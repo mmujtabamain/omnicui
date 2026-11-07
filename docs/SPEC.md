@@ -912,7 +912,8 @@ Targets import apps, never the reverse (§4.8).
 | File | What it does |
 |---|---|
 | `run.sh` | try it on macOS or Linux: doctor, setup, app, check, demo, test (§4.1a) |
-| `Makefile` | the same steps for `make` (`install`, `check`, `test`, `test-unit`, `test-real`, `test-report`, `cross`); `make release VERSION=<version>`: omnicui for linux, darwin and windows on amd64 and arm64, built with `CGO_ENABLED=0`, `-trimpath` and `-ldflags "-s -w -X main.Version=<version>"`, as `dist/omnicui_<version>_<os>_<arch>[.exe]`, with `dist/SHA256SUMS` |
+| `Makefile` | the same steps for `make` (`install`, `check`, `test`, `test-unit`, `test-real`, `test-report`, `cross`); `make release` (the version from `VERSION`, or `VERSION=<version>`): omnicui for linux, darwin and windows on amd64 and arm64, built with `CGO_ENABLED=0 -trimpath -ldflags "-s -w -X main.Version=<version>"`, plus `omnicui-src-<version>.tar.gz` (the command's source, without the real-target and report tests), and `SHA256SUMS`, in `dist/` |
+| `VERSION`, `notes/<version>.md`, `scripts/`, `.github/` | the version and its release notes; `check-notes.mjs` (the notes check, with its tests), `release-body.mjs` (a release's text), `neutral.mjs` (omnicui names no project that uses it); CI on merge requests and `main`, the notes check, a release `v<VERSION>` with the files of `make release` whenever `main` names a version that has none, and the ruleset protecting `main` |
 | `fresh-copy.sh`, `README.md` | the fresh-copy check; how to use |
 
 ---

@@ -1,0 +1,32 @@
+# The release-notes check, for main only: a merge request into main raises VERSION past main's and
+# adds notes/<VERSION>.md, and every note is well formed. Required by .github/rulesets/main.json.
+name: Release notes
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  notes:
+    name: Release notes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: VERSION is raised past main's, and every note is well formed
+        run: |
+          if [ -n "${{ github.base_ref }}" ] && git show "origin/${{ github.base_ref }}:VERSION" > /tmp/base-version 2>/dev/null; then
+            node scripts/check-notes.mjs --base-version "$(tr -d '[:space:]' < /tmp/base-version)"
+          else
+            node scripts/check-notes.mjs
+          fi

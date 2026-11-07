@@ -56,7 +56,7 @@ On macOS or Linux (this proof of concept has no Windows scripts; the omnicui com
 - `./run.sh app desktop` runs `cargo run --release` in `apps/desktop` and shows cargo's progress. If `setup` hasn't built it yet, the first build takes a few minutes before the window opens.
 - Add a deliberate defect to see it by eye: `OMNICUI_DEFECTS=egui.switch.linear ./run.sh app desktop`.
 - `./run.sh omnicui …` runs omnicui on this repository's project with any arguments, for example `./run.sh omnicui check egui counter`.
-- With `make`: `make install`, `make check`, `make test`, `make release VERSION=1.2.3`.
+- With `make`: `make install`, `make check`, `make test`, `make release`.
 
 **Requirements** (`doctor` checks them):
 - Go 1.21 or later, which fetches the 1.27 toolchain the module asks for by itself;
@@ -75,7 +75,8 @@ On macOS or Linux (this proof of concept has no Windows scripts; the omnicui com
 omnicui is one static binary with no runtime dependencies. Get it in one of three ways:
 
 ```sh
-make release VERSION=1.2.3       # dist/omnicui_1.2.3_<os>_<arch>[.exe] for six platforms, and SHA256SUMS
+make release                     # dist/: omnicui_<VERSION>_<os>_<arch>[.exe] for six platforms,
+                                 #   omnicui-src-<VERSION>.tar.gz (the command's source) and SHA256SUMS
 cd tools/omnicui && go install ./cmd/omnicui      # into $(go env GOPATH)/bin
 cd tools/omnicui && go build -o ../../bin/omnicui ./cmd/omnicui   # what setup does
 ```
@@ -137,3 +138,14 @@ This writes `omnicui/targets/swiftui/target.yaml` and prints the constructs to i
 3. Write an adapter: a program that reads JSON-RPC 2.0 requests from standard input, one per line, and writes one reply per line to standard output. It logs only to standard error. `omnicui/targets/javafx/` is a complete example in about 300 lines.
 4. Put the adapter's start command in `adapter:`, starting with `exec`.
 5. Tag the parts in the app's components, then run `omnicui check swiftui`.
+
+## Releases
+
+`VERSION` is the version, and `notes/<VERSION>.md` its release notes (front matter with `version`, `date` and a one-sentence `summary`, then `## New`, `## Changed`, `## Fixed`). A merge into `main` raises `VERSION` and adds its note; that is the whole release step.
+
+- `.github/workflows/ci.yml`, on merge requests and on `main`: vet, the unit and failure-injection tests, the six builds, the release scripts' tests (`node --test scripts/`) and `node scripts/neutral.mjs` (omnicui names no project that uses it).
+- `.github/workflows/notes.yml`: `node scripts/check-notes.mjs` (with `--base-version` from `main` on a merge request): `VERSION` is raised and every note is well formed.
+- `.github/workflows/release.yml`, on `main`: when `v<VERSION>` has no release yet, the checks, `make release`, and a GitHub Release with the six binaries, `omnicui-src-<VERSION>.tar.gz` and `SHA256SUMS`. Its text is the note, then how to use each file (`scripts/release-body.mjs`).
+- `.github/rulesets/main.json` protects `main` (merge requests only, both checks required); import it once under Settings → Rules → Rulesets.
+
+A project that vendors omnicui takes a release's source tarball, checks it against `SHA256SUMS`, and builds the command with `go build ./cmd/omnicui`. The tarball leaves out the real-target and report tests, which need this repository's apps.

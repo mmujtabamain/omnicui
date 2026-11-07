@@ -1,0 +1,47 @@
+# omnicui: vet, the unit and failure-injection tests, the build for every platform a release
+# ships, the notes check's own tests, and host neutrality. The real-target suite (three apps, a
+# browser, a JVM and a GPU driver) runs with ./run.sh test or ./fresh-copy.sh. The release-notes
+# check is notes.yml.
+name: omnicui
+
+on:
+  # once per change: on merge requests, and on main after a merge (a branch push with an open merge
+  # request would otherwise run everything twice)
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omnicui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Vet, tests and builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/omnicui/go.mod
+          cache-dependency-path: tools/omnicui/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Vet
+        working-directory: tools/omnicui
+        run: go vet ./...
+      - name: Tests (contracts, protocol, failure injection against a fake adapter, the check, the CLI)
+        working-directory: tools/omnicui
+        run: go test -count=1 ./...
+      - name: Builds for every platform a release ships
+        run: make cross
+      - name: The release scripts' own tests
+        run: node --test scripts/
+      - name: No host's name anywhere
+        run: node scripts/neutral.mjs

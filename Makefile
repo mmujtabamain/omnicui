@@ -2,14 +2,14 @@
 #   make install   build omnicui, the apps and their targets (needs Go, Node, Java 21, Rust)
 #   make check     run every contract on every target
 #   make test      everything: unit tests, failure injection, the real targets, the report's accessibility
-#   make release VERSION=1.2.3   omnicui for every platform, versioned, with checksums, in dist/
+#   make release VERSION=1.2.3   omnicui for every platform, versioned, and its source, with checksums, in dist/
 
 GO      ?= go
 NPM     ?= npm
 CARGO   ?= cargo
 OMNICUI := $(CURDIR)/bin/omnicui
 OMNI    := $(OMNICUI) --project $(CURDIR)/omnicui
-VERSION ?= dev
+VERSION ?= $(shell cat VERSION 2>/dev/null || echo dev)
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
 .PHONY: install omnicui web javafx egui report-tests check test test-unit test-real test-report cross release clean
@@ -62,14 +62,17 @@ cross:
 	cd tools/omnicui && for p in $(PLATFORMS); do \
 	  GOOS=$${p%/*} GOARCH=$${p#*/} $(GO) build -trimpath -o /dev/null ./cmd/omnicui && echo "built for $$p"; done
 
-# What ships: one static binary per platform, stamped with VERSION, and SHA256SUMS.
+# What ships: one static binary per platform, stamped with VERSION; the command's source
+# (tools/omnicui without the real-target and report tests, which need this repository's apps), for
+# projects that vendor and build it; and SHA256SUMS.
 release:
 	rm -rf dist && mkdir -p dist
 	cd tools/omnicui && for p in $(PLATFORMS); do \
 	  os=$${p%/*}; arch=$${p#*/}; ext=; [ $$os = windows ] && ext=.exe; \
 	  CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -trimpath -ldflags "-s -w -X main.Version=$(VERSION)" \
 	    -o $(CURDIR)/dist/omnicui_$(VERSION)_$${os}_$${arch}$$ext ./cmd/omnicui || exit 1; done
-	cd dist && (command -v sha256sum >/dev/null && sha256sum omnicui_* || shasum -a 256 omnicui_*) > SHA256SUMS
+	tar -czf dist/omnicui-src-$(VERSION).tar.gz --exclude=integration --exclude=report-test -C tools omnicui
+	cd dist && (command -v sha256sum >/dev/null && sha256sum omnicui_* omnicui-src-* || shasum -a 256 omnicui_* omnicui-src-*) > SHA256SUMS
 	@cat dist/SHA256SUMS
 
 clean:

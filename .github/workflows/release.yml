@@ -1,0 +1,70 @@
+# Releases. Runs on pushes to main only. A push to main is a release: the checks, then
+# `make release`, then a GitHub Release v<VERSION> with the six binaries, the command's source
+# (omnicui-src-<VERSION>.tar.gz, what a project that vendors omnicui takes) and SHA256SUMS, its notes
+# notes/<VERSION>.md followed by how to use each asset (scripts/release-body.mjs). If v<VERSION>
+# already exists (a re-run, or a push that didn't raise VERSION), nothing is released.
+# Needs: Settings → Actions → General → Workflow permissions: Read and write.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: The version, and whether it is new
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/check-notes.mjs
+          v="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" > /dev/null 2>&1 || git rev-parse -q --verify "refs/tags/v$v" > /dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "v$v is already released: nothing to do (raise VERSION and add notes/<version>.md to release)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.v.outputs.new == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/omnicui/go.mod
+          cache-dependency-path: tools/omnicui/go.sum
+      - name: Vet, tests, the release scripts' tests, neutrality
+        if: steps.v.outputs.new == 'true'
+        run: |
+          (cd tools/omnicui && go vet ./... && go test -count=1 ./...)
+          node --test scripts/
+          node scripts/neutral.mjs
+      - name: Build the release files
+        if: steps.v.outputs.new == 'true'
+        run: make release VERSION="${{ steps.v.outputs.version }}"
+      - name: Publish v${{ steps.v.outputs.version }}
+        if: steps.v.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.v.outputs.version }}"
+          node scripts/release-body.mjs --version "$v" > /tmp/release.md
+          title="$(head -n 1 /tmp/release.md)"
+          tail -n +2 /tmp/release.md > /tmp/body.md
+          gh release create "v$v" --target "$GITHUB_SHA" --title "$title" --notes-file /tmp/body.md dist/*
+          echo "Released [v$v](${{ github.server_url }}/${{ github.repository }}/releases/tag/v$v)" >> "$GITHUB_STEP_SUMMARY"
