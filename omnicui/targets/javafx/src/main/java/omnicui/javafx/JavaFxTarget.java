@@ -63,7 +63,7 @@ final class JavaFxTarget {
             // protocol: the first request of every run; the constructs (capabilities) this target supports
             case "advertise":
                 return Map.of("protocol", "1", "can", List.of("mount", "press", "focus", "key", "type", "drag", "hover",
-                        "read", "events", "screenshot", "trace", "record", "probe", "bounds", "role", "focused"));
+                        "read", "events", "screenshot", "trace", "trace.opacity", "record", "probe", "bounds", "role", "focused"));
             // protocol: the render check's picture, at the viewport asked for
             case "probe":
                 return probe(p.path("viewport").path("width").asDouble(), p.path("viewport").path("height").asDouble(), p.path("path").asText());
@@ -102,8 +102,10 @@ final class JavaFxTarget {
             // contract: tests[].trace[] (part and point); omnicui compares the samples
             case "trace": {
                 Node n = node(part);
+                if (p.path("property").asText("position").equals("opacity"))
+                    return sample(p.path("steps"), () -> Map.of("value", opacity(n)), null);
                 String point = p.path("point").asText();
-                return sample(p.path("steps"), () -> point(n.localToScene(n.getBoundsInLocal()), point));
+                return sample(p.path("steps"), () -> point(n.localToScene(n.getBoundsInLocal()), point), null);
             }
             // contract: tests[].record: true; frames of a clip, never compared
             case "record": {
@@ -111,9 +113,11 @@ final class JavaFxTarget {
                 new File(dir).mkdirs();
                 int[] frame = {0};
                 var frames = new ArrayList<Map<String, Object>>();
-                var samples = sample(p.path("steps"), () -> screenshot(dir + "/" + (frame[0]++) + ".png"));
+                var inputs = new ArrayList<Double>();
+                var samples = sample(p.path("steps"), () -> screenshot(dir + "/" + (frame[0]++) + ".png"), inputs);
                 for (var s : samples) frames.add(Map.of("ms", s.get("ms"), "file", s.get("value")));
-                return frames;
+                // protocol: when each step's input was delivered, on the frames' clock
+                return Map.of("frames", frames, "inputs", inputs);
             }
             default:
                 throw new RpcError(NO_METHOD, "unknown method " + method);
@@ -242,8 +246,16 @@ final class JavaFxTarget {
         return path;
     }
 
-    // trace and record: run the steps while a per-frame timer samples something, with the time in ms
-    private List<Map<String, Object>> sample(JsonNode steps, Callable<Object> what) throws Exception {
+    /** The opacity a node is drawn with: its own times its ancestors'. */
+    private static double opacity(Node n) {
+        double v = 1;
+        for (Node x = n; x != null; x = x.getParent()) v *= x.getOpacity();
+        return v;
+    }
+
+    // trace and record: run the steps while a per-frame timer samples something, with the time in
+    // ms; when inputs is given, it gets the time each step's input was delivered, on the same clock
+    private List<Map<String, Object>> sample(JsonNode steps, Callable<Object> what, List<Double> inputs) throws Exception {
         var samples = new CopyOnWriteArrayList<Map<String, Object>>();
         var timer = new AnimationTimer() {
             long start = -1;
@@ -260,7 +272,10 @@ final class JavaFxTarget {
         };
         onFx(() -> { timer.start(); return null; });
         Thread.sleep(100);
-        for (JsonNode s : steps) step(s.path("method").asText(), s);
+        for (JsonNode s : steps) {
+            if (inputs != null) inputs.add(timer.start < 0 ? 0.0 : (System.nanoTime() - timer.start) / 1e6);
+            step(s.path("method").asText(), s);
+        }
         Thread.sleep(150);
         onFx(() -> { timer.stop(); return null; });
         if (samples.isEmpty() || !(samples.get(0).get("value") instanceof Map)) return samples;
@@ -268,7 +283,8 @@ final class JavaFxTarget {
         for (var s : samples) {
             @SuppressWarnings("unchecked")
             var pt = (Map<String, Double>) s.get("value");
-            out.add(Map.of("ms", s.get("ms"), "x", pt.get("x"), "y", pt.get("y")));
+            if (pt.containsKey("value")) out.add(Map.of("ms", s.get("ms"), "x", 0.0, "y", 0.0, "value", pt.get("value")));
+            else out.add(Map.of("ms", s.get("ms"), "x", pt.get("x"), "y", pt.get("y")));
         }
         return out;
     }

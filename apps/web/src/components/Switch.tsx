@@ -12,7 +12,7 @@ export function Switch({ on: initial = SwitchDefaults.on, label = SwitchDefaults
     onToggled?.({ on: !on });
   };
   return (
-    <div className={defect("web.switch.slow") ? "switch switch--slow" : "switch"}>
+    <div className={["switch", defect("web.switch.slow") && "switch--slow", defect("web.switch.dim") && "switch--dim"].filter(Boolean).join(" ")}>
       <span id={labelId} className="switch__label">{label}</span>
       <button type="button" role="switch" aria-checked={on} aria-labelledby={defect("web.switch.no-name") ? undefined : labelId} data-part={Parts.switch} onClick={toggle} className="switch__track">
         <span className="switch__thumb" data-part={Parts.thumb} />

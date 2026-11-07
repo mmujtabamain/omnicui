@@ -58,7 +58,8 @@ func warnings(rep *Report, kind string) []Comparison {
 // and results.json, report.html, omnicui.log and protocol.log are written.
 func TestAllPass(t *testing.T) {
 	rep, p := run(t, map[string]T{"a": {}, "b": {}})
-	if rep.Summary.Pass != 14 || rep.Failed() || rep.Summary.Warnings != 0 {
+	// 7 written tests and 3 that keyboard: true adds, on two targets.
+	if rep.Summary.Pass != 20 || rep.Failed() || rep.Summary.Warnings != 0 {
 		t.Fatalf("summary %+v\n%+v", rep.Summary, rep.Results)
 	}
 	for _, f := range []string{"results.json", "report.html", "omnicui.log", "protocol.log"} {
@@ -66,8 +67,15 @@ func TestAllPass(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	var pix, tim int
+	var pix, tim, mot int
 	for _, c := range rep.Comparisons {
+		if c.Kind == "motion" {
+			mot++
+			if c.Warning || strings.HasPrefix(c.Note, "not compared") {
+				t.Errorf("the two fakes' clips move alike: %+v", c)
+			}
+			continue
+		}
 		if c.Kind == "pixels" {
 			pix++
 			if _, err := os.Stat(filepath.Join(p.RunDir(), c.Diff)); err != nil {
@@ -77,9 +85,10 @@ func TestAllPass(t *testing.T) {
 			tim++
 		}
 	}
-	// 5 tests take screenshots, one pair each; one trace: the pair and each target against the timing.
-	if pix != 5 || tim != 3 {
-		t.Errorf("comparisons: %d pixels, %d timing", pix, tim)
+	// 5 tests take screenshots, one pair each; one trace: the pair and each target against the
+	// timing; one clip: the pair, by visual progress.
+	if pix != 5 || tim != 3 || mot != 1 {
+		t.Errorf("comparisons: %d pixels, %d timing, %d motion", pix, tim, mot)
 	}
 	if r := result(t, rep, "a", "a press turns it on, and the thumb slides across"); r.Clip == "" || len(r.Traces) != 1 || len(r.Screenshots) != 2 {
 		t.Errorf("artifacts: %+v", r)
@@ -162,7 +171,7 @@ func TestPixelWarning(t *testing.T) {
 	}
 	var out strings.Builder
 	Print(&out, rep, p.RunDir())
-	for _, want := range []string{"area", "strength", "shift", "spot", "▲", "warning: ", "above the threshold", "thresholds", "30%", "3.5%", "6 px"} {
+	for _, want := range []string{"area", "strength", "shift", "spot", "▲", "warning: ", "above the threshold", "thresholds", "30%", "28%", "2%", "8 px"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("the console table should show %q:\n%s", want, out.String())
 		}
@@ -228,7 +237,7 @@ func TestHang(t *testing.T) {
 // R-CHECK-10: a target that can't start, or doesn't answer advertise, is broken for every test.
 func TestCannotStart(t *testing.T) {
 	rep, _ := run(t, map[string]T{"a": {Env: map[string]string{"FAKE_STRAY_ON": "1"}}})
-	if rep.Summary.Broken != 7 || !strings.Contains(rep.Targets[0].Broken, "did not answer advertise: stray output") {
+	if rep.Summary.Broken != 10 || !strings.Contains(rep.Targets[0].Broken, "did not answer advertise: stray output") {
 		t.Fatalf("%+v %+v", rep.Summary, rep.Targets)
 	}
 }
@@ -273,7 +282,7 @@ func TestStubs(t *testing.T) {
 	if err != nil || json.Unmarshal(data, &got) != nil || len(got) != 2 || got[0]["id"] != "ui.counter" {
 		t.Fatalf("stubs input: %v %s", err, data)
 	}
-	if rep.Summary.Broken != 7 || !strings.Contains(rep.Targets[1].Broken, "stub generator") {
+	if rep.Summary.Broken != 10 || !strings.Contains(rep.Targets[1].Broken, "stub generator") {
 		t.Fatalf("%+v", rep.Targets)
 	}
 }

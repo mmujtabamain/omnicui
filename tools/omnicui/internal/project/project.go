@@ -89,6 +89,9 @@ type Target struct {
 	StartTimeout string `yaml:"startTimeout"`
 
 	Dir string `yaml:"-"`
+	// Linked: targets/<name> is a link to a target folder elsewhere (another project's). Its stub
+	// generator is not run: it would rewrite that target's app from this project's contracts.
+	Linked bool `yaml:"-"`
 }
 
 // Timeouts with their defaults.
@@ -116,10 +119,12 @@ func (p Project) Targets() ([]Target, error) {
 	}
 	var out []Target
 	for _, e := range entries {
-		if !e.IsDir() {
+		dir := filepath.Join(p.TargetsDir(), e.Name())
+		// A target may be a link to another project's target folder: follow it.
+		if st, err := os.Stat(dir); err != nil || !st.IsDir() {
 			continue
 		}
-		dir := filepath.Join(p.TargetsDir(), e.Name())
+		linked := e.Type()&fs.ModeSymlink != 0
 		data, err := os.ReadFile(filepath.Join(dir, "target.yaml"))
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
@@ -138,6 +143,7 @@ func (p Project) Targets() ([]Target, error) {
 			return nil, fmt.Errorf("targets/%s/target.yaml: name `%s` must match its folder `%s`", e.Name(), t.Name, e.Name())
 		}
 		t.Dir = dir
+		t.Linked = linked
 		out = append(out, t)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
@@ -149,11 +155,13 @@ var Constructs = []struct{ Name, Does string }{
 	{"advertise", "first request: reply with the constructs this target can perform on this run"},
 	{"mount", "show a component, fresh (error -32001 if the target has no such component)"},
 	{"press, focus, key, type, drag, hover", "perform the action on a part (error -32002 if there is no such part)"},
-	{"read", "the value of one field of a part: text, name, disabled, checked, value"},
+	{"read", "the value of one field of a part: text, name, disabled, checked, value, and (optional) role, focused"},
 	{"events", "the events emitted since the last call"},
 	{"screenshot", "write an image of what is shown to the given path (if the target can render)"},
-	{"trace", "perform steps while sampling one point of a part; return its position over time"},
-	{"record", "perform steps while writing a clip's frames to the given folder; never compared"},
+	{"probe", "optional: draw the render check's picture (white, a black square at 8,8, a red one 8 px from the bottom-right corner) and write it to the given path"},
+	{"bounds", "optional: a part's box on screen {x, y, width, height}; 0×0 when it isn't rendered"},
+	{"trace", "perform steps while sampling one point of a part; return its position over time (or, with property: opacity, its opacity)"},
+	{"record", "perform steps while writing a clip's frames to the given folder; reply {frames, inputs}: the frames, and when each step's input landed on their clock"},
 }
 
 // Add creates targets/<name>. With a template it copies that folder or clones that git URL.

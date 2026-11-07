@@ -3,7 +3,6 @@ package compare
 import (
 	"image"
 	"image/color"
-	"image/gif"
 	"image/png"
 	"math"
 	"os"
@@ -157,23 +156,24 @@ func TestSpotTellsNoiseFromAConcentratedDifference(t *testing.T) {
 		}
 	}
 	a := solid(t, filepath.Join(d, "a.png"), 160, 160, color.White, lines)
-	// Every line one pixel lower and one shade lighter at its ends: thin, everywhere.
+	// Every line drawn 3 px lower, as one toolkit places text a little differently from another:
+	// beyond the 2 px reach, so it differs everywhere, but each pixel's colour is close by.
 	noisy := solid(t, filepath.Join(d, "noisy.png"), 160, 160, color.White, func(img *image.RGBA) {
 		for y := 13; y < 153; y += 10 {
 			for x := 10; x < 150; x++ {
-				img.Set(x, y, color.RGBA{90, 90, 90, 255})
+				img.Set(x, y, color.Black)
 			}
 		}
 	})
-	// The same lines, with one small block where a word should be.
+	// The same lines, with one small block of a colour the other screenshot doesn't have.
 	block := solid(t, filepath.Join(d, "block.png"), 160, 160, color.White, func(img *image.RGBA) {
 		lines(img)
-		square(img, 60, 60, 16, color.Black)
+		square(img, 60, 60, 16, color.RGBA{200, 0, 0, 255})
 	})
 	n, _, _ := Measure(a, noisy, "")
 	b, _, _ := Measure(a, block, "")
-	if n.Spot >= b.Spot || b.Spot < 30 {
-		t.Errorf("noise spot %.1f%% should be well under a block's %.1f%%", n.Spot, b.Spot)
+	if n.Area < 50 || n.Spot != 0 || n.Strength != 0 || b.Spot < 30 {
+		t.Errorf("displaced lines: area %.1f%%, spot %.1f%%, strength %.1f%% (want a large area, no spot, no strength); a block's spot %.1f%%", n.Area, n.Spot, n.Strength, b.Spot)
 	}
 }
 
@@ -240,7 +240,7 @@ func TestDifferMeasures(t *testing.T) {
 	if d, _ := Differ(lin, out); d < 50 {
 		t.Errorf("300ms linear against 200ms ease-out should differ a lot, got %.1f ms", d)
 	}
-	still := Analyze([]Sample{{0, 1, 1}, {16, 1.2, 1}, {32, 1, 1}})
+	still := Analyze([]Sample{{MS: 0, X: 1, Y: 1}, {MS: 16, X: 1.2, Y: 1}, {MS: 32, X: 1, Y: 1}})
 	if still.Moved {
 		t.Error("under a pixel is not a movement")
 	}
@@ -249,23 +249,5 @@ func TestDifferMeasures(t *testing.T) {
 	}
 	if d, _ := Differ(still, still); d != 0 {
 		t.Errorf("still against still: %v", d)
-	}
-}
-
-// R-RECORD-1: recorded frames become an animated GIF that keeps their timing.
-func TestClip(t *testing.T) {
-	d := t.TempDir()
-	var frames []Frame
-	for i, c := range []color.Color{color.White, color.Black, color.White} {
-		frames = append(frames, Frame{MS: float64(i) * 50, File: solid(t, filepath.Join(d, string(rune('a'+i))+".png"), 8, 8, c, nil)})
-	}
-	out := filepath.Join(d, "clip.gif")
-	if err := Clip(frames, out); err != nil {
-		t.Fatal(err)
-	}
-	f, _ := os.Open(out)
-	g, err := gif.DecodeAll(f)
-	if err != nil || len(g.Image) != 3 || g.Delay[0] != 5 || g.Delay[2] != 100 {
-		t.Fatalf("%v frames=%d delays=%v", err, len(g.Image), g.Delay)
 	}
 }

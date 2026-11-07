@@ -54,6 +54,14 @@ public final class SwitchControl extends HBox {
             slide.setFromX(thumb.getTranslateX());
             slide.setToX(now ? 20 : 0);
             slide.playFromStart();
+            // javafx.switch.dim: the thumb also fades to half opacity when on, slowly (600 ms,
+            // linear), which only this app does.
+            if (Defects.on("javafx.switch.dim")) {
+                var fade = new javafx.animation.FadeTransition(Duration.millis(600), thumb);
+                fade.setInterpolator(Interpolator.LINEAR);
+                fade.setToValue(now ? 0.5 : 1);
+                fade.playFromStart();
+            }
             onToggled.accept(now); // contract: events.toggled { on }
         });
 

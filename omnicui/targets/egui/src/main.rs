@@ -130,6 +130,9 @@ impl Target {
             "advertise" => {
                 let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace", "bounds", "role", "focused"];
                 let mut cannot = serde_json::Map::new();
+                // egui has no opacity per widget to read back (it is multiplied into the painted
+                // colours); a fade is compared through the recorded clip instead.
+                cannot.insert("trace.opacity".into(), json!("egui has no per-widget opacity to read; record the test and its clip is compared"));
                 match &self.can_render {
                     None => can.extend(["screenshot", "record", "probe"]),
                     Some(why) => {
@@ -204,7 +207,10 @@ impl Target {
             // contract: tests[].trace[]: perform the steps frame by frame, reading the part's box.
             "trace" => {
                 let point = p["point"].as_str().unwrap_or("center").to_owned();
-                let samples = self.frames(p, |t, frame_ms| {
+                if p["property"].as_str().is_some_and(|x| x != "position") {
+                    return Err(fail(STEP_FAILED, "egui can trace positions only"));
+                }
+                let (samples, _) = self.frames(p, |t, frame_ms| {
                     let h = t.harness()?;
                     let root = h.root();
                     let r = find(&root, &part)?.rect();
@@ -218,13 +224,14 @@ impl Target {
                 let dir = p["path"].as_str().unwrap_or_default().to_owned();
                 std::fs::create_dir_all(&dir).map_err(|e| fail(STEP_FAILED, e.to_string()))?;
                 let mut n = 0;
-                let frames = self.frames(p, |t, frame_ms| {
+                let (frames, inputs) = self.frames(p, |t, frame_ms| {
                     let file = format!("{dir}/{n}.png");
                     n += 1;
                     t.render_to(&file)?;
                     Ok(json!({ "ms": frame_ms, "file": file }))
                 })?;
-                Ok(Value::Array(frames))
+                // protocol: when each step's input was delivered, on the frames' clock.
+                Ok(json!({ "frames": frames, "inputs": inputs }))
             }
             other => Err(fail(NO_METHOD, format!("unknown method {other}"))),
         }
@@ -259,14 +266,16 @@ impl Target {
     }
 
     /// Runs the given steps one simulated frame at a time, calling `sample` after every frame,
-    /// until the UI has settled.
-    fn frames(&mut self, p: &Value, mut sample: impl FnMut(&mut Self, f64) -> Result<Value>) -> Result<Vec<Value>> {
+    /// until the UI has settled. Also returns when each step's input was queued, in ms.
+    fn frames(&mut self, p: &Value, mut sample: impl FnMut(&mut Self, f64) -> Result<Value>) -> Result<(Vec<Value>, Vec<f64>)> {
         let mut out = vec![];
+        let mut inputs = vec![];
         let mut frame = 0u32;
         let ms = |f: u32| f as f64 * STEP_DT as f64 * 1000.0;
         out.push(sample(self, ms(frame))?);
         let steps = p["steps"].as_array().cloned().unwrap_or_default();
         for s in &steps {
+            inputs.push(ms(frame));
             self.queue_step(s["method"].as_str().unwrap_or_default(), s)?;
             let mut quiet = 0;
             while quiet < 3 && frame < 600 {
@@ -278,7 +287,7 @@ impl Target {
                 out.push(sample(self, ms(frame))?);
             }
         }
-        Ok(out)
+        Ok((out, inputs))
     }
 
     fn render_to(&mut self, path: &str) -> Result<()> {

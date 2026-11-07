@@ -60,10 +60,12 @@ func Combos(c *contract.Contract) []Combo {
 
 // TraceResult is one traced point on one target.
 type TraceResult struct {
-	Part    string           `json:"part"`
-	Point   string           `json:"point"`
-	Samples []compare.Sample `json:"samples"`
-	Curve   compare.Curve    `json:"curve"`
+	Part     string           `json:"part"`
+	Point    string           `json:"point,omitempty"`
+	Property string           `json:"property,omitempty"`
+	Combo    string           `json:"combo,omitempty"`
+	Samples  []compare.Sample `json:"samples"`
+	Curve    compare.Curve    `json:"curve"`
 }
 
 // TestResult is one test on one target.
@@ -76,7 +78,9 @@ type TestResult struct {
 	// Screenshots by combo key, as paths relative to the run folder.
 	Screenshots map[string]string `json:"screenshots,omitempty"`
 	Traces      []TraceResult     `json:"traces,omitempty"`
-	Clip        string            `json:"clip,omitempty"`
+	// Clip is the first combination's clip; Clips has every combination's, by combo key.
+	Clip  string                `json:"clip,omitempty"`
+	Clips map[string]ClipResult `json:"clips,omitempty"`
 	// Missing lists capabilities a test needed but the target didn't advertise, with the reason.
 	Missing map[string]string `json:"notAdvertised,omitempty"`
 	// Bounds are the parts' boxes on screen when each screenshot was taken, by combo key and part
@@ -85,6 +89,18 @@ type TestResult struct {
 	// Invisible lists the parts whose text, name or value was read while they had no size on
 	// screen or were outside the viewport: what a user can't see passed anyway.
 	Invisible []string `json:"invisible,omitempty"`
+}
+
+// ClipResult is one recorded clip: its frames, the animated PNG made of them, when each input
+// was delivered (ms in the frames' timeline, when the target says), and its visual progress.
+type ClipResult struct {
+	File     string          `json:"file,omitempty"`
+	Frames   []compare.Frame `json:"frames"`
+	Inputs   []float64       `json:"inputs,omitempty"`
+	Progress *compare.Curve  `json:"progress,omitempty"`
+	// Values is the progress (0→1) at each frame.
+	Values []float64 `json:"values,omitempty"`
+	Note   string    `json:"note,omitempty"`
 }
 
 // Rect is a part's box on screen, in CSS pixels.

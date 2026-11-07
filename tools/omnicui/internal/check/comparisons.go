@@ -34,6 +34,9 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 			if len(test.Trace) > 0 {
 				out = append(out, compareTraces(c, test, results)...)
 			}
+			if test.Record {
+				out = append(out, compareClips(c, test, results)...)
+			}
 		}
 	}
 	return out
@@ -85,39 +88,91 @@ func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results
 	return out
 }
 
+func traceLabel(spec contract.TraceSpec) string {
+	if spec.Property != "" && spec.Property != "position" {
+		return spec.Part + " " + spec.Property
+	}
+	return spec.Part
+}
+
 func compareTraces(c *contract.Contract, test contract.Test, results []TestResult) []Comparison {
 	var out []Comparison
 	for _, spec := range test.Trace {
-		curves := map[string]compare.Curve{}
-		var order []string
+		// One comparison set per combination the traces were taken at.
+		var combos []string
+		curves := map[string]map[string]compare.Curve{}
+		order := map[string][]string{}
 		for _, res := range results {
 			for _, tr := range res.Traces {
-				if tr.Part == spec.Part && tr.Point == spec.Point {
-					curves[res.Target] = tr.Curve
-					order = append(order, res.Target)
+				if tr.Part != spec.Part || tr.Point != spec.Point || (tr.Property != "" && tr.Property != spec.Property) {
+					continue
+				}
+				if curves[tr.Combo] == nil {
+					curves[tr.Combo] = map[string]compare.Curve{}
+					combos = append(combos, tr.Combo)
+				}
+				curves[tr.Combo][res.Target] = tr.Curve
+				order[tr.Combo] = append(order[tr.Combo], res.Target)
+			}
+		}
+		label := traceLabel(spec)
+		for _, combo := range combos {
+			cs, names := curves[combo], order[combo]
+			for i := 0; i < len(names); i++ {
+				for j := i + 1; j < len(names); j++ {
+					d, note := compare.Differ(cs[names[i]], cs[names[j]])
+					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: names[i], B: names[j], Part: label, Combo: combo,
+						Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold, Note: note})
+				}
+			}
+			if spec.Timing != nil {
+				want, err := compare.Expected(spec.Timing.DurationMS, spec.Timing.Easing)
+				if err != nil {
+					continue
+				}
+				for _, name := range names {
+					d, note := compare.Differ(cs[name], want)
+					if !cs[name].Moved {
+						note = fmt.Sprintf("%s didn't change", label)
+					}
+					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: name, B: "timing", Part: label, Combo: combo,
+						Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold,
+						Note: fmt.Sprintf("against %.0fms %s; %s", spec.Timing.DurationMS, spec.Timing.Easing, note)})
 				}
 			}
 		}
-		for i := 0; i < len(order); i++ {
-			for j := i + 1; j < len(order); j++ {
-				d, note := compare.Differ(curves[order[i]], curves[order[j]])
-				out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: order[i], B: order[j], Part: spec.Part,
-					Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold, Note: note})
-			}
-		}
-		if spec.Timing != nil {
-			want, err := compare.Expected(spec.Timing.DurationMS, spec.Timing.Easing)
-			if err != nil {
-				continue
-			}
-			for _, name := range order {
-				d, note := compare.Differ(curves[name], want)
-				if !curves[name].Moved {
-					note = fmt.Sprintf("%s didn't move", spec.Part)
+	}
+	return out
+}
+
+// compareClips compares each pair of targets' clips, at each combination both recorded, by their
+// visual progress curves: how the picture moved from its first state to its last, lined up and
+// measured at levels of progress like a trace. This is what compares fades, blurs and colour
+// changes, which have no position to trace.
+func compareClips(c *contract.Contract, test contract.Test, results []TestResult) []Comparison {
+	var out []Comparison
+	for _, cb := range Combos(c) {
+		key := cb.Key()
+		for i := 0; i < len(results); i++ {
+			for j := i + 1; j < len(results); j++ {
+				a, okA := results[i].Clips[key]
+				b, okB := results[j].Clips[key]
+				if !okA || !okB {
+					continue
 				}
-				out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: name, B: "timing", Part: spec.Part,
-					Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold,
-					Note: fmt.Sprintf("against %.0fms %s; %s", spec.Timing.DurationMS, spec.Timing.Easing, note)})
+				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "motion", A: results[i].Target, B: results[j].Target, Part: "clip", Combo: key, Threshold: c.MotionThreshold}
+				switch {
+				case a.Progress == nil || b.Progress == nil:
+					why := a.Note
+					if why == "" {
+						why = b.Note
+					}
+					cmp.Note = "not compared: " + why
+				default:
+					d, note := compare.Differ(*a.Progress, *b.Progress)
+					cmp.Value, cmp.Warning, cmp.Note = round(d, 1), d > c.MotionThreshold, strings.Replace(note, "of the movement", "of the change", 1)
+				}
+				out = append(out, cmp)
 			}
 		}
 	}

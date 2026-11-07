@@ -68,8 +68,8 @@ type MeasuresRow struct {
 //
 //	                 area    strength  shift   spot
 //	egui ↔ web       5.7%    14%       3 px    0.0%    pass
-//	javafx ↔ web     75%     52%       6 px    41% ▲   warning: area, strength, shift, spot
-//	thresholds       30%     40%       6 px    1%
+//	javafx ↔ web     75% ▲   52% ▲     4 px    41% ▲   warning: area, strength, spot above the threshold
+//	thresholds       30%     28%       8 px    2%
 func MeasuresTable(rows []MeasuresRow, th contract.PixelThresholds, indent string) string {
 	labelW := utf8.RuneCountInString("thresholds")
 	for _, r := range rows {

@@ -415,6 +415,10 @@ func doStubs(p project.Project, names []string, stdout, stderr io.Writer) int {
 	}
 	status := 0
 	for _, t := range ts {
+		if t.Linked && t.Stubs != "" {
+			fmt.Fprintf(stdout, "%s: linked from elsewhere; its stub generator is not run here (it would rewrite that app from this project's contracts)\n", t.Name)
+			continue
+		}
 		if t.Stubs == "" {
 			fmt.Fprintf(stdout, "%s: no stub generator\n", t.Name)
 			continue

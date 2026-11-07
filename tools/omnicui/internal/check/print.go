@@ -45,12 +45,19 @@ func valueText(c Comparison) string {
 
 // comparisonLine is one line about a test's screenshots or one traced part.
 func comparisonLine(cs []Comparison) string {
-	var parts, warnings []string
+	var parts, warnings, notes []string
 	for _, c := range cs {
+		if strings.HasPrefix(c.Note, "not compared: ") {
+			notes = append(notes, pairLabel(c)+": "+strings.TrimPrefix(c.Note, "not compared: "))
+			continue
+		}
 		parts = append(parts, pairLabel(c)+" "+valueText(c))
 		if c.Warning {
 			warnings = append(warnings, pairLabel(c)+" "+valueText(c))
 		}
+	}
+	if len(parts) == 0 {
+		return "not compared: " + strings.Join(notes, "; ")
 	}
 	th := cs[0].Threshold
 	thText := fmt.Sprintf("%g%s", th, unit(cs[0].Kind))
@@ -144,10 +151,18 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				} else if cmp.Kind == "visibility" {
 					seen = append(seen, cmp)
 				} else {
-					if _, ok := traces[cmp.Part]; !ok {
-						partOrder = append(partOrder, cmp.Part)
+					// One line per traced part (or clip) and combination.
+					key := "trace " + cmp.Part
+					if cmp.Kind == "motion" {
+						key = "clip, visual progress"
 					}
-					traces[cmp.Part] = append(traces[cmp.Part], cmp)
+					if cmp.Combo != "" && len(Combos(c)) > 1 && test.AllCombinations {
+						key += " " + cmp.Combo
+					}
+					if _, ok := traces[key]; !ok {
+						partOrder = append(partOrder, key)
+					}
+					traces[key] = append(traces[key], cmp)
 				}
 			}
 			if len(pix) > 0 {
@@ -166,9 +181,9 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				fmt.Fprint(w, MeasuresTable(rows, *pix[0].Thresholds, "      "))
 			}
 			for _, p := range partOrder {
-				fmt.Fprintf(w, "    %s%s\n", pad("trace "+p, col-2), comparisonLine(traces[p]))
+				fmt.Fprintf(w, "    %s%s\n", pad(p, col-2), comparisonLine(traces[p]))
 			}
-			if combos := Combos(c); (len(test.Trace) > 0 || test.Record) && len(combos) > 1 {
+			if combos := Combos(c); (len(test.Trace) > 0 || test.Record) && len(combos) > 1 && !test.AllCombinations {
 				fmt.Fprintf(w, "    %s%s\n", pad("", col-2), "traces and clip: first combination only ("+combos[0].Label()+")")
 			}
 			for _, v := range seen {

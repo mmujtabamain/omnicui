@@ -146,7 +146,7 @@ async function step(method: string, p: Params) {
 const methods: Record<string, (p: Params) => Promise<unknown>> = {
   // protocol: the first request; which constructs this target can perform on this run.
   async advertise() {
-    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "record", "probe", "bounds", "role", "focused"] };
+    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "record", "probe", "bounds", "role", "focused"] };
   },
   // protocol: the render check's picture: white, a black 32×32 square at 8,8, a red one 8 px from
   // the bottom-right corner, at the viewport asked for.
@@ -206,30 +206,42 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     await page.screenshot({ path: p.path, caret: "hide" });
     return p.path;
   },
-  // contract: trace[]. Samples the part's box on every animation frame while the steps run.
+  // contract: trace[]. Samples the part's box on every animation frame while the steps run; or,
+  // with property: opacity, its opacity as drawn (its own times its ancestors').
   async trace(p) {
     await locate(p.part);
-    await page.evaluate(([sel, point]) => {
+    await page.evaluate(([sel, point, property]) => {
       const el = document.querySelector(sel)!;
-      const t = ((window as any).__trace = { samples: [] as { ms: number; x: number; y: number }[], on: true });
+      const t = ((window as any).__trace = { samples: [] as Record<string, number>[], on: true });
+      const opacity = () => {
+        let v = 1;
+        for (let n: Element | null = el; n; n = n.parentElement) v *= Number(getComputedStyle(n).opacity);
+        return v;
+      };
       const frame = (ms: number) => {
-        const r = el.getBoundingClientRect();
-        t.samples.push({ ms, x: point === "center" ? r.left + r.width / 2 : r.left, y: point === "center" ? r.top + r.height / 2 : r.top });
+        if (property === "opacity") {
+          t.samples.push({ ms, x: 0, y: 0, value: opacity() });
+        } else {
+          const r = el.getBoundingClientRect();
+          t.samples.push({ ms, x: point === "center" ? r.left + r.width / 2 : r.left, y: point === "center" ? r.top + r.height / 2 : r.top });
+        }
         if (t.on) requestAnimationFrame(frame);
       };
       requestAnimationFrame(frame);
-    }, [selector(p.part), p.point] as const);
+    }, [selector(p.part), p.point, p.property ?? "position"] as const);
     for (const s of p.steps) await step(s.method, s);
     await page.waitForTimeout(150);
-    const samples: { ms: number; x: number; y: number }[] = await page.evaluate(() => {
+    const samples: Record<string, number>[] = await page.evaluate(() => {
       const t = (window as any).__trace;
       t.on = false;
       return t.samples;
     });
     const t0 = samples[0]?.ms ?? 0;
-    return samples.map((s) => ({ ms: s.ms - t0, x: s.x, y: s.y }));
+    return samples.map((s) => ({ ...s, ms: s.ms - t0 }));
   },
-  // contract: record: true. Chromium's screencast sends a frame whenever the page changes.
+  // contract: record: true. Chromium's screencast sends a frame whenever the page changes. The
+  // reply says when each step's input was delivered, on the frames' clock (the screencast's
+  // timestamps are wall-clock seconds), so that clips can be lined up at the input.
   async record(p) {
     mkdirSync(p.path, { recursive: true });
     const frames: { ms: number; file: string }[] = [];
@@ -246,12 +258,16 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     cdp.on("Page.screencastFrame", onFrame);
     await cdp.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
     await page.waitForTimeout(150);
-    for (const s of p.steps) await step(s.method, s);
+    const inputs: number[] = [];
+    for (const s of p.steps) {
+      inputs.push(first < 0 ? 0 : Date.now() - first);
+      await step(s.method, s);
+    }
     await page.waitForTimeout(300);
     await cdp.send("Page.stopScreencast");
     cdp.off("Page.screencastFrame", onFrame);
     await Promise.all(writes);
-    return frames;
+    return { frames, inputs };
   },
 };
 

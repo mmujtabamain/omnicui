@@ -1,6 +1,7 @@
 package check
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"math"
@@ -20,10 +21,75 @@ type reportTest struct {
 	Combos      []Combo
 	Pixels      []Comparison
 	Timing      []Comparison
+	Visibility  []Comparison
+	ClipSets    []clipSet
 	Chart       template.HTML
 	HasShots    bool
 	HasClips    bool
 	TimingLines []string
+}
+
+// clipSet is the clips of one test at one combination: their chart, the player's data, and
+// each target's animated PNG.
+type clipSet struct {
+	Label   string
+	Chart   template.HTML
+	Player  string // JSON for the player script
+	Targets []clipTarget
+}
+
+type clipTarget struct {
+	Name, File, First string
+}
+
+type playerTarget struct {
+	Name   string   `json:"name"`
+	Offset float64  `json:"offset"`
+	Frames [][2]any `json:"frames"`
+	Align  string   `json:"align"`
+}
+
+// clipSets builds, for each combination where any target recorded, the player's data. Each
+// target's timeline is lined up at the moment its first input landed, when the target says when
+// that was, and otherwise where its picture starts to change.
+func clipSets(c *contract.Contract, results []TestResult) []clipSet {
+	var out []clipSet
+	for _, cb := range Combos(c) {
+		key := cb.Key()
+		set := clipSet{Label: cb.Label(), Chart: clipChart(results, key)}
+		var targets []playerTarget
+		lo, hi := 0.0, 0.0
+		for _, res := range results {
+			clip, ok := res.Clips[key]
+			if !ok || len(clip.Frames) == 0 {
+				continue
+			}
+			pt := playerTarget{Name: res.Target, Offset: clip.Frames[0].MS, Align: "its first frame"}
+			if len(clip.Inputs) > 0 {
+				pt.Offset, pt.Align = clip.Inputs[0], "its first input"
+			} else if len(clip.Values) == len(clip.Frames) {
+				for i, v := range clip.Values {
+					if v >= 0.02 {
+						pt.Offset, pt.Align = clip.Frames[i].MS, "where it starts to change"
+						break
+					}
+				}
+			}
+			for _, f := range clip.Frames {
+				pt.Frames = append(pt.Frames, [2]any{f.MS, filepath.ToSlash(f.File)})
+				lo, hi = math.Min(lo, f.MS-pt.Offset), math.Max(hi, f.MS-pt.Offset)
+			}
+			targets = append(targets, pt)
+			set.Targets = append(set.Targets, clipTarget{Name: res.Target, File: filepath.ToSlash(clip.File), First: filepath.ToSlash(clip.Frames[0].File)})
+		}
+		if len(targets) == 0 {
+			continue
+		}
+		data, _ := json.Marshal(map[string]any{"targets": targets, "min": math.Floor(lo), "max": math.Ceil(hi)})
+		set.Player = string(data)
+		out = append(out, set)
+	}
+	return out
 }
 
 type reportData struct {
@@ -35,61 +101,121 @@ type reportData struct {
 var dashes = []string{"", "6 4", "2 3", "10 3 2 3"}
 var strokes = []string{"#1f5fbf", "#b3261e", "#1d7a3a", "#6b3fa0"}
 
-// chart draws each target's traced progress over time as an SVG line chart.
-func chart(test contract.Test, results []TestResult, part string) template.HTML {
-	type line struct {
-		name string
-		pts  [][2]float64
+type chartLine struct {
+	name string
+	pts  [][2]float64
+}
+
+// progressOf is how far each sample has gone from the first to the last: along the movement for
+// a position, along the change for a value.
+func progressOf(s []compare.Sample) []float64 {
+	out := make([]float64, len(s))
+	p0, pn := s[0], s[len(s)-1]
+	if p0.Value != nil && pn.Value != nil {
+		change := *pn.Value - *p0.Value
+		for i, smp := range s {
+			if smp.Value != nil && change != 0 {
+				out[i] = (*smp.Value - *p0.Value) / change
+			}
+		}
+		return out
 	}
-	var lines []line
+	dx, dy := pn.X-p0.X, pn.Y-p0.Y
+	d2 := dx*dx + dy*dy
+	for i, smp := range s {
+		if d2 > 0 {
+			out[i] = ((smp.X-p0.X)*dx + (smp.Y-p0.Y)*dy) / d2
+		}
+	}
+	return out
+}
+
+// startAligned shifts a progress series so that 0 ms is where it passes 2%: each target reacts
+// after its own delay, and the chart compares the shape of the change.
+func startAligned(ms, progress []float64) ([][2]float64, float64) {
+	t0 := -1.0
+	for i, p := range progress {
+		if p >= 0.02 {
+			t0 = ms[i]
+			break
+		}
+	}
+	if t0 < 0 {
+		return nil, 0
+	}
+	var pts [][2]float64
+	maxT := 0.0
+	for i := range ms {
+		t := ms[i] - t0
+		if t < -20 {
+			continue
+		}
+		pts = append(pts, [2]float64{t, progress[i]})
+		maxT = math.Max(maxT, t)
+	}
+	return pts, maxT
+}
+
+// chart draws each target's traced progress of one part over time as an SVG line chart.
+func chart(test contract.Test, results []TestResult, spec contract.TraceSpec, first string) template.HTML {
+	var lines []chartLine
 	maxT := 1.0
 	for _, res := range results {
 		for _, tr := range res.Traces {
-			if tr.Part != part || len(tr.Samples) < 2 || !tr.Curve.Moved {
+			if tr.Part != spec.Part || tr.Point != spec.Point || (tr.Combo != "" && tr.Combo != first) || len(tr.Samples) < 2 || !tr.Curve.Moved {
 				continue
 			}
-			s := tr.Samples
-			p0, pn := s[0], s[len(s)-1]
-			dx, dy := pn.X-p0.X, pn.Y-p0.Y
-			d2 := dx*dx + dy*dy
-			var t0 float64 = -1
-			var pts [][2]float64
-			for _, smp := range s {
-				p := ((smp.X-p0.X)*dx + (smp.Y-p0.Y)*dy) / d2
-				if t0 < 0 && p >= 0.02 {
-					t0 = smp.MS
-				}
-				pts = append(pts, [2]float64{smp.MS, p})
+			ms := make([]float64, len(tr.Samples))
+			for i, smp := range tr.Samples {
+				ms[i] = smp.MS
 			}
-			if t0 < 0 {
+			pts, m := startAligned(ms, progressOf(tr.Samples))
+			if pts == nil {
 				continue
 			}
-			var shifted [][2]float64
-			for _, pt := range pts {
-				t := pt[0] - t0
-				if t < -20 {
-					continue
-				}
-				shifted = append(shifted, [2]float64{t, pt[1]})
-				maxT = math.Max(maxT, t)
-			}
-			lines = append(lines, line{name: res.Target, pts: shifted})
+			maxT = math.Max(maxT, m)
+			lines = append(lines, chartLine{name: res.Target, pts: pts})
 		}
 	}
-	for _, spec := range test.Trace {
-		if spec.Part == part && spec.Timing != nil {
-			want, err := compare.Expected(spec.Timing.DurationMS, spec.Timing.Easing)
-			if err == nil {
-				pts := [][2]float64{{0, 0.02}}
-				for i, l := range compare.Levels {
-					pts = append(pts, [2]float64{want.Times[i], l})
-				}
-				pts = append(pts, [2]float64{want.Duration, 0.98})
-				lines = append(lines, line{name: fmt.Sprintf("%.0fms %s", spec.Timing.DurationMS, spec.Timing.Easing), pts: pts})
-				maxT = math.Max(maxT, want.Duration)
+	if spec.Timing != nil {
+		want, err := compare.Expected(spec.Timing.DurationMS, spec.Timing.Easing)
+		if err == nil {
+			pts := [][2]float64{{0, 0.02}}
+			for i, l := range compare.Levels {
+				pts = append(pts, [2]float64{want.Times[i], l})
 			}
+			pts = append(pts, [2]float64{want.Duration, 0.98})
+			lines = append(lines, chartLine{name: fmt.Sprintf("%.0fms %s", spec.Timing.DurationMS, spec.Timing.Easing), pts: pts})
+			maxT = math.Max(maxT, want.Duration)
 		}
 	}
+	return drawChart(lines, maxT, "Progress of "+traceLabel(spec)+" over time, aligned where each target's change starts")
+}
+
+// clipChart draws each target's clip's visual progress at one combination.
+func clipChart(results []TestResult, combo string) template.HTML {
+	var lines []chartLine
+	maxT := 1.0
+	for _, res := range results {
+		clip, ok := res.Clips[combo]
+		if !ok || clip.Progress == nil || len(clip.Values) != len(clip.Frames) {
+			continue
+		}
+		ms := make([]float64, len(clip.Frames))
+		for i, f := range clip.Frames {
+			ms[i] = f.MS
+		}
+		pts, m := startAligned(ms, clip.Values)
+		if pts == nil {
+			continue
+		}
+		maxT = math.Max(maxT, m)
+		lines = append(lines, chartLine{name: res.Target, pts: pts})
+	}
+	return drawChart(lines, maxT, "Visual progress of each target's clip at "+combo+" (how far the picture has gone from its first frame to its last), aligned where each starts to change")
+}
+
+func drawChart(lines []chartLine, maxT float64, what string) template.HTML {
 	if len(lines) == 0 {
 		return ""
 	}
@@ -98,13 +224,11 @@ func chart(test contract.Test, results []TestResult, part string) template.HTML 
 	x := func(t float64) float64 { return L + (t+20)/(maxT+20)*(W-L-16) }
 	y := func(p float64) float64 { return H - B - math.Max(-0.1, math.Min(1.1, p))*(H-B-16) }
 	var sb strings.Builder
-	label := fmt.Sprintf("Progress of %s over time, aligned where each target's movement starts: %s.", part, func() string {
-		var n []string
-		for _, l := range lines {
-			n = append(n, l.name)
-		}
-		return strings.Join(n, ", ")
-	}())
+	var names []string
+	for _, l := range lines {
+		names = append(names, l.name)
+	}
+	label := what + ": " + strings.Join(names, ", ") + "."
 	fmt.Fprintf(&sb, `<svg class="chart" viewBox="0 0 %.0f %.0f" role="img" aria-label="%s">`, W, H, template.HTMLEscapeString(label))
 	fmt.Fprintf(&sb, `<line class="axis" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>`, L, H-B, W-16, H-B)
 	fmt.Fprintf(&sb, `<line class="axis" x1="%.1f" y1="16" x2="%.1f" y2="%.1f"/>`, L, L, H-B)
@@ -114,6 +238,9 @@ func chart(test contract.Test, results []TestResult, part string) template.HTML 
 	step := 50.0
 	if maxT > 400 {
 		step = 100
+	}
+	if maxT > 1000 {
+		step = 250
 	}
 	for t := 0.0; t <= maxT; t += step {
 		fmt.Fprintf(&sb, `<text x="%.1f" y="%.1f" text-anchor="middle">%.0f</text>`, x(t), H-B+16, t)
@@ -152,38 +279,37 @@ func writeReport(path string, rep *Report) error {
 				if res.Contract == c.ID && res.Test == test.Name {
 					rt.Results = append(rt.Results, res)
 					rt.HasShots = rt.HasShots || len(res.Screenshots) > 0
-					rt.HasClips = rt.HasClips || res.Clip != ""
+					rt.HasClips = rt.HasClips || len(res.Clips) > 0
 				}
 			}
-			var parts []string
 			for _, cmp := range rep.Comparisons {
 				if cmp.Contract != c.ID || cmp.Test != test.Name {
 					continue
 				}
-				if cmp.Kind == "pixels" {
+				switch cmp.Kind {
+				case "pixels":
 					rt.Pixels = append(rt.Pixels, cmp)
-				} else {
+				case "visibility":
+					rt.Visibility = append(rt.Visibility, cmp)
+				default:
 					rt.Timing = append(rt.Timing, cmp)
 				}
 			}
-			seen := map[string]bool{}
-			for _, spec := range test.Trace {
-				if !seen[spec.Part] {
-					seen[spec.Part] = true
-					parts = append(parts, spec.Part)
-				}
+			first := ""
+			if cbs := Combos(c); len(cbs) > 0 {
+				first = cbs[0].Key()
 			}
-			for _, p := range parts {
-				rt.Chart += chart(test, rt.Results, p)
+			for _, spec := range test.Trace {
+				rt.Chart += chart(test, rt.Results, spec, first)
+			}
+			if rt.HasClips {
+				rt.ClipSets = clipSets(c, rt.Results)
 			}
 			data.Tests = append(data.Tests, rt)
 		}
 	}
 	funcs := template.FuncMap{
-		"shot": func(res TestResult, key string) string { return res.Screenshots[key] },
-		"firstFrame": func(clip string) string {
-			return filepath.Join(filepath.Dir(clip), "frames", "0.png")
-		},
+		"shot":     func(res TestResult, key string) string { return res.Screenshots[key] },
 		"pair":     pairLabel,
 		"measures": func() []string { return contract.PixelMeasureNames },
 		"measure": func(c Comparison, name string) string {
@@ -265,6 +391,8 @@ th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left;
 .st { font-weight: 700; white-space: nowrap; }
 .th { font-size: 0.85em; }
 .st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised { color: var(--na); }
+.player .controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.player .time { width: min(28rem, 70vw); }
 .shots { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0; padding: 0; list-style: none; }
 figure { margin: 0; border: 1px solid var(--line); border-radius: .4rem; padding: .4rem; background: var(--card); }
 figure img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); }
@@ -354,15 +482,61 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 </table>
 </div>
 {{end}}
+{{if .Visibility}}
+<h3>Visibility</h3>
+<ul>{{range .Visibility}}<li class="st-warning">{{.A}}: {{.Note}}</li>{{end}}</ul>
+{{end}}
 {{if .HasClips}}
 <h3>Recorded clips</h3>
-<ul class="shots">
-{{range .Results}}{{if .Clip}}<li><figure><picture><source media="(prefers-reduced-motion: reduce)" srcset="{{firstFrame .Clip}}"><img src="{{.Clip}}" alt="Clip of the test running on {{.Target}}"></picture><figcaption>{{.Target}} · {{.Clip}}</figcaption></figure></li>{{end}}{{end}}
-</ul>
+{{range .ClipSets}}
+<h4>{{.Label}}</h4>
+{{.Chart}}
+<div class="player" data-player="{{.Player}}">
+<ul class="shots">{{range .Targets}}<li><figure><img src="{{.First}}" alt="{{.Name}}, at the moment the slider shows"><figcaption>{{.Name}}</figcaption></figure></li>{{end}}</ul>
+<p class="controls"><button type="button" class="play">Play</button>
+<label>Speed <select class="speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25" selected>¼×</option></select></label>
+<label>Time <input type="range" class="time" step="1"></label> <output class="at">0 ms</output></p>
+<p class="note">Every clip at the same moment, lined up at its first input (or, if the target doesn't say when that was, where its picture starts to change).</p>
+</div>
+<details><summary>Each clip on its own (animated PNG)</summary>
+<ul class="shots">{{range .Targets}}{{if .File}}<li><figure><picture><source media="(prefers-reduced-motion: reduce)" srcset="{{.First}}"><img src="{{.File}}" alt="Clip of the test running on {{.Name}}"></picture><figcaption>{{.Name}} · {{.File}}</figcaption></figure></li>{{end}}{{end}}</ul>
+</details>
+{{end}}
 {{end}}
 </section>
 {{end}}
 </main>
+<script>
+// The clip player: shows every target's frame for the same moment, lined up per target.
+for (const p of document.querySelectorAll(".player")) {
+  const d = JSON.parse(p.dataset.player);
+  const imgs = p.querySelectorAll("img"), time = p.querySelector(".time"), at = p.querySelector(".at");
+  const play = p.querySelector(".play"), speed = p.querySelector(".speed");
+  time.min = d.min; time.max = d.max; time.value = d.min;
+  const show = (t) => {
+    d.targets.forEach((tg, i) => {
+      let src = tg.frames[0][1];
+      for (const [ms, f] of tg.frames) { if (ms - tg.offset <= t) src = f; else break; }
+      if (imgs[i].getAttribute("src") !== src) imgs[i].src = src;
+    });
+    time.value = t; at.value = Math.round(t) + " ms";
+  };
+  time.addEventListener("input", () => show(+time.value));
+  let raf = 0;
+  play.addEventListener("click", () => {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; play.textContent = "Play"; return; }
+    let t = +time.value >= d.max ? d.min : +time.value, last = performance.now();
+    play.textContent = "Pause";
+    const tick = (now) => {
+      t += (now - last) * +speed.value; last = now;
+      if (t >= d.max) { show(d.max); raf = 0; play.textContent = "Play"; return; }
+      show(t); raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  });
+  show(d.min);
+}
+</script>
 </body>
 </html>
 `

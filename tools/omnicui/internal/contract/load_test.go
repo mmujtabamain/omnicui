@@ -69,7 +69,7 @@ func TestModel(t *testing.T) {
 // R-CONTRACT-3: what a contract leaves out takes the documented defaults.
 func TestDefaults(t *testing.T) {
 	c, _ := parse(t, good)
-	if len(c.Viewports) != 1 || c.Viewports[0] != DefaultViewport {
+	if len(c.Viewports) != 1 || c.Viewports[0].Width != DefaultViewport.Width || c.Viewports[0].Height != DefaultViewport.Height {
 		t.Errorf("viewports: %v", c.Viewports)
 	}
 	if len(c.ColorSchemes) != 1 || c.ColorSchemes[0] != "light" {

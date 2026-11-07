@@ -26,6 +26,11 @@ const SpotSize = 24
 // pixel counts as strongly off in the Spot measure. Anti-aliased edges are mostly under it.
 const StrongColour = 0.35
 
+// spotReach: a strongly differing pixel with a pixel of its colour this close in the other
+// screenshot is a displaced edge (a control drawn a few pixels wider), not a wrong colour, and
+// does not count towards Spot.
+const spotReach = 4
+
 // MaxShift is how far, in pixels, Measure looks for a differing pixel's nearest match. A pixel
 // with no match that close counts as unmatched: content that is missing, new or recoloured.
 const MaxShift = 8
@@ -39,9 +44,10 @@ type Measures struct {
 	// Area: the share of the drawn area that differs, as a percentage. A pixel differs when no
 	// pixel within Reach of it in the other screenshot has its colour, in either direction.
 	Area float64 `json:"area"`
-	// Strength: how far off the differing pixels are in colour, as a percentage (100 = black
-	// against white): the mean, over differing pixels, of the distance to the closest colour
-	// within Reach in the other screenshot.
+	// Strength: how far off in colour the recoloured pixels are, as a percentage (100 = black
+	// against white): the mean, over differing pixels with no pixel of their colour within
+	// spotReach in the other screenshot, of the distance to the closest colour within Reach.
+	// Pixels merely displaced by a few pixels are Shift's business and are left out.
 	Strength float64 `json:"strength"`
 	// Shift: how far, in pixels, differing pixels have moved: the median distance to the nearest
 	// pixel of the same colour in the other screenshot, over the differing pixels that have one
@@ -50,8 +56,9 @@ type Measures struct {
 	// Unmatched: the share of differing pixels with no match within MaxShift, as a percentage.
 	Unmatched float64 `json:"unmatched"`
 	// Spot: how concentrated the difference is. The share of the worst SpotSize×SpotSize spot's
-	// pixels that are strongly off in colour (more than StrongColour), as a percentage. Glyph
-	// noise is spread thinly over every edge; a wrong word, colour or opacity is concentrated.
+	// pixels that are strongly off in colour (more than StrongColour) with no pixel of their colour
+	// within spotReach, as a percentage. Glyph noise spreads thinly over every edge, and a
+	// displaced edge has its colour nearby; a wrong word, colour or opacity is concentrated.
 	Spot float64 `json:"spot"`
 	// Spots are the worst spots, worst first (at most five, not overlapping).
 	Spots []Box `json:"spots,omitempty"`
@@ -144,6 +151,7 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 	strong := make([]bool, w*h)
 	drawn, differ := 0, 0
 	var strengthSum float64
+	recoloured := 0
 	var shifts []int
 	unmatched := 0
 	for y := 0; y < h; y++ {
@@ -177,8 +185,13 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 				shifts = append(shifts, s)
 			}
 			c := math.Sqrt(math.Min(1, str/maxYIQDelta))
-			strengthSum += c
-			strong[i] = c > StrongColour
+			// Strength is about colour: a pixel with its colour a few pixels away is displaced
+			// (shift's business), and is left out.
+			if s > spotReach {
+				strengthSum += c
+				recoloured++
+			}
+			strong[i] = c > StrongColour && s > spotReach
 		}
 	}
 	spot, spots := worstSpots(strong, w, h)
@@ -214,7 +227,9 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 	m.Area = 100 * float64(differ) / float64(drawn)
 	m.Spot = spot
 	if differ > 0 {
-		m.Strength = 100 * strengthSum / float64(differ)
+		if recoloured > 0 {
+			m.Strength = 100 * strengthSum / float64(recoloured)
+		}
 		m.Unmatched = 100 * float64(unmatched) / float64(differ)
 	}
 	if len(shifts) > 0 {
