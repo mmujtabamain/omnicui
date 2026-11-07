@@ -195,6 +195,11 @@ func TestPatternMessages(t *testing.T) {
 			t.Errorf("want %q in %v", c.want, ps)
 		}
 	}
+	// The bad key is reported on its own line, under where it is.
+	_, ps := parse(t, replace("  value:     { role: status }", "  card-number: { role: status }"))
+	if len(ps) == 0 || ps[0].Line != 8 || !strings.HasPrefix(ps[0].Message, "parts: `card-number`") {
+		t.Errorf("got %v", ps)
+	}
 	if camelCase("card_number") != "cardNumber" || camelCase("Card Number") != "cardNumber" || camelCase("9x") != "" {
 		t.Error("camelCase")
 	}

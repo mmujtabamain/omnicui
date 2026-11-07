@@ -313,6 +313,18 @@ func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 			msg = fmt.Sprintf("`%v` is not one of %s", k.Got, quoteAll(anyStrings(k.Want)))
 		case *kind.Pattern:
 			msg = patternMessage(k.Got, k.Want)
+			// A key in the wrong form (propertyNames) is reported against no location: find the
+			// key itself, for its line and where it is.
+			if ptr == "" {
+				for p := range l.lines {
+					if strings.HasSuffix(p, "/"+escape(k.Got)+"#key") && (ptr == "" || l.lines[p] < l.lines[ptr]) {
+						ptr = p
+					}
+				}
+				if ptr != "" {
+					e.InstanceLocation = strings.Split(strings.TrimPrefix(strings.TrimSuffix(ptr, "/"+escape(k.Got)+"#key"), "/"), "/")
+				}
+			}
 		case *kind.FalseSchema:
 			if len(e.InstanceLocation) > 0 {
 				msg = fmt.Sprintf("unknown field `%s`", e.InstanceLocation[len(e.InstanceLocation)-1])
