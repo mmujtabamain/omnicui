@@ -1,4 +1,4 @@
-// scripts/check-notes.mjs: VERSION and the release notes, as CI checks them. Run: node --test scripts/
+// scripts/check-notes.mjs: VERSION and the release notes, as CI checks them. Run: node --test 'scripts/*.test.mjs'
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
