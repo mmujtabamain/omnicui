@@ -34,6 +34,8 @@ import org.testfx.util.WaitForAsyncUtils;
 final class JavaFxTarget {
     // protocol: error codes
     static final int NO_COMPONENT = -32001, NO_PART = -32002, STEP_FAILED = -32003, NO_METHOD = -32601;
+    // The largest viewport a contract may ask for; Adapter sizes Monocle's headless screen to it.
+    static final int MAX_VIEWPORT = 4096;
 
     static final class RpcError extends Exception {
         final int code;
@@ -61,7 +63,19 @@ final class JavaFxTarget {
             // protocol: the first request of every run; the constructs (capabilities) this target supports
             case "advertise":
                 return Map.of("protocol", "1", "can", List.of("mount", "press", "focus", "key", "type", "drag", "hover",
-                        "read", "events", "screenshot", "trace", "record"));
+                        "read", "events", "screenshot", "trace", "record", "probe", "bounds", "role", "focused"));
+            // protocol: the render check's picture, at the viewport asked for
+            case "probe":
+                return probe(p.path("viewport").path("width").asDouble(), p.path("viewport").path("height").asDouble(), p.path("path").asText());
+            // protocol: where a part is on screen, in scene pixels
+            case "bounds": {
+                Node n = node(part);
+                return onFx(() -> {
+                    Bounds b = n.localToScene(n.getBoundsInLocal());
+                    boolean shown = n.isVisible() && n.getScene() != null && n.getOpacity() > 0;
+                    return Map.of("x", b.getMinX(), "y", b.getMinY(), "width", shown ? b.getWidth() : 0.0, "height", shown ? b.getHeight() : 0.0);
+                });
+            }
             // contract: tests[].props, viewports, colorSchemes; a fresh component for every test
             case "mount":
                 mount(p);
@@ -115,6 +129,7 @@ final class JavaFxTarget {
         @SuppressWarnings("unchecked")
         Map<String, Object> props = json.convertValue(m.path("props"), Map.class);
         double w = m.path("viewport").path("width").asDouble(), h = m.path("viewport").path("height").asDouble();
+        checkScreen(w, h);
         String scheme = m.path("colorScheme").asText("light");
         // Libraries print to System.out; this line stands for them. Adapter.java sends System.out
         // to standard error, which keeps standard output for replies only.
@@ -163,8 +178,52 @@ final class JavaFxTarget {
             case "checked" -> n.queryAccessibleAttribute(AccessibleAttribute.SELECTED);
             case "disabled" -> n.isDisabled();
             case "value" -> n instanceof Slider s ? s.getValue() : n.queryAccessibleAttribute(AccessibleAttribute.VALUE);
+            case "focused" -> n.isFocused();
+            case "role" -> ariaRole(n.getAccessibleRole());
             default -> throw new RpcError(STEP_FAILED, "unknown field " + field);
         });
+    }
+
+    /** JavaFX's accessible role as the WAI-ARIA role a contract names; other roles by their JavaFX name. */
+    private static String ariaRole(javafx.scene.AccessibleRole r) {
+        return switch (r) {
+            // A toggle button is a button in WAI-ARIA (with aria-pressed); JavaFX has no switch role.
+            case BUTTON, TOGGLE_BUTTON, HYPERLINK -> "button";
+            case CHECK_BOX -> "checkbox";
+            case SLIDER, SPINNER -> "slider";
+            case TEXT_FIELD, TEXT_AREA, PASSWORD_FIELD -> "textbox";
+            case NODE, PARENT -> "generic";
+            default -> r.name().toLowerCase().replace("_", "");
+        };
+    }
+
+    /** A viewport larger than the (headless) screen would overflow it; say so instead of crashing. */
+    private static void checkScreen(double w, double h) throws RpcError {
+        var screen = javafx.stage.Screen.getPrimary().getBounds();
+        if (w > screen.getWidth() || h > screen.getHeight())
+            throw new RpcError(STEP_FAILED, String.format("the viewport %.0f×%.0f is larger than the screen, %.0f×%.0f; set -Dheadless.geometry=<width>x<height>-32 in the adapter command",
+                    w, h, screen.getWidth(), screen.getHeight()));
+    }
+
+    // probe: white, a black 32×32 square at 8,8, a red one 8 px from the bottom-right corner
+    private String probe(double w, double h, String path) throws Exception {
+        checkScreen(w, h);
+        FxToolkit.setupStage(s -> {
+            var black = new javafx.scene.shape.Rectangle(8, 8, 32, 32);
+            var red = new javafx.scene.shape.Rectangle(w - 40, h - 40, 32, 32);
+            red.setFill(javafx.scene.paint.Color.rgb(255, 0, 0));
+            var pane = new javafx.scene.layout.Pane(black, red);
+            pane.setStyle("-fx-background-color: white;");
+            scene = new Scene(pane, w, h, javafx.scene.paint.Color.WHITE);
+            s.setScene(scene);
+            s.setWidth(w);
+            s.setHeight(h);
+            s.show();
+        });
+        settle();
+        String out = onFx(() -> screenshot(path));
+        scene = null;
+        return out;
     }
 
     /** The name a screen reader announces: the node's own accessible text, or the Label that labels it. */
@@ -221,6 +280,13 @@ final class JavaFxTarget {
     private void settle() throws Exception {
         WaitForAsyncUtils.waitForFxEvents();
         if (scene == null) return;
+        // The component may be waiting for something outside the UI (Component.BUSY).
+        long busyDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (onFx(this::busy)) {
+            if (System.nanoTime() > busyDeadline) throw new RpcError(STEP_FAILED, "the component was still busy after 10 s");
+            Thread.sleep(10);
+        }
+        WaitForAsyncUtils.waitForFxEvents();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         String last = null;
         int still = 0;
@@ -231,6 +297,11 @@ final class JavaFxTarget {
             last = now;
         }
         WaitForAsyncUtils.waitForFxEvents();
+    }
+
+    private boolean busy() {
+        if (scene == null || !(scene.getRoot() instanceof StackPane host) || host.getChildren().isEmpty()) return false;
+        return host.getChildren().get(0).getProperties().get(Component.BUSY) instanceof java.util.function.BooleanSupplier b && b.getAsBoolean();
     }
 
     private static String fingerprint(Node n) {

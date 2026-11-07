@@ -79,22 +79,52 @@ type TestResult struct {
 	Clip        string            `json:"clip,omitempty"`
 	// Missing lists capabilities a test needed but the target didn't advertise, with the reason.
 	Missing map[string]string `json:"notAdvertised,omitempty"`
+	// Bounds are the parts' boxes on screen when each screenshot was taken, by combo key and part
+	// name (targets that advertise `bounds`).
+	Bounds map[string]map[string]Rect `json:"bounds,omitempty"`
+	// Invisible lists the parts whose text, name or value was read while they had no size on
+	// screen or were outside the viewport: what a user can't see passed anyway.
+	Invisible []string `json:"invisible,omitempty"`
+}
+
+// Rect is a part's box on screen, in CSS pixels.
+type Rect struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
+// Visible: it has a size, and some of it is inside a w×h viewport.
+func (r *Rect) Visible(w, h int) bool {
+	return r != nil && r.Width > 0 && r.Height > 0 && r.X < float64(w) && r.Y < float64(h) && r.X+r.Width > 0 && r.Y+r.Height > 0
+}
+
+func (r Rect) contains(x, y float64) bool {
+	return x >= r.X && y >= r.Y && x < r.X+r.Width && y < r.Y+r.Height
 }
 
 // Comparison is one measured difference between two targets, or between a target and a timing.
 type Comparison struct {
-	Contract  string  `json:"contract"`
-	Test      string  `json:"test"`
-	Kind      string  `json:"kind"` // "pixels" or "timing"
-	A         string  `json:"a"`
-	B         string  `json:"b"` // a target, or "timing" for the test's named timing
-	Combo     string  `json:"combo,omitempty"`
-	Part      string  `json:"part,omitempty"`
+	Contract string `json:"contract"`
+	Test     string `json:"test"`
+	Kind     string `json:"kind"` // "pixels", "timing" or "visibility"
+	A        string `json:"a"`
+	B        string `json:"b"` // a target, or "timing" for the test's named timing
+	Combo    string `json:"combo,omitempty"`
+	Part     string `json:"part,omitempty"`
+	// Value is the area for pixels, the largest difference in ms for timing.
 	Value     float64 `json:"value"`
 	Threshold float64 `json:"threshold"`
 	Warning   bool    `json:"warning"`
-	Diff      string  `json:"diff,omitempty"`
-	Note      string  `json:"note,omitempty"`
+	// Pixels only: all four measures, their thresholds, and those above their threshold.
+	Measures   *compare.Measures         `json:"measures,omitempty"`
+	Thresholds *contract.PixelThresholds `json:"thresholds,omitempty"`
+	Over       []string                  `json:"over,omitempty"`
+	// SpotPart is the part the worst spot is in, when the targets report bounds.
+	SpotPart string `json:"spotPart,omitempty"`
+	Diff     string `json:"diff,omitempty"`
+	Note     string `json:"note,omitempty"`
 }
 
 // TargetInfo is what a target advertised.
@@ -105,6 +135,9 @@ type TargetInfo struct {
 	Broken   string            `json:"broken,omitempty"`
 	Stderr   []string          `json:"stderr,omitempty"`
 	Protocol string            `json:"protocol,omitempty"`
+	// Probe says how the render check went: "passed", "not advertised", or empty when the
+	// target doesn't take screenshots.
+	Probe string `json:"probe,omitempty"`
 }
 
 // Summary counts every status.
@@ -132,4 +165,25 @@ type Report struct {
 // Failed reports whether the run should exit non-zero.
 func (r *Report) Failed() bool {
 	return r.Summary.Fail > 0 || r.Summary.Broken > 0 || r.Summary.Required > 0
+}
+
+// FailOnKinds are the values --fail-on accepts: every warning, or one kind of comparison.
+var FailOnKinds = map[string]bool{"warnings": true, "pixels": true, "timing": true, "visibility": true}
+
+// WarningsFailing counts the warnings that --fail-on turns into a failed run.
+func (r *Report) WarningsFailing(failOn []string) (int, []string) {
+	if len(failOn) == 0 {
+		return 0, nil
+	}
+	kinds := map[string]bool{}
+	for _, f := range failOn {
+		kinds[f] = true
+	}
+	n := 0
+	for _, c := range r.Comparisons {
+		if c.Warning && (kinds["warnings"] || kinds[c.Kind]) {
+			n++
+		}
+	}
+	return n, failOn
 }

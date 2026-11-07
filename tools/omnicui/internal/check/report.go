@@ -23,7 +23,6 @@ type reportTest struct {
 	Chart       template.HTML
 	HasShots    bool
 	HasClips    bool
-	PixelLine   string
 	TimingLines []string
 }
 
@@ -167,9 +166,6 @@ func writeReport(path string, rep *Report) error {
 					rt.Timing = append(rt.Timing, cmp)
 				}
 			}
-			if len(rt.Pixels) > 0 {
-				rt.PixelLine = comparisonLine(rt.Pixels)
-			}
 			seen := map[string]bool{}
 			for _, spec := range test.Trace {
 				if !seen[spec.Part] {
@@ -188,7 +184,34 @@ func writeReport(path string, rep *Report) error {
 		"firstFrame": func(clip string) string {
 			return filepath.Join(filepath.Dir(clip), "frames", "0.png")
 		},
-		"pair":   pairLabel,
+		"pair":     pairLabel,
+		"measures": func() []string { return contract.PixelMeasureNames },
+		"measure": func(c Comparison, name string) string {
+			if c.Measures == nil {
+				return "–"
+			}
+			return MeasureText(name, MeasureValue(*c.Measures, name))
+		},
+		"over": func(c Comparison, name string) bool {
+			for _, o := range c.Over {
+				if o == name {
+					return true
+				}
+			}
+			return false
+		},
+		"threshold": func(c Comparison, name string) string {
+			if c.Thresholds == nil {
+				return ""
+			}
+			return ThresholdText(name, c.Thresholds.Get(name))
+		},
+		"spot": func(c Comparison) string {
+			if c.Measures == nil || len(c.Measures.Spots) == 0 {
+				return ""
+			}
+			return c.Measures.Spots[0].String()
+		},
 		"value":  valueText,
 		"lower":  strings.ToLower,
 		"cls":    func(s Status) string { return strings.ReplaceAll(string(s), " ", "-") },
@@ -240,6 +263,7 @@ table { border-collapse: collapse; width: 100%; background: var(--card); }
 caption { text-align: left; font-weight: 600; padding: .25rem 0; }
 th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 .st { font-weight: 700; white-space: nowrap; }
+.th { font-size: 0.85em; }
 .st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised { color: var(--na); }
 .shots { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0; padding: 0; list-style: none; }
 figure { margin: 0; border: 1px solid var(--line); border-radius: .4rem; padding: .4rem; background: var(--card); }
@@ -298,7 +322,6 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 </div>
 {{if .HasShots}}
 <h3>Screenshots</h3>
-{{if .PixelLine}}<p>{{.PixelLine}}</p>{{end}}
 {{$t := .}}
 {{range $cb := .Combos}}
 <ul class="shots" aria-label="Screenshots at {{$cb.Label}}">
@@ -308,11 +331,12 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 {{if .Pixels}}
 <div class="table" role="region" tabindex="0" aria-label="Differences between targets (worst over all viewports and colour schemes)">
 <table>
-<caption>Differences between targets (worst over all viewports and colour schemes)</caption>
-<thead><tr><th scope="col">Pair</th><th scope="col">Pixels that differ</th><th scope="col">Result</th><th scope="col">Where</th></tr></thead>
+<caption>Differences between targets (worst viewport and colour scheme per pair). Area: how much of the drawn area differs. Strength: how far off in colour. Shift: how far pixels moved. Spot: how concentrated the difference is in its worst 24×24 px spot. ▲ marks a measure above its threshold.</caption>
+<thead><tr><th scope="col">Pair</th>{{range measures}}<th scope="col">{{.}}</th>{{end}}<th scope="col">Result</th><th scope="col">Where</th></tr></thead>
 <tbody>
-{{range .Pixels}}<tr><th scope="row">{{pair .}}</th><td>{{value .}} (threshold {{.Threshold}}%)</td><td class="st {{if .Warning}}st-warning{{else}}st-pass{{end}}">{{if .Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{.Diff}}" alt="Differences between {{.A}} and {{.B}} at {{.Combo}}: pixels that differ are red" loading="lazy"><figcaption>{{.Combo}}{{if .Note}}: {{.Note}}{{end}}</figcaption></figure></td></tr>
+{{range $c := .Pixels}}<tr><th scope="row">{{pair $c}}</th>{{range $n := measures}}<td{{if over $c $n}} class="st-warning"{{end}}>{{measure $c $n}}{{if over $c $n}} ▲ <span class="th">above {{threshold $c $n}}</span>{{end}}</td>{{end}}<td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{$c.Diff}}" alt="Differences between {{$c.A}} and {{$c.B}} at {{$c.Combo}}: strongly differing pixels red, slightly differing orange, the worst spots boxed in blue" loading="lazy"><figcaption>{{$c.Combo}}{{with spot $c}}; worst spot {{.}}{{end}}{{with $c.SpotPart}}, in {{.}}{{end}}{{if $c.Note}}: {{$c.Note}}{{end}}</figcaption></figure></td></tr>
 {{end}}</tbody>
+{{with $first := index .Pixels 0}}<tfoot><tr><th scope="row">thresholds</th>{{range $n := measures}}<td>{{threshold $first $n}}</td>{{end}}<td></td><td></td></tr></tfoot>{{end}}
 </table>
 </div>
 {{end}}

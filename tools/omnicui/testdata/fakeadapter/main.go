@@ -16,6 +16,10 @@
 //	FAKE_ERROR_ON     reply with an error to this method
 //	FAKE_SLEEP_MS     sleep before every reply
 //	FAKE_PID_FILE     write the process id here at start
+//	FAKE_PROBE        how to draw the render check's picture: ok (default), small (half the
+//	                  size asked for), blank (white only)
+//	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
+//	FAKE_ROLE         part=role,… to report another role than the contract's
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -185,6 +189,37 @@ func screenshot(path string) error {
 	return png.Encode(f, img)
 }
 
+// probe draws the render check's picture: white, a black square at 8,8 and a red one 8 px from
+// the bottom-right corner.
+func probe(path string, w, h int) error {
+	switch env("FAKE_PROBE", "ok") {
+	case "small":
+		w, h = w/2, h/2
+	}
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			c := color.RGBA{255, 255, 255, 255}
+			if env("FAKE_PROBE", "ok") != "blank" {
+				if x >= 8 && x < 40 && y >= 8 && y < 40 {
+					c = color.RGBA{0, 0, 0, 255}
+				}
+				if x >= w-40 && x < w-8 && y >= h-40 && y < h-8 {
+					c = color.RGBA{255, 0, 0, 255}
+				}
+			}
+			img.Set(x, y, c)
+		}
+	}
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return png.Encode(f, img)
+}
+
 func handle(n int, r req) (any, error) {
 	var p params
 	json.Unmarshal(r.Params, &p)
@@ -193,7 +228,7 @@ func handle(n int, r req) (any, error) {
 	}
 	switch r.Method {
 	case "advertise":
-		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,record"), ",")
+		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,record,probe,bounds,role,focused"), ",")
 		cannot := map[string]string{}
 		for _, kv := range strings.Split(os.Getenv("FAKE_CANNOT"), ",") {
 			if k, v, ok := strings.Cut(kv, "="); ok {
@@ -247,7 +282,30 @@ func handle(n int, r req) (any, error) {
 		case "ui.switch.switch/name":
 			return st.label, nil
 		}
+		part := strings.TrimPrefix(p.Part, st.component+".")
+		switch p.Field {
+		case "focused":
+			return st.focused == part, nil
+		case "role":
+			for _, kv := range strings.Split(os.Getenv("FAKE_ROLE"), ",") {
+				if k, v, ok := strings.Cut(kv, "="); ok && k == part {
+					return v, nil
+				}
+			}
+			return map[string]string{"value": "status", "increment": "button", "switch": "switch", "thumb": "generic"}[part], nil
+		}
 		return nil, nil
+	case "bounds":
+		if err := act("read", p); err != nil {
+			return nil, err
+		}
+		if has(os.Getenv("FAKE_HIDDEN"), strings.TrimPrefix(p.Part, st.component+".")) {
+			return map[string]any{"x": 24, "y": 24, "width": 0, "height": 0}, nil
+		}
+		shift := envInt("FAKE_SHIFT")
+		return map[string]any{"x": 24 + shift, "y": 24, "width": 60, "height": 30}, nil
+	case "probe":
+		return p.Path, probe(p.Path, p.Viewport.Width, p.Viewport.Height)
 	case "events":
 		out := st.events
 		st.events = nil

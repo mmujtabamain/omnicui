@@ -97,6 +97,84 @@ func TestPixelsSizes(t *testing.T) {
 	if pct, note, _ := Pixels(a, b, ""); pct != 100 || note == "" {
 		t.Fatalf("%v %q", pct, note)
 	}
+	if m, _, _ := Measure(a, b, ""); m.Spot != 100 || m.Strength != 100 {
+		t.Errorf("sizes differ: every measure is at its worst: %+v", m)
+	}
+}
+
+// R-PIXELS-4: the four measures answer different questions. A square moved by 5 px is a shift;
+// a recoloured block is strong and concentrated (spot); a faint recolour is weak.
+func TestMeasures(t *testing.T) {
+	d := t.TempDir()
+	base := func(img *image.RGBA) { square(img, 40, 40, 30, color.Black) }
+	a := solid(t, filepath.Join(d, "a.png"), 160, 160, color.White, base)
+
+	moved := solid(t, filepath.Join(d, "moved.png"), 160, 160, color.White, func(img *image.RGBA) { square(img, 45, 40, 30, color.Black) })
+	m, note, err := Measure(a, moved, "")
+	if err != nil || note != "" {
+		t.Fatal(err, note)
+	}
+	if m.Shift < 3 || m.Shift > 5 || m.Unmatched != 0 {
+		t.Errorf("moved by 5 px: shift %v, unmatched %v; want 3–5 px, all matched", m.Shift, m.Unmatched)
+	}
+
+	recoloured := solid(t, filepath.Join(d, "recoloured.png"), 160, 160, color.White, func(img *image.RGBA) {
+		base(img)
+		square(img, 40, 40, 30, color.RGBA{200, 0, 0, 255})
+	})
+	m, _, _ = Measure(a, recoloured, filepath.Join(d, "diff.png"))
+	if m.Area != 100 || m.Spot != 100 || m.Strength < StrongColour*100 || m.Unmatched != 100 {
+		t.Errorf("recoloured: %+v", m)
+	}
+	if len(m.Spots) == 0 || m.Spots[0].W != SpotSize {
+		t.Errorf("recoloured: the worst spot should be boxed: %+v", m.Spots)
+	}
+	f, _ := os.Open(filepath.Join(d, "diff.png"))
+	img, _ := png.Decode(f)
+	if c := color.RGBAModel.Convert(img.At(55, 55)).(color.RGBA); c != diffStrong {
+		t.Errorf("a strongly differing pixel should be red, got %v", c)
+	}
+
+	// A faint recolour (black to a dark grey) differs everywhere, but weakly, so it is no spot.
+	faint := solid(t, filepath.Join(d, "faint.png"), 160, 160, color.White, func(img *image.RGBA) {
+		square(img, 40, 40, 30, color.RGBA{60, 60, 60, 255})
+	})
+	m, _, _ = Measure(a, faint, "")
+	if m.Area != 100 || m.Strength >= StrongColour*100 || m.Spot != 0 {
+		t.Errorf("faint recolour: %+v", m)
+	}
+}
+
+// R-PIXELS-5: noise spread thinly over many edges scores a high area but a low spot, which is
+// what tells it from one concentrated difference of the same area.
+func TestSpotTellsNoiseFromAConcentratedDifference(t *testing.T) {
+	d := t.TempDir()
+	lines := func(img *image.RGBA) {
+		for y := 10; y < 150; y += 10 {
+			for x := 10; x < 150; x++ {
+				img.Set(x, y, color.Black)
+			}
+		}
+	}
+	a := solid(t, filepath.Join(d, "a.png"), 160, 160, color.White, lines)
+	// Every line one pixel lower and one shade lighter at its ends: thin, everywhere.
+	noisy := solid(t, filepath.Join(d, "noisy.png"), 160, 160, color.White, func(img *image.RGBA) {
+		for y := 13; y < 153; y += 10 {
+			for x := 10; x < 150; x++ {
+				img.Set(x, y, color.RGBA{90, 90, 90, 255})
+			}
+		}
+	})
+	// The same lines, with one small block where a word should be.
+	block := solid(t, filepath.Join(d, "block.png"), 160, 160, color.White, func(img *image.RGBA) {
+		lines(img)
+		square(img, 60, 60, 16, color.Black)
+	})
+	n, _, _ := Measure(a, noisy, "")
+	b, _, _ := Measure(a, block, "")
+	if n.Spot >= b.Spot || b.Spot < 30 {
+		t.Errorf("noise spot %.1f%% should be well under a block's %.1f%%", n.Spot, b.Spot)
+	}
 }
 
 func samplesOf(fn func(t float64) float64, durMS, delayMS float64, dist float64) []Sample {

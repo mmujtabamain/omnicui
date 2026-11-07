@@ -145,10 +145,33 @@ func TestRequire(t *testing.T) {
 
 // R-CHECK-6: screenshots that differ by more than the threshold are warnings, with a diff image; they don't fail.
 func TestPixelWarning(t *testing.T) {
-	rep, _ := run(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_COLOR": "c0392b", "FAKE_SHIFT": "8"}}})
+	rep, p := run(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_COLOR": "c0392b", "FAKE_SHIFT": "8"}}})
 	ws := warnings(rep, "pixels")
 	if len(ws) != 5 || rep.Failed() || ws[0].Value <= ws[0].Threshold {
 		t.Fatalf("%+v", ws)
+	}
+	// Every measure is reported, with its threshold, and the warning names the measures over it.
+	w := ws[0]
+	if w.Measures == nil || w.Thresholds == nil || len(w.Over) == 0 || w.Value != w.Measures.Area {
+		t.Fatalf("%+v", w)
+	}
+	for _, name := range w.Over {
+		if MeasureValue(*w.Measures, name) <= w.Thresholds.Get(name) {
+			t.Errorf("%s is listed as over, but %v <= %v", name, MeasureValue(*w.Measures, name), w.Thresholds.Get(name))
+		}
+	}
+	var out strings.Builder
+	Print(&out, rep, p.RunDir())
+	for _, want := range []string{"area", "strength", "shift", "spot", "▲", "warning: ", "above the threshold", "thresholds", "30%", "3.5%", "6 px"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("the console table should show %q:\n%s", want, out.String())
+		}
+	}
+	html, _ := os.ReadFile(filepath.Join(p.RunDir(), "report.html"))
+	for _, want := range []string{"<th scope=\"col\">spot</th>", "▲", "above 30%", "<tfoot>"} {
+		if !strings.Contains(string(html), want) {
+			t.Errorf("report.html should contain %q", want)
+		}
 	}
 }
 
@@ -291,7 +314,7 @@ func TestLogFields(t *testing.T) {
 			if m["id"] == nil || m["method"] == nil || m["target"] == nil {
 				t.Fatalf("call without id/method/target: %s", l)
 			}
-			if m["method"] != "advertise" && (m["contract"] == nil || m["test"] == nil || m["combo"] == nil) {
+			if m["method"] != "advertise" && m["method"] != "probe" && (m["contract"] == nil || m["test"] == nil || m["combo"] == nil) {
 				t.Fatalf("call not linked to its test: %s", l)
 			}
 			if strings.Count(l, `"target":`) != 1 {

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"syscall"
 
 	"omnicui/internal/check"
+	"omnicui/internal/compare"
 	"omnicui/internal/contract"
 	"omnicui/internal/project"
 	"omnicui/internal/rpc"
@@ -28,22 +30,28 @@ usage:
   omnicui [--project <folder>] <command> …
 
   omnicui check [target…] [component…] [--require target:capability]… [--out <folder>]
+                [--fail-on warnings|pixels|timing|visibility]…
                                        run every test of every contract on every target (or only those named);
-                                       results go to .omnicui/run/ in the project, or to --out
+                                       results go to .omnicui/run/ in the project, or to --out. One progress
+                                       line per test goes to standard error. --fail-on makes those warnings
+                                       fail the run (exit 1), for CI
   omnicui targets                      what each target advertises on this machine
   omnicui stubs [target…]              run the targets' stub generators
   omnicui contracts                    load and check the contracts only
   omnicui add <name> [--template <folder or git URL>]
                                        add a target
   omnicui remove <name>                remove a target
+  omnicui compare <a.png> <b.png> [--diff <out.png>] [--json]
+                                       measure two screenshots the way check does
+  omnicui help contract                what a contract can say, its defaults, and how targets are compared
   omnicui version
 
 The project is the folder that has contracts/ and targets/. omnicui finds it from the current
 folder: that folder or any above it, or omnicui/ inside one of them (a repository that keeps its
 project in omnicui/, next to its apps). --project <folder>, or OMNICUI_PROJECT, names it instead.
 
-Exit status: 0 when nothing failed or broke, 1 when something did, 2 for a usage or contract error,
-130 when interrupted (every adapter it started is stopped first).`
+Exit status: 0 when nothing failed or broke, 1 when something did (or a --fail-on warning), 2 for a
+usage or contract error, 130 when interrupted (every adapter it started is stopped first).`
 
 // Version is set by release builds with -ldflags "-X main.Version=1.2.3". Without it, the module
 // version that `go install …@v1.2.3` records is used, and otherwise "dev".
@@ -88,6 +96,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) > 0 && (args[0] == "--version" || args[0] == "-v") {
 		args = []string{"version"}
 	}
+	if len(args) == 2 && args[0] == "help" && args[1] == "contract" {
+		fmt.Fprint(stdout, contractHelp())
+		return 0
+	}
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		fmt.Fprintln(stdout, usage)
 		if len(args) == 0 {
@@ -103,6 +115,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if len(rest) > 0 && (rest[0] == "-h" || rest[0] == "--help") {
 		fmt.Fprintln(stdout, usage)
 		return 0
+	}
+	if cmd == "compare" {
+		return doCompare(rest, stdout, stderr)
 	}
 	var p project.Project
 	var err error
@@ -204,9 +219,14 @@ func selection(names []string, targets []project.Target, contracts []*contract.C
 }
 
 func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
-	var names, require []string
+	var names, require, failOn []string
 	for i := 0; i < len(args); i++ {
 		switch {
+		case args[i] == "--fail-on" && i+1 < len(args):
+			failOn = append(failOn, strings.Split(args[i+1], ",")...)
+			i++
+		case strings.HasPrefix(args[i], "--fail-on="):
+			failOn = append(failOn, strings.Split(strings.TrimPrefix(args[i], "--fail-on="), ",")...)
 		case args[i] == "--require" && i+1 < len(args):
 			require = append(require, args[i+1])
 			i++
@@ -222,6 +242,12 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 			return 2
 		default:
 			names = append(names, args[i])
+		}
+	}
+	for _, f := range failOn {
+		if !check.FailOnKinds[f] {
+			fmt.Fprintf(stderr, "omnicui: --fail-on %s: expected warnings, pixels, timing or visibility\n", f)
+			return 2
 		}
 	}
 	contracts, problems, code := loadContracts(p, stderr)
@@ -242,13 +268,17 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "omnicui:", err)
 		return 2
 	}
-	rep, err := check.Run(check.Options{Project: p, Contracts: cs, All: contracts, Problems: problems, Targets: ts, Require: require})
+	rep, err := check.Run(check.Options{Project: p, Contracts: cs, All: contracts, Problems: problems, Targets: ts, Require: require, Progress: stderr})
 	if err != nil {
 		fmt.Fprintln(stderr, "omnicui:", err)
 		return 2
 	}
 	check.Print(stdout, rep, p.RunDir())
 	if rep.Failed() {
+		return 1
+	}
+	if n, kinds := rep.WarningsFailing(failOn); n > 0 {
+		fmt.Fprintf(stdout, "exit 1: --fail-on %s, and there are %d such warning(s)\n", strings.Join(kinds, ","), n)
 		return 1
 	}
 	return 0
@@ -268,10 +298,15 @@ func doTargets(p project.Project, stdout, stderr io.Writer) int {
 		return 2
 	}
 	type row struct {
-		name, broken string
-		can          map[string]bool
-		cannot       map[string]string
+		name, broken, render string
+		can                  map[string]bool
+		cannot               map[string]string
 	}
+	// The render check runs at the contracts' largest viewport, as in a check.
+	contracts, _, _ := contract.LoadDir(p.Contracts())
+	vp := check.ProbeViewport(contracts)
+	probeDir, _ := os.MkdirTemp("", "omnicui-targets-")
+	defer os.RemoveAll(probeDir)
 	rows := make([]row, len(targets))
 	var wg sync.WaitGroup
 	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -308,6 +343,20 @@ func doTargets(p project.Project, stdout, stderr io.Writer) int {
 				rows[i].can[x] = true
 			}
 			rows[i].cannot = ad.Cannot
+			if rows[i].can["screenshot"] {
+				if !rows[i].can["probe"] {
+					rows[i].render = "not checked (the target doesn't advertise probe)"
+				} else if err := check.RenderCheck(c, vp, filepath.Join(probeDir, t.Name+".png"), start); err != nil {
+					rows[i].render = "FAILED: " + err.Error()
+					rows[i].can["screenshot"] = false
+					if rows[i].cannot == nil {
+						rows[i].cannot = map[string]string{}
+					}
+					rows[i].cannot["screenshot"] = "render check failed"
+				} else {
+					rows[i].render = fmt.Sprintf("passed at %d×%d", vp.Width, vp.Height)
+				}
+			}
 		}(i, t)
 	}
 	wg.Wait()
@@ -333,6 +382,11 @@ func doTargets(p project.Project, stdout, stderr io.Writer) int {
 			}
 		}
 		fmt.Fprintf(stdout, "%-10s%-22s%-22s%-22s%s\n", r.name, clip(cell(r, "screenshot")), clip(cell(r, "trace")), clip(cell(r, "record")), strings.Join(actions, " "))
+	}
+	for _, r := range rows {
+		if r.render != "" {
+			fmt.Fprintf(stdout, "%s: render check %s\n", r.name, r.render)
+		}
 	}
 	return 0
 }
@@ -412,5 +466,51 @@ func doAdd(p project.Project, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "  %-38s %s\n", c.Name, c.Does)
 	}
 	_ = dir
+	return 0
+}
+
+// doCompare measures two screenshots the way check does, outside a run: for looking into one
+// comparison, or for trying thresholds on saved screenshots.
+func doCompare(args []string, stdout, stderr io.Writer) int {
+	var files []string
+	diff, asJSON := "", false
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == "--diff" && i+1 < len(args):
+			diff = args[i+1]
+			i++
+		case strings.HasPrefix(args[i], "--diff="):
+			diff = strings.TrimPrefix(args[i], "--diff=")
+		case args[i] == "--json":
+			asJSON = true
+		case strings.HasPrefix(args[i], "-"):
+			fmt.Fprintf(stderr, "omnicui: unknown option %s\n", args[i])
+			return 2
+		default:
+			files = append(files, args[i])
+		}
+	}
+	if len(files) != 2 {
+		fmt.Fprintln(stderr, "usage: omnicui compare <a.png> <b.png> [--diff <out.png>] [--json]")
+		return 2
+	}
+	m, note, err := compare.Measure(files[0], files[1], diff)
+	if err != nil {
+		fmt.Fprintln(stderr, "omnicui:", err)
+		return 2
+	}
+	if asJSON {
+		data, _ := json.Marshal(struct {
+			compare.Measures
+			Note string `json:"note,omitempty"`
+		}{m, note})
+		fmt.Fprintln(stdout, string(data))
+		return 0
+	}
+	if note != "" {
+		fmt.Fprintln(stdout, note)
+	}
+	th := contract.DefaultPixelThresholds
+	fmt.Fprint(stdout, check.MeasuresTable([]check.MeasuresRow{{Label: "a ↔ b", Measures: m, Over: check.Over(th, m)}}, th, "  "))
 	return 0
 }

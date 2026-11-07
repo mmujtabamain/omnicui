@@ -9,6 +9,13 @@ use serde_json::Value;
 pub trait Mounted {
     /// Draws one frame. `emit` reports an event with its contract name and fields.
     fn frame(&mut self, ui: &mut egui::Ui, look: Look, emit: &mut dyn FnMut(&'static str, Value));
+
+    /// Whether the component is still waiting for something outside the UI (a network reply, a
+    /// file): the adapter answers no request until it isn't. A component that loads data says so
+    /// here; the others keep the default.
+    fn busy(&self) -> bool {
+        false
+    }
 }
 
 impl Mounted for Counter {

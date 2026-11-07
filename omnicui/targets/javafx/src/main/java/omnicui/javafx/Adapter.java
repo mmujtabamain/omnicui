@@ -26,6 +26,10 @@ public final class Adapter {
         System.setProperty("prism.order", "sw");
         System.setProperty("prism.text", "t2k");
         System.setProperty("java.awt.headless", "true");
+        // Monocle's headless screen is 1280×800 unless told otherwise, and a scene larger than the
+        // screen overflows its framebuffer (BufferOverflowException at mount). Make it as large as
+        // the largest viewport a contract may ask for (4096×4096), unless it is set already.
+        if (System.getProperty("headless.geometry") == null) System.setProperty("headless.geometry", JavaFxTarget.MAX_VIEWPORT + "x" + JavaFxTarget.MAX_VIEWPORT + "-32");
 
         // protocol: standard output carries replies only. Anything else that prints there
         // (a library, a stray println) would break the conversation, so it all goes to stderr.

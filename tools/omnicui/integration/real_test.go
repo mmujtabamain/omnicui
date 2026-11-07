@@ -99,7 +99,7 @@ func TestAllTargetsAgree(t *testing.T) {
 		t.Fatalf("targets: %+v", o.rep.Targets)
 	}
 	for _, ti := range o.rep.Targets {
-		if len(ti.Can) != 12 {
+		if len(ti.Can) != 16 {
 			t.Errorf("%s advertises %v", ti.Name, ti.Can)
 		}
 	}
@@ -156,6 +156,24 @@ func TestDefectsAreCaught(t *testing.T) {
 				t.Error("a wider web button must be a pixel warning")
 			}
 			onlyWarningsInvolve(t, o, "web")
+			// The worst spot is put down to the part it is in: the wider button.
+			for _, c := range o.rep.Comparisons {
+				if c.Kind == "pixels" && c.Warning && c.Test == counterStart && c.SpotPart != "increment" {
+					t.Errorf("the worst spot should be in `increment`: %+v", c)
+				}
+			}
+		}},
+		// The readiness hook: a component that appears 400 ms after mount fails when the page
+		// doesn't say it is busy, and passes when it does (window.omnicuiBusy).
+		{"web.harness.late", []string{"check", "web", "counter"}, func(t *testing.T, o outcome) {
+			if status(o, "web", counterStart) != check.Fail || !strings.Contains(o.out, "no part ui.counter.value") {
+				t.Error("a late component, not declared busy, must fail")
+			}
+		}},
+		{"web.harness.late-busy", []string{"check", "web", "counter"}, func(t *testing.T, o outcome) {
+			if o.rep.Summary.Pass != 3 || o.code != 0 {
+				t.Errorf("a late component declared busy must be waited for: %+v", o.rep.Summary)
+			}
 		}},
 		{"javafx.host.stretch", []string{"check"}, func(t *testing.T, o outcome) {
 			for _, test := range []string{counterStart, counterPress, switchOff, switchOn, switchPress} {

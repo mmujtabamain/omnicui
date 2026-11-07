@@ -15,7 +15,7 @@ use components::{create, Mounted};
 use desktop::{fonts, Look};
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 // protocol: error codes
 const NO_COMPONENT: i64 = -32001;
@@ -106,9 +106,20 @@ impl Target {
         self.harness.as_mut().ok_or_else(|| fail(STEP_FAILED, "nothing is mounted"))
     }
 
-    /// Runs frames until nothing is animating and no repaint is asked for: the UI has settled.
+    /// Runs frames until nothing is animating, no repaint is asked for, and the component is not
+    /// busy (waiting for a network reply, say): the UI has settled.
     fn settle(&mut self) -> Result<()> {
         let h = self.harness()?;
+        h.try_run().map_err(|e| fail(STEP_FAILED, format!("the UI did not settle: {e}")))?;
+        // Busy is about the world outside, so it is waited for in real time, not simulated frames.
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while h.state().component.busy() {
+            if Instant::now() > deadline {
+                return Err(fail(STEP_FAILED, "the component was still busy after 10 s"));
+            }
+            std::thread::sleep(Duration::from_millis(10));
+            h.step();
+        }
         h.try_run().map(|_| ()).map_err(|e| fail(STEP_FAILED, format!("the UI did not settle: {e}")))
     }
 
@@ -117,10 +128,10 @@ impl Target {
         match method {
             // protocol: the first request; the constructs this target can perform on this run.
             "advertise" => {
-                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace"];
+                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace", "bounds", "role", "focused"];
                 let mut cannot = serde_json::Map::new();
                 match &self.can_render {
-                    None => can.extend(["screenshot", "record"]),
+                    None => can.extend(["screenshot", "record", "probe"]),
                     Some(why) => {
                         cannot.insert("screenshot".into(), json!(why));
                         cannot.insert("record".into(), json!(why));
@@ -156,8 +167,27 @@ impl Target {
                     "checked" => json!(n.toggled().map(|t| t == egui::accesskit::Toggled::True)),
                     "disabled" => json!(n.is_disabled()),
                     "value" => json!(n.numeric_value()),
+                    "focused" => json!(node.is_focused()),
+                    "role" => json!(aria_role(n.role())),
                     other => return Err(fail(STEP_FAILED, format!("unknown field {other}"))),
                 })
+            }
+            // protocol: where a part is on screen, in points (1 point = 1 pixel here).
+            "bounds" => {
+                let h = self.harness()?;
+                let root = h.root();
+                let r = find(&root, &part)?.rect();
+                Ok(json!({ "x": r.min.x, "y": r.min.y, "width": r.width(), "height": r.height() }))
+            }
+            // protocol: the render check's picture, at the viewport asked for.
+            "probe" => {
+                let size = egui::vec2(p["viewport"]["width"].as_f64().unwrap_or(320.0) as f32, p["viewport"]["height"].as_f64().unwrap_or(240.0) as f32);
+                let path = p["path"].as_str().unwrap_or_default().to_owned();
+                self.harness = Some(build(Box::new(ProbePicture), Look::of("light"), size, false));
+                self.settle()?;
+                self.render_to(&path)?;
+                self.harness = None;
+                Ok(json!(path))
             }
             // contract: tests[].expect[] with event:
             "events" => {
@@ -261,6 +291,36 @@ impl Target {
             let _ = std::fs::create_dir_all(dir);
         }
         img.save(path).map_err(|e| fail(STEP_FAILED, format!("write {path}: {e}")))
+    }
+}
+
+/// The render check's picture: white, a black 32×32 square at 8,8, and a red one 8 px from the
+/// bottom-right corner. Painted on a layer of its own, in screen coordinates.
+struct ProbePicture;
+
+impl Mounted for ProbePicture {
+    fn frame(&mut self, ui: &mut egui::Ui, _: Look, _: &mut dyn FnMut(&'static str, Value)) {
+        let screen = ui.ctx().content_rect();
+        let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("omnicui-probe")));
+        painter.rect_filled(screen, 0.0, egui::Color32::WHITE);
+        painter.rect_filled(Rect::from_min_size(Pos2::new(8.0, 8.0), egui::vec2(32.0, 32.0)), 0.0, egui::Color32::BLACK);
+        painter.rect_filled(Rect::from_min_size(screen.max - egui::vec2(40.0, 40.0), egui::vec2(32.0, 32.0)), 0.0, egui::Color32::from_rgb(255, 0, 0));
+    }
+}
+
+/// AccessKit's role as the WAI-ARIA role a contract names; other roles by their AccessKit name.
+fn aria_role(role: egui::accesskit::Role) -> String {
+    use egui::accesskit::Role as R;
+    match role {
+        R::Button | R::DefaultButton => "button".into(),
+        R::CheckBox => "checkbox".into(),
+        R::Switch => "switch".into(),
+        R::Slider | R::SpinButton => "slider".into(),
+        R::TextInput | R::MultilineTextInput | R::SearchInput | R::EmailInput | R::NumberInput | R::PasswordInput | R::PhoneNumberInput | R::UrlInput => "textbox".into(),
+        R::Heading => "heading".into(),
+        R::Status => "status".into(),
+        R::GenericContainer => "generic".into(),
+        other => format!("{other:?}").to_lowercase(),
     }
 }
 

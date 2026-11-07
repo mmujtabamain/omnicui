@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -33,15 +34,18 @@ type Options struct {
 	Targets  []project.Target
 	// Require lists "target:capability" pairs that must be advertised.
 	Require []string
+	// Progress, if set, gets one line per finished test: `[web 3/38] counter › each press adds one  pass`.
+	Progress io.Writer
 }
 
 type runner struct {
-	opts   Options
-	runDir string
-	runID  string
-	log    *slog.Logger
-	wire   *os.File
-	wireMu sync.Mutex
+	opts       Options
+	progressMu sync.Mutex
+	runDir     string
+	runID      string
+	log        *slog.Logger
+	wire       *os.File
+	wireMu     sync.Mutex
 }
 
 func newRunID() string {
@@ -179,7 +183,7 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	defer client.Stop()
 	var ad advert
 	if err := client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad); err != nil {
-		info.Broken = "did not answer advertise: " + err.Error()
+		info.Broken = "did not answer advertise: " + err.Error() + tr0hint(err, t, "startTimeout", startTimeout)
 		info.Stderr = client.StderrTail()
 		return info, brokenAll(info.Broken)
 	}
@@ -189,12 +193,26 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	for _, c := range ad.Can {
 		can[c] = true
 	}
-	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: ad.Cannot, step: stepTimeout, log: log}
+	if info.Cannot == nil {
+		info.Cannot = map[string]string{}
+	}
+	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log}
+	if why := tr.probe(&info); why != "" {
+		// Screenshots from this target would be wrong; behaviour can still be checked.
+		delete(can, "screenshot")
+		info.Cannot["screenshot"] = "the render check failed: " + why
+		info.Can = without(info.Can, "screenshot")
+	}
+	total := 0
+	for _, c := range r.opts.Contracts {
+		total += len(c.Tests)
+	}
 	var out []TestResult
 	for _, c := range r.opts.Contracts {
 		for _, test := range c.Tests {
 			res := tr.runTest(c, test)
 			out = append(out, res)
+			r.progress(t.Name, len(out), total, c, test, res)
 		}
 	}
 	if b := client.Broken(); b != nil {
@@ -202,6 +220,35 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 		info.Stderr = b.StderrTail
 	}
 	return info, out
+}
+
+func without(xs []string, x string) []string {
+	var out []string
+	for _, y := range xs {
+		if y != x {
+			out = append(out, y)
+		}
+	}
+	return out
+}
+
+// progress prints one line per finished test, so that a long check shows it is moving.
+func (r *runner) progress(target string, n, total int, c *contract.Contract, test contract.Test, res TestResult) {
+	if r.opts.Progress == nil {
+		return
+	}
+	r.progressMu.Lock()
+	defer r.progressMu.Unlock()
+	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s\n", target, n, total, c.Short(), test.Name, res.Status)
+}
+
+// tr0hint adds what to change when a request timed out: the timeout and where it is set.
+func tr0hint(err error, t project.Target, setting string, d time.Duration) string {
+	var b *rpc.BrokenError
+	if !errors.As(err, &b) || !strings.Contains(b.Reason, "timed out") {
+		return ""
+	}
+	return fmt.Sprintf(" (if it needs longer, raise %s, now %s, in targets/%s/target.yaml)", setting, d, t.Name)
 }
 
 type targetRun struct {
@@ -290,8 +337,16 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	for _, e := range test.Expect {
 		if e.Event != "" {
 			needs = append(needs, "events")
-		} else {
-			needs = append(needs, "read")
+			continue
+		}
+		needs = append(needs, "read")
+		for _, ch := range e.Checks {
+			switch ch.Field {
+			case "role", "focused":
+				needs = append(needs, ch.Field)
+			case "visible":
+				needs = append(needs, "bounds")
+			}
 		}
 	}
 	for _, n := range needs {
@@ -334,7 +389,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			return true
 		case errors.As(err, &b):
 			res.Status = Broken
-			res.Messages = append(res.Messages, b.Reason)
+			res.Messages = append(res.Messages, b.Reason+tr0hint(err, tr.t, "stepTimeout", tr.step))
 			return true
 		default:
 			fail(err.Error() + suffix)
@@ -388,7 +443,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 				continue
 			}
 		}
-		if err := tr.expect(c, test, label(cb), fail); handle(err, label(cb)) {
+		if err := tr.expect(c, test, cb, label(cb), fail, &res); handle(err, label(cb)) {
 			if res.Status == Broken {
 				break
 			}
@@ -405,6 +460,23 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					fail("screenshot: the target replied, but wrote no file" + label(cb))
 				} else {
 					res.Screenshots[cb.Key()] = relRun(path)
+					// Where each part was, so that a difference can be put down to a part.
+					if tr.can["bounds"] {
+						boxes := map[string]Rect{}
+						for _, p := range c.Parts {
+							var r *Rect
+							if err := tr.call("bounds", map[string]any{"part": p.ID}, &r); err == nil && r != nil {
+								boxes[p.Name] = *r
+							} else if _, ok := err.(*failure); !ok && err != nil {
+								handle(err, label(cb))
+								break
+							}
+						}
+						if res.Bounds == nil {
+							res.Bounds = map[string]map[string]Rect{}
+						}
+						res.Bounds[cb.Key()] = boxes
+					}
 				}
 			} else {
 				res.Missing["screenshot"] = tr.reason("screenshot")
@@ -506,7 +578,7 @@ type event struct {
 }
 
 // expect reads every expected field and the events, and reports each mismatch through fail.
-func (tr *targetRun) expect(c *contract.Contract, test contract.Test, suffix string, fail func(string)) error {
+func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, suffix string, fail func(string), res *TestResult) error {
 	var events []event
 	gotEvents := false
 	for _, e := range test.Expect {
@@ -541,13 +613,52 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, suffix str
 			continue
 		}
 		part := c.ID + "." + e.Part
+		var box *Rect
+		gotBox := false
+		bounds := func() error {
+			if !gotBox {
+				gotBox = true
+				return tr.call("bounds", map[string]any{"part": part}, &box)
+			}
+			return nil
+		}
+		readsContent := false
 		for _, ch := range e.Checks {
 			var got any
-			if err := tr.call("read", map[string]any{"part": part, "field": ch.Field}, &got); err != nil {
+			if ch.Field == "visible" {
+				if err := bounds(); err != nil {
+					return err
+				}
+				got = box.Visible(cb.Viewport.Width, cb.Viewport.Height)
+			} else if err := tr.call("read", map[string]any{"part": part, "field": ch.Field}, &got); err != nil {
 				return err
 			}
+			readsContent = readsContent || ch.Field == "text" || ch.Field == "name" || ch.Field == "value" || ch.Field == "checked"
 			if !same(ch.Want, got) {
 				fail(fmt.Sprintf("%s.%s: expected %s, got %s%s", e.Part, ch.Field, show(ch.Want), show(got), suffix))
+			}
+		}
+		// A part whose content passed but that nobody can see: the content check says nothing about
+		// what is on screen. Only when the target reports bounds, and the test doesn't say whether
+		// the part should be visible.
+		if readsContent && tr.can["bounds"] && !e.Has("visible") {
+			if err := bounds(); err != nil {
+				return err
+			}
+			if !box.Visible(cb.Viewport.Width, cb.Viewport.Height) {
+				what := "no size on screen"
+				if box != nil && box.Width > 0 && box.Height > 0 {
+					what = "is outside the viewport"
+				} else if box != nil {
+					what = fmt.Sprintf("no size on screen (%g×%g)", box.Width, box.Height)
+				}
+				note := fmt.Sprintf("`%s` was read but has %s%s", e.Part, what, suffix)
+				if strings.HasPrefix(what, "is ") {
+					note = fmt.Sprintf("`%s` was read but %s%s", e.Part, what, suffix)
+				}
+				if !contains(res.Invisible, note) {
+					res.Invisible = append(res.Invisible, note)
+				}
 			}
 		}
 	}
@@ -659,4 +770,13 @@ func summarize(rep *Report) Summary {
 	}
 	s.Required = len(rep.Required)
 	return s
+}
+
+func contains(xs []string, x string) bool {
+	for _, y := range xs {
+		if y == x {
+			return true
+		}
+	}
+	return false
 }

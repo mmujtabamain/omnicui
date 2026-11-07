@@ -5,13 +5,15 @@
 //
 // It builds the app's components (apps/web, imported as the package web-app) for production with esbuild, serves the bundle from a local HTTP
 // server, and performs every step in a real Chromium through Playwright. Each reply is sent
-// only once the page has settled: no running animations, fonts loaded, two frames painted.
+// only once the page has settled: no running animations, fonts loaded, the app not busy (see
+// settle()), two frames painted.
 import { createServer } from "node:http";
 import { readFileSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { dirname, extname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { serveFile } from "web-app/static";
 import { chromium, type Page, type CDPSession } from "playwright";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -45,20 +47,18 @@ await build({
   loader: { ".ttf": "file" }, assetNames: "[name]", define: { "process.env.NODE_ENV": '"production"' }, logLevel: "warning",
 });
 writeFileSync(join(dist, "harness.html"), readFileSync(join(here, "harness.html")));
-const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".ttf": "font/ttf" };
-const server = createServer((req, res) => {
-  try {
-    const path = join(dist, new URL(req.url ?? "/", "http://x").pathname);
-    if (!path.startsWith(dist)) throw new Error("outside dist");
-    res.writeHead(200, { "content-type": types[extname(path)] ?? "application/octet-stream" }).end(readFileSync(path));
-  } catch {
-    res.writeHead(404).end();
-  }
-});
+const server = createServer((req, res) => serveFile(res, dist, new URL(req.url ?? "/", "http://x").pathname));
 await new Promise<void>((ok) => server.listen(0, "127.0.0.1", ok));
 const port = (server.address() as { port: number }).port;
 
 const browser = await chromium.launch({ headless: true });
+// If Chromium dies (a crashed GPU process, a broken install), every later request would fail one
+// by one as if the components were wrong. Exit instead: omnicui then reports this target as
+// broken, once, with these lines from standard error.
+browser.on("disconnected", () => {
+  log("Chromium has disconnected (it crashed or was closed); the adapter stops so that omnicui reports this target as broken");
+  process.exit(3);
+});
 let page: Page;
 let cdp: CDPSession;
 
@@ -72,10 +72,20 @@ async function freshPage(viewport: { width: number; height: number }, colorSchem
   cdp = await context.newCDPSession(page);
 }
 
-/** Waits until nothing is animating, fonts are loaded, and two more frames have been painted. */
+/**
+ * Waits until nothing is animating, fonts are loaded, the app is not busy, and two more frames
+ * have been painted. Busy: the app may define `window.omnicuiBusy = () => boolean`, true while it
+ * waits for something outside the page (a network reply, say); it is waited for, up to 10 s.
+ */
 async function settle() {
   await page.evaluate(async () => {
     await document.fonts.ready;
+    const busy = (window as any).omnicuiBusy as (() => boolean) | undefined;
+    const busyUntil = performance.now() + 10000;
+    while (busy?.()) {
+      if (performance.now() > busyUntil) throw new Error("the app was still busy after 10 s (window.omnicuiBusy)");
+      await new Promise((r) => setTimeout(r, 10));
+    }
     const deadline = performance.now() + 5000;
     while (performance.now() < deadline) {
       const running = document.getAnimations().filter((a) => a.playState === "running");
@@ -136,7 +146,23 @@ async function step(method: string, p: Params) {
 const methods: Record<string, (p: Params) => Promise<unknown>> = {
   // protocol: the first request; which constructs this target can perform on this run.
   async advertise() {
-    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "record"] };
+    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "record", "probe", "bounds", "role", "focused"] };
+  },
+  // protocol: the render check's picture: white, a black 32×32 square at 8,8, a red one 8 px from
+  // the bottom-right corner, at the viewport asked for.
+  async probe(p) {
+    await freshPage(p.viewport, "light");
+    await page.setContent(`<!doctype html><body style="margin:0;background:#fff">
+      <div style="position:fixed;left:8px;top:8px;width:32px;height:32px;background:#000"></div>
+      <div style="position:fixed;right:8px;bottom:8px;width:32px;height:32px;background:#f00"></div></body>`);
+    mkdirSync(dirname(p.path), { recursive: true });
+    await page.screenshot({ path: p.path });
+    return p.path;
+  },
+  // protocol: where a part is on screen, in CSS pixels; a part that is not rendered is 0×0.
+  async bounds(p) {
+    const box = await (await locate(p.part)).boundingBox();
+    return box ? { x: box.x, y: box.y, width: box.width, height: box.height } : { x: 0, y: 0, width: 0, height: 0 };
   },
   // contract: tests[].props, viewports, colorSchemes. A fresh page for every mount.
   async mount(p) {
@@ -155,13 +181,17 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   // contract: expect[] with part:. text is what is shown; the rest is what assistive tech sees.
   async read(p) {
     const loc = await locate(p.part);
-    if (p.field === "text") return (await loc.innerText()).trim();
+    // A text box's text is what is typed in it, as egui (AccessKit's value) and JavaFX (getText) read it.
+    if (p.field === "text") return loc.evaluate((el) => (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : (el as HTMLElement).innerText.trim()));
+    if (p.field === "focused") return loc.evaluate((el) => el === document.activeElement);
     const node = await axNode(p.part);
     switch (p.field) {
       case "name": return node?.name?.value ?? null;
       case "checked": { const v = prop(node, "checked"); return v === undefined ? null : v === "true" || v === true; }
       case "disabled": return prop(node, "disabled") === true;
       case "value": { const v = node?.value?.value ?? prop(node, "valuenow"); return v === undefined ? null : Number(v); }
+      // Chromium's role names are WAI-ARIA's, except a few of its own.
+      case "role": { const r = String(node?.role?.value ?? ""); return ({ StaticText: "text", none: "generic", LabelText: "label" } as Record<string, string>)[r] ?? r.toLowerCase(); }
     }
     throw new RpcError(STEP_FAILED, `unknown field ${p.field}`);
   },

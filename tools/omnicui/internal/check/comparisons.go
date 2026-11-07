@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"omnicui/internal/compare"
 	"omnicui/internal/contract"
@@ -22,6 +23,11 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 	for _, c := range rep.Contracts {
 		for _, test := range c.Tests {
 			results := byKey[c.ID+"\x00"+test.Name]
+			for _, res := range results {
+				for _, note := range res.Invisible {
+					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "visibility", A: res.Target, Warning: true, Note: note})
+				}
+			}
 			if test.Screenshot {
 				out = append(out, r.comparePixels(c, test, results)...)
 			}
@@ -48,15 +54,25 @@ func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results
 				}
 				os.MkdirAll(diffDir, 0o755)
 				diff := filepath.Join(diffDir, fmt.Sprintf("%s-%s-%s.png", a.Target, b.Target, cb.Key()))
-				pct, note, err := compare.Pixels(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), diff)
+				m, note, err := compare.Measure(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), diff)
 				if err != nil {
-					note, pct = err.Error(), 100
+					note = err.Error()
+					m = compare.Measures{Area: 100, Strength: 100, Unmatched: 100, Spot: 100}
 				}
+				m.Area, m.Strength, m.Unmatched, m.Spot = round(m.Area, 2), round(m.Strength, 1), round(m.Unmatched, 1), round(m.Spot, 2)
 				relDiff, _ := filepath.Rel(r.runDir, diff)
+				th := c.Pixels
+				over := Over(th, m)
 				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "pixels", A: a.Target, B: b.Target, Combo: cb.Key(),
-					Value: round(pct, 2), Threshold: c.PixelThreshold, Warning: pct > c.PixelThreshold, Diff: relDiff, Note: note}
-				r.log.Info("pixels", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(), "percent", cmp.Value)
-				if worst == nil || cmp.Value > worst.Value {
+					Value: m.Area, Threshold: th.Area, Warning: len(over) > 0, Diff: relDiff, Note: note,
+					Measures: &m, Thresholds: &th, Over: over}
+				if len(m.Spots) > 0 {
+					cmp.SpotPart = partAt(m.Spots[0], a.Bounds[cb.Key()], b.Bounds[cb.Key()])
+				}
+				r.log.Info("pixels", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(),
+					"area", m.Area, "strength", m.Strength, "shift", m.Shift, "spot", m.Spot, "over", strings.Join(over, ","))
+				// The worst combination: the most measures over their thresholds, then the largest area.
+				if worst == nil || len(cmp.Over) > len(worst.Over) || (len(cmp.Over) == len(worst.Over) && cmp.Value > worst.Value) {
 					cp := cmp
 					worst = &cp
 				}
@@ -114,4 +130,18 @@ func round(v float64, places int) float64 {
 	}
 	p := math.Pow(10, float64(places))
 	return math.Round(v*p) / p
+}
+
+// partAt names the smallest part, in either target, whose box holds the middle of a spot.
+func partAt(spot compare.Box, a, b map[string]Rect) string {
+	x, y := float64(spot.X)+float64(spot.W)/2, float64(spot.Y)+float64(spot.H)/2
+	best, area := "", math.Inf(1)
+	for _, boxes := range []map[string]Rect{a, b} {
+		for name, r := range boxes {
+			if r.contains(x, y) && r.Width*r.Height < area {
+				best, area = name, r.Width*r.Height
+			}
+		}
+	}
+	return best
 }

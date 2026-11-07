@@ -52,6 +52,16 @@ type Expectation struct {
 	Line   int            `json:"-"`
 }
 
+// Has reports whether the expectation checks a field.
+func (e Expectation) Has(field string) bool {
+	for _, c := range e.Checks {
+		if c.Field == field {
+			return true
+		}
+	}
+	return false
+}
+
 // Timing is a named timing function a trace is checked against.
 type Timing struct {
 	DurationMS float64 `json:"durationMs"`
@@ -94,9 +104,9 @@ type Contract struct {
 	Tests        []Test     `json:"tests"`
 	Viewports    []Viewport `json:"viewports"`
 	ColorSchemes []string   `json:"colorSchemes"`
-	// PixelThreshold is a percentage of pixels; TimingThreshold is in milliseconds.
-	PixelThreshold  float64 `json:"pixelThreshold"`
-	TimingThreshold float64 `json:"timingThreshold"`
+	// Pixels are the screenshot thresholds; TimingThreshold is in milliseconds.
+	Pixels          PixelThresholds `json:"pixelThresholds"`
+	TimingThreshold float64         `json:"timingThreshold"`
 }
 
 // Short is the last segment of the id ("counter" for "ui.counter").
@@ -133,6 +143,36 @@ func (c *Contract) EventByName(name string) *Event {
 var (
 	DefaultViewport        = Viewport{Width: 320, Height: 240}
 	DefaultColorSchemes    = []string{"light"}
-	DefaultPixelThreshold  = 30.0
 	DefaultTimingThreshold = 20.0
+	// DefaultPixelThresholds were set from screenshots of correct and defective renderings
+	// (docs/verification/pixel-measures.md): correct renderings stay under all four, and each
+	// defect there goes over at least one.
+	DefaultPixelThresholds = PixelThresholds{Area: 30, Strength: 25, Shift: 6, Spot: 3.5}
 )
+
+// PixelThresholds are how far two screenshots may differ, measure by measure, before the check
+// prints a warning. Area, Strength and Spot are percentages; Shift is in pixels.
+type PixelThresholds struct {
+	Area     float64 `json:"area"`
+	Strength float64 `json:"strength"`
+	Shift    float64 `json:"shift"`
+	Spot     float64 `json:"spot"`
+}
+
+// PixelMeasureNames lists the measures in the order they are shown.
+var PixelMeasureNames = []string{"area", "strength", "shift", "spot"}
+
+// Get returns one threshold by its name.
+func (t PixelThresholds) Get(name string) float64 {
+	switch name {
+	case "area":
+		return t.Area
+	case "strength":
+		return t.Strength
+	case "shift":
+		return t.Shift
+	case "spot":
+		return t.Spot
+	}
+	return 0
+}

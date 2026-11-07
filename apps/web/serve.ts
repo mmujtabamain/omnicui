@@ -2,11 +2,11 @@
 // `npm start` (or `run.sh app web`). It keeps serving until Ctrl+C.
 // OMNICUI_DEFECTS=… switches on the components' deliberate defects; NO_OPEN=1 doesn't open a browser.
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { dirname, extname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { serveFile } from "./static.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = join(here, "dist");
@@ -18,17 +18,10 @@ await build({
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Web app</title>
 <link rel="stylesheet" href="./app.css"><script>globalThis.__OMNICUI_DEFECTS__ = ${JSON.stringify(process.env.OMNICUI_DEFECTS ?? "")};</script></head>
 <body><div id="root"></div><script src="./app.js"></script></body></html>`;
-const types: Record<string, string> = { ".js": "text/javascript", ".css": "text/css", ".ttf": "font/ttf" };
 const server = createServer((req, res) => {
   const name = new URL(req.url ?? "/", "http://x").pathname;
   if (name === "/") return res.writeHead(200, { "content-type": "text/html" }).end(page);
-  try {
-    const path = join(dist, name);
-    if (!path.startsWith(dist)) throw new Error("outside dist");
-    res.writeHead(200, { "content-type": types[extname(path)] ?? "application/octet-stream" }).end(readFileSync(path));
-  } catch {
-    res.writeHead(404).end();
-  }
+  serveFile(res, dist, name);
 });
 await new Promise<void>((ok) => server.listen(Number(process.env.PORT ?? 0), "127.0.0.1", ok));
 const url = `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
