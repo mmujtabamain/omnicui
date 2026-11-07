@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -88,11 +89,63 @@ func TestVisualProgress(t *testing.T) {
 	if diff, _ := Differ(a, g); diff > 18 {
 		t.Errorf("a fade with a stalled pulse: %.1f ms apart", diff)
 	}
-	// A round trip (fade in, then out) has no single direction; it says so.
+	// A round trip (fade in, then straight out again) is measured out to its farthest frame and
+	// back, and says so.
 	there := fadeFrames(t, filepath.Join(d, "d"), lin, 200, 0, 1000.0/60)
-	back := append(there, Frame{MS: there[len(there)-1].MS + 16, File: there[0].File})
-	if _, _, note, _ := VisualProgress(back, false); note == "" {
-		t.Error("a round trip should be explained, not measured")
+	trip := func(frames []Frame) []Frame {
+		out := append([]Frame{}, frames...)
+		end := frames[len(frames)-1].MS
+		for i := len(frames) - 2; i >= 0; i-- {
+			out = append(out, Frame{MS: end + (end - frames[i].MS), File: frames[i].File})
+		}
+		return out
+	}
+	rt, _, note, err := VisualProgress(trip(there), false)
+	if err != nil || !rt.Moved || !rt.RoundTrip || !strings.Contains(note, "round trip") {
+		t.Fatalf("%+v %q %v", rt, note, err)
+	}
+	rt2, _, _, _ := VisualProgress(trip(fadeFrames(t, filepath.Join(d, "f"), lin, 200, 0, 1000.0/60)), false)
+	if diff, _ := Differ(rt, rt2); diff > 5 {
+		t.Errorf("two identical round trips: %.1f ms apart", diff)
+	}
+	slowTrip, _, _, _ := VisualProgress(trip(fadeFrames(t, filepath.Join(d, "h"), lin, 400, 0, 1000.0/60)), false)
+	if diff, _ := Differ(rt, slowTrip); diff < 50 {
+		t.Errorf("a 200 ms round trip against a 400 ms one: only %.1f ms apart", diff)
+	}
+}
+
+// R-MOTION-12: a traced value or position that goes out and comes back (a star scaling 1 → 1.25
+// → 1) is a round trip: measured, and compared by its timing.
+func TestRoundTripTraces(t *testing.T) {
+	spring := func(total float64) []Sample {
+		var s []Sample
+		for ms := 0.0; ms <= total+100; ms += 1000.0 / 60 {
+			x := math.Min(1, ms/total)
+			v := 1 + 0.25*math.Sin(math.Pi*x)
+			s = append(s, Sample{MS: ms, Value: &v})
+		}
+		return s
+	}
+	a, b, slow := Analyze(spring(350)), Analyze(spring(350)), Analyze(spring(700))
+	if !a.Moved || !a.RoundTrip || a.Distance < 0.24 {
+		t.Fatalf("%+v", a)
+	}
+	if d, _ := Differ(a, b); d > 1 {
+		t.Errorf("same spring: %.1f ms", d)
+	}
+	if d, _ := Differ(a, slow); d < 100 {
+		t.Errorf("350 ms against 700 ms: only %.1f ms", d)
+	}
+	var pos []Sample
+	for ms := 0.0; ms <= 300; ms += 1000.0 / 60 {
+		pos = append(pos, Sample{MS: ms, X: 10 + 20*math.Sin(math.Pi*math.Min(1, ms/200)), Y: 5})
+	}
+	if c := Analyze(pos); !c.Moved || !c.RoundTrip {
+		t.Fatalf("%+v", c)
+	}
+	still := 1.0
+	if c := Analyze([]Sample{{MS: 0, Value: &still}, {MS: 16, Value: &still}}); c.Moved {
+		t.Fatalf("a still value moved: %+v", c)
 	}
 }
 
@@ -139,5 +192,12 @@ func TestAPNG(t *testing.T) {
 	// Lossless: a pixel of the first frame is exactly what was drawn.
 	if r, _, _, _ := img.At(20, 20).RGBA(); r>>8 != 255 {
 		t.Errorf("first frame at 20,20: %v", img.At(20, 20))
+	}
+}
+
+// R-MOTION-13: a round trip and a change that ends elsewhere are different motions.
+func TestRoundTripAgainstOneWay(t *testing.T) {
+	if d, note := Differ(Curve{Moved: true, RoundTrip: true, Times: make([]float64, len(Levels))}, Curve{Moved: true, Times: make([]float64, len(Levels))}); !math.IsInf(d, 1) || !strings.Contains(note, "came back") {
+		t.Fatal(d, note)
 	}
 }

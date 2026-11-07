@@ -58,6 +58,10 @@
         "properties": {
           "role": {
             "$ref": "#/$defs/role"
+          },
+          "optional": {
+            "description": "The part is shown by some targets only (window controls in a desktop toolbar, say). A mask or a crop naming it covers it where it is, and is skipped where it isn't.",
+            "type": "boolean"
           }
         }
       }
@@ -156,6 +160,13 @@
     "keyboard": {
       "description": "For every button, switch and checkbox, add a test per key its role is activated by (button: Enter and Space; switch, checkbox: Space): the key must do what a pointer press does.",
       "type": "boolean"
+    },
+    "mask": {
+      "description": "Parts left out of every screenshot comparison of this contract, on every target (with each test's own mask).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partName"
+      }
     }
   },
   "$defs": {
@@ -224,7 +235,27 @@
           }
         },
         "screenshot": {
-          "type": "boolean"
+          "description": "true: compare screenshots at every viewport × colour scheme. Or an object: mask leaves parts out (where any target shows them, on both), part compares only that part's box on each target.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "mask": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/partName"
+                  }
+                },
+                "part": {
+                  "$ref": "#/$defs/partName"
+                }
+              }
+            }
+          ]
         },
         "trace": {
           "type": "array",
@@ -263,17 +294,35 @@
                 }
               },
               "property": {
-                "description": "What is followed: the point's position (the default) or the part's opacity as drawn.",
+                "description": "What is followed: the point's position (the default), the part's opacity as drawn, or its scale as drawn (its width on screen over its width unscaled, its ancestors' transforms included).",
                 "enum": [
                   "position",
-                  "opacity"
+                  "opacity",
+                  "scale"
                 ]
               }
             }
           }
         },
         "record": {
-          "type": "boolean"
+          "description": "true: record a clip, compared by its visual progress. { part: x }: measure the clip over that part's box (and 8 px around it) only.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "part"
+              ],
+              "properties": {
+                "part": {
+                  "$ref": "#/$defs/partName"
+                }
+              }
+            }
+          ]
         },
         "allCombinations": {
           "description": "Take the traces and the clip at every viewport × colour scheme, not only the first.",
@@ -283,10 +332,6 @@
     },
     "step": {
       "type": "object",
-      "required": [
-        "action",
-        "part"
-      ],
       "properties": {
         "action": {
           "enum": [
@@ -305,6 +350,15 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 100
+        },
+        "do": {
+          "description": "An action the targets define and advertise as do.<name> (swipe, scroll, refresh, back, pick…). omnicui passes it on as is: `with` holds its parameters, and `part` is optional.",
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
+        },
+        "with": {
+          "description": "Parameters of a `do` step, passed on to the target unchanged.",
+          "type": "object"
         }
       },
       "allOf": [
@@ -314,7 +368,10 @@
               "action": {
                 "const": "key"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -334,7 +391,10 @@
               "action": {
                 "const": "type"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -353,7 +413,10 @@
               "action": {
                 "const": "drag"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -371,7 +434,8 @@
           }
         }
       ],
-      "unevaluatedProperties": false
+      "unevaluatedProperties": false,
+      "description": "A user action: `action` (press, focus, key, type, drag, hover) on a part, or `do`: an action a target defines and advertises (as do.<name>), such as swipe or scroll, with its own `with` parameters."
     },
     "expectation": {
       "type": "object",
@@ -425,6 +489,10 @@
           },
           "focused": {
             "description": "Whether the part has keyboard focus.",
+            "type": "boolean"
+          },
+          "selected": {
+            "description": "Whether a button stays chosen: a chip, a tab, a segment (buttons only; the target must advertise selected).",
             "type": "boolean"
           },
           "visible": {

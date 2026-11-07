@@ -16,7 +16,10 @@ const (
 	Fail          Status = "fail"
 	Broken        Status = "broken"
 	NotAdvertised Status = "not advertised"
-	Warning       Status = "warning"
+	// NotMeasured: the test ran but couldn't measure what it is for, such as a generated keyboard
+	// test on a part that isn't on screen when the component mounts. Not a failure; it is listed.
+	NotMeasured Status = "not measured"
+	Warning     Status = "warning"
 )
 
 // rank orders statuses from best to worst, for "the worst over all combinations".
@@ -24,7 +27,7 @@ func rank(s Status) int {
 	switch s {
 	case Pass:
 		return 0
-	case NotAdvertised:
+	case NotAdvertised, NotMeasured:
 		return 1
 	case Fail:
 		return 2
@@ -89,6 +92,10 @@ type TestResult struct {
 	// Invisible lists the parts whose text, name or value was read while they had no size on
 	// screen or were outside the viewport: what a user can't see passed anyway.
 	Invisible []string `json:"invisible,omitempty"`
+	// Ms is how long the test took on this target, mounts and captures included.
+	Ms int64 `json:"ms"`
+	// Stderr holds what the adapter wrote to standard error while a failing or broken test ran.
+	Stderr []string `json:"stderr,omitempty"`
 }
 
 // ClipResult is one recorded clip: its frames, the animated PNG made of them, when each input
@@ -137,6 +144,8 @@ type Comparison struct {
 	Measures   *compare.Measures         `json:"measures,omitempty"`
 	Thresholds *contract.PixelThresholds `json:"thresholds,omitempty"`
 	Over       []string                  `json:"over,omitempty"`
+	// Raw: the whole screenshots' measures, when a mask or a screenshot part narrowed the comparison.
+	Raw *compare.Measures `json:"raw,omitempty"`
 	// SpotPart is the part the worst spot is in, when the targets report bounds.
 	SpotPart string `json:"spotPart,omitempty"`
 	Diff     string `json:"diff,omitempty"`
@@ -151,9 +160,14 @@ type TargetInfo struct {
 	Broken   string            `json:"broken,omitempty"`
 	Stderr   []string          `json:"stderr,omitempty"`
 	Protocol string            `json:"protocol,omitempty"`
+	// Keys: what the target said activates each role, when it said (advertise keys).
+	Keys map[string][]string `json:"keys,omitempty"`
 	// Probe says how the render check went: "passed", "not advertised", or empty when the
 	// target doesn't take screenshots.
 	Probe string `json:"probe,omitempty"`
+	// Ms is how long the target took in all; StartMs how long it took to answer advertise.
+	Ms      int64 `json:"ms"`
+	StartMs int64 `json:"startMs"`
 }
 
 // Summary counts every status.
@@ -162,6 +176,7 @@ type Summary struct {
 	Fail          int `json:"fail"`
 	Broken        int `json:"broken"`
 	NotAdvertised int `json:"notAdvertised"`
+	NotMeasured   int `json:"notMeasured"`
 	Warnings      int `json:"warnings"`
 	Required      int `json:"requiredMissing"`
 }

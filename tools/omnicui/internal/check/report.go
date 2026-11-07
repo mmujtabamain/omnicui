@@ -390,7 +390,7 @@ caption { text-align: left; font-weight: 600; padding: .25rem 0; }
 th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 .st { font-weight: 700; white-space: nowrap; }
 .th { font-size: 0.85em; }
-.st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised { color: var(--na); }
+.st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised, .st-not-measured { color: var(--na); }
 .player .controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
 .player .time { width: min(28rem, 70vw); }
 .shots { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0; padding: 0; list-style: none; }
@@ -416,7 +416,8 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <li><strong>{{.Rep.Summary.Pass}}</strong> pass</li>
 <li><strong>{{.Rep.Summary.Fail}}</strong> fail</li>
 <li><strong>{{.Rep.Summary.Broken}}</strong> broken</li>
-<li><strong>{{.Rep.Summary.NotAdvertised}}</strong> not advertised</li>
+<li><strong>{{.Rep.Summary.NotAdvertised}}</strong> not advertised</li>{{if .Rep.Summary.NotMeasured}}
+<li><strong>{{.Rep.Summary.NotMeasured}}</strong> not measured</li>{{end}}
 <li><strong>{{.Rep.Summary.Warnings}}</strong> warnings</li>
 </ul>
 {{range .Rep.Required}}<p><strong>Required:</strong> {{.}}</p>{{end}}
@@ -462,7 +463,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Differences between targets (worst viewport and colour scheme per pair). Area: how much of the drawn area differs. Strength: how far off in colour. Shift: how far pixels moved. Spot: how concentrated the difference is in its worst 24×24 px spot. ▲ marks a measure above its threshold.</caption>
 <thead><tr><th scope="col">Pair</th>{{range measures}}<th scope="col">{{.}}</th>{{end}}<th scope="col">Result</th><th scope="col">Where</th></tr></thead>
 <tbody>
-{{range $c := .Pixels}}<tr><th scope="row">{{pair $c}}</th>{{range $n := measures}}<td{{if over $c $n}} class="st-warning"{{end}}>{{measure $c $n}}{{if over $c $n}} ▲ <span class="th">above {{threshold $c $n}}</span>{{end}}</td>{{end}}<td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{$c.Diff}}" alt="Differences between {{$c.A}} and {{$c.B}} at {{$c.Combo}}: strongly differing pixels red, slightly differing orange, the worst spots boxed in blue" loading="lazy"><figcaption>{{$c.Combo}}{{with spot $c}}; worst spot {{.}}{{end}}{{with $c.SpotPart}}, in {{.}}{{end}}{{if $c.Note}}: {{$c.Note}}{{end}}</figcaption></figure></td></tr>
+{{range $c := .Pixels}}<tr><th scope="row">{{pair $c}}</th>{{range $n := measures}}<td{{if over $c $n}} class="st-warning"{{end}}>{{measure $c $n}}{{if over $c $n}} ▲ <span class="th">above {{threshold $c $n}}</span>{{end}}</td>{{end}}<td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{$c.Diff}}" alt="Differences between {{$c.A}} and {{$c.B}} at {{$c.Combo}}: strongly differing pixels red, slightly differing orange, the worst spots boxed in blue, masked areas grey" loading="lazy"><figcaption>{{$c.Combo}}{{with spot $c}}; worst spot {{.}}{{end}}{{with $c.SpotPart}}, in {{.}}{{end}}{{if $c.Note}}: {{$c.Note}}{{end}}</figcaption></figure></td></tr>
 {{end}}</tbody>
 {{with $first := index .Pixels 0}}<tfoot><tr><th scope="row">thresholds</th>{{range $n := measures}}<td>{{threshold $first $n}}</td>{{end}}<td></td><td></td></tr></tfoot>{{end}}
 </table>

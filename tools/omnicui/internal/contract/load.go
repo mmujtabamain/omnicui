@@ -262,7 +262,7 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -311,6 +311,9 @@ func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 			}
 		case *kind.Enum:
 			msg = fmt.Sprintf("`%v` is not one of %s", k.Got, quoteAll(anyStrings(k.Want)))
+			if n := len(e.InstanceLocation); n >= 3 && e.InstanceLocation[n-1] == "action" && e.InstanceLocation[n-3] == "steps" {
+				msg += fmt.Sprintf("; for an action the targets define, write `do: %v` (with its parameters under `with:`)", k.Got)
+			}
 		case *kind.Pattern:
 			msg = patternMessage(k.Got, k.Want)
 			// A key in the wrong form (propertyNames) is reported against no location: find the
@@ -478,7 +481,8 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	parts := v["parts"].(map[string]any)
 	for _, name := range orderedKeys(child(root, "parts")) {
 		p := parts[name].(map[string]any)
-		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name})
+		opt, _ := p["optional"].(bool)
+		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name, Optional: opt})
 	}
 	for i, tv := range v["tests"].([]any) {
 		t := tv.(map[string]any)
@@ -490,7 +494,27 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		if steps, ok := t["steps"].([]any); ok {
 			for j, sv := range steps {
 				s := sv.(map[string]any)
-				st := Step{Action: s["action"].(string), Part: s["part"].(string), Times: 1, Line: l.line(fmt.Sprintf("%s/steps/%d", base, j))}
+				ptr := fmt.Sprintf("%s/steps/%d", base, j)
+				st := Step{Times: 1, Line: l.line(ptr)}
+				_, hasAction := s["action"]
+				_, hasDo := s["do"]
+				_, hasPart := s["part"]
+				switch {
+				case hasAction && hasDo:
+					l.errorf(ptr, "a step has `action` (press, focus, key, type, drag, hover) or `do` (an action the targets define), not both")
+				case !hasAction && !hasDo:
+					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover) and a `part`, or `do` (an action the targets define, such as swipe)")
+				case hasAction && !hasPart:
+					l.errorf(ptr, "missing field `part`: an `action` acts on a part")
+				}
+				st.Action, _ = s["action"].(string)
+				st.Part, _ = s["part"].(string)
+				if name, ok := s["do"].(string); ok {
+					st.Action, st.Do = "do", name
+					if w, ok := s["with"].(map[string]any); ok {
+						st.With = plain(w).(map[string]any)
+					}
+				}
 				if x, ok := s["times"]; ok {
 					st.Times = int(num(x))
 				}
@@ -534,8 +558,25 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				test.Expect = append(test.Expect, ex)
 			}
 		}
-		test.Screenshot, _ = t["screenshot"].(bool)
-		test.Record, _ = t["record"].(bool)
+		switch sv := t["screenshot"].(type) {
+		case bool:
+			test.Screenshot = sv
+		case map[string]any:
+			test.Screenshot = true
+			test.ScreenshotPart, _ = sv["part"].(string)
+			if ms, ok := sv["mask"].([]any); ok {
+				for _, x := range ms {
+					test.Mask = append(test.Mask, x.(string))
+				}
+			}
+		}
+		switch rv := t["record"].(type) {
+		case bool:
+			test.Record = rv
+		case map[string]any:
+			test.Record = true
+			test.RecordPart, _ = rv["part"].(string)
+		}
 		test.AllCombinations, _ = t["allCombinations"].(bool)
 		if traces, ok := t["trace"].([]any); ok {
 			for j, trv := range traces {
@@ -569,6 +610,11 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		c.Viewports = []Viewport{DefaultViewport}
 	}
 	c.Keyboard, _ = v["keyboard"].(bool)
+	if ms, ok := v["mask"].([]any); ok {
+		for _, x := range ms {
+			c.Mask = append(c.Mask, x.(string))
+		}
+	}
 	if cs, ok := v["colorSchemes"].([]any); ok {
 		for _, s := range cs {
 			c.ColorSchemes = append(c.ColorSchemes, s.(string))
@@ -704,6 +750,16 @@ func (l *loader) crossCheck(c *Contract) {
 		}
 		for j, s := range t.Steps {
 			ptr := fmt.Sprintf("%s/steps/%d", base, j)
+			if s.Action == "do" {
+				// The target defines what it does, and to which roles: only the part is checked.
+				if s.Part != "" {
+					unknownPart(ptr+"/part", s.Part)
+				}
+				continue
+			}
+			if s.Action == "" || s.Part == "" {
+				continue // already reported: a step without an action or a part
+			}
 			if unknownPart(ptr+"/part", s.Part) {
 				continue
 			}
@@ -761,11 +817,37 @@ func (l *loader) crossCheck(c *Contract) {
 		for j, tr := range t.Trace {
 			unknownPart(fmt.Sprintf("%s/trace/%d/part", base, j), tr.Part)
 		}
+		if t.RecordPart != "" {
+			unknownPart(base+"/record/part", t.RecordPart)
+		}
+		for j, m := range t.Mask {
+			unknownPart(fmt.Sprintf("%s/screenshot/mask/%d", base, j), m)
+		}
+		if t.ScreenshotPart != "" {
+			unknownPart(base+"/screenshot/part", t.ScreenshotPart)
+			for _, m := range t.Mask {
+				if m == t.ScreenshotPart {
+					l.errorf(base+"/screenshot/mask", "test `%s` compares only `%s` and masks it too, which leaves nothing to compare", t.Name, m)
+				}
+			}
+		}
 		if t.Record && len(t.Steps) == 0 {
 			l.warnf(base+"/record", "test `%s` records a clip but has no steps", t.Name)
 		}
 		if len(t.Trace) > 0 && len(t.Steps) == 0 {
 			l.errorf(base+"/trace", "test `%s` traces a part but has no steps to trace", t.Name)
+		}
+	}
+	for j, m := range c.Mask {
+		unknownPart(fmt.Sprintf("/mask/%d", j), m)
+	}
+	if len(c.Mask) > 0 {
+		shots := false
+		for _, t := range c.Tests {
+			shots = shots || t.Screenshot
+		}
+		if !shots {
+			l.warnf("/mask", "`mask` leaves parts out of screenshot comparisons, and no test takes a screenshot")
 		}
 	}
 	for i, vp := range c.Viewports {

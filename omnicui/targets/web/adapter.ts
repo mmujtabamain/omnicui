@@ -146,7 +146,7 @@ async function step(method: string, p: Params) {
 const methods: Record<string, (p: Params) => Promise<unknown>> = {
   // protocol: the first request; which constructs this target can perform on this run.
   async advertise() {
-    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "record", "probe", "bounds", "role", "focused"] };
+    return { protocol: "1", can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected"] };
   },
   // protocol: the render check's picture: white, a black 32×32 square at 8,8, a red one 8 px from
   // the bottom-right corner, at the viewport asked for.
@@ -184,6 +184,8 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     // A text box's text is what is typed in it, as egui (AccessKit's value) and JavaFX (getText) read it.
     if (p.field === "text") return loc.evaluate((el) => (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : (el as HTMLElement).innerText.trim()));
     if (p.field === "focused") return loc.evaluate((el) => el === document.activeElement);
+    // A chosen chip, tab or segment: aria-pressed, aria-selected or aria-checked on a button.
+    if (p.field === "selected") return loc.evaluate((el) => ["aria-pressed", "aria-selected", "aria-checked"].some((a) => el.getAttribute(a) === "true"));
     const node = await axNode(p.part);
     switch (p.field) {
       case "name": return node?.name?.value ?? null;
@@ -207,21 +209,27 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     return p.path;
   },
   // contract: trace[]. Samples the part's box on every animation frame while the steps run; or,
-  // with property: opacity, its opacity as drawn (its own times its ancestors').
+  // with property: opacity, its opacity as drawn (its own times its ancestors'); or, with
+  // property: scale, its scale as drawn (its width on screen over its layout width). The part is
+  // looked up at each frame, so one that appears during the steps (a sheet, a dialog) is traced
+  // from its first frame on screen.
   async trace(p) {
-    await locate(p.part);
     await page.evaluate(([sel, point, property]) => {
-      const el = document.querySelector(sel)!;
-      const t = ((window as any).__trace = { samples: [] as Record<string, number>[], on: true });
-      const opacity = () => {
+      const t = ((window as any).__trace = { samples: [] as Record<string, number>[], on: true, start: performance.now() });
+      const opacity = (el: Element) => {
         let v = 1;
         for (let n: Element | null = el; n; n = n.parentElement) v *= Number(getComputedStyle(n).opacity);
         return v;
       };
-      const frame = (ms: number) => {
-        if (property === "opacity") {
-          t.samples.push({ ms, x: 0, y: 0, value: opacity() });
-        } else {
+      const frame = (now: number) => {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        const ms = now - t.start;
+        if (el && property === "opacity") {
+          t.samples.push({ ms, x: 0, y: 0, value: opacity(el) });
+        } else if (el && property === "scale") {
+          const w = el.offsetWidth;
+          if (w > 0) t.samples.push({ ms, x: 0, y: 0, value: el.getBoundingClientRect().width / w });
+        } else if (el) {
           const r = el.getBoundingClientRect();
           t.samples.push({ ms, x: point === "center" ? r.left + r.width / 2 : r.left, y: point === "center" ? r.top + r.height / 2 : r.top });
         }
@@ -236,7 +244,8 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       t.on = false;
       return t.samples;
     });
-    const t0 = samples[0]?.ms ?? 0;
+    if (samples.length === 0) throw new RpcError(NO_PART, `no part ${p.part} (not on screen at any frame)`);
+    const t0 = samples[0].ms;
     return samples.map((s) => ({ ...s, ms: s.ms - t0 }));
   },
   // contract: record: true. Chromium's screencast sends a frame whenever the page changes. The

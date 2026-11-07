@@ -40,6 +40,8 @@ func init() {
 		r.Fields["visible"] = "boolean"
 		Roles[name] = r
 	}
+	// selected: a button that stays chosen (a chip, a tab, a segment of a segmented control).
+	Roles["button"].Fields["selected"] = "boolean"
 	for _, name := range focusable {
 		Roles[name].Fields["focused"] = "boolean"
 	}

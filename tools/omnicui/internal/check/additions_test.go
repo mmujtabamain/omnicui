@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -102,7 +103,7 @@ func TestProgress(t *testing.T) {
 	for _, c := range cs {
 		total += len(c.Tests)
 	}
-	if len(lines) != total || !strings.HasPrefix(lines[0], "[a 1/") || !strings.HasSuffix(lines[0], "  pass") || !strings.Contains(lines[0], "counter › ") {
+	if len(lines) != total || !strings.HasPrefix(lines[0], "[a 1/") || !regexp.MustCompile(`  pass  \d+\.\ds$`).MatchString(lines[0]) || !strings.Contains(lines[0], "counter › ") {
 		t.Fatalf("%q", lines)
 	}
 }

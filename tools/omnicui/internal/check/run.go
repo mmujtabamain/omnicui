@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -34,8 +35,11 @@ type Options struct {
 	Targets  []project.Target
 	// Require lists "target:capability" pairs that must be advertised.
 	Require []string
-	// Progress, if set, gets one line per finished test: `[web 3/38] counter › each press adds one  pass`.
+	// Progress, if set, gets one line per finished test, `[web 3/38] counter › each press adds one  pass  0.4s`,
+	// and a line every 10 s while a target starts.
 	Progress io.Writer
+	// Serial runs one target at a time, as if every target were `exclusive: true`.
+	Serial bool
 }
 
 type runner struct {
@@ -90,11 +94,20 @@ func Run(opts Options) (*Report, error) {
 
 	infos := make([]TargetInfo, len(opts.Targets))
 	results := make([][]TestResult, len(opts.Targets))
+	// Targets run side by side, except an exclusive one, which runs with no other target.
 	var wg sync.WaitGroup
+	var machine sync.RWMutex
 	for i, t := range opts.Targets {
 		wg.Add(1)
 		go func(i int, t project.Target) {
 			defer wg.Done()
+			alone := t.Exclusive || opts.Serial
+			r.take(&machine, alone, t.Name)
+			if alone {
+				defer machine.Unlock()
+			} else {
+				defer machine.RUnlock()
+			}
 			infos[i], results[i] = r.runTarget(t)
 		}(i, t)
 	}
@@ -115,6 +128,37 @@ func Run(opts Options) (*Report, error) {
 		return rep, err
 	}
 	return rep, nil
+}
+
+// take locks the machine for a target: on its own (alone) or shared with the other targets. It
+// says so when the target has to wait.
+func (r *runner) take(m *sync.RWMutex, alone bool, name string) {
+	ok := false
+	if alone {
+		ok = m.TryLock()
+	} else {
+		ok = m.TryRLock()
+	}
+	if ok {
+		return
+	}
+	if alone {
+		r.say("[%s] waiting to run on its own (exclusive)", name)
+		m.Lock()
+	} else {
+		r.say("[%s] waiting for an exclusive target to finish", name)
+		m.RLock()
+	}
+}
+
+// say prints a progress line, if progress is wanted.
+func (r *runner) say(format string, args ...any) {
+	if r.opts.Progress == nil {
+		return
+	}
+	r.progressMu.Lock()
+	defer r.progressMu.Unlock()
+	fmt.Fprintf(r.opts.Progress, format+"\n", args...)
 }
 
 func writeJSON(path string, v any) error {
@@ -151,10 +195,15 @@ type advert struct {
 	Protocol string            `json:"protocol"`
 	Can      []string          `json:"can"`
 	Cannot   map[string]string `json:"cannot"`
+	// Keys, optional: per role, the keys that activate it on this target's platform, for the
+	// tests that `keyboard: true` adds. A role it doesn't name gets the usual keys.
+	Keys map[string][]string `json:"keys,omitempty"`
 }
 
-func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
-	info := TargetInfo{Name: t.Name}
+func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult) {
+	began := time.Now()
+	defer func() { info.Ms = time.Since(began).Milliseconds() }()
+	info = TargetInfo{Name: t.Name}
 	log := r.log.With("target", t.Name)
 	brokenAll := func(reason string) []TestResult {
 		var out []TestResult
@@ -184,12 +233,16 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	}
 	defer client.Stop()
 	var ad advert
-	if err := client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad); err != nil {
+	stopWatch := r.watchStart(t.Name, client, startTimeout)
+	err = client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad)
+	stopWatch()
+	info.StartMs = time.Since(began).Milliseconds()
+	if err != nil {
 		info.Broken = "did not answer advertise: " + err.Error() + tr0hint(err, t, "startTimeout", startTimeout)
 		info.Stderr = client.StderrTail()
 		return info, brokenAll(info.Broken)
 	}
-	info.Can, info.Cannot, info.Protocol = ad.Can, ad.Cannot, ad.Protocol
+	info.Can, info.Cannot, info.Protocol, info.Keys = ad.Can, ad.Cannot, ad.Protocol, ad.Keys
 	sort.Strings(info.Can)
 	can := map[string]bool{}
 	for _, c := range ad.Can {
@@ -198,7 +251,7 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	if info.Cannot == nil {
 		info.Cannot = map[string]string{}
 	}
-	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log}
+	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log, keys: ad.Keys}
 	if why := tr.probe(&info); why != "" {
 		// Screenshots from this target would be wrong; behaviour can still be checked.
 		delete(can, "screenshot")
@@ -209,10 +262,14 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	for _, c := range r.opts.Contracts {
 		total += len(c.Tests)
 	}
-	var out []TestResult
 	for _, c := range r.opts.Contracts {
 		for _, test := range c.Tests {
+			started, mark := time.Now(), client.StderrMark()
 			res := tr.runTest(c, test)
+			res.Ms = time.Since(started).Milliseconds()
+			if res.Status == Fail || res.Status == Broken {
+				res.Stderr = tailN(client.StderrSince(mark), 20)
+			}
 			out = append(out, res)
 			r.progress(t.Name, len(out), total, c, test, res)
 		}
@@ -222,6 +279,50 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 		info.Stderr = b.StderrTail
 	}
 	return info, out
+}
+
+// watchStart prints a line every 10 s while a target starts, with the time left and the last
+// thing its adapter wrote to standard error, so that a slow start (a cold build, a simulator
+// booting) doesn't look like a hang. The returned function stops it.
+func (r *runner) watchStart(name string, client *rpc.Client, limit time.Duration) func() {
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	started := time.Now()
+	go func() {
+		defer close(finished)
+		tick := time.NewTicker(startTick)
+		defer tick.Stop()
+		said := false
+		for {
+			select {
+			case <-done:
+				if said {
+					r.say("[%s] started in %s", name, roundSecond(time.Since(started)))
+				}
+				return
+			case <-tick.C:
+				said = true
+				line := fmt.Sprintf("[%s] starting: %s of startTimeout %s", name, roundSecond(time.Since(started)), limit)
+				if l := tailN(client.StderrTail(), 1); len(l) == 1 && strings.TrimSpace(l[0]) != "" {
+					line += " · adapter: " + clipLine(strings.TrimSpace(l[0]), 100)
+				}
+				r.say("%s", line)
+			}
+		}
+	}()
+	return func() { close(done); <-finished }
+}
+
+// startTick is how often watchStart reports (a variable, so tests can shorten it).
+var startTick = 10 * time.Second
+
+func roundSecond(d time.Duration) time.Duration { return d.Round(time.Second) }
+
+func clipLine(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
 }
 
 func without(xs []string, x string) []string {
@@ -241,7 +342,7 @@ func (r *runner) progress(target string, n, total int, c *contract.Contract, tes
 	}
 	r.progressMu.Lock()
 	defer r.progressMu.Unlock()
-	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s\n", target, n, total, c.Short(), test.Name, res.Status)
+	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s  %s\n", target, n, total, c.Short(), test.Name, res.Status, Seconds(res.Ms))
 }
 
 // tr0hint adds what to change when a request timed out: the timeout and where it is set.
@@ -254,6 +355,11 @@ func tr0hint(err error, t project.Target, setting string, d time.Duration) strin
 }
 
 type targetRun struct {
+	// lastRemote is the last call's error as the client returned it, before it became a failure:
+	// so that its JSON-RPC code can be looked at.
+	lastRemote error
+	// keys: the keys that activate each role on this target, when it says (advertise keys).
+	keys   map[string][]string
 	r      *runner
 	t      project.Target
 	client *rpc.Client
@@ -283,6 +389,14 @@ func stepParams(c *contract.Contract, steps []contract.Step) []map[string]any {
 		for i := 0; i < s.Times; i++ {
 			p := map[string]any{"method": s.Action, "part": c.ID + "." + s.Part}
 			switch s.Action {
+			case "do":
+				p = map[string]any{"method": "do", "name": s.Do, "with": s.With}
+				if s.With == nil {
+					p["with"] = map[string]any{}
+				}
+				if s.Part != "" {
+					p["part"] = c.ID + "." + s.Part
+				}
 			case "key":
 				p["key"] = s.Key
 			case "type":
@@ -313,6 +427,7 @@ func (f *failure) Error() string { return f.msg }
 // call wraps a request: an error reply becomes a test failure, a broken adapter stays broken.
 func (tr *targetRun) call(method string, params map[string]any, result any) error {
 	err := tr.client.Call(method, params, tr.step, result)
+	tr.lastRemote = err
 	var re *rpc.RemoteError
 	if errors.As(err, &re) {
 		what := method
@@ -327,6 +442,7 @@ func (tr *targetRun) call(method string, params map[string]any, result any) erro
 func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResult {
 	res := TestResult{Contract: c.ID, Test: test.Name, Target: tr.t.Name, Status: Pass, Screenshots: map[string]string{}, Missing: map[string]string{}}
 	log := tr.log.With("contract", c.ID, "test", test.Name)
+	tr.client.SetLog(log) // so every call, generated tests' too, is logged under its own test
 	if b := tr.client.Broken(); b != nil {
 		res.Status, res.Messages = Broken, []string{"not run: the target broke earlier (" + b.Reason + ")"}
 		return res
@@ -337,6 +453,10 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	// The constructs the behaviour needs; without them the test can't run here.
 	needs := []string{"mount"}
 	for _, s := range test.Steps {
+		if s.Action == "do" {
+			needs = append(needs, "do."+s.Do)
+			continue
+		}
 		needs = append(needs, s.Action)
 	}
 	for _, e := range test.Expect {
@@ -347,7 +467,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		needs = append(needs, "read")
 		for _, ch := range e.Checks {
 			switch ch.Field {
-			case "role", "focused":
+			case "role", "focused", "selected":
 				needs = append(needs, ch.Field)
 			case "visible":
 				needs = append(needs, "bounds")
@@ -422,7 +542,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			spec := test.Trace[0]
 			if capability := traceCapability(spec); tr.can[capability] {
 				var samples []compare.Sample
-				err := tr.call("trace", traceParams(c, spec, steps), &samples)
+				err := tr.trace(c, spec, steps, &samples)
 				if handle(err, label(cb)) {
 					if res.Status == Broken {
 						break
@@ -501,14 +621,14 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					break
 				}
 				var samples []compare.Sample
-				if handle(tr.call("trace", traceParams(c, spec, steps), &samples), label(cb)) {
+				if handle(tr.trace(c, spec, steps, &samples), label(cb)) {
 					break
 				}
 				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
 			}
 			if test.Record && res.Status != Broken {
 				if tr.can["record"] {
-					tr.record(c, cb, dir, steps, mount, handle, label, &res, ci == 0)
+					tr.record(c, test.RecordPart, cb, dir, steps, mount, handle, label, &res, ci == 0)
 				} else {
 					res.Missing["record"] = tr.reason("record")
 				}
@@ -530,6 +650,22 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 
 // traceCapability is what a target must advertise to take a trace: `trace` for a position,
 // `trace.<property>` for a property.
+// trace asks for a trace. A part the target can't find is often one that appears during the
+// steps (a sheet sliding in, a hero fading in): the message says the target should look it up
+// at each frame.
+func (tr *targetRun) trace(c *contract.Contract, spec contract.TraceSpec, steps []map[string]any, samples *[]compare.Sample) error {
+	err := tr.call("trace", traceParams(c, spec, steps), samples)
+	var re *rpc.RemoteError
+	var f *failure
+	if errors.As(tr.lastRemote, &re) && re.Code == -32002 && errors.As(err, &f) {
+		return &failure{msg: f.msg + fmt.Sprintf(" (if `%s` appears during the steps, %s's trace should look it up at each frame and start its samples when it is there: see the protocol's trace)", spec.Part, tr.t.Name)}
+	}
+	if err == nil && len(*samples) == 0 {
+		return &failure{msg: fmt.Sprintf("trace %s: no samples (the part wasn't on screen at any frame)", c.ID+"."+spec.Part)}
+	}
+	return err
+}
+
 func traceCapability(spec contract.TraceSpec) string {
 	if spec.Property == "" || spec.Property == "position" {
 		return "trace"
@@ -578,14 +714,42 @@ func (r *recording) UnmarshalJSON(b []byte) error {
 
 // record takes the clip at one combination: the frames, a lossless animated PNG of them, and
 // the clip's visual progress curve, which is what clips are compared by.
-func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []map[string]any, mount func(Combo) error,
+// clipMargin is how far around a part's box a clip of the part is measured, in pixels: room for
+// a shadow, a ripple or a scale beyond the box.
+const clipMargin = 8
+
+func (tr *targetRun) record(c *contract.Contract, part string, cb Combo, dir string, steps []map[string]any, mount func(Combo) error,
 	handle func(error, string) bool, label func(Combo) string, res *TestResult, first bool) {
 	framesDir := filepath.Join(dir, "frames-"+cb.Key())
 	os.MkdirAll(framesDir, 0o755)
 	var rec recording
-	if handle(mount(cb), label(cb)) || handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &rec), label(cb)) {
+	if handle(mount(cb), label(cb)) {
 		return
 	}
+	// record: { part: x }: the clip is measured over that part's box, before and after the steps,
+	// and a margin around it.
+	var box *compare.Region
+	partBox := func() {
+		if part == "" || !tr.can["bounds"] {
+			return
+		}
+		var r *Rect
+		if err := tr.call("bounds", map[string]any{"part": c.ID + "." + part}, &r); err != nil || r == nil || r.Width <= 0 || r.Height <= 0 {
+			return
+		}
+		b := compare.Region{X: r.X - clipMargin, Y: r.Y - clipMargin, Width: r.Width + 2*clipMargin, Height: r.Height + 2*clipMargin}
+		if box != nil {
+			x0, y0 := math.Min(box.X, b.X), math.Min(box.Y, b.Y)
+			x1, y1 := math.Max(box.X+box.Width, b.X+b.Width), math.Max(box.Y+box.Height, b.Y+b.Height)
+			b = compare.Region{X: x0, Y: y0, Width: x1 - x0, Height: y1 - y0}
+		}
+		box = &b
+	}
+	partBox()
+	if handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &rec), label(cb)) {
+		return
+	}
+	partBox()
 	if len(rec.Frames) == 0 {
 		tr.log.Warn("record returned no frames")
 		return
@@ -601,16 +765,21 @@ func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []
 	} else {
 		clip.File = rel(file)
 	}
-	curve, progress, note, err := compare.VisualProgress(rec.Frames, rec.Held)
+	if part != "" && box == nil {
+		clip.Note = fmt.Sprintf("`%s` had no box on screen (or %s doesn't advertise bounds), so the whole frames are measured; ", part, tr.t.Name)
+	}
+	curve, progress, note, err := compare.VisualProgressIn(rec.Frames, rec.Held, box)
 	switch {
 	case err != nil:
-		clip.Note = err.Error()
-	case note != "":
-		clip.Note = note
+		clip.Note += err.Error()
 	default:
-		clip.Progress = &curve
-		clip.Values = progress
+		clip.Note += note
+		if curve.Moved {
+			clip.Progress = &curve
+			clip.Values = progress
+		}
 	}
+	clip.Note = strings.TrimSuffix(clip.Note, "; ")
 	if res.Clips == nil {
 		res.Clips = map[string]ClipResult{}
 	}
@@ -847,6 +1016,8 @@ func summarize(rep *Report) Summary {
 			s.Broken++
 		case NotAdvertised:
 			s.NotAdvertised++
+		case NotMeasured:
+			s.NotMeasured++
 		}
 		if res.Status == Pass {
 			s.NotAdvertised += len(res.Missing)
@@ -885,17 +1056,33 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		}
 	}
 	cb := Combos(c)[0]
+	tr.client.SetLog(tr.log.With("contract", c.ID, "test", test.Name, "combo", cb.Key()))
 	part := c.ID + "." + k.Part
-	// state is what the component looks like to a test after the action: its events, and every
-	// part's checkable state (not names, which don't change on a press).
-	state := func(action func() error) ([]string, error) {
-		if err := tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, nil),
-			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil); err != nil {
-			return nil, err
+	// The target may say which keys activate a role on its platform (Compose ignores Space on a
+	// button, for one). A key it leaves out isn't checked there.
+	role := ""
+	for _, p := range c.Parts {
+		if p.Name == k.Part {
+			role = p.Role
 		}
-		if err := action(); err != nil {
-			return nil, err
+	}
+	if keys, ok := tr.keys[role]; ok && !contains(keys, k.Key) {
+		res.Status = NotAdvertised
+		why := fmt.Sprintf("%s says %s doesn't activate a %s there (advertise keys: %s: %s)", tr.t.Name, k.Key, role, role, strings.Join(keys, ", "))
+		if len(keys) == 0 {
+			why = fmt.Sprintf("%s says no key activates a %s there (advertise keys: %s: [])", tr.t.Name, role, role)
 		}
+		res.Missing["key "+k.Key] = why
+		res.Messages = append(res.Messages, why)
+		return res
+	}
+	mount := func() error {
+		return tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, nil),
+			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil)
+	}
+	// read is what the component looks like to a test now: its events, and every part's checkable
+	// state (not names, which don't change on a press).
+	read := func() ([]string, error) {
 		var out []string
 		var events []event
 		if err := tr.call("events", map[string]any{}, &events); err != nil {
@@ -906,8 +1093,8 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 			out = append(out, fmt.Sprintf("event %s %s", e.Name, fields))
 		}
 		for _, p := range c.Parts {
-			for _, f := range []string{"text", "checked", "value", "disabled"} {
-				if _, ok := contract.Roles[p.Role].Fields[f]; !ok {
+			for _, f := range []string{"text", "checked", "value", "disabled", "selected"} {
+				if _, ok := contract.Roles[p.Role].Fields[f]; !ok || (f == "selected" && !tr.can["selected"]) {
 					continue
 				}
 				var got any
@@ -923,15 +1110,58 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		}
 		return out, nil
 	}
-	pressed, err := state(func() error { return tr.call("press", map[string]any{"part": part}, nil) })
+	notMeasured := func(why string) TestResult {
+		res.Status = NotMeasured
+		res.Messages = append(res.Messages, why)
+		tr.log.Info("test finished", "contract", c.ID, "test", test.Name, "status", string(res.Status))
+		return res
+	}
+	// With the pointer first: the part must be on screen when the component mounts, and the press
+	// must change something a test can read, or there is nothing to compare the key with.
+	err := mount()
+	shown := true
+	if err == nil && tr.can["bounds"] {
+		var box *Rect
+		if e := tr.call("bounds", map[string]any{"part": part}, &box); e == nil {
+			shown = box != nil && box.Width > 0 && box.Height > 0
+		} else if _, ok := e.(*failure); ok {
+			shown = false
+		} else {
+			err = e
+		}
+	}
+	if err == nil && !shown {
+		return notMeasured(notShown(c, k.Part))
+	}
+	var before, pressed []string
+	if err == nil {
+		before, err = read()
+	}
+	if err == nil {
+		err = tr.call("press", map[string]any{"part": part}, nil)
+		var re *rpc.RemoteError
+		if errors.As(tr.lastRemote, &re) && re.Code == -32002 {
+			return notMeasured(notShown(c, k.Part))
+		}
+	}
+	if err == nil {
+		pressed, err = read()
+	}
+	if err == nil && stateDiff(before, pressed) == "" {
+		return notMeasured(fmt.Sprintf("a press on `%s` changed nothing a test can read when %s mounts (no event, and no part's text, checked, value, disabled or selected), so there is nothing to compare %s with: a test that sets it up (props) and expects the change says more", k.Part, c.ID, k.Key))
+	}
 	if err == nil {
 		var keyed []string
-		keyed, err = state(func() error {
-			if err := tr.call("focus", map[string]any{"part": part}, nil); err != nil {
-				return err
-			}
-			return tr.call("key", map[string]any{"part": part, "key": k.Key}, nil)
-		})
+		err = mount()
+		if err == nil {
+			err = tr.call("focus", map[string]any{"part": part}, nil)
+		}
+		if err == nil {
+			err = tr.call("key", map[string]any{"part": part, "key": k.Key}, nil)
+		}
+		if err == nil {
+			keyed, err = read()
+		}
 		if err == nil {
 			if diff := stateDiff(pressed, keyed); diff != "" {
 				res.Status = Fail
@@ -988,4 +1218,12 @@ func stateDiff(pressed, keyed []string) string {
 		return strings.Join(xs, ", ")
 	}
 	return fmt.Sprintf("a press gave %s; the key gave %s", say(onlyPress), say(onlyKey))
+}
+
+// notShown says why a generated keyboard test can't run: its part isn't on screen when the
+// component mounts (it is in a sheet, a dialog or a later state), and what to do about it.
+func notShown(c *contract.Contract, part string) string {
+	return fmt.Sprintf("`%s` isn't on screen when %s mounts, so keyboard: true can't press it there. "+
+		"If it is shown by a sheet, a dialog or another state, make that a component of its own (or a prop that "+
+		"mounts it shown), and give that component keyboard: true", part, c.ID)
 }

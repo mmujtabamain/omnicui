@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -30,6 +31,62 @@ type Curve struct {
 	Times []float64 `json:"times"`
 	// Duration is from 2% to 98% of the movement, in ms.
 	Duration float64 `json:"duration"`
+	// RoundTrip: it went out and came back (a press that scales a star up and back, a hover in
+	// and out). The levels are then of the whole trip: up to 50% on the way out, the rest back.
+	RoundTrip bool `json:"roundTrip,omitempty"`
+}
+
+// roundTrip is the progress of a change that ends where it started: half of it on the way out
+// to the farthest sample (fromFirst, the distance from the first sample), half on the way back
+// (toLast, the distance to the last sample). Nil when it never went anywhere.
+func roundTrip(fromFirst, toLast []float64, minChange float64) []float64 {
+	k := 0
+	for i, d := range fromFirst {
+		if d > fromFirst[k] {
+			k = i
+		}
+	}
+	out, back := fromFirst[k], toLast[k]
+	if out < minChange || back <= 0 {
+		return nil
+	}
+	p := make([]float64, len(fromFirst))
+	for i := range fromFirst {
+		if i <= k {
+			p[i] = 0.5 * fromFirst[i] / out
+		} else {
+			p[i] = 0.5 + 0.5*(1-math.Min(1, toLast[i]/back))
+		}
+	}
+	return p
+}
+
+// levels turns a progress from 0 to 1 over time into a Curve. A level is reached between two
+// samples less than maxGap ms apart by interpolation, and otherwise at the later sample.
+func levels(ms, progress []float64, maxGap, distance float64) Curve {
+	n := len(ms)
+	at := func(level float64) float64 {
+		for i := 1; i < n; i++ {
+			if progress[i] >= level {
+				if ms[i]-ms[i-1] > maxGap {
+					return ms[i]
+				}
+				a, b := progress[i-1], progress[i]
+				f := 1.0
+				if b > a {
+					f = (level - a) / (b - a)
+				}
+				return ms[i-1] + f*(ms[i]-ms[i-1])
+			}
+		}
+		return ms[n-1]
+	}
+	c := Curve{Moved: true, Distance: distance}
+	for _, l := range Levels {
+		c.Times = append(c.Times, at(l))
+	}
+	c.Duration = at(endLevel) - at(startLevel)
+	return c
 }
 
 // Analyze turns samples into a Curve. A point that moves less than one pixel didn't move.
@@ -53,6 +110,16 @@ func Analyze(samples []Sample) Curve {
 	dx, dy := pn.X-p0.X, pn.Y-p0.Y
 	dist := math.Hypot(dx, dy)
 	if dist < 1 {
+		from, to := make([]float64, len(samples)), make([]float64, len(samples))
+		ms := make([]float64, len(samples))
+		for i, s := range samples {
+			from[i], to[i], ms[i] = math.Hypot(s.X-p0.X, s.Y-p0.Y), math.Hypot(s.X-pn.X, s.Y-pn.Y), s.MS
+		}
+		if p := roundTrip(from, to, 1); p != nil {
+			c := levels(ms, p, math.Inf(1), slices.Max(from))
+			c.RoundTrip = true
+			return c
+		}
 		return Curve{Distance: dist}
 	}
 	progress := make([]float64, len(samples))
@@ -103,34 +170,22 @@ func analyzeValues(ms, values []float64, minChange, maxGap float64) Curve {
 	v0, vn := values[0], values[n-1]
 	change := vn - v0
 	if math.Abs(change) < minChange {
+		from, to := make([]float64, n), make([]float64, n)
+		for i, v := range values {
+			from[i], to[i] = math.Abs(v-v0), math.Abs(v-vn)
+		}
+		if p := roundTrip(from, to, minChange); p != nil {
+			c := levels(ms, p, maxGap, slices.Max(from))
+			c.RoundTrip = true
+			return c
+		}
 		return Curve{Distance: math.Abs(change)}
 	}
 	progress := make([]float64, n)
 	for i, v := range values {
 		progress[i] = (v - v0) / change
 	}
-	at := func(level float64) float64 {
-		for i := 1; i < n; i++ {
-			if progress[i] >= level {
-				if ms[i]-ms[i-1] > maxGap {
-					return ms[i]
-				}
-				a, b := progress[i-1], progress[i]
-				f := 1.0
-				if b > a {
-					f = (level - a) / (b - a)
-				}
-				return ms[i-1] + f*(ms[i]-ms[i-1])
-			}
-		}
-		return ms[n-1]
-	}
-	c := Curve{Moved: true, Distance: math.Abs(change)}
-	for _, l := range Levels {
-		c.Times = append(c.Times, at(l))
-	}
-	c.Duration = at(endLevel) - at(startLevel)
-	return c
+	return levels(ms, progress, maxGap, math.Abs(change))
 }
 
 // Differ returns the largest difference in ms between two curves at the same level, after
@@ -143,6 +198,8 @@ func Differ(a, b Curve) (float64, string) {
 		return 0, "neither moved"
 	case a.Moved != b.Moved:
 		return math.Inf(1), "one changed and the other didn't"
+	case a.RoundTrip != b.RoundTrip:
+		return math.Inf(1), "one went out and came back, the other ended somewhere else"
 	}
 	shift := 0.0
 	for i := range Levels {

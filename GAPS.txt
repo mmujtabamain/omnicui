@@ -1,7 +1,7 @@
-omnicui 0.2.0: known gaps
+omnicui 0.2.1: known gaps
 
 These are what is not done, not verified, or only works with a manual step. Each says what is
-missing and what closing it would take. Nothing here stops 0.2.0 working as documented.
+missing and what closing it would take. Nothing here stops 0.2.1 working as documented.
 
 Not verified yet
 1.  The release workflow (.github/workflows/release.yml) has run once, for v0.1.0 (eight assets).
@@ -63,10 +63,32 @@ with Mesa's software Vulkan (lavapipe), unpacked without root. Still open:
     are now written off the UI thread, which took an outlier of 128 ms away); Chromium's
     screencast sends frames only on change. Over 20 correct runs clips measured up to 30 ms
     apart, hence motion's 40 ms default; more runs on more machines would firm it up. A clip that ends
-    where it started (hover in and out) is not measured; trace a part for that.
-15. Opacity traces are web and JavaFX only: egui multiplies opacity into painted colours and has
-    nothing to read back. Its fades are compared through the clip.
+    where it started (hover in and out) is now measured out and back; that was verified with the
+    fake adapter and synthetic clips only, not yet on a real toolkit's spring.
+15. Opacity and scale traces are web and JavaFX only: egui multiplies opacity into painted colours
+    and has no transforms to read back. Its fades and springs are compared through the clip.
 16. A linked target (targets/<name> a link to another project's target) doesn't run its stub
     generator, which would rewrite its app from this project's contracts; that app's types must
     be refreshed from its own project.
 17. Clips are not yet WebM or MP4 (REC-9); APNG is lossless but larger.
+
+From the mobile stress test (8 November 2026)
+An agent built a five-screen hiking app twice, in Jetpack Compose (Robolectric) and SwiftUI (the
+iOS Simulator), with omnicui 0.2.0 vendored as is, and was stopped after 4.6 hours; what it found
+and what was its own doing is in docs/verification/mobile-review/. Built since: --test, --failed,
+--serial and exclusive targets, time per test and start-up progress, stderr kept on failures,
+"not measured" keyboard tests and target keys, masks and optional parts, part-cropped screenshots,
+do: actions the targets define, scale traces, part clips, round-trip motion, selected, and
+traces that find their part at each frame. Still open:
+18. There is no reference Android or iOS target in this repository: the mobile run's targets are
+    its own, and nothing here was run on Robolectric or the Simulator. The new constructs were
+    verified with the fake adapter and the three reference targets.
+19. Masks are named by the contract. A target can't yet declare its own system UI (a status bar,
+    the soft keyboard, a system picker) to be left out without the contract naming it (REC-2).
+20. A generated keyboard test reaches only what is on screen when the component mounts; a part in
+    a sheet is "not measured" until the sheet is a component of its own. Deriving keyboard tests
+    from a test's own steps would reach it in place (REC-11).
+21. `do:` actions are passed on unchanged: whether swipe means the same on two targets is up to
+    them. SPEC's table of conventions is a starting point, not a check.
+22. `check --failed` and `--test` replace the run folder like any run, so their report shows only
+    what was run again; keep the full report with --out if it is still needed.

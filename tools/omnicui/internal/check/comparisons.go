@@ -57,20 +57,39 @@ func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results
 				}
 				os.MkdirAll(diffDir, 0o755)
 				diff := filepath.Join(diffDir, fmt.Sprintf("%s-%s-%s.png", a.Target, b.Target, cb.Key()))
-				m, note, err := compare.Measure(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), diff)
+				view, viewNote := pixelView(c, test, a, b, cb.Key())
+				m, note, err := compare.MeasureView(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), diff, view)
 				if err != nil {
 					note = err.Error()
 					m = compare.Measures{Area: 100, Strength: 100, Unmatched: 100, Spot: 100}
 				}
 				m.Area, m.Strength, m.Unmatched, m.Spot = round(m.Area, 2), round(m.Strength, 1), round(m.Unmatched, 1), round(m.Spot, 2)
+				var raw *compare.Measures
+				if !view.Empty() && err == nil {
+					// The whole screenshots too, so that what the view left out stays visible.
+					if rm, _, rerr := compare.Measure(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), ""); rerr == nil {
+						rm.Area, rm.Strength, rm.Unmatched, rm.Spot = round(rm.Area, 2), round(rm.Strength, 1), round(rm.Unmatched, 1), round(rm.Spot, 2)
+						rm.Spots = nil
+						raw = &rm
+						viewNote += fmt.Sprintf(" (whole screenshots: area %g%%, strength %g%%, shift %g px, spot %g%%)", rm.Area, rm.Strength, rm.Shift, rm.Spot)
+					}
+				}
+				note = joinNotes(note, viewNote)
 				relDiff, _ := filepath.Rel(r.runDir, diff)
 				th := c.Pixels
 				over := Over(th, m)
 				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "pixels", A: a.Target, B: b.Target, Combo: cb.Key(),
 					Value: m.Area, Threshold: th.Area, Warning: len(over) > 0, Diff: relDiff, Note: note,
-					Measures: &m, Thresholds: &th, Over: over}
+					Measures: &m, Thresholds: &th, Over: over, Raw: raw}
 				if len(m.Spots) > 0 {
-					cmp.SpotPart = partAt(m.Spots[0], a.Bounds[cb.Key()], b.Bounds[cb.Key()])
+					if view.CropA != nil || view.CropB != nil {
+						cmp.SpotPart = partAt(shiftBox(m.Spots[0], view.CropA), a.Bounds[cb.Key()], nil)
+						if cmp.SpotPart == "" {
+							cmp.SpotPart = partAt(shiftBox(m.Spots[0], view.CropB), nil, b.Bounds[cb.Key()])
+						}
+					} else {
+						cmp.SpotPart = partAt(m.Spots[0], a.Bounds[cb.Key()], b.Bounds[cb.Key()])
+					}
 				}
 				r.log.Info("pixels", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(),
 					"area", m.Area, "strength", m.Strength, "shift", m.Shift, "spot", m.Spot, "over", strings.Join(over, ","))
@@ -185,6 +204,79 @@ func round(v float64, places int) float64 {
 	}
 	p := math.Pow(10, float64(places))
 	return math.Round(v*p) / p
+}
+
+// pixelView is what of two targets' screenshots a test compares: its contract's and its own
+// masks, and its screenshot part, from the boxes each target reported. With no boxes from a
+// target (it doesn't advertise bounds), the whole screenshots are compared, and the note says so.
+func pixelView(c *contract.Contract, test contract.Test, a, b TestResult, combo string) (compare.View, string) {
+	masks := append(append([]string{}, c.Mask...), test.Mask...)
+	if len(masks) == 0 && test.ScreenshotPart == "" {
+		return compare.View{}, ""
+	}
+	for _, x := range []TestResult{a, b} {
+		if x.Bounds[combo] == nil {
+			return compare.View{}, fmt.Sprintf("not masked or cropped: %s reports no bounds (advertise bounds)", x.Target)
+		}
+	}
+	region := func(r Rect) compare.Region { return compare.Region{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height} }
+	shown := func(x TestResult, part string) (Rect, bool) {
+		r, ok := x.Bounds[combo][part]
+		return r, ok && r.Width > 0 && r.Height > 0
+	}
+	var v compare.View
+	var notes []string
+	if p := test.ScreenshotPart; p != "" {
+		ra, okA := shown(a, p)
+		rb, okB := shown(b, p)
+		if !okA || !okB {
+			missing := a.Target
+			if okA {
+				missing = b.Target
+			}
+			return compare.View{}, fmt.Sprintf("`%s` isn't on screen on %s, so the whole screenshots are compared", p, missing)
+		}
+		ca, cb := region(ra), region(rb)
+		v.CropA, v.CropB = &ca, &cb
+		notes = append(notes, fmt.Sprintf("only `%s`", p))
+	}
+	var left []string
+	for _, m := range masks {
+		found := false
+		if r, ok := shown(a, m); ok {
+			v.MasksA = append(v.MasksA, region(r))
+			found = true
+		}
+		if r, ok := shown(b, m); ok {
+			v.MasksB = append(v.MasksB, region(r))
+			found = true
+		}
+		if found && !contains(left, m) {
+			left = append(left, m)
+		}
+	}
+	if len(left) > 0 {
+		notes = append(notes, "masked: "+strings.Join(left, ", "))
+	}
+	return v, strings.Join(notes, "; ")
+}
+
+func shiftBox(b compare.Box, by *compare.Region) compare.Box {
+	if by != nil {
+		b.X += int(by.X)
+		b.Y += int(by.Y)
+	}
+	return b
+}
+
+func joinNotes(a, b string) string {
+	switch {
+	case a == "":
+		return b
+	case b == "":
+		return a
+	}
+	return a + "; " + b
 }
 
 // partAt names the smallest part, in either target, whose box holds the middle of a spot.

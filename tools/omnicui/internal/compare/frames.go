@@ -32,6 +32,12 @@ import (
 // gap of more than 40 ms is reached at the later frame, not somewhere along the gap. Otherwise
 // (a frame every pulse, which a slow pulse delays) levels are interpolated across gaps.
 func VisualProgress(frames []Frame, held bool) (Curve, []float64, string, error) {
+	return VisualProgressIn(frames, held, nil)
+}
+
+// VisualProgressIn is VisualProgress over one box of the frames (a part, and around it): a
+// small part's motion isn't lost in a whole screen, and nothing else that moves counts.
+func VisualProgressIn(frames []Frame, held bool, box *Region) (Curve, []float64, string, error) {
 	if len(frames) < 2 {
 		return Curve{}, nil, "fewer than two frames", nil
 	}
@@ -40,6 +46,17 @@ func VisualProgress(frames []Frame, held bool) (Curve, []float64, string, error)
 		img, err := readPNG(f.File)
 		if err != nil {
 			return Curve{}, nil, "", err
+		}
+		if box != nil {
+			if s, ok := img.(interface {
+				SubImage(image.Rectangle) image.Image
+			}); ok {
+				r := box.rect().Intersect(img.Bounds())
+				if r.Empty() {
+					return Curve{}, nil, "the part's box is outside the frames", nil
+				}
+				img = s.SubImage(r)
+			}
 		}
 		imgs[i] = toYIQ(img)
 		if imgs[i].w != imgs[0].w || imgs[i].h != imgs[0].h {
@@ -74,10 +91,26 @@ func VisualProgress(frames []Frame, held bool) (Curve, []float64, string, error)
 	for _, im := range imgs {
 		peak = math.Max(peak, dist(first, im))
 	}
-	if total < 0.25*peak {
-		return Curve{}, nil, "the clip ends close to where it started (a round trip); trace a part to compare it", nil
-	}
 	ms := make([]float64, len(frames))
+	if total < 0.25*peak {
+		// A round trip (a star that scales up and back, a hover in and out): out to the frame
+		// farthest from the first, then back.
+		from, to := make([]float64, len(imgs)), make([]float64, len(imgs))
+		for i, im := range imgs {
+			ms[i], from[i], to[i] = frames[i].MS, dist(first, im), dist(im, last)
+		}
+		p := roundTrip(from, to, 1e-9)
+		if p == nil {
+			return Curve{}, nil, "nothing changes in the clip", nil
+		}
+		gap := math.Inf(1)
+		if held {
+			gap = 40
+		}
+		c := levels(ms, p, gap, peak)
+		c.RoundTrip = true
+		return c, p, "a round trip: out to the farthest frame, then back", nil
+	}
 	progress := make([]float64, len(frames))
 	for i, im := range imgs {
 		ms[i] = frames[i].MS

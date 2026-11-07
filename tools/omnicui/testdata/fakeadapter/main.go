@@ -22,6 +22,12 @@
 //	                  size asked for), blank (white only)
 //	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
 //	FAKE_ROLE         part=role,… to report another role than the contract's
+//	FAKE_LATE_PART    trace fails with "no part" (a target that looks the part up too early)
+//	FAKE_CONTROLS     draw window controls (part <component>.controls) that other targets lack
+//	FAKE_KEYS         role=Key+Key,… advertised as the keys that activate each role
+//	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
+//	FAKE_SPAN_FILE    append "<FAKE_NAME> start|stop <unix ns>" when starting and stopping
+//	FAKE_STDERR_ON    a method during which to write a line to stderr
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -62,6 +68,8 @@ type params struct {
 	Point       string           `json:"point"`
 	Property    string           `json:"property"`
 	Steps       []map[string]any `json:"steps"`
+	Name        string           `json:"name"`
+	With        map[string]any   `json:"with"`
 }
 
 type state struct {
@@ -136,6 +144,9 @@ func act(method string, p params) error {
 	press := func() {
 		switch part {
 		case "increment":
+			if has(os.Getenv("FAKE_BUG"), "inert") {
+				break // a press that changes nothing
+			}
 			st.count++
 			if has(os.Getenv("FAKE_BUG"), "double") {
 				st.count++
@@ -185,6 +196,9 @@ func screenshot(path string) error {
 			c := bg
 			if x >= 24+shift && x < 84+shift && y >= 24 && y < 54 {
 				c = fg
+			}
+			if os.Getenv("FAKE_CONTROLS") != "" && x >= 100 && x < 120 && y >= 24 && y < 44 {
+				c = color.RGBA{0xe0, 0x30, 0x30, 0xff}
 			}
 			// The switch's thumb, where it is now (so that recorded frames show it slide).
 			if tx := 30 + int(st.moved+0.5); st.component == "ui.switch" && x >= tx+shift && x < tx+12+shift && y >= 33 && y < 45 {
@@ -241,7 +255,7 @@ func handle(n int, r req) (any, error) {
 	}
 	switch r.Method {
 	case "advertise":
-		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,record,probe,bounds,role,focused"), ",")
+		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,trace.scale,record,probe,bounds,role,focused"), ",")
 		cannot := map[string]string{}
 		for _, kv := range strings.Split(os.Getenv("FAKE_CANNOT"), ",") {
 			if k, v, ok := strings.Cut(kv, "="); ok {
@@ -255,7 +269,20 @@ func handle(n int, r req) (any, error) {
 				can = keep
 			}
 		}
-		return map[string]any{"protocol": "1", "can": can, "cannot": cannot}, nil
+		ad := map[string]any{"protocol": "1", "can": can, "cannot": cannot}
+		// FAKE_KEYS: role=Key+Key,… the keys that activate each role here (advertise keys).
+		if v := os.Getenv("FAKE_KEYS"); v != "" {
+			keys := map[string][]string{}
+			for _, kv := range strings.Split(v, ",") {
+				role, ks, _ := strings.Cut(kv, "=")
+				keys[role] = []string{}
+				if ks != "" {
+					keys[role] = strings.Split(ks, "+")
+				}
+			}
+			ad["keys"] = keys
+		}
+		return ad, nil
 	case "mount":
 		if !has(env("FAKE_COMPONENTS", "ui.counter,ui.switch"), p.Component) {
 			return nil, &rpcErr{-32001, "no component " + p.Component}
@@ -276,6 +303,18 @@ func handle(n int, r req) (any, error) {
 		return nil, nil
 	case "press", "focus", "key", "type", "drag", "hover":
 		return nil, act(r.Method, p)
+	case "do":
+		// A target-defined action: `bump` adds with.by to the counter (on its increment part).
+		if p.Name != "bump" {
+			return nil, &rpcErr{-32601, "no action " + p.Name}
+		}
+		if p.Part != "ui.counter.increment" {
+			return nil, &rpcErr{-32002, "no part " + p.Part}
+		}
+		by, _ := p.With["by"].(float64)
+		st.count += int(by)
+		st.events = append(st.events, map[string]any{"name": "changed", "fields": map[string]any{"count": st.count}})
+		return nil, nil
 	case "read":
 		if err := act("read", p); err != nil {
 			return nil, err
@@ -299,6 +338,8 @@ func handle(n int, r req) (any, error) {
 		switch p.Field {
 		case "focused":
 			return st.focused == part, nil
+		case "selected":
+			return part == "increment" && st.count > 0, nil
 		case "role":
 			for _, kv := range strings.Split(os.Getenv("FAKE_ROLE"), ",") {
 				if k, v, ok := strings.Cut(kv, "="); ok && k == part {
@@ -309,6 +350,14 @@ func handle(n int, r req) (any, error) {
 		}
 		return nil, nil
 	case "bounds":
+		// FAKE_CONTROLS: this target draws window controls, the part <component>.controls, at
+		// 100,24 (20×20); other targets don't have it.
+		if p.Part == st.component+".controls" {
+			if os.Getenv("FAKE_CONTROLS") != "" {
+				return map[string]any{"x": 100, "y": 24, "width": 20, "height": 20}, nil
+			}
+			return nil, nil
+		}
 		if err := act("read", p); err != nil {
 			return nil, err
 		}
@@ -329,6 +378,11 @@ func handle(n int, r req) (any, error) {
 	case "screenshot":
 		return p.Path, screenshot(p.Path)
 	case "trace", "record":
+		// FAKE_LATE_PART: the traced part only appears during the steps, and this target looks
+		// it up before them (as a target shouldn't).
+		if r.Method == "trace" && os.Getenv("FAKE_LATE_PART") != "" {
+			return nil, &rpcErr{-32002, "no part " + p.Part}
+		}
 		start := st.moved
 		for _, s := range p.Steps {
 			b, _ := json.Marshal(s)
@@ -346,6 +400,10 @@ func handle(n int, r req) (any, error) {
 			t := math.Max(0, math.Min(1, (ms-50)/dur))
 			x := 36 + start + (end-start)*ease(t)
 			switch {
+			case r.Method == "trace" && p.Property == "scale":
+				// A spring: up to 1.25 and back, over the duration (a round trip).
+				v := 1 + 0.25*math.Sin(math.Pi*t)*math.Abs(end-start)/20
+				out = append(out, map[string]any{"ms": ms, "value": v})
 			case r.Method == "trace" && p.Property == "opacity":
 				v := 1 - 0.5*ease(t)*math.Abs(end-start)/20
 				out = append(out, map[string]any{"ms": ms, "value": v})
@@ -396,6 +454,22 @@ func main() {
 		os.WriteFile(f, []byte(strconv.Itoa(os.Getpid())), 0o644)
 	}
 	fmt.Fprintln(os.Stderr, "fake adapter starting")
+	if ms := envInt("FAKE_START_MS"); ms > 0 {
+		fmt.Fprintln(os.Stderr, "compiling the harness")
+		time.Sleep(time.Duration(ms) * time.Millisecond)
+	}
+	// FAKE_SPAN_FILE: append when this adapter started and stopped, to check exclusive targets.
+	if f := os.Getenv("FAKE_SPAN_FILE"); f != "" {
+		span := func(what string) {
+			fh, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			if err == nil {
+				fmt.Fprintf(fh, "%s %s %d\n", env("FAKE_NAME", "?"), what, time.Now().UnixNano())
+				fh.Close()
+			}
+		}
+		span("start")
+		defer span("stop")
+	}
 	out := bufio.NewWriter(os.Stdout)
 	sc := bufio.NewScanner(os.Stdin)
 	n := 0
@@ -416,6 +490,9 @@ func main() {
 			time.Sleep(time.Hour)
 		case envInt("FAKE_STRAY_ON"):
 			fmt.Fprintln(out, "Loading theme… done")
+		}
+		if r.Method == os.Getenv("FAKE_STDERR_ON") {
+			fmt.Fprintln(os.Stderr, "adapter note during", r.Method)
 		}
 		if ms := envInt("FAKE_SLEEP_MS"); ms > 0 {
 			time.Sleep(time.Duration(ms) * time.Millisecond)

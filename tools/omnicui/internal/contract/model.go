@@ -22,18 +22,24 @@ type Part struct {
 	Role string `json:"role"`
 	// ID is the part's id in every target: <contract id>.<part name>.
 	ID string `json:"id"`
+	// Optional: shown by some targets only. Masks and crops skip it where it isn't.
+	Optional bool `json:"optional,omitempty"`
 }
 
 // Step is one user action. Times is already 1 or more.
 type Step struct {
-	Action string  `json:"action"`
-	Part   string  `json:"part"`
-	Key    string  `json:"key,omitempty"`
-	Text   string  `json:"text,omitempty"`
-	DX     float64 `json:"dx,omitempty"`
-	DY     float64 `json:"dy,omitempty"`
-	Times  int     `json:"times"`
-	Line   int     `json:"-"`
+	// Action is press, focus, key, type, drag or hover; or "do", for an action a target defines:
+	// Do is its name and With its parameters, passed on unchanged. Part may be empty for "do".
+	Action string         `json:"action"`
+	Do     string         `json:"do,omitempty"`
+	With   map[string]any `json:"with,omitempty"`
+	Part   string         `json:"part"`
+	Key    string         `json:"key,omitempty"`
+	Text   string         `json:"text,omitempty"`
+	DX     float64        `json:"dx,omitempty"`
+	DY     float64        `json:"dy,omitempty"`
+	Times  int            `json:"times"`
+	Line   int            `json:"-"`
 }
 
 // Check is one field of one part, as read after the steps.
@@ -86,8 +92,14 @@ type Test struct {
 	Steps      []Step         `json:"steps,omitempty"`
 	Expect     []Expectation  `json:"expect,omitempty"`
 	Screenshot bool           `json:"screenshot,omitempty"`
-	Trace      []TraceSpec    `json:"trace,omitempty"`
-	Record     bool           `json:"record,omitempty"`
+	// Mask: parts left out of the screenshot comparison (with the contract's mask); ScreenshotPart:
+	// compare only this part's box on each target.
+	Mask           []string    `json:"mask,omitempty"`
+	ScreenshotPart string      `json:"screenshotPart,omitempty"`
+	Trace          []TraceSpec `json:"trace,omitempty"`
+	Record         bool        `json:"record,omitempty"`
+	// RecordPart: record: { part: x } measures the clip over that part\'s box only.
+	RecordPart string `json:"recordPart,omitempty"`
 	// AllCombinations takes the traces and the clip at every viewport × colour scheme, not only
 	// the first.
 	AllCombinations bool `json:"allCombinations,omitempty"`
@@ -127,6 +139,8 @@ type Contract struct {
 	// Keyboard adds, for every button, switch and checkbox, a test per key that activates its
 	// role: the key must do what a pointer press does, on every target.
 	Keyboard bool `json:"keyboard,omitempty"`
+	// Mask: parts left out of every screenshot comparison of this contract.
+	Mask []string `json:"mask,omitempty"`
 	// Pixels are the screenshot thresholds; TimingThreshold is in milliseconds.
 	Pixels          PixelThresholds `json:"pixelThresholds"`
 	TimingThreshold float64         `json:"timingThreshold"`

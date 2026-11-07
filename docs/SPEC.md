@@ -206,9 +206,10 @@ A hung adapter is gone after its timeout *(TestTimeout checks that the process n
 | pass | every expectation held | no |
 | fail | an expectation disagreed, a step acted on a part that does not exist, or the target has no such component | **yes** |
 | not advertised | the behaviour needs a construct the target did not advertise (the test can't run there) | no |
+| not measured | the test ran but had nothing to measure: a generated keyboard test whose part isn't on screen when the component mounts, or whose press changes nothing a test can read (§5) | no |
 | broken | the target broke during this test, or before it | **yes** |
 
-**Warnings** belong to comparisons, not to test results. A pass with a missing capability (for example, no `screenshot`) stays a pass, and the missing capability is counted in the summary as "not advertised". The **worst status over all combinations** is the test's status, in this order: broken > fail > not advertised > pass.
+**Warnings** belong to comparisons, not to test results. A pass with a missing capability (for example, no `screenshot`) stays a pass, and the missing capability is counted in the summary as "not advertised". The **worst status over all combinations** is the test's status, in this order: broken > fail > not advertised, not measured > pass. "not measured" is counted in the summary only when there is one: `… · 2 not advertised · 3 not measured · 0 warnings`.
 
 ---
 
@@ -220,7 +221,7 @@ Every command takes the form `omnicui [--project <folder>] <command> …`.
 
 | Command | Does | Exit status |
 |---|---|---|
-| `omnicui check [target…] [component…] [--require target:capability]… [--out <folder>] [--fail-on warnings\|pixels\|timing\|visibility]…` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out`. One progress line per finished test goes to standard error: `[web 12/38] counter › each press adds one  pass` | 0 when nothing failed or broke; 1 when something did, a required capability is missing, or there is a warning of a kind `--fail-on` names; 2 for a usage or contract error |
+| `omnicui check [target…] [component…] [--test <name>]… [--failed] [--serial] [--require target:capability]… [--out <folder>] [--fail-on warnings\|pixels\|timing\|visibility]…` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out`. One progress line per finished test, with its time, goes to standard error: `[web 12/38] counter › each press adds one  pass  0.4s`; while a target starts, a line every 10 s (§4.3) | 0 when nothing failed or broke; 1 when something did, a required capability is missing, or there is a warning of a kind `--fail-on` names; 2 for a usage or contract error |
 | `omnicui targets` | starts each adapter, asks `advertise`, runs the render check (§4.4) on each target that advertises `screenshot` and `probe`, and prints its capabilities with reasons and the render check's outcome | 0; 2 if a target.yaml is invalid |
 | `omnicui compare <a.png> <b.png> [--diff <out.png>] [--json]` | measures two screenshots the way `check` does and prints the four measures against the default thresholds, for looking into one comparison or trying thresholds on saved screenshots | 0; 2 if a file can't be read |
 | `omnicui help contract` | one screen: every field of a contract, the defaults, the roles and their fields, and how each comparison is measured | 0 |
@@ -232,6 +233,12 @@ Every command takes the form `omnicui [--project <folder>] <command> …`.
 | `omnicui`, `omnicui help`, `--help`, `-h`, `<command> --help` | prints the usage | 2 with no command at all; 0 otherwise |
 
 **Exit status, over all commands:** 0 when nothing failed or broke; 1 when something did; 2 for a usage, project or contract error; 130 when interrupted.
+
+**Running less** [R]. A full check of a large app takes long, mostly in mounts and captures. `--test <name>` (repeatable) keeps the tests whose name contains it, ignoring case, or, with `*` or `?`, matches the whole name as a glob (`--test 'keyboard:*'`). No match exits 2 with the tests that share a word with it. `--failed` keeps the tests that failed, broke or had a warning in the last run's `results.json` (in `--out`'s folder, if given): ``nothing to rerun: in the last run no test failed, broke or warned`` exits 0, and no earlier run exits 2. Both narrow what the target and component names chose. The run still replaces the run folder, so a second `--failed` reruns what still fails. *(TestFilterTests, TestLastProblems, TestCheckSelection)*
+
+**Time** [R]. Each result has `ms`, each target `ms` and `startMs` (until it answered `advertise`) in `results.json`, and the summary is preceded by the five slowest tests (of a second or more) and each target's total and start-up time. *(TestTimesAndStderr)*
+
+**`--serial`** [R] runs one target at a time, as if each had `exclusive: true` (§4.3). *(TestExclusive)*
 
 A name given to `check` or `stubs` is matched against target names first, then against contract ids and their last segment (`counter` for `ui.counter`). [R] An unknown name exits 2, listing the known names. *(TestUsageErrors)*
 
@@ -319,18 +326,28 @@ tests:
     expect:
       - { part: value, text: "3" }                    # a part and the fields to check
       - { event: changed, times: 3, last: { count: 3 } }
-    screenshot: true                                  # at every viewport and colour scheme
+    screenshot: true                                  # at every viewport and colour scheme; or { mask: [part…], part: <part> }
     trace:                                            # follow one point while the steps run
       - { part: value, point: center, timing: { duration: 200ms, easing: ease-out } }
-      - { part: value, property: opacity }            # or follow its opacity as drawn
-    record: true                                      # a clip, compared by its visual progress
+      - { part: value, property: opacity }            # or follow its opacity as drawn, or its scale
+    record: true                                      # a clip, compared by its visual progress; or { part: <part> }
     allCombinations: true                             # traces and the clip at every viewport × colour scheme
 
 viewports:    [{ width: 320, height: 240, props: {} }] # default: 320×240; props: every test's at that size (a test's own win)
 colorSchemes: [light, dark]                           # default: light
 keyboard:     true                                    # Enter/Space must do what a press does, per role
+mask:         []                                      # parts left out of every screenshot comparison
 thresholds:   { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms }   # the defaults
 ```
+
+**Screenshots of part of a screen** [R]:
+- `screenshot: { mask: [a, b] }` on a test, and `mask: [a, b]` for every test of the contract, leave those parts' boxes out of the comparison. Every box either target of a pair reports is left out of both images, so what one target draws there and the other doesn't is not compared: masked pixels count as not drawn, and show grey in the diff image.
+- A part can be `optional: true`: shown by some targets only, such as window controls that a desktop toolbar has and the web one doesn't. A mask or a crop naming it covers it where it is, and is skipped where it isn't.
+- `screenshot: { part: toolbar }` compares only that part's box on each target, wherever it sits on each; boxes of different sizes are compared from their top-left corners, and the difference in size counts.
+- The whole screenshots' measures stay in the comparison (`raw` in `results.json`) and in its note: `masked: keyboard (whole screenshots: area 41%, strength 30%, shift 2 px, spot 63%)`. A target that doesn't advertise `bounds` can't be masked: the note says so, and the whole screenshots are compared.
+*(TestMeasureView, TestMaskOptionalPart, TestScreenshotPart, TestMaskContractErrors)*
+
+**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
 
 **Standards it follows:**
 - typing: JSON Schema 2020-12, through the `yaml-language-server` first line, a path relative to the contract file (the schema is `tools/omnicui/schema/contract.schema.json`, and is also embedded in the omnicui binary);
@@ -368,7 +385,12 @@ adapter: exec node adapter.ts   # run with /bin/sh -c in the target's folder (cm
 stubs: node stubs.ts ../../../apps/web/src/omnicui   # optional; every contract as JSON on stdin
 stepTimeout: 15s             # default 10s: any one request
 startTimeout: 120s           # default 120s: starting and answering advertise
+exclusive: false             # true: run this target with no other target alongside
 ```
+
+**Starting** [R]. While a target starts, a line every 10 s on standard error says so, with the time left and the last line its adapter wrote to standard error: `[android] starting: 40s of startTimeout 20m0s · adapter: > Task :adapter:compileDebugUnitTestKotlin`, and then `[android] started in 52s`. *(TestStartProgress)*
+
+**`exclusive: true`** [R] is for a target that needs the whole machine (an emulator, a simulator, a large JVM): it starts and runs with no other target alongside, and the others wait (`[ios] waiting for an exclusive target to finish`). Targets without it run side by side, as before. *(TestExclusive)*
 
 Both commands run in the target's folder, so a relative path in them starts there. The other two reference targets:
 
@@ -398,17 +420,32 @@ Both commands run in the target's folder, so a relative path in them starts ther
 | `key` | `{part, key}` | `null` | yes |
 | `type` | `{part, text}` | `null` | yes |
 | `drag` | `{part, dx, dy}` | `null` | yes |
+| `do` | `{name, part?, with: {…}}` | `null` | optional: an action the target defines, advertised as `do.<name>` (see below) |
 | `read` | `{part, field}` | the value (string, boolean, number or null) | yes |
 | `events` | `{}` | `[{name, fields}…]` since the last call (mount clears) | yes |
 | `screenshot` | `{path}` | the path, after writing a PNG there | if it can render |
-| `trace` | `{part, point, steps: [{method, …params}…]}`, or `{part, property: "opacity", steps}` | `[{ms, x, y}…]`, sampled every frame while the steps run; for opacity `[{ms, value}…]`, the part's opacity times its ancestors' (capability `trace.opacity`) | if it can render |
+| `trace` | `{part, point, steps: [{method, …params}…]}`, or `{part, property: "opacity" \| "scale", steps}` | `[{ms, x, y}…]`, sampled every frame while the steps run; for opacity `[{ms, value}…]`, the part's opacity times its ancestors' (capability `trace.opacity`); for scale, its width as drawn over its layout width, ancestors' transforms included (capability `trace.scale`). [R] The part is looked up at each frame, and samples start when it is first there: a part that appears during the steps (a sheet sliding in) is traced from its first frame. Not there at any frame: error -32002 | if it can render |
 | `record` | `{path, steps}` | `{frames: [{ms, file}…], inputs: [ms…], held}`: the frames written into `path`, when each step's input was delivered on the frames' clock, and whether frames come only when the picture changes (`held: true`, Chromium's screencast) rather than every pulse. A bare `[{ms, file}…]` (the first protocol 1 adapters) is still accepted | optional |
 | `probe` | `{path, viewport: {width, height}}` | the path, after writing the render check's picture there | optional; asked right after `advertise` when the target advertises `screenshot` and `probe` |
 | `bounds` | `{part}` | `{x, y, width, height}`: the part's box on screen; 0×0 when it isn't rendered | optional |
 
 **The render check** [R]. Advertising `screenshot` is a claim. Before any test, omnicui asks each target that advertises `screenshot` and `probe` to draw, at the largest width and height of the run's viewports: a white background, a black 32×32 square at 8,8, and a red (#ff0000) 32×32 square whose bottom-right corner is 8 px from the viewport's. It checks the picture's size, the white middle, and both squares. If the check fails, `screenshot` is not advertised for that target in this run (behaviour still runs), the reason is printed first (`web: render check failed: the picture is 640×400, not the 1408×868 asked for: …`), and `--require web:screenshot` fails the run. *(TestProbePasses, TestProbeFails, TestProbeNotAdvertised)*
 
-**`read` fields beyond the role table:** `role` (a WAI-ARIA role name; the reference adapters map Chromium's, AccessKit's and JavaFX's roles to it, and name any other role by its own name, e.g. JavaFX `text`) and `focused` (a boolean).
+**`read` fields beyond the role table:** `role` (a WAI-ARIA role name; the reference adapters map Chromium's, AccessKit's and JavaFX's roles to it, and name any other role by its own name, e.g. JavaFX `text`), `focused` (a boolean) and, on a button, `selected` (a boolean: a chosen chip, tab or segment; capability `selected`; web reads `aria-pressed`, `aria-selected` or `aria-checked`, JavaFX a selected `Toggle`, egui AccessKit's selected state).
+
+**`advertise` may also say `keys`** [R]: per role, the keys that activate it on this platform, `{"keys": {"button": ["Enter"], "switch": []}}`. A generated keyboard test (§5) with a key the target leaves out is not advertised there, with the reason; a role it doesn't name gets the usual keys. Compose, for one, doesn't activate a button with Space. *(TestKeyboardTargetKeys)*
+
+**Actions the targets define (`do`)** [R]. omnicui builds in press, focus, key, type, drag and hover. Anything else a platform has, a swipe, a scroll, pull-to-refresh, the system back, a date picker, means something different on each and depends on how its target is built, so omnicui doesn't define it. A contract writes `{ do: swipe, part: row1, with: { direction: left } }`; omnicui sends `do` with `{name: "swipe", part: "<id>.row1", with: {direction: "left"}}`, unchanged, and `part` may be left out (`{ do: back }`). A target that can, advertises `do.swipe`; one that can't reports the test not advertised, with its `cannot` reason. These are the shapes the first mobile targets needed, as a convention to start from, not a rule:
+
+| `do` | `part` | `with` | what the target does |
+|---|---|---|---|
+| `scroll` | the scrolling container | `{to: "<part>"}` or `{by: <px>}` | scrolls, with the platform's own physics, until `to` is fully on screen, or by `by` |
+| `swipe` | the part to swipe | `{direction: left\|right\|up\|down, distance?: <px>}` | a real swipe gesture, as a finger does it |
+| `refresh` | the list | `{}` | pull to refresh |
+| `back` | none | `{}` | the system back (Android's back, iOS's edge swipe or back button) |
+| `pick` | the picker | `{value: "2026-11-14"}` | chooses a value in the platform's own picker |
+
+*(TestDoStep, TestDoStepContract)*
 
 **Error codes:**
 
@@ -556,7 +593,7 @@ pub fn create(component: &str, props: Value) -> Result<Box<dyn Mounted>, String>
 
 ## 5. Behaviour rules
 
-- [R] **Order.** Targets run in parallel. Within a target, the contracts run in file-name order, then the tests in file order, then the combinations, viewports first. *(TestAllPass; `check.Combos`)*
+- [R] **Order.** Targets run in parallel, except one with `exclusive: true` (or every target with `check --serial`), which runs with no other target alongside. Within a target, the contracts run in file-name order, then the tests in file order, then the combinations, viewports first. *(TestAllPass; `check.Combos`)*
 - [R] **One request at a time** per target. The next is sent only after the previous reply. *(TestConversation: ids 1…4 in order)*
 - [R] **A fresh component for every test and every combination.** `mount` is sent before each one. *(protocol.log in every scenario)*
 - [R] **`times` is expanded by omnicui.** `press ×3` is three `press` requests. *(TestConversation, TestFailMessage)*
@@ -574,10 +611,11 @@ pub fn create(component: &str, props: Value) -> Result<Box<dyn Mounted>, String>
 - [R] **`thresholds.pixels` was renamed `area`** and is refused, with the new spelling: ``thresholds.pixels was renamed to area (the share of the drawn area that differs): write `area: 30%` ``. A threshold under a third of its default is allowed, with a warning that says what correct renderings usually measure. *(TestPixelsRenamedToArea, TestStrictThresholdWarns)*
 - [R] **Visibility.** On a target that advertises `bounds`, a part whose text, name, value or checked state was read is asked for its box; one with no size, or outside the viewport, is a `visibility` warning, unless the test checks `visible` itself. *(TestInvisibleReadWarns)*
 - [R] **Different sizes are 100% different**, with a note. *(TestPixelsSizes)*
-- [R] **Opacity.** An opacity trace is analysed the same way, as the times its opacity covered 10%, … 90% of its change; a change under 0.02 is no change. A target that can't read opacity (egui paints it into colours) says so in `cannot`, and the test is "not advertised" there. *(TestAnalyzeValues, TestOpacityTrace)*
-- [R] **Clips** (`internal/compare/frames.go`). Each target records on its own clock (web: Chromium's screencast, a frame only when the page changes; JavaFX: a snapshot per pulse; egui: simulated frames at exactly 60 fps) and from its own moment, so clips are not compared frame by frame. Each clip becomes its **visual progress**: for every frame, 1 − its distance to the last frame / the first frame's distance to the last, over the pixels that change at all in the clip (the mean colour distance). When the target says its frames are held, frames more than 40 ms apart are a still picture, not a ramp; otherwise levels are interpolated across a gap (a slow pulse), as for traces. The curve is then compared like a trace; above `thresholds.motion` (default 40 ms, wider than `timing` because a clip shows every change on the screen and correct renderings measured up to 30 ms apart) it is a warning. A clip that ends close to where it started (a round trip) is not measured, and says so. On the reference switch, over 20 correct runs, clips measured 1.5–30 ms apart, 14 ms or less in 18 of them (position traces 0.0–0.5 ms); a 300 ms linear slide 76–104 ms; a 600 ms fade that only one target has, which no position trace sees, 182–189 ms. *(TestVisualProgress, TestClipMotionWarning, TestOldRecordReply; real: web.switch.dim, javafx.switch.dim)*
+- [R] **Round trips.** A trace, opacity or scale that goes out and comes back (a save star scaling 1 → 1.25 → 1, a hover in and out) is measured the same way as a round-trip clip, out and back. A round trip against a change that ends somewhere else is an infinite difference: ``one went out and came back, the other ended somewhere else``. *(TestRoundTripTraces, TestRoundTripAgainstOneWay, TestScaleTrace)*
+- [R] **Opacity and scale.** An opacity trace is analysed the same way, as the times its opacity covered 10%, … 90% of its change; a change under 0.02 is no change. A target that can't read opacity (egui paints it into colours) says so in `cannot`, and the test is "not advertised" there. *(TestAnalyzeValues, TestOpacityTrace)*
+- [R] **Clips** (`internal/compare/frames.go`). Each target records on its own clock (web: Chromium's screencast, a frame only when the page changes; JavaFX: a snapshot per pulse; egui: simulated frames at exactly 60 fps) and from its own moment, so clips are not compared frame by frame. Each clip becomes its **visual progress**: for every frame, 1 − its distance to the last frame / the first frame's distance to the last, over the pixels that change at all in the clip (the mean colour distance). When the target says its frames are held, frames more than 40 ms apart are a still picture, not a ramp; otherwise levels are interpolated across a gap (a slow pulse), as for traces. The curve is then compared like a trace; above `thresholds.motion` (default 40 ms, wider than `timing` because a clip shows every change on the screen and correct renderings measured up to 30 ms apart) it is a warning. A clip that ends close to where it started (a round trip) is measured out and back: up to 50% of its progress on the way out to the frame farthest from the first, the rest on the way back to the last, and says so in its note. `record: { part: x }` measures the clip over that part's box (before and after the steps, and 8 px around it) instead of the whole frame, so a small part's motion isn't lost in a phone screen. *(TestVisualProgress, TestRecordPartAndSelected)* On the reference switch, over 20 correct runs, clips measured 1.5–30 ms apart, 14 ms or less in 18 of them (position traces 0.0–0.5 ms); a 300 ms linear slide 76–104 ms; a 600 ms fade that only one target has, which no position trace sees, 182–189 ms. *(TestVisualProgress, TestClipMotionWarning, TestOldRecordReply; real: web.switch.dim, javafx.switch.dim)*
 - [R] **Clips are lossless animated PNGs** (`compare.APNG`, no external encoder), each frame shown for its own duration. report.html shows each combination's clips with a chart of their visual progress and a player that shows every target's frame for the same moment, lined up at its first input (or where its picture starts to change). *(TestAPNG, TestClipMotionWarning)*
-- [R] **Keyboard checks.** `keyboard: true` adds, for every part with role button (Enter, Space), switch or checkbox (Space), a test named ``keyboard: <key> on `<part>` does what a press does``: mount and press the part; mount, focus it and press the key; the events and every part's text, checked, value and disabled must be the same. A difference fails, saying what each gave. *(TestKeyboardChecks; real: javafx.counter.no-enter)*
+- [R] **Keyboard checks.** `keyboard: true` adds, for every part with role button (Enter, Space), switch or checkbox (Space), a test named ``keyboard: <key> on `<part>` does what a press does``: mount and press the part; mount, focus it and press the key; the events and every part's text, checked, value, disabled and (where advertised) selected must be the same. A difference fails, saying what each gave. Two cases are **not measured**, not passed or failed: the part isn't on screen when the component mounts (no box, or "no part"), with ``…isn't on screen when <id> mounts… If it is shown by a sheet, a dialog or another state, make that a component of its own (or a prop that mounts it shown), and give that component keyboard: true``; and the press changes nothing a test can read (choosing the segment already chosen), which leaves nothing to compare the key with. A target's `keys` (§4.4) leaves out the keys its platform doesn't use. *(TestKeyboardChecks, TestKeyboardPartNotShown, TestKeyboardInertPress, TestKeyboardTargetKeys; real: javafx.counter.no-enter)*
 - [R] **Motion.** A trace becomes the times at which the point reached 10%, 20%, … 90% of its movement, interpolated between samples. Two traces are first shifted to line up as well as possible, by the mean difference, and then compared by their largest remaining difference in ms. This compares the shape and the length of the movement (timing function and duration), not when each target reacted. A named timing is compared the same way with the CSS curve. Above `thresholds.timing` it is a warning. *(TestAnalyzeAlignsStart, TestExpectedMatchesEasing, TestDifferMeasures, TestTimingWarning)*
 - [R] **Movement under 1 px is no movement.** Moving against still is an infinite difference, and still against still is 0. *(TestDifferMeasures)*
 - [R] **No retries.** A step that fails is reported, never repeated: a flaky target should show. *(the code has no retry path; TestFailMessage)*
@@ -587,7 +625,7 @@ pub fn create(component: &str, props: Value) -> Result<Box<dyn Mounted>, String>
   - a step's timeout is `stepTimeout` (default 10 s);
   - the start timeout is `startTimeout` (default 120 s);
   - an adapter's reply line may be up to 64 MiB;
-  - the stderr kept for diagnosis is the last 40 lines.
+  - the stderr kept for diagnosis is the last 40 lines; a failing or broken test keeps the last 20 lines written while it ran, printed under it (5) and in `results.json` (`stderr`). *(TestTimesAndStderr)*
 - [R] **Stub generators always get every contract**, even when only some are checked, because they empty their output folder and rewrite it from scratch. *(TestStubsGetAllContracts; this was a bug, §17)*
 
 ---
@@ -791,15 +829,16 @@ The baseline is the design document (6 November 2026). Each row is a place where
 Ordered by value against cost. None of these is built.
 
 1. **[REC-1] Per-pair tolerance.** The JavaFX/egui counter differs by 26% when correct, against 30% for the threshold, which is the tightest margin in the suite. A contract could set a threshold per pair, or omnicui could report how far each pair is from its threshold. *Verify:* the deliberate defects are still caught with the narrower margins.
-2. **[REC-2] Masks** for intentional platform differences, such as a native focus ring: `mask: [{ part: increment }]` would leave that part's box out of the drawn area. The `bounds` construct it needed is now built. *Verify:* a fake adapter that differs only inside the masked part gives no warning.
+2. **[REC-2] Masks** are built: per test and per contract, with optional parts and part-cropped screenshots (§4.2). Still open: masks a target declares itself for its own system UI (a status bar, the soft keyboard), so that contracts needn't name them. *Verify:* a target's declared region is left out without a contract mask.
 3. **[REC-3] Differential fuzzing.** Random action sequences built from the parts, run on every target, reporting the first step where they diverge and saving it as a test. *Verify:* the `double` fake bug is found without a hand-written test.
 4. **[REC-4] A coverage report:** which parts and actions each target's tests reach. *Verify:* with the unused-part warning as a start.
 5. **[REC-5] Several adapter instances per target**, so that one target's tests run in parallel. JavaFX sets the wall time today. *Verify:* identical results at N = 1 and N = 4.
-6. **[REC-6] Compare delay too**, as a separate number: how long after the input the movement starts. *Verify:* a fake adapter with a 100 ms delay warns, and one with a 10 ms delay doesn't.
-7. **[REC-7] Batch requests** (JSON-RPC batches) for steps that don't need their replies one by one. *Verify:* the same results with fewer round trips.
-8. **[REC-8] Check roles as well:** built as the `role` field, which a test checks explicitly. Still open: checking every part's role automatically against the contract's. *Verify:* a `div` styled as a button fails.
-9. **[REC-9] Clips** are now lossless animated PNGs. Still open: WebM or MP4 next to them, for smaller files. *Verify:* the frame count and timing match.
-10. **[REC-10] A conformance kit for adapter authors:** a set of fake components and contracts that an adapter must pass, to check the adapter itself. *Verify:* each reference adapter passes it, and an adapter with a broken `read` fails it.
+6. **[REC-11] Keyboard checks from the tests.** The generated keyboard tests mount the component and press one part; a part inside a sheet is "not measured" and the advice is a component of its own. Deriving them from a test's own steps (swap its last press for focus and a key) would reach such parts without splitting the contract. *Verify:* a sheet's button is checked without a component of its own.
+7. **[REC-6] Compare delay too**, as a separate number: how long after the input the movement starts. *Verify:* a fake adapter with a 100 ms delay warns, and one with a 10 ms delay doesn't.
+8. **[REC-7] Batch requests** (JSON-RPC batches) for steps that don't need their replies one by one. *Verify:* the same results with fewer round trips.
+9. **[REC-8] Check roles as well:** built as the `role` field, which a test checks explicitly. Still open: checking every part's role automatically against the contract's. *Verify:* a `div` styled as a button fails.
+10. **[REC-9] Clips** are now lossless animated PNGs. Still open: WebM or MP4 next to them, for smaller files. *Verify:* the frame count and timing match.
+11. **[REC-10] A conformance kit for adapter authors:** a set of fake components and contracts that an adapter must pass, to check the adapter itself. *Verify:* each reference adapter passes it, and an adapter with a broken `read` fails it.
 
 By platform:
 - **web:** run Firefox and WebKit as further targets, with the same adapter.

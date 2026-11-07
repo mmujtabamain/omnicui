@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode/utf8"
 )
@@ -101,10 +102,18 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			col = max(col, utf8.RuneCountInString(t.Name)+2)
 		}
 	}
+	// A column per target, wide enough for its name and the longest status in it.
+	tw := 10
+	for _, n := range names {
+		tw = max(tw, utf8.RuneCountInString(n)+2)
+	}
+	for _, r := range rep.Results {
+		tw = max(tw, len(r.Status)+2)
+	}
 	for _, c := range rep.Contracts {
 		fmt.Fprintf(w, "\n%s", pad(c.ID, col+2))
 		for _, n := range names {
-			fmt.Fprint(w, pad(n, 10))
+			fmt.Fprint(w, pad(n, tw))
 		}
 		fmt.Fprintln(w)
 		for _, test := range c.Tests {
@@ -114,19 +123,22 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			for _, n := range names {
 				res := find(rep, c.ID, test.Name, n)
 				if res == nil {
-					fmt.Fprint(w, pad("-", 10))
+					fmt.Fprint(w, pad("-", tw))
 					continue
 				}
 				st := string(res.Status)
 				if res.Status == Fail || res.Status == Broken {
 					st = strings.ToUpper(st)
 				}
-				fmt.Fprint(w, pad(st, 10))
+				fmt.Fprint(w, pad(st, tw))
 				if res.Status != Pass {
 					for _, m := range res.Messages {
 						if repeated[n][m] == 0 {
 							notes = append(notes, n+": "+m)
 						}
+					}
+					for _, l := range tailN(res.Stderr, 5) {
+						notes = append(notes, n+": stderr | "+l)
 					}
 				}
 				for _, k := range sortedKeys(res.Missing) {
@@ -197,8 +209,24 @@ func Print(w io.Writer, rep *Report, runDir string) {
 	for _, r := range rep.Required {
 		fmt.Fprintf(w, "\nrequired: %s\n", r)
 	}
+	if slow := Slowest(rep, 5); len(slow) > 0 {
+		fmt.Fprintf(w, "\nslowest:")
+		for _, r := range slow {
+			fmt.Fprintf(w, " %s %s › %s %s;", r.Target, shortID(r.Contract), r.Test, Seconds(r.Ms))
+		}
+		fmt.Fprintln(w)
+		for _, t := range rep.Targets {
+			if t.Ms > 0 {
+				fmt.Fprintf(w, "  %s took %s, %s of it starting\n", t.Name, Seconds(t.Ms), Seconds(t.StartMs))
+			}
+		}
+	}
 	s := rep.Summary
-	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, s.Warnings)
+	measured := ""
+	if s.NotMeasured > 0 {
+		measured = fmt.Sprintf(" · %d not measured", s.NotMeasured)
+	}
+	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised%s · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, measured, s.Warnings)
 	if wd, err := os.Getwd(); err == nil {
 		if rel, err := filepath.Rel(wd, runDir); err == nil && !strings.HasPrefix(rel, "..") {
 			runDir = rel
@@ -249,4 +277,40 @@ func repeatedMessages(rep *Report) map[string]map[string]int {
 		}
 	}
 	return count
+}
+
+// Slowest returns the n slowest tests of the run, over all targets, slowest first. Only tests
+// that took a second or more count: below that, the list would be noise.
+func Slowest(rep *Report, n int) []TestResult {
+	var out []TestResult
+	for _, r := range rep.Results {
+		if r.Ms >= 1000 {
+			out = append(out, r)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Ms > out[j].Ms })
+	if len(out) > n {
+		out = out[:n]
+	}
+	return out
+}
+
+// Seconds writes a duration in ms for people: 0.4s, 12s, 2m05s.
+func Seconds(ms int64) string {
+	switch {
+	case ms < 10000:
+		return fmt.Sprintf("%.1fs", float64(ms)/1000)
+	case ms < 60000:
+		return fmt.Sprintf("%ds", (ms+500)/1000)
+	default:
+		s := (ms + 500) / 1000
+		return fmt.Sprintf("%dm%02ds", s/60, s%60)
+	}
+}
+
+func shortID(id string) string {
+	if i := strings.LastIndex(id, "."); i >= 0 {
+		return id[i+1:]
+	}
+	return id
 }

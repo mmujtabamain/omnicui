@@ -251,3 +251,54 @@ func TestDifferMeasures(t *testing.T) {
 		t.Errorf("still against still: %v", d)
 	}
 }
+
+// R-PIXELS-10: a mask leaves a box out of both images, even when only one target draws there
+// (window controls in a desktop toolbar); a crop compares the same part where it sits on each.
+func TestMeasureView(t *testing.T) {
+	d := t.TempDir()
+	toolbar := func(x0 int, controls bool) func(img *image.RGBA) {
+		return func(img *image.RGBA) {
+			for y := 4; y < 20; y++ {
+				for x := x0; x < x0+40; x++ {
+					img.Set(x, y, color.RGBA{40, 90, 160, 255})
+				}
+			}
+			square(img, x0+2, 30, 10, color.Black) // content below the toolbar
+			if controls {
+				square(img, x0+30, 6, 8, color.RGBA{230, 60, 60, 255})
+			}
+		}
+	}
+	web := solid(t, filepath.Join(d, "web.png"), 64, 64, color.White, toolbar(4, false))
+	desktop := solid(t, filepath.Join(d, "desktop.png"), 64, 64, color.White, toolbar(4, true))
+	raw, _, err := Measure(web, desktop, "")
+	if err != nil || raw.Area == 0 {
+		t.Fatalf("the controls should differ unmasked: %+v %v", raw, err)
+	}
+	controls := Region{X: 34, Y: 6, Width: 8, Height: 8}
+	diff := filepath.Join(d, "diff.png")
+	m, note, err := MeasureView(web, desktop, diff, View{MasksB: []Region{controls}})
+	if err != nil || note != "" || m.Area != 0 || m.Spot != 0 {
+		t.Fatalf("masked: %+v %q %v", m, note, err)
+	}
+	f, _ := os.Open(diff)
+	img, _ := png.Decode(f)
+	f.Close()
+	if r, g, b, _ := img.At(36, 8).RGBA(); r>>8 != 150 || g>>8 != 156 || b>>8 != 164 {
+		t.Fatalf("masked pixels should be grey in the diff: %d %d %d", r>>8, g>>8, b>>8)
+	}
+	// The same toolbar 12 px further right: whole images differ, the part alone doesn't.
+	moved := solid(t, filepath.Join(d, "moved.png"), 64, 64, color.White, toolbar(16, false))
+	if whole, _, _ := Measure(web, moved, ""); whole.Area == 0 {
+		t.Fatal("a moved toolbar should differ")
+	}
+	m, _, err = MeasureView(web, moved, "", View{CropA: &Region{X: 4, Y: 4, Width: 40, Height: 40}, CropB: &Region{X: 16, Y: 4, Width: 40, Height: 40}})
+	if err != nil || m.Area != 0 {
+		t.Fatalf("cropped: %+v %v", m, err)
+	}
+	// A crop of another size: the difference in size counts.
+	m, _, _ = MeasureView(web, moved, "", View{CropA: &Region{X: 4, Y: 4, Width: 40, Height: 40}, CropB: &Region{X: 16, Y: 4, Width: 30, Height: 40}})
+	if m.Area == 0 {
+		t.Fatalf("a smaller part should differ: %+v", m)
+	}
+}
