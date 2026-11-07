@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omnicui.invalid/contract.schema.json",
+  "title": "omnicui contract",
+  "description": "One UI component: what it accepts, what it reports, which parts can be seen, and the tests every implementation must pass.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "parts",
+    "tests"
+  ],
+  "properties": {
+    "id": {
+      "description": "The component's name. A part's id in every target is <id>.<part>.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-zA-Z0-9]*)+$"
+    },
+    "props": {
+      "description": "What the component accepts.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/field"
+      }
+    },
+    "events": {
+      "description": "What the component reports, with the fields each event carries.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/field"
+        }
+      }
+    },
+    "parts": {
+      "description": "The pieces of the component that tests can act on and check.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "$ref": "#/$defs/role"
+          }
+        }
+      }
+    },
+    "tests": {
+      "description": "Each test runs on every target, from a fresh component.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/test"
+      }
+    },
+    "viewports": {
+      "description": "Window sizes. Every test runs at each one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "width",
+          "height"
+        ],
+        "properties": {
+          "width": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 4096
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 4096
+          }
+        }
+      }
+    },
+    "colorSchemes": {
+      "description": "Colour schemes. Every test runs in each one.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "light",
+          "dark"
+        ]
+      }
+    },
+    "thresholds": {
+      "description": "How much targets may differ before the check prints a warning.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pixels": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
+        "timing": {
+          "type": "string",
+          "pattern": "^[0-9]+ms$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean"
+          ]
+        },
+        "enum": {
+          "type": "array",
+          "minItems": 1
+        },
+        "default": {}
+      }
+    },
+    "role": {
+      "enum": [
+        "button",
+        "switch",
+        "checkbox",
+        "slider",
+        "textbox",
+        "status",
+        "heading",
+        "generic"
+      ]
+    },
+    "partName": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9]*$"
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "props": {
+          "type": "object"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "expect": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expectation"
+          }
+        },
+        "screenshot": {
+          "type": "boolean"
+        },
+        "trace": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "part",
+              "point"
+            ],
+            "properties": {
+              "part": {
+                "$ref": "#/$defs/partName"
+              },
+              "point": {
+                "enum": [
+                  "center",
+                  "topLeft"
+                ]
+              },
+              "timing": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "duration",
+                  "easing"
+                ],
+                "properties": {
+                  "duration": {
+                    "type": "string",
+                    "pattern": "^[0-9]+ms$"
+                  },
+                  "easing": {
+                    "type": "string",
+                    "pattern": "^(linear|ease|ease-in|ease-out|ease-in-out|cubic-bezier\\(\\s*[0-9.]+\\s*,\\s*-?[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*-?[0-9.]+\\s*\\))$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "record": {
+          "type": "boolean"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "action",
+        "part"
+      ],
+      "properties": {
+        "action": {
+          "enum": [
+            "press",
+            "focus",
+            "key",
+            "type",
+            "drag",
+            "hover"
+          ]
+        },
+        "part": {
+          "$ref": "#/$defs/partName"
+        },
+        "times": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "key"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "key"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^((Shift|Control|Alt|Meta)\\+)*[A-Za-z0-9]+$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "type"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "text"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "drag"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dx",
+              "dy"
+            ],
+            "properties": {
+              "dx": {
+                "type": "number"
+              },
+              "dy": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "expectation": {
+      "type": "object",
+      "if": {
+        "required": [
+          "event"
+        ]
+      },
+      "then": {
+        "required": [
+          "event"
+        ],
+        "minProperties": 2,
+        "properties": {
+          "event": {
+            "type": "string"
+          },
+          "times": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "else": {
+        "required": [
+          "part"
+        ],
+        "minProperties": 2,
+        "properties": {
+          "part": {
+            "$ref": "#/$defs/partName"
+          },
+          "text": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "checked": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

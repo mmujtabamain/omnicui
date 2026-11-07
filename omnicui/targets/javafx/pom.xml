@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>omnicui</groupId>
+  <artifactId>omnicui-target-javafx</artifactId>
+  <version>0.1.0</version>
+  <description>omnicui's javafx target: mounts the JavaFX desktop app's components headlessly (TestFX on Monocle) and answers omnicui's requests.</description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javafx.version>21.0.13</javafx.version>
+  </properties>
+
+  <dependencies>
+    <!-- The app under test: apps/desktop-javafx, installed into the local Maven repository with
+         `./mvnw install` there (the run scripts do it). -->
+    <dependency><groupId>app</groupId><artifactId>desktop-javafx</artifactId><version>0.1.0</version></dependency>
+    <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version></dependency>
+    <dependency><groupId>org.openjfx</groupId><artifactId>javafx-swing</artifactId><version>${javafx.version}</version></dependency>
+    <dependency><groupId>org.testfx</groupId><artifactId>testfx-core</artifactId><version>4.0.18</version></dependency>
+    <dependency><groupId>org.testfx</groupId><artifactId>openjfx-monocle</artifactId><version>21.0.2</version></dependency>
+    <!-- TestFX's robot API names hamcrest types, so it must be on the compile path too. -->
+    <dependency><groupId>org.hamcrest</groupId><artifactId>hamcrest</artifactId><version>3.0</version></dependency>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.22.4</version></dependency>
+  </dependencies>
+
+  <build>
+    <finalName>omnicui-target-javafx</finalName>
+    <plugins>
+      <!-- The jar names its main class and its libraries, so `java -jar` starts it on every OS. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>omnicui.javafx.Adapter</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.8.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+            <configuration><outputDirectory>${project.build.directory}/lib</outputDirectory><includeScope>runtime</includeScope></configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

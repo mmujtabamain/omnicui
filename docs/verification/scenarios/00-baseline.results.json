@@ -1,0 +1,1338 @@
+{
+  "runId": "20261107T073723Z-875118bf1325",
+  "contracts": [
+    {
+      "id": "ui.counter",
+      "file": "contracts/counter.contract.yaml",
+      "props": [
+        {
+          "name": "start",
+          "type": "integer",
+          "default": 0,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "changed",
+          "fields": [
+            {
+              "name": "count",
+              "type": "integer",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "value",
+          "role": "status",
+          "id": "ui.counter.value"
+        },
+        {
+          "name": "increment",
+          "role": "button",
+          "id": "ui.counter.increment"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts at the start value",
+          "props": {
+            "start": 5
+          },
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "5"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "each press adds one",
+          "steps": [
+            {
+              "action": "press",
+              "part": "increment",
+              "times": 3
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3"
+                }
+              ]
+            },
+            {
+              "event": "changed",
+              "times": 3,
+              "last": {
+                "count": 3
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the keyboard works too",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "increment",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "increment",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1"
+                }
+              ]
+            },
+            {
+              "part": "increment",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Increment"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    },
+    {
+      "id": "ui.switch",
+      "file": "contracts/switch.contract.yaml",
+      "props": [
+        {
+          "name": "on",
+          "type": "boolean",
+          "default": false,
+          "hasDefault": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "default": "Dark mode",
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "on",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "switch",
+          "role": "switch",
+          "id": "ui.switch.switch"
+        },
+        {
+          "name": "thumb",
+          "role": "generic",
+          "id": "ui.switch.thumb"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts off, with its label as its name",
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                },
+                {
+                  "field": "name",
+                  "want": "Dark mode"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "starts on when asked",
+          "props": {
+            "label": "Wi-Fi",
+            "on": true
+          },
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Wi-Fi"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a press turns it on, and the thumb slides across",
+          "steps": [
+            {
+              "action": "press",
+              "part": "switch",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "on": true
+              }
+            }
+          ],
+          "screenshot": true,
+          "trace": [
+            {
+              "part": "thumb",
+              "point": "center",
+              "timing": {
+                "durationMs": 200,
+                "easing": "ease-out"
+              }
+            }
+          ],
+          "record": true
+        },
+        {
+          "name": "Space toggles it from the keyboard",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "switch",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "switch",
+              "key": "Space",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    }
+  ],
+  "targets": [
+    {
+      "name": "egui",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "protocol": "1"
+    },
+    {
+      "name": "javafx",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "protocol": "1"
+    },
+    {
+      "name": "web",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "protocol": "1"
+    }
+  ],
+  "results": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/counter/starts-at-the-start-value/320x240-dark.png",
+        "320x240-light": "egui/counter/starts-at-the-start-value/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/counter/each-press-adds-one/320x240-dark.png",
+        "320x240-light": "egui/counter/each-press-adds-one/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "egui",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "egui/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "egui/switch/starts-on-when-asked/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 136.4375,
+              "y": 36
+            },
+            {
+              "ms": 16.66666753590107,
+              "x": 139.1338653564453,
+              "y": 36
+            },
+            {
+              "ms": 33.33333507180214,
+              "x": 141.64430236816406,
+              "y": 36
+            },
+            {
+              "ms": 50.00000260770321,
+              "x": 144.00025939941406,
+              "y": 36
+            },
+            {
+              "ms": 66.66667014360428,
+              "x": 146.20448303222656,
+              "y": 36
+            },
+            {
+              "ms": 83.33333767950535,
+              "x": 148.25148010253906,
+              "y": 36
+            },
+            {
+              "ms": 100.00000521540642,
+              "x": 150.13035583496094,
+              "y": 36
+            },
+            {
+              "ms": 116.66667275130749,
+              "x": 151.8251953125,
+              "y": 36
+            },
+            {
+              "ms": 133.33334028720856,
+              "x": 153.31422424316406,
+              "y": 36
+            },
+            {
+              "ms": 150.00000782310963,
+              "x": 154.56820678710938,
+              "y": 36
+            },
+            {
+              "ms": 166.6666753590107,
+              "x": 155.5475311279297,
+              "y": 36
+            },
+            {
+              "ms": 183.33334289491177,
+              "x": 156.19715881347656,
+              "y": 36
+            },
+            {
+              "ms": 200.00001043081284,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 216.6666779667139,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 233.33334550261497,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 250.00001303851604,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 266.6666805744171,
+              "x": 156.4375,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              12.362321371665422,
+              25.32143365470263,
+              38.94462638345204,
+              53.30608444744157,
+              68.56389627471485,
+              84.9834371153246,
+              103.0203913653272,
+              123.52018543133657,
+              148.26278542240232
+            ],
+            "duration": 176.76471643015387
+          }
+        }
+      ],
+      "clip": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip.gif"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "egui",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "javafx",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "javafx/counter/starts-at-the-start-value/320x240-dark.png",
+        "320x240-light": "javafx/counter/starts-at-the-start-value/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "javafx",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "javafx/counter/each-press-adds-one/320x240-dark.png",
+        "320x240-light": "javafx/counter/each-press-adds-one/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "javafx",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "javafx",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "javafx/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "javafx/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "javafx",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "javafx/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "javafx/switch/starts-on-when-asked/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "javafx",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "javafx/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "javafx/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 16.031422,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 32.099526,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 47.991995,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 64.016135,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 80.001164,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 95.978142,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 111.952175,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 127.994789,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 143.980534,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 160.002178,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 176.026293,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 192.083714,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 207.984521,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 224.001758,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 240.020694,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 256.020836,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 271.962055,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 287.986765,
+              "x": 138.5647430419922,
+              "y": 36
+            },
+            {
+              "ms": 304.036868,
+              "x": 141.04681396484375,
+              "y": 36
+            },
+            {
+              "ms": 320.066521,
+              "x": 143.38009643554688,
+              "y": 36
+            },
+            {
+              "ms": 336.069258,
+              "x": 145.57362365722656,
+              "y": 36
+            },
+            {
+              "ms": 352.030599,
+              "x": 147.62576293945312,
+              "y": 36
+            },
+            {
+              "ms": 368.021146,
+              "x": 149.5294952392578,
+              "y": 36
+            },
+            {
+              "ms": 384.01561,
+              "x": 151.2734375,
+              "y": 36
+            },
+            {
+              "ms": 400.03622,
+              "x": 152.84182739257812,
+              "y": 36
+            },
+            {
+              "ms": 416.095343,
+              "x": 154.21359252929688,
+              "y": 36
+            },
+            {
+              "ms": 432.07836,
+              "x": 155.3607177734375,
+              "y": 36
+            },
+            {
+              "ms": 447.953345,
+              "x": 156.24554443359375,
+              "y": 36
+            },
+            {
+              "ms": 463.998535,
+              "x": 156.8161163330078,
+              "y": 36
+            },
+            {
+              "ms": 480.013017,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 495.995683,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 511.951388,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 528.016814,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 544.077563,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 560.023628,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 576.063568,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 592.047131,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 608.028543,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 624.070666,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 640.000678,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 656.086853,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 672.041287,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 688.062141,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 704.089704,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 720.032589,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 736.041662,
+              "x": 157,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              290.8013175348108,
+              303.73414943113767,
+              317.4552580925488,
+              331.88442344091686,
+              347.16347533628027,
+              363.5736096995984,
+              381.50779403128854,
+              401.8879315574861,
+              427.05244122216607
+            ],
+            "duration": 181.86257535325194
+          }
+        }
+      ],
+      "clip": "javafx/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip.gif"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "javafx",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/counter/starts-at-the-start-value/320x240-dark.png",
+        "320x240-light": "web/counter/starts-at-the-start-value/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/counter/each-press-adds-one/320x240-dark.png",
+        "320x240-light": "web/counter/each-press-adds-one/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "web",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "web/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "web/switch/starts-on-when-asked/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 16.799999999999983,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 33.400000000000006,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 49.99999999999997,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 66.79999999999998,
+              "x": 139.70436096191406,
+              "y": 36
+            },
+            {
+              "ms": 83.4,
+              "x": 142.20457458496094,
+              "y": 36
+            },
+            {
+              "ms": 100.1,
+              "x": 144.5652313232422,
+              "y": 36
+            },
+            {
+              "ms": 116.79999999999998,
+              "x": 146.77352905273438,
+              "y": 36
+            },
+            {
+              "ms": 133.4,
+              "x": 148.81216430664062,
+              "y": 36
+            },
+            {
+              "ms": 150.1,
+              "x": 150.69479370117188,
+              "y": 36
+            },
+            {
+              "ms": 166.79999999999998,
+              "x": 152.39260864257812,
+              "y": 36
+            },
+            {
+              "ms": 183.4,
+              "x": 153.87545776367188,
+              "y": 36
+            },
+            {
+              "ms": 200.1,
+              "x": 155.13192749023438,
+              "y": 36
+            },
+            {
+              "ms": 216.79999999999998,
+              "x": 156.11257934570312,
+              "y": 36
+            },
+            {
+              "ms": 233.4,
+              "x": 156.7592315673828,
+              "y": 36
+            },
+            {
+              "ms": 250.1,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 266.70000000000005,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 283.4,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 300.1,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 316.70000000000005,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 333.4,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 350,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 366.70000000000005,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 383.4,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 400.1,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 416.70000000000005,
+              "x": 157,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              62.424376950116496,
+              75.40230815237956,
+              89.02708004757349,
+              103.38788858716306,
+              118.64408550642194,
+              135.06621008267143,
+              153.10206168889528,
+              173.59954311586748,
+              198.346524336928
+            ],
+            "duration": 176.82754255282578
+          }
+        }
+      ],
+      "clip": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip.gif"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "web",
+      "status": "pass"
+    }
+  ],
+  "comparisons": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "javafx",
+      "combo": "320x240-dark",
+      "value": 16.18,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/starts-at-the-start-value/egui-javafx-320x240-dark.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.71,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/starts-at-the-start-value/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "kind": "pixels",
+      "a": "javafx",
+      "b": "web",
+      "combo": "320x240-light",
+      "value": 9.55,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/starts-at-the-start-value/javafx-web-320x240-light.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "javafx",
+      "combo": "320x240-dark",
+      "value": 26.3,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/each-press-adds-one/egui-javafx-320x240-dark.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 8.83,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/each-press-adds-one/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "kind": "pixels",
+      "a": "javafx",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 6.99,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/each-press-adds-one/javafx-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "javafx",
+      "combo": "320x240-dark",
+      "value": 6.72,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-off-with-its-label-as-its-name/egui-javafx-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.24,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-off-with-its-label-as-its-name/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "kind": "pixels",
+      "a": "javafx",
+      "b": "web",
+      "combo": "320x240-light",
+      "value": 2.51,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-off-with-its-label-as-its-name/javafx-web-320x240-light.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "javafx",
+      "combo": "320x240-light",
+      "value": 6.73,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-on-when-asked/egui-javafx-320x240-light.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.15,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-on-when-asked/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "kind": "pixels",
+      "a": "javafx",
+      "b": "web",
+      "combo": "320x240-light",
+      "value": 3.49,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-on-when-asked/javafx-web-320x240-light.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "javafx",
+      "combo": "320x240-dark",
+      "value": 6.29,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/a-press-turns-it-on-and-the-thumb-slides-across/egui-javafx-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.09,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/a-press-turns-it-on-and-the-thumb-slides-across/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "pixels",
+      "a": "javafx",
+      "b": "web",
+      "combo": "320x240-light",
+      "value": 2.8,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/a-press-turns-it-on-and-the-thumb-slides-across/javafx-web-320x240-light.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "egui",
+      "b": "javafx",
+      "part": "thumb",
+      "value": 0.3,
+      "threshold": 20,
+      "warning": false,
+      "note": "largest at 90% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "egui",
+      "b": "web",
+      "part": "thumb",
+      "value": 0,
+      "threshold": 20,
+      "warning": false,
+      "note": "largest at 10% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "javafx",
+      "b": "web",
+      "part": "thumb",
+      "value": 0.3,
+      "threshold": 20,
+      "warning": false,
+      "note": "largest at 90% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "egui",
+      "b": "timing",
+      "part": "thumb",
+      "value": 0.2,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 80% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "javafx",
+      "b": "timing",
+      "part": "thumb",
+      "value": 0.3,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 90% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "web",
+      "b": "timing",
+      "part": "thumb",
+      "value": 0.2,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 80% of the movement"
+    }
+  ],
+  "summary": {
+    "pass": 21,
+    "fail": 0,
+    "broken": 0,
+    "notAdvertised": 0,
+    "warnings": 0,
+    "requiredMissing": 0
+  }
+}

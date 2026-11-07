@@ -1,0 +1,13 @@
+name: egui
+language: rust
+# The app under test: apps/desktop (egui). This folder only mounts its components and answers
+# omnicui's requests; Cargo.toml depends on the app by path.
+#
+# omnicui runs `adapter:` once per check, with /bin/sh -c (cmd /C on Windows, which drops the
+# `exec`), and talks JSON-RPC to it over stdin/stdout. `exec` hands the shell's place to the
+# adapter, so that closing its output is seen at once. `cargo run` builds it if needed.
+adapter: exec cargo run -q --release --locked --bin adapter
+# Reads every contract as JSON on stdin and writes the app's types into apps/desktop/src/omnicui/.
+stubs: cargo run -q --release --locked -p omnicui-egui-stubs -- ../../../apps/desktop/src/omnicui
+stepTimeout: 15s
+startTimeout: 300s

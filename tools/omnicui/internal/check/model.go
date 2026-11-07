@@ -1,0 +1,135 @@
+// Package check runs every test of every contract on every target and compares the results.
+package check
+
+import (
+	"fmt"
+
+	"omnicui/internal/compare"
+	"omnicui/internal/contract"
+)
+
+// Status of one test on one target.
+type Status string
+
+const (
+	Pass          Status = "pass"
+	Fail          Status = "fail"
+	Broken        Status = "broken"
+	NotAdvertised Status = "not advertised"
+	Warning       Status = "warning"
+)
+
+// rank orders statuses from best to worst, for "the worst over all combinations".
+func rank(s Status) int {
+	switch s {
+	case Pass:
+		return 0
+	case NotAdvertised:
+		return 1
+	case Fail:
+		return 2
+	case Broken:
+		return 3
+	}
+	return 0
+}
+
+// Combo is one viewport and colour scheme a test runs at.
+type Combo struct {
+	Viewport contract.Viewport `json:"viewport"`
+	Scheme   string            `json:"colorScheme"`
+}
+
+func (c Combo) Key() string {
+	return fmt.Sprintf("%dx%d-%s", c.Viewport.Width, c.Viewport.Height, c.Scheme)
+}
+func (c Combo) Label() string {
+	return fmt.Sprintf("%d×%d %s", c.Viewport.Width, c.Viewport.Height, c.Scheme)
+}
+
+// Combos lists a contract's viewports × colour schemes, viewports first.
+func Combos(c *contract.Contract) []Combo {
+	var out []Combo
+	for _, v := range c.Viewports {
+		for _, s := range c.ColorSchemes {
+			out = append(out, Combo{Viewport: v, Scheme: s})
+		}
+	}
+	return out
+}
+
+// TraceResult is one traced point on one target.
+type TraceResult struct {
+	Part    string           `json:"part"`
+	Point   string           `json:"point"`
+	Samples []compare.Sample `json:"samples"`
+	Curve   compare.Curve    `json:"curve"`
+}
+
+// TestResult is one test on one target.
+type TestResult struct {
+	Contract string   `json:"contract"`
+	Test     string   `json:"test"`
+	Target   string   `json:"target"`
+	Status   Status   `json:"status"`
+	Messages []string `json:"messages,omitempty"`
+	// Screenshots by combo key, as paths relative to the run folder.
+	Screenshots map[string]string `json:"screenshots,omitempty"`
+	Traces      []TraceResult     `json:"traces,omitempty"`
+	Clip        string            `json:"clip,omitempty"`
+	// Missing lists capabilities a test needed but the target didn't advertise, with the reason.
+	Missing map[string]string `json:"notAdvertised,omitempty"`
+}
+
+// Comparison is one measured difference between two targets, or between a target and a timing.
+type Comparison struct {
+	Contract  string  `json:"contract"`
+	Test      string  `json:"test"`
+	Kind      string  `json:"kind"` // "pixels" or "timing"
+	A         string  `json:"a"`
+	B         string  `json:"b"` // a target, or "timing" for the test's named timing
+	Combo     string  `json:"combo,omitempty"`
+	Part      string  `json:"part,omitempty"`
+	Value     float64 `json:"value"`
+	Threshold float64 `json:"threshold"`
+	Warning   bool    `json:"warning"`
+	Diff      string  `json:"diff,omitempty"`
+	Note      string  `json:"note,omitempty"`
+}
+
+// TargetInfo is what a target advertised.
+type TargetInfo struct {
+	Name     string            `json:"name"`
+	Can      []string          `json:"can"`
+	Cannot   map[string]string `json:"cannot,omitempty"`
+	Broken   string            `json:"broken,omitempty"`
+	Stderr   []string          `json:"stderr,omitempty"`
+	Protocol string            `json:"protocol,omitempty"`
+}
+
+// Summary counts every status.
+type Summary struct {
+	Pass          int `json:"pass"`
+	Fail          int `json:"fail"`
+	Broken        int `json:"broken"`
+	NotAdvertised int `json:"notAdvertised"`
+	Warnings      int `json:"warnings"`
+	Required      int `json:"requiredMissing"`
+}
+
+// Report is everything one check found. It is written to results.json.
+type Report struct {
+	RunID       string               `json:"runId"`
+	Contracts   []*contract.Contract `json:"contracts"`
+	Targets     []TargetInfo         `json:"targets"`
+	Results     []TestResult         `json:"results"`
+	Comparisons []Comparison         `json:"comparisons"`
+	Problems    []contract.Problem   `json:"problems,omitempty"`
+	Required    []string             `json:"requiredMissing,omitempty"`
+	Summary     Summary              `json:"summary"`
+}
+
+// Failed reports whether the run should exit non-zero.
+func (r *Report) Failed() bool {
+	return r.Summary.Fail > 0 || r.Summary.Broken > 0 || r.Summary.Required > 0
+}
