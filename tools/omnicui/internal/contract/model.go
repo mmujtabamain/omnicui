@@ -34,12 +34,12 @@ type Step struct {
 	Do     string         `json:"do,omitempty"`
 	With   map[string]any `json:"with,omitempty"`
 	Part   string         `json:"part"`
-	Key    string  `json:"key,omitempty"`
-	Text   string  `json:"text,omitempty"`
-	DX     float64 `json:"dx,omitempty"`
-	DY     float64 `json:"dy,omitempty"`
-	Times  int     `json:"times"`
-	Line   int     `json:"-"`
+	Key    string         `json:"key,omitempty"`
+	Text   string         `json:"text,omitempty"`
+	DX     float64        `json:"dx,omitempty"`
+	DY     float64        `json:"dy,omitempty"`
+	Times  int            `json:"times"`
+	Line   int            `json:"-"`
 }
 
 // Check is one field of one part, as read after the steps.
