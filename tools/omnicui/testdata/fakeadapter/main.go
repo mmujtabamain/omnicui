@@ -396,6 +396,22 @@ func main() {
 		os.WriteFile(f, []byte(strconv.Itoa(os.Getpid())), 0o644)
 	}
 	fmt.Fprintln(os.Stderr, "fake adapter starting")
+	if ms := envInt("FAKE_START_MS"); ms > 0 {
+		fmt.Fprintln(os.Stderr, "compiling the harness")
+		time.Sleep(time.Duration(ms) * time.Millisecond)
+	}
+	// FAKE_SPAN_FILE: append when this adapter started and stopped, to check exclusive targets.
+	if f := os.Getenv("FAKE_SPAN_FILE"); f != "" {
+		span := func(what string) {
+			fh, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			if err == nil {
+				fmt.Fprintf(fh, "%s %s %d\n", env("FAKE_NAME", "?"), what, time.Now().UnixNano())
+				fh.Close()
+			}
+		}
+		span("start")
+		defer span("stop")
+	}
 	out := bufio.NewWriter(os.Stdout)
 	sc := bufio.NewScanner(os.Stdin)
 	n := 0
@@ -416,6 +432,9 @@ func main() {
 			time.Sleep(time.Hour)
 		case envInt("FAKE_STRAY_ON"):
 			fmt.Fprintln(out, "Loading theme… done")
+		}
+		if r.Method == os.Getenv("FAKE_STDERR_ON") {
+			fmt.Fprintln(os.Stderr, "adapter note during", r.Method)
 		}
 		if ms := envInt("FAKE_SLEEP_MS"); ms > 0 {
 			time.Sleep(time.Duration(ms) * time.Millisecond)

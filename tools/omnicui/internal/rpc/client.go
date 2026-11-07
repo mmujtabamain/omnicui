@@ -314,12 +314,20 @@ func (c *Client) Stop() {
 // StderrTail returns the last lines the adapter wrote to standard error.
 func (c *Client) StderrTail() []string { return c.stderr.lines() }
 
+// StderrMark counts the lines the adapter has written to standard error so far; StderrSince
+// returns those written after a mark (as many as are still kept).
+func (c *Client) StderrMark() int { return c.stderr.mark() }
+
+// StderrSince returns the complete lines written to standard error after mark.
+func (c *Client) StderrSince(mark int) []string { return c.stderr.since(mark) }
+
 // tail keeps the last n lines written to it.
 type tail struct {
 	mu      sync.Mutex
 	n       int
 	buf     []string
 	partial string
+	total   int // lines written so far, including those no longer kept
 }
 
 func newTail(n int) *tail { return &tail{n: n} }
@@ -332,11 +340,31 @@ func (t *tail) Write(p []byte) (int, error) {
 	t.partial = parts[len(parts)-1]
 	for _, l := range parts[:len(parts)-1] {
 		t.buf = append(t.buf, l)
+		t.total++
 		if len(t.buf) > t.n {
 			t.buf = t.buf[len(t.buf)-t.n:]
 		}
 	}
 	return len(p), nil
+}
+
+func (t *tail) mark() int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.total
+}
+
+func (t *tail) since(mark int) []string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	n := t.total - mark
+	if n <= 0 {
+		return nil
+	}
+	if n > len(t.buf) {
+		n = len(t.buf)
+	}
+	return append([]string{}, t.buf[len(t.buf)-n:]...)
 }
 
 func (t *tail) lines() []string {

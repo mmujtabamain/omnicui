@@ -87,6 +87,9 @@ type Target struct {
 	// Timeouts, as Go durations ("10s"). Start covers the adapter starting and answering advertise.
 	StepTimeout  string `yaml:"stepTimeout"`
 	StartTimeout string `yaml:"startTimeout"`
+	// Exclusive runs this target on its own: no other target starts or runs tests meanwhile.
+	// For targets that need the whole machine (an emulator, a simulator, a large JVM).
+	Exclusive bool `yaml:"exclusive"`
 
 	Dir string `yaml:"-"`
 	// Linked: targets/<name> is a link to a target folder elsewhere (another project's). Its stub

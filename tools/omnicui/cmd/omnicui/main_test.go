@@ -212,3 +212,32 @@ func must(b []byte, err error) []byte {
 	}
 	return b
 }
+
+// R-CLI-20: `check --test` runs only the matching tests and says so when none match; `--failed`
+// runs again only what failed, broke or warned in the last run; `--serial` is accepted.
+func TestCheckSelection(t *testing.T) {
+	root := testutil.Project(t, map[string]testutil.Target{"a": {}, "b": {Env: map[string]string{"FAKE_BUG": "double"}}})
+	code, out, _ := omni(t, root, "check", "--test", "each press")
+	if code != 1 || !strings.Contains(out, "1 pass · 1 fail ·") {
+		t.Fatalf("%d\n%s", code, out)
+	}
+	if code, _, errs := omni(t, root, "check", "--test", "press twice"); code != 2 || !strings.Contains(errs, "matches no test (tests with a word in common: `each press adds one`") {
+		t.Fatalf("%d %s", code, errs)
+	}
+	code, out, _ = omni(t, root, "check")
+	if code != 1 || !strings.Contains(out, " fail") {
+		t.Fatalf("%d\n%s", code, out)
+	}
+	code, out, errs := omni(t, root, "check", "--failed", "--serial")
+	if code != 1 || strings.Contains(errs, "starts at the start value") || !strings.Contains(errs, "each press adds one") {
+		t.Fatalf("%d\n%s\n%s", code, out, errs)
+	}
+	clean := testutil.Project(t, map[string]testutil.Target{"a": {}})
+	if code, _, errs := omni(t, clean, "check", "--failed"); code != 2 || !strings.Contains(errs, "run `omnicui check` first") {
+		t.Fatalf("%d %s", code, errs)
+	}
+	omni(t, clean, "check")
+	if code, out, _ := omni(t, clean, "check", "--failed"); code != 0 || !strings.Contains(out, "nothing to rerun") {
+		t.Fatalf("%d %s", code, out)
+	}
+}

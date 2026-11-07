@@ -251,6 +251,17 @@ func strip(t *testing.T, p project.Project) map[string]any {
 	var m map[string]any
 	json.Unmarshal(data, &m)
 	delete(m, "runId")
+	// Times differ from run to run.
+	for _, key := range []string{"results", "targets"} {
+		if xs, ok := m[key].([]any); ok {
+			for _, x := range xs {
+				if o, ok := x.(map[string]any); ok {
+					delete(o, "ms")
+					delete(o, "startMs")
+				}
+			}
+		}
+	}
 	return m
 }
 

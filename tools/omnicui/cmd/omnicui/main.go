@@ -29,12 +29,16 @@ const usage = `omnicui checks hand-written versions of a UI component, in differ
 usage:
   omnicui [--project <folder>] <command> …
 
-  omnicui check [target…] [component…] [--require target:capability]… [--out <folder>]
-                [--fail-on warnings|pixels|timing|visibility]…
+  omnicui check [target…] [component…] [--test <name>]… [--failed] [--serial]
+                [--require target:capability]… [--out <folder>] [--fail-on warnings|pixels|timing|visibility]…
                                        run every test of every contract on every target (or only those named);
                                        results go to .omnicui/run/ in the project, or to --out. One progress
-                                       line per test goes to standard error. --fail-on makes those warnings
-                                       fail the run (exit 1), for CI
+                                       line per test, with its time, goes to standard error, and a line every
+                                       10 s while a target starts.
+                                       --test: only tests whose name has this in it (or matches it, with *)
+                                       --failed: only the tests that failed, broke or warned in the last run
+                                       --serial: one target at a time (or exclusive: true in a target.yaml)
+                                       --fail-on: those warnings fail the run (exit 1), for CI
   omnicui targets                      what each target advertises on this machine
   omnicui stubs [target…]              run the targets' stub generators
   omnicui contracts                    load and check the contracts only
@@ -219,9 +223,19 @@ func selection(names []string, targets []project.Target, contracts []*contract.C
 }
 
 func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
-	var names, require, failOn []string
+	var names, require, failOn, tests []string
+	failed, serial := false, false
 	for i := 0; i < len(args); i++ {
 		switch {
+		case args[i] == "--test" && i+1 < len(args):
+			tests = append(tests, args[i+1])
+			i++
+		case strings.HasPrefix(args[i], "--test="):
+			tests = append(tests, strings.TrimPrefix(args[i], "--test="))
+		case args[i] == "--failed":
+			failed = true
+		case args[i] == "--serial":
+			serial = true
 		case args[i] == "--fail-on" && i+1 < len(args):
 			failOn = append(failOn, strings.Split(args[i+1], ",")...)
 			i++
@@ -268,7 +282,31 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "omnicui:", err)
 		return 2
 	}
-	rep, err := check.Run(check.Options{Project: p, Contracts: cs, All: contracts, Problems: problems, Targets: ts, Require: require, Progress: stderr})
+	if failed {
+		last, err := check.LastProblems(filepath.Join(p.RunDir(), "results.json"))
+		if err != nil {
+			fmt.Fprintln(stderr, "omnicui: --failed:", err)
+			return 2
+		}
+		if len(last) == 0 {
+			fmt.Fprintln(stdout, "nothing to rerun: in the last run no test failed, broke or warned")
+			return 0
+		}
+		cs = check.FilterTests(cs, func(c *contract.Contract, t contract.Test) bool { return last[c.ID+"\x00"+t.Name] })
+	}
+	if len(tests) > 0 {
+		all := cs
+		cs = check.FilterTests(cs, func(c *contract.Contract, t contract.Test) bool { return check.TestMatches(t.Name, tests) })
+		if len(cs) == 0 {
+			fmt.Fprintf(stderr, "omnicui: --test %s matches no test%s\n", strings.Join(tests, ", "), check.NearestTests(all, tests))
+			return 2
+		}
+	}
+	if (failed || len(tests) > 0) && len(cs) == 0 {
+		fmt.Fprintln(stdout, "nothing to rerun: the tests that failed last time aren't in this selection")
+		return 0
+	}
+	rep, err := check.Run(check.Options{Project: p, Contracts: cs, All: contracts, Problems: problems, Targets: ts, Require: require, Progress: stderr, Serial: serial})
 	if err != nil {
 		fmt.Fprintln(stderr, "omnicui:", err)
 		return 2

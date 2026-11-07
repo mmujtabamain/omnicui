@@ -34,8 +34,11 @@ type Options struct {
 	Targets  []project.Target
 	// Require lists "target:capability" pairs that must be advertised.
 	Require []string
-	// Progress, if set, gets one line per finished test: `[web 3/38] counter › each press adds one  pass`.
+	// Progress, if set, gets one line per finished test, `[web 3/38] counter › each press adds one  pass  0.4s`,
+	// and a line every 10 s while a target starts.
 	Progress io.Writer
+	// Serial runs one target at a time, as if every target were `exclusive: true`.
+	Serial bool
 }
 
 type runner struct {
@@ -90,11 +93,20 @@ func Run(opts Options) (*Report, error) {
 
 	infos := make([]TargetInfo, len(opts.Targets))
 	results := make([][]TestResult, len(opts.Targets))
+	// Targets run side by side, except an exclusive one, which runs with no other target.
 	var wg sync.WaitGroup
+	var machine sync.RWMutex
 	for i, t := range opts.Targets {
 		wg.Add(1)
 		go func(i int, t project.Target) {
 			defer wg.Done()
+			alone := t.Exclusive || opts.Serial
+			r.take(&machine, alone, t.Name)
+			if alone {
+				defer machine.Unlock()
+			} else {
+				defer machine.RUnlock()
+			}
 			infos[i], results[i] = r.runTarget(t)
 		}(i, t)
 	}
@@ -115,6 +127,37 @@ func Run(opts Options) (*Report, error) {
 		return rep, err
 	}
 	return rep, nil
+}
+
+// take locks the machine for a target: on its own (alone) or shared with the other targets. It
+// says so when the target has to wait.
+func (r *runner) take(m *sync.RWMutex, alone bool, name string) {
+	ok := false
+	if alone {
+		ok = m.TryLock()
+	} else {
+		ok = m.TryRLock()
+	}
+	if ok {
+		return
+	}
+	if alone {
+		r.say("[%s] waiting to run on its own (exclusive)", name)
+		m.Lock()
+	} else {
+		r.say("[%s] waiting for an exclusive target to finish", name)
+		m.RLock()
+	}
+}
+
+// say prints a progress line, if progress is wanted.
+func (r *runner) say(format string, args ...any) {
+	if r.opts.Progress == nil {
+		return
+	}
+	r.progressMu.Lock()
+	defer r.progressMu.Unlock()
+	fmt.Fprintf(r.opts.Progress, format+"\n", args...)
 }
 
 func writeJSON(path string, v any) error {
@@ -153,8 +196,10 @@ type advert struct {
 	Cannot   map[string]string `json:"cannot"`
 }
 
-func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
-	info := TargetInfo{Name: t.Name}
+func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult) {
+	began := time.Now()
+	defer func() { info.Ms = time.Since(began).Milliseconds() }()
+	info = TargetInfo{Name: t.Name}
 	log := r.log.With("target", t.Name)
 	brokenAll := func(reason string) []TestResult {
 		var out []TestResult
@@ -184,7 +229,11 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	}
 	defer client.Stop()
 	var ad advert
-	if err := client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad); err != nil {
+	stopWatch := r.watchStart(t.Name, client, startTimeout)
+	err = client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad)
+	stopWatch()
+	info.StartMs = time.Since(began).Milliseconds()
+	if err != nil {
 		info.Broken = "did not answer advertise: " + err.Error() + tr0hint(err, t, "startTimeout", startTimeout)
 		info.Stderr = client.StderrTail()
 		return info, brokenAll(info.Broken)
@@ -209,10 +258,14 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	for _, c := range r.opts.Contracts {
 		total += len(c.Tests)
 	}
-	var out []TestResult
 	for _, c := range r.opts.Contracts {
 		for _, test := range c.Tests {
+			started, mark := time.Now(), client.StderrMark()
 			res := tr.runTest(c, test)
+			res.Ms = time.Since(started).Milliseconds()
+			if res.Status == Fail || res.Status == Broken {
+				res.Stderr = tailN(client.StderrSince(mark), 20)
+			}
 			out = append(out, res)
 			r.progress(t.Name, len(out), total, c, test, res)
 		}
@@ -222,6 +275,50 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 		info.Stderr = b.StderrTail
 	}
 	return info, out
+}
+
+// watchStart prints a line every 10 s while a target starts, with the time left and the last
+// thing its adapter wrote to standard error, so that a slow start (a cold build, a simulator
+// booting) doesn't look like a hang. The returned function stops it.
+func (r *runner) watchStart(name string, client *rpc.Client, limit time.Duration) func() {
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	started := time.Now()
+	go func() {
+		defer close(finished)
+		tick := time.NewTicker(startTick)
+		defer tick.Stop()
+		said := false
+		for {
+			select {
+			case <-done:
+				if said {
+					r.say("[%s] started in %s", name, roundSecond(time.Since(started)))
+				}
+				return
+			case <-tick.C:
+				said = true
+				line := fmt.Sprintf("[%s] starting: %s of startTimeout %s", name, roundSecond(time.Since(started)), limit)
+				if l := tailN(client.StderrTail(), 1); len(l) == 1 && strings.TrimSpace(l[0]) != "" {
+					line += " · adapter: " + clipLine(strings.TrimSpace(l[0]), 100)
+				}
+				r.say("%s", line)
+			}
+		}
+	}()
+	return func() { close(done); <-finished }
+}
+
+// startTick is how often watchStart reports (a variable, so tests can shorten it).
+var startTick = 10 * time.Second
+
+func roundSecond(d time.Duration) time.Duration { return d.Round(time.Second) }
+
+func clipLine(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
 }
 
 func without(xs []string, x string) []string {
@@ -241,7 +338,7 @@ func (r *runner) progress(target string, n, total int, c *contract.Contract, tes
 	}
 	r.progressMu.Lock()
 	defer r.progressMu.Unlock()
-	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s\n", target, n, total, c.Short(), test.Name, res.Status)
+	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s  %s\n", target, n, total, c.Short(), test.Name, res.Status, Seconds(res.Ms))
 }
 
 // tr0hint adds what to change when a request timed out: the timeout and where it is set.
@@ -327,6 +424,7 @@ func (tr *targetRun) call(method string, params map[string]any, result any) erro
 func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResult {
 	res := TestResult{Contract: c.ID, Test: test.Name, Target: tr.t.Name, Status: Pass, Screenshots: map[string]string{}, Missing: map[string]string{}}
 	log := tr.log.With("contract", c.ID, "test", test.Name)
+	tr.client.SetLog(log) // so every call, generated tests' too, is logged under its own test
 	if b := tr.client.Broken(); b != nil {
 		res.Status, res.Messages = Broken, []string{"not run: the target broke earlier (" + b.Reason + ")"}
 		return res
@@ -885,6 +983,7 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		}
 	}
 	cb := Combos(c)[0]
+	tr.client.SetLog(tr.log.With("contract", c.ID, "test", test.Name, "combo", cb.Key()))
 	part := c.ID + "." + k.Part
 	// state is what the component looks like to a test after the action: its events, and every
 	// part's checkable state (not names, which don't change on a press).

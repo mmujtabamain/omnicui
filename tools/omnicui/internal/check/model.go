@@ -89,6 +89,10 @@ type TestResult struct {
 	// Invisible lists the parts whose text, name or value was read while they had no size on
 	// screen or were outside the viewport: what a user can't see passed anyway.
 	Invisible []string `json:"invisible,omitempty"`
+	// Ms is how long the test took on this target, mounts and captures included.
+	Ms int64 `json:"ms"`
+	// Stderr holds what the adapter wrote to standard error while a failing or broken test ran.
+	Stderr []string `json:"stderr,omitempty"`
 }
 
 // ClipResult is one recorded clip: its frames, the animated PNG made of them, when each input
@@ -154,6 +158,9 @@ type TargetInfo struct {
 	// Probe says how the render check went: "passed", "not advertised", or empty when the
 	// target doesn't take screenshots.
 	Probe string `json:"probe,omitempty"`
+	// Ms is how long the target took in all; StartMs how long it took to answer advertise.
+	Ms      int64 `json:"ms"`
+	StartMs int64 `json:"startMs"`
 }
 
 // Summary counts every status.
