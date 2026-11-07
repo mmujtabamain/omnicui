@@ -87,6 +87,9 @@ omnicui check egui counter                  # one target, one component
 omnicui check --require egui:screenshot     # fail if egui can't take screenshots here
 omnicui check --out ci-results              # write the results somewhere else than omnicui/.omnicui/run/
 omnicui check --fail-on pixels              # CI: pixel warnings fail the run (also timing, visibility, warnings)
+omnicui check --test "each press"           # only the tests whose name has this in it (or a glob, with *)
+omnicui check --failed                      # only what failed, broke or warned in the last run
+omnicui check --serial                      # one target at a time (or exclusive: true in a target.yaml)
 omnicui targets                             # what each target can do on this machine, with its render check
 omnicui compare a.png b.png --diff d.png    # the four pixel measures of two saved screenshots
 omnicui help contract                       # every field, default and measure, on one screen
@@ -108,9 +111,13 @@ omnicui --project path/to/omnicui check     # name the project instead of findin
 - **shift**: how far the differing pixels moved. Anti-aliasing alone reaches 3–7 px, so by default it is shown but doesn't warn;
 - **spot**: how concentrated the difference is in its worst 24×24 px spot. Font rendering spreads thin differences over every edge, and a displaced edge has its colour nearby; a wrong word, colour or opacity is concentrated. This is the measure that finds those, and the diff image boxes the worst spots.
 
-**How motion is compared.** A `trace` follows a point's position, or with `property: opacity` a part's opacity. A recorded clip (`record: true`) is compared too: each target's frames are reduced to how far the picture has gone from its first frame to its last, over time, and those curves are compared like traces (`thresholds.motion`, default 40 ms). That catches fades, blurs and colour changes on every target, egui included, whatever each target's frame rate. report.html plays the clips side by side, lined up at the input, with a speed control and a slider. `allCombinations: true` takes traces and clips at every viewport and colour scheme.
+**How motion is compared.** A `trace` follows a point's position, or with `property: opacity` or `scale` a part's opacity or scale, and it finds the part at each frame, so a sheet that slides in is traced from its first frame. A recorded clip (`record: true`) is compared too: each target's frames are reduced to how far the picture has gone from its first frame to its last, over time, and those curves are compared like traces (`thresholds.motion`, default 40 ms). That catches fades, blurs and colour changes on every target, egui included, whatever each target's frame rate. report.html plays the clips side by side, lined up at the input, with a speed control and a slider. `allCombinations: true` takes traces and clips at every viewport and colour scheme. `record: { part: x }` measures a clip over one part's box. A change that goes out and comes back (a spring, a hover in and out) is measured out and back.
 
-**Keyboard.** `keyboard: true` in a contract adds a test per button (Enter, Space), switch and checkbox (Space): the key must do what a pointer press does.
+**Part of a screen.** `screenshot: { mask: [parts] }` (or `mask:` for the whole contract) leaves parts out of the comparison, wherever either target shows them; a part marked `optional: true` is one that only some targets have, such as desktop window controls. `screenshot: { part: toolbar }` compares only that part's box on each target.
+
+**Actions a target defines.** Besides press, focus, key, type, drag and hover, a step can be `{ do: swipe, part: row, with: { direction: left } }`: omnicui passes it to every target that advertises `do.swipe`, unchanged. Scrolling, swiping, the system back and pickers differ by platform, so their targets define them.
+
+**Keyboard.** `keyboard: true` in a contract adds a test per button (Enter, Space), switch and checkbox (Space): the key must do what a pointer press does. A part that isn't on screen when the component mounts (it is in a sheet or a dialog) is "not measured", with the advice to give that sheet a component of its own; so is a press that changes nothing. A target can say which keys its platform uses (`keys` in `advertise`).
 
 `check` prints a table of all four per pair, with ▲ on each one over its threshold, and names the part the worst spot is in. Thresholds far below the defaults make every comparison warn, and the contract check says so.
 
