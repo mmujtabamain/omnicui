@@ -99,13 +99,14 @@ func TestAllTargetsAgree(t *testing.T) {
 	if len(o.rep.Targets) != 3 {
 		t.Fatalf("targets: %+v", o.rep.Targets)
 	}
-	// Every construct, on every target; trace.opacity where the toolkit has an opacity to read.
+	// Every construct, on every target; trace.opacity and trace.scale where the toolkit has an
+	// opacity and a transform to read.
 	for _, ti := range o.rep.Targets {
-		want := 16
+		want := 17
 		if ti.Name != "egui" {
-			want = 17
-		} else if !strings.Contains(ti.Cannot["trace.opacity"], "no per-widget opacity") {
-			t.Errorf("egui should say why it can't trace opacity: %v", ti.Cannot)
+			want = 19
+		} else if !strings.Contains(ti.Cannot["trace.opacity"], "no per-widget opacity") || !strings.Contains(ti.Cannot["trace.scale"], "no transform") {
+			t.Errorf("egui should say why it can't trace opacity or scale: %v", ti.Cannot)
 		}
 		if len(ti.Can) != want || ti.Probe != "passed" {
 			t.Errorf("%s advertises %v, render check %q", ti.Name, ti.Can, ti.Probe)

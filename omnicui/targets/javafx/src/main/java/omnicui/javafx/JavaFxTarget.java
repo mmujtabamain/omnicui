@@ -63,7 +63,7 @@ final class JavaFxTarget {
             // protocol: the first request of every run; the constructs (capabilities) this target supports
             case "advertise":
                 return Map.of("protocol", "1", "can", List.of("mount", "press", "focus", "key", "type", "drag", "hover",
-                        "read", "events", "screenshot", "trace", "trace.opacity", "record", "probe", "bounds", "role", "focused"));
+                        "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected"));
             // protocol: the render check's picture, at the viewport asked for
             case "probe":
                 return probe(p.path("viewport").path("width").asDouble(), p.path("viewport").path("height").asDouble(), p.path("path").asText());
@@ -100,12 +100,26 @@ final class JavaFxTarget {
                 return onFx(() -> screenshot(file));
             }
             // contract: tests[].trace[] (part and point); omnicui compares the samples
+            // The part is looked up at each frame: one that appears during the steps (a sheet, a
+            // dialog) is traced from its first frame on screen.
             case "trace": {
-                Node n = node(part);
-                if (p.path("property").asText("position").equals("opacity"))
-                    return sample(p.path("steps"), () -> Map.of("value", opacity(n)), null);
+                String property = p.path("property").asText("position");
                 String point = p.path("point").asText();
-                return sample(p.path("steps"), () -> point(n.localToScene(n.getBoundsInLocal()), point), null);
+                List<Map<String, Object>> samples = sample(p.path("steps"), () -> {
+                    Node n = scene == null ? null : lookup(scene.getRoot(), part);
+                    if (n == null) return null;
+                    return switch (property) {
+                        case "opacity" -> Map.of("value", opacity(n));
+                        case "scale" -> {
+                            // Its width as drawn (its ancestors' transforms too) over its own width.
+                            double w = n.getLayoutBounds().getWidth();
+                            yield w > 0 ? Map.of("value", n.localToScene(n.getBoundsInLocal()).getWidth() / w) : null;
+                        }
+                        default -> point(n.localToScene(n.getBoundsInLocal()), point);
+                    };
+                }, null);
+                if (samples.isEmpty()) throw new RpcError(NO_PART, "no part " + part + " (not on screen at any frame)");
+                return samples;
             }
             // contract: tests[].record: true; frames of a clip, never compared
             case "record": {
@@ -197,6 +211,8 @@ final class JavaFxTarget {
             case "disabled" -> n.isDisabled();
             case "value" -> n instanceof Slider s ? s.getValue() : n.queryAccessibleAttribute(AccessibleAttribute.VALUE);
             case "focused" -> n.isFocused();
+            // A chosen chip, tab or segment: a selected toggle button.
+            case "selected" -> n instanceof javafx.scene.control.Toggle t && t.isSelected();
             case "role" -> ariaRole(n.getAccessibleRole());
             default -> throw new RpcError(STEP_FAILED, "unknown field " + field);
         });
@@ -278,7 +294,8 @@ final class JavaFxTarget {
             public void handle(long now) {
                 if (start < 0) start = now;
                 try {
-                    samples.add(Map.of("ms", (now - start) / 1e6, "value", what.call()));
+                    Object v = what.call();
+                    if (v != null) samples.add(Map.of("ms", (now - start) / 1e6, "value", v)); // null: not there yet
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

@@ -128,11 +128,12 @@ impl Target {
         match method {
             // protocol: the first request; the constructs this target can perform on this run.
             "advertise" => {
-                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace", "bounds", "role", "focused"];
+                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace", "bounds", "role", "focused", "selected"];
                 let mut cannot = serde_json::Map::new();
                 // egui has no opacity per widget to read back (it is multiplied into the painted
                 // colours); a fade is compared through the recorded clip instead.
                 cannot.insert("trace.opacity".into(), json!("egui has no per-widget opacity to read; record the test and its clip is compared"));
+                cannot.insert("trace.scale".into(), json!("egui widgets have no transform to read; record the test and its clip is compared"));
                 match &self.can_render {
                     None => can.extend(["screenshot", "record", "probe"]),
                     Some(why) => {
@@ -171,6 +172,8 @@ impl Target {
                     "disabled" => json!(n.is_disabled()),
                     "value" => json!(n.numeric_value()),
                     "focused" => json!(node.is_focused()),
+                    // A chosen chip, tab or segment: egui's selectable label reports it selected.
+                    "selected" => json!(n.is_selected().unwrap_or(false)),
                     "role" => json!(aria_role(n.role())),
                     other => return Err(fail(STEP_FAILED, format!("unknown field {other}"))),
                 })
@@ -210,13 +213,20 @@ impl Target {
                 if p["property"].as_str().is_some_and(|x| x != "position") {
                     return Err(fail(STEP_FAILED, "egui can trace positions only"));
                 }
+                // The part is looked up at each frame: one that appears during the steps is traced
+                // from its first frame on screen.
                 let (samples, _) = self.frames(p, |t, frame_ms| {
                     let h = t.harness()?;
                     let root = h.root();
-                    let r = find(&root, &part)?.rect();
+                    let Ok(node) = find(&root, &part) else { return Ok(Value::Null) };
+                    let r = node.rect();
                     let at = if point == "center" { r.center() } else { r.min };
                     Ok(json!({ "ms": frame_ms, "x": at.x, "y": at.y }))
                 })?;
+                let samples: Vec<Value> = samples.into_iter().filter(|s| !s.is_null()).collect();
+                if samples.is_empty() {
+                    return Err(fail(NO_PART, format!("no part {part} (not on screen at any frame)")));
+                }
                 Ok(Value::Array(samples))
             }
             // contract: tests[].record: true; a frame of the clip for every simulated frame.
