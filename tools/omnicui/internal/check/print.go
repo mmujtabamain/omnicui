@@ -102,10 +102,18 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			col = max(col, utf8.RuneCountInString(t.Name)+2)
 		}
 	}
+	// A column per target, wide enough for its name and the longest status in it.
+	tw := 10
+	for _, n := range names {
+		tw = max(tw, utf8.RuneCountInString(n)+2)
+	}
+	for _, r := range rep.Results {
+		tw = max(tw, len(r.Status)+2)
+	}
 	for _, c := range rep.Contracts {
 		fmt.Fprintf(w, "\n%s", pad(c.ID, col+2))
 		for _, n := range names {
-			fmt.Fprint(w, pad(n, 10))
+			fmt.Fprint(w, pad(n, tw))
 		}
 		fmt.Fprintln(w)
 		for _, test := range c.Tests {
@@ -115,14 +123,14 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			for _, n := range names {
 				res := find(rep, c.ID, test.Name, n)
 				if res == nil {
-					fmt.Fprint(w, pad("-", 10))
+					fmt.Fprint(w, pad("-", tw))
 					continue
 				}
 				st := string(res.Status)
 				if res.Status == Fail || res.Status == Broken {
 					st = strings.ToUpper(st)
 				}
-				fmt.Fprint(w, pad(st, 10))
+				fmt.Fprint(w, pad(st, tw))
 				if res.Status != Pass {
 					for _, m := range res.Messages {
 						if repeated[n][m] == 0 {
