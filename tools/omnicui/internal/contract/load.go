@@ -262,7 +262,7 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -311,6 +311,9 @@ func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 			}
 		case *kind.Enum:
 			msg = fmt.Sprintf("`%v` is not one of %s", k.Got, quoteAll(anyStrings(k.Want)))
+			if n := len(e.InstanceLocation); n >= 3 && e.InstanceLocation[n-1] == "action" && e.InstanceLocation[n-3] == "steps" {
+				msg += fmt.Sprintf("; for an action the targets define, write `do: %v` (with its parameters under `with:`)", k.Got)
+			}
 		case *kind.Pattern:
 			msg = patternMessage(k.Got, k.Want)
 			// A key in the wrong form (propertyNames) is reported against no location: find the
@@ -491,7 +494,27 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		if steps, ok := t["steps"].([]any); ok {
 			for j, sv := range steps {
 				s := sv.(map[string]any)
-				st := Step{Action: s["action"].(string), Part: s["part"].(string), Times: 1, Line: l.line(fmt.Sprintf("%s/steps/%d", base, j))}
+				ptr := fmt.Sprintf("%s/steps/%d", base, j)
+				st := Step{Times: 1, Line: l.line(ptr)}
+				_, hasAction := s["action"]
+				_, hasDo := s["do"]
+				_, hasPart := s["part"]
+				switch {
+				case hasAction && hasDo:
+					l.errorf(ptr, "a step has `action` (press, focus, key, type, drag, hover) or `do` (an action the targets define), not both")
+				case !hasAction && !hasDo:
+					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover) and a `part`, or `do` (an action the targets define, such as swipe)")
+				case hasAction && !hasPart:
+					l.errorf(ptr, "missing field `part`: an `action` acts on a part")
+				}
+				st.Action, _ = s["action"].(string)
+				st.Part, _ = s["part"].(string)
+				if name, ok := s["do"].(string); ok {
+					st.Action, st.Do = "do", name
+					if w, ok := s["with"].(map[string]any); ok {
+						st.With = plain(w).(map[string]any)
+					}
+				}
 				if x, ok := s["times"]; ok {
 					st.Times = int(num(x))
 				}
@@ -721,6 +744,16 @@ func (l *loader) crossCheck(c *Contract) {
 		}
 		for j, s := range t.Steps {
 			ptr := fmt.Sprintf("%s/steps/%d", base, j)
+			if s.Action == "do" {
+				// The target defines what it does, and to which roles: only the part is checked.
+				if s.Part != "" {
+					unknownPart(ptr+"/part", s.Part)
+				}
+				continue
+			}
+			if s.Action == "" || s.Part == "" {
+				continue // already reported: a step without an action or a part
+			}
 			if unknownPart(ptr+"/part", s.Part) {
 				continue
 			}

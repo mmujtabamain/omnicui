@@ -388,6 +388,14 @@ func stepParams(c *contract.Contract, steps []contract.Step) []map[string]any {
 		for i := 0; i < s.Times; i++ {
 			p := map[string]any{"method": s.Action, "part": c.ID + "." + s.Part}
 			switch s.Action {
+			case "do":
+				p = map[string]any{"method": "do", "name": s.Do, "with": s.With}
+				if s.With == nil {
+					p["with"] = map[string]any{}
+				}
+				if s.Part != "" {
+					p["part"] = c.ID + "." + s.Part
+				}
 			case "key":
 				p["key"] = s.Key
 			case "type":
@@ -444,6 +452,10 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	// The constructs the behaviour needs; without them the test can't run here.
 	needs := []string{"mount"}
 	for _, s := range test.Steps {
+		if s.Action == "do" {
+			needs = append(needs, "do."+s.Do)
+			continue
+		}
 		needs = append(needs, s.Action)
 	}
 	for _, e := range test.Expect {

@@ -314,10 +314,6 @@
     },
     "step": {
       "type": "object",
-      "required": [
-        "action",
-        "part"
-      ],
       "properties": {
         "action": {
           "enum": [
@@ -336,6 +332,15 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 100
+        },
+        "do": {
+          "description": "An action the targets define and advertise as do.<name> (swipe, scroll, refresh, back, pick…). omnicui passes it on as is: `with` holds its parameters, and `part` is optional.",
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
+        },
+        "with": {
+          "description": "Parameters of a `do` step, passed on to the target unchanged.",
+          "type": "object"
         }
       },
       "allOf": [
@@ -345,7 +350,10 @@
               "action": {
                 "const": "key"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -365,7 +373,10 @@
               "action": {
                 "const": "type"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -384,7 +395,10 @@
               "action": {
                 "const": "drag"
               }
-            }
+            },
+            "required": [
+              "action"
+            ]
           },
           "then": {
             "required": [
@@ -402,7 +416,8 @@
           }
         }
       ],
-      "unevaluatedProperties": false
+      "unevaluatedProperties": false,
+      "description": "A user action: `action` (press, focus, key, type, drag, hover) on a part, or `do`: an action a target defines and advertises (as do.<name>), such as swipe or scroll, with its own `with` parameters."
     },
     "expectation": {
       "type": "object",

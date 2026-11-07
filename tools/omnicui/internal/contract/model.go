@@ -28,8 +28,12 @@ type Part struct {
 
 // Step is one user action. Times is already 1 or more.
 type Step struct {
-	Action string  `json:"action"`
-	Part   string  `json:"part"`
+	// Action is press, focus, key, type, drag or hover; or "do", for an action a target defines:
+	// Do is its name and With its parameters, passed on unchanged. Part may be empty for "do".
+	Action string         `json:"action"`
+	Do     string         `json:"do,omitempty"`
+	With   map[string]any `json:"with,omitempty"`
+	Part   string         `json:"part"`
 	Key    string  `json:"key,omitempty"`
 	Text   string  `json:"text,omitempty"`
 	DX     float64 `json:"dx,omitempty"`

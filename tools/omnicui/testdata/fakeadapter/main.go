@@ -67,6 +67,8 @@ type params struct {
 	Point       string           `json:"point"`
 	Property    string           `json:"property"`
 	Steps       []map[string]any `json:"steps"`
+	Name        string           `json:"name"`
+	With        map[string]any   `json:"with"`
 }
 
 type state struct {
@@ -300,6 +302,18 @@ func handle(n int, r req) (any, error) {
 		return nil, nil
 	case "press", "focus", "key", "type", "drag", "hover":
 		return nil, act(r.Method, p)
+	case "do":
+		// A target-defined action: `bump` adds with.by to the counter (on its increment part).
+		if p.Name != "bump" {
+			return nil, &rpcErr{-32601, "no action " + p.Name}
+		}
+		if p.Part != "ui.counter.increment" {
+			return nil, &rpcErr{-32002, "no part " + p.Part}
+		}
+		by, _ := p.With["by"].(float64)
+		st.count += int(by)
+		st.events = append(st.events, map[string]any{"name": "changed", "fields": map[string]any{"count": st.count}})
+		return nil, nil
 	case "read":
 		if err := act("read", p); err != nil {
 			return nil, err
