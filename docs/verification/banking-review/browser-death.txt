@@ -1,0 +1,33 @@
+Chromium killed (pkill -9) about 9 s into: omnicui check web
+Before this change the web adapter turned every later request into STEP_FAILED, so a dead browser read as many ordinary FAILs.
+
+web: broken: the adapter exited with code 3 before mount ui.switch
+  stderr | [web] ready on port 34643
+  stderr | [web] Chromium has disconnected (it crashed or was closed); the adapter stops so that omnicui reports this target as broken
+
+ui.counter                                          web       
+  starts at the start value                         pass      
+  each press adds one                               pass      
+  the keyboard works too                            pass      
+
+ui.switch                                           web       
+  starts off, with its label as its name            pass      
+  starts on when asked                              pass      
+  a press turns it on, and the thumb slides across  BROKEN    
+      web: the adapter exited with code 3 before mount ui.switch
+    trace thumb                                     web vs timing 0.2 ms   pass (all under 20 ms)
+                                                    traces and clip: first combination only (320×240 light)
+  Space toggles it from the keyboard                BROKEN    
+      web: not run: the target broke earlier (the adapter exited with code 3 before mount ui.switch)
+
+5 pass · 0 fail · 2 broken · 0 not advertised · 0 warnings
+results: <run>/results.json   report: <run>/report.html
+
+progress (stderr):
+[web 1/7] counter › starts at the start value  pass
+[web 2/7] counter › each press adds one  pass
+[web 3/7] counter › the keyboard works too  pass
+[web 4/7] switch › starts off, with its label as its name  pass
+[web 5/7] switch › starts on when asked  pass
+[web 6/7] switch › a press turns it on, and the thumb slides across  broken
+[web 7/7] switch › Space toggles it from the keyboard  broken

@@ -12,9 +12,11 @@ Not verified yet
 3.  Not run on a real Mac or a real Windows machine. Everything was verified on Linux, with
     software rendering for egui (lavapipe). The run scripts are bash only; on Windows only the
     command itself is supported, and it was cross-compiled but never run there.
-4.  Not run with a real GPU. The pixel threshold (30% of the drawn area) was tuned on software
-    rendering; a GPU's anti-aliasing may differ. Run ./run.sh check on a GPU machine and see
-    whether any screenshot comparison comes near the threshold.
+4.  Not run with a real GPU here. The pixel thresholds (area 30%, strength 25%, shift 6 px, spot
+    3.5%) were set from software rendering in this repository and from the banking stress test's
+    macOS screenshots; a GPU's anti-aliasing may differ. Run ./run.sh check on a GPU machine and
+    see whether any measure comes near its threshold. The tightest margin is spot: correct banking
+    pages reached 3.1%, the mildest real defect there 3.8%.
 5.  The desktop (egui) app's window was reported not opening on a Mac. The likely cause (a
     silent first build) is fixed, but the fix has not been seen working on a Mac.
 
@@ -43,3 +45,26 @@ Repository
 12. The JavaFX app is installed into the local Maven repository (~/.m2) by ./run.sh setup, so the
     javafx target can depend on it: the one thing setup writes outside this folder besides the
     usual download caches.
+
+From the banking stress test (7 November 2026)
+An agent built a banking app three times (React, JavaFX, egui) with omnicui 0.1.0. How the pixel
+measures were chosen from its screenshots is in docs/verification/banking-review/. Built since: the four pixel measures, the render check, bounds and the visibility warning,
+the busy hook, role/focused/visible, --fail-on, progress lines, compare, help contract, the
+reference adapters' fixes. Still open:
+13. egui's side of the render check, of bounds and of screenshots was compiled but not run: this
+    machine has no Vulkan driver, and no root to install lavapipe. make test-real's three egui
+    screenshot cases (egui.counter.small-text, egui.render.cursor, --require egui:screenshot)
+    fail here for that reason only.
+14. Traces follow a point's position only: opacity, blur and the like can't be traced. A
+    `property: opacity` trace, advertised per target, would close the common case.
+15. Traces and clips are taken at the first viewport × colour scheme only (now printed under the
+    test). An opt-in to take them at every combination, keyed like screenshots, is not built.
+16. Clips are GIFs, whose palette dithers gradients. Lossless APNG (pure Go) and a player that
+    steps every target's frames together by timestamp are not built (REC-9).
+17. A contract can't vary props by viewport, so a responsive component can't be told its width;
+    the banking agent patched all three adapters for it.
+18. Roles: JavaFX has no switch role (a toggle button is reported as `button`, as WAI-ARIA has it)
+    and labels report `text`, so `role: switch` or `role: status` fail on JavaFX. That is a real
+    difference, but a contract that checks roles will see it on every such part.
+19. Built-in keyboard checks per role (a button activates on Enter and on Space) are not built;
+    each contract must say so in a test.
