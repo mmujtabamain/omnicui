@@ -58,3 +58,29 @@ What the screenshots show:
 - **Spot** measures concentration instead of thickness: the share of the worst 24×24 px square whose pixels differ strongly. A strong difference is a colour distance above 35%, which anti-aliased edges mostly stay under. Correct pages reach at most 3.1%; every defect reaches 3.8% or more, and the major ones 9.9% or more. The default is **3.5%**. Square sizes of 12 and 16 px, and other cut-offs, separated less well.
 
 Nothing else in the run changes: the threshold for each measure is in the contract, and the defaults are in `internal/contract/model.go`.
+
+## Revised once egui could render (the same day)
+
+The reference repository's egui target had taken no screenshots here, since the box had no Vulkan
+driver. With Mesa's software driver (lavapipe), unpacked without root, it did, and the correct
+reference counter warned. JavaFX draws its button about 3 px wider than egui, and web sits within
+the 2 px reach of both. In dark mode those are thin light strokes on a dark ground: strength
+measured 44.7% and spot 6.8% on a correct rendering. Shift reached 7 px, and 14 px once its search
+went out to 16 px, because anti-aliased pixels find a "match" further away the further you look.
+
+So **strength** and **spot** now leave out displaced pixels: those with a pixel of their colour
+within 4 px in the other screenshot. Displacement is what shift describes. **Shift** keeps its
+8 px search, and its default is 8 px, the most it measures, so it is shown but doesn't warn on its
+own.
+
+The same corpora, measured again:
+
+| | correct, max | defects |
+|---|---|---|
+| spot, banking | 1.6% | opacity 9.9–14.6%, "Pay inv…" 9.5–12.5%, missing word 21.7–22.7%, egui placeholders 2.4–4.9% |
+| spot, reference (egui included) | 0.2% | `egui.render.cursor` 4.5–7.8%, `egui.counter.small-text` 7.6–9.4%, `web.counter.padding` 9.6–10.1%, `javafx.host.stretch` 10.6–90% |
+| strength, banking | 19% | 18–30% (spot catches the overlap) |
+| strength, reference | 24% | `web.switch.dim` 30–32%, the others 47–68% |
+| area, reference | 26% | 37–100% |
+
+**The defaults now:** area 30%, strength 28%, shift 8 px, spot 2%. Every defect above goes over at least one of them, and no correct pair does.
