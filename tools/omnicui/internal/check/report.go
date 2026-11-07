@@ -390,7 +390,7 @@ caption { text-align: left; font-weight: 600; padding: .25rem 0; }
 th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 .st { font-weight: 700; white-space: nowrap; }
 .th { font-size: 0.85em; }
-.st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised { color: var(--na); }
+.st-pass { color: var(--pass); } .st-fail, .st-broken { color: var(--fail); } .st-warning { color: var(--warn); } .st-not-advertised, .st-not-measured { color: var(--na); }
 .player .controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
 .player .time { width: min(28rem, 70vw); }
 .shots { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0; padding: 0; list-style: none; }
@@ -416,7 +416,8 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <li><strong>{{.Rep.Summary.Pass}}</strong> pass</li>
 <li><strong>{{.Rep.Summary.Fail}}</strong> fail</li>
 <li><strong>{{.Rep.Summary.Broken}}</strong> broken</li>
-<li><strong>{{.Rep.Summary.NotAdvertised}}</strong> not advertised</li>
+<li><strong>{{.Rep.Summary.NotAdvertised}}</strong> not advertised</li>{{if .Rep.Summary.NotMeasured}}
+<li><strong>{{.Rep.Summary.NotMeasured}}</strong> not measured</li>{{end}}
 <li><strong>{{.Rep.Summary.Warnings}}</strong> warnings</li>
 </ul>
 {{range .Rep.Required}}<p><strong>Required:</strong> {{.}}</p>{{end}}

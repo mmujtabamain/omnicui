@@ -16,7 +16,10 @@ const (
 	Fail          Status = "fail"
 	Broken        Status = "broken"
 	NotAdvertised Status = "not advertised"
-	Warning       Status = "warning"
+	// NotMeasured: the test ran but couldn't measure what it is for, such as a generated keyboard
+	// test on a part that isn't on screen when the component mounts. Not a failure; it is listed.
+	NotMeasured Status = "not measured"
+	Warning     Status = "warning"
 )
 
 // rank orders statuses from best to worst, for "the worst over all combinations".
@@ -24,7 +27,7 @@ func rank(s Status) int {
 	switch s {
 	case Pass:
 		return 0
-	case NotAdvertised:
+	case NotAdvertised, NotMeasured:
 		return 1
 	case Fail:
 		return 2
@@ -155,6 +158,8 @@ type TargetInfo struct {
 	Broken   string            `json:"broken,omitempty"`
 	Stderr   []string          `json:"stderr,omitempty"`
 	Protocol string            `json:"protocol,omitempty"`
+	// Keys: what the target said activates each role, when it said (advertise keys).
+	Keys map[string][]string `json:"keys,omitempty"`
 	// Probe says how the render check went: "passed", "not advertised", or empty when the
 	// target doesn't take screenshots.
 	Probe string `json:"probe,omitempty"`
@@ -169,6 +174,7 @@ type Summary struct {
 	Fail          int `json:"fail"`
 	Broken        int `json:"broken"`
 	NotAdvertised int `json:"notAdvertised"`
+	NotMeasured   int `json:"notMeasured"`
 	Warnings      int `json:"warnings"`
 	Required      int `json:"requiredMissing"`
 }

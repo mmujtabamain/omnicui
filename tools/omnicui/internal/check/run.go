@@ -194,6 +194,9 @@ type advert struct {
 	Protocol string            `json:"protocol"`
 	Can      []string          `json:"can"`
 	Cannot   map[string]string `json:"cannot"`
+	// Keys, optional: per role, the keys that activate it on this target's platform, for the
+	// tests that `keyboard: true` adds. A role it doesn't name gets the usual keys.
+	Keys map[string][]string `json:"keys,omitempty"`
 }
 
 func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult) {
@@ -238,7 +241,7 @@ func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult)
 		info.Stderr = client.StderrTail()
 		return info, brokenAll(info.Broken)
 	}
-	info.Can, info.Cannot, info.Protocol = ad.Can, ad.Cannot, ad.Protocol
+	info.Can, info.Cannot, info.Protocol, info.Keys = ad.Can, ad.Cannot, ad.Protocol, ad.Keys
 	sort.Strings(info.Can)
 	can := map[string]bool{}
 	for _, c := range ad.Can {
@@ -247,7 +250,7 @@ func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult)
 	if info.Cannot == nil {
 		info.Cannot = map[string]string{}
 	}
-	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log}
+	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log, keys: ad.Keys}
 	if why := tr.probe(&info); why != "" {
 		// Screenshots from this target would be wrong; behaviour can still be checked.
 		delete(can, "screenshot")
@@ -351,6 +354,11 @@ func tr0hint(err error, t project.Target, setting string, d time.Duration) strin
 }
 
 type targetRun struct {
+	// lastRemote is the last call's error as the client returned it, before it became a failure:
+	// so that its JSON-RPC code can be looked at.
+	lastRemote error
+	// keys: the keys that activate each role on this target, when it says (advertise keys).
+	keys   map[string][]string
 	r      *runner
 	t      project.Target
 	client *rpc.Client
@@ -410,6 +418,7 @@ func (f *failure) Error() string { return f.msg }
 // call wraps a request: an error reply becomes a test failure, a broken adapter stays broken.
 func (tr *targetRun) call(method string, params map[string]any, result any) error {
 	err := tr.client.Call(method, params, tr.step, result)
+	tr.lastRemote = err
 	var re *rpc.RemoteError
 	if errors.As(err, &re) {
 		what := method
@@ -945,6 +954,8 @@ func summarize(rep *Report) Summary {
 			s.Broken++
 		case NotAdvertised:
 			s.NotAdvertised++
+		case NotMeasured:
+			s.NotMeasured++
 		}
 		if res.Status == Pass {
 			s.NotAdvertised += len(res.Missing)
@@ -985,16 +996,31 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 	cb := Combos(c)[0]
 	tr.client.SetLog(tr.log.With("contract", c.ID, "test", test.Name, "combo", cb.Key()))
 	part := c.ID + "." + k.Part
-	// state is what the component looks like to a test after the action: its events, and every
-	// part's checkable state (not names, which don't change on a press).
-	state := func(action func() error) ([]string, error) {
-		if err := tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, nil),
-			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil); err != nil {
-			return nil, err
+	// The target may say which keys activate a role on its platform (Compose ignores Space on a
+	// button, for one). A key it leaves out isn't checked there.
+	role := ""
+	for _, p := range c.Parts {
+		if p.Name == k.Part {
+			role = p.Role
 		}
-		if err := action(); err != nil {
-			return nil, err
+	}
+	if keys, ok := tr.keys[role]; ok && !contains(keys, k.Key) {
+		res.Status = NotAdvertised
+		why := fmt.Sprintf("%s says %s doesn't activate a %s there (advertise keys: %s: %s)", tr.t.Name, k.Key, role, role, strings.Join(keys, ", "))
+		if len(keys) == 0 {
+			why = fmt.Sprintf("%s says no key activates a %s there (advertise keys: %s: [])", tr.t.Name, role, role)
 		}
+		res.Missing["key "+k.Key] = why
+		res.Messages = append(res.Messages, why)
+		return res
+	}
+	mount := func() error {
+		return tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, nil),
+			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil)
+	}
+	// read is what the component looks like to a test now: its events, and every part's checkable
+	// state (not names, which don't change on a press).
+	read := func() ([]string, error) {
 		var out []string
 		var events []event
 		if err := tr.call("events", map[string]any{}, &events); err != nil {
@@ -1022,15 +1048,58 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		}
 		return out, nil
 	}
-	pressed, err := state(func() error { return tr.call("press", map[string]any{"part": part}, nil) })
+	notMeasured := func(why string) TestResult {
+		res.Status = NotMeasured
+		res.Messages = append(res.Messages, why)
+		tr.log.Info("test finished", "contract", c.ID, "test", test.Name, "status", string(res.Status))
+		return res
+	}
+	// With the pointer first: the part must be on screen when the component mounts, and the press
+	// must change something a test can read, or there is nothing to compare the key with.
+	err := mount()
+	shown := true
+	if err == nil && tr.can["bounds"] {
+		var box *Rect
+		if e := tr.call("bounds", map[string]any{"part": part}, &box); e == nil {
+			shown = box != nil && box.Width > 0 && box.Height > 0
+		} else if _, ok := e.(*failure); ok {
+			shown = false
+		} else {
+			err = e
+		}
+	}
+	if err == nil && !shown {
+		return notMeasured(notShown(c, k.Part))
+	}
+	var before, pressed []string
+	if err == nil {
+		before, err = read()
+	}
+	if err == nil {
+		err = tr.call("press", map[string]any{"part": part}, nil)
+		var re *rpc.RemoteError
+		if errors.As(tr.lastRemote, &re) && re.Code == -32002 {
+			return notMeasured(notShown(c, k.Part))
+		}
+	}
+	if err == nil {
+		pressed, err = read()
+	}
+	if err == nil && stateDiff(before, pressed) == "" {
+		return notMeasured(fmt.Sprintf("a press on `%s` changed nothing a test can read when %s mounts (no event, and no part's text, checked, value or disabled), so there is nothing to compare %s with: a test that sets it up (props) and expects the change says more", k.Part, c.ID, k.Key))
+	}
 	if err == nil {
 		var keyed []string
-		keyed, err = state(func() error {
-			if err := tr.call("focus", map[string]any{"part": part}, nil); err != nil {
-				return err
-			}
-			return tr.call("key", map[string]any{"part": part, "key": k.Key}, nil)
-		})
+		err = mount()
+		if err == nil {
+			err = tr.call("focus", map[string]any{"part": part}, nil)
+		}
+		if err == nil {
+			err = tr.call("key", map[string]any{"part": part, "key": k.Key}, nil)
+		}
+		if err == nil {
+			keyed, err = read()
+		}
 		if err == nil {
 			if diff := stateDiff(pressed, keyed); diff != "" {
 				res.Status = Fail
@@ -1087,4 +1156,12 @@ func stateDiff(pressed, keyed []string) string {
 		return strings.Join(xs, ", ")
 	}
 	return fmt.Sprintf("a press gave %s; the key gave %s", say(onlyPress), say(onlyKey))
+}
+
+// notShown says why a generated keyboard test can't run: its part isn't on screen when the
+// component mounts (it is in a sheet, a dialog or a later state), and what to do about it.
+func notShown(c *contract.Contract, part string) string {
+	return fmt.Sprintf("`%s` isn't on screen when %s mounts, so keyboard: true can't press it there. "+
+		"If it is shown by a sheet, a dialog or another state, make that a component of its own (or a prop that "+
+		"mounts it shown), and give that component keyboard: true", part, c.ID)
 }

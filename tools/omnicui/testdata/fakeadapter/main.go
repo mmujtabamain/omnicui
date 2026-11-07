@@ -22,6 +22,10 @@
 //	                  size asked for), blank (white only)
 //	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
 //	FAKE_ROLE         part=role,… to report another role than the contract's
+//	FAKE_KEYS         role=Key+Key,… advertised as the keys that activate each role
+//	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
+//	FAKE_SPAN_FILE    append "<FAKE_NAME> start|stop <unix ns>" when starting and stopping
+//	FAKE_STDERR_ON    a method during which to write a line to stderr
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -136,6 +140,9 @@ func act(method string, p params) error {
 	press := func() {
 		switch part {
 		case "increment":
+			if has(os.Getenv("FAKE_BUG"), "inert") {
+				break // a press that changes nothing
+			}
 			st.count++
 			if has(os.Getenv("FAKE_BUG"), "double") {
 				st.count++
@@ -255,7 +262,20 @@ func handle(n int, r req) (any, error) {
 				can = keep
 			}
 		}
-		return map[string]any{"protocol": "1", "can": can, "cannot": cannot}, nil
+		ad := map[string]any{"protocol": "1", "can": can, "cannot": cannot}
+		// FAKE_KEYS: role=Key+Key,… the keys that activate each role here (advertise keys).
+		if v := os.Getenv("FAKE_KEYS"); v != "" {
+			keys := map[string][]string{}
+			for _, kv := range strings.Split(v, ",") {
+				role, ks, _ := strings.Cut(kv, "=")
+				keys[role] = []string{}
+				if ks != "" {
+					keys[role] = strings.Split(ks, "+")
+				}
+			}
+			ad["keys"] = keys
+		}
+		return ad, nil
 	case "mount":
 		if !has(env("FAKE_COMPONENTS", "ui.counter,ui.switch"), p.Component) {
 			return nil, &rpcErr{-32001, "no component " + p.Component}

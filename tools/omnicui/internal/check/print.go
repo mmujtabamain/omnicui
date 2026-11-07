@@ -214,7 +214,11 @@ func Print(w io.Writer, rep *Report, runDir string) {
 		}
 	}
 	s := rep.Summary
-	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, s.Warnings)
+	measured := ""
+	if s.NotMeasured > 0 {
+		measured = fmt.Sprintf(" · %d not measured", s.NotMeasured)
+	}
+	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised%s · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, measured, s.Warnings)
 	if wd, err := os.Getwd(); err == nil {
 		if rel, err := filepath.Rel(wd, runDir); err == nil && !strings.HasPrefix(rel, "..") {
 			runDir = rel
