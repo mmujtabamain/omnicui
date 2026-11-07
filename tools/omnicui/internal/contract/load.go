@@ -262,7 +262,7 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -570,7 +570,13 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				}
 			}
 		}
-		test.Record, _ = t["record"].(bool)
+		switch rv := t["record"].(type) {
+		case bool:
+			test.Record = rv
+		case map[string]any:
+			test.Record = true
+			test.RecordPart, _ = rv["part"].(string)
+		}
 		test.AllCombinations, _ = t["allCombinations"].(bool)
 		if traces, ok := t["trace"].([]any); ok {
 			for j, trv := range traces {
@@ -810,6 +816,9 @@ func (l *loader) crossCheck(c *Contract) {
 		}
 		for j, tr := range t.Trace {
 			unknownPart(fmt.Sprintf("%s/trace/%d/part", base, j), tr.Part)
+		}
+		if t.RecordPart != "" {
+			unknownPart(base+"/record/part", t.RecordPart)
 		}
 		for j, m := range t.Mask {
 			unknownPart(fmt.Sprintf("%s/screenshot/mask/%d", base, j), m)

@@ -294,17 +294,35 @@
                 }
               },
               "property": {
-                "description": "What is followed: the point's position (the default) or the part's opacity as drawn.",
+                "description": "What is followed: the point's position (the default), the part's opacity as drawn, or its scale as drawn (its width on screen over its width unscaled, its ancestors' transforms included).",
                 "enum": [
                   "position",
-                  "opacity"
+                  "opacity",
+                  "scale"
                 ]
               }
             }
           }
         },
         "record": {
-          "type": "boolean"
+          "description": "true: record a clip, compared by its visual progress. { part: x }: measure the clip over that part's box (and 8 px around it) only.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "part"
+              ],
+              "properties": {
+                "part": {
+                  "$ref": "#/$defs/partName"
+                }
+              }
+            }
+          ]
         },
         "allCombinations": {
           "description": "Take the traces and the clip at every viewport × colour scheme, not only the first.",
@@ -471,6 +489,10 @@
           },
           "focused": {
             "description": "Whether the part has keyboard focus.",
+            "type": "boolean"
+          },
+          "selected": {
+            "description": "Whether a button stays chosen: a chip, a tab, a segment (buttons only; the target must advertise selected).",
             "type": "boolean"
           },
           "visible": {

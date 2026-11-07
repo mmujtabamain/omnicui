@@ -98,6 +98,8 @@ type Test struct {
 	ScreenshotPart string      `json:"screenshotPart,omitempty"`
 	Trace          []TraceSpec `json:"trace,omitempty"`
 	Record         bool        `json:"record,omitempty"`
+	// RecordPart: record: { part: x } measures the clip over that part\'s box only.
+	RecordPart string `json:"recordPart,omitempty"`
 	// AllCombinations takes the traces and the clip at every viewport × colour scheme, not only
 	// the first.
 	AllCombinations bool `json:"allCombinations,omitempty"`

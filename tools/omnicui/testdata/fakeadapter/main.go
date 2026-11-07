@@ -22,6 +22,7 @@
 //	                  size asked for), blank (white only)
 //	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
 //	FAKE_ROLE         part=role,… to report another role than the contract's
+//	FAKE_LATE_PART    trace fails with "no part" (a target that looks the part up too early)
 //	FAKE_CONTROLS     draw window controls (part <component>.controls) that other targets lack
 //	FAKE_KEYS         role=Key+Key,… advertised as the keys that activate each role
 //	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
@@ -254,7 +255,7 @@ func handle(n int, r req) (any, error) {
 	}
 	switch r.Method {
 	case "advertise":
-		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,record,probe,bounds,role,focused"), ",")
+		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,trace.scale,record,probe,bounds,role,focused"), ",")
 		cannot := map[string]string{}
 		for _, kv := range strings.Split(os.Getenv("FAKE_CANNOT"), ",") {
 			if k, v, ok := strings.Cut(kv, "="); ok {
@@ -337,6 +338,8 @@ func handle(n int, r req) (any, error) {
 		switch p.Field {
 		case "focused":
 			return st.focused == part, nil
+		case "selected":
+			return part == "increment" && st.count > 0, nil
 		case "role":
 			for _, kv := range strings.Split(os.Getenv("FAKE_ROLE"), ",") {
 				if k, v, ok := strings.Cut(kv, "="); ok && k == part {
@@ -375,6 +378,11 @@ func handle(n int, r req) (any, error) {
 	case "screenshot":
 		return p.Path, screenshot(p.Path)
 	case "trace", "record":
+		// FAKE_LATE_PART: the traced part only appears during the steps, and this target looks
+		// it up before them (as a target shouldn't).
+		if r.Method == "trace" && os.Getenv("FAKE_LATE_PART") != "" {
+			return nil, &rpcErr{-32002, "no part " + p.Part}
+		}
 		start := st.moved
 		for _, s := range p.Steps {
 			b, _ := json.Marshal(s)
@@ -392,6 +400,10 @@ func handle(n int, r req) (any, error) {
 			t := math.Max(0, math.Min(1, (ms-50)/dur))
 			x := 36 + start + (end-start)*ease(t)
 			switch {
+			case r.Method == "trace" && p.Property == "scale":
+				// A spring: up to 1.25 and back, over the duration (a round trip).
+				v := 1 + 0.25*math.Sin(math.Pi*t)*math.Abs(end-start)/20
+				out = append(out, map[string]any{"ms": ms, "value": v})
 			case r.Method == "trace" && p.Property == "opacity":
 				v := 1 - 0.5*ease(t)*math.Abs(end-start)/20
 				out = append(out, map[string]any{"ms": ms, "value": v})

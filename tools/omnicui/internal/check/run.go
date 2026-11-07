@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -466,7 +467,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		needs = append(needs, "read")
 		for _, ch := range e.Checks {
 			switch ch.Field {
-			case "role", "focused":
+			case "role", "focused", "selected":
 				needs = append(needs, ch.Field)
 			case "visible":
 				needs = append(needs, "bounds")
@@ -541,7 +542,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			spec := test.Trace[0]
 			if capability := traceCapability(spec); tr.can[capability] {
 				var samples []compare.Sample
-				err := tr.call("trace", traceParams(c, spec, steps), &samples)
+				err := tr.trace(c, spec, steps, &samples)
 				if handle(err, label(cb)) {
 					if res.Status == Broken {
 						break
@@ -620,14 +621,14 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					break
 				}
 				var samples []compare.Sample
-				if handle(tr.call("trace", traceParams(c, spec, steps), &samples), label(cb)) {
+				if handle(tr.trace(c, spec, steps, &samples), label(cb)) {
 					break
 				}
 				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
 			}
 			if test.Record && res.Status != Broken {
 				if tr.can["record"] {
-					tr.record(c, cb, dir, steps, mount, handle, label, &res, ci == 0)
+					tr.record(c, test.RecordPart, cb, dir, steps, mount, handle, label, &res, ci == 0)
 				} else {
 					res.Missing["record"] = tr.reason("record")
 				}
@@ -649,6 +650,22 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 
 // traceCapability is what a target must advertise to take a trace: `trace` for a position,
 // `trace.<property>` for a property.
+// trace asks for a trace. A part the target can't find is often one that appears during the
+// steps (a sheet sliding in, a hero fading in): the message says the target should look it up
+// at each frame.
+func (tr *targetRun) trace(c *contract.Contract, spec contract.TraceSpec, steps []map[string]any, samples *[]compare.Sample) error {
+	err := tr.call("trace", traceParams(c, spec, steps), samples)
+	var re *rpc.RemoteError
+	var f *failure
+	if errors.As(tr.lastRemote, &re) && re.Code == -32002 && errors.As(err, &f) {
+		return &failure{msg: f.msg + fmt.Sprintf(" (if `%s` appears during the steps, %s's trace should look it up at each frame and start its samples when it is there: see the protocol's trace)", spec.Part, tr.t.Name)}
+	}
+	if err == nil && len(*samples) == 0 {
+		return &failure{msg: fmt.Sprintf("trace %s: no samples (the part wasn't on screen at any frame)", c.ID+"."+spec.Part)}
+	}
+	return err
+}
+
 func traceCapability(spec contract.TraceSpec) string {
 	if spec.Property == "" || spec.Property == "position" {
 		return "trace"
@@ -697,14 +714,42 @@ func (r *recording) UnmarshalJSON(b []byte) error {
 
 // record takes the clip at one combination: the frames, a lossless animated PNG of them, and
 // the clip's visual progress curve, which is what clips are compared by.
-func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []map[string]any, mount func(Combo) error,
+// clipMargin is how far around a part's box a clip of the part is measured, in pixels: room for
+// a shadow, a ripple or a scale beyond the box.
+const clipMargin = 8
+
+func (tr *targetRun) record(c *contract.Contract, part string, cb Combo, dir string, steps []map[string]any, mount func(Combo) error,
 	handle func(error, string) bool, label func(Combo) string, res *TestResult, first bool) {
 	framesDir := filepath.Join(dir, "frames-"+cb.Key())
 	os.MkdirAll(framesDir, 0o755)
 	var rec recording
-	if handle(mount(cb), label(cb)) || handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &rec), label(cb)) {
+	if handle(mount(cb), label(cb)) {
 		return
 	}
+	// record: { part: x }: the clip is measured over that part's box, before and after the steps,
+	// and a margin around it.
+	var box *compare.Region
+	partBox := func() {
+		if part == "" || !tr.can["bounds"] {
+			return
+		}
+		var r *Rect
+		if err := tr.call("bounds", map[string]any{"part": c.ID + "." + part}, &r); err != nil || r == nil || r.Width <= 0 || r.Height <= 0 {
+			return
+		}
+		b := compare.Region{X: r.X - clipMargin, Y: r.Y - clipMargin, Width: r.Width + 2*clipMargin, Height: r.Height + 2*clipMargin}
+		if box != nil {
+			x0, y0 := math.Min(box.X, b.X), math.Min(box.Y, b.Y)
+			x1, y1 := math.Max(box.X+box.Width, b.X+b.Width), math.Max(box.Y+box.Height, b.Y+b.Height)
+			b = compare.Region{X: x0, Y: y0, Width: x1 - x0, Height: y1 - y0}
+		}
+		box = &b
+	}
+	partBox()
+	if handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &rec), label(cb)) {
+		return
+	}
+	partBox()
 	if len(rec.Frames) == 0 {
 		tr.log.Warn("record returned no frames")
 		return
@@ -720,16 +765,21 @@ func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []
 	} else {
 		clip.File = rel(file)
 	}
-	curve, progress, note, err := compare.VisualProgress(rec.Frames, rec.Held)
+	if part != "" && box == nil {
+		clip.Note = fmt.Sprintf("`%s` had no box on screen (or %s doesn't advertise bounds), so the whole frames are measured; ", part, tr.t.Name)
+	}
+	curve, progress, note, err := compare.VisualProgressIn(rec.Frames, rec.Held, box)
 	switch {
 	case err != nil:
-		clip.Note = err.Error()
-	case note != "":
-		clip.Note = note
+		clip.Note += err.Error()
 	default:
-		clip.Progress = &curve
-		clip.Values = progress
+		clip.Note += note
+		if curve.Moved {
+			clip.Progress = &curve
+			clip.Values = progress
+		}
 	}
+	clip.Note = strings.TrimSuffix(clip.Note, "; ")
 	if res.Clips == nil {
 		res.Clips = map[string]ClipResult{}
 	}
@@ -1043,8 +1093,8 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 			out = append(out, fmt.Sprintf("event %s %s", e.Name, fields))
 		}
 		for _, p := range c.Parts {
-			for _, f := range []string{"text", "checked", "value", "disabled"} {
-				if _, ok := contract.Roles[p.Role].Fields[f]; !ok {
+			for _, f := range []string{"text", "checked", "value", "disabled", "selected"} {
+				if _, ok := contract.Roles[p.Role].Fields[f]; !ok || (f == "selected" && !tr.can["selected"]) {
 					continue
 				}
 				var got any
@@ -1098,7 +1148,7 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		pressed, err = read()
 	}
 	if err == nil && stateDiff(before, pressed) == "" {
-		return notMeasured(fmt.Sprintf("a press on `%s` changed nothing a test can read when %s mounts (no event, and no part's text, checked, value or disabled), so there is nothing to compare %s with: a test that sets it up (props) and expects the change says more", k.Part, c.ID, k.Key))
+		return notMeasured(fmt.Sprintf("a press on `%s` changed nothing a test can read when %s mounts (no event, and no part's text, checked, value, disabled or selected), so there is nothing to compare %s with: a test that sets it up (props) and expects the change says more", k.Part, c.ID, k.Key))
 	}
 	if err == nil {
 		var keyed []string

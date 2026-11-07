@@ -206,7 +206,6 @@ func round(v float64, places int) float64 {
 	return math.Round(v*p) / p
 }
 
-// partAt names the smallest part, in either target, whose box holds the middle of a spot.
 // pixelView is what of two targets' screenshots a test compares: its contract's and its own
 // masks, and its screenshot part, from the boxes each target reported. With no boxes from a
 // target (it doesn't advertise bounds), the whole screenshots are compared, and the note says so.
@@ -280,6 +279,7 @@ func joinNotes(a, b string) string {
 	return a + "; " + b
 }
 
+// partAt names the smallest part, in either target, whose box holds the middle of a spot.
 func partAt(spot compare.Box, a, b map[string]Rect) string {
 	x, y := float64(spot.X)+float64(spot.W)/2, float64(spot.Y)+float64(spot.H)/2
 	best, area := "", math.Inf(1)
