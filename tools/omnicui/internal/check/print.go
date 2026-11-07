@@ -209,16 +209,21 @@ func Print(w io.Writer, rep *Report, runDir string) {
 	for _, r := range rep.Required {
 		fmt.Fprintf(w, "\nrequired: %s\n", r)
 	}
-	if slow := Slowest(rep, 5); len(slow) > 0 {
+	// Where the time went: the slowest tests (of a second or more), then each target's total.
+	slow := Slowest(rep, 5)
+	if len(slow) > 0 {
 		fmt.Fprintf(w, "\nslowest:")
 		for _, r := range slow {
 			fmt.Fprintf(w, " %s %s › %s %s;", r.Target, shortID(r.Contract), r.Test, Seconds(r.Ms))
 		}
 		fmt.Fprintln(w)
-		for _, t := range rep.Targets {
-			if t.Ms > 0 {
-				fmt.Fprintf(w, "  %s took %s, %s of it starting\n", t.Name, Seconds(t.Ms), Seconds(t.StartMs))
+	}
+	for i, t := range rep.Targets {
+		if t.Ms > 0 {
+			if i == 0 && len(slow) == 0 {
+				fmt.Fprintln(w)
 			}
+			fmt.Fprintf(w, "  %s took %s, %s of it starting\n", t.Name, Seconds(t.Ms), Seconds(t.StartMs))
 		}
 	}
 	s := rep.Summary

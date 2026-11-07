@@ -105,6 +105,8 @@ func TestTimesAndStderr(t *testing.T) {
 	if !strings.Contains(out.String(), "stderr | adapter note during press") {
 		t.Fatal(out.String())
 	}
+	// Each target's time is printed however fast the machine is (the slowest-tests line only
+	// lists tests of a second or more, so it may be absent).
 	if !strings.Contains(out.String(), "  a took ") {
 		t.Fatal(out.String())
 	}
@@ -145,7 +147,9 @@ func TestExclusive(t *testing.T) {
 	overlap := func(extra string, serial bool) bool {
 		spans := filepath.Join(t.TempDir(), "spans.txt")
 		env := func(n string) map[string]string {
-			return map[string]string{"FAKE_SPAN_FILE": spans, "FAKE_NAME": n, "FAKE_START_MS": "300"}
+			// Each request takes 30 ms, so a target is alive for a second or more after it
+			// starts: side by side they overlap even on a slow, busy machine.
+			return map[string]string{"FAKE_SPAN_FILE": spans, "FAKE_NAME": n, "FAKE_START_MS": "300", "FAKE_SLEEP_MS": "30"}
 		}
 		root := testutil.Project(t, map[string]T{"a": {Env: env("a"), Extra: extra}, "b": {Env: env("b")}})
 		p := project.Project{Root: root}

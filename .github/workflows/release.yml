@@ -1,5 +1,5 @@
 # Releases. Runs on pushes to main only. A push to main is a release: the checks, then
-# `make release`, then a GitHub Release v<VERSION> with the six binaries, the command's source
+# `make release` and its smoke test (scripts/smoke.sh), then a GitHub Release v<VERSION> with the six binaries, the command's source
 # (omnicui-src-<VERSION>.tar.gz, what a project that vendors omnicui takes) and SHA256SUMS, its notes
 # notes/<VERSION>.md followed by how to use each asset (scripts/release-body.mjs). If v<VERSION>
 # already exists (a re-run, or a push that didn't raise VERSION), nothing is released.
@@ -58,6 +58,9 @@ jobs:
       - name: Build the release files
         if: steps.v.outputs.new == 'true'
         run: make release VERSION="${{ steps.v.outputs.version }}"
+      - name: Smoke test the release files (the same as on every merge request)
+        if: steps.v.outputs.new == 'true'
+        run: scripts/smoke.sh "${{ steps.v.outputs.version }}"
       - name: Publish v${{ steps.v.outputs.version }}
         if: steps.v.outputs.new == 'true'
         env:

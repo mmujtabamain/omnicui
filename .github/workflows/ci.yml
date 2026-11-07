@@ -1,6 +1,7 @@
-# omnicui's checks, one job each, and each runs only when its own files change. A job that has
-# nothing to check is skipped, and a skipped job counts as passed for the required checks
-# (.github/rulesets/main.json). The release-notes check is notes.yml. The real-target suite (three
+# omnicui's checks, one job each. The Go tests and the smoke test run on every merge request,
+# whatever it changes, so that what the release job runs on main has passed before the merge.
+# The other jobs run only when their own files change; a skipped job counts as passed for the
+# required checks (.github/rulesets/main.json). The release-notes check is notes.yml. The real-target suite (three
 # apps, a browser, a JVM and a GPU driver) runs with ./run.sh test or ./fresh-copy.sh.
 name: omnicui
 
@@ -58,8 +59,6 @@ jobs:
 
   go-tests:
     name: Go vet and tests
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -75,6 +74,22 @@ jobs:
         run: go vet ./...
       - name: Tests (contracts, protocol, failure injection against a fake adapter, the check, the CLI)
         run: go test -count=1 ./...
+
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/omnicui/go.mod
+          cache-dependency-path: tools/omnicui/go.sum
+      - name: The release files, used as a project uses them (the release job runs the same)
+        run: |
+          v="$(tr -d '[:space:]' < VERSION)"
+          make release VERSION="$v"
+          scripts/smoke.sh "$v"
 
   go-builds:
     name: Go builds
