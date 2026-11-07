@@ -170,7 +170,7 @@ This writes `omnicui/targets/swiftui/target.yaml` and prints the constructs to i
 
 `VERSION` is the version, and `notes/<VERSION>.md` its release notes (front matter with `version`, `date` and a one-sentence `summary`, then `## New`, `## Changed`, `## Fixed`). A merge into `main` raises `VERSION` and adds its note; that is the whole release step.
 
-- `.github/workflows/ci.yml`, on merge requests and on `main`, one job each, and each only when its own files change: Go vet and tests, the six Go builds (`tools/omnicui/`, `Makefile`), the release scripts' tests (`scripts/`), and, always, `node scripts/neutral.mjs` (omnicui names no project that uses it).
+- `.github/workflows/ci.yml`, on merge requests and on `main`, one job each. Always: Go vet and tests, the smoke test (`scripts/smoke.sh`: the release files built and used as a project uses them, the same as the release job runs before it publishes), and `node scripts/neutral.mjs` (omnicui names no project that uses it). Only when their own files change: the six Go builds (`tools/omnicui/`, `Makefile`), the release scripts' tests (`scripts/`) and the web static server.
 - `.github/workflows/notes.yml`: `node scripts/check-notes.mjs` (with `--base-version` from `main` on a merge request): `VERSION` is raised and every note is well formed.
 - `.github/workflows/release.yml`, on `main`: when `v<VERSION>` has no release yet, the checks, `make release`, and a GitHub Release with the six binaries, `omnicui-src-<VERSION>.tar.gz` and `SHA256SUMS`. Its text is the note, then how to use each file (`scripts/release-body.mjs`).
 - `.github/rulesets/main.json` protects `main` (merge requests only, both checks required); import it once under Settings → Rules → Rulesets.
