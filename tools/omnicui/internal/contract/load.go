@@ -445,7 +445,7 @@ func (l *loader) lintThresholds(c *Contract, given map[string]any) {
 		{"spot", "%", "correct renderings reach up to about 1.6%", c.Pixels.Spot, d.Spot},
 		{"shift", "px", "glyph placement alone usually measures 3–7 px", c.Pixels.Shift, d.Shift},
 		{"timing", "ms", "the same easing measured on two toolkits usually differs by 5–15 ms", c.TimingThreshold, DefaultTimingThreshold},
-		{"motion", "ms", "the same clip recorded on two toolkits differed by up to 20 ms", c.MotionThreshold, DefaultMotionThreshold},
+		{"motion", "ms", "the same clip recorded on two toolkits differed by up to 30 ms", c.MotionThreshold, DefaultMotionThreshold},
 	} {
 		ptr := "/thresholds/" + t.name
 		if _, ok := given[t.name]; ok && t.got < t.def/3 {

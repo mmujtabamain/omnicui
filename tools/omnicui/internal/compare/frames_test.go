@@ -46,12 +46,12 @@ func fadeFrames(t *testing.T, dir string, ease func(float64) float64, durMS, del
 func TestVisualProgress(t *testing.T) {
 	d := t.TempDir()
 	lin := func(p float64) float64 { return p }
-	a, _, note, err := VisualProgress(fadeFrames(t, filepath.Join(d, "a"), lin, 200, 0, 1000.0/60))
+	a, _, note, err := VisualProgress(fadeFrames(t, filepath.Join(d, "a"), lin, 200, 0, 1000.0/60), false)
 	if err != nil || note != "" || !a.Moved {
 		t.Fatal(err, note, a)
 	}
 	// The same fade on another clock: 30 frames a second, starting 70 ms later.
-	b, _, _, _ := VisualProgress(fadeFrames(t, filepath.Join(d, "b"), lin, 200, 70, 1000.0/30))
+	b, _, _, _ := VisualProgress(fadeFrames(t, filepath.Join(d, "b"), lin, 200, 70, 1000.0/30), false)
 	if diff, _ := Differ(a, b); diff > 18 {
 		t.Errorf("same fade, other clock: %.1f ms apart", diff)
 	}
@@ -59,7 +59,7 @@ func TestVisualProgress(t *testing.T) {
 	if diff, _ := Differ(a, want); diff > 18 {
 		t.Errorf("a linear 200 ms fade against linear 200 ms: %.1f ms", diff)
 	}
-	slow, _, _, _ := VisualProgress(fadeFrames(t, filepath.Join(d, "c"), lin, 400, 0, 1000.0/60))
+	slow, _, _, _ := VisualProgress(fadeFrames(t, filepath.Join(d, "c"), lin, 400, 0, 1000.0/60), false)
 	if diff, _ := Differ(a, slow); diff < 50 {
 		t.Errorf("200 ms against 400 ms: only %.1f ms apart", diff)
 	}
@@ -72,14 +72,26 @@ func TestVisualProgress(t *testing.T) {
 			sparse = append(sparse, f)
 		}
 	}
-	h, _, _, _ := VisualProgress(sparse)
+	h, _, _, _ := VisualProgress(sparse, true)
 	if diff, _ := Differ(a, h); diff > 18 {
 		t.Errorf("a fade after a held first frame: %.1f ms apart", diff)
+	}
+	// A target that sends a frame every pulse, with one slow pulse in the middle of the fade: the
+	// fade went on during the gap, so levels are interpolated across it.
+	var stalled []Frame
+	for _, f := range fadeFrames(t, filepath.Join(d, "g"), lin, 200, 0, 1000.0/60) {
+		if f.MS < 60 || f.MS > 110 {
+			stalled = append(stalled, f)
+		}
+	}
+	g, _, _, _ := VisualProgress(stalled, false)
+	if diff, _ := Differ(a, g); diff > 18 {
+		t.Errorf("a fade with a stalled pulse: %.1f ms apart", diff)
 	}
 	// A round trip (fade in, then out) has no single direction; it says so.
 	there := fadeFrames(t, filepath.Join(d, "d"), lin, 200, 0, 1000.0/60)
 	back := append(there, Frame{MS: there[len(there)-1].MS + 16, File: there[0].File})
-	if _, _, note, _ := VisualProgress(back); note == "" {
+	if _, _, note, _ := VisualProgress(back, false); note == "" {
 		t.Error("a round trip should be explained, not measured")
 	}
 }

@@ -267,7 +267,8 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     await cdp.send("Page.stopScreencast");
     cdp.off("Page.screencastFrame", onFrame);
     await Promise.all(writes);
-    return { frames, inputs };
+    // held: frames come only when the picture changes, so a gap means "unchanged until then".
+    return { frames, inputs, held: true };
   },
 };
 

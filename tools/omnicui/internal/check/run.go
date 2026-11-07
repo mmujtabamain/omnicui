@@ -563,6 +563,9 @@ func mergeProps(viewport, test map[string]any) map[string]any {
 type recording struct {
 	Frames []compare.Frame `json:"frames"`
 	Inputs []float64       `json:"inputs"`
+	// Held: the target sends a frame only when the picture changes (Chromium's screencast), so a
+	// gap between frames is a still picture, not a slow change.
+	Held bool `json:"held"`
 }
 
 func (r *recording) UnmarshalJSON(b []byte) error {
@@ -598,7 +601,7 @@ func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []
 	} else {
 		clip.File = rel(file)
 	}
-	curve, progress, note, err := compare.VisualProgress(rec.Frames)
+	curve, progress, note, err := compare.VisualProgress(rec.Frames, rec.Held)
 	switch {
 	case err != nil:
 		clip.Note = err.Error()

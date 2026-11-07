@@ -27,7 +27,11 @@ import (
 // last frame is the mean colour difference over the pixels that change at all in the clip, and
 // progress is 1 − distance/distance(first, last). Note says why there is no curve: the clip
 // ends where it started (a round trip, which traces measure better), or nothing changes.
-func VisualProgress(frames []Frame) (Curve, []float64, string, error) {
+//
+// held says the frames come only when the picture changes (a screencast): a level reached after a
+// gap of more than 40 ms is reached at the later frame, not somewhere along the gap. Otherwise
+// (a frame every pulse, which a slow pulse delays) levels are interpolated across gaps.
+func VisualProgress(frames []Frame, held bool) (Curve, []float64, string, error) {
 	if len(frames) < 2 {
 		return Curve{}, nil, "fewer than two frames", nil
 	}
@@ -79,8 +83,10 @@ func VisualProgress(frames []Frame) (Curve, []float64, string, error) {
 		ms[i] = frames[i].MS
 		progress[i] = 1 - dist(im, last)/total
 	}
-	// Frames more than 40 ms apart (over two frames at 60 fps) are a held picture, not a ramp.
-	return AnalyzeHeld(ms, progress, 0.01, 40), progress, "", nil
+	if held {
+		return AnalyzeHeld(ms, progress, 0.01, 40), progress, "", nil
+	}
+	return AnalyzeValues(ms, progress, 0.01), progress, "", nil
 }
 
 // APNG writes frames as an animated PNG: lossless, so gradients and textures keep their colours

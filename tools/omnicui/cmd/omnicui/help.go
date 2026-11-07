@@ -85,7 +85,7 @@ How targets are compared (warnings, never failures, unless check --fail-on says 
 
 Thresholds far below the defaults make every comparison warn: correct renderings by different
 toolkits differ by up to 26%% of area and by up to about 1.6%% in spot; the same easing measured on
-two toolkits by 5–15 ms, and the same clip by up to 20 ms. Try them on saved screenshots with: omnicui compare a.png b.png --diff d.png
+two toolkits by 5–15 ms, and the same clip by up to 30 ms. Try them on saved screenshots with: omnicui compare a.png b.png --diff d.png
 
 Every reply waits until the UI has settled: nothing animating, events processed, and the app not
 busy (for example, waiting for a network reply), when the app tells its target so.

@@ -132,7 +132,7 @@ type Contract struct {
 	TimingThreshold float64         `json:"timingThreshold"`
 	// MotionThreshold is for clips compared by visual progress, in ms. It is wider than timing's:
 	// a clip shows everything that changes (a colour, a highlight), each target's frames come on
-	// its own clock, and correct renderings measured up to 20 ms apart.
+	// its own clock, and correct renderings measured up to 30 ms apart.
 	MotionThreshold float64 `json:"motionThreshold"`
 }
 

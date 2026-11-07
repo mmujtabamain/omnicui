@@ -114,7 +114,21 @@ final class JavaFxTarget {
                 int[] frame = {0};
                 var frames = new ArrayList<Map<String, Object>>();
                 var inputs = new ArrayList<Double>();
-                var samples = sample(p.path("steps"), () -> screenshot(dir + "/" + (frame[0]++) + ".png"), inputs);
+                // Only the snapshot is taken on the FX thread, each pulse; encoding the PNG there
+                // would slow the very frames being recorded. Files are written meanwhile, elsewhere.
+                var writer = java.util.concurrent.Executors.newFixedThreadPool(4);
+                var writes = new ArrayList<java.util.concurrent.Future<?>>();
+                var samples = sample(p.path("steps"), () -> {
+                    var image = scene.snapshot(null);
+                    var file = new File(dir + "/" + (frame[0]++) + ".png");
+                    writes.add(writer.submit(() -> {
+                        ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
+                        return null;
+                    }));
+                    return file.getPath();
+                }, inputs);
+                for (var w : writes) w.get();
+                writer.shutdown();
                 for (var s : samples) frames.add(Map.of("ms", s.get("ms"), "file", s.get("value")));
                 // protocol: when each step's input was delivered, on the frames' clock
                 return Map.of("frames", frames, "inputs", inputs);

@@ -20,7 +20,10 @@ Clips can't simply be compared frame by frame. Each target records on its own cl
    - lined up by the mean difference, which removes each target's start time;
    - measured at 10%, 20%, … 90% of the change, which removes the frame rate.
 
-   The first version read the screencast's 246 ms gap as a slow ramp, and put web and JavaFX 80 ms apart on a correct switch. Frames more than 40 ms apart are now a held picture.
+   The first version read the screencast's 246 ms gap as a slow ramp, and put web and JavaFX 80 ms apart on a correct switch. Now:
+   - the web adapter says its frames are held (`held: true`), and for web, frames more than 40 ms apart are a still picture;
+   - for JavaFX, a gap is a slow pulse and is interpolated. Treating JavaFX gaps as held once put a correct JavaFX clip 128 ms off;
+   - JavaFX also wrote each PNG on its UI thread, slowing the frames it recorded. It now only snapshots there, and writes the files on worker threads.
 2. **Opacity traces** (`property: opacity`), on web and JavaFX: the part's opacity times its ancestors'. egui multiplies opacity into its painted colours and has nothing to read back. It says so, and its fades are compared through the clip.
 3. **Input times.** `record` replies with when each step's input landed, on the frames' clock. report.html uses this to line every target's clip up at the input, in one player.
 4. **Lossless clips** (animated PNG), and `allCombinations: true` for traces and clips at every viewport and colour scheme.
@@ -31,16 +34,16 @@ These come from the switch's "a press turns it on" test in `make test-real`, egu
 
 | run | position trace | clip, visual progress |
 |---|---|---|
-| no defect (6 runs) | 0.0–0.5 | 0.8–20 |
-| `web.switch.slow`: 300 ms linear slide on web | 59 | 73–89 |
-| `javafx.switch.linear`: the same on JavaFX | 59 | 96–104 |
+| no defect (20 runs) | 0.0–0.5 | 1.5–30, and 14 or less in 18 of them |
+| `web.switch.slow`: 300 ms linear slide on web | 59 | 76–89 |
+| `javafx.switch.linear`: the same on JavaFX | 59 | 84–104 |
 | `egui.switch.linear`: the same on egui | 59 | 72–74 |
 | `web.switch.dim`: the thumb also fades over 600 ms, web only | **0.3** | **183–184** |
-| `javafx.switch.dim`: the same, JavaFX only | **2.3** | **182–184** |
+| `javafx.switch.dim`: the same, JavaFX only | **2.3** | **182–189** |
 
 - **The fade is invisible to the position trace and plain in the clip.** That is the case the banking agent had no check for.
 - **Clips are noisier than traces,** so they have their own threshold, `thresholds.motion`, at 40 ms by default:
-  - correct clips measured up to 20 ms apart, mostly egui against the others;
+  - correct clips measured up to 30 ms apart, mostly JavaFX against the others;
   - every defect measured 72 ms or more.
 
 An opacity trace, run against the same targets, matches the fade's named timing ("600ms linear") within 0.0 ms on web and 0.1 ms on JavaFX. The target without the fade shows as "one changed and the other didn't".
