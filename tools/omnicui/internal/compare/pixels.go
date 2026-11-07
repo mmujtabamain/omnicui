@@ -78,9 +78,10 @@ func (b Box) String() string { return fmt.Sprintf("%d×%d at %d,%d", b.W, b.H, b
 
 // Colours of the diff image.
 var (
-	diffStrong = color.RGBA{R: 230, G: 0, B: 40, A: 255}  // strongly off in colour
-	diffWeak   = color.RGBA{R: 255, G: 150, B: 0, A: 255} // differs a little (mostly edges)
-	diffBox    = color.RGBA{R: 30, G: 90, B: 230, A: 255} // outline of one of the worst spots
+	diffStrong = color.RGBA{R: 230, G: 0, B: 40, A: 255}    // strongly off in colour
+	diffWeak   = color.RGBA{R: 255, G: 150, B: 0, A: 255}   // differs a little (mostly edges)
+	diffBox    = color.RGBA{R: 30, G: 90, B: 230, A: 255}   // outline of one of the worst spots
+	diffMasked = color.RGBA{R: 150, G: 156, B: 164, A: 255} // left out by a mask
 )
 
 // Measure compares two PNG screenshots of the same size.
@@ -95,6 +96,39 @@ var (
 // differing pixels orange, a blue box around each of the worst spots, and the rest faded.
 // The note says why there are no measures (different sizes, nothing drawn).
 func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error) {
+	return MeasureView(aPath, bPath, diffPath, View{})
+}
+
+// Region is a box in an image, in pixels.
+type Region struct{ X, Y, Width, Height float64 }
+
+func (r Region) rect() image.Rectangle {
+	return image.Rect(int(math.Floor(r.X)), int(math.Floor(r.Y)), int(math.Ceil(r.X+r.Width)), int(math.Ceil(r.Y+r.Height)))
+}
+
+// View says which part of two screenshots to compare.
+//
+//   - CropA and CropB, if set, cut each image down to that box first (the same part, which may
+//     sit somewhere else on each target). Boxes of different sizes are compared from their
+//     top-left corners, on a canvas as large as the larger one, filled with each image's
+//     background: the size difference counts as a difference.
+//   - MasksA and MasksB are boxes to leave out, each in its own image's coordinates (before any
+//     crop). Every mask is left out of both images, at the same place relative to the crop:
+//     what one target draws there and the other doesn't (window controls in a desktop toolbar)
+//     is not compared either.
+type View struct {
+	CropA, CropB   *Region
+	MasksA, MasksB []Region
+}
+
+// Empty says whether the view compares the whole screenshots.
+func (v View) Empty() bool {
+	return v.CropA == nil && v.CropB == nil && len(v.MasksA) == 0 && len(v.MasksB) == 0
+}
+
+// MeasureView is Measure on a part of the screenshots: see View. Masked pixels count as not
+// drawn and show grey in the diff image.
+func MeasureView(aPath, bPath, diffPath string, v View) (m Measures, note string, err error) {
 	ai, err := readPNG(aPath)
 	if err != nil {
 		return m, "", err
@@ -103,6 +137,70 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 	if err != nil {
 		return m, "", err
 	}
+	var masked []bool
+	if !v.Empty() {
+		ai, bi, masked = applyView(ai, bi, v)
+	}
+	return measureImages(ai, bi, diffPath, masked)
+}
+
+// applyView crops and masks two images as View says, returning images of one size and which of
+// their pixels are masked.
+func applyView(ai, bi image.Image, v View) (image.Image, image.Image, []bool) {
+	cut := func(img image.Image, r *Region) (image.Rectangle, image.Point) {
+		if r == nil {
+			return img.Bounds(), img.Bounds().Min
+		}
+		box := r.rect().Intersect(img.Bounds())
+		return box, box.Min
+	}
+	ra, oa := cut(ai, v.CropA)
+	rb, ob := cut(bi, v.CropB)
+	w, h := max(ra.Dx(), rb.Dx()), max(ra.Dy(), rb.Dy())
+	canvas := func(img image.Image, r image.Rectangle) *image.RGBA {
+		out := image.NewRGBA(image.Rect(0, 0, w, h))
+		bg := img.At(img.Bounds().Min.X, img.Bounds().Min.Y)
+		if !r.Empty() {
+			bg = img.At(r.Min.X, r.Min.Y)
+		}
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				if x < r.Dx() && y < r.Dy() {
+					out.Set(x, y, img.At(r.Min.X+x, r.Min.Y+y))
+				} else {
+					out.Set(x, y, bg)
+				}
+			}
+		}
+		return out
+	}
+	ca, cb := canvas(ai, ra), canvas(bi, rb)
+	masked := make([]bool, w*h)
+	mark := func(r Region, origin image.Point) {
+		box := r.rect().Sub(origin).Intersect(image.Rect(0, 0, w, h))
+		for y := box.Min.Y; y < box.Max.Y; y++ {
+			for x := box.Min.X; x < box.Max.X; x++ {
+				masked[y*w+x] = true
+			}
+		}
+	}
+	for _, r := range v.MasksA {
+		mark(r, oa)
+	}
+	for _, r := range v.MasksB {
+		mark(r, ob)
+	}
+	bgA, bgB := ca.At(0, 0), cb.At(0, 0)
+	for i, m := range masked {
+		if m {
+			ca.Set(i%w, i/w, bgA)
+			cb.Set(i%w, i/w, bgB)
+		}
+	}
+	return ca, cb, masked
+}
+
+func measureImages(ai, bi image.Image, diffPath string, masked []bool) (m Measures, note string, err error) {
 	if ai.Bounds().Dx() != bi.Bounds().Dx() || ai.Bounds().Dy() != bi.Bounds().Dy() {
 		all := Measures{Area: 100, Strength: 100, Unmatched: 100, Spot: 100}
 		return all, fmt.Sprintf("sizes differ: %d×%d against %d×%d", ai.Bounds().Dx(), ai.Bounds().Dy(), bi.Bounds().Dx(), bi.Bounds().Dy()), nil
@@ -157,6 +255,9 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			i := y*w + x
+			if masked != nil && masked[i] {
+				continue
+			}
 			if delta(a.px[i], bgA) <= limit && delta(b.px[i], bgB) <= limit {
 				continue
 			}
@@ -202,6 +303,8 @@ func Measure(aPath, bPath, diffPath string) (m Measures, note string, err error)
 			for x := 0; x < w; x++ {
 				i := y*w + x
 				switch {
+				case masked != nil && masked[i]:
+					diff.Set(x, y, diffMasked)
 				case strong[i]:
 					diff.Set(x, y, diffStrong)
 				case differs[i]:

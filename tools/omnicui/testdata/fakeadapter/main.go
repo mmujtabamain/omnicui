@@ -22,6 +22,7 @@
 //	                  size asked for), blank (white only)
 //	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
 //	FAKE_ROLE         part=role,… to report another role than the contract's
+//	FAKE_CONTROLS     draw window controls (part <component>.controls) that other targets lack
 //	FAKE_KEYS         role=Key+Key,… advertised as the keys that activate each role
 //	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
 //	FAKE_SPAN_FILE    append "<FAKE_NAME> start|stop <unix ns>" when starting and stopping
@@ -193,6 +194,9 @@ func screenshot(path string) error {
 			if x >= 24+shift && x < 84+shift && y >= 24 && y < 54 {
 				c = fg
 			}
+			if os.Getenv("FAKE_CONTROLS") != "" && x >= 100 && x < 120 && y >= 24 && y < 44 {
+				c = color.RGBA{0xe0, 0x30, 0x30, 0xff}
+			}
 			// The switch's thumb, where it is now (so that recorded frames show it slide).
 			if tx := 30 + int(st.moved+0.5); st.component == "ui.switch" && x >= tx+shift && x < tx+12+shift && y >= 33 && y < 45 {
 				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
@@ -329,6 +333,14 @@ func handle(n int, r req) (any, error) {
 		}
 		return nil, nil
 	case "bounds":
+		// FAKE_CONTROLS: this target draws window controls, the part <component>.controls, at
+		// 100,24 (20×20); other targets don't have it.
+		if p.Part == st.component+".controls" {
+			if os.Getenv("FAKE_CONTROLS") != "" {
+				return map[string]any{"x": 100, "y": 24, "width": 20, "height": 20}, nil
+			}
+			return nil, nil
+		}
 		if err := act("read", p); err != nil {
 			return nil, err
 		}

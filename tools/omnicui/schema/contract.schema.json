@@ -58,6 +58,10 @@
         "properties": {
           "role": {
             "$ref": "#/$defs/role"
+          },
+          "optional": {
+            "description": "The part is shown by some targets only (window controls in a desktop toolbar, say). A mask or a crop naming it covers it where it is, and is skipped where it isn't.",
+            "type": "boolean"
           }
         }
       }
@@ -156,6 +160,13 @@
     "keyboard": {
       "description": "For every button, switch and checkbox, add a test per key its role is activated by (button: Enter and Space; switch, checkbox: Space): the key must do what a pointer press does.",
       "type": "boolean"
+    },
+    "mask": {
+      "description": "Parts left out of every screenshot comparison of this contract, on every target (with each test's own mask).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partName"
+      }
     }
   },
   "$defs": {
@@ -224,7 +235,27 @@
           }
         },
         "screenshot": {
-          "type": "boolean"
+          "description": "true: compare screenshots at every viewport × colour scheme. Or an object: mask leaves parts out (where any target shows them, on both), part compares only that part's box on each target.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "mask": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/partName"
+                  }
+                },
+                "part": {
+                  "$ref": "#/$defs/partName"
+                }
+              }
+            }
+          ]
         },
         "trace": {
           "type": "array",

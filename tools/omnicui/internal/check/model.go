@@ -144,6 +144,8 @@ type Comparison struct {
 	Measures   *compare.Measures         `json:"measures,omitempty"`
 	Thresholds *contract.PixelThresholds `json:"thresholds,omitempty"`
 	Over       []string                  `json:"over,omitempty"`
+	// Raw: the whole screenshots' measures, when a mask or a screenshot part narrowed the comparison.
+	Raw *compare.Measures `json:"raw,omitempty"`
 	// SpotPart is the part the worst spot is in, when the targets report bounds.
 	SpotPart string `json:"spotPart,omitempty"`
 	Diff     string `json:"diff,omitempty"`

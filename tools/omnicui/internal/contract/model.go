@@ -22,6 +22,8 @@ type Part struct {
 	Role string `json:"role"`
 	// ID is the part's id in every target: <contract id>.<part name>.
 	ID string `json:"id"`
+	// Optional: shown by some targets only. Masks and crops skip it where it isn't.
+	Optional bool `json:"optional,omitempty"`
 }
 
 // Step is one user action. Times is already 1 or more.
@@ -86,8 +88,12 @@ type Test struct {
 	Steps      []Step         `json:"steps,omitempty"`
 	Expect     []Expectation  `json:"expect,omitempty"`
 	Screenshot bool           `json:"screenshot,omitempty"`
-	Trace      []TraceSpec    `json:"trace,omitempty"`
-	Record     bool           `json:"record,omitempty"`
+	// Mask: parts left out of the screenshot comparison (with the contract's mask); ScreenshotPart:
+	// compare only this part's box on each target.
+	Mask           []string    `json:"mask,omitempty"`
+	ScreenshotPart string      `json:"screenshotPart,omitempty"`
+	Trace          []TraceSpec `json:"trace,omitempty"`
+	Record         bool        `json:"record,omitempty"`
 	// AllCombinations takes the traces and the clip at every viewport × colour scheme, not only
 	// the first.
 	AllCombinations bool `json:"allCombinations,omitempty"`
@@ -127,6 +133,8 @@ type Contract struct {
 	// Keyboard adds, for every button, switch and checkbox, a test per key that activates its
 	// role: the key must do what a pointer press does, on every target.
 	Keyboard bool `json:"keyboard,omitempty"`
+	// Mask: parts left out of every screenshot comparison of this contract.
+	Mask []string `json:"mask,omitempty"`
 	// Pixels are the screenshot thresholds; TimingThreshold is in milliseconds.
 	Pixels          PixelThresholds `json:"pixelThresholds"`
 	TimingThreshold float64         `json:"timingThreshold"`

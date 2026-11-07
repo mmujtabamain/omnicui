@@ -262,7 +262,7 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -478,7 +478,8 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	parts := v["parts"].(map[string]any)
 	for _, name := range orderedKeys(child(root, "parts")) {
 		p := parts[name].(map[string]any)
-		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name})
+		opt, _ := p["optional"].(bool)
+		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name, Optional: opt})
 	}
 	for i, tv := range v["tests"].([]any) {
 		t := tv.(map[string]any)
@@ -534,7 +535,18 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				test.Expect = append(test.Expect, ex)
 			}
 		}
-		test.Screenshot, _ = t["screenshot"].(bool)
+		switch sv := t["screenshot"].(type) {
+		case bool:
+			test.Screenshot = sv
+		case map[string]any:
+			test.Screenshot = true
+			test.ScreenshotPart, _ = sv["part"].(string)
+			if ms, ok := sv["mask"].([]any); ok {
+				for _, x := range ms {
+					test.Mask = append(test.Mask, x.(string))
+				}
+			}
+		}
 		test.Record, _ = t["record"].(bool)
 		test.AllCombinations, _ = t["allCombinations"].(bool)
 		if traces, ok := t["trace"].([]any); ok {
@@ -569,6 +581,11 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		c.Viewports = []Viewport{DefaultViewport}
 	}
 	c.Keyboard, _ = v["keyboard"].(bool)
+	if ms, ok := v["mask"].([]any); ok {
+		for _, x := range ms {
+			c.Mask = append(c.Mask, x.(string))
+		}
+	}
 	if cs, ok := v["colorSchemes"].([]any); ok {
 		for _, s := range cs {
 			c.ColorSchemes = append(c.ColorSchemes, s.(string))
@@ -761,11 +778,34 @@ func (l *loader) crossCheck(c *Contract) {
 		for j, tr := range t.Trace {
 			unknownPart(fmt.Sprintf("%s/trace/%d/part", base, j), tr.Part)
 		}
+		for j, m := range t.Mask {
+			unknownPart(fmt.Sprintf("%s/screenshot/mask/%d", base, j), m)
+		}
+		if t.ScreenshotPart != "" {
+			unknownPart(base+"/screenshot/part", t.ScreenshotPart)
+			for _, m := range t.Mask {
+				if m == t.ScreenshotPart {
+					l.errorf(base+"/screenshot/mask", "test `%s` compares only `%s` and masks it too, which leaves nothing to compare", t.Name, m)
+				}
+			}
+		}
 		if t.Record && len(t.Steps) == 0 {
 			l.warnf(base+"/record", "test `%s` records a clip but has no steps", t.Name)
 		}
 		if len(t.Trace) > 0 && len(t.Steps) == 0 {
 			l.errorf(base+"/trace", "test `%s` traces a part but has no steps to trace", t.Name)
+		}
+	}
+	for j, m := range c.Mask {
+		unknownPart(fmt.Sprintf("/mask/%d", j), m)
+	}
+	if len(c.Mask) > 0 {
+		shots := false
+		for _, t := range c.Tests {
+			shots = shots || t.Screenshot
+		}
+		if !shots {
+			l.warnf("/mask", "`mask` leaves parts out of screenshot comparisons, and no test takes a screenshot")
 		}
 	}
 	for i, vp := range c.Viewports {
