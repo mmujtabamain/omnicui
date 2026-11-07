@@ -1,0 +1,204 @@
+{
+  "runId": "20261107T074050Z-b984763bac74",
+  "contracts": [
+    {
+      "id": "ui.counter",
+      "file": "contracts/counter.contract.yaml",
+      "props": [
+        {
+          "name": "start",
+          "type": "integer",
+          "default": 0,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "changed",
+          "fields": [
+            {
+              "name": "count",
+              "type": "integer",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "value",
+          "role": "status",
+          "id": "ui.counter.value"
+        },
+        {
+          "name": "increment",
+          "role": "button",
+          "id": "ui.counter.increment"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts at the start value",
+          "props": {
+            "start": 5
+          },
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "5"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "each press adds one",
+          "steps": [
+            {
+              "action": "press",
+              "part": "increment",
+              "times": 3
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3"
+                }
+              ]
+            },
+            {
+              "event": "changed",
+              "times": 3,
+              "last": {
+                "count": 3
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the keyboard works too",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "increment",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "increment",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1"
+                }
+              ]
+            },
+            {
+              "part": "increment",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Increment"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    }
+  ],
+  "targets": [
+    {
+      "name": "egui",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "trace",
+        "type"
+      ],
+      "cannot": {
+        "record": "rendering switched off (OMNICUI_EGUI_RENDER=off)",
+        "screenshot": "rendering switched off (OMNICUI_EGUI_RENDER=off)"
+      },
+      "protocol": "1"
+    }
+  ],
+  "results": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "egui",
+      "status": "pass",
+      "messages": [
+        "screenshot: not advertised by egui (rendering switched off (OMNICUI_EGUI_RENDER=off))"
+      ],
+      "notAdvertised": {
+        "screenshot": "rendering switched off (OMNICUI_EGUI_RENDER=off)"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "egui",
+      "status": "pass",
+      "messages": [
+        "screenshot: not advertised by egui (rendering switched off (OMNICUI_EGUI_RENDER=off))"
+      ],
+      "notAdvertised": {
+        "screenshot": "rendering switched off (OMNICUI_EGUI_RENDER=off)"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "egui",
+      "status": "pass"
+    }
+  ],
+  "comparisons": null,
+  "requiredMissing": [
+    "egui must advertise `screenshot` (--require), but it doesn't: rendering switched off (OMNICUI_EGUI_RENDER=off)"
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0,
+    "broken": 0,
+    "notAdvertised": 2,
+    "warnings": 0,
+    "requiredMissing": 1
+  }
+}

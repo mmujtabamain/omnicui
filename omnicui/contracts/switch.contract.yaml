@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../tools/omnicui/schema/contract.schema.json
+id: ui.switch
+
+props:
+  on:    { type: boolean, default: false }
+  label: { type: string, default: "Dark mode" }
+
+events:
+  toggled:
+    on: { type: boolean }
+
+parts:
+  switch: { role: switch }
+  thumb:  { role: generic }
+
+tests:
+  - name: starts off, with its label as its name
+    expect:
+      - { part: switch, checked: false, name: "Dark mode" }
+    screenshot: true
+
+  - name: starts on when asked
+    props: { on: true, label: "Wi-Fi" }
+    expect:
+      - { part: switch, checked: true, name: "Wi-Fi" }
+    screenshot: true
+
+  - name: a press turns it on, and the thumb slides across
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, checked: true }
+      - { event: toggled, times: 1, last: { on: true } }
+    screenshot: true
+    trace:
+      - { part: thumb, point: center, timing: { duration: 200ms, easing: ease-out } }
+    record: true
+
+  - name: Space toggles it from the keyboard
+    steps:
+      - { action: focus, part: switch }
+      - { action: key, part: switch, key: Space }
+    expect:
+      - { part: switch, checked: true }
+      - { event: toggled, times: 1 }
+
+viewports:    [{ width: 320, height: 240 }]
+colorSchemes: [light, dark]
+thresholds:   { pixels: 30%, timing: 20ms }

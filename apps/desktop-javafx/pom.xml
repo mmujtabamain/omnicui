@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>app</groupId>
+  <artifactId>desktop-javafx</artifactId>
+  <version>0.1.0</version>
+  <description>The JavaFX desktop app: its components (package app.components) and its window (app.Main).</description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javafx.version>21.0.13</javafx.version>
+  </properties>
+
+  <dependencies>
+    <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version></dependency>
+  </dependencies>
+
+  <build>
+    <finalName>desktop-javafx</finalName>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <!-- The one font every app draws with, from shared/fonts, next to the theme in the jar. -->
+      <resource>
+        <directory>../../shared/fonts</directory>
+        <targetPath>app/components</targetPath>
+        <includes><include>DejaVuSans.ttf</include></includes>
+      </resource>
+    </resources>
+    <plugins>
+      <!-- `java -jar target/desktop-javafx.jar` starts the window on every OS. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>app.Main</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.8.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+            <configuration><outputDirectory>${project.build.directory}/lib</outputDirectory><includeScope>runtime</includeScope></configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

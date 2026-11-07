@@ -1,0 +1,933 @@
+{
+  "runId": "20261107T074014Z-f8fcaaafc933",
+  "contracts": [
+    {
+      "id": "ui.counter",
+      "file": "contracts/counter.contract.yaml",
+      "props": [
+        {
+          "name": "start",
+          "type": "integer",
+          "default": 0,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "changed",
+          "fields": [
+            {
+              "name": "count",
+              "type": "integer",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "value",
+          "role": "status",
+          "id": "ui.counter.value"
+        },
+        {
+          "name": "increment",
+          "role": "button",
+          "id": "ui.counter.increment"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts at the start value",
+          "props": {
+            "start": 5
+          },
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "5"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "each press adds one",
+          "steps": [
+            {
+              "action": "press",
+              "part": "increment",
+              "times": 3
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3"
+                }
+              ]
+            },
+            {
+              "event": "changed",
+              "times": 3,
+              "last": {
+                "count": 3
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the keyboard works too",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "increment",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "increment",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1"
+                }
+              ]
+            },
+            {
+              "part": "increment",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Increment"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    },
+    {
+      "id": "ui.switch",
+      "file": "contracts/switch.contract.yaml",
+      "props": [
+        {
+          "name": "on",
+          "type": "boolean",
+          "default": false,
+          "hasDefault": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "default": "Dark mode",
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "on",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "switch",
+          "role": "switch",
+          "id": "ui.switch.switch"
+        },
+        {
+          "name": "thumb",
+          "role": "generic",
+          "id": "ui.switch.thumb"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts off, with its label as its name",
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                },
+                {
+                  "field": "name",
+                  "want": "Dark mode"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "starts on when asked",
+          "props": {
+            "label": "Wi-Fi",
+            "on": true
+          },
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Wi-Fi"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a press turns it on, and the thumb slides across",
+          "steps": [
+            {
+              "action": "press",
+              "part": "switch",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "on": true
+              }
+            }
+          ],
+          "screenshot": true,
+          "trace": [
+            {
+              "part": "thumb",
+              "point": "center",
+              "timing": {
+                "durationMs": 200,
+                "easing": "ease-out"
+              }
+            }
+          ],
+          "record": true
+        },
+        {
+          "name": "Space toggles it from the keyboard",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "switch",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "switch",
+              "key": "Space",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    }
+  ],
+  "targets": [
+    {
+      "name": "egui",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "protocol": "1"
+    },
+    {
+      "name": "javafx",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "broken": "stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\"",
+      "stderr": [
+        "Nov 07, 2026 7:40:14 AM com.sun.javafx.application.PlatformImpl startup",
+        "WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @74ba7881'"
+      ],
+      "protocol": "1"
+    },
+    {
+      "name": "web",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "protocol": "1"
+    }
+  ],
+  "results": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/counter/starts-at-the-start-value/320x240-dark.png",
+        "320x240-light": "egui/counter/starts-at-the-start-value/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/counter/each-press-adds-one/320x240-dark.png",
+        "320x240-light": "egui/counter/each-press-adds-one/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "egui",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "egui/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "egui/switch/starts-on-when-asked/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "egui",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 136.4375,
+              "y": 36
+            },
+            {
+              "ms": 16.66666753590107,
+              "x": 139.1338653564453,
+              "y": 36
+            },
+            {
+              "ms": 33.33333507180214,
+              "x": 141.64430236816406,
+              "y": 36
+            },
+            {
+              "ms": 50.00000260770321,
+              "x": 144.00025939941406,
+              "y": 36
+            },
+            {
+              "ms": 66.66667014360428,
+              "x": 146.20448303222656,
+              "y": 36
+            },
+            {
+              "ms": 83.33333767950535,
+              "x": 148.25148010253906,
+              "y": 36
+            },
+            {
+              "ms": 100.00000521540642,
+              "x": 150.13035583496094,
+              "y": 36
+            },
+            {
+              "ms": 116.66667275130749,
+              "x": 151.8251953125,
+              "y": 36
+            },
+            {
+              "ms": 133.33334028720856,
+              "x": 153.31422424316406,
+              "y": 36
+            },
+            {
+              "ms": 150.00000782310963,
+              "x": 154.56820678710938,
+              "y": 36
+            },
+            {
+              "ms": 166.6666753590107,
+              "x": 155.5475311279297,
+              "y": 36
+            },
+            {
+              "ms": 183.33334289491177,
+              "x": 156.19715881347656,
+              "y": 36
+            },
+            {
+              "ms": 200.00001043081284,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 216.6666779667139,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 233.33334550261497,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 250.00001303851604,
+              "x": 156.4375,
+              "y": 36
+            },
+            {
+              "ms": 266.6666805744171,
+              "x": 156.4375,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              12.362321371665422,
+              25.32143365470263,
+              38.94462638345204,
+              53.30608444744157,
+              68.56389627471485,
+              84.9834371153246,
+              103.0203913653272,
+              123.52018543133657,
+              148.26278542240232
+            ],
+            "duration": 176.76471643015387
+          }
+        }
+      ],
+      "clip": "egui/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip.gif"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "egui",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\""
+      ]
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/counter/starts-at-the-start-value/320x240-dark.png",
+        "320x240-light": "web/counter/starts-at-the-start-value/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/counter/each-press-adds-one/320x240-dark.png",
+        "320x240-light": "web/counter/each-press-adds-one/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "web",
+      "status": "pass"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "web/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "web/switch/starts-on-when-asked/320x240-light.png"
+      }
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 16.600000000000023,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 33.30000000000001,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 49.900000000000006,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 66.60000000000002,
+              "x": 139.69782257080078,
+              "y": 36
+            },
+            {
+              "ms": 83.30000000000001,
+              "x": 142.21302795410156,
+              "y": 36
+            },
+            {
+              "ms": 99.90000000000003,
+              "x": 144.55947875976562,
+              "y": 36
+            },
+            {
+              "ms": 116.5,
+              "x": 146.75540161132812,
+              "y": 36
+            },
+            {
+              "ms": 133.3,
+              "x": 148.81900024414062,
+              "y": 36
+            },
+            {
+              "ms": 149.90000000000003,
+              "x": 150.69029235839844,
+              "y": 36
+            },
+            {
+              "ms": 166.60000000000002,
+              "x": 152.3885955810547,
+              "y": 36
+            },
+            {
+              "ms": 183.2,
+              "x": 153.87197875976562,
+              "y": 36
+            },
+            {
+              "ms": 199.90000000000003,
+              "x": 155.12908935546875,
+              "y": 36
+            },
+            {
+              "ms": 216.60000000000002,
+              "x": 156.11050415039062,
+              "y": 36
+            },
+            {
+              "ms": 233.2,
+              "x": 156.75806427001953,
+              "y": 36
+            },
+            {
+              "ms": 249.90000000000003,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 266.6,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 283.2,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 299.90000000000003,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 316.59999999999997,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 333.3,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 349.90000000000003,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 366.50000000000006,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 383.3,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 399.90000000000003,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 416.59999999999997,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 433.3,
+              "x": 157,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              62.280354572423235,
+              75.24595917773068,
+              88.86744506655744,
+              103.23010450831066,
+              118.49130434782609,
+              134.90562636072312,
+              152.94546181491467,
+              173.44200380599705,
+              198.18512125846627
+            ],
+            "duration": 176.7720012369816
+          }
+        }
+      ],
+      "clip": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip.gif"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "web",
+      "status": "pass"
+    }
+  ],
+  "comparisons": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.71,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/starts-at-the-start-value/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 8.83,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/counter/each-press-adds-one/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.24,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-off-with-its-label-as-its-name/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.15,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/starts-on-when-asked/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "pixels",
+      "a": "egui",
+      "b": "web",
+      "combo": "320x240-dark",
+      "value": 5.09,
+      "threshold": 30,
+      "warning": false,
+      "diff": "diff/switch/a-press-turns-it-on-and-the-thumb-slides-across/egui-web-320x240-dark.png"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "egui",
+      "b": "web",
+      "part": "thumb",
+      "value": 0,
+      "threshold": 20,
+      "warning": false,
+      "note": "largest at 10% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "egui",
+      "b": "timing",
+      "part": "thumb",
+      "value": 0.2,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 80% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "web",
+      "b": "timing",
+      "part": "thumb",
+      "value": 0.2,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 80% of the movement"
+    }
+  ],
+  "summary": {
+    "pass": 14,
+    "fail": 0,
+    "broken": 7,
+    "notAdvertised": 0,
+    "warnings": 0,
+    "requiredMissing": 0
+  }
+}

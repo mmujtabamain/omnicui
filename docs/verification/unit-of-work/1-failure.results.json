@@ -1,0 +1,201 @@
+{
+  "runId": "20261107T080432Z-107b2ca59760",
+  "contracts": [
+    {
+      "id": "ui.counter",
+      "file": "omnicui/contracts/counter.contract.yaml",
+      "props": [
+        {
+          "name": "start",
+          "type": "integer",
+          "default": 0,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "changed",
+          "fields": [
+            {
+              "name": "count",
+              "type": "integer",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "value",
+          "role": "status",
+          "id": "ui.counter.value"
+        },
+        {
+          "name": "increment",
+          "role": "button",
+          "id": "ui.counter.increment"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts at the start value",
+          "props": {
+            "start": 5
+          },
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "5"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "each press adds one",
+          "steps": [
+            {
+              "action": "press",
+              "part": "increment",
+              "times": 3
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3"
+                }
+              ]
+            },
+            {
+              "event": "changed",
+              "times": 3,
+              "last": {
+                "count": 3
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the keyboard works too",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "increment",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "increment",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "value",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1"
+                }
+              ]
+            },
+            {
+              "part": "increment",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Increment"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThreshold": 30,
+      "timingThreshold": 20
+    }
+  ],
+  "targets": [
+    {
+      "name": "javafx",
+      "can": [
+        "drag",
+        "events",
+        "focus",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "read",
+        "record",
+        "screenshot",
+        "trace",
+        "type"
+      ],
+      "broken": "stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\"",
+      "stderr": [
+        "Nov 07, 2026 8:04:33 AM com.sun.javafx.application.PlatformImpl startup",
+        "WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @188212e4'"
+      ],
+      "protocol": "1"
+    }
+  ],
+  "results": [
+    {
+      "contract": "ui.counter",
+      "test": "starts at the start value",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\""
+      ]
+    },
+    {
+      "contract": "ui.counter",
+      "test": "each press adds one",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    },
+    {
+      "contract": "ui.counter",
+      "test": "the keyboard works too",
+      "target": "javafx",
+      "status": "broken",
+      "messages": [
+        "not run: the target broke earlier (stray output on standard output during mount ui.counter: \"[javafx] mounting ui.counter\")"
+      ]
+    }
+  ],
+  "comparisons": null,
+  "summary": {
+    "pass": 0,
+    "fail": 0,
+    "broken": 3,
+    "notAdvertised": 0,
+    "warnings": 0,
+    "requiredMissing": 0
+  }
+}

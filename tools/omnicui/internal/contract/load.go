@@ -1,0 +1,734 @@
+package contract
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+	"gopkg.in/yaml.v3"
+
+	"omnicui/schema"
+)
+
+// Problem is one error or warning about a contract file, with the line it is about.
+type Problem struct {
+	File    string `json:"file"`
+	Line    int    `json:"line"`
+	Message string `json:"message"`
+	Warning bool   `json:"warning"`
+}
+
+func (p Problem) String() string {
+	kind := "error"
+	if p.Warning {
+		kind = "warning"
+	}
+	return fmt.Sprintf("%s:%d  %s: %s", p.File, p.Line, kind, p.Message)
+}
+
+var compiled *jsonschema.Schema
+
+func compiledSchema() *jsonschema.Schema {
+	if compiled != nil {
+		return compiled
+	}
+	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(schema.JSON))
+	if err != nil {
+		panic(err)
+	}
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("contract.schema.json", doc); err != nil {
+		panic(err)
+	}
+	compiled, err = c.Compile("contract.schema.json")
+	if err != nil {
+		panic(err)
+	}
+	return compiled
+}
+
+// LoadDir loads every *.contract.yaml in dir, in file-name order.
+func LoadDir(dir string) ([]*Contract, []Problem, error) {
+	files, err := filepath.Glob(filepath.Join(dir, "*.contract.yaml"))
+	if err != nil {
+		return nil, nil, err
+	}
+	sort.Strings(files)
+	var all []*Contract
+	var problems []Problem
+	ids := map[string]string{}
+	for _, f := range files {
+		c, ps := LoadFile(f)
+		problems = append(problems, ps...)
+		if c == nil {
+			continue
+		}
+		if prev, ok := ids[c.ID]; ok {
+			problems = append(problems, Problem{File: rel(f), Line: 1, Message: fmt.Sprintf("id `%s` is already used by %s", c.ID, prev)})
+			continue
+		}
+		ids[c.ID] = rel(f)
+		all = append(all, c)
+	}
+	return all, problems, nil
+}
+
+func rel(path string) string {
+	if wd, err := os.Getwd(); err == nil {
+		if r, err := filepath.Rel(wd, path); err == nil && !strings.HasPrefix(r, "..") {
+			return r
+		}
+	}
+	return path
+}
+
+// HasErrors reports whether any problem is an error rather than a warning.
+func HasErrors(ps []Problem) bool {
+	for _, p := range ps {
+		if !p.Warning {
+			return true
+		}
+	}
+	return false
+}
+
+// LoadFile reads, validates and checks one contract. It returns nil if there are errors.
+func LoadFile(path string) (*Contract, []Problem) {
+	file := rel(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, []Problem{{File: file, Line: 1, Message: err.Error()}}
+	}
+	return Parse(file, data)
+}
+
+// Parse validates and checks one contract's YAML text.
+func Parse(file string, data []byte) (*Contract, []Problem) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		line := 1
+		if te, ok := err.(*yaml.TypeError); ok && len(te.Errors) > 0 {
+			fmt.Sscanf(te.Errors[0], "line %d", &line)
+		}
+		msg := err.Error()
+		fmt.Sscanf(msg, "yaml: line %d", &line)
+		return nil, []Problem{{File: file, Line: line, Message: "not valid YAML: " + strings.TrimPrefix(msg, "yaml: ")}}
+	}
+	if len(doc.Content) == 0 {
+		return nil, []Problem{{File: file, Line: 1, Message: "the file is empty"}}
+	}
+	lines := map[string]int{}
+	value, err := toValue(doc.Content[0], "", lines)
+	if err != nil {
+		return nil, []Problem{{File: file, Line: 1, Message: err.Error()}}
+	}
+	l := loader{file: file, lines: lines}
+	if verr := compiledSchema().Validate(value); verr != nil {
+		ve, ok := verr.(*jsonschema.ValidationError)
+		if !ok {
+			return nil, []Problem{{File: file, Line: 1, Message: verr.Error()}}
+		}
+		l.schemaProblems(ve)
+		l.sortProblems()
+		return nil, l.problems
+	}
+	c := l.build(value.(map[string]any), doc.Content[0])
+	l.crossCheck(c)
+	l.sortProblems()
+	if HasErrors(l.problems) {
+		return nil, l.problems
+	}
+	return c, l.problems
+}
+
+// toValue turns a YAML node into JSON-like values (map[string]any, []any, json.Number, string,
+// bool, nil), recording the line of every JSON pointer it passes.
+func toValue(n *yaml.Node, ptr string, lines map[string]int) (any, error) {
+	lines[ptr] = n.Line
+	switch n.Kind {
+	case yaml.MappingNode:
+		m := map[string]any{}
+		for i := 0; i+1 < len(n.Content); i += 2 {
+			k := n.Content[i]
+			if k.Kind != yaml.ScalarNode {
+				return nil, fmt.Errorf("line %d: keys must be plain words", k.Line)
+			}
+			child := ptr + "/" + escape(k.Value)
+			lines[child+"#key"] = k.Line
+			v, err := toValue(n.Content[i+1], child, lines)
+			if err != nil {
+				return nil, err
+			}
+			m[k.Value] = v
+		}
+		return m, nil
+	case yaml.SequenceNode:
+		arr := make([]any, 0, len(n.Content))
+		for i, c := range n.Content {
+			v, err := toValue(c, ptr+"/"+strconv.Itoa(i), lines)
+			if err != nil {
+				return nil, err
+			}
+			arr = append(arr, v)
+		}
+		return arr, nil
+	case yaml.AliasNode:
+		return toValue(n.Alias, ptr, lines)
+	case yaml.ScalarNode:
+		switch n.Tag {
+		case "!!int", "!!float":
+			return json.Number(strings.ReplaceAll(n.Value, "_", "")), nil
+		case "!!bool":
+			var b bool
+			if err := n.Decode(&b); err != nil {
+				return nil, err
+			}
+			return b, nil
+		case "!!null":
+			return nil, nil
+		default:
+			return n.Value, nil
+		}
+	}
+	return nil, fmt.Errorf("line %d: unsupported YAML", n.Line)
+}
+
+func escape(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "~", "~0"), "/", "~1")
+}
+
+type loader struct {
+	file     string
+	lines    map[string]int
+	problems []Problem
+}
+
+func (l *loader) sortProblems() {
+	sort.SliceStable(l.problems, func(i, j int) bool { return l.problems[i].Line < l.problems[j].Line })
+}
+
+// line finds the line of a JSON pointer, falling back to its nearest parent.
+func (l *loader) line(ptr string) int {
+	for {
+		if n, ok := l.lines[ptr]; ok {
+			return n
+		}
+		i := strings.LastIndex(ptr, "/")
+		if i < 0 {
+			return 1
+		}
+		ptr = ptr[:i]
+	}
+}
+
+func (l *loader) errorf(ptr, format string, args ...any) {
+	l.problems = append(l.problems, Problem{File: l.file, Line: l.line(ptr), Message: fmt.Sprintf(format, args...)})
+}
+
+func (l *loader) warnf(ptr, format string, args ...any) {
+	l.problems = append(l.problems, Problem{File: l.file, Line: l.line(ptr), Message: fmt.Sprintf(format, args...), Warning: true})
+}
+
+var printer = message.NewPrinter(language.English)
+
+// Words the schema knows, for "did you mean" on unknown fields.
+var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
+	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
+	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
+	"width", "height", "pixels", "disabled", "checked", "value"}
+
+func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
+	seen := map[string]bool{}
+	var walk func(e *jsonschema.ValidationError)
+	walk = func(e *jsonschema.ValidationError) {
+		if len(e.Causes) > 0 {
+			for _, c := range e.Causes {
+				walk(c)
+			}
+			return
+		}
+		ptr := ""
+		for _, p := range e.InstanceLocation {
+			ptr += "/" + escape(p)
+		}
+		msg := e.ErrorKind.LocalizedString(printer)
+		switch k := e.ErrorKind.(type) {
+		case *kind.AdditionalProperties:
+			for _, p := range k.Properties {
+				m := fmt.Sprintf("unknown field `%s`", p)
+				if s := closest(p, knownFields); s != "" {
+					m += fmt.Sprintf("; did you mean `%s`?", s)
+				}
+				key := ptr + "/" + escape(p) + m
+				if !seen[key] {
+					seen[key] = true
+					l.problems = append(l.problems, Problem{File: l.file, Line: l.line(ptr + "/" + escape(p) + "#key"), Message: m})
+				}
+			}
+			return
+		case *kind.Required:
+			msg = fmt.Sprintf("missing field %s", quoteAll(k.Missing))
+		case *kind.Type:
+			msg = fmt.Sprintf("expected %s, got %s", strings.Join(k.Want, " or "), k.Got)
+		case *kind.Enum:
+			msg = fmt.Sprintf("`%v` is not one of %s", k.Got, quoteAll(anyStrings(k.Want)))
+		case *kind.Pattern:
+			msg = fmt.Sprintf("`%s` is not in the expected form", k.Got)
+		case *kind.FalseSchema:
+			if len(e.InstanceLocation) > 0 {
+				msg = fmt.Sprintf("unknown field `%s`", e.InstanceLocation[len(e.InstanceLocation)-1])
+			}
+		}
+		where := strings.Join(e.InstanceLocation, ".")
+		if where != "" {
+			msg = where + ": " + msg
+		}
+		if !seen[ptr+msg] {
+			seen[ptr+msg] = true
+			l.problems = append(l.problems, Problem{File: l.file, Line: l.line(ptr), Message: msg})
+		}
+	}
+	walk(ve)
+}
+
+func quoteAll(xs []string) string {
+	q := make([]string, len(xs))
+	for i, x := range xs {
+		q[i] = "`" + x + "`"
+	}
+	return strings.Join(q, ", ")
+}
+
+func anyStrings(xs []any) []string {
+	out := make([]string, len(xs))
+	for i, x := range xs {
+		out[i] = fmt.Sprint(x)
+	}
+	return out
+}
+
+// orderedKeys returns a mapping node's keys in file order.
+func orderedKeys(n *yaml.Node) []string {
+	var keys []string
+	if n == nil || n.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		keys = append(keys, n.Content[i].Value)
+	}
+	return keys
+}
+
+func child(n *yaml.Node, key string) *yaml.Node {
+	if n == nil || n.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		if n.Content[i].Value == key {
+			return n.Content[i+1]
+		}
+	}
+	return nil
+}
+
+func num(v any) float64 {
+	switch x := v.(type) {
+	case json.Number:
+		f, _ := x.Float64()
+		return f
+	case float64:
+		return x
+	case int:
+		return float64(x)
+	}
+	return 0
+}
+
+// plain turns json.Number into int64 or float64, recursively, so values compare and print simply.
+func plain(v any) any {
+	switch x := v.(type) {
+	case json.Number:
+		if i, err := x.Int64(); err == nil {
+			return i
+		}
+		f, _ := x.Float64()
+		return f
+	case map[string]any:
+		m := map[string]any{}
+		for k, vv := range x {
+			m[k] = plain(vv)
+		}
+		return m
+	case []any:
+		out := make([]any, len(x))
+		for i, vv := range x {
+			out[i] = plain(vv)
+		}
+		return out
+	}
+	return v
+}
+
+func parseMS(s string) float64 {
+	f, _ := strconv.ParseFloat(strings.TrimSuffix(s, "ms"), 64)
+	return f
+}
+
+func parsePercent(s string) float64 {
+	f, _ := strconv.ParseFloat(strings.TrimSuffix(s, "%"), 64)
+	return f
+}
+
+func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
+	c := &Contract{ID: v["id"].(string), File: l.file}
+	props, _ := v["props"].(map[string]any)
+	for _, name := range orderedKeys(child(root, "props")) {
+		c.Props = append(c.Props, field(name, props[name].(map[string]any)))
+	}
+	events, _ := v["events"].(map[string]any)
+	for _, name := range orderedKeys(child(root, "events")) {
+		ev := Event{Name: name, Fields: []Field{}}
+		fields, _ := events[name].(map[string]any)
+		for _, fname := range orderedKeys(child(child(root, "events"), name)) {
+			ev.Fields = append(ev.Fields, field(fname, fields[fname].(map[string]any)))
+		}
+		c.Events = append(c.Events, ev)
+	}
+	parts := v["parts"].(map[string]any)
+	for _, name := range orderedKeys(child(root, "parts")) {
+		p := parts[name].(map[string]any)
+		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name})
+	}
+	for i, tv := range v["tests"].([]any) {
+		t := tv.(map[string]any)
+		base := fmt.Sprintf("/tests/%d", i)
+		test := Test{Name: t["name"].(string), Line: l.line(base)}
+		if p, ok := t["props"].(map[string]any); ok {
+			test.Props = plain(p).(map[string]any)
+		}
+		if steps, ok := t["steps"].([]any); ok {
+			for j, sv := range steps {
+				s := sv.(map[string]any)
+				st := Step{Action: s["action"].(string), Part: s["part"].(string), Times: 1, Line: l.line(fmt.Sprintf("%s/steps/%d", base, j))}
+				if x, ok := s["times"]; ok {
+					st.Times = int(num(x))
+				}
+				if x, ok := s["key"].(string); ok {
+					st.Key = x
+				}
+				if x, ok := s["text"].(string); ok {
+					st.Text = x
+				}
+				if x, ok := s["dx"]; ok {
+					st.DX = num(x)
+				}
+				if x, ok := s["dy"]; ok {
+					st.DY = num(x)
+				}
+				test.Steps = append(test.Steps, st)
+			}
+		}
+		if exps, ok := t["expect"].([]any); ok {
+			expNodes := child(child(root, "tests").Content[i], "expect")
+			for j, ev := range exps {
+				e := ev.(map[string]any)
+				ex := Expectation{Line: l.line(fmt.Sprintf("%s/expect/%d", base, j))}
+				if name, ok := e["event"].(string); ok {
+					ex.Event = name
+					if x, ok := e["times"]; ok {
+						n := int(num(x))
+						ex.Times = &n
+					}
+					if last, ok := e["last"].(map[string]any); ok {
+						ex.Last = plain(last).(map[string]any)
+					}
+				} else {
+					ex.Part = e["part"].(string)
+					for _, k := range orderedKeys(expNodes.Content[j]) {
+						if k != "part" {
+							ex.Checks = append(ex.Checks, Check{Field: k, Want: plain(e[k])})
+						}
+					}
+				}
+				test.Expect = append(test.Expect, ex)
+			}
+		}
+		test.Screenshot, _ = t["screenshot"].(bool)
+		test.Record, _ = t["record"].(bool)
+		if traces, ok := t["trace"].([]any); ok {
+			for j, trv := range traces {
+				tr := trv.(map[string]any)
+				spec := TraceSpec{Part: tr["part"].(string), Point: tr["point"].(string), Line: l.line(fmt.Sprintf("%s/trace/%d", base, j))}
+				if tm, ok := tr["timing"].(map[string]any); ok {
+					spec.Timing = &Timing{DurationMS: parseMS(tm["duration"].(string)), Easing: tm["easing"].(string)}
+				}
+				test.Trace = append(test.Trace, spec)
+			}
+		}
+		c.Tests = append(c.Tests, test)
+	}
+	if vps, ok := v["viewports"].([]any); ok {
+		for _, vp := range vps {
+			m := vp.(map[string]any)
+			c.Viewports = append(c.Viewports, Viewport{Width: int(num(m["width"])), Height: int(num(m["height"]))})
+		}
+	} else {
+		c.Viewports = []Viewport{DefaultViewport}
+	}
+	if cs, ok := v["colorSchemes"].([]any); ok {
+		for _, s := range cs {
+			c.ColorSchemes = append(c.ColorSchemes, s.(string))
+		}
+	} else {
+		c.ColorSchemes = DefaultColorSchemes
+	}
+	c.PixelThreshold, c.TimingThreshold = DefaultPixelThreshold, DefaultTimingThreshold
+	if th, ok := v["thresholds"].(map[string]any); ok {
+		if p, ok := th["pixels"].(string); ok {
+			c.PixelThreshold = parsePercent(p)
+		}
+		if t, ok := th["timing"].(string); ok {
+			c.TimingThreshold = parseMS(t)
+		}
+	}
+	return c
+}
+
+func field(name string, m map[string]any) Field {
+	f := Field{Name: name, Type: m["type"].(string)}
+	if e, ok := m["enum"].([]any); ok {
+		f.Enum = plain(e).([]any)
+	}
+	if d, ok := m["default"]; ok {
+		f.Default, f.HasDefault = plain(d), true
+	}
+	return f
+}
+
+// typeOK reports whether a value fits a contract type.
+func typeOK(t string, v any) bool {
+	switch t {
+	case "string":
+		_, ok := v.(string)
+		return ok
+	case "boolean":
+		_, ok := v.(bool)
+		return ok
+	case "integer":
+		_, ok := v.(int64)
+		return ok
+	case "number":
+		switch v.(type) {
+		case int64, float64:
+			return true
+		}
+	}
+	return false
+}
+
+func describe(v any) string {
+	switch v.(type) {
+	case string:
+		return "a string"
+	case bool:
+		return "a boolean"
+	case int64:
+		return "an integer"
+	case float64:
+		return "a number"
+	case nil:
+		return "nothing"
+	}
+	return "an object"
+}
+
+func (l *loader) crossCheck(c *Contract) {
+	partNames := []string{}
+	for _, p := range c.Parts {
+		partNames = append(partNames, p.Name)
+	}
+	eventNames := []string{}
+	for _, e := range c.Events {
+		eventNames = append(eventNames, e.Name)
+	}
+	propNames := []string{}
+	for _, p := range c.Props {
+		propNames = append(propNames, p.Name)
+		if p.HasDefault && !typeOK(p.Type, p.Default) {
+			l.errorf("/props/"+p.Name+"/default", "the default of `%s` is %s, but its type is %s", p.Name, describe(p.Default), p.Type)
+		}
+	}
+	used := map[string]bool{}
+	unknownPart := func(ptr, name string) bool {
+		if c.PartByName(name) != nil {
+			used[name] = true
+			return false
+		}
+		m := fmt.Sprintf("part `%s` does not exist", name)
+		if s := closest(name, partNames); s != "" {
+			m += fmt.Sprintf("; did you mean `%s`?", s)
+		}
+		l.errorf(ptr, "%s", m)
+		return true
+	}
+	names := map[string]bool{}
+	for i, t := range c.Tests {
+		base := fmt.Sprintf("/tests/%d", i)
+		if names[t.Name] {
+			l.errorf(base+"/name", "another test is already called `%s`", t.Name)
+		}
+		names[t.Name] = true
+		for _, k := range sortedKeys(t.Props) {
+			var decl *Field
+			for j := range c.Props {
+				if c.Props[j].Name == k {
+					decl = &c.Props[j]
+				}
+			}
+			if decl == nil {
+				m := fmt.Sprintf("prop `%s` does not exist", k)
+				if s := closest(k, propNames); s != "" {
+					m += fmt.Sprintf("; did you mean `%s`?", s)
+				}
+				l.errorf(base+"/props/"+escape(k)+"#key", "%s", m)
+			} else if !typeOK(decl.Type, t.Props[k]) {
+				l.errorf(base+"/props/"+escape(k), "prop `%s` is %s, but its type is %s", k, describe(t.Props[k]), decl.Type)
+			}
+		}
+		for j, s := range t.Steps {
+			ptr := fmt.Sprintf("%s/steps/%d", base, j)
+			if unknownPart(ptr+"/part", s.Part) {
+				continue
+			}
+			role := c.PartByName(s.Part).Role
+			if !Roles[role].Actions[s.Action] {
+				l.errorf(ptr+"/action", "`%s` is a %s, which does not accept `%s`", s.Part, role, s.Action)
+			}
+		}
+		for j, e := range t.Expect {
+			ptr := fmt.Sprintf("%s/expect/%d", base, j)
+			if e.Event != "" {
+				ev := c.EventByName(e.Event)
+				if ev == nil {
+					m := fmt.Sprintf("event `%s` does not exist", e.Event)
+					if s := closest(e.Event, eventNames); s != "" {
+						m += fmt.Sprintf("; did you mean `%s`?", s)
+					}
+					l.errorf(ptr+"/event", "%s", m)
+					continue
+				}
+				for _, k := range sortedKeys(e.Last) {
+					var decl *Field
+					fieldNames := []string{}
+					for x := range ev.Fields {
+						fieldNames = append(fieldNames, ev.Fields[x].Name)
+						if ev.Fields[x].Name == k {
+							decl = &ev.Fields[x]
+						}
+					}
+					if decl == nil {
+						m := fmt.Sprintf("event `%s` has no field `%s`", e.Event, k)
+						if s := closest(k, fieldNames); s != "" {
+							m += fmt.Sprintf("; did you mean `%s`?", s)
+						}
+						l.errorf(ptr+"/last/"+escape(k)+"#key", "%s", m)
+					} else if !typeOK(decl.Type, e.Last[k]) {
+						l.errorf(ptr+"/last/"+escape(k), "field `%s` of `%s` is %s, but its type is %s", k, e.Event, describe(e.Last[k]), decl.Type)
+					}
+				}
+				continue
+			}
+			if unknownPart(ptr+"/part", e.Part) {
+				continue
+			}
+			role := c.PartByName(e.Part).Role
+			for _, ch := range e.Checks {
+				t, ok := Roles[role].Fields[ch.Field]
+				if !ok {
+					l.errorf(ptr+"/"+ch.Field+"#key", "`%s` is a %s, which has no field `%s`", e.Part, role, ch.Field)
+				} else if !typeOK(t, ch.Want) && !(t == "number" && typeOK("number", ch.Want)) {
+					l.errorf(ptr+"/"+ch.Field, "`%s` is %s, but it is %s", ch.Field, t, describe(ch.Want))
+				}
+			}
+		}
+		for j, tr := range t.Trace {
+			unknownPart(fmt.Sprintf("%s/trace/%d/part", base, j), tr.Part)
+		}
+		if t.Record && len(t.Steps) == 0 {
+			l.warnf(base+"/record", "test `%s` records a clip but has no steps", t.Name)
+		}
+		if len(t.Trace) > 0 && len(t.Steps) == 0 {
+			l.errorf(base+"/trace", "test `%s` traces a part but has no steps to trace", t.Name)
+		}
+	}
+	for _, p := range c.Parts {
+		if !used[p.Name] {
+			l.warnf("/parts/"+p.Name+"#key", "part `%s` is never used by any test", p.Name)
+		}
+	}
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// closest returns the candidate nearest to word, if it is near enough to be a likely typo.
+func closest(word string, candidates []string) string {
+	best, bestD := "", 1<<30
+	for _, c := range candidates {
+		if c == word {
+			continue
+		}
+		if d := distance(strings.ToLower(word), strings.ToLower(c)); d < bestD {
+			best, bestD = c, d
+		}
+	}
+	limit := 2
+	if len(word) > 6 {
+		limit = 3
+	}
+	if bestD <= limit {
+		return best
+	}
+	return ""
+}
+
+// distance is the Damerau–Levenshtein (optimal string alignment) edit distance.
+func distance(a, b string) int {
+	ra, rb := []rune(a), []rune(b)
+	d := make([][]int, len(ra)+1)
+	for i := range d {
+		d[i] = make([]int, len(rb)+1)
+		d[i][0] = i
+	}
+	for j := range d[0] {
+		d[0][j] = j
+	}
+	for i := 1; i <= len(ra); i++ {
+		for j := 1; j <= len(rb); j++ {
+			cost := 1
+			if ra[i-1] == rb[j-1] {
+				cost = 0
+			}
+			d[i][j] = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost)
+			if i > 1 && j > 1 && ra[i-1] == rb[j-2] && ra[i-2] == rb[j-1] {
+				d[i][j] = min(d[i][j], d[i-2][j-2]+1)
+			}
+		}
+	}
+	return d[len(ra)][len(rb)]
+}

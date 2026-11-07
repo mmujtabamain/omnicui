@@ -1,0 +1,45 @@
+omnicui 0.1.0: known gaps
+
+These are what is not done, not verified, or only works with a manual step. Each says what is
+missing and what closing it would take. Nothing here stops 0.1.0 working as documented.
+
+Not verified yet
+1.  The release workflow (.github/workflows/release.yml) has never run: it runs only on main.
+    The first merge into main is its first run; check that v0.1.0 appears with seven files
+    (six binaries and omnicui-src-0.1.0.tar.gz) and SHA256SUMS.
+2.  The ruleset (.github/rulesets/main.json) protects main only once it is imported by hand:
+    Settings > Rules > Rulesets > Import a ruleset.
+3.  Not run on a real Mac or a real Windows machine. Everything was verified on Linux, with
+    software rendering for egui (lavapipe). The run scripts are bash only; on Windows only the
+    command itself is supported, and it was cross-compiled but never run there.
+4.  Not run with a real GPU. The pixel threshold (30% of the drawn area) was tuned on software
+    rendering; a GPU's anti-aliasing may differ. Run ./run.sh check on a GPU machine and see
+    whether any screenshot comparison comes near the threshold.
+5.  The desktop (egui) app's window was reported not opening on a Mac. The likely cause (a
+    silent first build) is fixed, but the fix has not been seen working on a Mac.
+
+Not in CI
+6.  The real-target suite (three apps, Chromium, a JVM, a GPU driver) runs only with
+    ./run.sh test or ./fresh-copy.sh, not on pull requests. CI runs the command's own tests, the
+    builds, the release scripts' tests and the neutrality check.
+
+Installing and vendoring
+7.  `go install github.com/mmujtabamain/omnicui/...@v0.1.0` does not work: the Go module is named
+    `omnicui`, not its repository path. Today the command comes from a release binary, or from
+    building the source. Closing it: rename the module to
+    github.com/mmujtabamain/omnicui/tools/omnicui, and tag releases also as tools/omnicui/v<version>.
+8.  The release binaries are not signed. macOS quarantines a downloaded binary; the first run needs
+    `xattr -d com.apple.quarantine omnicui_<version>_darwin_<arch>`, or a right-click > Open.
+    Closing it: sign and notarise the macOS binaries in release.yml.
+9.  The source tarball (omnicui-src-<version>.tar.gz) builds on its own, but its unit tests do not
+    run on their own: they read this repository's example contracts (omnicui/contracts/). A
+    project that vendors the source can build it, not test it. Closing it: copy the two contracts
+    into tools/omnicui/testdata/ and point the tests there.
+10. A local build (./run.sh setup, make omnicui) is not stamped with VERSION, so its
+    `omnicui version` says "dev". Release binaries say their version.
+
+Repository
+11. There is no LICENSE file, so by default nobody else may use, copy or change the code. Choose one.
+12. The JavaFX app is installed into the local Maven repository (~/.m2) by ./run.sh setup, so the
+    javafx target can depend on it: the one thing setup writes outside this folder besides the
+    usual download caches.

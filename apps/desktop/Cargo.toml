@@ -1,0 +1,26 @@
+[package]
+name = "desktop"
+version = "0.1.0"
+edition = "2024"
+description = "The desktop app, in egui: its components (a library) and its window (a binary)."
+publish = false
+
+# The window needs eframe; the components don't. Whoever uses only the components (such as the
+# omnicui egui target) turns the `app` feature off and never builds eframe.
+[features]
+default = ["app"]
+app = ["dep:eframe"]
+
+[[bin]]
+name = "desktop"
+path = "src/main.rs"
+required-features = ["app"]
+
+[dependencies]
+egui = "0.37"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+eframe = { version = "0.37", optional = true, default-features = false, features = ["accesskit", "default_fonts", "wgpu", "wayland", "x11"] }
+
+[profile.release]
+debug = false

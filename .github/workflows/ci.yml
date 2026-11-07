@@ -1,0 +1,116 @@
+# omnicui's checks, one job each, and each runs only when its own files change. A job that has
+# nothing to check is skipped, and a skipped job counts as passed for the required checks
+# (.github/rulesets/main.json). The release-notes check is notes.yml. The real-target suite (three
+# apps, a browser, a JVM and a GPU driver) runs with ./run.sh test or ./fresh-copy.sh.
+name: omnicui
+
+on:
+  # once per change: on merge requests, and on main after a merge (a branch push with an open merge
+  # request would otherwise run everything twice)
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omnicui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: What changed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.f.outputs.go }}
+      scripts: ${{ steps.f.outputs.scripts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: f
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          # The files this change touches; when that can't be told (a manual run, a new branch),
+          # everything runs.
+          files=""
+          if [ "$EVENT" = pull_request ]; then
+            files="$(git diff --name-only "$PR_BASE...$PR_HEAD")" || files="*"
+          elif [ "$EVENT" = push ] && [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            files="$(git diff --name-only "$BEFORE" "$AFTER")" || files="*"
+          else
+            files="*"
+          fi
+          printf '%s\n' "$files"
+          wants() { [ "$files" = "*" ] || printf '%s\n' "$files" | grep -qE "$1"; }
+          if wants '^(tools/omnicui/|Makefile$|\.github/workflows/ci\.yml$)'; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+          if wants '^(scripts/|\.github/workflows/ci\.yml$)'; then echo "scripts=true" >> "$GITHUB_OUTPUT"; else echo "scripts=false" >> "$GITHUB_OUTPUT"; fi
+
+  go-tests:
+    name: Go vet and tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tools/omnicui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/omnicui/go.mod
+          cache-dependency-path: tools/omnicui/go.sum
+      - name: Vet
+        run: go vet ./...
+      - name: Tests (contracts, protocol, failure injection against a fake adapter, the check, the CLI)
+        run: go test -count=1 ./...
+
+  go-builds:
+    name: Go builds
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/omnicui/go.mod
+          cache-dependency-path: tools/omnicui/go.sum
+      - name: Every platform a release ships
+        run: make cross
+
+  scripts:
+    name: Release scripts
+    needs: changes
+    if: needs.changes.outputs.scripts == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: The release scripts' own tests
+        run: node --test 'scripts/*.test.mjs'
+
+  neutral:
+    name: Host neutral
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: No host's name anywhere
+        run: node scripts/neutral.mjs

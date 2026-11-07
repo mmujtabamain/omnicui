@@ -1,0 +1,24 @@
+[package]
+name = "omnicui-target-egui"
+version = "0.1.0"
+edition = "2024"
+description = "omnicui's egui target: mounts the desktop app's components headlessly with egui_kittest and answers omnicui's requests, reading AccessKit."
+publish = false
+
+[workspace]
+members = ["stubs"]
+
+[[bin]]
+name = "adapter"
+path = "src/main.rs"
+
+[dependencies]
+# The app under test: its components only, without its window (no eframe).
+desktop = { path = "../../../apps/desktop", default-features = false }
+egui = "0.37"
+egui_kittest = { version = "0.37", features = ["wgpu", "snapshot"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+serde_json = "1"
+
+[profile.release]
+debug = false

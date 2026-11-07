@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../tools/omnicui/schema/contract.schema.json
+id: ui.counter
+
+props:
+  start: { type: integer, default: 0 }
+
+events:
+  changed:
+    count: { type: integer }
+
+parts:
+  value:     { role: status }
+  increment: { role: button }
+
+tests:
+  - name: starts at the start value
+    props: { start: 5 }
+    expect:
+      - { part: value, text: "5" }
+    screenshot: true
+
+  - name: each press adds one
+    steps:
+      - { action: press, part: increment, times: 3 }
+    expect:
+      - { part: value, text: "3" }
+      - { event: changed, times: 3, last: { count: 3 } }
+    screenshot: true
+
+  - name: the keyboard works too
+    steps:
+      - { action: focus, part: increment }
+      - { action: key, part: increment, key: Enter }
+    expect:
+      - { part: value, text: "1" }
+      - { part: increment, name: "Increment" }
+
+viewports:    [{ width: 320, height: 240 }]
+colorSchemes: [light, dark]
+thresholds:   { pixels: 30% }
