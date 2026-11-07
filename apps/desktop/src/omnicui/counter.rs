@@ -1,4 +1,4 @@
-//! Generated from omnicui/contracts/counter.contract.yaml by the stub generator. Do not edit: change the contract instead.
+//! Generated from contracts/counter.contract.yaml by the stub generator. Do not edit: change the contract instead.
 
 /// The props of `ui.counter`, with the contract's defaults.
 #[derive(Debug, Clone, serde::Deserialize)]

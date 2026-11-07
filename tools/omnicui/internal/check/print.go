@@ -45,12 +45,19 @@ func valueText(c Comparison) string {
 
 // comparisonLine is one line about a test's screenshots or one traced part.
 func comparisonLine(cs []Comparison) string {
-	var parts, warnings []string
+	var parts, warnings, notes []string
 	for _, c := range cs {
+		if strings.HasPrefix(c.Note, "not compared: ") {
+			notes = append(notes, pairLabel(c)+": "+strings.TrimPrefix(c.Note, "not compared: "))
+			continue
+		}
 		parts = append(parts, pairLabel(c)+" "+valueText(c))
 		if c.Warning {
 			warnings = append(warnings, pairLabel(c)+" "+valueText(c))
 		}
+	}
+	if len(parts) == 0 {
+		return "not compared: " + strings.Join(notes, "; ")
 	}
 	th := cs[0].Threshold
 	thText := fmt.Sprintf("%g%s", th, unit(cs[0].Kind))
@@ -71,9 +78,22 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			}
 		}
 	}
+	for _, t := range rep.Targets {
+		if why, ok := strings.CutPrefix(t.Probe, "failed: "); ok {
+			fmt.Fprintf(w, "%s: render check failed: %s; screenshots from %s are off for this run\n", t.Name, why, t.Name)
+		}
+	}
 	names := []string{}
 	for _, t := range rep.Targets {
 		names = append(names, t.Name)
+	}
+	// A message that many tests of one target share (a browser that died, a missing component)
+	// is printed once, here, instead of under every test.
+	repeated := repeatedMessages(rep)
+	for _, n := range names {
+		for _, m := range sortedKeys(repeated[n]) {
+			fmt.Fprintf(w, "%s: %d tests: %s\n", n, repeated[n][m], m)
+		}
 	}
 	col := 30
 	for _, c := range rep.Contracts {
@@ -104,7 +124,9 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				fmt.Fprint(w, pad(st, 10))
 				if res.Status != Pass {
 					for _, m := range res.Messages {
-						notes = append(notes, n+": "+m)
+						if repeated[n][m] == 0 {
+							notes = append(notes, n+": "+m)
+						}
 					}
 				}
 				for _, k := range sortedKeys(res.Missing) {
@@ -117,7 +139,7 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			for _, n := range notes {
 				fmt.Fprintf(w, "      %s\n", n)
 			}
-			var pix []Comparison
+			var pix, seen []Comparison
 			traces := map[string][]Comparison{}
 			var partOrder []string
 			for _, cmp := range rep.Comparisons {
@@ -126,18 +148,46 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				}
 				if cmp.Kind == "pixels" {
 					pix = append(pix, cmp)
+				} else if cmp.Kind == "visibility" {
+					seen = append(seen, cmp)
 				} else {
-					if _, ok := traces[cmp.Part]; !ok {
-						partOrder = append(partOrder, cmp.Part)
+					// One line per traced part (or clip) and combination.
+					key := "trace " + cmp.Part
+					if cmp.Kind == "motion" {
+						key = "clip, visual progress"
 					}
-					traces[cmp.Part] = append(traces[cmp.Part], cmp)
+					if cmp.Combo != "" && len(Combos(c)) > 1 && test.AllCombinations {
+						key += " " + cmp.Combo
+					}
+					if _, ok := traces[key]; !ok {
+						partOrder = append(partOrder, key)
+					}
+					traces[key] = append(traces[key], cmp)
 				}
 			}
 			if len(pix) > 0 {
-				fmt.Fprintf(w, "    %s%s\n", pad("screenshot", col-2), comparisonLine(pix))
+				fmt.Fprintf(w, "    screenshots, worst combination per pair:\n")
+				var rows []MeasuresRow
+				for _, p := range pix {
+					if p.Measures == nil {
+						continue
+					}
+					label := pairLabel(p)
+					if len(Combos(c)) > 1 {
+						label += " " + p.Combo
+					}
+					rows = append(rows, MeasuresRow{Label: label, Measures: *p.Measures, Over: p.Over, Note: p.Note, SpotPart: p.SpotPart})
+				}
+				fmt.Fprint(w, MeasuresTable(rows, *pix[0].Thresholds, "      "))
 			}
 			for _, p := range partOrder {
-				fmt.Fprintf(w, "    %s%s\n", pad("trace "+p, col-2), comparisonLine(traces[p]))
+				fmt.Fprintf(w, "    %s%s\n", pad(p, col-2), comparisonLine(traces[p]))
+			}
+			if combos := Combos(c); (len(test.Trace) > 0 || test.Record) && len(combos) > 1 && !test.AllCombinations {
+				fmt.Fprintf(w, "    %s%s\n", pad("", col-2), "traces and clip: first combination only ("+combos[0].Label()+")")
+			}
+			for _, v := range seen {
+				fmt.Fprintf(w, "    %s%s: warning: %s\n", pad("visibility", col-2), v.A, v.Note)
 			}
 			for _, k := range sortedKeys(missing) {
 				fmt.Fprintf(w, "    %s%s\n", pad(k, col-2), "not advertised by "+strings.Join(missing[k], ", "))
@@ -172,4 +222,31 @@ func find(rep *Report, contractID, test, target string) *TestResult {
 		}
 	}
 	return nil
+}
+
+// repeatedMessages finds, per target, the failure messages that three or more of its tests share.
+func repeatedMessages(rep *Report) map[string]map[string]int {
+	count := map[string]map[string]int{}
+	for _, res := range rep.Results {
+		if res.Status == Pass {
+			continue
+		}
+		if count[res.Target] == nil {
+			count[res.Target] = map[string]int{}
+		}
+		for _, m := range res.Messages {
+			count[res.Target][m]++
+		}
+	}
+	for t, ms := range count {
+		for m, n := range ms {
+			if n < 3 {
+				delete(ms, m)
+			}
+		}
+		if len(ms) == 0 {
+			delete(count, t)
+		}
+	}
+	return count
 }

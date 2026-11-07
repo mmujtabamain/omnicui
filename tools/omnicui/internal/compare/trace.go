@@ -7,11 +7,13 @@ import (
 	"strconv"
 )
 
-// Sample is one point of a trace: a time in milliseconds and a position in pixels.
+// Sample is one point of a trace: a time in milliseconds and a position in pixels, or, for a
+// traced property such as opacity, its value.
 type Sample struct {
-	MS float64 `json:"ms"`
-	X  float64 `json:"x"`
-	Y  float64 `json:"y"`
+	MS    float64  `json:"ms"`
+	X     float64  `json:"x"`
+	Y     float64  `json:"y"`
+	Value *float64 `json:"value,omitempty"`
 }
 
 // Levels are the fractions of the movement at which traces are compared.
@@ -31,7 +33,19 @@ type Curve struct {
 }
 
 // Analyze turns samples into a Curve. A point that moves less than one pixel didn't move.
+// Samples that carry a value (a traced property) are analysed by AnalyzeValues instead.
 func Analyze(samples []Sample) Curve {
+	if len(samples) > 0 && samples[0].Value != nil {
+		ms := make([]float64, len(samples))
+		vs := make([]float64, len(samples))
+		for i, s := range samples {
+			ms[i] = s.MS
+			if s.Value != nil {
+				vs[i] = *s.Value
+			}
+		}
+		return AnalyzeValues(ms, vs, 0.02)
+	}
 	if len(samples) < 2 {
 		return Curve{}
 	}
@@ -66,6 +80,59 @@ func Analyze(samples []Sample) Curve {
 	return c
 }
 
+// AnalyzeValues turns a value over time (an opacity, the picture's progress towards its final
+// state) into a Curve: the times at which it covered each level of its change from the first
+// value to the last. A change smaller than minChange is no change.
+func AnalyzeValues(ms, values []float64, minChange float64) Curve {
+	return analyzeValues(ms, values, minChange, math.Inf(1))
+}
+
+// AnalyzeHeld is AnalyzeValues for frames that are held until the next one: a screencast sends a
+// frame only when the picture changes, so a long gap means "unchanged until then", not a slow
+// ramp. A level is reached between two frames less than maxGap ms apart by interpolation, and
+// otherwise at the later frame.
+func AnalyzeHeld(ms, values []float64, minChange, maxGap float64) Curve {
+	return analyzeValues(ms, values, minChange, maxGap)
+}
+
+func analyzeValues(ms, values []float64, minChange, maxGap float64) Curve {
+	n := len(values)
+	if n < 2 || len(ms) != n {
+		return Curve{}
+	}
+	v0, vn := values[0], values[n-1]
+	change := vn - v0
+	if math.Abs(change) < minChange {
+		return Curve{Distance: math.Abs(change)}
+	}
+	progress := make([]float64, n)
+	for i, v := range values {
+		progress[i] = (v - v0) / change
+	}
+	at := func(level float64) float64 {
+		for i := 1; i < n; i++ {
+			if progress[i] >= level {
+				if ms[i]-ms[i-1] > maxGap {
+					return ms[i]
+				}
+				a, b := progress[i-1], progress[i]
+				f := 1.0
+				if b > a {
+					f = (level - a) / (b - a)
+				}
+				return ms[i-1] + f*(ms[i]-ms[i-1])
+			}
+		}
+		return ms[n-1]
+	}
+	c := Curve{Moved: true, Distance: math.Abs(change)}
+	for _, l := range Levels {
+		c.Times = append(c.Times, at(l))
+	}
+	c.Duration = at(endLevel) - at(startLevel)
+	return c
+}
+
 // Differ returns the largest difference in ms between two curves at the same level, after
 // shifting one so that they line up as well as possible. Targets react to input after different
 // delays, and sample at different moments, so only the shape and length of the movement are
@@ -75,7 +142,7 @@ func Differ(a, b Curve) (float64, string) {
 	case !a.Moved && !b.Moved:
 		return 0, "neither moved"
 	case a.Moved != b.Moved:
-		return math.Inf(1), "one moved and the other didn't"
+		return math.Inf(1), "one changed and the other didn't"
 	}
 	shift := 0.0
 	for i := range Levels {

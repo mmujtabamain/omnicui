@@ -1,4 +1,4 @@
-// Generated from omnicui/contracts/counter.contract.yaml by stubs.ts. Do not edit: change the contract instead.
+// Generated from contracts/counter.contract.yaml by stubs.ts. Do not edit: change the contract instead.
 
 export interface CounterChanged { count: number; }
 export interface CounterProps {

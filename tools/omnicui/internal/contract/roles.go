@@ -15,6 +15,10 @@ func set(xs ...string) map[string]bool {
 	return m
 }
 
+// Every role also has `role` (the role assistive technology reports, compared with the
+// contract's) and `visible` (the part has a size on screen and is inside the viewport); the
+// focusable roles have `focused`. They are added to each role below.
+
 // Roles is the full table. A role that is not here is refused by the schema.
 var Roles = map[string]Role{
 	"button":   {Fields: map[string]string{"text": "string", "name": "string", "disabled": "boolean"}, Actions: set("press", "focus", "key", "hover")},
@@ -25,4 +29,27 @@ var Roles = map[string]Role{
 	"status":   {Fields: map[string]string{"text": "string", "name": "string"}, Actions: set("hover")},
 	"heading":  {Fields: map[string]string{"text": "string", "name": "string"}, Actions: set("hover")},
 	"generic":  {Fields: map[string]string{"text": "string"}, Actions: set("hover")},
+}
+
+// focusable roles can hold keyboard focus.
+var focusable = []string{"button", "switch", "checkbox", "slider", "textbox"}
+
+func init() {
+	for name, r := range Roles {
+		r.Fields["role"] = "string"
+		r.Fields["visible"] = "boolean"
+		Roles[name] = r
+	}
+	for _, name := range focusable {
+		Roles[name].Fields["focused"] = "boolean"
+	}
+}
+
+// RoleNames lists the roles, for `role:` expectations.
+func RoleNames() []string {
+	out := make([]string, 0, len(Roles))
+	for n := range Roles {
+		out = append(out, n)
+	}
+	return out
 }

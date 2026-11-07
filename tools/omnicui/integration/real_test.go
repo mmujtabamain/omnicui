@@ -92,15 +92,23 @@ const (
 func TestAllTargetsAgree(t *testing.T) {
 	o := omnicui(t, "00-baseline", nil, "check")
 	s := o.rep.Summary
-	if o.code != 0 || s.Pass != 21 || s.Fail != 0 || s.Broken != 0 || s.NotAdvertised != 0 || s.Warnings != 0 {
+	// 7 written tests and 3 keyboard tests (keyboard: true), on three targets.
+	if o.code != 0 || s.Pass != 30 || s.Fail != 0 || s.Broken != 0 || s.NotAdvertised != 0 || s.Warnings != 0 {
 		t.Fatalf("summary %+v, exit %d", s, o.code)
 	}
 	if len(o.rep.Targets) != 3 {
 		t.Fatalf("targets: %+v", o.rep.Targets)
 	}
+	// Every construct, on every target; trace.opacity where the toolkit has an opacity to read.
 	for _, ti := range o.rep.Targets {
-		if len(ti.Can) != 12 {
-			t.Errorf("%s advertises %v", ti.Name, ti.Can)
+		want := 16
+		if ti.Name != "egui" {
+			want = 17
+		} else if !strings.Contains(ti.Cannot["trace.opacity"], "no per-widget opacity") {
+			t.Errorf("egui should say why it can't trace opacity: %v", ti.Cannot)
+		}
+		if len(ti.Can) != want || ti.Probe != "passed" {
+			t.Errorf("%s advertises %v, render check %q", ti.Name, ti.Can, ti.Probe)
 		}
 	}
 }
@@ -156,6 +164,24 @@ func TestDefectsAreCaught(t *testing.T) {
 				t.Error("a wider web button must be a pixel warning")
 			}
 			onlyWarningsInvolve(t, o, "web")
+			// The worst spot is put down to the part it is in: the wider button.
+			for _, c := range o.rep.Comparisons {
+				if c.Kind == "pixels" && c.Warning && c.Test == counterStart && c.SpotPart != "increment" {
+					t.Errorf("the worst spot should be in `increment`: %+v", c)
+				}
+			}
+		}},
+		// The readiness hook: a component that appears 400 ms after mount fails when the page
+		// doesn't say it is busy, and passes when it does (window.omnicuiBusy).
+		{"web.harness.late", []string{"check", "web", "counter"}, func(t *testing.T, o outcome) {
+			if status(o, "web", counterStart) != check.Fail || !strings.Contains(o.out, "no part ui.counter.value") {
+				t.Error("a late component, not declared busy, must fail")
+			}
+		}},
+		{"web.harness.late-busy", []string{"check", "web", "counter"}, func(t *testing.T, o outcome) {
+			if o.rep.Summary.Pass != 5 || o.code != 0 {
+				t.Errorf("a late component declared busy must be waited for: %+v", o.rep.Summary)
+			}
 		}},
 		{"javafx.host.stretch", []string{"check"}, func(t *testing.T, o outcome) {
 			for _, test := range []string{counterStart, counterPress, switchOff, switchOn, switchPress} {
@@ -169,7 +195,38 @@ func TestDefectsAreCaught(t *testing.T) {
 			if !warned(o, "timing", "web", switchPress) {
 				t.Error("a 300ms linear slide on web must be a timing warning")
 			}
+			if !warned(o, "motion", "web", switchPress) {
+				t.Error("and its clip must move differently too")
+			}
 			onlyWarningsInvolve(t, o, "web")
+		}},
+		// A fade is no movement: the position trace can't see it, the clip can.
+		{"web.switch.dim", []string{"check", "switch"}, func(t *testing.T, o outcome) {
+			if warned(o, "timing", "web", switchPress) {
+				t.Error("the thumb still slides the same way: no trace warning")
+			}
+			if !warned(o, "motion", "web", switchPress) {
+				t.Error("a 600 ms fade on web only must make its clip move differently")
+			}
+			onlyWarningsInvolve(t, o, "web")
+		}},
+		{"javafx.switch.dim", []string{"check", "switch"}, func(t *testing.T, o outcome) {
+			if warned(o, "timing", "javafx", switchPress) || !warned(o, "motion", "javafx", switchPress) {
+				t.Error("a fade on javafx only: a motion warning from the clip, no trace warning")
+			}
+			onlyWarningsInvolve(t, o, "javafx")
+		}},
+		// A control that ignores Enter: the keyboard test that keyboard: true adds catches it,
+		// with no expectation written for it.
+		{"javafx.counter.no-enter", []string{"check", "counter"}, func(t *testing.T, o outcome) {
+			if status(o, "javafx", "keyboard: Enter on `increment` does what a press does") != check.Fail ||
+				status(o, "javafx", "keyboard: Space on `increment` does what a press does") != check.Pass ||
+				status(o, "web", "keyboard: Enter on `increment` does what a press does") != check.Pass {
+				t.Error("only javafx's Enter test must fail")
+			}
+			if !strings.Contains(o.out, "javafx: Enter on `increment` didn't do what a press does: a press gave event changed {\"count\":1}, value.text \"1\"; the key gave value.text \"0\"") {
+				t.Error("the message must say how the key and the press differ")
+			}
 		}},
 		{"javafx.switch.linear", []string{"check", "switch"}, func(t *testing.T, o outcome) {
 			if !warned(o, "timing", "javafx", switchPress) {
@@ -190,7 +247,7 @@ func TestDefectsAreCaught(t *testing.T) {
 			onlyWarningsInvolve(t, o, "egui")
 		}},
 		{"javafx.adapter.stdout", []string{"check"}, func(t *testing.T, o outcome) {
-			if o.rep.Summary.Broken != 7 || o.code != 1 || !strings.Contains(o.out, `javafx: broken: stray output on standard output during mount ui.counter: "[javafx] mounting ui.counter"`) {
+			if o.rep.Summary.Broken != 10 || o.code != 1 || !strings.Contains(o.out, `javafx: broken: stray output on standard output during mount ui.counter: "[javafx] mounting ui.counter"`) {
 				t.Errorf("printing on standard output must break javafx, and only javafx: %+v", o.rep.Summary)
 			}
 			if status(o, "web", counterPress) != check.Pass || status(o, "egui", counterPress) != check.Pass {
@@ -206,7 +263,7 @@ func TestDefectsAreCaught(t *testing.T) {
 	}
 	// And with the defects switched off again, everything passes once more.
 	o := omnicui(t, "99-baseline-again", nil, "check")
-	if o.rep.Summary.Pass != 21 || o.rep.Summary.Warnings != 0 {
+	if o.rep.Summary.Pass != 30 || o.rep.Summary.Warnings != 0 {
 		t.Fatalf("after the defects: %+v", o.rep.Summary)
 	}
 }

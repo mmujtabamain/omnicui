@@ -36,6 +36,12 @@ public final class Counter extends HBox {
             onChanged.accept(count.get()); // contract: events.changed { count }
         });
         // A focused JavaFX Button already fires on Enter and on Space, as a browser's does.
+        // javafx.counter.no-enter: a control that ignores Enter (as a custom control built from a
+        // Region or a Label does, unless it handles keys itself).
+        if (Defects.on("javafx.counter.no-enter"))
+            increment.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+                if (e.getCode() == javafx.scene.input.KeyCode.ENTER) e.consume();
+            });
 
         getChildren().addAll(value, increment);
         getStyleClass().add("counter");

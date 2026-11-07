@@ -7,7 +7,9 @@
 //	FAKE_COLOR        RRGGBB of the drawn component in screenshots (default 1d1f1b)
 //	FAKE_SHIFT        pixels to move the drawn component right (default 0)
 //	FAKE_EASING       linear or ease-out (default ease-out), FAKE_DURATION ms (default 200)
-//	FAKE_BUG          no-name (the button has no name), double (each press adds two)
+//	FAKE_BUG          no-name (the button has no name), double (each press adds two),
+//	                  old-record (record replies with the frames alone, as protocol 1 adapters did),
+//	                  no-enter (Enter doesn't press a focused button), space-twice (Space presses twice)
 //	FAKE_CRASH_ON     exit with code 3 when request N arrives (after writing to stderr)
 //	FAKE_CLOSE_ON     close standard output when request N arrives, and keep running
 //	FAKE_HANG_ON      never answer request N
@@ -16,6 +18,10 @@
 //	FAKE_ERROR_ON     reply with an error to this method
 //	FAKE_SLEEP_MS     sleep before every reply
 //	FAKE_PID_FILE     write the process id here at start
+//	FAKE_PROBE        how to draw the render check's picture: ok (default), small (half the
+//	                  size asked for), blank (white only)
+//	FAKE_HIDDEN       parts that report no size on screen (bounds 0×0), e.g. value
+//	FAKE_ROLE         part=role,… to report another role than the contract's
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -54,6 +60,7 @@ type params struct {
 	Key         string           `json:"key"`
 	Path        string           `json:"path"`
 	Point       string           `json:"point"`
+	Property    string           `json:"property"`
 	Steps       []map[string]any `json:"steps"`
 }
 
@@ -146,8 +153,14 @@ func act(method string, p params) error {
 	case "focus":
 		st.focused = part
 	case "key":
+		if p.Key == "Enter" && has(os.Getenv("FAKE_BUG"), "no-enter") {
+			break
+		}
 		if (p.Key == "Enter" || p.Key == "Space") && st.focused == part {
 			press()
+			if p.Key == "Space" && has(os.Getenv("FAKE_BUG"), "space-twice") {
+				press()
+			}
 		}
 	}
 	if st.on {
@@ -173,6 +186,41 @@ func screenshot(path string) error {
 			if x >= 24+shift && x < 84+shift && y >= 24 && y < 54 {
 				c = fg
 			}
+			// The switch's thumb, where it is now (so that recorded frames show it slide).
+			if tx := 30 + int(st.moved+0.5); st.component == "ui.switch" && x >= tx+shift && x < tx+12+shift && y >= 33 && y < 45 {
+				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
+			}
+			img.Set(x, y, c)
+		}
+	}
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return png.Encode(f, img)
+}
+
+// probe draws the render check's picture: white, a black square at 8,8 and a red one 8 px from
+// the bottom-right corner.
+func probe(path string, w, h int) error {
+	switch env("FAKE_PROBE", "ok") {
+	case "small":
+		w, h = w/2, h/2
+	}
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			c := color.RGBA{255, 255, 255, 255}
+			if env("FAKE_PROBE", "ok") != "blank" {
+				if x >= 8 && x < 40 && y >= 8 && y < 40 {
+					c = color.RGBA{0, 0, 0, 255}
+				}
+				if x >= w-40 && x < w-8 && y >= h-40 && y < h-8 {
+					c = color.RGBA{255, 0, 0, 255}
+				}
+			}
 			img.Set(x, y, c)
 		}
 	}
@@ -193,7 +241,7 @@ func handle(n int, r req) (any, error) {
 	}
 	switch r.Method {
 	case "advertise":
-		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,record"), ",")
+		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,record,probe,bounds,role,focused"), ",")
 		cannot := map[string]string{}
 		for _, kv := range strings.Split(os.Getenv("FAKE_CANNOT"), ",") {
 			if k, v, ok := strings.Cut(kv, "="); ok {
@@ -247,7 +295,30 @@ func handle(n int, r req) (any, error) {
 		case "ui.switch.switch/name":
 			return st.label, nil
 		}
+		part := strings.TrimPrefix(p.Part, st.component+".")
+		switch p.Field {
+		case "focused":
+			return st.focused == part, nil
+		case "role":
+			for _, kv := range strings.Split(os.Getenv("FAKE_ROLE"), ",") {
+				if k, v, ok := strings.Cut(kv, "="); ok && k == part {
+					return v, nil
+				}
+			}
+			return map[string]string{"value": "status", "increment": "button", "switch": "switch", "thumb": "generic"}[part], nil
+		}
 		return nil, nil
+	case "bounds":
+		if err := act("read", p); err != nil {
+			return nil, err
+		}
+		if has(os.Getenv("FAKE_HIDDEN"), strings.TrimPrefix(p.Part, st.component+".")) {
+			return map[string]any{"x": 24, "y": 24, "width": 0, "height": 0}, nil
+		}
+		shift := envInt("FAKE_SHIFT")
+		return map[string]any{"x": 24 + shift, "y": 24, "width": 60, "height": 30}, nil
+	case "probe":
+		return p.Path, probe(p.Path, p.Viewport.Width, p.Viewport.Height)
 	case "events":
 		out := st.events
 		st.events = nil
@@ -274,15 +345,27 @@ func handle(n int, r req) (any, error) {
 			ms := float64(i) * 1000 / 60
 			t := math.Max(0, math.Min(1, (ms-50)/dur))
 			x := 36 + start + (end-start)*ease(t)
-			if r.Method == "trace" {
+			switch {
+			case r.Method == "trace" && p.Property == "opacity":
+				v := 1 - 0.5*ease(t)*math.Abs(end-start)/20
+				out = append(out, map[string]any{"ms": ms, "value": v})
+			case r.Method == "trace":
 				out = append(out, map[string]any{"ms": ms, "x": x, "y": 36})
-			} else {
+			default:
 				file := filepath.Join(p.Path, fmt.Sprintf("%d.png", i))
-				if err := screenshot(file); err != nil {
+				final := st.moved
+				st.moved = x - 36
+				err := screenshot(file)
+				st.moved = final
+				if err != nil {
 					return nil, err
 				}
 				out = append(out, map[string]any{"ms": ms, "file": file})
 			}
+		}
+		if r.Method == "record" && !has(os.Getenv("FAKE_BUG"), "old-record") {
+			// The input landed at 50 ms in the clip's timeline.
+			return map[string]any{"frames": out, "inputs": []float64{50}}, nil
 		}
 		return out, nil
 	}

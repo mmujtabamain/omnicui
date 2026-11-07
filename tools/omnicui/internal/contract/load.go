@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
@@ -131,7 +132,7 @@ func Parse(file string, data []byte) (*Contract, []Problem) {
 	if err != nil {
 		return nil, []Problem{{File: file, Line: 1, Message: err.Error()}}
 	}
-	l := loader{file: file, lines: lines}
+	l := loader{file: file, lines: lines, doc: value}
 	if verr := compiledSchema().Validate(value); verr != nil {
 		ve, ok := verr.(*jsonschema.ValidationError)
 		if !ok {
@@ -207,6 +208,7 @@ func escape(s string) string {
 }
 
 type loader struct {
+	doc      any // the whole file, as plain values
 	file     string
 	lines    map[string]int
 	problems []Problem
@@ -214,6 +216,22 @@ type loader struct {
 
 func (l *loader) sortProblems() {
 	sort.SliceStable(l.problems, func(i, j int) bool { return l.problems[i].Line < l.problems[j].Line })
+}
+
+// value is the value at a JSON pointer whose segments need no unescaping, or nil.
+func (l *loader) value(ptr string) any {
+	v := l.doc
+	for _, seg := range strings.Split(strings.TrimPrefix(ptr, "/"), "/") {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return nil
+		}
+		v = m[seg]
+	}
+	if f, ok := v.(float64); ok && f == float64(int64(f)) {
+		return int64(f)
+	}
+	return v
 }
 
 // line finds the line of a JSON pointer, falling back to its nearest parent.
@@ -244,7 +262,7 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "disabled", "checked", "value"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -279,10 +297,34 @@ func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 			msg = fmt.Sprintf("missing field %s", quoteAll(k.Missing))
 		case *kind.Type:
 			msg = fmt.Sprintf("expected %s, got %s", strings.Join(k.Want, " or "), k.Got)
+			// A threshold written as a bare number: say which unit it takes.
+			if n := len(e.InstanceLocation); n == 2 && e.InstanceLocation[0] == "thresholds" && k.Got == "number" {
+				got := fmt.Sprint(l.value(ptr))
+				switch e.InstanceLocation[1] {
+				case "area", "strength", "spot", "pixels":
+					msg = patternMessage(got, "%$")
+				case "shift":
+					msg = patternMessage(got, "px$")
+				case "timing", "motion":
+					msg = patternMessage(got, "ms$")
+				}
+			}
 		case *kind.Enum:
 			msg = fmt.Sprintf("`%v` is not one of %s", k.Got, quoteAll(anyStrings(k.Want)))
 		case *kind.Pattern:
-			msg = fmt.Sprintf("`%s` is not in the expected form", k.Got)
+			msg = patternMessage(k.Got, k.Want)
+			// A key in the wrong form (propertyNames) is reported against no location: find the
+			// key itself, for its line and where it is.
+			if ptr == "" {
+				for p := range l.lines {
+					if strings.HasSuffix(p, "/"+escape(k.Got)+"#key") && (ptr == "" || l.lines[p] < l.lines[ptr]) {
+						ptr = p
+					}
+				}
+				if ptr != "" {
+					e.InstanceLocation = strings.Split(strings.TrimPrefix(strings.TrimSuffix(ptr, "/"+escape(k.Got)+"#key"), "/"), "/")
+				}
+			}
 		case *kind.FalseSchema:
 			if len(e.InstanceLocation) > 0 {
 				msg = fmt.Sprintf("unknown field `%s`", e.InstanceLocation[len(e.InstanceLocation)-1])
@@ -383,6 +425,36 @@ func parseMS(s string) float64 {
 	return f
 }
 
+func parsePX(s string) float64 {
+	f, _ := strconv.ParseFloat(strings.TrimSuffix(s, "px"), 64)
+	return f
+}
+
+// lintThresholds warns about a threshold far stricter than its default. Correct renderings by
+// different toolkits always differ a little, so such a threshold makes every comparison warn,
+// and real differences drown among the warnings.
+func (l *loader) lintThresholds(c *Contract, given map[string]any) {
+	d := DefaultPixelThresholds
+	type th struct {
+		name, unit, typical string
+		got, def            float64
+	}
+	for _, t := range []th{
+		{"area", "%", "correct renderings by different toolkits usually differ by 3–26% of the drawn area", c.Pixels.Area, d.Area},
+		{"strength", "%", "anti-aliased edges alone usually reach 12–24%", c.Pixels.Strength, d.Strength},
+		{"spot", "%", "correct renderings reach up to about 1.6%", c.Pixels.Spot, d.Spot},
+		{"shift", "px", "glyph placement alone usually measures 3–7 px", c.Pixels.Shift, d.Shift},
+		{"timing", "ms", "the same easing measured on two toolkits usually differs by 5–15 ms", c.TimingThreshold, DefaultTimingThreshold},
+		{"motion", "ms", "the same clip recorded on two toolkits differed by up to 30 ms", c.MotionThreshold, DefaultMotionThreshold},
+	} {
+		ptr := "/thresholds/" + t.name
+		if _, ok := given[t.name]; ok && t.got < t.def/3 {
+			l.warnf(ptr, "thresholds.%s %g%s is far below the default %g%s; %s, so expect most comparisons to warn",
+				t.name, t.got, t.unit, t.def, t.unit, t.typical)
+		}
+	}
+}
+
 func parsePercent(s string) float64 {
 	f, _ := strconv.ParseFloat(strings.TrimSuffix(s, "%"), 64)
 	return f
@@ -464,10 +536,18 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		}
 		test.Screenshot, _ = t["screenshot"].(bool)
 		test.Record, _ = t["record"].(bool)
+		test.AllCombinations, _ = t["allCombinations"].(bool)
 		if traces, ok := t["trace"].([]any); ok {
 			for j, trv := range traces {
 				tr := trv.(map[string]any)
-				spec := TraceSpec{Part: tr["part"].(string), Point: tr["point"].(string), Line: l.line(fmt.Sprintf("%s/trace/%d", base, j))}
+				spec := TraceSpec{Part: tr["part"].(string), Property: "position", Line: l.line(fmt.Sprintf("%s/trace/%d", base, j))}
+				spec.Point, _ = tr["point"].(string)
+				if prop, ok := tr["property"].(string); ok {
+					spec.Property = prop
+				}
+				if spec.Property == "position" && spec.Point == "" {
+					l.errorf(fmt.Sprintf("%s/trace/%d", base, j), "a position trace needs `point: center` or `point: topLeft`")
+				}
 				if tm, ok := tr["timing"].(map[string]any); ok {
 					spec.Timing = &Timing{DurationMS: parseMS(tm["duration"].(string)), Easing: tm["easing"].(string)}
 				}
@@ -479,11 +559,16 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	if vps, ok := v["viewports"].([]any); ok {
 		for _, vp := range vps {
 			m := vp.(map[string]any)
-			c.Viewports = append(c.Viewports, Viewport{Width: int(num(m["width"])), Height: int(num(m["height"]))})
+			vp := Viewport{Width: int(num(m["width"])), Height: int(num(m["height"]))}
+			if props, ok := m["props"].(map[string]any); ok {
+				vp.Props = plain(props).(map[string]any)
+			}
+			c.Viewports = append(c.Viewports, vp)
 		}
 	} else {
 		c.Viewports = []Viewport{DefaultViewport}
 	}
+	c.Keyboard, _ = v["keyboard"].(bool)
 	if cs, ok := v["colorSchemes"].([]any); ok {
 		for _, s := range cs {
 			c.ColorSchemes = append(c.ColorSchemes, s.(string))
@@ -491,14 +576,27 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	} else {
 		c.ColorSchemes = DefaultColorSchemes
 	}
-	c.PixelThreshold, c.TimingThreshold = DefaultPixelThreshold, DefaultTimingThreshold
+	c.Pixels, c.TimingThreshold, c.MotionThreshold = DefaultPixelThresholds, DefaultTimingThreshold, DefaultMotionThreshold
 	if th, ok := v["thresholds"].(map[string]any); ok {
 		if p, ok := th["pixels"].(string); ok {
-			c.PixelThreshold = parsePercent(p)
+			l.errorf("/thresholds/pixels#key", "thresholds.pixels was renamed to area (the share of the drawn area that differs): write `area: %s`", p)
+		}
+		percent := map[string]*float64{"area": &c.Pixels.Area, "strength": &c.Pixels.Strength, "spot": &c.Pixels.Spot}
+		for name, dst := range percent {
+			if p, ok := th[name].(string); ok {
+				*dst = parsePercent(p)
+			}
+		}
+		if s, ok := th["shift"].(string); ok {
+			c.Pixels.Shift = parsePX(s)
 		}
 		if t, ok := th["timing"].(string); ok {
 			c.TimingThreshold = parseMS(t)
 		}
+		if t, ok := th["motion"].(string); ok {
+			c.MotionThreshold = parseMS(t)
+		}
+		l.lintThresholds(c, th)
 	}
 	return c
 }
@@ -670,6 +768,43 @@ func (l *loader) crossCheck(c *Contract) {
 			l.errorf(base+"/trace", "test `%s` traces a part but has no steps to trace", t.Name)
 		}
 	}
+	for i, vp := range c.Viewports {
+		for _, k := range sortedKeys(vp.Props) {
+			ptr := fmt.Sprintf("/viewports/%d/props/%s", i, escape(k))
+			var decl *Field
+			for j := range c.Props {
+				if c.Props[j].Name == k {
+					decl = &c.Props[j]
+				}
+			}
+			if decl == nil {
+				m := fmt.Sprintf("prop `%s` does not exist", k)
+				if s := closest(k, propNames); s != "" {
+					m += fmt.Sprintf("; did you mean `%s`?", s)
+				}
+				l.errorf(ptr+"#key", "%s", m)
+			} else if !typeOK(decl.Type, vp.Props[k]) {
+				l.errorf(ptr, "prop `%s` is %s, but its type is %s", k, describe(vp.Props[k]), decl.Type)
+			}
+		}
+	}
+	if c.Keyboard {
+		found := false
+		for _, p := range c.Parts {
+			for _, key := range KeyboardKeys[p.Role] {
+				found = true
+				used[p.Name] = true
+				c.Tests = append(c.Tests, Test{
+					Name:     fmt.Sprintf("keyboard: %s on `%s` does what a press does", key, p.Name),
+					Keyboard: &KeyboardCheck{Part: p.Name, Key: key},
+					Line:     l.line("/keyboard"),
+				})
+			}
+		}
+		if !found {
+			l.warnf("/keyboard", "`keyboard: true` adds tests for buttons, switches and checkboxes, and this contract has none")
+		}
+	}
 	for _, p := range c.Parts {
 		if !used[p.Name] {
 			l.warnf("/parts/"+p.Name+"#key", "part `%s` is never used by any test", p.Name)
@@ -731,4 +866,55 @@ func distance(a, b string) int {
 		}
 	}
 	return d[len(ra)][len(rb)]
+}
+
+// patternMessage says what a value in the wrong form should look like, and, where it can, how
+// this one would be written.
+func patternMessage(got, pattern string) string {
+	switch {
+	case pattern == "^[a-z][a-zA-Z0-9]*$":
+		m := fmt.Sprintf("`%s` is not a valid name: names are camelCase, a lower-case letter and then letters and digits", got)
+		if c := camelCase(got); c != "" && c != got {
+			m += fmt.Sprintf("; write `%s`", c)
+		}
+		return m
+	case strings.HasPrefix(pattern, "^[a-z][a-z0-9]*(\\.") || strings.HasPrefix(pattern, "^[a-z][a-z0-9]*(\\\\."):
+		return fmt.Sprintf("`%s` is not a valid id: an id is lower-case words joined by dots, like `ui.counter`", got)
+	case strings.HasSuffix(pattern, "%$"):
+		return fmt.Sprintf("`%s` is not a percentage: write it like `30%%`", got)
+	case strings.HasSuffix(pattern, "px$"):
+		return fmt.Sprintf("`%s` is not a length in pixels: write it like `5px`", got)
+	case strings.HasSuffix(pattern, "ms$"):
+		return fmt.Sprintf("`%s` is not a duration: write it in milliseconds, like `200ms`", got)
+	case strings.Contains(pattern, "cubic-bezier"):
+		return fmt.Sprintf("`%s` is not a timing function: linear, ease, ease-in, ease-out, ease-in-out or cubic-bezier(x1, y1, x2, y2)", got)
+	}
+	return fmt.Sprintf("`%s` is not in the expected form (%s)", got, pattern)
+}
+
+// camelCase turns card-number, card_number or Card Number into cardNumber; "" if it can't.
+func camelCase(s string) string {
+	var b strings.Builder
+	upper := false
+	for _, r := range s {
+		switch {
+		case r == '-' || r == '_' || r == ' ' || r == '.':
+			upper = b.Len() > 0
+		case (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'):
+			if b.Len() == 0 {
+				if r >= '0' && r <= '9' {
+					return ""
+				}
+				b.WriteRune(unicode.ToLower(r))
+			} else if upper {
+				b.WriteRune(unicode.ToUpper(r))
+			} else {
+				b.WriteRune(r)
+			}
+			upper = false
+		default:
+			return ""
+		}
+	}
+	return b.String()
 }

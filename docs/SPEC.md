@@ -95,10 +95,12 @@ omnicui starts the adapter once per check and keeps it running. It sends one JSO
 
 **Q3: What is checked, and how are differences reported?** There are three checks:
 - **Tests** are exact. A mismatch **fails** the run.
-- **Pixels:** each screenshot is compared between every pair of targets that took it. The measure is the share of the drawn area that differs, allowing for 2 px of placement noise. Above the contract's threshold it prints a **warning**.
-- **Motion:** each trace is compared between targets and with the test's named timing function, if it has one. Above the threshold it prints a **warning**.
+- **Pixels:** each screenshot is compared between every pair of targets that took it, by four measures (§5): **area** (how much of the drawn area differs, allowing for 2 px of placement noise), **strength** (how far off in colour), **shift** (how far pixels moved) and **spot** (how concentrated the difference is in its worst 24×24 px spot). Any measure above the contract's threshold for it prints a **warning**.
+- **Visibility:** a part whose text, name, value or checked state was read while it had no size on screen, or was outside the viewport, is a **warning** (targets that report `bounds`).
+- **Motion:** each trace (a point's position, or a part's opacity) is compared between targets and with the test's named timing function, if it has one. Each recorded clip is reduced to its **visual progress** (how far the picture has gone from its first frame to its last, over time) and compared between targets the same way, which covers fades, blurs and colour changes that have no position to trace. Above the threshold (`timing` for traces, `motion` for clips) it prints a **warning**.
+- **Keyboard:** with `keyboard: true`, every button, switch and checkbox gets a generated test per key its role is activated by; the key must do what a pointer press does. A difference **fails**.
 
-A warning never fails the run, and nothing is sent anywhere: the author reads it and decides. omnicui keeps no state between runs, and has no approval step and no baselines.
+A warning never fails the run unless `check --fail-on` says so (for CI), and nothing is sent anywhere: the author reads it and decides. omnicui keeps no state between runs, and has no approval step and no baselines.
 
 **Q4: How does it fail, and how does it recover?** Every failure is visible and classified:
 - an error reply **fails** that test;
@@ -116,14 +118,14 @@ There is nothing to recover: each run starts clean and replaces the last run's f
 | Entity | Fields | Identifier | Owner |
 |---|---|---|---|
 | **Project** | `contracts/`, `targets/`, `.omnicui/run/` | its folder: named by `--project <folder>` or `OMNICUI_PROJECT`, or else found by walking up from the working directory, taking at each level the folder itself if it has `contracts/`, or its `omnicui/` subfolder if that has `contracts/` (in the reference repository, `omnicui/`) | the user |
-| **Contract** | `id`, `props`, `events`, `parts`, `tests`, `viewports`, `colorSchemes`, `thresholds` | `id`, e.g. `ui.counter` (unique in the project) | `contracts/<name>.contract.yaml` |
+| **Contract** | `id`, `props`, `events`, `parts`, `tests`, `viewports` (each with optional `props`), `colorSchemes`, `thresholds`, `keyboard` | `id`, e.g. `ui.counter` (unique in the project) | `contracts/<name>.contract.yaml` |
 | **Field** | `type` (string, integer, number, boolean), optional `enum`, optional `default` | its name within props or within one event | a contract |
 | **Part** | `role` | `<contract id>.<part name>`, e.g. `ui.counter.increment` | a contract |
 | **Role** | its checkable fields and the actions it accepts (table below) | WAI-ARIA name | omnicui |
-| **Test** | `name`, `props`, `steps`, `expect`, `screenshot`, `trace`, `record` | `name` (unique in its contract) | a contract |
+| **Test** | `name`, `props`, `steps`, `expect`, `screenshot`, `trace`, `record`, `allCombinations` | `name` (unique in its contract) | a contract |
 | **Step** | `action`, `part`, `times`, and `key`, `text` or `dx`/`dy` | its position | a test |
 | **Expectation** | either `part` and fields, or `event` with `times` and/or `last` | its position | a test |
-| **Trace spec** | `part`, `point` (`center` or `topLeft`), optional `timing` (`duration`, `easing`) | its position | a test |
+| **Trace spec** | `part`, `property` (`position`, the default, or `opacity`), `point` (`center` or `topLeft`; positions only), optional `timing` (`duration`, `easing`) | its position | a test |
 | **Target** | `name`, `language`, `adapter`, `stubs`, `stepTimeout`, `startTimeout` | `name` (equals its folder name) | `targets/<name>/target.yaml` |
 | **Advertisement** | `protocol`, `can` (constructs), `cannot` (construct → reason) | none: one per target per run | the adapter |
 | **Run** | run id, the results of every test on every target, the comparisons, the summary | `<UTC time>-<12 hex digits>` | `.omnicui/run/` in the project, or the folder given by `check --out` |
@@ -140,6 +142,8 @@ There is nothing to recover: each run starts clean and replaces the last run's f
 | textbox | text, name, disabled | press, focus, key, type, hover |
 | status, heading | text, name | hover |
 | generic | text | hover |
+
+Every role also has `role` (the role assistive technology reports, compared with the value given; capability `role`) and `visible` (the part has a size on screen and some of it is inside the viewport; omnicui works it out from `bounds`). The focusable roles (button, switch, checkbox, slider, textbox) have `focused` (capability `focused`). A test that checks one of them on a target that doesn't advertise its capability is "not advertised" there. *(TestRoleAndFocused)*
 
 ### Invariants
 
@@ -169,7 +173,7 @@ replace the run folder (.omnicui/run/, or --out) ─▶ for every target, in par
                            for each contract, each test, in file order:
                                for each viewport × colour scheme:
                                    mount → steps (or trace) → expect → screenshot
-                               first combination only: further traces, record
+                               first combination only (every one with allCombinations): further traces, record
                            stop the adapter
       ▼
 compare screenshots and traces between targets ─▶ results.json, report.html ─▶ print ─▶ exit 0 or 1
@@ -216,8 +220,10 @@ Every command takes the form `omnicui [--project <folder>] <command> …`.
 
 | Command | Does | Exit status |
 |---|---|---|
-| `omnicui check [target…] [component…] [--require target:capability]… [--out <folder>]` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out` | 0 when nothing failed or broke; 1 when something did, or a required capability is missing; 2 for a usage or contract error |
-| `omnicui targets` | starts each adapter, asks `advertise`, and prints its capabilities with reasons | 0; 2 if a target.yaml is invalid |
+| `omnicui check [target…] [component…] [--require target:capability]… [--out <folder>] [--fail-on warnings\|pixels\|timing\|visibility]…` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out`. One progress line per finished test goes to standard error: `[web 12/38] counter › each press adds one  pass` | 0 when nothing failed or broke; 1 when something did, a required capability is missing, or there is a warning of a kind `--fail-on` names; 2 for a usage or contract error |
+| `omnicui targets` | starts each adapter, asks `advertise`, runs the render check (§4.4) on each target that advertises `screenshot` and `probe`, and prints its capabilities with reasons and the render check's outcome | 0; 2 if a target.yaml is invalid |
+| `omnicui compare <a.png> <b.png> [--diff <out.png>] [--json]` | measures two screenshots the way `check` does and prints the four measures against the default thresholds, for looking into one comparison or trying thresholds on saved screenshots | 0; 2 if a file can't be read |
+| `omnicui help contract` | one screen: every field of a contract, the defaults, the roles and their fields, and how each comparison is measured | 0 |
 | `omnicui stubs [target…]` | runs the targets' stub generators | 0; 1 if one fails |
 | `omnicui contracts` | loads and checks the contracts only | 0; 2 on any error |
 | `omnicui add <name> [--template <folder or git URL>]` | creates `targets/<name>/target.yaml`, or copies a template and renames it | 0; 2 if the name is invalid or exists |
@@ -240,18 +246,22 @@ A name given to `check` or `stubs` is matched against target names first, then a
 **Example**, from the reference repository's root (the project is found in `omnicui/`):
 
 ```
-$ bin/omnicui check
+$ OMNICUI_DEFECTS=web.counter.padding bin/omnicui check counter
+[javafx 1/5] counter › starts at the start value  pass               # progress, on standard error
+…
+ui.counter                                               egui      javafx    web
+  starts at the start value                              pass      pass      pass
+    screenshots, worst combination per pair:
+                                 area      strength  shift     spot
+      egui ↔ javafx 320x240-dark 16%       19%       4 px      0.2%      pass
+      egui ↔ web 320x240-dark    74% ▲     61% ▲     4 px      9.7% ▲    warning: area, strength, spot above the threshold (worst spot 24×24 at 78,18, in `increment`)
+      javafx ↔ web 320x240-light 75% ▲     61% ▲     4 px      9.6% ▲    warning: area, strength, spot above the threshold (worst spot 24×24 at 78,18, in `increment`)
+      thresholds                 30%       28%       8 px      2%
+  …
+  keyboard: Enter on `increment` does what a press does  pass      pass      pass
+  keyboard: Space on `increment` does what a press does  pass      pass      pass
 
-ui.counter                                          egui      javafx    web
-  starts at the start value                         pass      pass      pass
-    screenshot                                      egui ↔ javafx 16.2% · egui ↔ web 5.7% · javafx ↔ web 9.6%   pass (all under 30%)
-  …
-ui.switch                                           egui      javafx    web
-  a press turns it on, and the thumb slides across  pass      pass      pass
-    screenshot                                      egui ↔ javafx 6.3% · egui ↔ web 5.1% · javafx ↔ web 2.8%   pass (all under 30%)
-    trace thumb                                     egui ↔ javafx 3.0 ms · … · web vs timing 0.2 ms   pass (all under 20 ms)
-  …
-21 pass · 0 fail · 0 broken · 0 not advertised · 0 warnings
+15 pass · 0 fail · 0 broken · 0 not advertised · 4 warnings
 results: omnicui/.omnicui/run/results.json   report: omnicui/.omnicui/run/report.html
 ```
 
@@ -312,11 +322,14 @@ tests:
     screenshot: true                                  # at every viewport and colour scheme
     trace:                                            # follow one point while the steps run
       - { part: value, point: center, timing: { duration: 200ms, easing: ease-out } }
-    record: true                                      # a clip, never compared
+      - { part: value, property: opacity }            # or follow its opacity as drawn
+    record: true                                      # a clip, compared by its visual progress
+    allCombinations: true                             # traces and the clip at every viewport × colour scheme
 
-viewports:    [{ width: 320, height: 240 }]           # default: 320×240
+viewports:    [{ width: 320, height: 240, props: {} }] # default: 320×240; props: every test's at that size (a test's own win)
 colorSchemes: [light, dark]                           # default: light
-thresholds:   { pixels: 30%, timing: 20ms }           # defaults: 30% and 20 ms
+keyboard:     true                                    # Enter/Space must do what a press does, per role
+thresholds:   { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms }   # the defaults
 ```
 
 **Standards it follows:**
@@ -374,7 +387,8 @@ Both commands run in the target's folder, so a relative path in them starts ther
 - standard output carries replies only, and anything else on it breaks the target;
 - logs go to standard error;
 - images and clips are written to files at paths omnicui chooses;
-- an adapter replies to a step only once its UI has settled (nothing animating, all events processed).
+- an adapter replies to a step only once its UI has settled: nothing animating, all events processed, and the app not busy. **Busy** is the app saying it is still waiting for something outside the UI (a network reply, a file). Each reference adapter asks it the way its stack does: web, `window.omnicuiBusy()` if the page defines it; egui, `Mounted::busy()` (default false); JavaFX, a `BooleanSupplier` under `Component.BUSY` in the component root's properties. Busy is waited for in real time, up to 10 s, then the step fails. *(real: `web.harness.late` fails, `web.harness.late-busy` passes)*
+- an adapter whose own runtime dies (the web adapter's Chromium) exits, so that omnicui reports the target broken once, with its standard error, instead of failing each later request. *(docs/verification/banking-review/browser-death.txt)*
 
 | Method | Params | Result | Required |
 |---|---|---|---|
@@ -387,8 +401,14 @@ Both commands run in the target's folder, so a relative path in them starts ther
 | `read` | `{part, field}` | the value (string, boolean, number or null) | yes |
 | `events` | `{}` | `[{name, fields}…]` since the last call (mount clears) | yes |
 | `screenshot` | `{path}` | the path, after writing a PNG there | if it can render |
-| `trace` | `{part, point, steps: [{method, …params}…]}` | `[{ms, x, y}…]`, sampled every frame while the steps run | if it can render |
-| `record` | `{path, steps}` | `[{ms, file}…]`, the frames written into `path` | optional |
+| `trace` | `{part, point, steps: [{method, …params}…]}`, or `{part, property: "opacity", steps}` | `[{ms, x, y}…]`, sampled every frame while the steps run; for opacity `[{ms, value}…]`, the part's opacity times its ancestors' (capability `trace.opacity`) | if it can render |
+| `record` | `{path, steps}` | `{frames: [{ms, file}…], inputs: [ms…], held}`: the frames written into `path`, when each step's input was delivered on the frames' clock, and whether frames come only when the picture changes (`held: true`, Chromium's screencast) rather than every pulse. A bare `[{ms, file}…]` (the first protocol 1 adapters) is still accepted | optional |
+| `probe` | `{path, viewport: {width, height}}` | the path, after writing the render check's picture there | optional; asked right after `advertise` when the target advertises `screenshot` and `probe` |
+| `bounds` | `{part}` | `{x, y, width, height}`: the part's box on screen; 0×0 when it isn't rendered | optional |
+
+**The render check** [R]. Advertising `screenshot` is a claim. Before any test, omnicui asks each target that advertises `screenshot` and `probe` to draw, at the largest width and height of the run's viewports: a white background, a black 32×32 square at 8,8, and a red (#ff0000) 32×32 square whose bottom-right corner is 8 px from the viewport's. It checks the picture's size, the white middle, and both squares. If the check fails, `screenshot` is not advertised for that target in this run (behaviour still runs), the reason is printed first (`web: render check failed: the picture is 640×400, not the 1408×868 asked for: …`), and `--require web:screenshot` fails the run. *(TestProbePasses, TestProbeFails, TestProbeNotAdvertised)*
+
+**`read` fields beyond the role table:** `role` (a WAI-ARIA role name; the reference adapters map Chromium's, AccessKit's and JavaFX's roles to it, and name any other role by its own name, e.g. JavaFX `text`) and `focused` (a boolean).
 
 **Error codes:**
 
@@ -437,7 +457,7 @@ The folder is `.omnicui/run/` inside the project (in the reference repository, `
 | `omnicui.log` | structured log, one JSON object per line (§7) |
 | `protocol.log` | every JSON-RPC line sent (`>`) and received (`<`), prefixed by the target |
 | `<target>/<component>/<test>/<w>x<h>-<scheme>.png` | screenshots |
-| `<target>/<component>/<test>/frames/`, `clip.gif` | recorded frames and the clip made from them |
+| `<target>/<component>/<test>/frames-<combination>/`, `clip-<combination>.png` | recorded frames and the lossless animated PNG made from them |
 | `diff/<component>/<test>/<a>-<b>-<combo>.png` | differences between two targets: red where they differ |
 
 ### 4.7 Environment
@@ -540,13 +560,24 @@ pub fn create(component: &str, props: Value) -> Result<Box<dyn Mounted>, String>
 - [R] **One request at a time** per target. The next is sent only after the previous reply. *(TestConversation: ids 1…4 in order)*
 - [R] **A fresh component for every test and every combination.** `mount` is sent before each one. *(protocol.log in every scenario)*
 - [R] **`times` is expanded by omnicui.** `press ×3` is three `press` requests. *(TestConversation, TestFailMessage)*
-- [R] **Traces and clips.** Traces and the clip are taken at the first combination only. The first trace replaces the plain steps there. Each further trace, and the recording, uses a fresh `mount`. *(TestAllPass: one trace, one clip, two screenshots)*
-- [R] **Pixels.** For every test with `screenshot: true`, every pair of targets that took it, and every combination, omnicui computes the share of the drawn area that differs:
+- [R] **Traces and clips.** Traces and the clip are taken at the first combination only, or at every combination when the test says `allCombinations: true`, and are then compared combination by combination. The first trace replaces the plain steps there. Each further trace, and the recording, uses a fresh `mount`. *(TestAllPass: one trace, one clip, two screenshots; TestAllCombinations)*
+- [R] **Viewport props.** A viewport's `props` are given to every mount at that viewport, under the test's own props, which win; they are type-checked like a test's. *(TestViewportProps)*
+- [R] **Pixels.** For every test with `screenshot: true`, every pair of targets that took it, and every combination, omnicui computes four measures (`internal/compare/pixels.go`):
   - the drawn area is every pixel that is not the top-left (background) colour in either image;
-  - a pixel differs when no pixel within 2 px of it in the other image is within the colour tolerance, which is YIQ Δ ≤ 0.1 on pixelmatch's scale, in either direction.
+  - a pixel **differs** when no pixel within 2 px of it in the other image is within the colour tolerance, which is YIQ Δ ≤ 0.1 on pixelmatch's scale, in either direction;
+  - **area**: the share of the drawn area that differs (how often);
+  - **strength**: the mean, over differing pixels that have no pixel of their colour within 4 px (recoloured, not displaced), of the colour distance to the closest colour within 2 px in the other image, as a percentage of black against white (how far off in colour);
+  - **shift**: the median, over differing pixels that have one within 8 px, of the distance to the nearest pixel of the same colour (how far it moved). Anti-aliasing alone reaches 3–7 px, so its default is the most it measures, 8 px: it is shown, and warns only under a contract's own threshold;
+  - **spot**: the share of the worst 24×24 px square's pixels that differ strongly (colour distance above 35%) and have no pixel of their colour within 4 px (how concentrated). Displaced edges, such as a button drawn 3 px wider by one toolkit, have their colour nearby and don't count. Anti-aliasing differences spread thinly over every edge; a wrong word, colour or opacity is concentrated, and this is the measure that tells them apart. The five worst spots are boxed in the diff image; when the targets report `bounds`, the worst is put down to the smallest part that holds it.
 
-  The worst combination is reported per pair, and above `thresholds.pixels` it is a warning. *(TestPixelsIdentical, TestPixelsDrawnAreaAndReach, TestPixelWarning)*
+  The worst combination is reported per pair (the one with the most measures over their thresholds, then the largest area), with all four measures; each measure above its threshold is a warning. The defaults were set from screenshots of correct and defective renderings (docs/verification/banking-review/pixel-measures.md): area 30%, strength 28%, shift 8 px, spot 2%. *(TestPixelsIdentical, TestPixelsDrawnAreaAndReach, TestMeasures, TestSpotTellsNoiseFromAConcentratedDifference, TestPixelWarning)*
+- [R] **`thresholds.pixels` was renamed `area`** and is refused, with the new spelling: ``thresholds.pixels was renamed to area (the share of the drawn area that differs): write `area: 30%` ``. A threshold under a third of its default is allowed, with a warning that says what correct renderings usually measure. *(TestPixelsRenamedToArea, TestStrictThresholdWarns)*
+- [R] **Visibility.** On a target that advertises `bounds`, a part whose text, name, value or checked state was read is asked for its box; one with no size, or outside the viewport, is a `visibility` warning, unless the test checks `visible` itself. *(TestInvisibleReadWarns)*
 - [R] **Different sizes are 100% different**, with a note. *(TestPixelsSizes)*
+- [R] **Opacity.** An opacity trace is analysed the same way, as the times its opacity covered 10%, … 90% of its change; a change under 0.02 is no change. A target that can't read opacity (egui paints it into colours) says so in `cannot`, and the test is "not advertised" there. *(TestAnalyzeValues, TestOpacityTrace)*
+- [R] **Clips** (`internal/compare/frames.go`). Each target records on its own clock (web: Chromium's screencast, a frame only when the page changes; JavaFX: a snapshot per pulse; egui: simulated frames at exactly 60 fps) and from its own moment, so clips are not compared frame by frame. Each clip becomes its **visual progress**: for every frame, 1 − its distance to the last frame / the first frame's distance to the last, over the pixels that change at all in the clip (the mean colour distance). When the target says its frames are held, frames more than 40 ms apart are a still picture, not a ramp; otherwise levels are interpolated across a gap (a slow pulse), as for traces. The curve is then compared like a trace; above `thresholds.motion` (default 40 ms, wider than `timing` because a clip shows every change on the screen and correct renderings measured up to 30 ms apart) it is a warning. A clip that ends close to where it started (a round trip) is not measured, and says so. On the reference switch, over 20 correct runs, clips measured 1.5–30 ms apart, 14 ms or less in 18 of them (position traces 0.0–0.5 ms); a 300 ms linear slide 76–104 ms; a 600 ms fade that only one target has, which no position trace sees, 182–189 ms. *(TestVisualProgress, TestClipMotionWarning, TestOldRecordReply; real: web.switch.dim, javafx.switch.dim)*
+- [R] **Clips are lossless animated PNGs** (`compare.APNG`, no external encoder), each frame shown for its own duration. report.html shows each combination's clips with a chart of their visual progress and a player that shows every target's frame for the same moment, lined up at its first input (or where its picture starts to change). *(TestAPNG, TestClipMotionWarning)*
+- [R] **Keyboard checks.** `keyboard: true` adds, for every part with role button (Enter, Space), switch or checkbox (Space), a test named ``keyboard: <key> on `<part>` does what a press does``: mount and press the part; mount, focus it and press the key; the events and every part's text, checked, value and disabled must be the same. A difference fails, saying what each gave. *(TestKeyboardChecks; real: javafx.counter.no-enter)*
 - [R] **Motion.** A trace becomes the times at which the point reached 10%, 20%, … 90% of its movement, interpolated between samples. Two traces are first shifted to line up as well as possible, by the mean difference, and then compared by their largest remaining difference in ms. This compares the shape and the length of the movement (timing function and duration), not when each target reacted. A named timing is compared the same way with the CSS curve. Above `thresholds.timing` it is a warning. *(TestAnalyzeAlignsStart, TestExpectedMatchesEasing, TestDifferMeasures, TestTimingWarning)*
 - [R] **Movement under 1 px is no movement.** Moving against still is an infinite difference, and still against still is 0. *(TestDifferMeasures)*
 - [R] **No retries.** A step that fails is reported, never repeated: a flaky target should show. *(the code has no retry path; TestFailMessage)*
@@ -661,7 +692,7 @@ omnicui has two surfaces: the terminal output (§4.1) and `report.html`.
   - status is text, never colour alone;
   - contrast meets AA in light and dark;
   - **forced colours:** charts use `CanvasText`, and lines also differ by dash pattern;
-  - **reduced motion:** clips show their first frame instead of animating (`<picture>` with `prefers-reduced-motion`).
+  - **reduced motion:** clips show their first frame instead of animating (`<picture>` with `prefers-reduced-motion`); the player moves only when asked to.
 - **Phone:** at 390 px wide the page does not scroll sideways, and long paths wrap.
 
 [R] axe-core 4.14 finds 0 violations of WCAG 2.0, 2.1 and 2.2 A and AA in light, dark, phone and forced colours. *(`tools/omnicui/report-test/report.test.ts`; output in `docs/verification/report-a11y.log`)*
@@ -678,7 +709,7 @@ Their own accessibility is what the contracts test: names, checked state, and ke
 
 | Case | Expected | Verified by |
 |---|---|---|
-| a contract with no viewports, colour schemes or thresholds | 320×240, light, 30%, 20 ms | TestDefaults |
+| a contract with no viewports, colour schemes or thresholds | 320×240, light; area 30%, strength 28%, shift 8 px, spot 2%; timing 20 ms, motion 40 ms | TestDefaults |
 | no `*.contract.yaml` files | exit 2, "there are no *.contract.yaml files" | `loadContracts` |
 | no targets | exit 2, "add one with `omnicui add <name>`" | `doCheck` |
 | a target.yaml with an empty adapter | `targets` shows "no adapter command in target.yaml yet" | TestAddRemove |
@@ -760,14 +791,14 @@ The baseline is the design document (6 November 2026). Each row is a place where
 Ordered by value against cost. None of these is built.
 
 1. **[REC-1] Per-pair tolerance.** The JavaFX/egui counter differs by 26% when correct, against 30% for the threshold, which is the tightest margin in the suite. A contract could set a threshold per pair, or omnicui could report how far each pair is from its threshold. *Verify:* the deliberate defects are still caught with the narrower margins.
-2. **[REC-2] Masks** for intentional platform differences, such as a native focus ring: `mask: [{ part: increment }]` would leave that part's box out of the drawn area. This needs a `bounds(part)` construct. *Verify:* a fake adapter that differs only inside the masked part gives no warning.
+2. **[REC-2] Masks** for intentional platform differences, such as a native focus ring: `mask: [{ part: increment }]` would leave that part's box out of the drawn area. The `bounds` construct it needed is now built. *Verify:* a fake adapter that differs only inside the masked part gives no warning.
 3. **[REC-3] Differential fuzzing.** Random action sequences built from the parts, run on every target, reporting the first step where they diverge and saving it as a test. *Verify:* the `double` fake bug is found without a hand-written test.
 4. **[REC-4] A coverage report:** which parts and actions each target's tests reach. *Verify:* with the unused-part warning as a start.
 5. **[REC-5] Several adapter instances per target**, so that one target's tests run in parallel. JavaFX sets the wall time today. *Verify:* identical results at N = 1 and N = 4.
 6. **[REC-6] Compare delay too**, as a separate number: how long after the input the movement starts. *Verify:* a fake adapter with a 100 ms delay warns, and one with a 10 ms delay doesn't.
 7. **[REC-7] Batch requests** (JSON-RPC batches) for steps that don't need their replies one by one. *Verify:* the same results with fewer round trips.
-8. **[REC-8] Check roles as well:** read each part's role from the accessibility tree and compare it with the contract's role. Web, egui and JavaFX all expose roles. *Verify:* a `div` styled as a button fails.
-9. **[REC-9] Clips as WebM or MP4** next to the GIF, for smaller files. *Verify:* the frame count and timing match.
+8. **[REC-8] Check roles as well:** built as the `role` field, which a test checks explicitly. Still open: checking every part's role automatically against the contract's. *Verify:* a `div` styled as a button fails.
+9. **[REC-9] Clips** are now lossless animated PNGs. Still open: WebM or MP4 next to them, for smaller files. *Verify:* the frame count and timing match.
 10. **[REC-10] A conformance kit for adapter authors:** a set of fake components and contracts that an adapter must pass, to check the adapter itself. *Verify:* each reference adapter passes it, and an adapter with a broken `read` fails it.
 
 By platform:

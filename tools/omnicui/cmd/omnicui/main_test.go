@@ -53,7 +53,7 @@ func TestUsageErrors(t *testing.T) {
 func TestCheckExitCodes(t *testing.T) {
 	root := testutil.Project(t, map[string]testutil.Target{"a": {}, "b": {}})
 	code, out, _ := omni(t, root, "check")
-	if code != 0 || !strings.Contains(out, "14 pass · 0 fail · 0 broken · 0 not advertised · 0 warnings") {
+	if code != 0 || !strings.Contains(out, "20 pass · 0 fail · 0 broken · 0 not advertised · 0 warnings") {
 		t.Fatalf("%d\n%s", code, out)
 	}
 	root = testutil.Project(t, map[string]testutil.Target{"a": {Env: map[string]string{"FAKE_BUG": "no-name"}}})
@@ -136,7 +136,7 @@ func TestAddTemplate(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "targets", "copy", "node_modules")); err == nil {
 		t.Error("node_modules was copied")
 	}
-	if code, out, _ := omni(t, root, "check", "copy", "counter"); code != 0 || !strings.Contains(out, "3 pass") {
+	if code, out, _ := omni(t, root, "check", "copy", "counter"); code != 0 || !strings.Contains(out, "5 pass") {
 		t.Errorf("the copy must work as a target: %d\n%s", code, out)
 	}
 }
@@ -147,6 +147,24 @@ func TestTargets(t *testing.T) {
 	code, out, _ := omni(t, root, "targets")
 	if code != 0 || !strings.Contains(out, "– no display") || !strings.Contains(out, "c         broken: the adapter exited with code 3 during advertise") {
 		t.Fatalf("%d\n%s", code, out)
+	}
+	if !strings.Contains(out, "a: render check passed at 320×240") {
+		t.Errorf("the render check should be reported:\n%s", out)
+	}
+	// A target folder can be a link to another project's target, and is followed.
+	other := testutil.Project(t, map[string]testutil.Target{})
+	os.MkdirAll(filepath.Join(other, "targets"), 0o755)
+	if err := os.Symlink(filepath.Join(root, "targets", "a"), filepath.Join(other, "targets", "a")); err != nil {
+		t.Skip("no symlinks here:", err)
+	}
+	if code, out, errs := omni(t, other, "targets"); code != 0 || !strings.Contains(out, "\na ") {
+		t.Errorf("the linked target should be listed: %d\n%s\n%s", code, out, errs)
+	}
+	// Its stub generator writes into the app it was made for, from that project's contracts: from
+	// here, it would rewrite that app from this project's contracts, so it is not run.
+	os.WriteFile(filepath.Join(root, "targets", "a", "target.yaml"), append(must(os.ReadFile(filepath.Join(root, "targets", "a", "target.yaml"))), []byte("stubs: exit 9\n")...), 0o644)
+	if code, out, _ := omni(t, other, "stubs"); code != 0 || !strings.Contains(out, "a: linked from elsewhere; its stub generator is not run here") {
+		t.Errorf("a linked target's stubs must not run: %d\n%s", code, out)
 	}
 }
 
@@ -186,4 +204,11 @@ func TestProjectAndOut(t *testing.T) {
 	if code, out, _ := omni(t, repo, "check", "--help"); code != 0 || !strings.Contains(out, "--project <folder>") {
 		t.Fatal(code, out)
 	}
+}
+
+func must(b []byte, err error) []byte {
+	if err != nil {
+		panic(err)
+	}
+	return b
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -33,15 +34,18 @@ type Options struct {
 	Targets  []project.Target
 	// Require lists "target:capability" pairs that must be advertised.
 	Require []string
+	// Progress, if set, gets one line per finished test: `[web 3/38] counter › each press adds one  pass`.
+	Progress io.Writer
 }
 
 type runner struct {
-	opts   Options
-	runDir string
-	runID  string
-	log    *slog.Logger
-	wire   *os.File
-	wireMu sync.Mutex
+	opts       Options
+	progressMu sync.Mutex
+	runDir     string
+	runID      string
+	log        *slog.Logger
+	wire       *os.File
+	wireMu     sync.Mutex
 }
 
 func newRunID() string {
@@ -165,7 +169,9 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	if all == nil {
 		all = r.opts.Contracts
 	}
-	if err := Stubs(t, all, log); err != nil {
+	if t.Linked && t.Stubs != "" {
+		log.Info("stubs skipped: the target is linked from elsewhere")
+	} else if err := Stubs(t, all, log); err != nil {
 		info.Broken = err.Error()
 		return info, brokenAll(err.Error())
 	}
@@ -179,7 +185,7 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	defer client.Stop()
 	var ad advert
 	if err := client.Call("advertise", map[string]any{"protocol": rpc.Protocol}, startTimeout, &ad); err != nil {
-		info.Broken = "did not answer advertise: " + err.Error()
+		info.Broken = "did not answer advertise: " + err.Error() + tr0hint(err, t, "startTimeout", startTimeout)
 		info.Stderr = client.StderrTail()
 		return info, brokenAll(info.Broken)
 	}
@@ -189,12 +195,26 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 	for _, c := range ad.Can {
 		can[c] = true
 	}
-	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: ad.Cannot, step: stepTimeout, log: log}
+	if info.Cannot == nil {
+		info.Cannot = map[string]string{}
+	}
+	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log}
+	if why := tr.probe(&info); why != "" {
+		// Screenshots from this target would be wrong; behaviour can still be checked.
+		delete(can, "screenshot")
+		info.Cannot["screenshot"] = "the render check failed: " + why
+		info.Can = without(info.Can, "screenshot")
+	}
+	total := 0
+	for _, c := range r.opts.Contracts {
+		total += len(c.Tests)
+	}
 	var out []TestResult
 	for _, c := range r.opts.Contracts {
 		for _, test := range c.Tests {
 			res := tr.runTest(c, test)
 			out = append(out, res)
+			r.progress(t.Name, len(out), total, c, test, res)
 		}
 	}
 	if b := client.Broken(); b != nil {
@@ -202,6 +222,35 @@ func (r *runner) runTarget(t project.Target) (TargetInfo, []TestResult) {
 		info.Stderr = b.StderrTail
 	}
 	return info, out
+}
+
+func without(xs []string, x string) []string {
+	var out []string
+	for _, y := range xs {
+		if y != x {
+			out = append(out, y)
+		}
+	}
+	return out
+}
+
+// progress prints one line per finished test, so that a long check shows it is moving.
+func (r *runner) progress(target string, n, total int, c *contract.Contract, test contract.Test, res TestResult) {
+	if r.opts.Progress == nil {
+		return
+	}
+	r.progressMu.Lock()
+	defer r.progressMu.Unlock()
+	fmt.Fprintf(r.opts.Progress, "[%s %d/%d] %s › %s  %s\n", target, n, total, c.Short(), test.Name, res.Status)
+}
+
+// tr0hint adds what to change when a request timed out: the timeout and where it is set.
+func tr0hint(err error, t project.Target, setting string, d time.Duration) string {
+	var b *rpc.BrokenError
+	if !errors.As(err, &b) || !strings.Contains(b.Reason, "timed out") {
+		return ""
+	}
+	return fmt.Sprintf(" (if it needs longer, raise %s, now %s, in targets/%s/target.yaml)", setting, d, t.Name)
 }
 
 type targetRun struct {
@@ -282,6 +331,9 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		res.Status, res.Messages = Broken, []string{"not run: the target broke earlier (" + b.Reason + ")"}
 		return res
 	}
+	if test.Keyboard != nil {
+		return tr.runKeyboard(c, test, res)
+	}
 	// The constructs the behaviour needs; without them the test can't run here.
 	needs := []string{"mount"}
 	for _, s := range test.Steps {
@@ -290,8 +342,16 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	for _, e := range test.Expect {
 		if e.Event != "" {
 			needs = append(needs, "events")
-		} else {
-			needs = append(needs, "read")
+			continue
+		}
+		needs = append(needs, "read")
+		for _, ch := range e.Checks {
+			switch ch.Field {
+			case "role", "focused":
+				needs = append(needs, ch.Field)
+			case "visible":
+				needs = append(needs, "bounds")
+			}
 		}
 	}
 	for _, n := range needs {
@@ -314,7 +374,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		return ""
 	}
 	mount := func(cb Combo) error {
-		return tr.call("mount", map[string]any{"component": c.ID, "props": nonNil(test.Props),
+		return tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, test.Props),
 			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil)
 	}
 	fail := func(msg string) {
@@ -334,7 +394,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			return true
 		case errors.As(err, &b):
 			res.Status = Broken
-			res.Messages = append(res.Messages, b.Reason)
+			res.Messages = append(res.Messages, b.Reason+tr0hint(err, tr.t, "stepTimeout", tr.step))
 			return true
 		default:
 			fail(err.Error() + suffix)
@@ -355,22 +415,24 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			}
 			continue
 		}
+		// Traces and the clip: at the first combination, or at every one if the test asks.
+		motionHere := ci == 0 || test.AllCombinations
 		traced := false
-		if ci == 0 && len(test.Trace) > 0 {
-			if tr.can["trace"] {
-				spec := test.Trace[0]
+		if motionHere && len(test.Trace) > 0 {
+			spec := test.Trace[0]
+			if capability := traceCapability(spec); tr.can[capability] {
 				var samples []compare.Sample
-				err := tr.call("trace", map[string]any{"part": c.ID + "." + spec.Part, "point": spec.Point, "steps": steps}, &samples)
+				err := tr.call("trace", traceParams(c, spec, steps), &samples)
 				if handle(err, label(cb)) {
 					if res.Status == Broken {
 						break
 					}
 					continue
 				}
-				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Samples: samples, Curve: compare.Analyze(samples)})
+				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
 				traced = true
 			} else {
-				res.Missing["trace"] = tr.reason("trace")
+				res.Missing[capability] = tr.reason(capability)
 			}
 		}
 		if !traced {
@@ -388,7 +450,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 				continue
 			}
 		}
-		if err := tr.expect(c, test, label(cb), fail); handle(err, label(cb)) {
+		if err := tr.expect(c, test, cb, label(cb), fail, &res); handle(err, label(cb)) {
 			if res.Status == Broken {
 				break
 			}
@@ -405,41 +467,48 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					fail("screenshot: the target replied, but wrote no file" + label(cb))
 				} else {
 					res.Screenshots[cb.Key()] = relRun(path)
+					// Where each part was, so that a difference can be put down to a part.
+					if tr.can["bounds"] {
+						boxes := map[string]Rect{}
+						for _, p := range c.Parts {
+							var r *Rect
+							if err := tr.call("bounds", map[string]any{"part": p.ID}, &r); err == nil && r != nil {
+								boxes[p.Name] = *r
+							} else if _, ok := err.(*failure); !ok && err != nil {
+								handle(err, label(cb))
+								break
+							}
+						}
+						if res.Bounds == nil {
+							res.Bounds = map[string]map[string]Rect{}
+						}
+						res.Bounds[cb.Key()] = boxes
+					}
 				}
 			} else {
 				res.Missing["screenshot"] = tr.reason("screenshot")
 			}
 		}
-		if ci == 0 {
+		if motionHere {
 			// The other traced points, each from a fresh component.
 			for _, spec := range test.Trace[min(1, len(test.Trace)):] {
-				if !tr.can["trace"] {
-					break
+				capability := traceCapability(spec)
+				if !tr.can[capability] {
+					res.Missing[capability] = tr.reason(capability)
+					continue
 				}
 				if handle(mount(cb), label(cb)) {
 					break
 				}
 				var samples []compare.Sample
-				if handle(tr.call("trace", map[string]any{"part": c.ID + "." + spec.Part, "point": spec.Point, "steps": steps}, &samples), label(cb)) {
+				if handle(tr.call("trace", traceParams(c, spec, steps), &samples), label(cb)) {
 					break
 				}
-				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Samples: samples, Curve: compare.Analyze(samples)})
+				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
 			}
 			if test.Record && res.Status != Broken {
 				if tr.can["record"] {
-					framesDir := filepath.Join(dir, "frames")
-					os.MkdirAll(framesDir, 0o755)
-					var frames []compare.Frame
-					if !handle(mount(cb), label(cb)) && !handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &frames), label(cb)) {
-						clip := filepath.Join(dir, "clip.gif")
-						if len(frames) == 0 {
-							log.Warn("record returned no frames")
-						} else if err := compare.Clip(frames, clip); err != nil {
-							log.Warn("could not make the clip", "error", err.Error())
-						} else {
-							res.Clip = relRun(clip)
-						}
-					}
+					tr.record(c, cb, dir, steps, mount, handle, label, &res, ci == 0)
 				} else {
 					res.Missing["record"] = tr.reason("record")
 				}
@@ -457,6 +526,98 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	}
 	log.Info("test finished", "status", string(res.Status))
 	return res
+}
+
+// traceCapability is what a target must advertise to take a trace: `trace` for a position,
+// `trace.<property>` for a property.
+func traceCapability(spec contract.TraceSpec) string {
+	if spec.Property == "" || spec.Property == "position" {
+		return "trace"
+	}
+	return "trace." + spec.Property
+}
+
+func traceParams(c *contract.Contract, spec contract.TraceSpec, steps []map[string]any) map[string]any {
+	p := map[string]any{"part": c.ID + "." + spec.Part, "point": spec.Point, "steps": steps}
+	if spec.Property != "" && spec.Property != "position" {
+		p["property"] = spec.Property
+		delete(p, "point")
+	}
+	return p
+}
+
+// mergeProps: the viewport's props, then the test's, which win.
+func mergeProps(viewport, test map[string]any) map[string]any {
+	out := map[string]any{}
+	for k, v := range viewport {
+		out[k] = v
+	}
+	for k, v := range test {
+		out[k] = v
+	}
+	return out
+}
+
+// recording is what `record` replies: the frames, and (newer adapters) when each step's input
+// was delivered, in the frames' timeline. Older adapters reply with the frames alone.
+type recording struct {
+	Frames []compare.Frame `json:"frames"`
+	Inputs []float64       `json:"inputs"`
+	// Held: the target sends a frame only when the picture changes (Chromium's screencast), so a
+	// gap between frames is a still picture, not a slow change.
+	Held bool `json:"held"`
+}
+
+func (r *recording) UnmarshalJSON(b []byte) error {
+	if len(b) > 0 && b[0] == '[' {
+		return json.Unmarshal(b, &r.Frames)
+	}
+	type plain recording
+	return json.Unmarshal(b, (*plain)(r))
+}
+
+// record takes the clip at one combination: the frames, a lossless animated PNG of them, and
+// the clip's visual progress curve, which is what clips are compared by.
+func (tr *targetRun) record(c *contract.Contract, cb Combo, dir string, steps []map[string]any, mount func(Combo) error,
+	handle func(error, string) bool, label func(Combo) string, res *TestResult, first bool) {
+	framesDir := filepath.Join(dir, "frames-"+cb.Key())
+	os.MkdirAll(framesDir, 0o755)
+	var rec recording
+	if handle(mount(cb), label(cb)) || handle(tr.call("record", map[string]any{"path": framesDir, "steps": steps}, &rec), label(cb)) {
+		return
+	}
+	if len(rec.Frames) == 0 {
+		tr.log.Warn("record returned no frames")
+		return
+	}
+	rel := func(p string) string { r, _ := filepath.Rel(tr.r.runDir, p); return r }
+	clip := ClipResult{Inputs: rec.Inputs}
+	for _, f := range rec.Frames {
+		clip.Frames = append(clip.Frames, compare.Frame{MS: f.MS, File: rel(f.File)})
+	}
+	file := filepath.Join(dir, "clip-"+cb.Key()+".png")
+	if err := compare.APNG(rec.Frames, file); err != nil {
+		tr.log.Warn("could not make the clip", "error", err.Error())
+	} else {
+		clip.File = rel(file)
+	}
+	curve, progress, note, err := compare.VisualProgress(rec.Frames, rec.Held)
+	switch {
+	case err != nil:
+		clip.Note = err.Error()
+	case note != "":
+		clip.Note = note
+	default:
+		clip.Progress = &curve
+		clip.Values = progress
+	}
+	if res.Clips == nil {
+		res.Clips = map[string]ClipResult{}
+	}
+	res.Clips[cb.Key()] = clip
+	if first {
+		res.Clip = clip.File
+	}
 }
 
 // collapse turns a message repeated for every combination into one message without the combination.
@@ -506,7 +667,7 @@ type event struct {
 }
 
 // expect reads every expected field and the events, and reports each mismatch through fail.
-func (tr *targetRun) expect(c *contract.Contract, test contract.Test, suffix string, fail func(string)) error {
+func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, suffix string, fail func(string), res *TestResult) error {
 	var events []event
 	gotEvents := false
 	for _, e := range test.Expect {
@@ -541,13 +702,52 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, suffix str
 			continue
 		}
 		part := c.ID + "." + e.Part
+		var box *Rect
+		gotBox := false
+		bounds := func() error {
+			if !gotBox {
+				gotBox = true
+				return tr.call("bounds", map[string]any{"part": part}, &box)
+			}
+			return nil
+		}
+		readsContent := false
 		for _, ch := range e.Checks {
 			var got any
-			if err := tr.call("read", map[string]any{"part": part, "field": ch.Field}, &got); err != nil {
+			if ch.Field == "visible" {
+				if err := bounds(); err != nil {
+					return err
+				}
+				got = box.Visible(cb.Viewport.Width, cb.Viewport.Height)
+			} else if err := tr.call("read", map[string]any{"part": part, "field": ch.Field}, &got); err != nil {
 				return err
 			}
+			readsContent = readsContent || ch.Field == "text" || ch.Field == "name" || ch.Field == "value" || ch.Field == "checked"
 			if !same(ch.Want, got) {
 				fail(fmt.Sprintf("%s.%s: expected %s, got %s%s", e.Part, ch.Field, show(ch.Want), show(got), suffix))
+			}
+		}
+		// A part whose content passed but that nobody can see: the content check says nothing about
+		// what is on screen. Only when the target reports bounds, and the test doesn't say whether
+		// the part should be visible.
+		if readsContent && tr.can["bounds"] && !e.Has("visible") {
+			if err := bounds(); err != nil {
+				return err
+			}
+			if !box.Visible(cb.Viewport.Width, cb.Viewport.Height) {
+				what := "no size on screen"
+				if box != nil && box.Width > 0 && box.Height > 0 {
+					what = "is outside the viewport"
+				} else if box != nil {
+					what = fmt.Sprintf("no size on screen (%g×%g)", box.Width, box.Height)
+				}
+				note := fmt.Sprintf("`%s` was read but has %s%s", e.Part, what, suffix)
+				if strings.HasPrefix(what, "is ") {
+					note = fmt.Sprintf("`%s` was read but %s%s", e.Part, what, suffix)
+				}
+				if !contains(res.Invisible, note) {
+					res.Invisible = append(res.Invisible, note)
+				}
 			}
 		}
 	}
@@ -659,4 +859,133 @@ func summarize(rep *Report) Summary {
 	}
 	s.Required = len(rep.Required)
 	return s
+}
+
+func contains(xs []string, x string) bool {
+	for _, y := range xs {
+		if y == x {
+			return true
+		}
+	}
+	return false
+}
+
+// runKeyboard runs a test that `keyboard: true` added: the key on the part must leave the
+// component as a pointer press does, with the same events. It needs no expectation of its own,
+// so it catches a toolkit whose control ignores a key the others accept (a JavaFX Button fires on
+// Space, but on Enter only when it is the default button).
+func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res TestResult) TestResult {
+	k := test.Keyboard
+	for _, n := range []string{"mount", "press", "focus", "key", "read", "events"} {
+		if !tr.can[n] {
+			res.Status = NotAdvertised
+			res.Missing[n] = tr.reason(n)
+			res.Messages = append(res.Messages, fmt.Sprintf("needs `%s`, which %s doesn't advertise (%s)", n, tr.t.Name, tr.reason(n)))
+			return res
+		}
+	}
+	cb := Combos(c)[0]
+	part := c.ID + "." + k.Part
+	// state is what the component looks like to a test after the action: its events, and every
+	// part's checkable state (not names, which don't change on a press).
+	state := func(action func() error) ([]string, error) {
+		if err := tr.call("mount", map[string]any{"component": c.ID, "props": mergeProps(cb.Viewport.Props, nil),
+			"viewport": map[string]int{"width": cb.Viewport.Width, "height": cb.Viewport.Height}, "colorScheme": cb.Scheme}, nil); err != nil {
+			return nil, err
+		}
+		if err := action(); err != nil {
+			return nil, err
+		}
+		var out []string
+		var events []event
+		if err := tr.call("events", map[string]any{}, &events); err != nil {
+			return nil, err
+		}
+		for _, e := range events {
+			fields, _ := json.Marshal(e.Fields)
+			out = append(out, fmt.Sprintf("event %s %s", e.Name, fields))
+		}
+		for _, p := range c.Parts {
+			for _, f := range []string{"text", "checked", "value", "disabled"} {
+				if _, ok := contract.Roles[p.Role].Fields[f]; !ok {
+					continue
+				}
+				var got any
+				err := tr.call("read", map[string]any{"part": p.ID, "field": f}, &got)
+				var fl *failure
+				if errors.As(err, &fl) {
+					continue // a part that isn't shown now
+				} else if err != nil {
+					return nil, err
+				}
+				out = append(out, fmt.Sprintf("%s.%s %s", p.Name, f, show(got)))
+			}
+		}
+		return out, nil
+	}
+	pressed, err := state(func() error { return tr.call("press", map[string]any{"part": part}, nil) })
+	if err == nil {
+		var keyed []string
+		keyed, err = state(func() error {
+			if err := tr.call("focus", map[string]any{"part": part}, nil); err != nil {
+				return err
+			}
+			return tr.call("key", map[string]any{"part": part, "key": k.Key}, nil)
+		})
+		if err == nil {
+			if diff := stateDiff(pressed, keyed); diff != "" {
+				res.Status = Fail
+				res.Messages = append(res.Messages, fmt.Sprintf("%s on `%s` didn't do what a press does: %s", k.Key, k.Part, diff))
+			}
+		}
+	}
+	var f *failure
+	var b *rpc.BrokenError
+	switch {
+	case errors.As(err, &b):
+		res.Status = Broken
+		res.Messages = append(res.Messages, b.Reason)
+	case errors.As(err, &f):
+		res.Status = Fail
+		res.Messages = append(res.Messages, f.msg)
+	case err != nil:
+		res.Status = Fail
+		res.Messages = append(res.Messages, err.Error())
+	}
+	tr.log.Info("test finished", "contract", c.ID, "test", test.Name, "status", string(res.Status))
+	return res
+}
+
+// stateDiff says how two states differ: "a press gave …; the key gave …".
+func stateDiff(pressed, keyed []string) string {
+	count := map[string]int{}
+	for _, x := range pressed {
+		count[x]++
+	}
+	for _, x := range keyed {
+		count[x]--
+	}
+	var onlyPress, onlyKey []string
+	for _, x := range pressed {
+		if count[x] > 0 {
+			onlyPress = append(onlyPress, x)
+			count[x]--
+		}
+	}
+	for k, n := range count {
+		for ; n < 0; n++ {
+			onlyKey = append(onlyKey, k)
+		}
+	}
+	sort.Strings(onlyKey)
+	if len(onlyPress) == 0 && len(onlyKey) == 0 {
+		return ""
+	}
+	say := func(xs []string) string {
+		if len(xs) == 0 {
+			return "nothing else"
+		}
+		return strings.Join(xs, ", ")
+	}
+	return fmt.Sprintf("a press gave %s; the key gave %s", say(onlyPress), say(onlyKey))
 }

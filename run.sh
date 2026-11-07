@@ -199,6 +199,7 @@ tests() {
   need_setup
   say "1/4  omnicui: unit tests and failure injection"
   (cd tools/omnicui && go vet ./... && go test -count=1 ./...)
+  (cd apps/web && node --test static.test.ts)
   say "2/4  the real targets: agreement, every deliberate defect, --require, stubs (a few minutes)"
   mkdir -p omnicui/.omnicui
   set +e

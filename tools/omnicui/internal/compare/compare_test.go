@@ -3,7 +3,6 @@ package compare
 import (
 	"image"
 	"image/color"
-	"image/gif"
 	"image/png"
 	"math"
 	"os"
@@ -97,6 +96,85 @@ func TestPixelsSizes(t *testing.T) {
 	if pct, note, _ := Pixels(a, b, ""); pct != 100 || note == "" {
 		t.Fatalf("%v %q", pct, note)
 	}
+	if m, _, _ := Measure(a, b, ""); m.Spot != 100 || m.Strength != 100 {
+		t.Errorf("sizes differ: every measure is at its worst: %+v", m)
+	}
+}
+
+// R-PIXELS-4: the four measures answer different questions. A square moved by 5 px is a shift;
+// a recoloured block is strong and concentrated (spot); a faint recolour is weak.
+func TestMeasures(t *testing.T) {
+	d := t.TempDir()
+	base := func(img *image.RGBA) { square(img, 40, 40, 30, color.Black) }
+	a := solid(t, filepath.Join(d, "a.png"), 160, 160, color.White, base)
+
+	moved := solid(t, filepath.Join(d, "moved.png"), 160, 160, color.White, func(img *image.RGBA) { square(img, 45, 40, 30, color.Black) })
+	m, note, err := Measure(a, moved, "")
+	if err != nil || note != "" {
+		t.Fatal(err, note)
+	}
+	if m.Shift < 3 || m.Shift > 5 || m.Unmatched != 0 {
+		t.Errorf("moved by 5 px: shift %v, unmatched %v; want 3–5 px, all matched", m.Shift, m.Unmatched)
+	}
+
+	recoloured := solid(t, filepath.Join(d, "recoloured.png"), 160, 160, color.White, func(img *image.RGBA) {
+		base(img)
+		square(img, 40, 40, 30, color.RGBA{200, 0, 0, 255})
+	})
+	m, _, _ = Measure(a, recoloured, filepath.Join(d, "diff.png"))
+	if m.Area != 100 || m.Spot != 100 || m.Strength < StrongColour*100 || m.Unmatched != 100 {
+		t.Errorf("recoloured: %+v", m)
+	}
+	if len(m.Spots) == 0 || m.Spots[0].W != SpotSize {
+		t.Errorf("recoloured: the worst spot should be boxed: %+v", m.Spots)
+	}
+	f, _ := os.Open(filepath.Join(d, "diff.png"))
+	img, _ := png.Decode(f)
+	if c := color.RGBAModel.Convert(img.At(55, 55)).(color.RGBA); c != diffStrong {
+		t.Errorf("a strongly differing pixel should be red, got %v", c)
+	}
+
+	// A faint recolour (black to a dark grey) differs everywhere, but weakly, so it is no spot.
+	faint := solid(t, filepath.Join(d, "faint.png"), 160, 160, color.White, func(img *image.RGBA) {
+		square(img, 40, 40, 30, color.RGBA{60, 60, 60, 255})
+	})
+	m, _, _ = Measure(a, faint, "")
+	if m.Area != 100 || m.Strength >= StrongColour*100 || m.Spot != 0 {
+		t.Errorf("faint recolour: %+v", m)
+	}
+}
+
+// R-PIXELS-5: noise spread thinly over many edges scores a high area but a low spot, which is
+// what tells it from one concentrated difference of the same area.
+func TestSpotTellsNoiseFromAConcentratedDifference(t *testing.T) {
+	d := t.TempDir()
+	lines := func(img *image.RGBA) {
+		for y := 10; y < 150; y += 10 {
+			for x := 10; x < 150; x++ {
+				img.Set(x, y, color.Black)
+			}
+		}
+	}
+	a := solid(t, filepath.Join(d, "a.png"), 160, 160, color.White, lines)
+	// Every line drawn 3 px lower, as one toolkit places text a little differently from another:
+	// beyond the 2 px reach, so it differs everywhere, but each pixel's colour is close by.
+	noisy := solid(t, filepath.Join(d, "noisy.png"), 160, 160, color.White, func(img *image.RGBA) {
+		for y := 13; y < 153; y += 10 {
+			for x := 10; x < 150; x++ {
+				img.Set(x, y, color.Black)
+			}
+		}
+	})
+	// The same lines, with one small block of a colour the other screenshot doesn't have.
+	block := solid(t, filepath.Join(d, "block.png"), 160, 160, color.White, func(img *image.RGBA) {
+		lines(img)
+		square(img, 60, 60, 16, color.RGBA{200, 0, 0, 255})
+	})
+	n, _, _ := Measure(a, noisy, "")
+	b, _, _ := Measure(a, block, "")
+	if n.Area < 50 || n.Spot != 0 || n.Strength != 0 || b.Spot < 30 {
+		t.Errorf("displaced lines: area %.1f%%, spot %.1f%%, strength %.1f%% (want a large area, no spot, no strength); a block's spot %.1f%%", n.Area, n.Spot, n.Strength, b.Spot)
+	}
 }
 
 func samplesOf(fn func(t float64) float64, durMS, delayMS float64, dist float64) []Sample {
@@ -162,7 +240,7 @@ func TestDifferMeasures(t *testing.T) {
 	if d, _ := Differ(lin, out); d < 50 {
 		t.Errorf("300ms linear against 200ms ease-out should differ a lot, got %.1f ms", d)
 	}
-	still := Analyze([]Sample{{0, 1, 1}, {16, 1.2, 1}, {32, 1, 1}})
+	still := Analyze([]Sample{{MS: 0, X: 1, Y: 1}, {MS: 16, X: 1.2, Y: 1}, {MS: 32, X: 1, Y: 1}})
 	if still.Moved {
 		t.Error("under a pixel is not a movement")
 	}
@@ -171,23 +249,5 @@ func TestDifferMeasures(t *testing.T) {
 	}
 	if d, _ := Differ(still, still); d != 0 {
 		t.Errorf("still against still: %v", d)
-	}
-}
-
-// R-RECORD-1: recorded frames become an animated GIF that keeps their timing.
-func TestClip(t *testing.T) {
-	d := t.TempDir()
-	var frames []Frame
-	for i, c := range []color.Color{color.White, color.Black, color.White} {
-		frames = append(frames, Frame{MS: float64(i) * 50, File: solid(t, filepath.Join(d, string(rune('a'+i))+".png"), 8, 8, c, nil)})
-	}
-	out := filepath.Join(d, "clip.gif")
-	if err := Clip(frames, out); err != nil {
-		t.Fatal(err)
-	}
-	f, _ := os.Open(out)
-	g, err := gif.DecodeAll(f)
-	if err != nil || len(g.Image) != 3 || g.Delay[0] != 5 || g.Delay[2] != 100 {
-		t.Fatalf("%v frames=%d delays=%v", err, len(g.Image), g.Delay)
 	}
 }

@@ -27,6 +27,7 @@ jobs:
     outputs:
       go: ${{ steps.f.outputs.go }}
       scripts: ${{ steps.f.outputs.scripts }}
+      web: ${{ steps.f.outputs.web }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,6 +54,7 @@ jobs:
           wants() { [ "$files" = "*" ] || printf '%s\n' "$files" | grep -qE "$1"; }
           if wants '^(tools/omnicui/|Makefile$|\.github/workflows/ci\.yml$)'; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
           if wants '^(scripts/|\.github/workflows/ci\.yml$)'; then echo "scripts=true" >> "$GITHUB_OUTPUT"; else echo "scripts=false" >> "$GITHUB_OUTPUT"; fi
+          if wants '^(apps/web/|\.github/workflows/ci\.yml$)'; then echo "web=true" >> "$GITHUB_OUTPUT"; else echo "web=false" >> "$GITHUB_OUTPUT"; fi
 
   go-tests:
     name: Go vet and tests
@@ -102,6 +104,20 @@ jobs:
           node-version: 24
       - name: The release scripts' own tests
         run: node --test 'scripts/*.test.mjs'
+
+  web-static:
+    name: Web static server
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Missing files are a 404, not a crash (the app's server and the web target share it)
+        run: node --test apps/web/static.test.ts
 
   neutral:
     name: Host neutral

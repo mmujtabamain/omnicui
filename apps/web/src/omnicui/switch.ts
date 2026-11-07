@@ -1,4 +1,4 @@
-// Generated from omnicui/contracts/switch.contract.yaml by stubs.ts. Do not edit: change the contract instead.
+// Generated from contracts/switch.contract.yaml by stubs.ts. Do not edit: change the contract instead.
 
 export interface SwitchToggled { on: boolean; }
 export interface SwitchProps {

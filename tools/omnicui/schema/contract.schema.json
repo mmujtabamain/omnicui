@@ -91,6 +91,10 @@
             "type": "integer",
             "minimum": 16,
             "maximum": 4096
+          },
+          "props": {
+            "description": "Props every test gets at this viewport; a test's own props win.",
+            "type": "object"
           }
         }
       }
@@ -112,15 +116,46 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "area": {
+          "description": "The share of the drawn area that may differ. Default 30%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
+        "strength": {
+          "description": "How far off in colour the recoloured pixels may be, on average (100% = black against white); pixels merely displaced are left out. Default 28%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
+        "shift": {
+          "description": "How far differing pixels may have moved: the median distance to their nearest match, measured up to 8 px. Default 8px, the most it measures, so by default it is shown but never warns: on correct renderings it reaches 3–7 px from anti-aliasing alone.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?px$"
+        },
+        "spot": {
+          "description": "How concentrated the difference may be: the share of the worst 24×24 px spot that is strongly off in colour with no pixel of its colour within 4 px. Default 2%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
         "pixels": {
+          "description": "Renamed to area; omnicui refuses it with a message saying so.",
+          "deprecated": true,
           "type": "string",
           "pattern": "^[0-9]+(\\.[0-9]+)?%$"
         },
         "timing": {
           "type": "string",
           "pattern": "^[0-9]+ms$"
+        },
+        "motion": {
+          "description": "How far apart two targets' clips may move, compared by visual progress. Default 40ms.",
+          "type": "string",
+          "pattern": "^[0-9]+ms$"
         }
       }
+    },
+    "keyboard": {
+      "description": "For every button, switch and checkbox, add a test per key its role is activated by (button: Enter and Space; switch, checkbox: Space): the key must do what a pointer press does.",
+      "type": "boolean"
     }
   },
   "$defs": {
@@ -197,8 +232,7 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "part",
-              "point"
+              "part"
             ],
             "properties": {
               "part": {
@@ -227,11 +261,22 @@
                     "pattern": "^(linear|ease|ease-in|ease-out|ease-in-out|cubic-bezier\\(\\s*[0-9.]+\\s*,\\s*-?[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*-?[0-9.]+\\s*\\))$"
                   }
                 }
+              },
+              "property": {
+                "description": "What is followed: the point's position (the default) or the part's opacity as drawn.",
+                "enum": [
+                  "position",
+                  "opacity"
+                ]
               }
             }
           }
         },
         "record": {
+          "type": "boolean"
+        },
+        "allCombinations": {
+          "description": "Take the traces and the clip at every viewport × colour scheme, not only the first.",
           "type": "boolean"
         }
       }
@@ -377,6 +422,18 @@
           },
           "value": {
             "type": "number"
+          },
+          "focused": {
+            "description": "Whether the part has keyboard focus.",
+            "type": "boolean"
+          },
+          "visible": {
+            "description": "Whether the part has a size on screen and is inside the viewport.",
+            "type": "boolean"
+          },
+          "role": {
+            "description": "The role assistive technology reports for the part (WAI-ARIA).",
+            "$ref": "#/$defs/role"
           }
         },
         "additionalProperties": false

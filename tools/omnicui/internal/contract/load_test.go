@@ -69,18 +69,23 @@ func TestModel(t *testing.T) {
 // R-CONTRACT-3: what a contract leaves out takes the documented defaults.
 func TestDefaults(t *testing.T) {
 	c, _ := parse(t, good)
-	if len(c.Viewports) != 1 || c.Viewports[0] != DefaultViewport {
+	if len(c.Viewports) != 1 || c.Viewports[0].Width != DefaultViewport.Width || c.Viewports[0].Height != DefaultViewport.Height {
 		t.Errorf("viewports: %v", c.Viewports)
 	}
 	if len(c.ColorSchemes) != 1 || c.ColorSchemes[0] != "light" {
 		t.Errorf("schemes: %v", c.ColorSchemes)
 	}
-	if c.PixelThreshold != 30 || c.TimingThreshold != 20 {
-		t.Errorf("thresholds: %v %v", c.PixelThreshold, c.TimingThreshold)
+	if c.Pixels != DefaultPixelThresholds || c.TimingThreshold != 20 {
+		t.Errorf("thresholds: %+v %v", c.Pixels, c.TimingThreshold)
 	}
-	c, _ = parse(t, good+"thresholds: { pixels: 0.5%, timing: 8ms }\n")
-	if c.PixelThreshold != 0.5 || c.TimingThreshold != 8 {
-		t.Errorf("thresholds: %v %v", c.PixelThreshold, c.TimingThreshold)
+	c, _ = parse(t, good+"thresholds: { area: 25%, strength: 30%, shift: 7px, spot: 5%, timing: 18ms }\n")
+	if c.Pixels != (PixelThresholds{Area: 25, Strength: 30, Shift: 7, Spot: 5}) || c.TimingThreshold != 18 {
+		t.Errorf("thresholds: %+v %v", c.Pixels, c.TimingThreshold)
+	}
+	// Only the measures named change; the others keep their defaults.
+	c, _ = parse(t, good+"thresholds: { spot: 5% }\n")
+	if want := DefaultPixelThresholds; c.Pixels.Spot != 5 || c.Pixels.Area != want.Area || c.Pixels.Shift != want.Shift {
+		t.Errorf("thresholds: %+v", c.Pixels)
 	}
 }
 
@@ -99,7 +104,7 @@ func TestErrors(t *testing.T) {
 		{"bad role", replace("role: status", "role: label"), 8, "is not one of"},
 		{"bad action", replace("action: press", "action: tap"), 13, "`tap` is not one of"},
 		{"missing key for key action", replace("action: press, part: increment, times: 3", "action: key, part: increment"), 13, "missing field `key`"},
-		{"bad id", replace("id: ui.counter", "id: Counter"), 1, "is not in the expected form"},
+		{"bad id", replace("id: ui.counter", "id: Counter"), 1, "`Counter` is not a valid id: an id is lower-case words joined by dots"},
 		{"no tests", strings.Split(good, "tests:")[0], 1, "missing field `tests`"},
 		{"unknown part", replace("part: increment, times", "part: incremnt, times"), 13, "part `incremnt` does not exist; did you mean `increment`?"},
 		{"role refuses action", replace("part: increment, times", "part: value, times"), 13, "`value` is a status, which does not accept `press`"},
@@ -112,7 +117,7 @@ func TestErrors(t *testing.T) {
 		{"default type", replace("default: 0", `default: "zero"`), 3, "the default of `start` is a string, but its type is integer"},
 		{"duplicate test", good + "  - name: three presses\n    expect: [{ part: value, text: \"0\" }]\n", 17, "another test is already called `three presses`"},
 		{"trace without steps", good + "  - name: t\n    trace: [{ part: value, point: center }]\n", 18, "traces a part but has no steps"},
-		{"bad easing", replace("    expect:", "    trace: [{ part: value, point: center, timing: { duration: 200ms, easing: bouncy } }]\n    expect:"), 14, "is not in the expected form"},
+		{"bad easing", replace("    expect:", "    trace: [{ part: value, point: center, timing: { duration: 200ms, easing: bouncy } }]\n    expect:"), 14, "`bouncy` is not a timing function: linear, ease"},
 		{"not yaml", "id: [unclosed\n", 1, "not valid YAML"},
 	}
 	for _, tc := range cases {
@@ -142,6 +147,61 @@ func TestUnusedPartWarns(t *testing.T) {
 	}
 	if len(ps) != 1 || !ps[0].Warning || ps[0].Line != 10 || !strings.Contains(ps[0].Message, "part `extra` is never used by any test") {
 		t.Errorf("problems: %v", ps)
+	}
+}
+
+// R-CONTRACT-9: thresholds.pixels was renamed to area, and is refused with the new spelling.
+func TestPixelsRenamedToArea(t *testing.T) {
+	c, ps := parse(t, good+"thresholds: { pixels: 30% }\n")
+	if c != nil || !HasErrors(ps) || ps[0].Line != 17 || !strings.Contains(ps[0].Message, "thresholds.pixels was renamed to area") || !strings.Contains(ps[0].Message, "`area: 30%`") {
+		t.Errorf("got %v", ps)
+	}
+}
+
+// R-CONTRACT-10: a threshold far stricter than its default is allowed, with a warning that says
+// what correct renderings usually measure, because otherwise every comparison warns.
+func TestStrictThresholdWarns(t *testing.T) {
+	c, ps := parse(t, good+"thresholds: { area: 1%, timing: 20ms }\n")
+	if c == nil || len(ps) != 1 || !ps[0].Warning || ps[0].Line != 17 {
+		t.Fatalf("got %v", ps)
+	}
+	for _, want := range []string{"thresholds.area 1% is far below the default 30%", "3–26%", "expect most comparisons to warn"} {
+		if !strings.Contains(ps[0].Message, want) {
+			t.Errorf("%q should say %q", ps[0].Message, want)
+		}
+	}
+	if _, ps := parse(t, good+"thresholds: { area: 20%, timing: 15ms }\n"); len(ps) != 0 {
+		t.Errorf("a modest change should not warn: %v", ps)
+	}
+}
+
+// R-CONTRACT-11: a value in the wrong form is told what form it should take, and a name gets
+// its camelCase spelling.
+func TestPatternMessages(t *testing.T) {
+	cases := []struct{ yaml, want string }{
+		{replace("  value:     { role: status }", "  card-number: { role: status }"), "`card-number` is not a valid name: names are camelCase, a lower-case letter and then letters and digits; write `cardNumber`"},
+		{replace("id: ui.counter", "id: Counter"), "`Counter` is not a valid id: an id is lower-case words joined by dots, like `ui.counter`"},
+		{good + "thresholds: { area: 30 }\n", "`30` is not a percentage: write it like `30%`"},
+		{good + "thresholds: { shift: 5 }\n", "`5` is not a length in pixels: write it like `5px`"},
+		{good + "thresholds: { timing: 20 }\n", "`20` is not a duration: write it in milliseconds, like `200ms`"},
+	}
+	for _, c := range cases {
+		_, ps := parse(t, c.yaml)
+		found := false
+		for _, p := range ps {
+			found = found || strings.Contains(p.Message, c.want)
+		}
+		if !found {
+			t.Errorf("want %q in %v", c.want, ps)
+		}
+	}
+	// The bad key is reported on its own line, under where it is.
+	_, ps := parse(t, replace("  value:     { role: status }", "  card-number: { role: status }"))
+	if len(ps) == 0 || ps[0].Line != 8 || !strings.HasPrefix(ps[0].Message, "parts: `card-number`") {
+		t.Errorf("got %v", ps)
+	}
+	if camelCase("card_number") != "cardNumber" || camelCase("Card Number") != "cardNumber" || camelCase("9x") != "" {
+		t.Error("camelCase")
 	}
 }
 
