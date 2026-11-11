@@ -8,6 +8,7 @@ import { defect } from "../defects.ts";
 //                          (so it does have a thumb, moving another way)
 //   webalt.switch.noevent  toggling doesn't send `toggled`           (broken behaviour)
 //   webalt.switch.nospace  Space doesn't toggle it                   (broken behaviour)
+//   webalt.brand           the same layout in the original design language (its colours, its font)
 export function RedesignedSwitch({ on: initial = SwitchDefaults.on, label = SwitchDefaults.label, onToggled }: SwitchProps) {
   const [on, setOn] = useState(initial);
   const id = useId();
@@ -20,7 +21,7 @@ export function RedesignedSwitch({ on: initial = SwitchDefaults.on, label = Swit
   };
   if (defect("webalt.switch.pill")) {
     return (
-      <div className="rd rd-switch">
+      <div className={defect("webalt.brand") ? "rd rd--brand rd-switch" : "rd rd-switch"}>
         <button type="button" role="switch" aria-checked={on} aria-labelledby={id} data-part={Parts.switch} className="rd-pill"
           onClick={toggle} onKeyDown={noSpace} onKeyUp={noSpace}>
           <span className="rd-pill__thumb" data-part={Parts.thumb} />
@@ -30,7 +31,7 @@ export function RedesignedSwitch({ on: initial = SwitchDefaults.on, label = Swit
     );
   }
   return (
-    <div className="rd rd-switch">
+    <div className={defect("webalt.brand") ? "rd rd--brand rd-switch" : "rd rd-switch"}>
       <input id={id} type="checkbox" role="switch" className="rd-switch__box" data-part={Parts.switch} checked={on}
         onChange={toggle} onKeyDown={noSpace} onKeyUp={noSpace} />
       <label htmlFor={id}>{label}</label>

@@ -550,9 +550,21 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				} else {
 					ex.Part = e["part"].(string)
 					for _, k := range orderedKeys(expNodes.Content[j]) {
-						if k != "part" {
-							ex.Checks = append(ex.Checks, Check{Field: k, Want: plain(e[k])})
+						if k == "part" {
+							continue
 						}
+						want := plain(e[k])
+						// text: { contains: … } or { matches: … }
+						if m, ok := want.(map[string]any); ok && (k == "text" || k == "name") {
+							contains, _ := m["contains"].(string)
+							matches, _ := m["matches"].(string)
+							tm, err := NewTextMatch(contains, matches)
+							if err != nil {
+								l.errorf(fmt.Sprintf("%s/expect/%d/%s/matches", base, j, k), "`%s` is not a regular expression: %v", matches, err)
+							}
+							want = tm
+						}
+						ex.Checks = append(ex.Checks, Check{Field: k, Want: want})
 					}
 				}
 				test.Expect = append(test.Expect, ex)
@@ -623,6 +635,7 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		c.ColorSchemes = DefaultColorSchemes
 	}
 	c.Pixels, c.TimingThreshold, c.MotionThreshold = DefaultPixelThresholds, DefaultTimingThreshold, DefaultMotionThreshold
+	c.PaletteThreshold, c.DirectionThreshold = DefaultPaletteThreshold, DefaultDirectionThreshold
 	if th, ok := v["thresholds"].(map[string]any); ok {
 		if p, ok := th["pixels"].(string); ok {
 			l.errorf("/thresholds/pixels#key", "thresholds.pixels was renamed to area (the share of the drawn area that differs): write `area: %s`", p)
@@ -641,6 +654,12 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		}
 		if t, ok := th["motion"].(string); ok {
 			c.MotionThreshold = parseMS(t)
+		}
+		if p, ok := th["palette"].(string); ok {
+			c.PaletteThreshold = parsePercent(p)
+		}
+		if d, ok := th["direction"].(string); ok {
+			c.DirectionThreshold, _ = strconv.ParseFloat(strings.TrimSuffix(d, "deg"), 64)
 		}
 		l.lintThresholds(c, th)
 	}
@@ -662,8 +681,11 @@ func field(name string, m map[string]any) Field {
 func typeOK(t string, v any) bool {
 	switch t {
 	case "string":
-		_, ok := v.(string)
-		return ok
+		switch v.(type) {
+		case string, TextMatch:
+			return true
+		}
+		return false
 	case "boolean":
 		_, ok := v.(bool)
 		return ok

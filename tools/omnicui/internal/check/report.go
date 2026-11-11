@@ -21,6 +21,7 @@ type reportTest struct {
 	Combos      []Combo
 	Pixels      []Comparison
 	Timing      []Comparison
+	Palette     []Comparison
 	Visibility  []Comparison
 	ClipSets    []clipSet
 	Chart       template.HTML
@@ -291,6 +292,8 @@ func writeReport(path string, rep *Report) error {
 					rt.Pixels = append(rt.Pixels, cmp)
 				case "visibility":
 					rt.Visibility = append(rt.Visibility, cmp)
+				case "palette":
+					rt.Palette = append(rt.Palette, cmp)
 				default:
 					rt.Timing = append(rt.Timing, cmp)
 				}
@@ -338,11 +341,14 @@ func writeReport(path string, rep *Report) error {
 			}
 			return c.Measures.Spots[0].String()
 		},
-		"value":  valueText,
-		"lower":  strings.ToLower,
-		"cls":    func(s Status) string { return strings.ReplaceAll(string(s), " ", "-") },
-		"join":   strings.Join,
-		"unitOf": unit,
+		"value":   valueText,
+		"designs": designsLine,
+		"th":      func(c Comparison) string { return fmt.Sprintf("%g%s", c.Threshold, unit(c.Kind)) },
+		"css":     func(hex string) template.CSS { return template.CSS("background:" + hex) },
+		"lower":   strings.ToLower,
+		"cls":     func(s Status) string { return strings.ReplaceAll(string(s), " ", "-") },
+		"join":    strings.Join,
+		"unitOf":  unit,
 		"missing": func(res TestResult) []string {
 			var out []string
 			for _, k := range sortedKeys(res.Missing) {
@@ -370,6 +376,7 @@ const reportHTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>omnicui check · {{.Rep.Summary.Pass}} pass, {{.Rep.Summary.Fail}} fail, {{.Rep.Summary.Warnings}} warnings</title>
 <style>
+.swatches{white-space:nowrap}.swatches span{display:inline-flex;align-items:center;gap:4px;margin-right:6px}.swatches i{display:inline-block;width:14px;height:14px;border:1px solid currentColor;border-radius:3px}
 :root { color-scheme: light dark; --bg: #fbfaf7; --fg: #1d1f1b; --muted: #4f5449; --line: #c9c6bd; --card: #ffffff;
   --pass: #1d6b34; --fail: #a3201a; --warn: #7a4b00; --na: #4f5449; }
 @media (prefers-color-scheme: dark) { :root { --bg: #161814; --fg: #ecebe6; --muted: #b9b8b0; --line: #4a4c45; --card: #20231e;
@@ -426,6 +433,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <main id="main">
 <section aria-labelledby="targets-h">
 <h2 id="targets-h">Targets</h2>
+{{with designs .Rep.Targets}}<p id="designs">{{.}}</p>{{end}}
 <div class="table" role="region" tabindex="0" aria-label="What each target advertised">
 <table>
 <caption>What each target advertised</caption>
@@ -445,7 +453,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Result on each target</caption>
 <thead><tr><th scope="col">Target</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead>
 <tbody>
-{{range .Results}}<tr><th scope="row">{{.Target}}</th><td class="st st-{{cls .Status}}">{{.Status}}</td><td>{{range .Messages}}<div>{{.}}</div>{{end}}{{range missing .}}<div class="muted">{{.}}</div>{{end}}</td></tr>
+{{range .Results}}<tr><th scope="row">{{.Target}}</th><td class="st st-{{cls .Status}}">{{.Status}}</td><td>{{range .Messages}}<div>{{.}}</div>{{end}}{{range .Absent}}<div class="muted absent">{{.}}</div>{{end}}{{range missing .}}<div class="muted">{{.}}</div>{{end}}</td></tr>
 {{end}}</tbody>
 </table>
 </div>
@@ -470,6 +478,19 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 </div>
 {{end}}
 {{end}}
+{{if .Palette}}
+<h3>Colours across designs</h3>
+<p>These targets are of different designs (<code>design:</code> in target.yaml), so their screenshots are compared by the colours they draw with, not pixel by pixel: the share of one's drawing in colours the other doesn't use.</p>
+<div class="table" role="region" tabindex="0" aria-label="Colours across designs, worst combination per pair">
+<table>
+<caption>Colours across designs, worst combination per pair</caption>
+<thead><tr><th scope="col">Compared</th><th scope="col">Difference</th><th scope="col">Result</th><th scope="col">Colours</th><th scope="col">Note</th></tr></thead>
+<tbody>
+{{range $c := .Palette}}<tr><th scope="row">{{pair $c}}</th><td>{{value $c}} (threshold {{th $c}})</td><td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td>{{with $c.Palette}}<div class="swatches">{{$c.A}}: {{range .A}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div><div class="swatches">{{$c.B}}: {{range .B}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div>{{end}}</td><td>{{$c.Combo}}: {{$c.Note}}</td></tr>
+{{end}}</tbody>
+</table>
+</div>
+{{end}}
 {{if .Timing}}
 <h3>Motion</h3>
 {{.Chart}}
@@ -478,7 +499,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Traced timing: the largest difference at any level of the movement</caption>
 <thead><tr><th scope="col">Part</th><th scope="col">Compared</th><th scope="col">Difference</th><th scope="col">Result</th><th scope="col">Note</th></tr></thead>
 <tbody>
-{{range .Timing}}<tr><td>{{.Part}}</td><th scope="row">{{pair .}}</th><td>{{value .}} (threshold {{.Threshold}} ms)</td><td class="st {{if .Warning}}st-warning{{else}}st-pass{{end}}">{{if .Warning}}warning{{else}}pass{{end}}</td><td>{{.Note}}</td></tr>
+{{range .Timing}}<tr><td>{{.Part}}</td><th scope="row">{{pair .}}</th><td>{{value .}} (threshold {{th .}})</td><td class="st {{if .Warning}}st-warning{{else}}st-pass{{end}}">{{if .Warning}}warning{{else}}pass{{end}}</td><td>{{.Note}}</td></tr>
 {{end}}</tbody>
 </table>
 </div>

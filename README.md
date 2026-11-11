@@ -87,7 +87,7 @@ omnicui check                               # every contract, every target
 omnicui check egui counter                  # one target, one component
 omnicui check --require egui:screenshot     # fail if egui can't take screenshots here
 omnicui check --out ci-results              # write the results somewhere else than omnicui/.omnicui/run/
-omnicui check --fail-on pixels              # CI: pixel warnings fail the run (also timing, visibility, warnings)
+omnicui check --fail-on pixels              # CI: pixel warnings fail the run (also palette, timing, direction, motion, visibility, warnings)
 omnicui check --test "each press"           # only the tests whose name has this in it (or a glob, with *)
 omnicui check --failed                      # only what failed, broke or warned in the last run
 omnicui check --serial                      # one target at a time (or exclusive: true in a target.yaml)
@@ -106,15 +106,21 @@ omnicui --project path/to/omnicui check     # name the project instead of findin
 
 **Exit status:** 0 when nothing failed or broke, 1 when something did (or a warning that `--fail-on` names), 2 for a usage or contract error, 130 when interrupted.
 
-**How screenshots are compared.** Every pair of targets, by four measures, each with its own threshold in the contract (`thresholds: { area: 30%, strength: 28%, shift: 8px, spot: 2% }` are the defaults):
+**What omnicui is for.** Two things, on every stack an app is built in: the same **behaviour** (the tests, the keyboard, the events), and one **design language** (the look, the colours, the motion), even where the layouts differ by design.
+
+**How screenshots are compared.** Every pair of targets of one design, by four measures, each with its own threshold in the contract (`thresholds: { area: 30%, strength: 28%, shift: 8px, spot: 2% }` are the defaults):
 - **area**: how much of the drawn area differs (a pixel differs when nothing within 2 px of it in the other screenshot has its colour);
 - **strength**: how far off in colour the recoloured pixels are (pixels merely displaced are left out);
 - **shift**: how far the differing pixels moved. Anti-aliasing alone reaches 3–7 px, so by default it is shown but doesn't warn;
 - **spot**: how concentrated the difference is in its worst 24×24 px spot. Font rendering spreads thin differences over every edge, and a displaced edge has its colour nearby; a wrong word, colour or opacity is concentrated. This is the measure that finds those, and the diff image boxes the worst spots.
 
-**How motion is compared.** A `trace` follows a point's position, or with `property: opacity` or `scale` a part's opacity or scale, and it finds the part at each frame, so a sheet that slides in is traced from its first frame. A recorded clip (`record: true`) is compared too: each target's frames are reduced to how far the picture has gone from its first frame to its last, over time, and those curves are compared like traces (`thresholds.motion`, default 40 ms). That catches fades, blurs and colour changes on every target, egui included, whatever each target's frame rate. report.html plays the clips side by side, lined up at the input, with a speed control and a slider. `allCombinations: true` takes traces and clips at every viewport and colour scheme. `record: { part: x }` measures a clip over one part's box. A change that goes out and comes back (a spring, a hover in and out) is measured out and back.
+**Different designs.** A target whose layout is meant to differ (a phone layout, a redesign) says `design: <name>` in its target.yaml. Its screenshots are then compared with other designs' by their **design language** instead of pixel by pixel: the colours each draws with. `palette` is the share of one's drawing in colours the other design uses in none of its screenshots (`thresholds.palette`, default 15%), and the warning names them. Behaviour, keyboard and motion are compared between every target as usual. `experiments/redesign/` shows it: a redesign in its own palette warns at 73–100%, and the same layouts in the reference colours measure 0%.
 
-**Part of a screen.** `screenshot: { mask: [parts] }` (or `mask:` for the whole contract) leaves parts out of the comparison, wherever either target shows them; a part marked `optional: true` is one that only some targets have, such as desktop window controls. `screenshot: { part: toolbar }` compares only that part's box on each target.
+**How motion is compared.** A `trace` follows a point's position, or with `property: opacity` or `scale` a part's opacity or scale, and it finds the part at each frame, so a sheet that slides in is traced from its first frame. A recorded clip (`record: true`) is compared too: each target's frames are reduced to how far the picture has gone from its first frame to its last, over time, and those curves are compared like traces (`thresholds.motion`, default 40 ms). That catches fades, blurs and colour changes on every target, egui included, whatever each target's frame rate. report.html plays the clips side by side, lined up at the input, with a speed control and a slider. `allCombinations: true` takes traces and clips at every viewport and colour scheme. `record: { part: x }` measures a clip over one part's box. A change that goes out and comes back (a spring, a hover in and out) is measured out and back. Two traces that move more than 30° apart (`thresholds.direction`) warn too: `web went right 20 px, webalt up 20 px`.
+
+**Part of a screen.** `screenshot: { mask: [parts] }` (or `mask:` for the whole contract) leaves parts out of the comparison, wherever either target shows them; a part marked `optional: true` is one that only some targets or designs have, such as desktop window controls or a switch's thumb that another design draws as a checkbox. Where a target doesn't have it, traces, clips and checks on it are skipped, with a note, and a test whose steps act on it is "not measured".
+
+**Text.** `text` is what a part shows. A test can ask for it exactly (`text: "3"`), or `{ contains: "3" }`, or `{ matches: "^3\\b" }`, for a design that says more ("3 taps"). `screenshot: { part: toolbar }` compares only that part's box on each target.
 
 **Actions a target defines.** Besides press, focus, key, type, drag and hover, a step can be `{ do: swipe, part: row, with: { direction: left } }`: omnicui passes it to every target that advertises `do.swipe`, unchanged. Scrolling, swiping, the system back and pickers differ by platform, so their targets define them.
 

@@ -41,6 +41,8 @@ func contractHelp() string {
               { do: swipe, part: row, with: { direction: left } }: an action the targets define
               and advertise as do.<name> (scroll, swipe, refresh, back, pick…)
       expect: [ { part: value, text: "3" }, { event: changed, times: 3, last: { count: 3 } } ]
+              text and name: "3" exactly, or { contains: "3" }, or { matches: "^3\\b" } (RE2);
+              text is what the part shows (text only a screen reader gets is left out)
       screenshot: true                 at every viewport × colour scheme; or
                   { mask: [part…] }    leave those parts out, wherever either target shows them
                   { part: toolbar }    compare only that part's box on each target
@@ -53,8 +55,12 @@ func contractHelp() string {
   colorSchemes: [ light, dark ]                                       default light
   keyboard:     true                   Enter/Space must do what a press does (see below)
   mask:         [ part… ]              parts left out of every screenshot comparison
-  parts: { controls: { role: generic, optional: true } }   shown by some targets only
-  thresholds:   { area: %g%%, strength: %g%%, shift: %gpx, spot: %g%%, timing: %gms, motion: %gms }   (the defaults)
+  parts: { thumb: { role: generic, optional: true } }   some targets or designs have it, some don't:
+                                       where it isn't, masks, crops, traces, clips and checks on
+                                       it are skipped (with a note); a test whose steps act on it
+                                       is not measured
+  thresholds:   { area: %g%%, strength: %g%%, shift: %gpx, spot: %g%%, timing: %gms, motion: %gms,
+                  palette: %g%%, direction: %gdeg }   (the defaults)
 
 Names (props, events, parts, event fields) are camelCase: a lower-case letter, then letters and
 digits. card-number is refused; write cardNumber.
@@ -67,7 +73,8 @@ Roles, what a test can check on a part of each, and the actions it accepts:
   selected a button that stays chosen: a chip, a tab, a segment (targets that advertise selected)
 
 How targets are compared (warnings, never failures, unless check --fail-on says so):
-  screenshots  every pair of targets, at every combination; the worst combination is reported.
+  screenshots  every pair of targets of one design (design: in target.yaml; most share the
+               default), at every combination; the worst combination is reported.
                area      how much of the drawn area differs (a pixel differs when no pixel within
                          2 px of it in the other screenshot has its colour)
                strength  how far off in colour the recoloured pixels are, on average (100%% = black
@@ -79,9 +86,14 @@ How targets are compared (warnings, never failures, unless check --fail-on says 
                          that is strongly off in colour, with no pixel of its colour within 4 px.
                          Glyph noise spreads thinly and displaced edges have their colour nearby;
                          a wrong word, colour or opacity is concentrated, so this finds them
+  colours      targets of different designs (a phone layout and a desktop one, a redesign) aren't
+               compared pixel by pixel, but by their design language: the colours they fill
+               areas with. palette is the share of one's drawing in colours the other design
+               uses in none of its screenshots at that colour scheme (another background: 100%%)
   traces       a point's position (or, with property: opacity or scale, a part's), lined up, then
                compared at 10%%, 20%%, … 90%% of the change, against each other and against the
-               named timing (threshold: timing)
+               named timing (threshold: timing); and where each point went: two that move
+               more than 30° apart warn (threshold: direction)
   clips        record: true. Each clip becomes its visual progress: how far the picture has gone
                from its first frame to its last, over time. Compared like traces (threshold:
                motion), so a fade, a blur or a colour change is compared too, on every target,
@@ -104,5 +116,6 @@ Every reply waits until the UI has settled: nothing animating, events processed,
 busy (for example, waiting for a network reply), when the app tells its target so.
 
 The full specification: docs/SPEC.md
-`, d.Area, d.Strength, d.Shift, d.Spot, contract.DefaultTimingThreshold, contract.DefaultMotionThreshold, strings.Join(roles, "\n"))
+`, d.Area, d.Strength, d.Shift, d.Spot, contract.DefaultTimingThreshold, contract.DefaultMotionThreshold,
+		contract.DefaultPaletteThreshold, contract.DefaultDirectionThreshold, strings.Join(roles, "\n"))
 }

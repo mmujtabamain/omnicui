@@ -60,7 +60,7 @@
             "$ref": "#/$defs/role"
           },
           "optional": {
-            "description": "The part is shown by some targets only (window controls in a desktop toolbar, say). A mask or a crop naming it covers it where it is, and is skipped where it isn't.",
+            "description": "The part is shown by some targets or designs only (window controls in a desktop toolbar; the thumb of a switch another design draws as a checkbox). Where a target has no such part, masks, crops, traces, clips and expectations on it are skipped, with a note, and a test whose steps act on it is not measured.",
             "type": "boolean"
           }
         }
@@ -154,6 +154,16 @@
           "description": "How far apart two targets' clips may move, compared by visual progress. Default 40ms.",
           "type": "string",
           "pattern": "^[0-9]+ms$"
+        },
+        "palette": {
+          "description": "For targets of different designs (`design:` in target.yaml), whose screenshots are compared by the colours they draw with: the share of one's drawing that may be in colours the other doesn't use. Default 15%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
+        "direction": {
+          "description": "How far apart, in degrees, two targets may move a traced point. Default 30deg.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?deg$"
         }
       }
     },
@@ -473,10 +483,26 @@
             "$ref": "#/$defs/partName"
           },
           "text": {
-            "type": "string"
+            "description": "The text the part shows: exactly this string, or { contains: \"…\" }, or { matches: \"<regular expression>\" }.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/textMatch"
+              }
+            ]
           },
           "name": {
-            "type": "string"
+            "description": "Its accessible name: exactly this string, or { contains: \"…\" }, or { matches: \"<regular expression>\" }.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/textMatch"
+              }
+            ]
           },
           "disabled": {
             "type": "boolean"
@@ -505,6 +531,23 @@
           }
         },
         "additionalProperties": false
+      }
+    },
+    "textMatch": {
+      "description": "A looser text: the value contains a string, or matches a regular expression (RE2 syntax).",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "contains": {
+          "type": "string",
+          "description": "The value contains this string."
+        },
+        "matches": {
+          "type": "string",
+          "description": "The value matches this regular expression (RE2: Go's syntax), e.g. \"^3( taps)?$\"."
+        }
       }
     }
   }

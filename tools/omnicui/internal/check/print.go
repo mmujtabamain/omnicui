@@ -25,8 +25,11 @@ func pairLabel(c Comparison) string {
 }
 
 func unit(kind string) string {
-	if kind == "pixels" {
+	switch kind {
+	case "pixels", "palette":
 		return "%"
+	case "direction":
+		return "°"
 	}
 	return " ms"
 }
@@ -35,8 +38,11 @@ func valueText(c Comparison) string {
 	if c.Value >= 1e9 {
 		return "∞"
 	}
-	if c.Kind == "pixels" {
+	switch c.Kind {
+	case "pixels", "palette":
 		return fmt.Sprintf("%.1f%%", c.Value)
+	case "direction":
+		return fmt.Sprintf("%.0f°", c.Value)
 	}
 	if c.Value < 10 {
 		return fmt.Sprintf("%.1f ms", c.Value)
@@ -96,6 +102,10 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			fmt.Fprintf(w, "%s: %d tests: %s\n", n, repeated[n][m], m)
 		}
 	}
+	// Designs: which targets are compared pixel by pixel, and which by their colours.
+	if line := designsLine(rep.Targets); line != "" {
+		fmt.Fprintln(w, line)
+	}
 	col := 30
 	for _, c := range rep.Contracts {
 		for _, t := range c.Tests {
@@ -141,6 +151,9 @@ func Print(w io.Writer, rep *Report, runDir string) {
 						notes = append(notes, n+": stderr | "+l)
 					}
 				}
+				for _, a := range res.Absent {
+					notes = append(notes, n+": "+a)
+				}
 				for _, k := range sortedKeys(res.Missing) {
 					if res.Status == Pass {
 						missing[k] = append(missing[k], fmt.Sprintf("%s (%s)", n, res.Missing[k]))
@@ -165,8 +178,13 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				} else {
 					// One line per traced part (or clip) and combination.
 					key := "trace " + cmp.Part
-					if cmp.Kind == "motion" {
+					switch cmp.Kind {
+					case "motion":
 						key = "clip, visual progress"
+					case "direction":
+						key = "direction " + cmp.Part
+					case "palette":
+						key = "colours (other designs)"
 					}
 					if cmp.Combo != "" && len(Combos(c)) > 1 && test.AllCombinations {
 						key += " " + cmp.Combo
@@ -194,6 +212,19 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			}
 			for _, p := range partOrder {
 				fmt.Fprintf(w, "    %s%s\n", pad(p, col-2), comparisonLine(traces[p]))
+				// What a palette or a direction warning is about: which colours, which way.
+				for _, cmp := range traces[p] {
+					if cmp.Warning && (cmp.Kind == "palette" || cmp.Kind == "direction") {
+						note := cmp.Note
+						if cmp.Palette != nil {
+							note = cmp.Palette.Note(cmp.A, cmp.B)
+						}
+						if len(Combos(c)) > 1 && cmp.Kind == "palette" {
+							note += " (" + cmp.Combo + ")"
+						}
+						fmt.Fprintf(w, "    %s%s\n", pad("", col-2), note)
+					}
+				}
 			}
 			if combos := Combos(c); (len(test.Trace) > 0 || test.Record) && len(combos) > 1 && !test.AllCombinations {
 				fmt.Fprintf(w, "    %s%s\n", pad("", col-2), "traces and clip: first combination only ("+combos[0].Label()+")")
@@ -318,4 +349,29 @@ func shortID(id string) string {
 		return id[i+1:]
 	}
 	return id
+}
+
+// designsLine says which design each target is of, when they are not all of one: screenshots are
+// compared pixel by pixel within a design, and by their colours across designs.
+func designsLine(ts []TargetInfo) string {
+	groups := map[string][]string{}
+	var order []string
+	for _, t := range ts {
+		if _, ok := groups[t.Design]; !ok {
+			order = append(order, t.Design)
+		}
+		groups[t.Design] = append(groups[t.Design], t.Name)
+	}
+	if len(order) < 2 {
+		return ""
+	}
+	var parts []string
+	for _, d := range order {
+		name := d
+		if d == "" {
+			name = "default"
+		}
+		parts = append(parts, fmt.Sprintf("%s: %s", name, strings.Join(groups[d], ", ")))
+	}
+	return "designs: " + strings.Join(parts, " · ") + " (pixels compared within a design, colours across designs)"
 }

@@ -50,6 +50,10 @@ type runner struct {
 	log        *slog.Logger
 	wire       *os.File
 	wireMu     sync.Mutex
+	// For palettes across designs: every result, and each target's palettes per colour scheme.
+	results      []TestResult
+	paletteMu    sync.Mutex
+	paletteCache map[string][]compare.Palette
 }
 
 func newRunID() string {
@@ -203,7 +207,7 @@ type advert struct {
 func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult) {
 	began := time.Now()
 	defer func() { info.Ms = time.Since(began).Milliseconds() }()
-	info = TargetInfo{Name: t.Name}
+	info = TargetInfo{Name: t.Name, Design: t.Design}
 	log := r.log.With("target", t.Name)
 	brokenAll := func(reason string) []TestResult {
 		var out []TestResult
@@ -434,9 +438,50 @@ func (tr *targetRun) call(method string, params map[string]any, result any) erro
 		if p, ok := params["part"].(string); ok && method != "mount" {
 			what += " " + p
 		}
-		return &failure{msg: fmt.Sprintf("%s: %s", what, re.Message)}
+		msg := fmt.Sprintf("%s: %s", what, re.Message)
+		// A part this target's design doesn't have at all (a trace says more itself).
+		if p, ok := params["part"].(string); ok && re.Code == -32002 && method != "trace" && method != "bounds" {
+			msg += fmt.Sprintf(" (if %s's design has no `%s`, mark the part `optional: true` in the contract)", tr.t.Name, p[strings.LastIndex(p, ".")+1:])
+		}
+		return &failure{msg: msg}
 	}
 	return err
+}
+
+// noPart says whether the last reply was "no part" (-32002).
+func (tr *targetRun) noPart() bool {
+	var re *rpc.RemoteError
+	return errors.As(tr.lastRemote, &re) && re.Code == -32002
+}
+
+// optionalPart says whether the contract marks a part optional: some designs have it, some don't.
+func optionalPart(c *contract.Contract, part string) bool {
+	p := c.PartByName(part)
+	return p != nil && p.Optional
+}
+
+// absent notes, once, what a test skips because this target's design has no such part.
+func (tr *targetRun) absent(part, what string, res *TestResult) {
+	note := fmt.Sprintf("no `%s` in %s's design (an optional part): %s", part, tr.t.Name, what)
+	if !contains(res.Absent, note) {
+		res.Absent = append(res.Absent, note)
+	}
+}
+
+// missingOptional: the last request failed because the target has no such part, and the
+// contract says that is allowed. It notes what is skipped.
+func (tr *targetRun) missingOptional(c *contract.Contract, part, what string, res *TestResult) bool {
+	if !optionalPart(c, part) || !tr.noPart() {
+		return false
+	}
+	tr.absent(part, what, res)
+	return true
+}
+
+// partName is a step's part, as the contract names it ("" when it has none).
+func partName(c *contract.Contract, step map[string]any) string {
+	p, _ := step["part"].(string)
+	return strings.TrimPrefix(p, c.ID+".")
 }
 
 func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResult {
@@ -543,25 +588,44 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			if capability := traceCapability(spec); tr.can[capability] {
 				var samples []compare.Sample
 				err := tr.trace(c, spec, steps, &samples)
-				if handle(err, label(cb)) {
+				if err != nil && tr.missingOptional(c, spec.Part, "its trace is skipped", &res) {
+					// The steps ran during the trace: run them again, plainly, on a fresh component.
+					if handle(mount(cb), label(cb)) {
+						if res.Status == Broken {
+							break
+						}
+						continue
+					}
+				} else if handle(err, label(cb)) {
 					if res.Status == Broken {
 						break
 					}
 					continue
+				} else {
+					res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
+					res.measured++
+					traced = true
 				}
-				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
-				traced = true
 			} else {
 				res.Missing[capability] = tr.reason(capability)
 			}
 		}
 		if !traced {
-			stopped := false
+			stopped, unmeasured := false, false
 			for _, s := range steps {
-				if handle(tr.call(s["method"].(string), withoutMethod(s), nil), label(cb)) {
+				err := tr.call(s["method"].(string), withoutMethod(s), nil)
+				if err != nil && tr.missingOptional(c, partName(c, s), "the test acts on it, so there is nothing to measure here", &res) {
+					unmeasured = true
+					break
+				}
+				if handle(err, label(cb)) {
 					stopped = true
 					break
 				}
+			}
+			if unmeasured {
+				res.Status = NotMeasured
+				break
 			}
 			if stopped {
 				if res.Status == Broken {
@@ -587,6 +651,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					fail("screenshot: the target replied, but wrote no file" + label(cb))
 				} else {
 					res.Screenshots[cb.Key()] = relRun(path)
+					res.measured++
 					// Where each part was, so that a difference can be put down to a part.
 					if tr.can["bounds"] {
 						boxes := map[string]Rect{}
@@ -621,10 +686,13 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 					break
 				}
 				var samples []compare.Sample
-				if handle(tr.trace(c, spec, steps, &samples), label(cb)) {
+				if err := tr.trace(c, spec, steps, &samples); err != nil && tr.missingOptional(c, spec.Part, "its trace is skipped", &res) {
+					continue
+				} else if handle(err, label(cb)) {
 					break
 				}
 				res.Traces = append(res.Traces, TraceResult{Part: spec.Part, Point: spec.Point, Property: spec.Property, Combo: cb.Key(), Samples: samples, Curve: compare.Analyze(samples)})
+				res.measured++
 			}
 			if test.Record && res.Status != Broken {
 				if tr.can["record"] {
@@ -639,6 +707,10 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		}
 	}
 	res.Messages = collapse(res.Messages, combos)
+	// Everything the test checks is on parts this design doesn't have.
+	if res.Status == Pass && res.measured == 0 && len(res.Absent) > 0 {
+		res.Status = NotMeasured
+	}
 	if res.Status == Pass && len(res.Missing) > 0 {
 		for _, k := range sortedKeys(res.Missing) {
 			res.Messages = append(res.Messages, fmt.Sprintf("%s: not advertised by %s (%s)", k, tr.t.Name, res.Missing[k]))
@@ -658,7 +730,7 @@ func (tr *targetRun) trace(c *contract.Contract, spec contract.TraceSpec, steps 
 	var re *rpc.RemoteError
 	var f *failure
 	if errors.As(tr.lastRemote, &re) && re.Code == -32002 && errors.As(err, &f) {
-		return &failure{msg: f.msg + fmt.Sprintf(" (if `%s` appears during the steps, %s's trace should look it up at each frame and start its samples when it is there: see the protocol's trace)", spec.Part, tr.t.Name)}
+		return &failure{msg: f.msg + fmt.Sprintf(" (if `%s` appears during the steps, %s's trace should look it up at each frame and start its samples when it is there: see the protocol's trace; if %s's design has no `%s`, mark the part `optional: true` in the contract)", spec.Part, tr.t.Name, tr.t.Name, spec.Part)}
 	}
 	if err == nil && len(*samples) == 0 {
 		return &failure{msg: fmt.Sprintf("trace %s: no samples (the part wasn't on screen at any frame)", c.ID+"."+spec.Part)}
@@ -729,12 +801,16 @@ func (tr *targetRun) record(c *contract.Contract, part string, cb Combo, dir str
 	// record: { part: x }: the clip is measured over that part's box, before and after the steps,
 	// and a margin around it.
 	var box *compare.Region
+	missing := 0 // how many times the part wasn't there
 	partBox := func() {
 		if part == "" || !tr.can["bounds"] {
 			return
 		}
 		var r *Rect
 		if err := tr.call("bounds", map[string]any{"part": c.ID + "." + part}, &r); err != nil || r == nil || r.Width <= 0 || r.Height <= 0 {
+			if err == nil || tr.noPart() {
+				missing++
+			}
 			return
 		}
 		b := compare.Region{X: r.X - clipMargin, Y: r.Y - clipMargin, Width: r.Width + 2*clipMargin, Height: r.Height + 2*clipMargin}
@@ -750,6 +826,11 @@ func (tr *targetRun) record(c *contract.Contract, part string, cb Combo, dir str
 		return
 	}
 	partBox()
+	if missing == 2 && optionalPart(c, part) {
+		// Neither before nor after the steps: this design has no such part.
+		tr.absent(part, "its clip is skipped", res)
+		return
+	}
 	if len(rec.Frames) == 0 {
 		tr.log.Warn("record returned no frames")
 		return
@@ -784,6 +865,7 @@ func (tr *targetRun) record(c *contract.Contract, part string, cb Combo, dir str
 		res.Clips = map[string]ClipResult{}
 	}
 	res.Clips[cb.Key()] = clip
+	res.measured++
 	if first {
 		res.Clip = clip.File
 	}
@@ -853,6 +935,7 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, 
 					matching = append(matching, ev)
 				}
 			}
+			res.measured++
 			if e.Times != nil && len(matching) != *e.Times {
 				fail(fmt.Sprintf("%s: expected %s, got %s%s", e.Event, timesWord(*e.Times), timesWord(len(matching)), suffix))
 			}
@@ -880,21 +963,33 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, 
 			}
 			return nil
 		}
-		readsContent := false
+		readsContent, skipped := false, false
 		for _, ch := range e.Checks {
 			var got any
 			if ch.Field == "visible" {
 				if err := bounds(); err != nil {
+					if tr.missingOptional(c, e.Part, "what the test expects of it is skipped", res) {
+						skipped = true
+						break
+					}
 					return err
 				}
 				got = box.Visible(cb.Viewport.Width, cb.Viewport.Height)
 			} else if err := tr.call("read", map[string]any{"part": part, "field": ch.Field}, &got); err != nil {
+				if tr.missingOptional(c, e.Part, "what the test expects of it is skipped", res) {
+					skipped = true
+					break
+				}
 				return err
 			}
+			res.measured++
 			readsContent = readsContent || ch.Field == "text" || ch.Field == "name" || ch.Field == "value" || ch.Field == "checked"
 			if !same(ch.Want, got) {
 				fail(fmt.Sprintf("%s.%s: expected %s, got %s%s", e.Part, ch.Field, show(ch.Want), show(got), suffix))
 			}
+		}
+		if skipped {
+			continue
 		}
 		// A part whose content passed but that nobody can see: the content check says nothing about
 		// what is on screen. Only when the target reports bounds, and the test doesn't say whether
@@ -933,6 +1028,9 @@ func timesWord(n int) string {
 // same compares a contract value with a value read from a target; numbers compare as numbers.
 func same(want, got any) bool {
 	switch w := want.(type) {
+	case contract.TextMatch:
+		g, ok := got.(string)
+		return ok && w.Match(g)
 	case int64:
 		g, ok := got.(float64)
 		return ok && g == float64(w)
@@ -953,6 +1051,8 @@ func show(v any) string {
 	switch x := v.(type) {
 	case nil:
 		return "nothing"
+	case contract.TextMatch:
+		return x.String()
 	case string:
 		return fmt.Sprintf("%q", x)
 	case float64:
@@ -1131,6 +1231,9 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 		}
 	}
 	if err == nil && !shown {
+		if optionalPart(c, k.Part) {
+			return notMeasured(fmt.Sprintf("no `%s` in %s's design (an optional part), so there is no key to compare with a press", k.Part, tr.t.Name))
+		}
 		return notMeasured(notShown(c, k.Part))
 	}
 	var before, pressed []string

@@ -28,6 +28,9 @@
 //	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
 //	FAKE_SPAN_FILE    append "<FAKE_NAME> start|stop <unix ns>" when starting and stopping
 //	FAKE_STDERR_ON    a method during which to write a line to stderr
+//	FAKE_NO_PARTS     parts this target's design doesn't have, e.g. thumb ("no part" for each)
+//	FAKE_TEXT_SUFFIX  what the counter's value shows after the number, e.g. " taps"
+//	FAKE_VERTICAL     the switch's thumb slides down instead of across
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -138,7 +141,7 @@ func act(method string, p params) error {
 	}
 	part := strings.TrimPrefix(p.Part, st.component+".")
 	known := map[string]bool{"ui.counter.value": true, "ui.counter.increment": true, "ui.switch.switch": true, "ui.switch.thumb": true}
-	if !known[p.Part] {
+	if !known[p.Part] || has(os.Getenv("FAKE_NO_PARTS"), part) {
 		return &rpcErr{-32002, "no part " + p.Part}
 	}
 	press := func() {
@@ -201,7 +204,11 @@ func screenshot(path string) error {
 				c = color.RGBA{0xe0, 0x30, 0x30, 0xff}
 			}
 			// The switch's thumb, where it is now (so that recorded frames show it slide).
-			if tx := 30 + int(st.moved+0.5); st.component == "ui.switch" && x >= tx+shift && x < tx+12+shift && y >= 33 && y < 45 {
+			tx, ty := 30+int(st.moved+0.5), 33
+			if os.Getenv("FAKE_VERTICAL") != "" {
+				tx, ty = 30, 33+int(st.moved+0.5)
+			}
+			if st.component == "ui.switch" && !has(os.Getenv("FAKE_NO_PARTS"), "thumb") && x >= tx+shift && x < tx+12+shift && y >= ty && y < ty+12 {
 				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
 			}
 			img.Set(x, y, c)
@@ -321,7 +328,7 @@ func handle(n int, r req) (any, error) {
 		}
 		switch p.Part + "/" + p.Field {
 		case "ui.counter.value/text":
-			return strconv.Itoa(st.count), nil
+			return strconv.Itoa(st.count) + os.Getenv("FAKE_TEXT_SUFFIX"), nil
 		case "ui.counter.increment/name":
 			if has(os.Getenv("FAKE_BUG"), "no-name") {
 				return nil, nil
@@ -383,6 +390,16 @@ func handle(n int, r req) (any, error) {
 		if r.Method == "trace" && os.Getenv("FAKE_LATE_PART") != "" {
 			return nil, &rpcErr{-32002, "no part " + p.Part}
 		}
+		if r.Method == "trace" && has(os.Getenv("FAKE_NO_PARTS"), strings.TrimPrefix(p.Part, st.component+".")) {
+			// Like a real target, it ran the steps looking for the part at each frame.
+			for _, s := range p.Steps {
+				b, _ := json.Marshal(s)
+				var sp params
+				json.Unmarshal(b, &sp)
+				act(s["method"].(string), sp)
+			}
+			return nil, &rpcErr{-32002, "no part " + p.Part + " (not on screen at any frame)"}
+		}
 		start := st.moved
 		for _, s := range p.Steps {
 			b, _ := json.Marshal(s)
@@ -407,6 +424,8 @@ func handle(n int, r req) (any, error) {
 			case r.Method == "trace" && p.Property == "opacity":
 				v := 1 - 0.5*ease(t)*math.Abs(end-start)/20
 				out = append(out, map[string]any{"ms": ms, "value": v})
+			case r.Method == "trace" && os.Getenv("FAKE_VERTICAL") != "":
+				out = append(out, map[string]any{"ms": ms, "x": 36.0, "y": x})
 			case r.Method == "trace":
 				out = append(out, map[string]any{"ms": ms, "x": x, "y": 36})
 			default:

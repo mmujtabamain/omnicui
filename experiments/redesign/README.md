@@ -6,10 +6,11 @@ To find out, the web app got a second design of the counter and the switch, in `
 - **the counter** is a vertical card, with the value in a coloured pill and a round icon button;
 - **the switch** is a native checkbox with a tick: no track, no thumb, no animation.
 
-The second design has the same props, the same events and the same part tags as the first. It runs here as the target `webalt`, next to `web` (a link to the reference web target, the original design), against the reference contracts (also a link), on omnicui 0.2.2.
+The second design has the same props, the same events and the same part tags as the first. It runs here as the target `webalt`, next to `web` (a link to the reference web target, the original design), against the reference contracts (also a link), first on omnicui 0.2.2, and again on 0.2.3, which was built from what 0.2.2 got wrong here. webalt's target.yaml now says `design: redesign`.
 
 Variants then change one thing each, switched on with `OMNICUI_DEFECTS`.
 - **Look only (the behaviour is the same):**
+  - `brand`: the same layouts in the reference design language (its colours and font);
   - `copy`: the value reads "3 taps";
   - `srlabel`: a visually-hidden "Count: " sits in front of the value;
   - `toolbar`: a heading and a Reset button that the contract doesn't name;
@@ -20,41 +21,54 @@ Variants then change one thing each, switched on with `OMNICUI_DEFECTS`.
   - `noevent`: no `toggled` event;
   - `nospace`: Space doesn't toggle.
 
-The rules: omnicui and the contracts are not changed, and no part is faked to get a pass.
+The rules: the reference contracts are not changed (the contract experiments are copies, in `contract-variants/`), and no part is faked to get a pass.
 
 ```sh
 ./run.sh setup web
-experiments/redesign/run.sh            # every run below (about 2 minutes); output in runs/<run>/
+experiments/redesign/run.sh            # every run below (about 3 minutes); output in runs/<run>/
 experiments/redesign/run.sh base       # one of them
 ```
 
-## Results (webalt; `web` passes everything in every run)
+## Results on 0.2.3 (webalt; `web` passes everything in every run)
 
-| Run | webalt | Verdict | What omnicui said |
+| Run | webalt | Against the original's screenshots | Verdict |
 |---|---|---|---|
-| base (card + checkbox) | 9 pass, 1 fail; 5 pixel warnings | **false failure** | `a press turns it on, and the thumb slides across`: `trace ui.switch.thumb: no part` (and a hint to look the part up at each frame, which is wrong here: a checkbox has no thumb). Every screenshot pair warns, area 92–100%. |
-| counter.copy | 3 fail | **false failure** (strictly, the contract asked for "3") | `value.text: expected "3", got "3 taps"` |
-| counter.srlabel | 3 fail | **false failure** | `value.text: expected "5", got "Count:\n5"`: the web adapter reads `innerText`, which includes visually-hidden text |
-| counter.toolbar | pass | right | parts the contract doesn't name are ignored |
-| switch.pill | pass; timing and motion warnings | right, but incomplete | `trace thumb web ↔ webalt 99 ms`, `clip 134 ms`; that the thumb moves up instead of across isn't noticed |
-| counter.double | 2 fail | right | `value.text: expected "3", got "6"`, `changed.last.count: expected 3, got 6`; the generated keyboard tests pass (key and press both add two) |
-| counter.divbutton | 3 fail | right | `Enter on increment didn't do what a press does: … the key gave value.text "0"` |
-| switch.noevent | 2 fail | right, but tangled | `toggled: expected 1 time, got 0 times`, in the same failing test as the thumb's false failure |
-| switch.nospace | 3 fail | right | `Space on switch didn't do what a press does` |
-| fail-on-pixels | exit 1 | a gap | 2 pixel warnings fail the run: nothing says that webalt is meant to look different |
+| base (card + checkbox) | 9 pass, 1 fail | colours: 90–100% on 4 of 5, warns: `webalt uses #f4a261 (68%), #c77dff (22.2%), which web doesn't use` | right: a palette of its own is another design language. The fail is the thumb (the reference contract doesn't mark it optional; see a) |
+| brand (the same layouts, the reference colours) | 9 pass, 1 fail | colours: **0%** on all 5 | right: another layout, the same design language |
+| counter.copy ("3 taps") | 3 fail | | right by the exact contract; `matches` (e) lets it pass |
+| counter.srlabel (hidden "Count: ") | pass | | right: `text` is what is shown (it failed on 0.2.2) |
+| counter.toolbar | pass | | right |
+| switch.pill (thumb slides up, 400 ms linear) | pass | timing 99 ms, clip 134 ms, **direction 90°: `web went right 20 px, webalt up 20 px`** | right (on 0.2.2, the direction wasn't noticed) |
+| counter.double | 2 fail | | right |
+| counter.divbutton | 3 fail | | right |
+| switch.noevent | 2 fail | | right |
+| switch.nospace | 3 fail | | right |
+| fail-on-palette (contract a, the redesign) | exit 1 | 4 colour warnings | right: a CI gate on the design language |
+| fail-on-palette-brand (contract a, brand) | exit 0 | 0 colour warnings | right: the same gate passes another layout in the same design language |
 
-## Contract experiments (`contract-variants/`)
+## Contract experiments on 0.2.3 (`contract-variants/`)
 
-| Switch contract | webalt | What it shows |
+| Contract | webalt | What it shows |
 |---|---|---|
-| a: `thumb: { optional: true }` | still fails | `optional` covers masks and crops only, not traces |
-| b: the trace and the clip in a test of their own | that test fails | the failure moves, it doesn't go away |
-| c: no trace, no clip | pass | but the original designs lose their motion check (and `part thumb is never used`) |
-| d: `record: { part: switch }`, no trace | pass; motion warning 78 ms (the pill: 134 ms) | what works today: a clip needs no part inside the switch |
+| a: `thumb: { optional: true }` | **pass**, `no `thumb` in webalt's design (an optional part): its trace is skipped` | the fix: the motion check stays on the designs that have a thumb (failed on 0.2.2) |
+| b: the trace and the clip in a test of their own, thumb not optional | that test fails, with ``if webalt's design has no `thumb`, mark the part `optional: true` `` | the message now names the way out |
+| c: no trace, no clip | pass | still works, but loses the motion check; a is better |
+| d: `record: { part: switch }`, no trace | pass; motion warning 78 ms (the pill: 134 ms) | a clip needs no part inside the switch |
+| e: `text: { matches: "^3\\b" }`, with "3 taps" | **pass** | a design may show more than the contract cares about |
 
-## What omnicui is missing
+## On 0.2.2 (before the fixes)
 
-1. **A part that only some designs have.** `optional: true` should cover traces, clips and expectations too: such a test should be "not applicable" where the target has no such part, instead of failing. A part that is missing and isn't optional should say `optional: true` is the way out, not give the per-frame hint.
-2. **Designs.** `design:` in `target.yaml`, so that screenshots are compared only between targets of the same design, while behaviour, keyboard and motion are still checked everywhere. Without it, `--fail-on pixels` can't be used between two designs.
-3. **Looser text.** `text: { contains: "3" }` or `matches:`. And a decision on whether `text` means what is shown, or what a screen reader reads (`innerText` gives the second).
-4. **Direction.** A trace compares only the timing along the movement, so the direction and the distance aren't compared.
+| Run | webalt | What omnicui said |
+|---|---|---|
+| base | 9 pass, 1 fail; 5 pixel warnings, area 92–100% | the thumb's trace failed, and the hint (look the part up at each frame) was wrong for a checkbox |
+| counter.copy, counter.srlabel | 3 fail each | `expected "5", got "5 taps"`; `expected "5", got "Count:\n5"` |
+| switch.pill | pass, timing warnings only | the upward slide wasn't noticed |
+| switch.noevent | 2 fail | the real failure was mixed with the thumb's false one in one test |
+| `--fail-on pixels` | exit 1 | nothing could say webalt was meant to look different |
+| contracts a, b | fail | `optional` covered masks and crops only |
+
+## Still open
+
+- The design language is compared by colour only: font, spacing, radii and elevation are not (GAPS 23).
+- Text colours drawn only as glyphs rarely enter a palette (GAPS 24).
+- A design's palette is what it drew in the run: a check of one component knows only its colours (GAPS 25).

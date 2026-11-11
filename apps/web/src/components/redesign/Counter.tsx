@@ -9,6 +9,7 @@ import { defect } from "../defects.ts";
 //   webalt.counter.toolbar    a heading and a Reset button beside it, which the contract doesn't name
 //   webalt.counter.double     each press adds two                 (broken behaviour)
 //   webalt.counter.divbutton  the button is a <div role="button"> with no key handling (broken)
+//   webalt.brand              the same layout in the original design language (its colours, its font)
 export function RedesignedCounter({ start = CounterDefaults.start, onChanged }: CounterProps) {
   const [count, setCount] = useState(start);
   const step = defect("webalt.counter.double") ? 2 : 1;
@@ -31,7 +32,7 @@ export function RedesignedCounter({ start = CounterDefaults.start, onChanged }: 
     </button>
   );
   return (
-    <div className="rd rd-counter">
+    <div className={defect("webalt.brand") ? "rd rd--brand rd-counter" : "rd rd-counter"}>
       {defect("webalt.counter.toolbar") && <h2 className="rd-counter__heading">Visitors</h2>}
       <output className="rd-counter__value" data-part={Parts.value}>
         {defect("webalt.counter.srlabel") && <span className="rd-sr">Count: </span>}

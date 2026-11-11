@@ -1,6 +1,12 @@
 // Package contract loads and checks contract files.
 package contract
 
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
 // Field is a typed prop or event field.
 type Field struct {
 	Name       string `json:"name"`
@@ -22,7 +28,10 @@ type Part struct {
 	Role string `json:"role"`
 	// ID is the part's id in every target: <contract id>.<part name>.
 	ID string `json:"id"`
-	// Optional: shown by some targets only. Masks and crops skip it where it isn't.
+	// Optional: shown by some targets or designs only (window controls in a desktop toolbar, the
+	// thumb of a switch that another design draws as a checkbox). Masks and crops skip it where it
+	// isn't; so do traces, clips and expectations on it, and a test whose steps act on it is not
+	// measured there.
 	Optional bool `json:"optional,omitempty"`
 }
 
@@ -42,7 +51,49 @@ type Step struct {
 	Line   int            `json:"-"`
 }
 
-// Check is one field of one part, as read after the steps.
+// TextMatch is a looser `text` or `name`: the value contains a string, or matches a regular
+// expression (Go's syntax, RE2), instead of being exactly a string.
+type TextMatch struct {
+	Contains string `json:"contains,omitempty"`
+	Matches  string `json:"matches,omitempty"`
+	re       *regexp.Regexp
+}
+
+// NewTextMatch makes a TextMatch; an error when the regular expression doesn't compile.
+func NewTextMatch(contains, matches string) (TextMatch, error) {
+	m := TextMatch{Contains: contains, Matches: matches}
+	if matches != "" {
+		re, err := regexp.Compile(matches)
+		if err != nil {
+			return m, err
+		}
+		m.re = re
+	}
+	return m, nil
+}
+
+// Match says whether a value read from a target matches.
+func (m TextMatch) Match(s string) bool {
+	if m.re != nil {
+		return m.re.MatchString(s)
+	}
+	if m.Matches != "" {
+		re, err := regexp.Compile(m.Matches)
+		return err == nil && re.MatchString(s)
+	}
+	return strings.Contains(s, m.Contains)
+}
+
+// String is how a message shows what was expected.
+func (m TextMatch) String() string {
+	if m.Matches != "" {
+		return fmt.Sprintf("text matching /%s/", m.Matches)
+	}
+	return fmt.Sprintf("text containing %q", m.Contains)
+}
+
+// Check is one field of one part, as read after the steps. Want is a string, a boolean, a
+// number, or a TextMatch for text and name.
 type Check struct {
 	Field string `json:"field"`
 	Want  any    `json:"want"`
@@ -148,6 +199,11 @@ type Contract struct {
 	// a clip shows everything that changes (a colour, a highlight), each target's frames come on
 	// its own clock, and correct renderings measured up to 30 ms apart.
 	MotionThreshold float64 `json:"motionThreshold"`
+	// PaletteThreshold is for screenshots of targets of different designs, compared by the
+	// colours they draw with: the share, in percent, of one's drawing in colours the other doesn't
+	// use. DirectionThreshold is the angle, in degrees, two targets may move a traced point apart.
+	PaletteThreshold   float64 `json:"paletteThreshold"`
+	DirectionThreshold float64 `json:"directionThreshold"`
 }
 
 // Short is the last segment of the id ("counter" for "ui.counter").
@@ -186,6 +242,11 @@ var (
 	DefaultColorSchemes    = []string{"light"}
 	DefaultTimingThreshold = 20.0
 	DefaultMotionThreshold = 40.0
+	// DefaultPaletteThreshold: correct renderings of one design by three toolkits measured 0%,
+	// and a redesign with a palette of its own 74–100% (experiments/redesign).
+	DefaultPaletteThreshold = 15.0
+	// DefaultDirectionThreshold: a thumb sliding across against one sliding up is 90°.
+	DefaultDirectionThreshold = 30.0
 	// DefaultPixelThresholds were set from screenshots of correct and defective renderings
 	// (docs/verification/pixel-measures.md): correct renderings stay under all four, and each
 	// defect there goes over at least one.

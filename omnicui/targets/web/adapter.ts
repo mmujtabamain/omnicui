@@ -182,7 +182,20 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async read(p) {
     const loc = await locate(p.part);
     // A text box's text is what is typed in it, as egui (AccessKit's value) and JavaFX (getText) read it.
-    if (p.field === "text") return loc.evaluate((el) => (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : (el as HTMLElement).innerText.trim()));
+    // `text` is what the part shows. innerText also has text only a screen reader gets (visually
+    // hidden: a 1×1 box that clips its content), which is left out here.
+    if (p.field === "text") return loc.evaluate((el) => {
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return el.value;
+      const hidden = [...el.querySelectorAll<HTMLElement>("*")].filter((d) => {
+        const r = d.getBoundingClientRect(), s = getComputedStyle(d);
+        return r.width <= 1 && r.height <= 1 && (s.overflow === "hidden" || s.clip !== "auto" || s.clipPath !== "none");
+      });
+      const saved = hidden.map((d) => d.style.display);
+      hidden.forEach((d) => (d.style.display = "none"));
+      const text = (el as HTMLElement).innerText.trim();
+      hidden.forEach((d, i) => (d.style.display = saved[i]));
+      return text;
+    });
     if (p.field === "focused") return loc.evaluate((el) => el === document.activeElement);
     // A chosen chip, tab or segment: aria-pressed, aria-selected or aria-checked on a button.
     if (p.field === "selected") return loc.evaluate((el) => ["aria-pressed", "aria-selected", "aria-checked"].some((a) => el.getAttribute(a) === "true"));

@@ -15,6 +15,11 @@ import (
 // traces, and each trace with the test's named timing.
 func (r *runner) compareAll(rep *Report) []Comparison {
 	var out []Comparison
+	r.results = rep.Results
+	design := map[string]string{}
+	for _, t := range rep.Targets {
+		design[t.Name] = t.Design
+	}
 	byKey := map[string][]TestResult{}
 	for _, res := range rep.Results {
 		k := res.Contract + "\x00" + res.Test
@@ -29,7 +34,7 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 				}
 			}
 			if test.Screenshot {
-				out = append(out, r.comparePixels(c, test, results)...)
+				out = append(out, r.comparePixels(c, test, results, design)...)
 			}
 			if len(test.Trace) > 0 {
 				out = append(out, compareTraces(c, test, results)...)
@@ -42,12 +47,20 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 	return out
 }
 
-func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results []TestResult) []Comparison {
+// comparePixels compares each pair of targets' screenshots: pixel by pixel when they are of one
+// design, by their palettes when not (design names the design of each target).
+func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results []TestResult, design map[string]string) []Comparison {
 	var out []Comparison
 	diffDir := filepath.Join(r.runDir, "diff", c.Short(), slug(test.Name))
 	for i := 0; i < len(results); i++ {
 		for j := i + 1; j < len(results); j++ {
 			a, b := results[i], results[j]
+			if design[a.Target] != design[b.Target] {
+				if cmp := r.comparePalettes(c, test, a, b, design); cmp != nil {
+					out = append(out, *cmp)
+				}
+				continue
+			}
 			var worst *Comparison
 			for _, cb := range Combos(c) {
 				pa, okA := a.Screenshots[cb.Key()]
@@ -107,6 +120,74 @@ func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results
 	return out
 }
 
+// comparePalettes compares two targets of different designs by the colours their screenshots
+// are drawn with, at every combination both took; the worst combination is kept. Masks and a
+// screenshot part apply as they do to pixels.
+func (r *runner) comparePalettes(c *contract.Contract, test contract.Test, a, b TestResult, design map[string]string) *Comparison {
+	var worst *Comparison
+	name := func(t string) string {
+		if design[t] == "" {
+			return "the default design"
+		}
+		return "design " + design[t]
+	}
+	for _, cb := range Combos(c) {
+		pa, okA := a.Screenshots[cb.Key()]
+		pb, okB := b.Screenshots[cb.Key()]
+		if !okA || !okB {
+			continue
+		}
+		view, viewNote := pixelView(c, test, a, b, cb.Key())
+		p, err := compare.ComparePalettesIn(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), view,
+			r.palettes(a.Target, cb.Scheme), r.palettes(b.Target, cb.Scheme))
+		cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "palette", A: a.Target, B: b.Target, Combo: cb.Key(), Part: "palette",
+			Threshold: c.PaletteThreshold}
+		if err != nil {
+			cmp.Value, cmp.Warning, cmp.Note = 100, true, err.Error()
+		} else {
+			cmp.Value, cmp.Warning, cmp.Palette = p.Value, p.Value > c.PaletteThreshold, &p
+			cmp.Note = joinNotes(fmt.Sprintf("%s is %s and %s %s, so their colours are compared, not their pixels: %s",
+				a.Target, name(a.Target), b.Target, name(b.Target), p.Note(a.Target, b.Target)), viewNote)
+		}
+		r.log.Info("palette", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(), "value", cmp.Value)
+		if worst == nil || cmp.Value > worst.Value {
+			cp := cmp
+			worst = &cp
+		}
+	}
+	return worst
+}
+
+// palettes are every screenshot's palette a target took in this run at a colour scheme: the
+// colours its design uses, which a colour of another design's screenshot is looked for in.
+func (r *runner) palettes(target, scheme string) []compare.Palette {
+	r.paletteMu.Lock()
+	defer r.paletteMu.Unlock()
+	key := target + "\x00" + scheme
+	if ps, ok := r.paletteCache[key]; ok {
+		return ps
+	}
+	var out []compare.Palette
+	for _, res := range r.results {
+		if res.Target != target {
+			continue
+		}
+		for combo, path := range res.Screenshots {
+			if !strings.HasSuffix(combo, "-"+scheme) {
+				continue
+			}
+			if p, err := compare.ReadPalette(filepath.Join(r.runDir, path)); err == nil {
+				out = append(out, p)
+			}
+		}
+	}
+	if r.paletteCache == nil {
+		r.paletteCache = map[string][]compare.Palette{}
+	}
+	r.paletteCache[key] = out
+	return out
+}
+
 func traceLabel(spec contract.TraceSpec) string {
 	if spec.Property != "" && spec.Property != "position" {
 		return spec.Part + " " + spec.Property
@@ -142,6 +223,13 @@ func compareTraces(c *contract.Contract, test contract.Test, results []TestResul
 					d, note := compare.Differ(cs[names[i]], cs[names[j]])
 					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: names[i], B: names[j], Part: label, Combo: combo,
 						Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold, Note: note})
+					// Where the point went: timing is measured along each one's own movement, so a
+					// thumb sliding up against one sliding across has the same timing.
+					if deg, ok := compare.Direction(cs[names[i]], cs[names[j]]); ok {
+						out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "direction", A: names[i], B: names[j], Part: label, Combo: combo,
+							Value: round(deg, 0), Threshold: c.DirectionThreshold, Warning: deg > c.DirectionThreshold,
+							Note: fmt.Sprintf("%s went %s, %s %s", names[i], compare.Heading(cs[names[i]]), names[j], compare.Heading(cs[names[j]]))})
+					}
 				}
 			}
 			if spec.Timing != nil {
