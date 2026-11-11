@@ -26,6 +26,7 @@ tools/omnicui/                     the omnicui command (Go): cmd/, internal/, sc
   integration/                     the tests against the real targets (build tag `real`)
   testdata/fakeadapter/            a fake target for omnicui's own tests, including every kind of failure
   report-test/                     report.html in a real browser: axe (WCAG 2.2 AA) and screenshots
+experiments/redesign/              a second design of the web components, checked against the same contracts (README.md)
 run.sh                             try it: doctor, setup, app, check, demo, test (macOS, Linux)
 Makefile                           the same, with make; and `make release`
 ```
