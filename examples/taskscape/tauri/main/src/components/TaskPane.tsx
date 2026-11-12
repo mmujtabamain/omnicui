@@ -198,6 +198,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
   return (
     <PaneContext.Provider value={list.id}>
       <section
+        data-part="pane"
         className="bg-surface-2l dark:bg-surface-2d flex h-full min-w-0 flex-1 flex-col"
         onMouseDown={focusPane}
       >
@@ -208,6 +209,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
           <TextInput
             bare
             ref={searchRef}
+            data-part="search"
             value={query}
             placeholder={`Search ${list.name}`}
             onFocus={focusPane}
@@ -227,6 +229,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
           {query.trim() && (
             <>
               <Label
+                data-part="matchCount"
                 tone="muted"
                 weight="semibold"
                 className="shrink-0 text-[11px] tabular-nums"
@@ -239,6 +242,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
                 iconWeight={300}
                 variant="plain"
                 onClick={() => useSearchStore.getState().clear(list.id)}
+                data-part="clearSearch"
                 title="Clear search"
               />
             </>
@@ -249,6 +253,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
             iconSize={18}
             iconWeight={400}
             onClick={() => startNewTask(list.id)}
+            data-part="newTask"
             title="New task"
           />
           {isSplit && (
@@ -258,6 +263,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
               iconWeight={300}
               className="-mr-1"
               onClick={() => useLayoutStore.getState().closeSplit()}
+              data-part="closeSplit"
               title="Close split"
             />
           )}
@@ -307,6 +313,7 @@ export function TaskPane({ list, isSplit }: { list: List; isSplit: boolean }) {
             )}
             {visibleRoots.length === 0 && (
               <EmptyState
+                part="paneEmpty"
                 icon={searching ? 'search_off' : 'landscape'}
                 iconSize={30}
                 title={
@@ -396,6 +403,7 @@ function ScopeFields() {
       variant="plain"
       onMouseDown={(e) => e.preventDefault()}
       onClick={open}
+      data-part="searchOptions"
       title="Search options"
     />
   );
@@ -420,8 +428,12 @@ function BulkBar({ count }: { count: number }) {
     });
   };
   return (
-    <div className="border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d gap-space-2 px-space-6 flex h-9 shrink-0 items-center border-t">
+    <div
+      data-part="bulkBar"
+      className="border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d gap-space-2 px-space-6 flex h-9 shrink-0 items-center border-t"
+    >
       <Label
+        data-part="selectedCount"
         tone="primary"
         weight="semibold"
         className="mr-1 pl-1 text-[11px] tracking-[0.08em] uppercase tabular-nums"
@@ -434,6 +446,7 @@ function BulkBar({ count }: { count: number }) {
         iconWeight={300}
         size="sm"
         onClick={() => bulkSetDone(listId, true)}
+        data-part="bulkDone"
         title="Mark done"
       >
         Done
@@ -443,6 +456,7 @@ function BulkBar({ count }: { count: number }) {
         iconWeight={300}
         size="sm"
         onClick={() => bulkSetDone(listId, false)}
+        data-part="bulkUndone"
         title="Mark not done"
       >
         Undone
@@ -453,6 +467,7 @@ function BulkBar({ count }: { count: number }) {
         size="sm"
         onClick={openMoveMenu}
         disabled={otherLists.length === 0}
+        data-part="bulkMove"
         title="Move to another list"
       >
         Move to…
@@ -462,6 +477,7 @@ function BulkBar({ count }: { count: number }) {
         iconWeight={300}
         size="sm"
         onClick={() => bulkCopy(listId)}
+        data-part="bulkCopy"
         title="Copy as checklist"
       >
         Copy
@@ -472,6 +488,7 @@ function BulkBar({ count }: { count: number }) {
         size="sm"
         variant="danger"
         onClick={() => void bulkDelete(listId)}
+        data-part="bulkDelete"
         title="Delete selection"
       >
         Delete
@@ -482,6 +499,7 @@ function BulkBar({ count }: { count: number }) {
         size="sm"
         className="ml-auto"
         onClick={() => useSelectionStore.getState().clear(listId)}
+        data-part="bulkClear"
         title="Clear selection"
       >
         Clear
@@ -503,18 +521,23 @@ function StatsBar({
   return (
     <Label
       as="div"
+      data-part="stats"
       tone="muted"
       weight="semibold"
       className="border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d gap-space-5 px-space-7 flex h-9 shrink-0 items-center border-t text-[11px] tracking-[0.08em] uppercase tabular-nums"
     >
       <ViewControl />
       <Divider orientation="vertical" className="h-3" />
-      <span>
+      <span data-part="doneCount">
         {done}/{total} done
       </span>
       <div className="gap-space-4 ml-auto flex items-center">
         <ProgressBar value={total ? done / total : 0} />
-        <Label tone="secondary" className="w-8 text-right">
+        <Label
+          data-part="donePercent"
+          tone="secondary"
+          className="w-8 text-right"
+        >
           {pct}%
         </Label>
       </div>
@@ -535,6 +558,7 @@ function ViewControl() {
   };
   return (
     <button
+      data-part="viewControl"
       onClick={toggle}
       title="Sort & filter"
       className={cn(

@@ -26,6 +26,10 @@ export function HotkeyControl({ binding, editor }: HotkeyControlProps) {
         />
       )}
       <Keycap
+        data-part={`hotkey${binding.id
+          .split('_')
+          .map((w) => w[0].toUpperCase() + w.slice(1))
+          .join('')}`}
         recording={recording}
         onClick={() => editor.beginRecording(binding.id)}
       >

@@ -1,0 +1,156 @@
+P0's report: the contracts, the shared spec and the tauri target.
+
+Each gap: what happened, and what I would have wanted to write. "OWN" marks my own mistakes;
+"APP" something in the Tauri app the ports should not copy; "PLATFORM" a limit of a platform.
+
+== The last full check ==
+
+  tauri: 177 pass · 0 fail · 0 broken · 0 not advertised · 12 not measured · 1 not applicable
+  · 0 warnings (190 tests; the run before it had the two visibility warnings of OWN 1).
+
+  Start-up (launching the adapter to its reply to advertise): about 0.9 s in the check, 1.0 s
+  in setup.sh (the store server and Chromium; nothing is built per check). setup.sh from scratch:
+  25 s with warm caches.
+  Total: the eleven contracts took 14 min 37 s on tauri in the last run (10 min 31 s in the
+  first, on a less loaded machine). The slowest tests are the ones that
+  record a clip at both schemes (the window's sheet and palette, 9–10 s each); a plain behaviour
+  test is 1.5–3 s, most of it Chromium's fresh context per mount.
+
+== What omnicui or the contracts got in the way of ==
+
+1. Prop defaults aren't sent with `mount`.
+   A test that leaves a prop out sends no value for it, so each registry has to carry the
+   contracts' defaults again (DEFAULTS in tauri/main/src/omnicui/registry.tsx), and they can
+   drift. The sheet and toast mounts failed until I did that.
+   Wanted: omnicui merges `props: { x: { default } }` into every mount's props.
+
+2. Expected values can differ by platform, events can't.
+   The design review moves completion onto the row's round check; the Tauri app still selects
+   with it. The honest contract is "on tauri a press on the check completes nothing (why: the
+   reference lags the review)", but `times:` and `last:` have no per-platform form, so the test
+   says `except: [tauri]` and reads "not applicable", which suggests tauri has no such check.
+   Wanted: `{ event: taskCompleted, times: { default: 1, tauri: 0 }, why: … }`, or a status for
+   "the reference lags the design" counted apart from not applicable.
+
+3. Roles: no tab, treeitem or menuitem.
+   Rows are a tree, tabs are tabs, menu entries are menu items; all are `button` here. A tab's
+   chosen state can't be read either: the app marks it only with a background, and `selected`
+   reads aria-pressed/selected/checked. The contracts check which list is shown through the
+   pane (its search field's name) and the `paneShows` event instead.
+   Wanted: `tab`, `treeitem`, `menuitem` roles, with `selected` and `expanded`.
+
+4. A generic part can't be pressed, and a repeated part is a numbered part.
+   Every row needs two parts, `rowN` (a button, to press) and `rowNTitle` (to read the title
+   without the badges). Numbered parts work (todo's GAPS 2), but the tauri adapter needs its own
+   convention to find them (`data-part="row"` for each row and `"rowTitle"` inside it; the N-th
+   in page order), and every port must invent the same.
+   Wanted: collection parts, `row: { role: button, each: true }` with `row[3].title`.
+
+5. No way to say a part is gone (todo's GAPS 1 again).
+   The toast after Undo, the menu after a pick, the bulk bar after Clear: the tests check what
+   replaced them instead.
+
+6. The title bar region model assumes the title bar is the platform's.
+   Taskscape hides macOS's title bar and draws its own, with the project switcher and the list
+   tabs in it and its own traffic lights. Reporting it whole (as `titlebar`) makes omnicui cut it
+   off, which is right for the window and Settings (the web has no such bar above its content)
+   and wrong for the title bar mounted on its own (nothing would be left). So the target reports
+   the whole bar for those two, and only the traffic lights' box elsewhere, which omnicui masks.
+   The tabs and the pill are then compared in `taskscape.titlebar` only, not in the window.
+   Wanted: a region kind for platform controls inside an app-drawn bar (`windowcontrols`),
+   masked, and a part-level way to keep an app-drawn bar in the comparison.
+
+7. Motion that plays on mount can't be traced.
+   A trace or a clip needs steps; the sheet, the palette and the toast animate as they mount.
+   Their contracts take screenshots, and the window contract traces them where a step opens
+   them (the sheet, the palette, the inspector).
+   Wanted: `trace` and `record` with no steps measure the mount itself.
+
+8. The web adapter's notion of settled misses React's Suspense reveal (web-specific).
+   The note editor is a React.lazy chunk; React reveals a resolved Suspense boundary up to
+   300 ms later (its fallback throttle), after the page looked settled (no animation, nothing
+   busy, two frames). Reads of a note failed by timing. The registry now renders the lazy
+   editor once before mounting, so it never suspends again.
+   Wanted: in the reference web adapter, a short "DOM quiet" wait, or a note in SPEC §4.4 that a
+   lazy component is the app's busy.
+
+9. Text is what is shown, and what is shown has three web-specific forms here:
+   - CSS `text-transform: uppercase`: the footer reads "3/8 DONE", so the contracts say so and a
+     port must upper-case it too;
+   - a flex row of spans ("1", "/", "3") comes out of innerText one per line: the adapter joins
+     line breaks with a space, and the contracts match `^1 ?/ ?3$`;
+   - icons drawn from a ligature font are text nodes ("more_horiz"): the adapter leaves out
+     aria-hidden icon glyphs; the keycap's ⌘ and ⇧ are such icons, so it reads "N" (the contract
+     matches `^[⌘ ]*N$`).
+   Wanted: SPEC §4.2 to say what `text` means for transformed and split text, for every target.
+
+10. Keyboard checks where the app is wrong (APP).
+   `keyboard: true` is on for the palette, the toast and Settings, where the app gets it right,
+   and off for the pane, the inspector and the sheet, where the Tauri app fails it:
+   - the window-wide key map (useAppKeyboard.ts) turns Enter into "rename the focused task" and
+     calls preventDefault, so Enter on a focused button does nothing else while a task is
+     focused;
+   - a sheet's Enter accepts wherever focus is, Cancel included.
+   SPEC-PRODUCT.md tells the ports not to copy either. The contracts test the sheet's Enter as
+   a named input (`confirm`), which is what the app means by it.
+
+11. Settings' generated keyboard checks are "not measured" (12 of them).
+   A pane other than General, the search's clear button and the discard button appear only after
+   a press. Settings has no prop for its opening pane: it is the window's own state.
+   Wanted: nothing from omnicui; a `pane` prop, if the registry may set it.
+
+12. Fixture times are now (PLATFORM: the store).
+   The Store stamps created/updated with the clock and has no way to set them, so "Created just
+   now" holds only while a test runs within 45 s of its mount, and a test can't show "3d ago".
+
+13. The Store finds its folder through HOME (APP).
+   `Store::open_at` is private, so the fixture loader sets HOME for the whole process before
+   `Store::open`. The GPUI port must do the same in its adapter process, one fixture at a time.
+   Wanted: `Store::open_at` public (I didn't change it: P0 adds only tags and a registry to the
+   app).
+
+14. Random names in sheets.
+   "New list" and "New project" offer a random name (the dice). The screenshot masks the field.
+
+15. Not covered: the attachment lightbox (rank 12), drag and drop, import and export (the file
+   dialogs), resizing, @mentions in notes, and the screenshot flows' success path (macOS's
+   screencapture; off macOS the app's own capture fails, which is what the target reports).
+
+16. Fonts (PLATFORM).
+   The tauri target draws with the host's system-ui (DejaVu Sans or similar on Linux), not SF
+   Pro. Nothing compares pixels, but the `layout` measure sees text widths; a GPUI port on this
+   host draws with its own system font.
+
+== Decisions I made that someone may want to revisit ==
+
+- The ports follow the design review where the app hasn't (the round check means done,
+  selection by ⌘/⇧ press); SPEC-PRODUCT.md marks each place, and the one contract test is
+  `except: [tauri]`.
+- The web is not responsive: one 1180×760 desktop layout and the same component sizes (P2 may
+  ask for a narrower size in its GAPS file).
+- Web keyboard chords (platforms.yaml): Alt where the browser keeps ⌘/Ctrl (new task, new list,
+  ⌘1–9), Ctrl for the rest, Ctrl+Alt with the arrows.
+- The page in Chromium says it is a Mac (user agent), as WKWebView does, so the app takes its
+  macOS paths; advertise reports the host OS (linux), as the prompt asks.
+- Events name things by fixture key, and carry no ids for things made in a test.
+
+== OWN: my mistakes ==
+
+1. The palette's first test read the last command, which is below the fold: two visibility
+   warnings in full check 1. Replaced with a search for it.
+2. The adapter's part lookup was a template literal: `\d` became `d`, so every numbered part
+   failed (one wasted pane run) until it was String.raw.
+3. I assumed omnicui sent prop defaults (gap 1).
+4. Hand-driven adapter sessions left store servers running (the adapter didn't kill its server on
+   every exit path). They loaded the machine, and a Trash and a filter run timed out on mount.
+   The adapter now kills the server on exit.
+5. `pkill -f <server name>` matched my own shell and killed it; anchored patterns or PIDs only.
+6. I wrote the inspector's rise from memory (220 ms, 6 px); tokens.css says 110 ms, 3 px.
+7. The Trash's order: the loader deleted both trashed tasks in one call (one millisecond, so no
+   order); it now deletes them one at a time.
+8. I first copied the Trash's "Empty Trash?" question into the registry (the app's code
+   duplicated in the target), then removed it.
+9. I wrote that sheets drop from the top (the sheet module's comment says so); they are centred.
+   Fixed in DESIGN.md and SPEC-PRODUCT.md from the screenshot.
+10. Prettier's import sorting reordered untouched imports in three app files; I put them back so
+   the app's diff is tags and the registry only.

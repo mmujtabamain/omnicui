@@ -39,10 +39,12 @@ function SubtaskRow({ task, depth }: { task: Task; depth: number }) {
   return (
     <>
       <div
+        data-part="subtask"
         className="rounded-field hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-5 pr-space-4 -mx-1.5 flex h-8 items-center"
         style={{ paddingLeft: 6 + depth * SUBTASK_INDENT }}
       >
         <Checkbox
+          data-part="subtaskCheck"
           checked={task.done}
           size="sm"
           title={task.done ? 'Mark not done' : 'Mark done'}
@@ -50,6 +52,7 @@ function SubtaskRow({ task, depth }: { task: Task; depth: number }) {
         />
         <Label
           as="button"
+          data-part="subtaskName"
           onClick={() => selectTask(task.id)}
           title={task.title}
           truncate
@@ -256,13 +259,17 @@ export function TaskInspector({ task }: { task: Task }) {
   };
 
   return (
-    <div className="animate-rise flex min-h-0 flex-1 flex-col">
+    <div
+      data-part="inspector"
+      className="animate-rise flex min-h-0 flex-1 flex-col"
+    >
       <div className="p-space-7 relative shrink-0">
         {/* Index tick: the panel "receives" the selection. */}
         <span className="bg-accent-500l dark:bg-accent-500d absolute top-4.75 left-0 h-4 w-0.5" />
         <div className="gap-space-5 flex items-start">
           <div className="mt-0.5">
             <Checkbox
+              data-part="inspectorDone"
               checked={task.done}
               size="md"
               title={task.done ? 'Mark not done' : 'Mark done'}
@@ -274,6 +281,7 @@ export function TaskInspector({ task }: { task: Task }) {
                 fill + same-color ring (a padding halo) when editing — never a swap. */}
             <textarea
               ref={titleRef}
+              data-part="inspectorTitle"
               rows={1}
               spellCheck={false}
               readOnly={!editingTitle}
@@ -305,7 +313,10 @@ export function TaskInspector({ task }: { task: Task }) {
               tone="muted"
               className="mt-2.5 flex flex-col gap-1 text-[11.5px] tabular-nums"
             >
-              <span className="flex items-center gap-1.5">
+              <span
+                data-part="inspectorWhere"
+                className="flex items-center gap-1.5"
+              >
                 <Icon
                   name="folder_open"
                   size={13}
@@ -318,6 +329,7 @@ export function TaskInspector({ task }: { task: Task }) {
                 {listName && <span className="shrink-0">/ {listName}</span>}
               </span>
               <span
+                data-part="inspectorCreated"
                 className="flex items-center gap-1.5"
                 title={absoluteDateTime(task.created_at)}
               >
@@ -348,6 +360,7 @@ export function TaskInspector({ task }: { task: Task }) {
               icon="last_page"
               iconSize={16}
               onClick={() => useLayoutStore.getState().setPreviewOpen(false)}
+              data-part="inspectorClose"
               title="Close panel"
             />
             <IconButton
@@ -355,12 +368,14 @@ export function TaskInspector({ task }: { task: Task }) {
               iconSize={15}
               iconWeight={300}
               onClick={startTitleEdit}
+              data-part="inspectorRename"
               title="Rename"
             />
             <IconButton
               icon={copied ? 'check' : 'content_copy'}
               iconSize={15}
               onClick={copyTask}
+              data-part="inspectorCopy"
               title={copied ? 'Copied' : 'Copy task'}
             />
             <IconButton
@@ -368,6 +383,7 @@ export function TaskInspector({ task }: { task: Task }) {
               iconSize={15}
               variant="danger"
               onClick={() => void requestDeleteTask(task)}
+              data-part="inspectorDelete"
               title="Delete task"
             />
           </div>
@@ -381,13 +397,18 @@ export function TaskInspector({ task }: { task: Task }) {
             trailing={
               notes.length > 0 ? (
                 <div className="gap-space-3 flex items-center">
-                  <Label tone="muted" className="text-[11px] tabular-nums">
+                  <Label
+                    data-part="notesCount"
+                    tone="muted"
+                    className="text-[11px] tabular-nums"
+                  >
                     {notes.length}
                   </Label>
                   <ToolbarButton
                     icon="add"
                     iconSize={14}
                     onClick={() => setAddingNote(true)}
+                    data-part="addNote"
                     title="Add note"
                   >
                     Note
@@ -414,6 +435,7 @@ export function TaskInspector({ task }: { task: Task }) {
               <RichTextEditor
                 ref={addNoteRef}
                 autoFocus
+                part="newNote"
                 placeholder="Write a note ... (drop an attachment to @mention it)"
                 minHeightClass="min-h-24"
                 attachments={task.attachments}
@@ -430,6 +452,7 @@ export function TaskInspector({ task }: { task: Task }) {
               />
             ) : notes.length === 0 ? (
               <DashedButton
+                data-part="addNote"
                 onClick={() => setAddingNote(true)}
                 className="h-24 w-full font-semibold"
               >
@@ -445,7 +468,11 @@ export function TaskInspector({ task }: { task: Task }) {
             <SectionHeader
               label="Subtasks"
               trailing={
-                <Label tone="muted" className="text-[11.5px] tabular-nums">
+                <Label
+                  data-part="subtasksCount"
+                  tone="muted"
+                  className="text-[11.5px] tabular-nums"
+                >
                   {doneChildren} done / {children.length}
                 </Label>
               }

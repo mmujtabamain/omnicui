@@ -39,6 +39,7 @@ export function TitleBar() {
 
   return (
     <header
+      data-part="titlebar"
       data-tauri-drag-region
       onDoubleClick={(e) => {
         if ((e.target as HTMLElement).hasAttribute('data-tauri-drag-region'))
@@ -77,12 +78,14 @@ export function TitleBar() {
 
         {splitListId != null && (
           <BarButton
+            part="swapPanes"
             icon="swap_horiz"
             title="Swap panes"
             onClick={() => useLayoutStore.getState().swapPanes()}
           />
         )}
         <BarButton
+          part="splitView"
           icon="vertical_split"
           active={splitListId != null}
           disabled={splitTarget == null}
@@ -90,12 +93,14 @@ export function TitleBar() {
           onClick={toggleSplit}
         />
         <BarButton
+          part="togglePreview"
           icon={previewOpen ? 'right_panel_close' : 'right_panel_open'}
           active={previewOpen}
           title={`${previewOpen ? 'Hide' : 'Show'} preview panel${hint('toggle_preview')}`}
           onClick={() => useLayoutStore.getState().togglePreview()}
         />
         <BarButton
+          part="openSettings"
           icon="settings"
           title={`Settings${hint('open_settings')}`}
           onClick={() => api.openSettings()}
@@ -108,12 +113,14 @@ export function TitleBar() {
 }
 
 function BarButton({
+  part,
   icon,
   title,
   onClick,
   active = false,
   disabled = false,
 }: {
+  part: string;
   icon: string;
   title: string;
   onClick: () => void;
@@ -122,6 +129,7 @@ function BarButton({
 }) {
   return (
     <IconButton
+      data-part={part}
       icon={icon}
       size="xl"
       radius="control"

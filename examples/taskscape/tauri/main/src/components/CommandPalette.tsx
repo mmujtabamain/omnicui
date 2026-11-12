@@ -76,6 +76,7 @@ export function CommandPalette({
       trapFocus
     >
       <Surface
+        data-part="palette"
         elevation="menu"
         surface={2}
         radius="panel"
@@ -91,6 +92,7 @@ export function CommandPalette({
           <TextInput
             bare
             ref={inputRef}
+            data-part="paletteInput"
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -119,6 +121,7 @@ export function CommandPalette({
           {results.length === 0 && (
             <Label
               as="p"
+              data-part="paletteEmpty"
               tone="muted"
               className="px-space-7 py-6 text-center text-[13px]"
             >
@@ -132,6 +135,7 @@ export function CommandPalette({
                 {cmd.group !== prevGroup && (
                   <Label
                     as="div"
+                    data-part="commandGroup"
                     tone="muted"
                     weight="semibold"
                     className="mt-space-3 mb-space-1 px-space-6 text-[10.5px] tracking-widest uppercase"
@@ -140,6 +144,7 @@ export function CommandPalette({
                   </Label>
                 )}
                 <MenuItem
+                  data-part="command"
                   data-idx={i}
                   active={i === active}
                   onMouseMove={() => setActive(i)}

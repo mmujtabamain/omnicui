@@ -26,6 +26,7 @@ export function NotesSection({
       <div className="min-h-0 overflow-hidden">
         <RichTextEditor
           ref={editorRef}
+          part="captureNotes"
           autoFocus
           attachments={[]}
           placeholder="Notes ..."
@@ -50,6 +51,7 @@ export function NotesSection({
   return (
     <div className="min-h-0 overflow-hidden">
       <button
+        data-part="captureNotesHint"
         onClick={onOpen}
         className="text-content-3l dark:text-content-3d px-3 py-2 text-xs"
       >

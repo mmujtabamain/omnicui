@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The capture bar (SPEC-PRODUCT.md, "taskscape.capture"): the menu-bar agent's one window,
+# summoned anywhere with ⌘↩. A title, notes behind Tab, screenshots, and where the task will land;
+# Enter files it in the last list the main window had open. The product's hero (the design
+# review's direction). Desktop only: a browser has no menu bar to live in.
+id: taskscape.capture
+
+props:
+  seed: { type: string, enum: [standard, empty], default: standard }
+
+events:
+  taskCreated:   { id: { type: string }, title: { type: string }, listId: { type: string }, parentId: { type: string } }
+  noteAdded:     { taskId: { type: string }, text: { type: string } }
+  dismissed:     {}
+  mainOpened:    {}
+  screenshotRequested: {}
+
+parts:
+  captureBar:       { role: generic }
+  captureTitle:     { role: textbox, same: [layout] }   # a text field
+  captureClear:     { role: button }
+  captureNotesHint: { role: button }
+  captureNotes:     { role: textbox, same: [layout] }   # a rich-text editor
+  captureTarget:    { role: button }
+  captureShot:      { role: button }
+
+tests:
+  - name: the bar opens empty, focused, and says where the task will go
+    only: [desktop]
+    expect:
+      - { part: captureTitle, text: "", focused: true, name: "Capture a task ..." }
+      - { part: captureNotesHint, text: "Press Tab to add a note" }
+      - { part: captureTarget, text: { matches: "^Atlas ?/ ?Launch plan$" } }
+      - { part: captureShot, text: { contains: "Screenshot" } }
+    screenshot: true
+
+  - name: Enter files the task in the last list the main window had open
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Ring the printer" }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { event: taskCreated, times: 1, last: { title: "Ring the printer", listId: launch, parentId: "" } }
+      - { part: captureTitle, text: "" }
+
+  - name: with no lists yet, a capture lands in the first list
+    only: [desktop]
+    props: { seed: empty }
+    steps:
+      - { action: type, part: captureTitle, text: "First thought" }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { event: taskCreated, times: 1, last: { title: "First thought", listId: inbox } }
+
+  - name: a blank title files nothing
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "   " }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { event: taskCreated, times: 0 }
+
+  - name: Tab opens the notes under the title
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Ring the printer" }
+      - { action: key, part: captureTitle, key: Tab }
+    expect:
+      - { part: captureNotes, focused: true }
+      - { part: captureClear, text: { contains: "Clear" } }
+    screenshot: true
+    # The notes panel grows open (grid-template-rows 0fr → 1fr).
+    record: { part: captureBar }
+
+  - name: a capture with notes keeps them as the task's first note
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Ring the printer" }
+      - { action: key, part: captureTitle, key: Tab }
+      - { action: type, part: captureNotes, text: "Ask for the matte paper" }
+      - { action: key, part: captureNotes, key: Meta+Enter }
+    expect:
+      - { event: taskCreated, times: 1, last: { title: "Ring the printer", listId: launch } }
+      - { event: noteAdded, times: 1, last: { text: "Ask for the matte paper" } }
+      - { part: captureTitle, text: "" }
+
+  - name: Clear empties the draft and files nothing
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Never mind" }
+      - { action: press, part: captureClear }
+    expect:
+      - { part: captureTitle, text: "" }
+      - { event: taskCreated, times: 0 }
+
+  - name: the clear-draft input does the same
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Never mind" }
+      - { input: clearDraft }
+    expect:
+      - { part: captureTitle, text: "" }
+      - { event: taskCreated, times: 0 }
+
+  - name: Escape hides the bar and keeps the draft for next time
+    only: [desktop]
+    steps:
+      - { action: type, part: captureTitle, text: "Half a thought" }
+      - { action: key, part: captureTitle, key: Escape }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { event: taskCreated, times: 0 }
+      - { part: captureTitle, text: "Half a thought" }
+
+  - name: the screenshot button takes a screenshot for the draft
+    only: [desktop]
+    steps:
+      - { action: press, part: captureShot }
+    expect:
+      - { event: screenshotRequested, times: 1 }
+
+  - name: the target opens the main window
+    only: [desktop]
+    steps:
+      - { action: press, part: captureTarget }
+    expect:
+      - { event: mainOpened, times: 1 }
+
+# tauri.conf.json: a 480 px wide window, as tall as the card (the card is at its top here).
+viewports: [{ width: 480, height: 240 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]

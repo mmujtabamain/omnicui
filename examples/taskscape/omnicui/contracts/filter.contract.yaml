@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The filter and sort panel (SPEC-PRODUCT.md, "taskscape.filter"): how the visible pane sorts
+# and filters its tasks. Display only: it never changes a task. Hosted in the right-hand rail.
+id: taskscape.filter
+
+props:
+  seed: { type: string, enum: [standard], default: standard }
+  list: { type: string, default: launch }
+
+events:
+  viewChanged: { listId: { type: string }, sort: { type: string }, dir: { type: string }, filter: { type: string, enum: [all, active, completed] } }
+  closed:      {}
+
+parts:
+  filterSummary:   { role: status }
+  showAll:         { role: button, same: [layout] }   # segments of a segmented control
+  showActive:      { role: button, same: [layout] }
+  showCompleted:   { role: button, same: [layout] }
+  notesHas:        { role: button, same: [layout] }
+  filterReset:     { role: button }
+  filterDone:      { role: button }
+  filterClose:     { role: button }
+
+tests:
+  - name: with nothing filtered the panel says it shows every task
+    expect:
+      - { part: filterSummary, text: "Showing 8 of 8 tasks" }
+      - { part: showAll, text: "All" }
+      - { part: showActive, text: "Active" }
+      - { part: showCompleted, text: "Done" }
+      - { part: filterReset, disabled: true }
+    screenshot: true
+
+  - name: Active hides the done tasks
+    steps:
+      - { action: press, part: showActive }
+    expect:
+      - { event: viewChanged, times: 1, last: { listId: launch, filter: active, sort: manual, dir: asc } }
+      - { part: filterSummary, text: "Showing 5 of 8 tasks" }
+      - { part: filterReset, disabled: false }
+    screenshot: true
+
+  - name: Done shows the done tasks, under the parents they belong to
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { event: viewChanged, times: 1, last: { filter: completed } }
+      # The three done tasks, and the two open parents of the done subtasks, for context.
+      - { part: filterSummary, text: "Showing 5 of 8 tasks" }
+
+  - name: refining by notes keeps the tasks that have them
+    steps:
+      - { action: press, part: notesHas }
+    expect:
+      - { part: filterSummary, text: "Showing 2 of 8 tasks" }
+
+  - name: Reset puts the view back
+    steps:
+      - { action: press, part: showActive }
+      - { action: press, part: filterReset }
+    expect:
+      - { event: viewChanged, last: { filter: all } }
+      - { part: filterSummary, text: "Showing 8 of 8 tasks" }
+      - { part: filterReset, disabled: true }
+
+  - name: Done closes the panel
+    steps:
+      - { action: press, part: filterDone }
+    expect:
+      - { event: closed, times: 1 }
+
+  - name: the close button closes it too
+    steps:
+      - { action: press, part: filterClose }
+    expect:
+      - { event: closed, times: 1 }
+
+viewports: [{ width: 320, height: 708 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]

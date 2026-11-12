@@ -47,12 +47,15 @@ const LIGHTS: Record<
  *  control a window doesn't support. Needs a `group` ancestor for the glyph. */
 function Light({
   id,
+  part,
   focused,
   inert = false,
   title,
   onClick,
 }: {
   id: WindowControl;
+  /** Its part tag for tests: `windowClose`, or `dialogClose` in a panel. */
+  part: string;
   focused: boolean;
   inert?: boolean;
   title?: string;
@@ -62,6 +65,7 @@ function Light({
   const lit = focused && !inert;
   return (
     <button
+      data-part={part}
       onClick={onClick}
       disabled={inert}
       title={title ?? light.label}
@@ -102,11 +106,16 @@ function MacLights({
   closeTitle?: string;
 }) {
   return (
-    <div className="group flex items-center gap-2 pr-3 pl-5" data-no-drag>
+    <div
+      data-part={closeTitle ? 'dialogControls' : 'windowControls'}
+      className="group flex items-center gap-2 pr-3 pl-5"
+      data-no-drag
+    >
       {ORDER.map((id) => (
         <Light
           key={id}
           id={id}
+          part={`${closeTitle ? 'dialog' : 'window'}${id[0].toUpperCase()}${id.slice(1)}`}
           focused={focused}
           inert={!act[id]}
           title={id === 'close' ? closeTitle : undefined}

@@ -264,6 +264,7 @@ export const TaskRow = memo(function TaskRow({
     <div>
       <div
         data-task-id={task.id}
+        data-part="row"
         draggable
         onDragStart={(e) => {
           // The primary id rides on the DataTransfer for drop-target detection
@@ -384,6 +385,7 @@ export const TaskRow = memo(function TaskRow({
         <div className="ml-space-6 py-space-5 min-w-0 flex-1">
           <Label
             as="div"
+            data-part="rowTitle"
             truncate
             weight="medium"
             tone={task.done ? 'muted' : 'primary'}
@@ -396,6 +398,7 @@ export const TaskRow = memo(function TaskRow({
           {task.notes && (
             <Label
               as="div"
+              data-part="rowNotes"
               truncate
               tone={task.done ? 'muted' : 'secondary'}
               className={cn(
@@ -413,6 +416,7 @@ export const TaskRow = memo(function TaskRow({
           {children.length > 0 && (
             <span className="grid w-5 shrink-0 place-items-center">
               <button
+                data-part="rowToggle"
                 onClick={(e) => {
                   e.stopPropagation();
                   useLayoutStore.getState().toggleCollapsed(task.id);
@@ -440,6 +444,7 @@ export const TaskRow = memo(function TaskRow({
           )}
           {children.length > 0 && (
             <Badge
+              data-part="rowSubtasks"
               className="px-space-3"
               title={`${doneChildren} of ${children.length} subtasks done`}
             >
@@ -449,7 +454,7 @@ export const TaskRow = memo(function TaskRow({
             </Badge>
           )}
           {task.attachments.length > 0 && (
-            <Badge className="px-space-2">
+            <Badge data-part="rowAttachments" className="px-space-2">
               <Icon name="attach_file" size={13} weight={500} />
               <span className="pr-0.5">{task.attachments.length}</span>
             </Badge>
@@ -459,6 +464,7 @@ export const TaskRow = memo(function TaskRow({
             iconSize={17}
             iconWeight={300}
             variant="ghostStrong"
+            data-part="rowMore"
             title="More"
             onClick={(e) => {
               e.stopPropagation();
@@ -521,6 +527,7 @@ function Check({
 
   return (
     <button
+      data-part="rowCheck"
       title={title}
       aria-pressed={active}
       className={cn(
@@ -603,6 +610,7 @@ function SubtaskComposer({
       />
       <TextInput
         ref={ref}
+        data-part="subtaskTitle"
         placeholder="Subtask title — Enter to add"
         onKeyDown={(e) => {
           e.stopPropagation();

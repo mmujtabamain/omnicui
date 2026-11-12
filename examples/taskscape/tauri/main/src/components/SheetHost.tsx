@@ -132,6 +132,7 @@ function SheetView({
       instead={
         alt && (
           <KeyAction
+            data-part="sheetInstead"
             label={alt.label}
             onClick={() => answer({ action: 'instead', id: alt.id })}
           />
@@ -139,6 +140,7 @@ function SheetView({
       }
       accept={
         <KeyAction
+          data-part="sheetAccept"
           label={spec.accept}
           variant={tone === 'danger' ? 'danger' : 'accept'}
           disabled={!!ask && !text.trim()}
@@ -149,6 +151,7 @@ function SheetView({
       {ask &&
         (ask.tail ? (
           <SuffixInput
+            data-part="sheetField"
             ref={inputRef}
             autoFocus
             value={text}
@@ -170,6 +173,7 @@ function SheetView({
                   iconSize={16}
                   variant="ghostStrong"
                   tabIndex={-1}
+                  data-part="sheetDice"
                   aria-label="Roll another name"
                   title="Roll another name"
                   onMouseDown={(e) => e.preventDefault()}
@@ -180,6 +184,7 @@ function SheetView({
           >
             <TextInput
               bare
+              data-part="sheetField"
               ref={inputRef}
               autoFocus
               value={text}

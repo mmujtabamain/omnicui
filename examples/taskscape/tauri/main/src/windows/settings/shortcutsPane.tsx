@@ -17,7 +17,12 @@ function bindingRow(binding: HotkeyBinding): RowSpec {
     control: (ctx) => <HotkeyControl binding={binding} editor={ctx.hotkeys} />,
     footnote: (ctx) =>
       ctx.hotkeys.error?.id === binding.id ? (
-        <Label as="p" tone="danger" className="text-[11px]">
+        <Label
+          as="p"
+          data-part="hotkeyError"
+          tone="danger"
+          className="text-[11px]"
+        >
           {ctx.hotkeys.error.message}
         </Label>
       ) : null,

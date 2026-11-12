@@ -28,6 +28,7 @@ export function ProjectSwitcher() {
   return (
     <div ref={rootRef} className="relative flex items-center" data-no-drag>
       <button
+        data-part="project"
         onClick={() => setOpen((v) => !v)}
         className="rounded-control bg-surface-0l dark:bg-surface-0d hover:bg-wash-2l dark:hover:bg-wash-2d gap-space-3 py-space-3 pr-space-6 pl-space-7 flex h-8 items-center"
         title="Switch project"
@@ -53,6 +54,7 @@ export function ProjectSwitcher() {
           {projects.map((p) => (
             <div
               key={p.id}
+              data-part="projectItem"
               className="group hover:bg-wash-2l dark:hover:bg-wash-2d gap-space-4 px-space-6 flex h-9 cursor-default items-center"
               onClick={() => {
                 selectProject(p.id);
@@ -64,7 +66,12 @@ export function ProjectSwitcher() {
                   <Icon name="check" size={15} weight={900} />
                 )}
               </Label>
-              <Label tone="primary" truncate className="flex-1 text-[13.5px]">
+              <Label
+                data-part="projectItemName"
+                tone="primary"
+                truncate
+                className="flex-1 text-[13.5px]"
+              >
                 {p.name}
               </Label>
               <IconButton
@@ -78,6 +85,7 @@ export function ProjectSwitcher() {
                   setOpen(false);
                   void renameProject(p);
                 }}
+                data-part="projectItemRename"
                 title="Rename project"
               />
               <IconButton
@@ -91,12 +99,14 @@ export function ProjectSwitcher() {
                   setOpen(false);
                   void deleteProject(p);
                 }}
+                data-part="projectItemDelete"
                 title="Delete project"
               />
             </div>
           ))}
           <Divider level={1} className="mx-space-5 my-space-3" />
           <button
+            data-part="newProject"
             onClick={() => {
               setOpen(false);
               void createProject();
@@ -133,6 +143,7 @@ function ProjectMenu({
   useDismissable({ onDismiss, ref: anchorRef });
   return (
     <Surface
+      data-part="projectMenu"
       elevation="menu"
       surface={3}
       radius="panel"

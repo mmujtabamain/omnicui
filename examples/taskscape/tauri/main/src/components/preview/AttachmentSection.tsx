@@ -170,6 +170,7 @@ export function AttachmentSection({
         trailing={
           <div className="gap-space-1 flex items-center">
             <ToolbarButton
+              data-part="attachShot"
               onClick={addScreenshot}
               disabled={capturing}
               title={
@@ -186,10 +187,20 @@ export function AttachmentSection({
               )}
               {capturing ? 'Capturing …' : 'Shot'}
             </ToolbarButton>
-            <ToolbarButton icon="add_link" iconSize={14} onClick={addLink}>
+            <ToolbarButton
+              data-part="attachLink"
+              icon="add_link"
+              iconSize={14}
+              onClick={addLink}
+            >
               Link
             </ToolbarButton>
-            <ToolbarButton icon="note_add" iconSize={14} onClick={addFile}>
+            <ToolbarButton
+              data-part="attachFile"
+              icon="note_add"
+              iconSize={14}
+              onClick={addFile}
+            >
               File
             </ToolbarButton>
           </div>
@@ -201,8 +212,9 @@ export function AttachmentSection({
           {task.attachments.map((a) => {
             const thumb = thumbs.get(a.id);
             return (
-              <div key={a.id} className="min-w-0">
+              <div key={a.id} data-part="attachment" className="min-w-0">
                 <button
+                  data-part="attachmentTile"
                   onClick={() => openTile(a)}
                   onContextMenu={(e) => openTileMenu(e, a)}
                   title={`${a.name}\nRight-click to rename · drag onto a note to @mention`}
@@ -235,6 +247,7 @@ export function AttachmentSection({
                 </button>
                 <Label
                   as="div"
+                  data-part="attachmentName"
                   tone="muted"
                   truncate
                   className="mt-1 text-center text-[11px]"

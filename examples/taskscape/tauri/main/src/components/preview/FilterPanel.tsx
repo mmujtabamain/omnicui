@@ -155,6 +155,7 @@ export function FilterPanel({ onClose }: { onClose: () => void }) {
           size="lg"
           iconSize={16}
           onClick={onClose}
+          data-part="filterClose"
           title="Close"
         />
       </div>
@@ -210,6 +211,7 @@ export function FilterPanel({ onClose }: { onClose: () => void }) {
             items={SHOW.map((s) => ({ value: s.id, label: s.label }))}
             value={view.filter}
             onChange={(filter) => update({ filter })}
+            part="show"
           />
         </Section>
 
@@ -289,6 +291,7 @@ export function FilterPanel({ onClose }: { onClose: () => void }) {
           )}
         />
         <Label
+          data-part="filterSummary"
           tone="secondary"
           weight="medium"
           truncate
@@ -307,11 +310,17 @@ export function FilterPanel({ onClose }: { onClose: () => void }) {
           icon="restart_alt"
           size="lg"
           onClick={resetAll}
+          data-part="filterReset"
           disabled={!anyActive}
         >
           Reset
         </ToolbarButton>
-        <Button variant="primary" className="ml-auto" onClick={onClose}>
+        <Button
+          data-part="filterDone"
+          variant="primary"
+          className="ml-auto"
+          onClick={onClose}
+        >
           Done
         </Button>
       </div>
@@ -429,6 +438,7 @@ function TriRow({
       <div className="w-40 shrink-0">
         <Segmented
           size="sm"
+          part={label.toLowerCase()}
           items={TRI.map((t) => ({ value: t.id, label: t.label }))}
           value={value}
           onChange={onChange}

@@ -6,6 +6,8 @@ export interface ToggleProps {
   disabled?: boolean;
   title?: string;
   className?: string;
+  /** A part tag for tests. */
+  part?: string;
 }
 
 /** A pill switch (settings). No transition, per the app's motion policy. */
@@ -15,9 +17,11 @@ export function Toggle({
   disabled,
   title,
   className,
+  part,
 }: ToggleProps) {
   return (
     <button
+      data-part={part}
       type="button"
       role="switch"
       aria-checked={checked}

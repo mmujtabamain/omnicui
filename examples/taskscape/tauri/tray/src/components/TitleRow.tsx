@@ -34,6 +34,7 @@ export function TitleRow({
       <TextInput
         bare
         ref={titleRef}
+        data-part="captureTitle"
         autoFocus
         value={title}
         onChange={(e) => onChange(e.target.value)}
@@ -43,6 +44,7 @@ export function TitleRow({
 
       {hasDraft && (
         <ToolbarButton
+          data-part="captureClear"
           size="xs"
           variant="well"
           icon="delete_sweep"

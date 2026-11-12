@@ -69,6 +69,7 @@ export function Sheet({
       trapFocus
     >
       <Surface
+        data-part="sheet"
         role="dialog"
         aria-modal
         aria-labelledby={headlineId}
@@ -100,6 +101,7 @@ export function Sheet({
             )}
             <Label
               as="h2"
+              data-part="sheetHeadline"
               id={headlineId}
               tone="primary"
               weight="semibold"
@@ -112,6 +114,7 @@ export function Sheet({
           {detail && (
             <Label
               as="p"
+              data-part="sheetDetail"
               id={detailId}
               tone="secondary"
               className="mt-space-6 text-[12.5px] leading-normal text-pretty"
@@ -126,7 +129,11 @@ export function Sheet({
         <div className="border-edge-1l dark:border-edge-1d gap-space-5 px-space-6 pt-space-6 pb-space-6 flex items-center border-t">
           {instead}
           <div className="gap-space-4 ml-auto grid shrink-0 grid-cols-2 [&>button]:min-w-24">
-            <KeyAction label="Cancel" onClick={onDismiss} />
+            <KeyAction
+              data-part="sheetCancel"
+              label="Cancel"
+              onClick={onDismiss}
+            />
             {accept}
           </div>
         </div>

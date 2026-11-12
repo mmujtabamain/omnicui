@@ -10,7 +10,7 @@ omnicui checks that all three behave the same and keep one design, each idiomati
 |---|---|---|
 | `tauri/` | The Tauri app, copied as-is from its own repository at commit `09f3f4c` (its tracked files only). The reference. | vendored |
 | `prompts/` | What each of the three building agents was asked to build (P0, P1, P2) | written |
-| `omnicui/` | The omnicui project: contracts, fixtures, product spec, design notes, the `tauri` target | P0 |
+| `omnicui/` | The omnicui project: contracts, fixtures, product spec, design notes, the `tauri` target | built (P0); the tauri target passes every contract |
 | `gpui/` | The GPUI port and its target | P1 |
 | `web/` | The web port, its server and its target | P2 |
 | `process/` | The building agents' transcripts and a summary of each | after the build |

@@ -57,6 +57,7 @@ function App() {
     // squashing it, so what's measured is the height it actually wants.
     <div
       ref={cardRef}
+      data-part="captureBar"
       data-tauri-drag-region
       className="rounded-panel border-edge-2l bg-surface-2l text-content-1l dark:border-edge-2d dark:bg-surface-2d dark:text-content-1d flex w-screen shrink-0 flex-col overflow-hidden border"
       onKeyDown={onKeyDown}

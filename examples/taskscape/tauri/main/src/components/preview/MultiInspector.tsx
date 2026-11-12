@@ -63,7 +63,10 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div className="animate-rise flex min-h-0 flex-1 flex-col">
+    <div
+      data-part="multi"
+      className="animate-rise flex min-h-0 flex-1 flex-col"
+    >
       <div className="p-space-7 shrink-0">
         <div className="gap-space-5 flex items-center">
           <Badge
@@ -76,13 +79,19 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
           <div className="min-w-0 flex-1">
             <Label
               as="p"
+              data-part="multiCount"
               tone="primary"
               weight="semibold"
               className="font-display text-[16px]"
             >
               {tasks.length} tasks selected
             </Label>
-            <Label as="p" tone="muted" className="text-[11.5px] tabular-nums">
+            <Label
+              as="p"
+              data-part="multiDoneCount"
+              tone="muted"
+              className="text-[11.5px] tabular-nums"
+            >
               {done} done / {tasks.length}
             </Label>
           </div>
@@ -92,6 +101,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             onClick={() =>
               focusedListId && useSelectionStore.getState().clear(focusedListId)
             }
+            data-part="multiClear"
             title="Clear selection"
           />
         </div>
@@ -103,6 +113,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             size="lg"
             className="justify-center"
             onClick={() => focusedListId && bulkSetDone(focusedListId, true)}
+            data-part="multiDone"
           >
             Done
           </ToolbarButton>
@@ -112,6 +123,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             size="lg"
             className="justify-center"
             onClick={() => focusedListId && bulkSetDone(focusedListId, false)}
+            data-part="multiUndone"
           >
             Undone
           </ToolbarButton>
@@ -121,6 +133,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             size="lg"
             className="justify-center"
             onClick={openMoveMenu}
+            data-part="multiMove"
             disabled={moveTargets.length === 0}
           >
             Move
@@ -131,6 +144,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             size="lg"
             className="justify-center"
             onClick={copy}
+            data-part="multiCopy"
           >
             {copied ? 'Copied' : 'Copy'}
           </ToolbarButton>
@@ -141,6 +155,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
             variant="danger"
             className="col-span-2 justify-center"
             onClick={() => focusedListId && void bulkDelete(focusedListId)}
+            data-part="multiDelete"
           >
             Delete
           </ToolbarButton>
@@ -153,6 +168,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
           {tasks.map((t) => (
             <div
               key={t.id}
+              data-part="picked"
               className={cn(
                 'group/sel rounded-field gap-space-5 px-space-4 flex h-9 items-center',
                 t.id === activeId
@@ -161,6 +177,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
               )}
             >
               <Checkbox
+                data-part="pickedCheck"
                 checked={t.done}
                 size="sm"
                 title={t.done ? 'Mark not done' : 'Mark done'}
@@ -168,6 +185,7 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
               />
               <Label
                 as="button"
+                data-part="pickedName"
                 onClick={() => useSelectionStore.getState().focus(t.id)}
                 title={t.title}
                 truncate
@@ -180,7 +198,12 @@ export function MultiInspector({ tasks }: { tasks: Task[] }) {
                 {t.title}
               </Label>
               {listNameById(t.list_id) && (
-                <Badge tone="outline" size="sm" className="px-space-4 shrink-0">
+                <Badge
+                  data-part="pickedList"
+                  tone="outline"
+                  size="sm"
+                  className="px-space-4 shrink-0"
+                >
                   {listNameById(t.list_id)}
                 </Badge>
               )}

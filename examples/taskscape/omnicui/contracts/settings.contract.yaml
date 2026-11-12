@@ -1,0 +1,157 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# Settings (SPEC-PRODUCT.md, "taskscape.settings"): General, Capture, Shortcuts and About, with
+# a search across all of them. Every change applies at once; the title bar's undo puts back what
+# the window opened with. In the Tauri app it is a window of its own, built fresh on every open
+# (WHY.md: the wait this port removes); a port may draw it in the main window or as a native
+# window that opens ready. Mounted here at its own size, 640×520.
+id: taskscape.settings
+
+props:
+  seed: { type: string, enum: [standard], default: standard }
+
+events:
+  settingChanged: { key: { type: string }, value: { type: string } }
+  hotkeyChanged:  { command: { type: string }, accel: { type: string } }
+  windowAction:   { action: { type: string } }
+
+parts:
+  # The window's own title bar and controls: drawn by each desktop platform its own way.
+  settingsTitlebar:   { role: generic, optional: true, same: none }
+  discardChanges:     { role: button }
+  settingsSearch:     { role: textbox, same: [layout] }   # a text field
+  settingsClearSearch: { role: button }
+  navGeneral:         { role: button }
+  navCapture:         { role: button }
+  navShortcuts:       { role: button }
+  navAbout:           { role: button }
+  settingsIntro:      { role: generic }
+  settingsEmptyTitle: { role: heading }
+  settingsEmptySubtitle: { role: generic }
+  themeSystem:        { role: button, same: [layout] }   # segments of a segmented control
+  themeLight:         { role: button, same: [layout] }
+  themeDark:          { role: button, same: [layout] }
+  reducedMotion:      { role: switch, same: [layout] }   # a switch: each platform's own
+  showCompleted:      { role: switch, same: [layout] }
+  captureModeFullscreen: { role: button, same: [layout] }
+  captureModeRegion:  { role: button, same: [layout] }
+  hotkeyNewTask:      { role: button }
+  hotkeyError:        { role: status }
+
+tests:
+  - name: Settings opens on General, with the stored preferences
+    expect:
+      - { part: navGeneral, text: "General" }
+      - { part: navCapture, text: "Capture" }
+      - { part: navShortcuts, text: "Shortcuts" }
+      - { part: navAbout, text: "About" }
+      - { part: themeSystem, text: "System" }
+      - { part: themeLight, text: "Light" }
+      - { part: themeDark, text: "Dark" }
+      - { part: reducedMotion, checked: false, name: "Reduced motion" }
+      - { part: showCompleted, checked: true, name: "Show completed tasks" }
+      - { part: settingsSearch, text: "", name: "Search settings" }
+    screenshot: true
+
+  - name: choosing Dark saves the theme at once, and offers to undo the session
+    steps:
+      - { action: press, part: themeDark }
+    expect:
+      - { event: settingChanged, times: 1, last: { key: theme, value: dark } }
+      - { part: discardChanges, name: "Discard changes" }
+
+  - name: turning Show completed off saves it
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { event: settingChanged, times: 1, last: { key: show_completed, value: "0" } }
+      - { part: showCompleted, checked: false }
+
+  - name: turning Reduced motion on saves it
+    steps:
+      - { action: press, part: reducedMotion }
+    expect:
+      - { event: settingChanged, times: 1, last: { key: reduced_motion, value: "1" } }
+      - { part: reducedMotion, checked: true }
+
+  - name: discarding puts back what the window opened with
+    steps:
+      - { action: press, part: showCompleted }
+      - { action: press, part: discardChanges }
+    expect:
+      - { event: settingChanged, times: 2, last: { key: show_completed, value: "1" } }
+      - { part: showCompleted, checked: true }
+
+  - name: Capture chooses how screenshots are taken
+    steps:
+      - { action: press, part: navCapture }
+      - { action: press, part: captureModeRegion }
+    expect:
+      - { event: settingChanged, times: 1, last: { key: screenshot_mode, value: region } }
+      - { part: captureModeFullscreen, text: "Full screen" }
+      - { part: captureModeRegion, text: "Region" }
+
+  - name: Shortcuts lists every binding, and says how to change one
+    steps:
+      - { action: press, part: navShortcuts }
+    expect:
+      - { part: settingsIntro, text: "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel." }
+      # The tauri app draws ⌘ and ⇧ as icons, which are not text; a port may write them.
+      - { part: hotkeyNewTask, text: { matches: "^[⌘ ]*N$" } }
+    screenshot: true
+
+  - name: a shortcut is changed by pressing it while the keycap records
+    steps:
+      - { action: press, part: navShortcuts }
+      - { action: press, part: hotkeyNewTask }
+      - { action: key, part: hotkeyNewTask, key: Meta+Shift+j }
+    expect:
+      - { event: hotkeyChanged, times: 1, last: { command: new_task, accel: Cmd+Shift+J } }
+      - { part: hotkeyNewTask, text: { matches: "^[⌘⇧ ]*J$" } }
+
+  - name: a shortcut another command has is refused, and says which
+    steps:
+      - { action: press, part: navShortcuts }
+      - { action: press, part: hotkeyNewTask }
+      - { action: key, part: hotkeyNewTask, key: Meta+k }
+    expect:
+      - { event: hotkeyChanged, times: 0 }
+      - { part: hotkeyError, text: { contains: "Command palette" } }
+
+  - name: search finds settings across every pane
+    steps:
+      - { action: type, part: settingsSearch, text: "dark" }
+    expect:
+      - { part: themeDark, text: "Dark" }
+      - { part: navGeneral, text: { matches: "^General ?1$" } }
+    screenshot: true
+
+  - name: a search with no match says so
+    steps:
+      - { action: type, part: settingsSearch, text: "zebra" }
+    expect:
+      - { part: settingsEmptyTitle, text: "No settings match" }
+      - { part: settingsEmptySubtitle, text: "Nothing here for “zebra”." }
+
+  - name: clearing the search goes back to the pane
+    steps:
+      - { action: type, part: settingsSearch, text: "zebra" }
+      - { action: press, part: settingsClearSearch }
+    expect:
+      - { part: settingsSearch, text: "" }
+      - { part: themeDark, text: "Dark" }
+
+  - name: on the desktop Settings is a window, with its own title bar
+    only: [desktop]
+    expect:
+      - { part: settingsTitlebar, text: "Settings" }
+
+  - name: Escape closes Settings
+    steps:
+      - { action: key, part: navGeneral, key: Escape }
+    expect:
+      - { event: windowAction, times: 1, last: { action: close } }
+
+viewports: [{ width: 640, height: 520 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]
+keyboard: true

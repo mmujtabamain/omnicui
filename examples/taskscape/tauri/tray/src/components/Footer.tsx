@@ -41,6 +41,7 @@ export function Footer({
       className="flex shrink-0 items-center justify-between gap-2 px-3 py-2"
     >
       <button
+        data-part="captureTarget"
         onClick={() => api.openMain()}
         tabIndex={-1}
         className="text-content-2l hover:text-content-1l dark:text-content-2d dark:hover:text-content-1d flex min-w-0 items-center gap-1.5 text-xs"
@@ -66,6 +67,7 @@ export function Footer({
 
       <div className="flex shrink-0 items-center gap-1">
         <ToolbarButton
+          data-part="captureShot"
           size="xs"
           variant="well"
           icon={capturing ? undefined : error ? 'error' : 'screenshot_monitor'}

@@ -48,10 +48,11 @@ export function NoteCard({
   };
 
   return (
-    <div className="group/note relative">
+    <div data-part="note" className="group/note relative">
       <RichTextEditor
         ref={ref}
         initialHtml={note.content}
+        part="noteText"
         minHeightClass="min-h-14"
         attachments={attachments}
         onOpenMention={onOpenMention}
@@ -68,6 +69,7 @@ export function NoteCard({
         iconWeight={400}
         variant="plain"
         onClick={onDelete}
+        data-part="noteDelete"
         title="Delete note"
         className="z-raised border-edge-2l dark:border-edge-2d bg-surface-3l dark:bg-surface-3d shadow-lift hover:text-danger-500l dark:hover:text-danger-500d absolute -top-2 -right-2 rounded-full border opacity-0 group-hover/note:opacity-100"
       />

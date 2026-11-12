@@ -91,6 +91,7 @@ function App() {
             </div>
           ) : (
             <EmptyState
+              part="windowEmpty"
               className="bg-surface-2l dark:bg-surface-2d"
               title={
                 listsInProject.length === 0

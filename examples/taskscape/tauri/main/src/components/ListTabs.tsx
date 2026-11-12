@@ -126,6 +126,7 @@ export function ListTabs() {
               )}
             />
             <div
+              data-part="tab"
               draggable={editingId !== list.id}
               onClick={() => selectList(list.id)}
               onDoubleClick={() => setEditingId(list.id)}
@@ -202,6 +203,7 @@ export function ListTabs() {
               )}
               {editingId === list.id ? (
                 <TextInput
+                  data-part="tabRename"
                   autoFocus
                   defaultValue={list.name}
                   onClick={(e) => e.stopPropagation()}
@@ -224,6 +226,7 @@ export function ListTabs() {
                 />
               ) : (
                 <Label
+                  data-part="tabName"
                   truncate
                   weight="medium"
                   tone={focused ? 'primary' : 'muted'}
@@ -242,6 +245,7 @@ export function ListTabs() {
                     e.stopPropagation();
                     void deleteList(list);
                   }}
+                  data-part="tabClose"
                   title="Delete list"
                 />
               </span>
@@ -296,6 +300,7 @@ export function ListTabs() {
         iconWeight={300}
         size="lg"
         onClick={() => void createList()}
+        data-part="newList"
         className="my-auto ml-2 rounded-md"
         title="New list"
       />

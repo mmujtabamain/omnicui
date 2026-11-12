@@ -46,7 +46,10 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="bg-surface-1l dark:bg-surface-1d flex h-full w-full flex-col">
+    <div
+      data-part="trash"
+      className="bg-surface-1l dark:bg-surface-1d flex h-full w-full flex-col"
+    >
       <TitleBar
         title="Trash"
         border="edge-1"
@@ -66,10 +69,16 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
 
       {roots.length > 0 && (
         <div className="border-edge-1l dark:border-edge-1d gap-space-3 px-space-6 py-space-5 flex shrink-0 items-center border-b">
-          <ToolbarButton icon="restore" iconSize={14} onClick={restoreAll}>
+          <ToolbarButton
+            data-part="restoreAll"
+            icon="restore"
+            iconSize={14}
+            onClick={restoreAll}
+          >
             Restore all
           </ToolbarButton>
           <ToolbarButton
+            data-part="emptyTrash"
             icon="delete_forever"
             iconSize={14}
             variant="danger"
@@ -84,6 +93,7 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
       <div className="p-space-5 min-h-0 flex-1 overflow-y-auto">
         {roots.length === 0 && (
           <EmptyState
+            part="trashEmpty"
             icon="delete"
             iconSize={28}
             title={loading ? 'Loading…' : 'Trash is empty'}
@@ -93,13 +103,26 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
         {roots.map((t) => (
           <div
             key={t.id}
+            data-part="trashed"
             className="group/trash rounded-field hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-5 px-space-5 flex h-9 items-center"
           >
             <div className="min-w-0 flex-1">
-              <Label as="div" tone="primary" truncate className="text-[13.5px]">
+              <Label
+                as="div"
+                data-part="trashedTitle"
+                tone="primary"
+                truncate
+                className="text-[13.5px]"
+              >
                 {t.title}
               </Label>
-              <Label as="div" tone="muted" truncate className="text-[11px]">
+              <Label
+                as="div"
+                data-part="trashedWhen"
+                tone="muted"
+                truncate
+                className="text-[11px]"
+              >
                 {listName(t.list_id) ? `${listName(t.list_id)} · ` : ''}
                 {t.deleted_at ? `deleted ${relativeTime(t.deleted_at)}` : ''}
               </Label>
@@ -111,6 +134,7 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
               variant="ghostStrong"
               className="opacity-0 group-hover/trash:opacity-100"
               onClick={() => useTrashStore.getState().restore([t.id])}
+              data-part="trashedRestore"
               title="Restore"
             />
             <IconButton
@@ -120,6 +144,7 @@ export function TrashPane({ onClose }: { onClose: () => void }) {
               variant="danger"
               className="opacity-0 group-hover/trash:opacity-100"
               onClick={() => useTrashStore.getState().purge([t.id])}
+              data-part="trashedPurge"
               title="Delete permanently"
             />
           </div>

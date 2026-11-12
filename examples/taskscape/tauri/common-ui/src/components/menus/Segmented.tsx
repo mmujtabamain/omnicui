@@ -39,6 +39,8 @@ export interface SegmentedProps<T extends string | number> {
   variant?: SegmentedVariant;
   size?: SegmentedSize;
   className?: string;
+  /** A part tag for tests: each segment is `<part><Value>` (`showActive`). */
+  part?: string;
 }
 
 /** A recessed segmented control — one unified component for both the accent-thumb
@@ -50,6 +52,7 @@ export function Segmented<T extends string | number>({
   variant = 'accentThumb',
   size = 'md',
   className,
+  part,
 }: SegmentedProps<T>) {
   return (
     <div
@@ -63,6 +66,10 @@ export function Segmented<T extends string | number>({
         return (
           <button
             key={String(it.value)}
+            data-part={
+              part &&
+              `${part}${String(it.value)[0].toUpperCase()}${String(it.value).slice(1)}`
+            }
             type="button"
             title={it.title}
             onClick={() => onChange(it.value)}

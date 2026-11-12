@@ -33,6 +33,8 @@ export interface TitleBarProps {
   draggable?: boolean;
   border?: TitleBarBorder;
   className?: string;
+  /** A part tag for tests. */
+  part?: string;
 }
 
 /** The chrome bar atop a frameless window, a dialog or a panel: platform
@@ -48,10 +50,12 @@ export function TitleBar({
   draggable = false,
   border = 'edge-2',
   className,
+  part,
 }: TitleBarProps) {
   const drag = draggable || undefined;
   return (
     <header
+      data-part={part}
       data-tauri-drag-region={drag}
       className={cn(
         'relative flex h-13 shrink-0 items-stretch',

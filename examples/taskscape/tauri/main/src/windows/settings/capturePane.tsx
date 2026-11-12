@@ -39,6 +39,7 @@ export const CAPTURE_PANE: PaneSpec = {
           layout: 'stacked',
           control: (ctx) => (
             <Segmented
+              part="captureMode"
               variant="surfaceThumb"
               items={MODES}
               value={asMode(ctx.values.screenshot_mode)}

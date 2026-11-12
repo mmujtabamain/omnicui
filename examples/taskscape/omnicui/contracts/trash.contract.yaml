@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The Trash (SPEC-PRODUCT.md, "taskscape.trash"): deleted tasks, newest first, each with where it
+# came from; restore one or all, delete one for good, or empty the Trash after a question. It is
+# hosted in the right-hand rail today; the design review would make it a separate destination.
+id: taskscape.trash
+
+props:
+  seed: { type: string, enum: [standard, empty], default: standard }
+
+events:
+  taskRestored: { id: { type: string } }
+  taskPurged:   { id: { type: string } }
+  confirmAsked: { headline: { type: string } }
+  closed:       {}
+
+parts:
+  dialogClose:      { role: button, optional: true, same: none }   # the panel's close control: macOS's traffic light on the desktop
+  restoreAll:       { role: button }
+  emptyTrash:       { role: button }
+  trashEmptyTitle:  { role: heading }
+  trashed1Title:    { role: generic }
+  trashed1When:     { role: status }
+  trashed1Restore:  { role: button }
+  trashed1Purge:    { role: button }
+  trashed2Title:    { role: generic }
+  trashed2When:     { role: status }
+
+tests:
+  - name: the Trash lists deleted tasks newest first, with where they came from
+    expect:
+      - { part: trashed1Title, text: "Paint swatches" }
+      - { part: trashed1When, text: "Groceries · deleted just now" }
+      - { part: trashed2Title, text: "Old launch draft" }
+      - { part: trashed2When, text: "Launch plan · deleted just now" }
+      - { part: restoreAll, text: "Restore all" }
+      - { part: emptyTrash, text: "Empty" }
+    screenshot: true
+
+  - name: an empty Trash says so
+    props: { seed: empty }
+    expect:
+      - { part: trashEmptyTitle, text: "Trash is empty" }
+    screenshot: true
+
+  - name: restoring one task takes it out of the Trash
+    steps:
+      - { action: hover, part: trashed1Title }
+      - { action: press, part: trashed1Restore }
+    expect:
+      - { event: taskRestored, times: 1, last: { id: swatches } }
+      - { part: trashed1Title, text: "Old launch draft" }
+
+  - name: deleting one for good needs no question
+    steps:
+      - { action: hover, part: trashed1Title }
+      - { action: press, part: trashed1Purge }
+    expect:
+      - { event: taskPurged, times: 1, last: { id: swatches } }
+      - { part: trashed1Title, text: "Old launch draft" }
+
+  - name: Restore all brings every task back
+    steps:
+      - { action: press, part: restoreAll }
+    expect:
+      - { event: taskRestored, times: 2 }
+      - { part: trashEmptyTitle, text: "Trash is empty" }
+
+  - name: Empty asks first, because nothing brings them back
+    steps:
+      - { action: press, part: emptyTrash }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Empty Trash?" } }
+      - { event: taskPurged, times: 0 }
+
+  - name: the close control closes the Trash
+    only: [desktop]
+    steps:
+      - { action: press, part: dialogClose }
+    expect:
+      - { event: closed, times: 1 }
+
+viewports: [{ width: 320, height: 708 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]

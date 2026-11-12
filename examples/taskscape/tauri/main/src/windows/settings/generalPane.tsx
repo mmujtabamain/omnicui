@@ -35,6 +35,7 @@ function appearance(ctx: SettingsCtx): GroupSpec {
         layout: 'stacked',
         control: (ctx) => (
           <Segmented
+            part="theme"
             variant="surfaceThumb"
             items={THEMES}
             value={asTheme(ctx.values.theme)}
@@ -49,6 +50,7 @@ function appearance(ctx: SettingsCtx): GroupSpec {
         keywords: 'animation animations transitions battery low power motion',
         control: (ctx) => (
           <Toggle
+            part="reducedMotion"
             checked={forcesMotion(ctx) || ctx.values.reduced_motion === '1'}
             disabled={forcesMotion(ctx)}
             onChange={(next) => ctx.set('reduced_motion', next ? '1' : '0')}
@@ -86,6 +88,7 @@ function tasks(ctx: SettingsCtx): GroupSpec {
         keywords: 'done finished hide completed checked',
         control: (ctx) => (
           <Toggle
+            part="showCompleted"
             checked={ctx.values.show_completed !== '0'}
             onChange={(next) => ctx.set('show_completed', next ? '1' : '0')}
             title="Show completed tasks"

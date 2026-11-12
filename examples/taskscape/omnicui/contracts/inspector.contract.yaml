@@ -1,0 +1,291 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The preview rail (SPEC-PRODUCT.md, "taskscape.inspector"): the details drawer at the window's
+# right edge. It shows what the focused list's selection says: nothing, one task (the task
+# inspector: title, where it lives, notes, subtasks, attachments), a new-task draft, or several
+# tasks (the multi inspector). The design review keeps it a details drawer: it never becomes a
+# second pane.
+id: taskscape.inspector
+
+props:
+  seed:     { type: string, enum: [standard, empty], default: standard }
+  # The task the inspector shows, by key; "" for none.
+  selected: { type: string, default: "" }
+  # A new-task draft for this list (by key), as "+" opens it; "" for none.
+  draft:    { type: string, default: "" }
+  # Several tasks of the focused list selected, by key, comma separated.
+  multi:    { type: string, default: "" }
+
+events:
+  taskCompleted: { id: { type: string }, done: { type: boolean } }
+  taskRenamed:   { id: { type: string }, title: { type: string } }
+  taskCreated:   { id: { type: string }, title: { type: string }, listId: { type: string }, parentId: { type: string } }
+  taskFocused:   { id: { type: string } }
+  noteAdded:     { taskId: { type: string }, text: { type: string } }
+  noteChanged:   { taskId: { type: string }, text: { type: string } }
+  confirmAsked:  { headline: { type: string } }
+  previewToggled: { open: { type: boolean } }
+  copied:        { text: { type: string } }
+  attachmentOpened: { location: { type: string } }
+
+parts:
+  previewEmptyTitle:    { role: heading }
+  previewEmptySubtitle: { role: generic }
+  inspector:        { role: generic }
+  inspectorDone:    { role: checkbox }
+  inspectorTitle:   { role: textbox, same: [layout] }   # a text field drawn as the title
+  inspectorWhere:   { role: status }
+  inspectorCreated: { role: status }
+  inspectorClose:   { role: button }
+  inspectorRename:  { role: button }
+  inspectorCopy:    { role: button }
+  inspectorDelete:  { role: button }
+  notesCount:       { role: status }
+  addNote:          { role: button }
+  note1:            { role: generic }
+  note1Text:        { role: textbox, same: [layout] }   # a rich-text editor: each platform's own text engine
+  note1Delete:      { role: button }
+  newNote:          { role: textbox, same: [layout] }
+  subtasksCount:    { role: status }
+  subtask1Check:    { role: checkbox }
+  subtask1Name:     { role: button }
+  subtask2Check:    { role: checkbox }
+  subtask2Name:     { role: button }
+  attachment1Tile:  { role: button }
+  attachment1Name:  { role: status }
+  attachment2Name:  { role: status }
+  attachLink:       { role: button }
+  draftTitle:       { role: textbox, same: [layout] }
+  draftWhere:       { role: status }
+  draftNote:        { role: button }
+  multiCount:       { role: heading }
+  multiDoneCount:   { role: status }
+  multiClear:       { role: button }
+  multiDone:        { role: button }
+  multiDelete:      { role: button }
+  picked1Name:      { role: button }
+  picked1List:      { role: status }
+  picked2Name:      { role: button }
+
+tests:
+  - name: with nothing selected the drawer says what it is for
+    expect:
+      - { part: previewEmptyTitle, text: "No task selected" }
+      - { part: previewEmptySubtitle, text: "Select a task to inspect it" }
+    screenshot: true
+
+  - name: a task shows its title, where it lives, its notes, subtasks and attachments
+    props: { selected: brief }
+    expect:
+      - { part: inspectorTitle, text: "Write the launch brief" }
+      - { part: inspectorDone, checked: false, name: "Mark done" }
+      - { part: inspectorWhere, text: "Atlas / Launch plan" }
+      - { part: inspectorCreated, text: "Created just now" }
+      - { part: notesCount, text: "1" }
+      - { part: note1Text, text: "Draft due Friday; keep it to one page." }
+      - { part: subtasksCount, text: "1 done / 3" }
+      - { part: subtask1Name, text: "Collect the feature list" }
+      - { part: subtask1Check, checked: true }
+      - { part: subtask2Name, text: "Draft the summary" }
+      - { part: subtask2Check, checked: false }
+      - { part: attachment1Name, text: "Brief outline" }
+      - { part: attachment2Name, text: "whiteboard.png" }
+    screenshot: true
+
+  - name: the inspector's check marks the task done, and its open subtasks with it
+    props: { selected: brief }
+    steps:
+      - { action: press, part: inspectorDone }
+    expect:
+      # brief, then its two open subtasks, in order; the done one is left as it is.
+      - { event: taskCompleted, times: 3, last: { id: review, done: true } }
+      - { part: inspectorDone, checked: true, name: "Mark not done" }
+      - { part: subtasksCount, text: "3 done / 3" }
+
+  - name: a subtask's check marks the subtask done, and the count follows
+    props: { selected: brief }
+    steps:
+      - { action: press, part: subtask2Check }
+    expect:
+      - { event: taskCompleted, times: 1, last: { id: summary, done: true } }
+      - { part: subtasksCount, text: "2 done / 3" }
+
+  - name: pressing a subtask opens it in the drawer, which rises in
+    props: { selected: brief }
+    steps:
+      - { action: press, part: subtask1Name }
+    expect:
+      - { event: taskFocused, times: 1, last: { id: features } }
+      - { part: inspectorTitle, text: "Collect the feature list" }
+      - { part: inspectorDone, checked: true }
+      - { part: inspectorWhere, text: "Atlas / Launch plan" }
+    trace:
+      # tokens.css --animate-rise: 110 ms, cubic-bezier(0.2, 0, 0, 1), up 3 px and in from transparent.
+      - { part: inspector, property: opacity }
+      - { part: inspector, point: center }
+    record: { part: inspector }
+
+  - name: Rename edits the title in place, and Enter keeps it
+    props: { selected: banners }
+    steps:
+      - { action: press, part: inspectorRename }
+      - { action: type, part: inspectorTitle, text: "Order two banners" }
+      - { action: key, part: inspectorTitle, key: Enter }
+    expect:
+      - { event: taskRenamed, times: 1, last: { id: banners, title: "Order two banners" } }
+      - { part: inspectorTitle, text: "Order two banners" }
+
+  - name: Escape while renaming keeps the old title
+    props: { selected: banners }
+    steps:
+      - { action: press, part: inspectorRename }
+      - { action: type, part: inspectorTitle, text: "Something else" }
+      - { action: key, part: inspectorTitle, key: Escape }
+    expect:
+      - { event: taskRenamed, times: 0 }
+      - { part: inspectorTitle, text: "Order the banners" }
+
+  - name: a task with no notes offers to add one, and a note is saved when you leave it
+    props: { selected: banners }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNote, text: "Two metres wide" }
+      - { action: key, part: newNote, key: Tab }
+    expect:
+      - { event: noteAdded, times: 1, last: { taskId: banners, text: "Two metres wide" } }
+      - { part: notesCount, text: "1" }
+      - { part: note1Text, text: "Two metres wide" }
+
+  - name: editing a note saves it
+    props: { selected: venue }
+    steps:
+      - { action: press, part: note1Text }
+      - { action: key, part: note1Text, key: End }
+      - { action: type, part: note1Text, text: " Paid." }
+      - { action: key, part: note1Text, key: Tab }
+    expect:
+      - { event: noteChanged, last: { taskId: venue, text: "Hall B, forty seats. Paid." } }
+      - { part: note1Text, text: "Hall B, forty seats. Paid." }
+
+  - name: deleting a note asks first, because notes skip the Trash
+    props: { selected: venue }
+    steps:
+      - { action: hover, part: note1 }
+      - { action: press, part: note1Delete }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Delete note?" } }
+
+  - name: Delete asks before it moves the task to the Trash
+    props: { selected: banners }
+    steps:
+      - { action: press, part: inspectorDelete }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Move to Trash?" } }
+
+  - name: Copy puts the task and its notes on the clipboard as Markdown
+    props: { selected: venue }
+    steps:
+      - { action: press, part: inspectorCopy }
+    expect:
+      - { event: copied, times: 1, last: { text: "- [x] Book the venue\n  > Hall B, forty seats." } }
+
+  - name: the close button closes the drawer
+    props: { selected: banners }
+    steps:
+      - { action: press, part: inspectorClose }
+    expect:
+      - { event: previewToggled, times: 1, last: { open: false } }
+
+  - name: a linked attachment opens with the system, not in the app
+    props: { selected: brief }
+    steps:
+      - { action: press, part: attachment1Tile }
+    expect:
+      - { event: attachmentOpened, times: 1, last: { location: "https://example.com/brief" } }
+
+  - name: Link asks for the file or page to link
+    props: { selected: banners }
+    steps:
+      - { action: press, part: attachLink }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Link a file or page" } }
+
+  - name: a draft has an empty, focused title and says where the task will go
+    props: { draft: launch }
+    expect:
+      - { part: draftTitle, text: "", focused: true }
+      - { part: draftWhere, text: "Atlas / Launch plan" }
+      - { event: taskCreated, times: 0 }
+    screenshot: true
+
+  - name: a draft with a title becomes a task on Enter, and the drawer shows it
+    props: { draft: launch }
+    steps:
+      - { action: type, part: draftTitle, text: "Call the caterer" }
+      - { action: key, part: draftTitle, key: Enter }
+    expect:
+      - { event: taskCreated, times: 1, last: { title: "Call the caterer", listId: launch, parentId: "" } }
+      - { part: inspectorTitle, text: "Call the caterer" }
+      - { part: inspectorWhere, text: "Atlas / Launch plan" }
+
+  - name: a draft left blank creates nothing
+    props: { draft: launch }
+    steps:
+      - { action: type, part: draftTitle, text: "   " }
+      - { action: key, part: draftTitle, key: Enter }
+    expect:
+      - { event: taskCreated, times: 0 }
+      - { part: previewEmptyTitle, text: "No task selected" }
+
+  - name: Escape discards the draft
+    props: { draft: launch }
+    steps:
+      - { action: type, part: draftTitle, text: "Never mind" }
+      - { action: key, part: draftTitle, key: Escape }
+    expect:
+      - { event: taskCreated, times: 0 }
+      - { part: previewEmptyTitle, text: "No task selected" }
+
+  - name: starting a draft with a note creates an Untitled task and opens its note
+    props: { draft: launch }
+    steps:
+      - { action: press, part: draftNote }
+    expect:
+      - { event: taskCreated, times: 1, last: { title: "Untitled", listId: launch } }
+      - { part: inspectorTitle, text: "Untitled" }
+      - { part: newNote, focused: true }
+
+  - name: several selected tasks show the bulk drawer
+    props: { multi: "venue,banners" }
+    expect:
+      - { part: multiCount, text: "2 tasks selected" }
+      - { part: multiDoneCount, text: "1 done / 2" }
+      - { part: picked1Name, text: "Book the venue" }
+      - { part: picked1List, text: "Launch plan" }
+      - { part: picked2Name, text: "Order the banners" }
+    screenshot: true
+
+  - name: Done in the bulk drawer marks them all done
+    props: { multi: "venue,banners" }
+    steps:
+      - { action: press, part: multiDone }
+    expect:
+      - { event: taskCompleted, times: 2, last: { id: banners, done: true } }
+      - { part: multiDoneCount, text: "2 done / 2" }
+
+  - name: Delete in the bulk drawer asks first
+    props: { multi: "venue,banners" }
+    steps:
+      - { action: press, part: multiDelete }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Move 2 tasks to Trash?" } }
+
+  - name: clearing the selection empties the drawer
+    props: { multi: "venue,banners" }
+    steps:
+      - { action: press, part: multiClear }
+    expect:
+      - { part: previewEmptyTitle, text: "No task selected" }
+
+viewports: [{ width: 320, height: 708 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]

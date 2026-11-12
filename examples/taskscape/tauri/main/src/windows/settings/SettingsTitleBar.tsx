@@ -19,6 +19,7 @@ export interface SettingsTitleBarProps {
 export function SettingsTitleBar({ trailing }: SettingsTitleBarProps) {
   return (
     <TitleBar
+      part="settingsTitlebar"
       draggable
       title="Settings"
       titleAs="h1"

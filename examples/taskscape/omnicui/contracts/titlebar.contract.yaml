@@ -1,0 +1,191 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The window's top bar (SPEC-PRODUCT.md, "taskscape.titlebar"): the window controls, the project
+# switcher, the list tabs, and the view buttons. On the desktop it is also the window's title bar
+# (the app hides macOS's and draws its own); the web has no window to control.
+id: taskscape.titlebar
+
+props:
+  seed:    { type: string, enum: [standard, empty, nolists], default: standard }
+  # The list on the left pane (the focused tab), by key.
+  list:    { type: string, default: launch }
+  # The list in the split pane, by key; "" for no split.
+  split:   { type: string, default: "" }
+  preview: { type: boolean, default: true }
+
+events:
+  paneShows:       { listId: { type: string } }
+  listSelected:    { id: { type: string } }
+  projectSelected: { id: { type: string } }
+  previewToggled:  { open: { type: boolean } }
+  splitChanged:    { listId: { type: string } }
+  settingsOpened:  {}
+  confirmAsked:    { headline: { type: string } }
+  windowAction:    { action: { type: string } }
+
+parts:
+  # The traffic lights: desktop windows draw them, each the way its platform does; a browser tab
+  # has none.
+  windowControls: { role: generic, optional: true, same: none }
+  windowClose:    { role: button, optional: true, same: none }
+  project:        { role: button }
+  projectMenu:    { role: generic }
+  projectItem1Name: { role: generic }
+  projectItem2:   { role: button }
+  projectItem2Name: { role: generic }
+  newProject:     { role: button }
+  tab1:           { role: button }
+  tab1Name:       { role: generic }
+  tab1Close:      { role: button }
+  tab2:           { role: button }
+  tab2Name:       { role: generic }
+  tab3Name:       { role: generic }
+  newList:        { role: button }
+  swapPanes:      { role: button }
+  splitView:      { role: button }
+  togglePreview:  { role: button }
+  openSettings:   { role: button }
+
+tests:
+  - name: the bar shows the project and its lists as tabs
+    expect:
+      - { part: project, text: "Atlas", name: "Atlas" }
+      - { part: tab1Name, text: "Launch plan" }
+      - { part: tab2Name, text: "Groceries" }
+      - { part: tab3Name, text: "Inbox" }
+      - { part: newList, name: "New list" }
+      - { part: splitView, name: "Split view" }
+      - { part: togglePreview, name: { contains: "Hide preview panel" } }
+      - { part: openSettings, name: { contains: "Settings" } }
+    screenshot: true
+
+  - name: a project with no lists shows no tabs, only the way to add one
+    props: { seed: nolists, list: "" }
+    expect:
+      - { part: project, text: "Atlas" }
+      - { part: newList, name: "New list" }
+    screenshot: true
+
+  - name: pressing a tab shows that list
+    steps:
+      - { action: press, part: tab2 }
+    expect:
+      - { event: paneShows, times: 1, last: { listId: groceries } }
+      - { event: listSelected, times: 1, last: { id: groceries } }
+
+  - name: the next-list input moves to the next tab
+    steps:
+      - { action: press, part: tab1 }
+      - { input: nextList }
+    expect:
+      - { event: paneShows, last: { listId: groceries } }
+
+  - name: the second-list input jumps to the second tab
+    steps:
+      - { action: press, part: tab1 }
+      - { input: switchList2 }
+    expect:
+      - { event: paneShows, last: { listId: groceries } }
+
+  - name: the project pill opens the project menu
+    steps:
+      - { action: press, part: project }
+    expect:
+      - { part: projectItem1Name, text: "Atlas" }
+      - { part: projectItem2Name, text: "Home" }
+      - { part: newProject, text: "New project…" }
+    screenshot: true
+    # tokens.css --animate-sheet-in: the menu scales in from the pill.
+    trace:
+      - { part: projectMenu, property: opacity }
+    record: { part: projectMenu }
+
+  - name: choosing another project shows its lists
+    steps:
+      - { action: press, part: project }
+      - { action: press, part: projectItem2 }
+    expect:
+      - { event: projectSelected, times: 1, last: { id: home } }
+      - { part: project, text: "Home" }
+      - { part: tab1Name, text: "Chores" }
+
+  - name: New project asks for its name
+    steps:
+      - { action: press, part: project }
+      - { action: press, part: newProject }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "New project" } }
+
+  - name: the plus asks for a new list's name
+    steps:
+      - { action: press, part: newList }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "New list" } }
+
+  - name: a tab's close button asks before it deletes the list
+    steps:
+      - { action: hover, part: tab1 }
+      - { action: press, part: tab1Close }
+    expect:
+      - { event: confirmAsked, times: 1, last: { headline: "Delete “Launch plan”?" } }
+      - { part: tab1Name, text: "Launch plan" }
+
+  - name: the preview button hides the preview rail
+    steps:
+      - { action: press, part: togglePreview }
+    expect:
+      - { event: previewToggled, times: 1, last: { open: false } }
+      - { part: togglePreview, name: { contains: "Show preview panel" } }
+
+  - name: the toggle-preview input does the same
+    steps:
+      - { action: press, part: tab1 }
+      - { input: togglePreview }
+    expect:
+      - { event: previewToggled, times: 1, last: { open: false } }
+
+  - name: split view opens the next list beside this one, and offers to swap them
+    steps:
+      - { action: press, part: splitView }
+    expect:
+      - { event: splitChanged, times: 1, last: { listId: groceries } }
+      - { part: splitView, name: "Close split view" }
+      - { part: swapPanes, name: "Swap panes" }
+    screenshot: true
+
+  - name: swapping the panes puts the split list on the left
+    props: { split: groceries }
+    steps:
+      - { action: press, part: swapPanes }
+    expect:
+      - { event: paneShows, times: 1, last: { listId: groceries } }
+
+  - name: the settings button opens Settings
+    steps:
+      - { action: press, part: openSettings }
+    expect:
+      - { event: settingsOpened, times: 1 }
+
+  - name: the open-settings input does the same
+    steps:
+      - { action: press, part: tab1 }
+      - { input: openSettings }
+    expect:
+      - { event: settingsOpened, times: 1 }
+
+  - name: the window's close control closes the window
+    only: [desktop]
+    steps:
+      - { action: press, part: windowClose }
+    expect:
+      - { event: windowAction, times: 1, last: { action: close } }
+
+  - name: a desktop window draws its own window controls at the bar's leading edge
+    only: [desktop]
+    expect:
+      - { part: windowControls, visible: true }
+      - { part: windowClose, name: "Close" }
+
+# The bar is 52 px tall; the rest is room for the project menu that hangs from it.
+viewports: [{ width: 1180, height: 300 }]
+colorSchemes: [light, dark]
+same: [layout, colours, motion]

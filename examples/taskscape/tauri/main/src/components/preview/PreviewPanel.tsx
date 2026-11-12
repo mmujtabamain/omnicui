@@ -49,6 +49,7 @@ export function PreviewPanel() {
         <DraftInspector key={draftListId} />
       ) : (
         <EmptyState
+          part="previewEmpty"
           icon="left_click"
           iconSize={28}
           title="No task selected"

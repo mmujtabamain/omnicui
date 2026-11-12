@@ -100,6 +100,7 @@ function MenuPanel({
         <div key={item.id} className="relative">
           {item.dividerAbove && <Divider className="mx-space-5 my-space-3" />}
           <MenuRow
+            data-part={menuPart(item.id, nested)}
             tone={item.danger ? 'danger' : 'default'}
             disabled={item.disabled}
             onMouseEnter={() => setSubFor(item.submenu ? item.id : null)}
@@ -135,6 +136,16 @@ function MenuPanel({
       ))}
     </Surface>
   );
+}
+
+/** The item's part tag for tests: `menuRename` for `rename`, `menuScopeList`
+ *  for `scope:list`; an item named by a list id, and every submenu item, by
+ *  position (`menuItem`, `submenuItem`). */
+function menuPart(id: string, nested: boolean): string {
+  if (nested || /^[0-9a-f-]{36}$/.test(id))
+    return nested ? 'submenuItem' : 'menuItem';
+  const words = id.split(/[:_-]/).filter((w) => !/^[0-9a-f-]{36}$/.test(w));
+  return 'menu' + words.map((w) => w[0].toUpperCase() + w.slice(1)).join('');
 }
 
 /** Positions a submenu beside its parent item, flipping to the left side when

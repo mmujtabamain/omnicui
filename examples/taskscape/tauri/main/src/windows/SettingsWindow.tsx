@@ -218,6 +218,7 @@ export function SettingsWindow() {
                 variant="ghostStrong"
                 title="Discard every change made since this window opened"
                 aria-label="Discard changes"
+                data-part="discardChanges"
                 onClick={() => {
                   settings.discardAll();
                   hotkeys.discardAll();
@@ -241,6 +242,7 @@ export function SettingsWindow() {
                     variant="plain"
                     title="Clear search"
                     aria-label="Clear search"
+                    data-part="settingsClearSearch"
                     onClick={clearSearch}
                   />
                 )
@@ -249,6 +251,7 @@ export function SettingsWindow() {
               <TextInput
                 bare
                 ref={searchRef}
+                data-part="settingsSearch"
                 value={query}
                 onChange={(e) => search(e.target.value)}
                 placeholder="Search"
@@ -271,6 +274,7 @@ export function SettingsWindow() {
                 return (
                   <MenuItem
                     key={pane.id}
+                    data-part={`nav${pane.id[0].toUpperCase()}${pane.id.slice(1)}`}
                     id={`settings-tab-${pane.id}`}
                     role="tab"
                     rounded
@@ -318,7 +322,12 @@ export function SettingsWindow() {
               {!searching ? (
                 <>
                   {activePane.intro && (
-                    <Label as="p" tone="muted" className="text-[12px]">
+                    <Label
+                      as="p"
+                      data-part="settingsIntro"
+                      tone="muted"
+                      className="text-[12px]"
+                    >
                       {activePane.intro}
                     </Label>
                   )}
@@ -334,6 +343,7 @@ export function SettingsWindow() {
                 )
               ) : (
                 <EmptyState
+                  part="settingsEmpty"
                   icon="search"
                   title="No settings match"
                   subtitle={`Nothing here for “${query.trim()}”.`}

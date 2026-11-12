@@ -60,6 +60,8 @@ interface Props {
    *  ring). Pass '' for a flat, chromeless surface like the tray mini bar; omit
    *  to keep the default inset-field look. */
   wrapperClassName?: string;
+  /** A part tag for tests, on the editable surface itself. */
+  part?: string;
 }
 
 export type RichTextEditorProps = Props;
@@ -152,6 +154,7 @@ export const RichTextEditor = forwardRef<RichTextHandle, Props>(
       floatingToolbar = true,
       toolbarClassName,
       wrapperClassName,
+      part,
     },
     ref
   ) {
@@ -253,6 +256,7 @@ export const RichTextEditor = forwardRef<RichTextHandle, Props>(
       immediatelyRender: false,
       editorProps: {
         attributes: {
+          ...(part ? { 'data-part': part } : {}),
           class: twMerge(
             'note-rt text-content-1l dark:text-content-1d w-full overflow-x-hidden overflow-y-auto px-3 py-2.5 text-[13.5px] leading-5 wrap-anywhere outline-none',
             minHeightClass,

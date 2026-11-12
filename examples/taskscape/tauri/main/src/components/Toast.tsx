@@ -13,16 +13,23 @@ export function Toast() {
   return (
     <div className="z-overlay pointer-events-none fixed inset-x-0 bottom-5 flex justify-center">
       <Surface
+        data-part="toast"
         elevation="lift"
         surface={3}
         radius="control"
         className="animate-rise gap-space-5 py-space-5 pr-space-5 pl-space-7 pointer-events-auto flex items-center"
       >
-        <Label tone="primary" weight="medium" className="text-[13px]">
+        <Label
+          data-part="toastMessage"
+          tone="primary"
+          weight="medium"
+          className="text-[13px]"
+        >
           {toast.message}
         </Label>
         {toast.action && (
           <ToolbarButton
+            data-part="toastAction"
             icon="undo"
             iconSize={14}
             variant="accent"
@@ -39,6 +46,7 @@ export function Toast() {
           size="lg"
           iconSize={14}
           onClick={() => useToastStore.getState().dismiss()}
+          data-part="toastDismiss"
           title="Dismiss"
         />
       </Surface>

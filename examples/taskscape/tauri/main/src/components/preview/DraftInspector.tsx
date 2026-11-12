@@ -42,7 +42,10 @@ export function DraftInspector() {
   const noBlur = (e: React.MouseEvent) => e.preventDefault();
 
   return (
-    <div className="animate-rise flex min-h-0 flex-1 flex-col">
+    <div
+      data-part="draft"
+      className="animate-rise flex min-h-0 flex-1 flex-col"
+    >
       <div className="relative shrink-0 p-4">
         <span className="bg-accent-500l dark:bg-accent-500d absolute top-4.75 left-0 h-4 w-0.5" />
         <div className="flex items-start gap-2.5">
@@ -50,6 +53,7 @@ export function DraftInspector() {
           <div className="min-w-0 flex-1">
             <textarea
               ref={ref}
+              data-part="draftTitle"
               rows={1}
               spellCheck={false}
               value={title}
@@ -70,6 +74,7 @@ export function DraftInspector() {
             />
             <Label
               as="div"
+              data-part="draftWhere"
               tone="muted"
               className="mt-2.5 flex items-center gap-1.5 text-[11.5px]"
             >
@@ -90,6 +95,7 @@ export function DraftInspector() {
             iconSize={16}
             onMouseDown={noBlur}
             onClick={() => void runDraftAction('', 'cancel')}
+            data-part="draftDiscard"
             title="Discard draft"
           />
         </div>
@@ -101,6 +107,7 @@ export function DraftInspector() {
           <DashedButton
             onMouseDown={noBlur}
             onClick={() => void runDraftAction(title, 'note')}
+            data-part="draftNote"
             className="h-10 flex-1 text-[13px] font-semibold"
           >
             <Icon name="add" size={16} />
@@ -109,6 +116,7 @@ export function DraftInspector() {
           <DashedButton
             onMouseDown={noBlur}
             onClick={() => void runDraftAction(title, 'shot')}
+            data-part="draftShot"
             className="h-10 flex-1 text-[13px] font-semibold"
           >
             <Icon name="screenshot_monitor" size={15} />
