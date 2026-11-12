@@ -229,6 +229,9 @@ type Contract struct {
 	// the contract set it.
 	Same    Aspects `json:"same"`
 	SameSet bool    `json:"-"`
+	// SameBy: the contract's same per platform selector ({ default: pixels, mobile: none }), when
+	// given that way: what a platform promises for every part that doesn't say otherwise.
+	SameBy map[string]Aspects `json:"sameBy,omitempty"`
 	// LayoutThreshold: how far a part's box may move between targets compared by layout, in
 	// percent of the component's width.
 	LayoutThreshold float64 `json:"layoutThreshold"`
@@ -333,4 +336,13 @@ func (c *Contract) PartSame(part string, p Platform) (Aspects, bool) {
 		}
 	}
 	return 0, false
+}
+
+// BaseSame is what a platform promises for a part that says nothing itself: the contract's
+// `same` for that platform, or its default.
+func (c *Contract) BaseSame(p Platform) Aspects {
+	if a, _, ok := Pick(c.SameBy, p); ok {
+		return a
+	}
+	return c.Same
 }

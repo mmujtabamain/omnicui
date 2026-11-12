@@ -309,12 +309,12 @@ func TestSameMotion(t *testing.T) {
 	}
 }
 
-// R-PLATFORM-9: regions a target's platform drew (a title bar) are left out of every
-// comparison, without any contract naming them.
+// R-PLATFORM-9: regions a target's platform drew over the app (a scrollbar) are left out of
+// every comparison, without any contract naming them.
 func TestSystemRegions(t *testing.T) {
-	rep, _ := runProject(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_REGIONS": "titlebar:0,0,320,16"}, Extra: "platform: [desktop]\n"}}, "", noKeyboard)
+	rep, _ := runProject(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_REGIONS": "scrollbar:304,0,16,240"}, Extra: "platform: [desktop]\n"}}, "", noKeyboard)
 	c := pixelsOf(rep, "starts at the start value")
-	if c == nil || c.Warning || c.Measures.Area != 0 || !strings.Contains(c.Note, "left out, drawn by the platform: b's titlebar") {
+	if c == nil || c.Warning || c.Measures.Area != 0 || !strings.Contains(c.Note, "left out, drawn by the platform: b's scrollbar") {
 		t.Fatalf("%+v", c)
 	}
 	if r := result(t, rep, "b", "starts at the start value"); len(r.Regions["320x240-light"]) != 1 {
@@ -329,5 +329,28 @@ func TestUnknownSelectors(t *testing.T) {
 	ps := contract.UnknownSelectors(cs, []string{"web", "phone"})
 	if len(ps) != 1 || !ps[0].Warning || ps[0].Line != 7 || !strings.Contains(ps[0].Message, "`iso` (only/except) is not a platform, a target or a design; did you mean `ios`?") {
 		t.Fatalf("%+v", ps)
+	}
+}
+
+// R-PLATFORM-11: a bar across the whole width at the top (a desktop window's title bar) is cut
+// off before comparing, so the content under it lines up with a target that has none; and the
+// contract's same per platform: { default: pixels, mobile: none } compares nothing visual with
+// a phone.
+func TestTitleBarCropAndContractSame(t *testing.T) {
+	rep, _ := runProject(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_TITLEBAR": "28"}, Extra: "platform: [desktop]\nos: macos\n"}}, "", noKeyboard)
+	c := pixelsOf(rep, "starts at the start value")
+	if c == nil || c.Warning || c.Measures.Area != 0 || !strings.Contains(c.Note, "left out, drawn by the platform: b's titlebar") {
+		t.Fatalf("%+v", c)
+	}
+	rep, _ = runProject(t, map[string]T{"a": {}, "b": {Env: map[string]string{"FAKE_COLOR": "7b2cbf", "FAKE_SHIFT": "100"}, Extra: "platform: [mobile]\n"}}, "", func(s string) string {
+		return "same: { default: pixels, mobile: none }\n" + noKeyboard(s)
+	})
+	for _, c := range rep.Comparisons {
+		if c.Kind == "pixels" || c.Kind == "palette" || c.Kind == "layout" {
+			t.Errorf("nothing visual with a phone: %+v", c)
+		}
+	}
+	if rep.Summary.Fail != 0 {
+		t.Errorf("%+v", rep.Summary)
 	}
 }

@@ -413,11 +413,9 @@ A **selector** names one of these, or is `default`. Where several match a target
   - `motion`: traces and clips of that part;
   - `none`: nothing visual; behaviour still counts.
 - Where it is written:
-  - on a contract: `same: pixels`, the default, for targets of one design;
+  - on a contract: `same: pixels` (the default), or per platform: `same: { default: pixels, mobile: none }`. Without it, targets of different designs compare colours and motion only; a contract that says it is taken at its word across designs too (`same: [layout, colours, motion]` for a web and a macOS app of one product, each idiomatic);
   - on a part: `same: [layout, colours]`, or per platform: `same: { default: pixels, mobile: [layout, colours], ios: [layout] }`.
-- A target promises, for each part, its most specific selector's aspects, or else the **base**:
-  - the contract's `same`, between targets of one design;
-  - `[colours, motion]`, between designs.
+- A target promises, for each part, its most specific selector's aspects, or else its contract-level promise (the contract's `same` for its platform). The pair's **base** is the intersection of the two contract-level promises, capped at `[colours, motion]` between designs when the contract doesn't say `same:` itself.
 - A pair is held to the **intersection** of the two promises, part by part. Neither side can be held to more than it promised, and adding a target never changes how the others are compared.
   - The whole screen is compared at the base level, with every part the pair holds to less than that masked.
   - Each such part is then compared as it was promised: by `colours` over its box, by `layout`, or not at all.
@@ -425,7 +423,7 @@ A **selector** names one of these, or is `default`. Where several match a target
   - A trace or a clip of a part is compared only where both promised that part's `motion`.
 - The comparison's note says what was compared: `compared as pixels, except value: layout · increment: layout`. *(TestSamePerPart, TestSameMotion)*
 
-**System regions.** With each screenshot, a target may report the regions its platform drew rather than the app: `{"path": …, "regions": [{"kind": "titlebar", "x": 0, "y": 0, "width": 320, "height": 28}]}`. The kinds are `titlebar`, `statusbar`, `homeindicator`, `keyboard` and `scrollbar`. They are left out of every comparison, without any contract naming them, and the note says so: `left out, drawn by the platform: macos's titlebar`. *(TestSystemRegions)*
+**System regions.** With each screenshot, a target may report the regions its platform drew rather than the app: `{"path": …, "regions": [{"kind": "titlebar", "x": 0, "y": 0, "width": 320, "height": 28}]}`. The kinds are `titlebar`, `statusbar`, `homeindicator`, `keyboard` and `scrollbar`. They are left out of every comparison, without any contract naming them, and the note says so: `left out, drawn by the platform: macos's titlebar`. A region across the whole width at the top or the bottom (a title bar, a status bar, a home indicator) is the platform's bar above or below the app, so it is **cut off** before comparing: the app's content under a 28 px title bar lines up with a target that has none. Other regions (a scrollbar) are masked. *(TestSystemRegions, TestTitleBarCropAndContractSame)*
 
 **Tests for some platforms:** `only: [desktop]` or `except: [ios]` on a test. Elsewhere its status is **not applicable**, which is neither a failure nor a gap (unlike "not advertised"). It is counted on its own: `… · 2 not applicable`. *(TestOnlyExcept)*
 

@@ -775,11 +775,12 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	}
 	c.Same, c.LayoutThreshold = Pixels, DefaultLayoutThreshold
 	if sv, ok := v["same"]; ok {
-		a, err := ParseAspects(sv)
-		if err != nil {
-			l.errorf("/same", "%v", err)
+		// Aspects for every platform, or per platform selector: { default: pixels, mobile: none }.
+		c.SameBy = l.same(sv, "/same")
+		if d, ok := c.SameBy["default"]; ok {
+			c.Same = d
 		}
-		c.Same, c.SameSet = a, true
+		c.SameSet = true
 	}
 	c.Keyboard, _ = v["keyboard"].(bool)
 	if ms, ok := v["mask"].([]any); ok {

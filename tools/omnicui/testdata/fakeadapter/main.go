@@ -35,6 +35,9 @@
 //	FAKE_REGIONS      kind:x,y,w,h;… regions its platform draws (a title bar), drawn in red and
 //	                  reported with each screenshot
 //	FAKE_BOUNDS       part=x,y,w,h;… boxes reported for those parts, instead of the drawn block
+//	FAKE_TITLEBAR     a title bar this many px tall above the content, as a desktop window has:
+//	                  the screenshot is that much taller, everything else moves down, and the bar
+//	                  is reported as a titlebar region
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -190,7 +193,8 @@ func act(method string, p params) error {
 }
 
 func screenshot(path string) error {
-	img := image.NewRGBA(image.Rect(0, 0, st.w, st.h))
+	bar := envInt("FAKE_TITLEBAR")
+	img := image.NewRGBA(image.Rect(0, 0, st.w, st.h+bar))
 	bg := color.RGBA{0xfb, 0xfa, 0xf7, 0xff}
 	if st.dark {
 		bg = color.RGBA{0x1b, 0x1d, 0x19, 0xff}
@@ -223,7 +227,12 @@ func screenshot(path string) error {
 			if thumb && x >= tx+shift && x < tx+12+shift && y >= ty && y < ty+12 {
 				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
 			}
-			img.SetRGBA(x, y, c)
+			img.SetRGBA(x, y+bar, c)
+		}
+	}
+	for y := 0; y < bar; y++ {
+		for x := 0; x < st.w; x++ {
+			img.SetRGBA(x, y, color.RGBA{0x30, 0x30, 0x34, 0xff})
 		}
 	}
 	os.MkdirAll(filepath.Dir(path), 0o755)
@@ -394,7 +403,7 @@ func handle(n int, r req) (any, error) {
 				return map[string]any{"x": x, "y": y, "width": w, "height": h}, nil
 			}
 		}
-		return map[string]any{"x": 24 + shift, "y": 24, "width": 60, "height": 30}, nil
+		return map[string]any{"x": 24 + shift, "y": 24 + envInt("FAKE_TITLEBAR"), "width": 60, "height": 30}, nil
 	case "probe":
 		return p.Path, probe(p.Path, p.Viewport.Width, p.Viewport.Height)
 	case "events":
@@ -408,7 +417,11 @@ func handle(n int, r req) (any, error) {
 		if err := screenshot(p.Path); err != nil {
 			return nil, err
 		}
-		if regs := regions(); len(regs) > 0 {
+		regs := regions()
+		if bar := envInt("FAKE_TITLEBAR"); bar > 0 {
+			regs = append(regs, region{kind: "titlebar", x: 0, y: 0, w: st.w, h: bar})
+		}
+		if len(regs) > 0 {
 			var out []map[string]any
 			for _, r := range regs {
 				out = append(out, map[string]any{"kind": r.kind, "x": r.x, "y": r.y, "width": r.w, "height": r.h})

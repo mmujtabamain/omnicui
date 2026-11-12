@@ -27,22 +27,31 @@ type pairSame struct {
 }
 
 func pairAspects(c *contract.Contract, pa, pb contract.Platform) pairSame {
-	base := c.Same
-	if pa.Design != pb.Design {
-		base = contract.Colours | contract.Motion
+	// Each target's promise for the parts that say nothing (the contract's same, per platform);
+	// between designs, at most colours and motion.
+	promA, promB := c.BaseSame(pa), c.BaseSame(pb)
+	// Between designs, a contract that says nothing compares colours and motion only; one that
+	// says what its platforms hold the same is taken at its word.
+	designs := contract.Pixels
+	if pa.Design != pb.Design && !c.SameSet {
+		designs = contract.Colours | contract.Motion
 	}
+	base := promA & promB & designs
 	ps := pairSame{base: base, parts: map[string]contract.Aspects{}}
 	for _, p := range c.Parts {
 		a, okA := c.PartSame(p.Name, pa)
-		if !okA {
-			a = base
-		}
 		b, okB := c.PartSame(p.Name, pb)
-		if !okB {
-			b = base
+		switch {
+		case !okA && !okB:
+			ps.parts[p.Name] = base
+			continue
+		case !okA:
+			a = promA & designs
+		case !okB:
+			b = promB & designs
 		}
 		ps.parts[p.Name] = a & b
-		ps.explicit = ps.explicit || okA || okB
+		ps.explicit = true
 	}
 	return ps
 }
@@ -298,6 +307,12 @@ func viewFor(masks []string, crop string, a, b TestResult, ka, kb string) (compa
 	if len(sys) > 0 {
 		notes = append(notes, "left out, drawn by the platform: "+strings.Join(sys, ", "))
 	}
+	// A bar across the whole width at the top or the bottom (a title bar, a status bar, a home
+	// indicator) is cut off rather than masked, so that what is under a title bar lines up with a
+	// target that has none.
+	if crop == "" {
+		v.CropA, v.CropB = edgeCrop(a.Regions[ka], ka), edgeCrop(b.Regions[kb], kb)
+	}
 	if len(masks) == 0 && crop == "" {
 		return v, strings.Join(notes, "; ")
 	}
@@ -434,4 +449,34 @@ func filterIn(xs, in []string) []string {
 		}
 	}
 	return out
+}
+
+// edgeCrop is the box of a screenshot below the full-width bars at its top and above those at its
+// bottom, or nil when there are none. key is the combination's key (its viewport: "1024x720-light").
+func edgeCrop(regions []SystemRegion, key string) *compare.Region {
+	var w, h float64
+	fmt.Sscanf(key, "%gx%g", &w, &h)
+	if w <= 0 || h <= 0 {
+		return nil
+	}
+	top, bottom := 0.0, math.Inf(1)
+	for _, r := range regions {
+		if r.X > 0 || r.X+r.Width < w {
+			continue // not across the whole width: masked instead
+		}
+		switch {
+		case r.Y <= 0:
+			top = math.Max(top, r.Y+r.Height)
+		case r.Y >= h/2:
+			bottom = math.Min(bottom, r.Y)
+		}
+	}
+	if top == 0 && math.IsInf(bottom, 1) {
+		return nil
+	}
+	height := 1e6 // to the bottom of the picture, whatever its height
+	if !math.IsInf(bottom, 1) {
+		height = bottom - top
+	}
+	return &compare.Region{X: 0, Y: top, Width: w, Height: height}
 }
