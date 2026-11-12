@@ -1,0 +1,170 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The whole app (SPEC-APP.md, "todo.app"): the list, a task's detail and settings, and how one
+# gets from one to another. Its parts are the screens' parts of the same name (todo.app.row1 is
+# the list's row1, wherever the app shows the list), and its own openSettings.
+#
+# On a phone the detail and settings replace the list; on the desktop web the detail is a pane
+# beside the list, and settings a page of its own. Both report each change of screen as
+# `navigated`, and "back" returns to the list on both.
+id: todo.app
+
+props:
+  seed: { type: string, enum: [empty, three, many], default: three }
+
+events:
+  navigated:            { screen: { type: string, enum: [list, detail, settings] }, id: { type: string } }
+  opened:               { id: { type: string } }
+  added:                { id: { type: string }, title: { type: string } }
+  toggled:              { id: { type: string }, done: { type: boolean } }
+  renamed:              { id: { type: string }, title: { type: string } }
+  deleted:              { id: { type: string } }
+  themeChanged:         { theme: { type: string, enum: [system, light, dark] } }
+  showCompletedChanged: { show: { type: boolean } }
+
+# The app's layouts differ by design between the phone and the desktop: a pair keeps the palette
+# and the motion, part by part as on the screens' own contracts.
+parts:
+  openSettings:  { role: button,   same: &shared { default: [colours, motion], mobile: [layout, colours, motion] } }
+  tasksHeading:  { role: heading,  same: *shared }
+  left:          { role: status,   same: *shared }
+  add:           { role: button,   same: *shared }
+  newTitle:      { role: textbox,  same: none }
+  confirmAdd:    { role: button,   same: *shared }
+  row1:          { role: button,   same: *shared }
+  row2:          { role: button,   same: *shared }
+  row1Check:     { role: checkbox, same: motion }
+  title:         { role: textbox,  same: none }
+  done:          { role: switch,   same: motion }
+  delete:        { role: button,   same: *shared }
+  detailBack:    { role: button,   same: *shared }
+  themeSystem:   { role: button,   same: *shared }
+  themeDark:     { role: button,   same: *shared }
+  showCompleted: { role: switch,   same: motion }
+  settingsBack:  { role: button,   same: *shared }
+
+tests:
+  - name: starts on the task list
+    expect:
+      - { part: tasksHeading, text: "Tasks" }
+      - { part: row1, text: "Buy milk" }
+      - { part: left, text: "2 left" }
+      - { part: openSettings, name: "Settings" }
+      - { event: navigated, times: 0 }
+    screenshot: true
+
+  - name: pressing a task opens its detail
+    steps:
+      - { action: press, part: row1 }
+    expect:
+      - { part: title, text: "Buy milk" }
+      - { part: done, checked: false }
+      - { event: opened, times: 1, last: { id: "t1" } }
+      - { event: navigated, times: 1, last: { screen: detail, id: "t1" } }
+    screenshot: true
+
+  - name: on the desktop, the task opens beside the list
+    only: [web, desktop]
+    steps:
+      - { action: press, part: row1 }
+    expect:
+      - { part: row1, visible: true }
+      - { part: title, text: "Buy milk", visible: true }
+      - { part: tasksHeading, visible: true }
+
+  - name: the detail's own back control returns to the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: detailBack }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: row1, text: "Buy milk", visible: true }
+
+  - name: back returns from a task to the list
+    steps:
+      - { action: press, part: row2 }
+      - { input: back }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: row2, text: "Call the plumber", visible: true }
+
+  - name: settings opens from the list, and back returns
+    steps:
+      - { action: press, part: openSettings }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { event: navigated, times: 1, last: { screen: settings, id: "" } }
+    screenshot: true
+
+  - name: back returns from settings to the list
+    steps:
+      - { action: press, part: openSettings }
+      - { input: back }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: left, text: "2 left", visible: true }
+
+  - name: the Dark theme applies to the whole app
+    steps:
+      - { action: press, part: openSettings }
+      - { action: press, part: themeDark }
+      - { action: press, part: settingsBack }
+    expect:
+      - { event: themeChanged, times: 1, last: { theme: dark } }
+      - { event: navigated, last: { screen: list, id: "" } }
+      - { part: row1, text: "Buy milk" }
+    screenshot: true
+
+  - name: a title edited in the detail shows in the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: type, part: title, text: " today" }
+      - { action: press, part: detailBack }
+    expect:
+      - { event: renamed, last: { id: "t1", title: "Buy milk today" } }
+      - { part: row1, text: "Buy milk today" }
+
+  - name: Done in the detail checks the task in the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: done }
+      - { input: back }
+    expect:
+      - { part: row1Check, checked: true }
+      - { part: left, text: "1 left" }
+      - { event: toggled, times: 1, last: { id: "t1", done: true } }
+
+  - name: deleting a task returns to the list without it
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: delete }
+    expect:
+      - { event: deleted, times: 1, last: { id: "t1" } }
+      - { event: navigated, last: { screen: list, id: "" } }
+      - { part: row1, text: "Call the plumber" }
+      - { part: left, text: "1 left" }
+
+  - name: Show completed off in settings hides done tasks from the list
+    steps:
+      - { action: press, part: openSettings }
+      - { action: press, part: showCompleted }
+      - { input: back }
+    expect:
+      - { event: showCompletedChanged, times: 1, last: { show: false } }
+      - { part: row2, text: "Book train tickets" }
+      - { part: left, text: "2 left" }
+
+  - name: a task added in the app is listed
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "Water the plants" }
+      - { action: press, part: confirmAdd }
+    expect:
+      - { event: added, times: 1, last: { id: "t1", title: "Water the plants" } }
+      - { part: row1, text: "Water the plants" }
+      - { event: navigated, times: 0 }
+
+viewports:
+  default: [{ width: 1024, height: 720 }]
+  mobile:  [{ width: 360, height: 640 }]
+colorSchemes: [light, dark]

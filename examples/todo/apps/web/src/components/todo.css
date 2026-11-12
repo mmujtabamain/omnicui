@@ -1,0 +1,161 @@
+/* The todo app's look on the desktop web. The colours are the design language every version of
+   the app shares (SPEC-APP.md, Colours); the layout, type and controls are the web's own. */
+.todo {
+  --primary: #36618e; --on-primary: #ffffff;
+  --primary-container: #d1e4ff; --on-primary-container: #001d36;
+  --secondary-container: #d7e3f7; --on-secondary-container: #101c2b;
+  --surface: #f8f9ff; --on-surface: #191c20; --on-surface-variant: #43474e;
+  --surface-container-low: #f2f3f9; --surface-container: #eceef4; --surface-container-high: #e6e8ee;
+  --outline: #73777f; --outline-variant: #c3c6cf; --error: #ba1a1a;
+  --scrim: rgb(0 0 0 / 0.6);
+  color-scheme: light;
+}
+.todo[data-theme="dark"] {
+  --primary: #a0cafd; --on-primary: #003258;
+  --primary-container: #194975; --on-primary-container: #d1e4ff;
+  --secondary-container: #3b4858; --on-secondary-container: #d7e3f7;
+  --surface: #111418; --on-surface: #e1e2e8; --on-surface-variant: #c3c6cf;
+  --surface-container-low: #191c20; --surface-container: #1d2024; --surface-container-high: #272a2f;
+  --outline: #8d9199; --outline-variant: #43474e; --error: #ffb4ab;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  .todo[data-theme="system"] {
+    --primary: #a0cafd; --on-primary: #003258;
+    --primary-container: #194975; --on-primary-container: #d1e4ff;
+    --secondary-container: #3b4858; --on-secondary-container: #d7e3f7;
+    --surface: #111418; --on-surface: #e1e2e8; --on-surface-variant: #c3c6cf;
+    --surface-container-low: #191c20; --surface-container: #1d2024; --surface-container-high: #272a2f;
+    --outline: #8d9199; --outline-variant: #43474e; --error: #ffb4ab;
+    color-scheme: dark;
+  }
+}
+
+.todo {
+  min-height: 100vh; box-sizing: border-box;
+  background: var(--surface); color: var(--on-surface);
+  font: 14px/1.43 system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.todo *, .todo *::before, .todo *::after { box-sizing: border-box; }
+.todo :where(button, input, textarea) { font: inherit; color: inherit; }
+.todo :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.todo svg { flex: none; }
+
+/* --- the app's frame -------------------------------------------------------------------------- */
+.app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; min-height: 0; }
+.header {
+  display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--outline-variant); background: var(--surface);
+}
+.header__brand { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; color: var(--primary); }
+.app__body { display: flex; min-height: 0; }
+.screen { display: flex; }
+
+/* --- buttons ---------------------------------------------------------------------------------- */
+.filled-button, .text-button, .outlined-button, .icon-button {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; background: none;
+  font-weight: 500; border-radius: 20px; transition: background-color 150ms ease-out;
+}
+.filled-button { height: 36px; padding: 0 16px 0 12px; background: var(--primary); color: var(--on-primary); }
+.filled-button:hover { background: color-mix(in srgb, var(--primary) 90%, var(--on-primary)); }
+.text-button { height: 36px; padding: 0 12px; color: var(--primary); }
+.text-button:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.text-button:disabled { color: color-mix(in srgb, var(--on-surface) 38%, transparent); cursor: default; background: none; }
+.outlined-button { height: 36px; padding: 0 16px; border: 1px solid var(--outline); }
+.outlined-button--danger { color: var(--error); border-color: var(--error); }
+.icon-button { width: 36px; height: 36px; justify-content: center; color: var(--on-surface-variant); }
+.icon-button:hover { background: var(--surface-container-high); }
+
+/* --- the list: the sidebar -------------------------------------------------------------------- */
+.sidebar {
+  width: 340px; flex: none; display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface-container-low); border-right: 1px solid var(--outline-variant);
+}
+.screen > .sidebar { height: 100vh; }
+.sidebar__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 12px 20px; }
+.sidebar__title { margin: 0; font-size: 22px; font-weight: 500; }
+.segmented { display: flex; margin: 0 16px; border: 1px solid var(--outline); border-radius: 8px; overflow: hidden; }
+.segmented--inline { margin: 0; width: max-content; }
+.segment {
+  flex: 1; min-width: 88px; height: 32px; padding: 0 12px; border: 0; background: none; cursor: pointer;
+  font-weight: 500; transition: background-color 150ms ease-out;
+}
+.segment + .segment { border-left: 1px solid var(--outline); }
+.segment[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.left { margin: 12px 20px 4px; font-size: 12px; font-weight: 500; color: var(--on-surface-variant); }
+.empty { margin: 40px 20px; text-align: center; color: var(--on-surface-variant); }
+.rows { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 4px 8px 16px; overflow: auto; }
+.row { display: flex; align-items: center; gap: 4px; padding-left: 12px; border-radius: 8px; }
+.row:hover { background: var(--surface-container-high); }
+.row--current { background: var(--secondary-container); }
+.row__title {
+  flex: 1; min-width: 0; height: 40px; padding: 0 8px; border: 0; background: none; cursor: pointer;
+  text-align: left; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row--done .row__title { color: var(--on-surface-variant); text-decoration: line-through; }
+
+/* The checkbox: the native input, drawn in the app's colours; the tick grows in over 100 ms. */
+.check {
+  appearance: none; flex: none; position: relative; width: 18px; height: 18px; margin: 0;
+  border: 2px solid var(--on-surface-variant); border-radius: 2px; cursor: pointer;
+  transition: background-color 90ms ease-out, border-color 90ms ease-out;
+}
+.check:checked { background: var(--primary); border-color: var(--primary); }
+.check::after {
+  content: ""; position: absolute; left: 4px; top: 0; width: 5px; height: 10px;
+  border: solid var(--on-primary); border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0); transition: transform 100ms ease-out;
+}
+.check:checked::after { transform: rotate(45deg) scale(1); }
+
+/* --- the dialog ------------------------------------------------------------------------------- */
+.dialog {
+  width: 400px; padding: 24px; border: 0; border-radius: 28px;
+  background: var(--surface-container-high); color: var(--on-surface);
+  animation: dialog-in 200ms ease-out;
+}
+.dialog::backdrop { background: var(--scrim); }
+@keyframes dialog-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.dialog__title { margin: 0 0 16px; font-size: 24px; font-weight: 400; }
+.dialog__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
+/* --- fields ----------------------------------------------------------------------------------- */
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.field__label { font-size: 12px; font-weight: 500; color: var(--on-surface-variant); }
+.field__input {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--outline); border-radius: 4px;
+  background: transparent; font-size: 15px;
+}
+.field__input:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.field__input--notes { resize: vertical; }
+
+/* --- the switch ------------------------------------------------------------------------------- */
+.switch-row { display: flex; align-items: center; justify-content: space-between; max-width: 560px; padding: 8px 0; }
+.switch-row__label { font-size: 15px; cursor: pointer; }
+.switch {
+  position: relative; width: 52px; height: 32px; padding: 0; border: 2px solid var(--outline); border-radius: 16px;
+  background: var(--surface-container-high); cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out;
+}
+.switch__thumb {
+  position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--outline);
+  transition: transform 150ms ease-out, width 150ms ease-out, height 150ms ease-out, top 150ms ease-out, background-color 150ms ease-out;
+}
+.switch[aria-checked="true"] { background: var(--primary); border-color: var(--primary); }
+.switch[aria-checked="true"] .switch__thumb { transform: translateX(20px); top: 2px; width: 24px; height: 24px; background: var(--on-primary); }
+
+/* --- the detail pane -------------------------------------------------------------------------- */
+.pane { flex: 1; min-width: 0; padding: 20px 32px; overflow: auto; }
+.screen > .pane { min-height: 100vh; }
+.pane .field { max-width: 560px; }
+.pane--empty { display: grid; place-items: center; color: var(--on-surface-variant); }
+.pane__head { display: flex; align-items: center; justify-content: space-between; max-width: 560px; margin-bottom: 16px; }
+.pane__title { margin: 0; font-size: 22px; font-weight: 500; }
+.pane__actions { margin-top: 24px; }
+
+/* --- settings --------------------------------------------------------------------------------- */
+.settings { width: 100%; max-width: 640px; margin: 0 auto; padding: 24px 32px; }
+.settings__back { margin-left: -12px; }
+.settings__title { margin: 12px 0 24px; font-size: 28px; font-weight: 400; }
+.settings__group { margin-bottom: 24px; }
+.settings__label { margin: 0 0 8px; font-size: 14px; font-weight: 500; color: var(--primary); }
+.settings__hint { margin: 0; font-size: 12px; color: var(--on-surface-variant); }

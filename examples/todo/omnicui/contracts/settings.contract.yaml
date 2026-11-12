@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# Settings (SPEC-APP.md, "todo.settings"): the theme, as a segmented control, and whether the
+# list's All filter shows completed tasks. The theme applies at once, to this screen too.
+id: todo.settings
+
+props:
+  theme:         { type: string, enum: [system, light, dark], default: system }
+  showCompleted: { type: boolean, default: true }
+
+events:
+  themeChanged:         { theme: { type: string, enum: [system, light, dark] } }
+  showCompletedChanged: { show: { type: boolean } }
+  closed:               {}
+
+# The segments keep the palette and the motion between Android and the web, and the layout too
+# between two phones. The switch is each platform's own control: only its motion is held.
+parts:
+  themeSystem:   { role: button, same: &shared { default: [colours, motion], mobile: [layout, colours, motion] } }
+  themeLight:    { role: button, same: *shared }
+  themeDark:     { role: button, same: *shared }
+  showCompleted: { role: switch, same: motion }
+  settingsBack:  { role: button, same: *shared }
+
+tests:
+  - name: starts from the system theme, with completed tasks shown
+    expect:
+      - { part: themeSystem, selected: true, text: "System" }
+      - { part: themeLight, selected: false, text: "Light" }
+      - { part: themeDark, selected: false, text: "Dark" }
+      - { part: showCompleted, checked: true, name: "Show completed" }
+      - { part: settingsBack, name: { default: "Back to tasks", mobile: "Back" }, why: "a phone's top bar has an up arrow named Back; the desktop page has a labelled link-like button" }
+    screenshot: true
+
+  - name: choosing Dark selects it, reports it and darkens the screen
+    steps:
+      - { action: press, part: themeDark }
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+      - { event: themeChanged, times: 1, last: { theme: dark } }
+    screenshot: true
+
+  - name: a Light theme stays light whatever the system's scheme
+    props: { theme: light }
+    expect:
+      - { part: themeLight, selected: true }
+      - { part: themeSystem, selected: false }
+    screenshot: true
+
+  - name: choosing the theme already chosen reports nothing
+    steps:
+      - { action: press, part: themeSystem }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { event: themeChanged, times: 0 }
+
+  - name: Show completed turns off
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: false }
+      - { event: showCompletedChanged, times: 1, last: { show: false } }
+
+  - name: and on again
+    props: { showCompleted: false }
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: true }
+      - { event: showCompletedChanged, times: 1, last: { show: true } }
+
+  - name: leaving reports it
+    steps:
+      - { action: press, part: settingsBack }
+    expect:
+      - { event: closed, times: 1 }
+      - { event: themeChanged, times: 0 }
+
+  - name: Enter chooses the focused segment
+    steps:
+      - { action: focus, part: themeLight }
+      - { action: key, part: themeLight, key: Enter }
+    expect:
+      - { part: themeLight, selected: true, focused: true }
+      - { event: themeChanged, times: 1, last: { theme: light } }
+
+viewports:
+  default: [{ width: 1024, height: 720 }]
+  mobile:  [{ width: 360, height: 640 }]
+colorSchemes: [light, dark]
+keyboard: true

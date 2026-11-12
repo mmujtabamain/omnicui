@@ -1,0 +1,9 @@
+# Progress: todo (Android + web) against omnicui
+
+- 09:23 UTC: started. Read README, SPEC §1, §4.2–4.4, §4.8, §5, the web and javafx targets, the mobile review.
+- 09:30: chose versions: AGP 8.13.2, Gradle 8.14.4, Kotlin 2.2.21, Compose BOM 2025.10.01, Navigation 2.9.5, Robolectric 4.16.1, compileSdk 36. Installing the Android SDK into ~/.local/android-sdk.
+- 09:41: Android app (ui library + app) builds: `./gradlew :app:assembleDebug`; store unit tests pass (4).
+- 09:56: Android target adapter works by hand (JSON-RPC over stdin, Robolectric, one JVM): mount, press, focus, key, type, read, bounds, screenshot (windows composited, dialog dim 0.6), trace (scale), record, do back. Start-up about 13 s. captureToImage timed out under Robolectric, so windows are drawn with View.draw on native-graphics canvases.
+- 10:15: contracts written (list, detail, settings, app; platforms.yaml with input back; per-platform viewports; same: per part). `check android`: 77 pass, 8 not measured (keyboard tests on dialog parts and already-chosen segments), 0 fail, in 32 s + 30 s (about 8 s of each starting).
+- 10:31: web app (React, esbuild) and web target (from omnicui/targets/web via omnicui add --template) pass all contracts. Full check #1: 154 pass, 0 fail, 16 not measured, 2 warnings, 2m09s (android 50 s with 7 s start-up, web 1m53s). Then: android record now idles the main looper per frame (the dialog window was missing from clips); web record steps the page's animations 16 ms at a time instead of the screencast; dialog clip measured over its own box (79 ms -> 9.9 ms).
+- 10:40: full check #3 (last): 155 pass, 0 fail, 16 not measured, 1 not applicable, 2 platform exceptions, 1 warning (the switch's motion, 56 ms), 2m06s; android 40 s (7.4 s start-up), web 1m50s (1.2 s). runs/latest.txt and runs/results.json saved. SPEC-APP.md, README.md, GAPS-todo.txt written.
