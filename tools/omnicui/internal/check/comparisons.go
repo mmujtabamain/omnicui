@@ -3,7 +3,6 @@ package check
 import (
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -12,13 +11,15 @@ import (
 )
 
 // compareAll compares, for every test, each pair of targets' screenshots (per combination) and
-// traces, and each trace with the test's named timing.
+// traces, and each trace with the test's named timing, as each pair promised (`same:`).
 func (r *runner) compareAll(rep *Report) []Comparison {
 	var out []Comparison
 	r.results = rep.Results
-	design := map[string]string{}
+	plats := map[string]contract.Platform{}
 	for _, t := range rep.Targets {
-		design[t.Name] = t.Design
+		p := t.Platform
+		p.Target, p.Design = t.Name, t.Design
+		plats[t.Name] = p
 	}
 	byKey := map[string][]TestResult{}
 	for _, res := range rep.Results {
@@ -34,128 +35,17 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 				}
 			}
 			if test.Screenshot {
-				out = append(out, r.comparePixels(c, test, results, design)...)
+				out = append(out, r.compareScreens(c, test, results, plats)...)
 			}
 			if len(test.Trace) > 0 {
-				out = append(out, compareTraces(c, test, results)...)
+				out = append(out, compareTraces(c, test, results, plats)...)
 			}
 			if test.Record {
-				out = append(out, compareClips(c, test, results)...)
+				out = append(out, compareClips(c, test, results, plats)...)
 			}
 		}
 	}
 	return out
-}
-
-// comparePixels compares each pair of targets' screenshots: pixel by pixel when they are of one
-// design, by their palettes when not (design names the design of each target).
-func (r *runner) comparePixels(c *contract.Contract, test contract.Test, results []TestResult, design map[string]string) []Comparison {
-	var out []Comparison
-	diffDir := filepath.Join(r.runDir, "diff", c.Short(), slug(test.Name))
-	for i := 0; i < len(results); i++ {
-		for j := i + 1; j < len(results); j++ {
-			a, b := results[i], results[j]
-			if design[a.Target] != design[b.Target] {
-				if cmp := r.comparePalettes(c, test, a, b, design); cmp != nil {
-					out = append(out, *cmp)
-				}
-				continue
-			}
-			var worst *Comparison
-			for _, cb := range Combos(c) {
-				pa, okA := a.Screenshots[cb.Key()]
-				pb, okB := b.Screenshots[cb.Key()]
-				if !okA || !okB {
-					continue
-				}
-				os.MkdirAll(diffDir, 0o755)
-				diff := filepath.Join(diffDir, fmt.Sprintf("%s-%s-%s.png", a.Target, b.Target, cb.Key()))
-				view, viewNote := pixelView(c, test, a, b, cb.Key())
-				m, note, err := compare.MeasureView(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), diff, view)
-				if err != nil {
-					note = err.Error()
-					m = compare.Measures{Area: 100, Strength: 100, Unmatched: 100, Spot: 100}
-				}
-				m.Area, m.Strength, m.Unmatched, m.Spot = round(m.Area, 2), round(m.Strength, 1), round(m.Unmatched, 1), round(m.Spot, 2)
-				var raw *compare.Measures
-				if !view.Empty() && err == nil {
-					// The whole screenshots too, so that what the view left out stays visible.
-					if rm, _, rerr := compare.Measure(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), ""); rerr == nil {
-						rm.Area, rm.Strength, rm.Unmatched, rm.Spot = round(rm.Area, 2), round(rm.Strength, 1), round(rm.Unmatched, 1), round(rm.Spot, 2)
-						rm.Spots = nil
-						raw = &rm
-						viewNote += fmt.Sprintf(" (whole screenshots: area %g%%, strength %g%%, shift %g px, spot %g%%)", rm.Area, rm.Strength, rm.Shift, rm.Spot)
-					}
-				}
-				note = joinNotes(note, viewNote)
-				relDiff, _ := filepath.Rel(r.runDir, diff)
-				th := c.Pixels
-				over := Over(th, m)
-				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "pixels", A: a.Target, B: b.Target, Combo: cb.Key(),
-					Value: m.Area, Threshold: th.Area, Warning: len(over) > 0, Diff: relDiff, Note: note,
-					Measures: &m, Thresholds: &th, Over: over, Raw: raw}
-				if len(m.Spots) > 0 {
-					if view.CropA != nil || view.CropB != nil {
-						cmp.SpotPart = partAt(shiftBox(m.Spots[0], view.CropA), a.Bounds[cb.Key()], nil)
-						if cmp.SpotPart == "" {
-							cmp.SpotPart = partAt(shiftBox(m.Spots[0], view.CropB), nil, b.Bounds[cb.Key()])
-						}
-					} else {
-						cmp.SpotPart = partAt(m.Spots[0], a.Bounds[cb.Key()], b.Bounds[cb.Key()])
-					}
-				}
-				r.log.Info("pixels", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(),
-					"area", m.Area, "strength", m.Strength, "shift", m.Shift, "spot", m.Spot, "over", strings.Join(over, ","))
-				// The worst combination: the most measures over their thresholds, then the largest area.
-				if worst == nil || len(cmp.Over) > len(worst.Over) || (len(cmp.Over) == len(worst.Over) && cmp.Value > worst.Value) {
-					cp := cmp
-					worst = &cp
-				}
-			}
-			if worst != nil {
-				out = append(out, *worst)
-			}
-		}
-	}
-	return out
-}
-
-// comparePalettes compares two targets of different designs by the colours their screenshots
-// are drawn with, at every combination both took; the worst combination is kept. Masks and a
-// screenshot part apply as they do to pixels.
-func (r *runner) comparePalettes(c *contract.Contract, test contract.Test, a, b TestResult, design map[string]string) *Comparison {
-	var worst *Comparison
-	name := func(t string) string {
-		if design[t] == "" {
-			return "the default design"
-		}
-		return "design " + design[t]
-	}
-	for _, cb := range Combos(c) {
-		pa, okA := a.Screenshots[cb.Key()]
-		pb, okB := b.Screenshots[cb.Key()]
-		if !okA || !okB {
-			continue
-		}
-		view, viewNote := pixelView(c, test, a, b, cb.Key())
-		p, err := compare.ComparePalettesIn(filepath.Join(r.runDir, pa), filepath.Join(r.runDir, pb), view,
-			r.palettes(a.Target, cb.Scheme), r.palettes(b.Target, cb.Scheme))
-		cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "palette", A: a.Target, B: b.Target, Combo: cb.Key(), Part: "palette",
-			Threshold: c.PaletteThreshold}
-		if err != nil {
-			cmp.Value, cmp.Warning, cmp.Note = 100, true, err.Error()
-		} else {
-			cmp.Value, cmp.Warning, cmp.Palette = p.Value, p.Value > c.PaletteThreshold, &p
-			cmp.Note = joinNotes(fmt.Sprintf("%s is %s and %s %s, so their colours are compared, not their pixels: %s",
-				a.Target, name(a.Target), b.Target, name(b.Target), p.Note(a.Target, b.Target)), viewNote)
-		}
-		r.log.Info("palette", "contract", c.ID, "test", test.Name, "a", a.Target, "b", b.Target, "combo", cb.Key(), "value", cmp.Value)
-		if worst == nil || cmp.Value > worst.Value {
-			cp := cmp
-			worst = &cp
-		}
-	}
-	return worst
 }
 
 // palettes are every screenshot's palette a target took in this run at a colour scheme: the
@@ -195,31 +85,44 @@ func traceLabel(spec contract.TraceSpec) string {
 	return spec.Part
 }
 
-func compareTraces(c *contract.Contract, test contract.Test, results []TestResult) []Comparison {
+func compareTraces(c *contract.Contract, test contract.Test, results []TestResult, plats map[string]contract.Platform) []Comparison {
 	var out []Comparison
 	for _, spec := range test.Trace {
-		// One comparison set per combination the traces were taken at.
-		var combos []string
-		curves := map[string]map[string]compare.Curve{}
-		order := map[string][]string{}
+		// One comparison set per combination the traces were taken at: the i-th of each target's.
+		var combos []int
+		curves := map[int]map[string]compare.Curve{}
+		keys := map[int]map[string]string{}
+		order := map[int][]string{}
 		for _, res := range results {
 			for _, tr := range res.Traces {
 				if tr.Part != spec.Part || tr.Point != spec.Point || (tr.Property != "" && tr.Property != spec.Property) {
 					continue
 				}
-				if curves[tr.Combo] == nil {
-					curves[tr.Combo] = map[string]compare.Curve{}
-					combos = append(combos, tr.Combo)
+				i := comboIndex(c, plats[res.Target], tr.Combo)
+				if curves[i] == nil {
+					curves[i], keys[i] = map[string]compare.Curve{}, map[string]string{}
+					combos = append(combos, i)
 				}
-				curves[tr.Combo][res.Target] = tr.Curve
-				order[tr.Combo] = append(order[tr.Combo], res.Target)
+				curves[i][res.Target], keys[i][res.Target] = tr.Curve, tr.Combo
+				order[i] = append(order[i], res.Target)
 			}
 		}
 		label := traceLabel(spec)
-		for _, combo := range combos {
-			cs, names := curves[combo], order[combo]
+		for _, ci := range combos {
+			cs, names := curves[ci], order[ci]
+			comboOf := func(a, b string) string {
+				if b == "" || keys[ci][a] == keys[ci][b] {
+					return keys[ci][a]
+				}
+				return keys[ci][a] + " / " + keys[ci][b]
+			}
 			for i := 0; i < len(names); i++ {
 				for j := i + 1; j < len(names); j++ {
+					// Only where both promised the part's motion.
+					if !pairAspects(c, plats[names[i]], plats[names[j]]).parts[spec.Part].Has(contract.Motion) {
+						continue
+					}
+					combo := comboOf(names[i], names[j])
 					d, note := compare.Differ(cs[names[i]], cs[names[j]])
 					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: names[i], B: names[j], Part: label, Combo: combo,
 						Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold, Note: note})
@@ -242,7 +145,7 @@ func compareTraces(c *contract.Contract, test contract.Test, results []TestResul
 					if !cs[name].Moved {
 						note = fmt.Sprintf("%s didn't change", label)
 					}
-					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: name, B: "timing", Part: label, Combo: combo,
+					out = append(out, Comparison{Contract: c.ID, Test: test.Name, Kind: "timing", A: name, B: "timing", Part: label, Combo: comboOf(name, ""),
 						Value: round(d, 1), Threshold: c.TimingThreshold, Warning: d > c.TimingThreshold,
 						Note: fmt.Sprintf("against %.0fms %s; %s", spec.Timing.DurationMS, spec.Timing.Easing, note)})
 				}
@@ -255,19 +158,28 @@ func compareTraces(c *contract.Contract, test contract.Test, results []TestResul
 // compareClips compares each pair of targets' clips, at each combination both recorded, by their
 // visual progress curves: how the picture moved from its first state to its last, lined up and
 // measured at levels of progress like a trace. This is what compares fades, blurs and colour
-// changes, which have no position to trace.
-func compareClips(c *contract.Contract, test contract.Test, results []TestResult) []Comparison {
+// changes, which have no position to trace. A clip of a part is compared where both promised
+// that part's motion; a clip of the whole component where both promised motion as their base.
+func compareClips(c *contract.Contract, test contract.Test, results []TestResult, plats map[string]contract.Platform) []Comparison {
 	var out []Comparison
-	for _, cb := range Combos(c) {
-		key := cb.Key()
-		for i := 0; i < len(results); i++ {
-			for j := i + 1; j < len(results); j++ {
-				a, okA := results[i].Clips[key]
-				b, okB := results[j].Clips[key]
+	for i := 0; i < len(results); i++ {
+		for j := i + 1; j < len(results); j++ {
+			ra, rb := results[i], results[j]
+			ps := pairAspects(c, plats[ra.Target], plats[rb.Target])
+			motion := ps.base.Has(contract.Motion)
+			if test.RecordPart != "" {
+				motion = ps.parts[test.RecordPart].Has(contract.Motion)
+			}
+			if !motion {
+				continue
+			}
+			for _, cp := range comboPairs(c, plats[ra.Target], plats[rb.Target]) {
+				a, okA := ra.Clips[cp.a.Key()]
+				b, okB := rb.Clips[cp.b.Key()]
 				if !okA || !okB {
 					continue
 				}
-				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "motion", A: results[i].Target, B: results[j].Target, Part: "clip", Combo: key, Threshold: c.MotionThreshold}
+				cmp := Comparison{Contract: c.ID, Test: test.Name, Kind: "motion", A: ra.Target, B: rb.Target, Part: "clip", Combo: cp.label(), Threshold: c.MotionThreshold}
 				switch {
 				case a.Progress == nil || b.Progress == nil:
 					why := a.Note
@@ -292,61 +204,6 @@ func round(v float64, places int) float64 {
 	}
 	p := math.Pow(10, float64(places))
 	return math.Round(v*p) / p
-}
-
-// pixelView is what of two targets' screenshots a test compares: its contract's and its own
-// masks, and its screenshot part, from the boxes each target reported. With no boxes from a
-// target (it doesn't advertise bounds), the whole screenshots are compared, and the note says so.
-func pixelView(c *contract.Contract, test contract.Test, a, b TestResult, combo string) (compare.View, string) {
-	masks := append(append([]string{}, c.Mask...), test.Mask...)
-	if len(masks) == 0 && test.ScreenshotPart == "" {
-		return compare.View{}, ""
-	}
-	for _, x := range []TestResult{a, b} {
-		if x.Bounds[combo] == nil {
-			return compare.View{}, fmt.Sprintf("not masked or cropped: %s reports no bounds (advertise bounds)", x.Target)
-		}
-	}
-	region := func(r Rect) compare.Region { return compare.Region{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height} }
-	shown := func(x TestResult, part string) (Rect, bool) {
-		r, ok := x.Bounds[combo][part]
-		return r, ok && r.Width > 0 && r.Height > 0
-	}
-	var v compare.View
-	var notes []string
-	if p := test.ScreenshotPart; p != "" {
-		ra, okA := shown(a, p)
-		rb, okB := shown(b, p)
-		if !okA || !okB {
-			missing := a.Target
-			if okA {
-				missing = b.Target
-			}
-			return compare.View{}, fmt.Sprintf("`%s` isn't on screen on %s, so the whole screenshots are compared", p, missing)
-		}
-		ca, cb := region(ra), region(rb)
-		v.CropA, v.CropB = &ca, &cb
-		notes = append(notes, fmt.Sprintf("only `%s`", p))
-	}
-	var left []string
-	for _, m := range masks {
-		found := false
-		if r, ok := shown(a, m); ok {
-			v.MasksA = append(v.MasksA, region(r))
-			found = true
-		}
-		if r, ok := shown(b, m); ok {
-			v.MasksB = append(v.MasksB, region(r))
-			found = true
-		}
-		if found && !contains(left, m) {
-			left = append(left, m)
-		}
-	}
-	if len(left) > 0 {
-		notes = append(notes, "masked: "+strings.Join(left, ", "))
-	}
-	return v, strings.Join(notes, "; ")
 }
 
 func shiftBox(b compare.Box, by *compare.Region) compare.Box {

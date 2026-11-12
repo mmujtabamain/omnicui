@@ -80,7 +80,117 @@ func LoadDir(dir string) ([]*Contract, []Problem, error) {
 		ids[c.ID] = rel(f)
 		all = append(all, c)
 	}
+	// The project's named inputs, next to contracts/: platforms.yaml.
+	inputs, ps := LoadInputs(filepath.Join(filepath.Dir(dir), "platforms.yaml"))
+	problems = append(problems, ps...)
+	for _, c := range all {
+		c.Inputs = inputs
+		for _, t := range c.Tests {
+			for _, st := range t.Steps {
+				if st.Action != "input" {
+					continue
+				}
+				if _, ok := inputs[st.Input]; !ok {
+					m := fmt.Sprintf("input `%s` is not in platforms.yaml", st.Input)
+					names := make([]string, 0, len(inputs))
+					for n := range inputs {
+						names = append(names, n)
+					}
+					sort.Strings(names)
+					if s := closest(st.Input, names); s != "" {
+						m += fmt.Sprintf("; did you mean `%s`?", s)
+					} else if len(inputs) == 0 {
+						m += " (there is no platforms.yaml next to contracts/: it names each input's form per platform)"
+					}
+					problems = append(problems, Problem{File: rel(c.File), Line: st.Line, Message: m})
+				}
+			}
+		}
+	}
+	sort.SliceStable(problems, func(i, j int) bool {
+		if problems[i].File != problems[j].File {
+			return problems[i].File < problems[j].File
+		}
+		return problems[i].Line < problems[j].Line
+	})
 	return all, problems, nil
+}
+
+// LoadInputs reads platforms.yaml: `inputs:`, each a name with its form per platform selector,
+// `{ key: Alt+Left }`, `{ action: press }`, `{ do: back, with: {…} }`, or `none`. A missing
+// file is no inputs.
+func LoadInputs(path string) (Inputs, []Problem) {
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return Inputs{}, nil
+	}
+	file := rel(path)
+	if err != nil {
+		return Inputs{}, []Problem{{File: file, Line: 1, Message: err.Error()}}
+	}
+	var root yaml.Node
+	if err := yaml.Unmarshal(data, &root); err != nil {
+		return Inputs{}, []Problem{{File: file, Line: 1, Message: "not valid YAML: " + err.Error()}}
+	}
+	var problems []Problem
+	bad := func(n *yaml.Node, format string, args ...any) {
+		problems = append(problems, Problem{File: file, Line: n.Line, Message: fmt.Sprintf(format, args...)})
+	}
+	out := Inputs{}
+	if len(root.Content) == 0 {
+		return out, nil
+	}
+	doc := root.Content[0]
+	inputs := child(doc, "inputs")
+	if doc.Kind != yaml.MappingNode || inputs == nil || inputs.Kind != yaml.MappingNode {
+		bad(doc, "platforms.yaml has `inputs:`, a map of input names, each with its form per platform: back: { default: { key: Alt+Left }, android: { do: back } }")
+		return out, problems
+	}
+	for i := 0; i+1 < len(inputs.Content); i += 2 {
+		name, forms := inputs.Content[i], inputs.Content[i+1]
+		if !inputNameRE.MatchString(name.Value) {
+			bad(name, "input `%s`: a name is a lower-case letter, then letters and digits (camelCase)", name.Value)
+		}
+		if forms.Kind != yaml.MappingNode {
+			bad(forms, "input `%s` needs its form per platform selector: { default: { key: … }, android: { do: back } }", name.Value)
+			continue
+		}
+		byPlatform := map[string]Input{}
+		for j := 0; j+1 < len(forms.Content); j += 2 {
+			sel, form := forms.Content[j], forms.Content[j+1]
+			var in Input
+			switch {
+			case form.Kind == yaml.ScalarNode && form.Value == "none":
+				in.None = true
+			case form.Kind == yaml.MappingNode:
+				var m map[string]any
+				form.Decode(&m)
+				in.Key, _ = m["key"].(string)
+				in.Action, _ = m["action"].(string)
+				in.Do, _ = m["do"].(string)
+				if w, ok := m["with"].(map[string]any); ok {
+					in.With = w
+				}
+				n := 0
+				for _, x := range []string{in.Key, in.Action, in.Do} {
+					if x != "" {
+						n++
+					}
+				}
+				if n != 1 {
+					bad(form, "input `%s` on `%s`: write one of { key: … }, { action: press | focus | hover }, { do: … } or none", name.Value, sel.Value)
+				}
+				if in.Action != "" && in.Action != "press" && in.Action != "focus" && in.Action != "hover" {
+					bad(form, "input `%s` on `%s`: action `%s` is not press, focus or hover", name.Value, sel.Value, in.Action)
+				}
+			default:
+				bad(form, "input `%s` on `%s`: write one of { key: … }, { action: … }, { do: … } or none", name.Value, sel.Value)
+			}
+			byPlatform[sel.Value] = in
+		}
+		out[name.Value] = byPlatform
+	}
+	return out, problems
 }
 
 func rel(path string) string {
@@ -262,7 +372,8 @@ var printer = message.NewPrinter(language.English)
 var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports", "colorSchemes", "thresholds",
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
-	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale"}
+	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale",
+	"same", "only", "except", "input", "why", "layout", "palette", "direction", "contains", "matches"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -482,12 +593,17 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 	for _, name := range orderedKeys(child(root, "parts")) {
 		p := parts[name].(map[string]any)
 		opt, _ := p["optional"].(bool)
-		c.Parts = append(c.Parts, Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name, Optional: opt})
+		part := Part{Name: name, Role: p["role"].(string), ID: c.ID + "." + name, Optional: opt}
+		if sv, ok := p["same"]; ok {
+			part.Same = l.same(sv, "/parts/"+escape(name)+"/same")
+		}
+		c.Parts = append(c.Parts, part)
 	}
 	for i, tv := range v["tests"].([]any) {
 		t := tv.(map[string]any)
 		base := fmt.Sprintf("/tests/%d", i)
 		test := Test{Name: t["name"].(string), Line: l.line(base)}
+		test.Only, test.Except = strs(t["only"]), strs(t["except"])
 		if p, ok := t["props"].(map[string]any); ok {
 			test.Props = plain(p).(map[string]any)
 		}
@@ -498,17 +614,27 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				st := Step{Times: 1, Line: l.line(ptr)}
 				_, hasAction := s["action"]
 				_, hasDo := s["do"]
+				_, hasInput := s["input"]
 				_, hasPart := s["part"]
+				kinds := 0
+				for _, b := range []bool{hasAction, hasDo, hasInput} {
+					if b {
+						kinds++
+					}
+				}
 				switch {
-				case hasAction && hasDo:
-					l.errorf(ptr, "a step has `action` (press, focus, key, type, drag, hover) or `do` (an action the targets define), not both")
-				case !hasAction && !hasDo:
-					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover) and a `part`, or `do` (an action the targets define, such as swipe)")
+				case kinds > 1:
+					l.errorf(ptr, "a step has one of `action` (press, focus, key, type, drag, hover), `do` (an action the targets define) or `input` (a named input from platforms.yaml)")
+				case kinds == 0:
+					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover) and a `part`, or `do` (an action the targets define, such as swipe), or `input` (a named input from platforms.yaml, such as back)")
 				case hasAction && !hasPart:
 					l.errorf(ptr, "missing field `part`: an `action` acts on a part")
 				}
 				st.Action, _ = s["action"].(string)
 				st.Part, _ = s["part"].(string)
+				if name, ok := s["input"].(string); ok {
+					st.Action, st.Input = "input", name
+				}
 				if name, ok := s["do"].(string); ok {
 					st.Action, st.Do = "do", name
 					if w, ok := s["with"].(map[string]any); ok {
@@ -553,18 +679,26 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 						if k == "part" {
 							continue
 						}
-						want := plain(e[k])
-						// text: { contains: … } or { matches: … }
-						if m, ok := want.(map[string]any); ok && (k == "text" || k == "name") {
-							contains, _ := m["contains"].(string)
-							matches, _ := m["matches"].(string)
-							tm, err := NewTextMatch(contains, matches)
-							if err != nil {
-								l.errorf(fmt.Sprintf("%s/expect/%d/%s/matches", base, j, k), "`%s` is not a regular expression: %v", matches, err)
-							}
-							want = tm
+						if k == "why" {
+							ex.Why, _ = e[k].(string)
+							continue
 						}
-						ex.Checks = append(ex.Checks, Check{Field: k, Want: want})
+						ptr := fmt.Sprintf("%s/expect/%d/%s", base, j, k)
+						check := Check{Field: k}
+						want := l.wantValue(plain(e[k]), k, ptr)
+						// A value per platform: { default: …, ios: … }.
+						if m, ok := want.(map[string]any); ok {
+							check.ByPlatform = map[string]any{}
+							for sel, v := range m {
+								check.ByPlatform[sel] = l.wantValue(v, k, ptr+"/"+escape(sel))
+							}
+							want = check.ByPlatform["default"]
+							if _, ok := e["why"]; !ok {
+								l.errorf(ptr, "`%s` differs by platform, so the expectation must say why (`why: …`): it is listed as a platform exception", k)
+							}
+						}
+						check.Want = want
+						ex.Checks = append(ex.Checks, check)
 					}
 				}
 				test.Expect = append(test.Expect, ex)
@@ -609,17 +743,43 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		}
 		c.Tests = append(c.Tests, test)
 	}
-	if vps, ok := v["viewports"].([]any); ok {
+	viewports := func(vps []any) []Viewport {
+		var out []Viewport
 		for _, vp := range vps {
 			m := vp.(map[string]any)
 			vp := Viewport{Width: int(num(m["width"])), Height: int(num(m["height"]))}
 			if props, ok := m["props"].(map[string]any); ok {
 				vp.Props = plain(props).(map[string]any)
 			}
-			c.Viewports = append(c.Viewports, vp)
+			out = append(out, vp)
 		}
-	} else {
+		return out
+	}
+	switch vps := v["viewports"].(type) {
+	case []any:
+		c.Viewports = viewports(vps)
+	case map[string]any:
+		// Per platform: each target runs at its most specific selector's sizes.
+		c.ViewportsBy = map[string][]Viewport{}
+		for _, sel := range orderedKeys(child(root, "viewports")) {
+			list, _ := vps[sel].([]any)
+			c.ViewportsBy[sel] = viewports(list)
+		}
+		if d, ok := c.ViewportsBy["default"]; ok {
+			c.Viewports = d
+		} else {
+			c.Viewports = c.ViewportsBy[orderedKeys(child(root, "viewports"))[0]]
+		}
+	default:
 		c.Viewports = []Viewport{DefaultViewport}
+	}
+	c.Same, c.LayoutThreshold = Pixels, DefaultLayoutThreshold
+	if sv, ok := v["same"]; ok {
+		a, err := ParseAspects(sv)
+		if err != nil {
+			l.errorf("/same", "%v", err)
+		}
+		c.Same, c.SameSet = a, true
 	}
 	c.Keyboard, _ = v["keyboard"].(bool)
 	if ms, ok := v["mask"].([]any); ok {
@@ -657,6 +817,9 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 		}
 		if p, ok := th["palette"].(string); ok {
 			c.PaletteThreshold = parsePercent(p)
+		}
+		if p, ok := th["layout"].(string); ok {
+			c.LayoutThreshold = parsePercent(p)
 		}
 		if d, ok := th["direction"].(string); ok {
 			c.DirectionThreshold, _ = strconv.ParseFloat(strings.TrimSuffix(d, "deg"), 64)
@@ -772,7 +935,7 @@ func (l *loader) crossCheck(c *Contract) {
 		}
 		for j, s := range t.Steps {
 			ptr := fmt.Sprintf("%s/steps/%d", base, j)
-			if s.Action == "do" {
+			if s.Action == "do" || s.Action == "input" {
 				// The target defines what it does, and to which roles: only the part is checked.
 				if s.Part != "" {
 					unknownPart(ptr+"/part", s.Part)
@@ -833,6 +996,12 @@ func (l *loader) crossCheck(c *Contract) {
 					l.errorf(ptr+"/"+ch.Field+"#key", "`%s` is a %s, which has no field `%s`", e.Part, role, ch.Field)
 				} else if !typeOK(t, ch.Want) && !(t == "number" && typeOK("number", ch.Want)) {
 					l.errorf(ptr+"/"+ch.Field, "`%s` is %s, but it is %s", ch.Field, t, describe(ch.Want))
+				} else {
+					for _, sel := range sortedKeys(ch.ByPlatform) {
+						if v := ch.ByPlatform[sel]; !typeOK(t, v) && !(t == "number" && typeOK("number", v)) {
+							l.errorf(ptr+"/"+ch.Field+"/"+escape(sel), "`%s` on `%s` is %s, but it is %s", ch.Field, sel, t, describe(v))
+						}
+					}
 				}
 			}
 		}
@@ -1021,4 +1190,59 @@ func camelCase(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// strs reads a list of strings (only, except).
+func strs(v any) []string {
+	var out []string
+	if xs, ok := v.([]any); ok {
+		for _, x := range xs {
+			if s, ok := x.(string); ok {
+				out = append(out, s)
+			}
+		}
+	}
+	return out
+}
+
+// same reads a part's `same`: aspects for every platform, or per platform selector.
+func (l *loader) same(v any, ptr string) map[string]Aspects {
+	out := map[string]Aspects{}
+	if m, ok := v.(map[string]any); ok {
+		for sel, x := range m {
+			a, err := ParseAspects(x)
+			if err != nil {
+				l.errorf(ptr+"/"+escape(sel), "%v", err)
+			}
+			out[sel] = a
+		}
+		return out
+	}
+	a, err := ParseAspects(v)
+	if err != nil {
+		l.errorf(ptr, "%v", err)
+	}
+	out["default"] = a
+	return out
+}
+
+// wantValue reads an expected value: a TextMatch for text and name written { contains | matches },
+// anything else as it is.
+func (l *loader) wantValue(want any, field, ptr string) any {
+	m, ok := want.(map[string]any)
+	if !ok || (field != "text" && field != "name") {
+		return want
+	}
+	_, hasC := m["contains"]
+	_, hasM := m["matches"]
+	if !hasC && !hasM {
+		return want
+	}
+	contains, _ := m["contains"].(string)
+	matches, _ := m["matches"].(string)
+	tm, err := NewTextMatch(contains, matches)
+	if err != nil {
+		l.errorf(ptr+"/matches", "`%s` is not a regular expression: %v", matches, err)
+	}
+	return tm
 }

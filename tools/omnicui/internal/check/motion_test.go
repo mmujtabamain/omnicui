@@ -159,7 +159,7 @@ colorSchemes: [ light, dark ]
 	rep, _ := runWith(t, map[string]T{"a": {}, "b": {}}, "switch", yaml)
 	r := result(t, rep, "a", "the thumb slides")
 	if len(r.Traces) != 4 || len(r.Clips) != 4 {
-		t.Fatalf("traces %d, clips %d", len(r.Traces), len(r.Clips))
+		t.Fatalf("traces %d, clips %d: %+v", len(r.Traces), len(r.Clips), r)
 	}
 	combos := map[string]bool{}
 	for _, c := range kind(rep, "timing") {

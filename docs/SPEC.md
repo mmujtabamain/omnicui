@@ -207,6 +207,7 @@ A hung adapter is gone after its timeout *(TestTimeout checks that the process n
 | pass | every expectation held | no |
 | fail | an expectation disagreed, a step acted on a part that does not exist, or the target has no such component | **yes** |
 | not advertised | the behaviour needs a construct the target did not advertise (the test can't run there) | no |
+| not applicable | the test is not for this platform (`only` / `except`), or it uses an input that is `none` there (§4.2a) | no |
 | not measured | the test ran but had nothing to measure: a generated keyboard test whose part isn't on screen when the component mounts, or whose press changes nothing a test can read (§5); a test whose steps act on an optional part this target's design doesn't have, or everything it checks is on such parts (§4.2) | no |
 | broken | the target broke during this test, or before it | **yes** |
 
@@ -358,7 +359,7 @@ Each skip is noted under the test, on the console (`webalt: no `thumb` in webalt
 
 **Looser text** [R]. `text` and `name` are a string the value must equal, or `{ contains: "3" }`, or `{ matches: "^3\\b" }` (a regular expression, RE2), for a design that shows more than the contract cares about ("3 taps"). A regular expression that doesn't compile is a contract error. `text` is what the part shows: the web adapter leaves out text that only a screen reader gets (an element clipped to a 1×1 box); JavaFX and egui read their labels' text. *(TestTextMatch, TestTextMatchContractError)*
 
-**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
+**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4), or `input`, a named input (§4.2a). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
 
 **Standards it follows:**
 - typing: JSON Schema 2020-12, through the `yaml-language-server` first line, a path relative to the contract file (the schema is `tools/omnicui/schema/contract.schema.json`, and is also embedded in the omnicui binary);
@@ -385,6 +386,73 @@ Other messages, as `TestErrors` checks them:
 - ``the default of `start` is a string, but its type is integer``
 - ``part `extra` is never used by any test`` (a warning)
 
+### 4.2a What may differ by platform [R]
+
+One contract holds every target to one behaviour and one look, and some platforms are meant to differ:
+- a desktop window has a title bar, and the web has none;
+- iOS draws its bars in Liquid Glass, while Android uses Material;
+- macOS goes back with ⌘[, Windows and Linux with Alt+←, and Android with its system back.
+
+A project says per part and per platform what must stay the same, and per platform how an input is given. Props and events never vary: they are the component's API, and two APIs are two contracts. With none of this written, a run compares exactly as in 0.2.3. (The design discussion: the per-platform verdict doc; the demonstration: `examples/todo/`.)
+
+**Platform tags.** A target is described by:
+- its **name**;
+- its **design** (`design:` in target.yaml);
+- its **forms** (`platform: [mobile]` in target.yaml: `desktop`, `web`, `mobile`, `tablet`);
+- its **OS**: what the adapter reports in advertise (`"platform": {"os": "android", "version": "16"}`), or else target.yaml's `os:`; one of `linux`, `windows`, `macos`, `ios`, `android`.
+
+A **selector** names one of these, or is `default`. Where several match a target, the most specific wins: target > OS > form > design > default. The console prints `platforms: web (web, linux) · android (mobile, android)`. A selector that matches no form, OS, target or design is a warning, with the nearest name. *(TestPlatformTags, TestUnknownSelectors)*
+
+**Viewports per platform:** `viewports: { default: [{ width: 1024, height: 720 }], mobile: [{ width: 360, height: 640 }] }`. Each target runs at its most specific selector's sizes. The i-th size of one target is compared with the i-th of another, at the same colour scheme, and labelled `1024x720-light / 360x640-light`. *(TestViewportsPerPlatform)*
+
+**`same:`: what each part holds the same.**
+- The aspects:
+  - `pixels`: all four pixel measures; it implies the three below;
+  - `layout`: a new measure from `bounds`. Each part's box is taken relative to the box around every part both targets show, scaled to its width. The largest difference in position or size, in percent of the width, is compared with `thresholds.layout` (default 10%). Parts in another reading order (top to bottom, then left to right) are 100%;
+  - `colours`: the palette (§5), over that part's box;
+  - `motion`: traces and clips of that part;
+  - `none`: nothing visual; behaviour still counts.
+- Where it is written:
+  - on a contract: `same: pixels`, the default, for targets of one design;
+  - on a part: `same: [layout, colours]`, or per platform: `same: { default: pixels, mobile: [layout, colours], ios: [layout] }`.
+- A target promises, for each part, its most specific selector's aspects, or else the **base**:
+  - the contract's `same`, between targets of one design;
+  - `[colours, motion]`, between designs.
+- A pair is held to the **intersection** of the two promises, part by part. Neither side can be held to more than it promised, and adding a target never changes how the others are compared.
+  - The whole screen is compared at the base level, with every part the pair holds to less than that masked.
+  - Each such part is then compared as it was promised: by `colours` over its box, by `layout`, or not at all.
+  - A part both hold to more than the base (`pixels` across designs) is compared as a crop of that part.
+  - A trace or a clip of a part is compared only where both promised that part's `motion`.
+- The comparison's note says what was compared: `compared as pixels, except value: layout · increment: layout`. *(TestSamePerPart, TestSameMotion)*
+
+**System regions.** With each screenshot, a target may report the regions its platform drew rather than the app: `{"path": …, "regions": [{"kind": "titlebar", "x": 0, "y": 0, "width": 320, "height": 28}]}`. The kinds are `titlebar`, `statusbar`, `homeindicator`, `keyboard` and `scrollbar`. They are left out of every comparison, without any contract naming them, and the note says so: `left out, drawn by the platform: macos's titlebar`. *(TestSystemRegions)*
+
+**Tests for some platforms:** `only: [desktop]` or `except: [ios]` on a test. Elsewhere its status is **not applicable**, which is neither a failure nor a gap (unlike "not advertised"). It is counted on its own: `… · 2 not applicable`. *(TestOnlyExcept)*
+
+**Named inputs.** `platforms.yaml`, next to `contracts/`, names the inputs whose form depends on the platform:
+
+```yaml
+inputs:
+  back:
+    default: { key: Alt+ArrowLeft }          # Windows, Linux
+    macos:   { key: Meta+BracketLeft }       # ⌘[
+    android: { do: back }                    # the system back
+    ios:     { do: swipe, with: { direction: right, from: edge } }
+  openMenuBar:
+    default: { key: F10 }
+    macos:   none                            # tests using it are not applicable there
+```
+
+Each form is one of:
+- `{ key: … }`;
+- `{ action: press | focus | hover }`;
+- `{ do: <name>, with: {…} }`;
+- `none`.
+
+A step `{ input: back }`, optionally with `part:`, is sent to each target in its platform's form; a key without a part is sent without one, to whatever has focus. Each result notes what it became: ``input `back`: do back (platforms.yaml, `android`)``. An input a contract names must be in platforms.yaml (``input `bak` is not in platforms.yaml; did you mean `back`?``). *(TestNamedInputs, TestNamedInputErrors)*
+
+**Platform exceptions.** An expected value may differ by platform, with a reason: `name: { default: "Back", ios: "Trails" }` with `why: "iOS names the back button after the previous screen"` on the expectation. A per-platform value without `why:` is a contract error. A target is held to its platform's value, and each one is listed under its result (`platform exception: back.name: "Trails" on ios (`ios`), not "Back"; why: …`) and counted in the summary (`· 3 platform exceptions`). *(TestPlatformExceptions)*
+
 ### 4.3 `target.yaml`
 
 `omnicui/targets/web/target.yaml`, without its comments:
@@ -398,6 +466,8 @@ stepTimeout: 15s             # default 10s: any one request
 startTimeout: 120s           # default 120s: starting and answering advertise
 exclusive: false             # true: run this target with no other target alongside
 design: redesign             # optional: a design of its own (default: the one most targets share)
+platform: [desktop]          # optional: its forms (desktop, web, mobile, tablet), for platform selectors (§4.2a)
+os: macos                    # optional: its OS, when the adapter doesn't report it in advertise
 ```
 
 **Starting** [R]. While a target starts, a line every 10 s on standard error says so, with the time left and the last line its adapter wrote to standard error: `[android] starting: 40s of startTimeout 20m0s · adapter: > Task :adapter:compileDebugUnitTestKotlin`, and then `[android] started in 52s`. *(TestStartProgress)*
@@ -428,7 +498,7 @@ Both commands run in the target's folder, so a relative path in them starts ther
 
 | Method | Params | Result | Required |
 |---|---|---|---|
-| `advertise` | `{protocol: "1"}` | `{protocol, can: [construct…], cannot: {construct: reason}}` | yes, the first request |
+| `advertise` | `{protocol: "1"}` | `{protocol, can: [construct…], cannot: {construct: reason}}`, and optionally `keys` (below) and `platform: {os, version}`: the OS it runs on (§4.2a) | yes, the first request |
 | `mount` | `{component, props, viewport: {width, height}, colorScheme}` | `null` | yes |
 | `press`, `focus`, `hover` | `{part}` | `null` | yes |
 | `key` | `{part, key}` | `null` | yes |
@@ -437,7 +507,7 @@ Both commands run in the target's folder, so a relative path in them starts ther
 | `do` | `{name, part?, with: {…}}` | `null` | optional: an action the target defines, advertised as `do.<name>` (see below) |
 | `read` | `{part, field}` | the value (string, boolean, number or null) | yes |
 | `events` | `{}` | `[{name, fields}…]` since the last call (mount clears) | yes |
-| `screenshot` | `{path}` | the path, after writing a PNG there | if it can render |
+| `screenshot` | `{path}` | the path, after writing a PNG there; or `{path, regions: [{kind, x, y, width, height}…]}`, with the regions its platform drew (§4.2a) | if it can render |
 | `trace` | `{part, point, steps: [{method, …params}…]}`, or `{part, property: "opacity" \| "scale", steps}` | `[{ms, x, y}…]`, sampled every frame while the steps run; for opacity `[{ms, value}…]`, the part's opacity times its ancestors' (capability `trace.opacity`); for scale, its width as drawn over its layout width, ancestors' transforms included (capability `trace.scale`). [R] The part is looked up at each frame, and samples start when it is first there: a part that appears during the steps (a sheet sliding in) is traced from its first frame. Not there at any frame: error -32002 | if it can render |
 | `record` | `{path, steps}` | `{frames: [{ms, file}…], inputs: [ms…], held}`: the frames written into `path`, when each step's input was delivered on the frames' clock, and whether frames come only when the picture changes (`held: true`, Chromium's screencast) rather than every pulse. A bare `[{ms, file}…]` (the first protocol 1 adapters) is still accepted | optional |
 | `probe` | `{path, viewport: {width, height}}` | the path, after writing the render check's picture there | optional; asked right after `advertise` when the target advertises `screenshot` and `probe` |

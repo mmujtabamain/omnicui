@@ -116,6 +116,16 @@ omnicui --project path/to/omnicui check     # name the project instead of findin
 
 **Different designs.** A target whose layout is meant to differ (a phone layout, a redesign) says `design: <name>` in its target.yaml. Its screenshots are then compared with other designs' by their **design language** instead of pixel by pixel: the colours each draws with. `palette` is the share of one's drawing in colours the other design uses in none of its screenshots (`thresholds.palette`, default 15%), and the warning names them. Behaviour, keyboard and motion are compared between every target as usual. `experiments/redesign/` shows it: a redesign in its own palette warns at 73–100%, and the same layouts in the reference colours measure 0%.
 
+**What may differ by platform.** A desktop window has a title bar, iOS draws Liquid Glass where Android draws Material, and each OS goes back its own way. A target says what it runs on (`platform: [mobile]` in target.yaml, and its OS in advertise), and a contract says per part what each platform must keep the same:
+- `same: { default: pixels, mobile: [layout, colours] }`: `pixels`, `layout`, `colours`, `motion` or `none`; each pair of targets compares only what both promised;
+- tests for some platforms only: `only: [desktop]`, or `except: [ios]`; elsewhere a test is "not applicable";
+- inputs named in `platforms.yaml`, such as `{ input: back }`, sent to each target in its own form;
+- per-platform expected values with a `why:`, counted as platform exceptions;
+- viewports per platform;
+- title bars and status bars a target reports, never compared.
+
+Props and events never vary. See SPEC §4.2a, and `examples/todo/`.
+
 **How motion is compared.** A `trace` follows a point's position, or with `property: opacity` or `scale` a part's opacity or scale, and it finds the part at each frame, so a sheet that slides in is traced from its first frame. A recorded clip (`record: true`) is compared too: each target's frames are reduced to how far the picture has gone from its first frame to its last, over time, and those curves are compared like traces (`thresholds.motion`, default 40 ms). That catches fades, blurs and colour changes on every target, egui included, whatever each target's frame rate. report.html plays the clips side by side, lined up at the input, with a speed control and a slider. `allCombinations: true` takes traces and clips at every viewport and colour scheme. `record: { part: x }` measures a clip over one part's box. A change that goes out and comes back (a spring, a hover in and out) is measured out and back. Two traces that move more than 30° apart (`thresholds.direction`) warn too: `web went right 20 px, webalt up 20 px`.
 
 **Part of a screen.** `screenshot: { mask: [parts] }` (or `mask:` for the whole contract) leaves parts out of the comparison, wherever either target shows them; a part marked `optional: true` is one that only some targets or designs have, such as desktop window controls or a switch's thumb that another design draws as a checkbox. Where a target doesn't have it, traces, clips and checks on it are skipped, with a note, and a test whose steps act on it is "not measured".

@@ -26,7 +26,7 @@ func pairLabel(c Comparison) string {
 
 func unit(kind string) string {
 	switch kind {
-	case "pixels", "palette":
+	case "pixels", "palette", "layout":
 		return "%"
 	case "direction":
 		return "°"
@@ -39,7 +39,7 @@ func valueText(c Comparison) string {
 		return "∞"
 	}
 	switch c.Kind {
-	case "pixels", "palette":
+	case "pixels", "palette", "layout":
 		return fmt.Sprintf("%.1f%%", c.Value)
 	case "direction":
 		return fmt.Sprintf("%.0f°", c.Value)
@@ -106,6 +106,9 @@ func Print(w io.Writer, rep *Report, runDir string) {
 	if line := designsLine(rep.Targets); line != "" {
 		fmt.Fprintln(w, line)
 	}
+	if line := platformsLine(rep.Targets); line != "" {
+		fmt.Fprintln(w, line)
+	}
 	col := 30
 	for _, c := range rep.Contracts {
 		for _, t := range c.Tests {
@@ -154,6 +157,12 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				for _, a := range res.Absent {
 					notes = append(notes, n+": "+a)
 				}
+				for _, in := range res.Inputs {
+					notes = append(notes, n+": "+in)
+				}
+				for _, e := range res.Exceptions {
+					notes = append(notes, n+": platform exception: "+e)
+				}
 				for _, k := range sortedKeys(res.Missing) {
 					if res.Status == Pass {
 						missing[k] = append(missing[k], fmt.Sprintf("%s (%s)", n, res.Missing[k]))
@@ -184,7 +193,12 @@ func Print(w io.Writer, rep *Report, runDir string) {
 					case "direction":
 						key = "direction " + cmp.Part
 					case "palette":
-						key = "colours (other designs)"
+						key = "colours"
+						if cmp.Part != "" {
+							key += " " + cmp.Part
+						}
+					case "layout":
+						key = "layout"
 					}
 					if cmp.Combo != "" && len(Combos(c)) > 1 && test.AllCombinations {
 						key += " " + cmp.Combo
@@ -203,7 +217,10 @@ func Print(w io.Writer, rep *Report, runDir string) {
 						continue
 					}
 					label := pairLabel(p)
-					if len(Combos(c)) > 1 {
+					if p.Part != "" {
+						label += " " + p.Part
+					}
+					if len(Combos(c)) > 1 || strings.Contains(p.Combo, " / ") {
 						label += " " + p.Combo
 					}
 					rows = append(rows, MeasuresRow{Label: label, Measures: *p.Measures, Over: p.Over, Note: p.Note, SpotPart: p.SpotPart})
@@ -214,7 +231,7 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				fmt.Fprintf(w, "    %s%s\n", pad(p, col-2), comparisonLine(traces[p]))
 				// What a palette or a direction warning is about: which colours, which way.
 				for _, cmp := range traces[p] {
-					if cmp.Warning && (cmp.Kind == "palette" || cmp.Kind == "direction") {
+					if cmp.Warning && (cmp.Kind == "palette" || cmp.Kind == "direction" || cmp.Kind == "layout") {
 						note := cmp.Note
 						if cmp.Palette != nil {
 							note = cmp.Palette.Note(cmp.A, cmp.B)
@@ -261,6 +278,12 @@ func Print(w io.Writer, rep *Report, runDir string) {
 	measured := ""
 	if s.NotMeasured > 0 {
 		measured = fmt.Sprintf(" · %d not measured", s.NotMeasured)
+	}
+	if s.NotApplicable > 0 {
+		measured += fmt.Sprintf(" · %d not applicable", s.NotApplicable)
+	}
+	if s.Exceptions > 0 {
+		measured += fmt.Sprintf(" · %d platform exceptions", s.Exceptions)
 	}
 	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised%s · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, measured, s.Warnings)
 	if wd, err := os.Getwd(); err == nil {
@@ -374,4 +397,21 @@ func designsLine(ts []TargetInfo) string {
 		parts = append(parts, fmt.Sprintf("%s: %s", name, strings.Join(groups[d], ", ")))
 	}
 	return "designs: " + strings.Join(parts, " · ") + " (pixels compared within a design, colours across designs)"
+}
+
+// platformsLine says what each target runs on, when any says: "platforms: web (web, linux) ·
+// android (mobile, android)".
+func platformsLine(ts []TargetInfo) string {
+	var parts []string
+	any := false
+	for _, t := range ts {
+		p := t.Platform
+		p.Target, p.Design = t.Name, ""
+		any = any || p.OS != "" || len(p.Forms) > 0
+		parts = append(parts, p.String())
+	}
+	if !any {
+		return ""
+	}
+	return "platforms: " + strings.Join(parts, " · ")
 }

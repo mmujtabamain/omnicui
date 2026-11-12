@@ -19,7 +19,10 @@ const (
 	// NotMeasured: the test ran but couldn't measure what it is for, such as a generated keyboard
 	// test on a part that isn't on screen when the component mounts. Not a failure; it is listed.
 	NotMeasured Status = "not measured"
-	Warning     Status = "warning"
+	// NotApplicable: the test is not for this platform (only / except), or it uses an input the
+	// platform doesn't have (platforms.yaml: none). Neither a gap nor a failure.
+	NotApplicable Status = "not applicable"
+	Warning       Status = "warning"
 )
 
 // rank orders statuses from best to worst, for "the worst over all combinations".
@@ -27,7 +30,7 @@ func rank(s Status) int {
 	switch s {
 	case Pass:
 		return 0
-	case NotAdvertised, NotMeasured:
+	case NotAdvertised, NotMeasured, NotApplicable:
 		return 1
 	case Fail:
 		return 2
@@ -50,10 +53,20 @@ func (c Combo) Label() string {
 	return fmt.Sprintf("%d×%d %s", c.Viewport.Width, c.Viewport.Height, c.Scheme)
 }
 
-// Combos lists a contract's viewports × colour schemes, viewports first.
+// Combos lists a contract's viewports × colour schemes, viewports first (the default platform's
+// viewports).
 func Combos(c *contract.Contract) []Combo {
+	return combosOf(c, c.Viewports)
+}
+
+// CombosFor lists the combinations a platform runs a contract at.
+func CombosFor(c *contract.Contract, p contract.Platform) []Combo {
+	return combosOf(c, c.ViewportsFor(p))
+}
+
+func combosOf(c *contract.Contract, vps []contract.Viewport) []Combo {
 	var out []Combo
-	for _, v := range c.Viewports {
+	for _, v := range vps {
 		for _, s := range c.ColorSchemes {
 			out = append(out, Combo{Viewport: v, Scheme: s})
 		}
@@ -92,6 +105,16 @@ type TestResult struct {
 	// Invisible lists the parts whose text, name or value was read while they had no size on
 	// screen or were outside the viewport: what a user can't see passed anyway.
 	Invisible []string `json:"invisible,omitempty"`
+	// Inputs says what each named input became on this target: "input `back`: do back
+	// (platforms.yaml, `android`)".
+	Inputs []string `json:"inputs,omitempty"`
+	// Exceptions are the expectations this target was held to a value of its own platform's:
+	// "back.name: \"Trails\" on ios (why: …)".
+	Exceptions []string `json:"platformExceptions,omitempty"`
+	// Regions: per combination, what the target's platform drew in the screenshot rather than the
+	// app (a title bar, a status bar, the home indicator, the soft keyboard), as the target
+	// reported it. They are left out of every comparison.
+	Regions map[string][]SystemRegion `json:"systemRegions,omitempty"`
 	// Absent says what was skipped because this target's design has no such part (an optional
 	// part): "no `thumb` (an optional part): its trace is skipped".
 	Absent []string `json:"absent,omitempty"`
@@ -166,6 +189,10 @@ type Comparison struct {
 // TargetInfo is what a target advertised.
 type TargetInfo struct {
 	Name string `json:"name"`
+	// Platform: what the target runs on (its forms, from target.yaml, and its OS, as its adapter
+	// reported it), for the contracts' platform selectors.
+	Platform  contract.Platform `json:"platform"`
+	OSVersion string            `json:"osVersion,omitempty"`
 	// Design is target.yaml's design: empty for the default one.
 	Design   string            `json:"design,omitempty"`
 	Can      []string          `json:"can"`
@@ -190,8 +217,11 @@ type Summary struct {
 	Broken        int `json:"broken"`
 	NotAdvertised int `json:"notAdvertised"`
 	NotMeasured   int `json:"notMeasured"`
-	Warnings      int `json:"warnings"`
-	Required      int `json:"requiredMissing"`
+	NotApplicable int `json:"notApplicable"`
+	// Exceptions counts the platform exceptions: expectations held to a platform's own value.
+	Exceptions int `json:"platformExceptions"`
+	Warnings   int `json:"warnings"`
+	Required   int `json:"requiredMissing"`
 }
 
 // Report is everything one check found. It is written to results.json.
@@ -230,4 +260,13 @@ func (r *Report) WarningsFailing(failOn []string) (int, []string) {
 		}
 	}
 	return n, failOn
+}
+
+// SystemRegion is a box of a screenshot that the platform drew, not the app.
+type SystemRegion struct {
+	Kind   string  `json:"kind"` // titlebar, statusbar, homeindicator, keyboard, scrollbar…
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }

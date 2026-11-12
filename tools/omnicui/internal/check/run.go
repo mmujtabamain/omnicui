@@ -202,6 +202,11 @@ type advert struct {
 	// Keys, optional: per role, the keys that activate it on this target's platform, for the
 	// tests that `keyboard: true` adds. A role it doesn't name gets the usual keys.
 	Keys map[string][]string `json:"keys,omitempty"`
+	// Platform, optional: the OS the target is running on, as it found it.
+	Platform struct {
+		OS      string `json:"os"`
+		Version string `json:"version,omitempty"`
+	} `json:"platform"`
 }
 
 func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult) {
@@ -255,7 +260,14 @@ func (r *runner) runTarget(t project.Target) (info TargetInfo, out []TestResult)
 	if info.Cannot == nil {
 		info.Cannot = map[string]string{}
 	}
-	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log, keys: ad.Keys}
+	// What the target runs on: its forms (target.yaml), and its OS as the adapter found it (or as
+	// target.yaml says, for an adapter that doesn't report one).
+	plat := contract.Platform{Target: t.Name, Design: t.Design, Forms: t.Platform, OS: ad.Platform.OS}
+	if plat.OS == "" {
+		plat.OS = t.OS
+	}
+	info.Platform, info.OSVersion = plat, ad.Platform.Version
+	tr := &targetRun{r: r, t: t, client: client, can: can, cannot: info.Cannot, step: stepTimeout, log: log, keys: ad.Keys, plat: plat}
 	if why := tr.probe(&info); why != "" {
 		// Screenshots from this target would be wrong; behaviour can still be checked.
 		delete(can, "screenshot")
@@ -371,6 +383,8 @@ type targetRun struct {
 	cannot map[string]string
 	step   time.Duration
 	log    *slog.Logger
+	// plat: what the target runs on, for the contracts' platform selectors.
+	plat contract.Platform
 }
 
 func (tr *targetRun) reason(capability string) string {
@@ -386,12 +400,43 @@ func slug(s string) string {
 	return strings.Trim(slugRE.ReplaceAllString(strings.ToLower(s), "-"), "-")
 }
 
-// stepParams turns contract steps into the requests a target receives, expanding `times`.
+// stepParams turns contract steps into the requests a target receives, expanding `times`, on
+// the default platform (named inputs as their default form).
 func stepParams(c *contract.Contract, steps []contract.Step) []map[string]any {
-	var out []map[string]any
+	out, _, _ := stepParamsFor(c, steps, contract.Platform{})
+	return out
+}
+
+// stepParamsFor is stepParams on one platform: a named input becomes that platform's form of it.
+// sent says what each input became ("back: key Alt+Left"); none names an input the platform
+// doesn't have, which makes the test not applicable there.
+func stepParamsFor(c *contract.Contract, steps []contract.Step, plat contract.Platform) (out []map[string]any, sent []string, none string) {
 	for _, s := range steps {
+		if s.Action == "input" {
+			in, sel, ok := contract.Pick(c.Inputs[s.Input], plat)
+			switch {
+			case !ok:
+				return nil, sent, fmt.Sprintf("input `%s` has no form for %s (and no default) in platforms.yaml", s.Input, plat)
+			case in.None:
+				return nil, sent, fmt.Sprintf("input `%s` is none on %s (platforms.yaml, `%s`)", s.Input, plat.Target, sel)
+			}
+			note := fmt.Sprintf("input `%s`: %s (platforms.yaml, `%s`)", s.Input, in, sel)
+			if !contains(sent, note) {
+				sent = append(sent, note)
+			}
+			s = contract.Step{Action: in.Action, Part: s.Part, Times: s.Times}
+			switch {
+			case in.Key != "":
+				s.Action, s.Key = "key", in.Key
+			case in.Do != "":
+				s.Action, s.Do, s.With = "do", in.Do, in.With
+			}
+		}
 		for i := 0; i < s.Times; i++ {
 			p := map[string]any{"method": s.Action, "part": c.ID + "." + s.Part}
+			if s.Part == "" {
+				delete(p, "part") // a key with no part goes to what has focus
+			}
 			switch s.Action {
 			case "do":
 				p = map[string]any{"method": "do", "name": s.Do, "with": s.With}
@@ -411,7 +456,7 @@ func stepParams(c *contract.Contract, steps []contract.Step) []map[string]any {
 			out = append(out, p)
 		}
 	}
-	return out
+	return out, sent, ""
 }
 
 func withoutMethod(p map[string]any) map[string]any {
@@ -495,14 +540,31 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	if test.Keyboard != nil {
 		return tr.runKeyboard(c, test, res)
 	}
+	// Not for this platform: only / except, or an input it doesn't have.
+	if !test.Applies(tr.plat) {
+		res.Status = NotApplicable
+		if len(test.Only) > 0 {
+			res.Messages = append(res.Messages, fmt.Sprintf("only: [%s], and %s isn't", strings.Join(test.Only, ", "), tr.plat))
+		} else {
+			res.Messages = append(res.Messages, fmt.Sprintf("except: [%s], and %s is", strings.Join(test.Except, ", "), tr.plat))
+		}
+		return res
+	}
+	steps, sent, none := stepParamsFor(c, test.Steps, tr.plat)
+	res.Inputs = sent
+	if none != "" {
+		res.Status = NotApplicable
+		res.Messages = append(res.Messages, none)
+		return res
+	}
 	// The constructs the behaviour needs; without them the test can't run here.
 	needs := []string{"mount"}
-	for _, s := range test.Steps {
-		if s.Action == "do" {
-			needs = append(needs, "do."+s.Do)
+	for _, s := range steps {
+		if s["method"] == "do" {
+			needs = append(needs, "do."+s["name"].(string))
 			continue
 		}
-		needs = append(needs, s.Action)
+		needs = append(needs, s["method"].(string))
 	}
 	for _, e := range test.Expect {
 		if e.Event != "" {
@@ -530,8 +592,7 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 	dir := filepath.Join(tr.r.runDir, tr.t.Name, c.Short(), slug(test.Name))
 	os.MkdirAll(dir, 0o755)
 	relRun := func(p string) string { r, _ := filepath.Rel(tr.r.runDir, p); return r }
-	combos := Combos(c)
-	steps := stepParams(c, test.Steps)
+	combos := CombosFor(c, tr.plat)
 	label := func(cb Combo) string {
 		if len(combos) > 1 {
 			return " (" + cb.Label() + ")"
@@ -643,7 +704,8 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		if test.Screenshot {
 			if tr.can["screenshot"] {
 				path := filepath.Join(dir, cb.Key()+".png")
-				if handle(tr.call("screenshot", map[string]any{"path": path}, nil), label(cb)) {
+				var shot shotReply
+				if handle(tr.call("screenshot", map[string]any{"path": path}, &shot), label(cb)) {
 					if res.Status == Broken {
 						break
 					}
@@ -652,6 +714,13 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 				} else {
 					res.Screenshots[cb.Key()] = relRun(path)
 					res.measured++
+					// What the platform drew there, not the app (a title bar, a status bar): never compared.
+					if len(shot.Regions) > 0 {
+						if res.Regions == nil {
+							res.Regions = map[string][]SystemRegion{}
+						}
+						res.Regions[cb.Key()] = shot.Regions
+					}
 					// Where each part was, so that a difference can be put down to a part.
 					if tr.can["bounds"] {
 						boxes := map[string]Rect{}
@@ -984,8 +1053,19 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, 
 			}
 			res.measured++
 			readsContent = readsContent || ch.Field == "text" || ch.Field == "name" || ch.Field == "value" || ch.Field == "checked"
-			if !same(ch.Want, got) {
-				fail(fmt.Sprintf("%s.%s: expected %s, got %s%s", e.Part, ch.Field, show(ch.Want), show(got), suffix))
+			want := ch.Want
+			// A value of this platform's own: a platform exception, with its reason.
+			if v, sel, ok := contract.Pick(ch.ByPlatform, tr.plat); ok {
+				want = v
+				if sel != "default" {
+					note := fmt.Sprintf("%s.%s: %s on %s (`%s`), not %s; why: %s", e.Part, ch.Field, show(v), tr.t.Name, sel, show(ch.Want), e.Why)
+					if !contains(res.Exceptions, note) {
+						res.Exceptions = append(res.Exceptions, note)
+					}
+				}
+			}
+			if !same(want, got) {
+				fail(fmt.Sprintf("%s.%s: expected %s, got %s%s", e.Part, ch.Field, show(want), show(got), suffix))
 			}
 		}
 		if skipped {
@@ -1118,10 +1198,13 @@ func summarize(rep *Report) Summary {
 			s.NotAdvertised++
 		case NotMeasured:
 			s.NotMeasured++
+		case NotApplicable:
+			s.NotApplicable++
 		}
 		if res.Status == Pass {
 			s.NotAdvertised += len(res.Missing)
 		}
+		s.Exceptions += len(res.Exceptions)
 	}
 	for _, c := range rep.Comparisons {
 		if c.Warning {
@@ -1155,7 +1238,7 @@ func (tr *targetRun) runKeyboard(c *contract.Contract, test contract.Test, res T
 			return res
 		}
 	}
-	cb := Combos(c)[0]
+	cb := CombosFor(c, tr.plat)[0]
 	tr.client.SetLog(tr.log.With("contract", c.ID, "test", test.Name, "combo", cb.Key()))
 	part := c.ID + "." + k.Part
 	// The target may say which keys activate a role on its platform (Compose ignores Space on a
@@ -1329,4 +1412,19 @@ func notShown(c *contract.Contract, part string) string {
 	return fmt.Sprintf("`%s` isn't on screen when %s mounts, so keyboard: true can't press it there. "+
 		"If it is shown by a sheet, a dialog or another state, make that a component of its own (or a prop that "+
 		"mounts it shown), and give that component keyboard: true", part, c.ID)
+}
+
+// shotReply is what `screenshot` replies: the path, or (newer adapters) the path and the regions
+// of the picture its platform drew rather than the app.
+type shotReply struct {
+	Path    string         `json:"path"`
+	Regions []SystemRegion `json:"regions,omitempty"`
+}
+
+func (r *shotReply) UnmarshalJSON(b []byte) error {
+	if len(b) > 0 && b[0] == '"' {
+		return json.Unmarshal(b, &r.Path)
+	}
+	type plain shotReply
+	return json.Unmarshal(b, (*plain)(r))
 }

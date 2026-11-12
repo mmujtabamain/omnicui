@@ -22,6 +22,7 @@ type reportTest struct {
 	Pixels      []Comparison
 	Timing      []Comparison
 	Palette     []Comparison
+	Layout      []Comparison
 	Visibility  []Comparison
 	ClipSets    []clipSet
 	Chart       template.HTML
@@ -294,6 +295,8 @@ func writeReport(path string, rep *Report) error {
 					rt.Visibility = append(rt.Visibility, cmp)
 				case "palette":
 					rt.Palette = append(rt.Palette, cmp)
+				case "layout":
+					rt.Layout = append(rt.Layout, cmp)
 				default:
 					rt.Timing = append(rt.Timing, cmp)
 				}
@@ -343,12 +346,18 @@ func writeReport(path string, rep *Report) error {
 		},
 		"value":   valueText,
 		"designs": designsLine,
-		"th":      func(c Comparison) string { return fmt.Sprintf("%g%s", c.Threshold, unit(c.Kind)) },
-		"css":     func(hex string) template.CSS { return template.CSS("background:" + hex) },
-		"lower":   strings.ToLower,
-		"cls":     func(s Status) string { return strings.ReplaceAll(string(s), " ", "-") },
-		"join":    strings.Join,
-		"unitOf":  unit,
+		"platform": func(t TargetInfo) string {
+			p := t.Platform
+			p.Target = ""
+			s := p.String()
+			return strings.Trim(s, " ()")
+		},
+		"th":     func(c Comparison) string { return fmt.Sprintf("%g%s", c.Threshold, unit(c.Kind)) },
+		"css":    func(hex string) template.CSS { return template.CSS("background:" + hex) },
+		"lower":  strings.ToLower,
+		"cls":    func(s Status) string { return strings.ReplaceAll(string(s), " ", "-") },
+		"join":   strings.Join,
+		"unitOf": unit,
 		"missing": func(res TestResult) []string {
 			var out []string
 			for _, k := range sortedKeys(res.Missing) {
@@ -439,7 +448,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>What each target advertised</caption>
 <thead><tr><th scope="col">Target</th><th scope="col">Can</th><th scope="col">Cannot</th></tr></thead>
 <tbody>
-{{range .Rep.Targets}}<tr><th scope="row">{{.Name}}</th><td>{{join .Can ", "}}</td><td>{{range $k, $v := .Cannot}}{{$k}} ({{$v}}) {{end}}</td></tr>
+{{range .Rep.Targets}}<tr><th scope="row">{{.Name}}{{with platform .}}<div class="muted">{{.}}</div>{{end}}</th><td>{{join .Can ", "}}</td><td>{{range $k, $v := .Cannot}}{{$k}} ({{$v}}) {{end}}</td></tr>
 {{end}}</tbody>
 </table>
 </div>
@@ -453,7 +462,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Result on each target</caption>
 <thead><tr><th scope="col">Target</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead>
 <tbody>
-{{range .Results}}<tr><th scope="row">{{.Target}}</th><td class="st st-{{cls .Status}}">{{.Status}}</td><td>{{range .Messages}}<div>{{.}}</div>{{end}}{{range .Absent}}<div class="muted absent">{{.}}</div>{{end}}{{range missing .}}<div class="muted">{{.}}</div>{{end}}</td></tr>
+{{range .Results}}<tr><th scope="row">{{.Target}}</th><td class="st st-{{cls .Status}}">{{.Status}}</td><td>{{range .Messages}}<div>{{.}}</div>{{end}}{{range .Absent}}<div class="muted absent">{{.}}</div>{{end}}{{range .Inputs}}<div class="muted input">{{.}}</div>{{end}}{{range .Exceptions}}<div class="exception">platform exception: {{.}}</div>{{end}}{{range missing .}}<div class="muted">{{.}}</div>{{end}}</td></tr>
 {{end}}</tbody>
 </table>
 </div>
@@ -471,7 +480,7 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Differences between targets (worst viewport and colour scheme per pair). Area: how much of the drawn area differs. Strength: how far off in colour. Shift: how far pixels moved. Spot: how concentrated the difference is in its worst 24×24 px spot. ▲ marks a measure above its threshold.</caption>
 <thead><tr><th scope="col">Pair</th>{{range measures}}<th scope="col">{{.}}</th>{{end}}<th scope="col">Result</th><th scope="col">Where</th></tr></thead>
 <tbody>
-{{range $c := .Pixels}}<tr><th scope="row">{{pair $c}}</th>{{range $n := measures}}<td{{if over $c $n}} class="st-warning"{{end}}>{{measure $c $n}}{{if over $c $n}} ▲ <span class="th">above {{threshold $c $n}}</span>{{end}}</td>{{end}}<td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{$c.Diff}}" alt="Differences between {{$c.A}} and {{$c.B}} at {{$c.Combo}}: strongly differing pixels red, slightly differing orange, the worst spots boxed in blue, masked areas grey" loading="lazy"><figcaption>{{$c.Combo}}{{with spot $c}}; worst spot {{.}}{{end}}{{with $c.SpotPart}}, in {{.}}{{end}}{{if $c.Note}}: {{$c.Note}}{{end}}</figcaption></figure></td></tr>
+{{range $c := .Pixels}}<tr><th scope="row">{{pair $c}}{{with $c.Part}} · {{.}}{{end}}</th>{{range $n := measures}}<td{{if over $c $n}} class="st-warning"{{end}}>{{measure $c $n}}{{if over $c $n}} ▲ <span class="th">above {{threshold $c $n}}</span>{{end}}</td>{{end}}<td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td><figure><img src="{{$c.Diff}}" alt="Differences between {{$c.A}} and {{$c.B}} at {{$c.Combo}}: strongly differing pixels red, slightly differing orange, the worst spots boxed in blue, masked areas grey" loading="lazy"><figcaption>{{$c.Combo}}{{with spot $c}}; worst spot {{.}}{{end}}{{with $c.SpotPart}}, in {{.}}{{end}}{{if $c.Note}}: {{$c.Note}}{{end}}</figcaption></figure></td></tr>
 {{end}}</tbody>
 {{with $first := index .Pixels 0}}<tfoot><tr><th scope="row">thresholds</th>{{range $n := measures}}<td>{{threshold $first $n}}</td>{{end}}<td></td><td></td></tr></tfoot>{{end}}
 </table>
@@ -486,7 +495,20 @@ pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--li
 <caption>Colours across designs, worst combination per pair</caption>
 <thead><tr><th scope="col">Compared</th><th scope="col">Difference</th><th scope="col">Result</th><th scope="col">Colours</th><th scope="col">Note</th></tr></thead>
 <tbody>
-{{range $c := .Palette}}<tr><th scope="row">{{pair $c}}</th><td>{{value $c}} (threshold {{th $c}})</td><td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td>{{with $c.Palette}}<div class="swatches">{{$c.A}}: {{range .A}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div><div class="swatches">{{$c.B}}: {{range .B}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div>{{end}}</td><td>{{$c.Combo}}: {{$c.Note}}</td></tr>
+{{range $c := .Palette}}<tr><th scope="row">{{pair $c}}{{with $c.Part}} · {{.}}{{end}}</th><td>{{value $c}} (threshold {{th $c}})</td><td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td>{{with $c.Palette}}<div class="swatches">{{$c.A}}: {{range .A}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div><div class="swatches">{{$c.B}}: {{range .B}}<span><i style="{{css .Hex}}"></i>{{.Hex}}</span> {{end}}</div>{{end}}</td><td>{{$c.Combo}}: {{$c.Note}}</td></tr>
+{{end}}</tbody>
+</table>
+</div>
+{{end}}
+{{if .Layout}}
+<h3>Layout across platforms</h3>
+<p>Parts that a pair of targets holds to the same layout but not the same pixels (<code>same: [layout]</code>): each part's box relative to the component, scaled to its width.</p>
+<div class="table" role="region" tabindex="0" aria-label="Layout across platforms, worst combination per pair">
+<table>
+<caption>Layout across platforms, worst combination per pair</caption>
+<thead><tr><th scope="col">Compared</th><th scope="col">Difference</th><th scope="col">Result</th><th scope="col">Note</th></tr></thead>
+<tbody>
+{{range $c := .Layout}}<tr><th scope="row">{{pair $c}}</th><td>{{value $c}} (threshold {{th $c}})</td><td class="st {{if $c.Warning}}st-warning{{else}}st-pass{{end}}">{{if $c.Warning}}warning{{else}}pass{{end}}</td><td>{{$c.Combo}}: {{$c.Note}}</td></tr>
 {{end}}</tbody>
 </table>
 </div>

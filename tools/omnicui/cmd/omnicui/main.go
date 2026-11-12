@@ -277,6 +277,18 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "omnicui: there are no targets; add one with `omnicui add <name>`")
 		return 2
 	}
+	// Platform selectors that match no form, OS, target or design: probably a typo.
+	var known []string
+	for _, t := range targets {
+		known = append(known, t.Name)
+		if t.Design != "" {
+			known = append(known, t.Design)
+		}
+	}
+	for _, pr := range contract.UnknownSelectors(contracts, known) {
+		fmt.Fprintln(stderr, pr)
+		problems = append(problems, pr)
+	}
 	ts, cs, err := selection(names, targets, contracts)
 	if err != nil {
 		fmt.Fprintln(stderr, "omnicui:", err)

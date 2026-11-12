@@ -166,7 +166,7 @@ func TestDesigns(t *testing.T) {
 	}
 	out.Reset()
 	Print(&out, rep, p.RunDir())
-	if !strings.Contains(out.String(), "colours (other designs)") || !strings.Contains(out.String(), "b uses #7b2cbf (100%), which a doesn't use") {
+	if !strings.Contains(out.String(), "    colours  ") || !strings.Contains(out.String(), "b uses #7b2cbf (100%), which a doesn't use") {
 		t.Fatal(out.String())
 	}
 

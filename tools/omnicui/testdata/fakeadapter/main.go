@@ -31,6 +31,10 @@
 //	FAKE_NO_PARTS     parts this target's design doesn't have, e.g. thumb ("no part" for each)
 //	FAKE_TEXT_SUFFIX  what the counter's value shows after the number, e.g. " taps"
 //	FAKE_VERTICAL     the switch's thumb slides down instead of across
+//	FAKE_OS           the OS it reports in advertise (platform: {os})
+//	FAKE_REGIONS      kind:x,y,w,h;… regions its platform draws (a title bar), drawn in red and
+//	                  reported with each screenshot
+//	FAKE_BOUNDS       part=x,y,w,h;… boxes reported for those parts, instead of the drawn block
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -194,24 +198,32 @@ func screenshot(path string) error {
 	v, _ := strconv.ParseUint(env("FAKE_COLOR", "1d1f1b"), 16, 32)
 	fg := color.RGBA{uint8(v >> 16), uint8(v >> 8), uint8(v), 0xff}
 	shift := envInt("FAKE_SHIFT")
+	// The settings, read once: this runs for every pixel of every frame of a clip.
+	regs, controls := regions(), os.Getenv("FAKE_CONTROLS") != ""
+	thumb := st.component == "ui.switch" && !has(os.Getenv("FAKE_NO_PARTS"), "thumb")
+	// The switch's thumb, where it is now (so that recorded frames show it slide).
+	tx, ty := 30+int(st.moved+0.5), 33
+	if os.Getenv("FAKE_VERTICAL") != "" {
+		tx, ty = 30, 33+int(st.moved+0.5)
+	}
 	for y := 0; y < st.h; y++ {
 		for x := 0; x < st.w; x++ {
 			c := bg
 			if x >= 24+shift && x < 84+shift && y >= 24 && y < 54 {
 				c = fg
 			}
-			if os.Getenv("FAKE_CONTROLS") != "" && x >= 100 && x < 120 && y >= 24 && y < 44 {
+			for _, r := range regs {
+				if x >= r.x && x < r.x+r.w && y >= r.y && y < r.y+r.h {
+					c = color.RGBA{0xd0, 0x20, 0x20, 0xff}
+				}
+			}
+			if controls && x >= 100 && x < 120 && y >= 24 && y < 44 {
 				c = color.RGBA{0xe0, 0x30, 0x30, 0xff}
 			}
-			// The switch's thumb, where it is now (so that recorded frames show it slide).
-			tx, ty := 30+int(st.moved+0.5), 33
-			if os.Getenv("FAKE_VERTICAL") != "" {
-				tx, ty = 30, 33+int(st.moved+0.5)
-			}
-			if st.component == "ui.switch" && !has(os.Getenv("FAKE_NO_PARTS"), "thumb") && x >= tx+shift && x < tx+12+shift && y >= ty && y < ty+12 {
+			if thumb && x >= tx+shift && x < tx+12+shift && y >= ty && y < ty+12 {
 				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
 			}
-			img.Set(x, y, c)
+			img.SetRGBA(x, y, c)
 		}
 	}
 	os.MkdirAll(filepath.Dir(path), 0o755)
@@ -220,7 +232,7 @@ func screenshot(path string) error {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	return (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(f, img)
 }
 
 // probe draws the render check's picture: white, a black square at 8,8 and a red one 8 px from
@@ -251,7 +263,7 @@ func probe(path string, w, h int) error {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	return (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(f, img)
 }
 
 func handle(n int, r req) (any, error) {
@@ -277,6 +289,9 @@ func handle(n int, r req) (any, error) {
 			}
 		}
 		ad := map[string]any{"protocol": "1", "can": can, "cannot": cannot}
+		if name := os.Getenv("FAKE_OS"); name != "" {
+			ad["platform"] = map[string]any{"os": name, "version": "1.0"}
+		}
 		// FAKE_KEYS: role=Key+Key,… the keys that activate each role here (advertise keys).
 		if v := os.Getenv("FAKE_KEYS"); v != "" {
 			keys := map[string][]string{}
@@ -372,6 +387,13 @@ func handle(n int, r req) (any, error) {
 			return map[string]any{"x": 24, "y": 24, "width": 0, "height": 0}, nil
 		}
 		shift := envInt("FAKE_SHIFT")
+		for _, kv := range strings.Split(os.Getenv("FAKE_BOUNDS"), ";") {
+			if k, v, ok := strings.Cut(kv, "="); ok && st.component+"."+k == p.Part {
+				var x, y, w, h float64
+				fmt.Sscanf(v, "%g,%g,%g,%g", &x, &y, &w, &h)
+				return map[string]any{"x": x, "y": y, "width": w, "height": h}, nil
+			}
+		}
 		return map[string]any{"x": 24 + shift, "y": 24, "width": 60, "height": 30}, nil
 	case "probe":
 		return p.Path, probe(p.Path, p.Viewport.Width, p.Viewport.Height)
@@ -383,7 +405,17 @@ func handle(n int, r req) (any, error) {
 		}
 		return out, nil
 	case "screenshot":
-		return p.Path, screenshot(p.Path)
+		if err := screenshot(p.Path); err != nil {
+			return nil, err
+		}
+		if regs := regions(); len(regs) > 0 {
+			var out []map[string]any
+			for _, r := range regs {
+				out = append(out, map[string]any{"kind": r.kind, "x": r.x, "y": r.y, "width": r.w, "height": r.h})
+			}
+			return map[string]any{"path": p.Path, "regions": out}, nil
+		}
+		return p.Path, nil
 	case "trace", "record":
 		// FAKE_LATE_PART: the traced part only appears during the steps, and this target looks
 		// it up before them (as a target shouldn't).
@@ -535,4 +567,25 @@ func main() {
 		out.Write(append(b, '\n'))
 		out.Flush()
 	}
+}
+
+type region struct {
+	kind       string
+	x, y, w, h int
+}
+
+// regions are FAKE_REGIONS: kind:x,y,w,h;…
+func regions() []region {
+	var out []region
+	for _, r := range strings.Split(os.Getenv("FAKE_REGIONS"), ";") {
+		kind, box, ok := strings.Cut(r, ":")
+		if !ok {
+			continue
+		}
+		var g region
+		g.kind = kind
+		fmt.Sscanf(box, "%d,%d,%d,%d", &g.x, &g.y, &g.w, &g.h)
+		out = append(out, g)
+	}
+	return out
 }

@@ -33,13 +33,19 @@ type Part struct {
 	// isn't; so do traces, clips and expectations on it, and a test whose steps act on it is not
 	// measured there.
 	Optional bool `json:"optional,omitempty"`
+	// Same: what the part holds the same between targets, per platform selector (`default` for
+	// every platform). Empty: the contract's (or, across designs, colours and motion).
+	Same map[string]Aspects `json:"same,omitempty"`
 }
 
 // Step is one user action. Times is already 1 or more.
 type Step struct {
 	// Action is press, focus, key, type, drag or hover; or "do", for an action a target defines:
 	// Do is its name and With its parameters, passed on unchanged. Part may be empty for "do".
+	// Or "input": Input names one of the project's inputs (platforms.yaml), sent to each target
+	// in its platform's form.
 	Action string         `json:"action"`
+	Input  string         `json:"input,omitempty"`
 	Do     string         `json:"do,omitempty"`
 	With   map[string]any `json:"with,omitempty"`
 	Part   string         `json:"part"`
@@ -97,6 +103,9 @@ func (m TextMatch) String() string {
 type Check struct {
 	Field string `json:"field"`
 	Want  any    `json:"want"`
+	// ByPlatform: the value per platform selector, when it differs by platform (Want is then
+	// the default's). Each one is a platform exception, and the expectation says why.
+	ByPlatform map[string]any `json:"byPlatform,omitempty"`
 }
 
 // Expectation is either about a part (Part and Checks) or about an event (Event, Times, Last).
@@ -106,7 +115,9 @@ type Expectation struct {
 	Event  string         `json:"event,omitempty"`
 	Times  *int           `json:"times,omitempty"`
 	Last   map[string]any `json:"last,omitempty"`
-	Line   int            `json:"-"`
+	// Why: the reason a value differs by platform.
+	Why  string `json:"why,omitempty"`
+	Line int    `json:"-"`
 }
 
 // Has reports whether the expectation checks a field.
@@ -157,7 +168,19 @@ type Test struct {
 	// Keyboard is set on the tests omnicui adds for `keyboard: true`: press Part with Key, and
 	// expect what pressing it with the pointer does.
 	Keyboard *KeyboardCheck `json:"keyboard,omitempty"`
-	Line     int            `json:"-"`
+	// Only and Except: platform selectors; the test is not applicable on a target that matches
+	// none of Only, or one of Except.
+	Only   []string `json:"only,omitempty"`
+	Except []string `json:"except,omitempty"`
+	Line   int      `json:"-"`
+}
+
+// Applies says whether a test runs on a platform (only / except).
+func (t Test) Applies(p Platform) bool {
+	if len(t.Only) > 0 && !p.Matches(t.Only) {
+		return false
+	}
+	return !(len(t.Except) > 0 && p.Matches(t.Except))
 }
 
 // Viewport is a window size, with the props a test gets at that size (a test's own props win).
@@ -179,14 +202,17 @@ var KeyboardKeys = map[string][]string{"button": {"Enter", "Space"}, "switch": {
 
 // Contract is one loaded and checked contract file.
 type Contract struct {
-	ID           string     `json:"id"`
-	File         string     `json:"file"`
-	Props        []Field    `json:"props"`
-	Events       []Event    `json:"events"`
-	Parts        []Part     `json:"parts"`
-	Tests        []Test     `json:"tests"`
-	Viewports    []Viewport `json:"viewports"`
-	ColorSchemes []string   `json:"colorSchemes"`
+	ID        string     `json:"id"`
+	File      string     `json:"file"`
+	Props     []Field    `json:"props"`
+	Events    []Event    `json:"events"`
+	Parts     []Part     `json:"parts"`
+	Tests     []Test     `json:"tests"`
+	Viewports []Viewport `json:"viewports"`
+	// ViewportsBy: viewports per platform selector, when they differ by platform (Viewports is
+	// then the default's, or the first given).
+	ViewportsBy  map[string][]Viewport `json:"viewportsBy,omitempty"`
+	ColorSchemes []string              `json:"colorSchemes"`
 	// Keyboard adds, for every button, switch and checkbox, a test per key that activates its
 	// role: the key must do what a pointer press does, on every target.
 	Keyboard bool `json:"keyboard,omitempty"`
@@ -199,6 +225,15 @@ type Contract struct {
 	// a clip shows everything that changes (a colour, a highlight), each target's frames come on
 	// its own clock, and correct renderings measured up to 30 ms apart.
 	MotionThreshold float64 `json:"motionThreshold"`
+	// Same: what parts hold the same between targets of one design (default pixels); SameSet says
+	// the contract set it.
+	Same    Aspects `json:"same"`
+	SameSet bool    `json:"-"`
+	// LayoutThreshold: how far a part's box may move between targets compared by layout, in
+	// percent of the component's width.
+	LayoutThreshold float64 `json:"layoutThreshold"`
+	// Inputs: the project's named inputs (platforms.yaml), for steps that name one.
+	Inputs Inputs `json:"-"`
 	// PaletteThreshold is for screenshots of targets of different designs, compared by the
 	// colours they draw with: the share, in percent, of one's drawing in colours the other doesn't
 	// use. DirectionThreshold is the angle, in degrees, two targets may move a traced point apart.
@@ -247,6 +282,8 @@ var (
 	DefaultPaletteThreshold = 15.0
 	// DefaultDirectionThreshold: a thumb sliding across against one sliding up is 90°.
 	DefaultDirectionThreshold = 30.0
+	// DefaultLayoutThreshold: a part's box may be 10% of the component's width off.
+	DefaultLayoutThreshold = 10.0
 	// DefaultPixelThresholds were set from screenshots of correct and defective renderings
 	// (docs/verification/pixel-measures.md): correct renderings stay under all four, and each
 	// defect there goes over at least one.
@@ -278,4 +315,22 @@ func (t PixelThresholds) Get(name string) float64 {
 		return t.Spot
 	}
 	return 0
+}
+
+// ViewportsFor are the viewports a platform runs a contract at.
+func (c *Contract) ViewportsFor(p Platform) []Viewport {
+	if vs, _, ok := Pick(c.ViewportsBy, p); ok {
+		return vs
+	}
+	return c.Viewports
+}
+
+// PartSame is what a part promises on a platform, and whether the contract said anything.
+func (c *Contract) PartSame(part string, p Platform) (Aspects, bool) {
+	if pt := c.PartByName(part); pt != nil {
+		if a, _, ok := Pick(pt.Same, p); ok {
+			return a, true
+		}
+	}
+	return 0, false
 }
