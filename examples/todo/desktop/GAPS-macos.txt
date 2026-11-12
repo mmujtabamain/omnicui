@@ -1,0 +1,104 @@
+macOS desktop todo — implementation and verification
+
+Scope
+- Branch: devbench/parity-and-verification; pulled origin, base 418fff3.
+- Added only apps/macos/, omnicui/targets/macos/ and this report under
+  examples/todo/desktop/. Tools, contracts and web source were not edited.
+- Built bin/omnicui with the requested Go command. Swift deployment target is
+  macOS 26.0; verification host is macOS 27.2, SDK 27.2, Swift 6.4.2,
+  Go 1.27.3 and Node 22.23.1. The local Todo.app is ad-hoc signed.
+- The shipped fixture is byte-identical: SHA-256
+  c1ace19804fea36d7f4a6e1b96c2e183c518741010339f09c058615992a51d2e.
+
+App and target
+- The same SwiftUI screens and in-memory store power Todo.app and the adapter.
+  The app uses a real NSToolbar, native checkboxes, segmented controls, text
+  fields, a multiline NSTextView, and tinted SwiftUI system switches.
+- Each mount creates a fresh store and NSHostingView in a real window. One
+  NSApplication process serves the entire JSON-RPC conversation. Standard
+  output is protocol only; keyboard inputs are real NSEvents, including Cmd+[.
+- Screenshots capture the window hierarchy at scale 1. At the contract viewport
+  they are 1024x752, with a measured 32-point titlebar region, leaving 1024x720.
+  The actual native toolbar remains in the compared content. Bounds are native
+  view conversions into those screenshot coordinates, including dialog scale.
+- The render probe uses the same bitmap capture path and passes. Traces sample
+  rendered view transforms on the live run loop; recordings use real timestamps.
+- Local build and run instructions are in both new directories' README.md files.
+  Full results and protocol evidence are in targets/macos/build/full-1 and
+  full-2 (ignored generated files); logs are build/full-1.log and full-2.log.
+
+What omnicui/contracts could not check
+1. keyboard: true has no per-part setup. Its dialog Add and Cancel tests mount
+   the list with the dialog closed, then report "not measured". It suggests
+   adding a component or a prop that mounts the dialog shown, which would change
+   this product API. Neither the app defaults nor the contracts were changed
+   to accommodate that suggestion.
+   What I wanted to write (proposed syntax, not currently accepted):
+     keyboard:
+       confirmAdd:
+         setup: [{action: press, part: add},
+                 {action: type, part: newTitle, text: Keyboard task}]
+         keys: [Enter, Space]
+       cancelAdd:
+         setup: [{action: press, part: add}]
+         keys: [Enter, Space]
+2. The generated All/System segment tests have no observable change from the
+   default mount. They are also "not measured", rather than testing the segment
+   after choosing another one. I wanted per-part keyboard setup steps for that
+   state as well. Together these limitations cause 16 not-measured results
+   across the two targets; they are not missing adapter capabilities.
+3. SPEC-APP section 7 asks for Enter and Space on checkboxes and switches, but
+   generated checks exercise only Space for those roles. I wanted contract
+   keyboard configuration that explicitly enumerates both keys per role.
+   The adapter accepts both. The independent smoke test also exercises Return
+   on a switch and dialog Add/Cancel after the normal user setup.
+
+Verification beyond the full checks
+- smoke.py checks real focus and key delivery, multiline notes, an event for
+  every typed notes character, monotonic IDs after deletions, trimming,
+  segments, dialog keys, scale samples, and real Cmd+[ navigation.
+- The native toolbar's label and icon use Auto Layout centre constraints;
+  Settings also centres its title/image group. This corrects the alignment
+  issue identified by the user. Native screenshots were inspected in both
+  appearances. All toolbar contents share the same measured vertical centre.
+- The fixture hash, app signature and binary's macOS 26.0 deployment target were
+  verified. Builds used one compiler job, with memory and other compiler
+  processes checked first; compilation paused when requested by the user.
+- Exactly two full macos/web checks were run. The first finished in 65.98 s:
+  156 pass, 0 fail, 0 broken, 16 not measured, 0 warnings. Its dialog scale
+  timing difference was 8.6 ms and clip progress difference 22 ms, both passing.
+
+Last full check
+156 pass · 0 fail · 0 broken · 0 not advertised · 16 not measured · 0 warnings
+
+Start-up and total time
+- Last full check: macos startup 2,399 ms; macos total 50,626 ms.
+  Web startup 2,584 ms; web total 70,386 ms. Command wall time 77.00 s.
+- Largest layout difference: 0.7%, below 10%. All colour comparisons passed.
+  Dialog scale timing difference: 9.1 ms, below 20 ms.
+- Implementation session began 2026-11-12 at 16:31 Asia/Karachi and took
+  approximately 28 minutes, including setup, resource pauses and verification.
+
+What omnicui got in my way
+- No blocking protocol, titlebar, layout, colour or motion comparison defects.
+- The generated keyboard tests cannot set up a dialog or an alternate selected
+  segment, and do not generate Enter checks for switches/checkboxes. The
+  desired contract additions are written above; no tool/contract workaround
+  was added, and the 16 unmeasured results remain visible.
+
+Own mistakes (corrected)
+- I initially read @Published tasks before the store was fully initialized,
+  and used an unavailable Swift spelling for the heading accessibility role.
+  Both were compile-time mistakes, fixed before any full check.
+- I initially serviced stdin without NSApplication.run(). That produced
+  inactive native controls and incomplete accessibility behavior. Requests
+  now run on the main queue inside the real application event loop.
+- I initially relied on native button content tint to colour button titles;
+  AppKit did not apply it consistently. Attributed native titles now use the
+  product palette, including the dark on-accent colour.
+- The first notes field wrapped text but was not a proper multiline editor.
+  Replaced it with NSTextView; multiline input and per-keystroke events pass
+  the independent smoke test.
+- My initial toolbar custom views used manual child frames and aligned their
+  contents inconsistently. The user identified this. Auto Layout now centres
+  both item contents, and Settings keeps its icon and title together.
