@@ -15,4 +15,4 @@ omnicui checks that all three behave the same and keep one design, each idiomati
 | `web/` | The web port, its server and its target | P2 |
 | `process/` | The building agents' transcripts and a summary of each | after the build |
 
-The app's own documentation is in `tauri/AGENTS.md` and `tauri/.llm/`.
+Why it is being ported: [WHY.md](WHY.md). It covers load time, and dialogs that open in a window of their own. The app's own documentation is in `tauri/AGENTS.md` and `tauri/.llm/`.
