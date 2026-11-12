@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+/* Scan the shared common-ui sources: their Tailwind classes (e.g. the
+   RichTextEditor's `absolute` placeholder, `fixed` toolbar, `z-tooltip` mention
+   popup) live outside this project's root, which v4 auto-detection skips — so
+   without this any class the tray's own src doesn't also use goes ungenerated. */
+@source '../../common-ui/src';
+@import '../../common-ui/styles/tokens.css';
+@import '../../common-ui/styles/note-rt.css';
+
+/* The tray tracks the system appearance by toggling the shared `.dark` class on
+   <html> from lib/theme.ts (it has no user override, unlike the main app). That
+   drives both Tailwind's `dark:` variant and the theme-swap aliases + Material
+   Symbols weight defined for `:root`/`.dark` in the shared tokens.css. */
+
+/* The window backing stays transparent (there is no native vibrancy anymore) so
+   the opaque card's rounded corners render against nothing — the card itself
+   paints the solid surface. */
+html,
+body,
+#root {
+  overscroll-behavior: none;
+  background: transparent;
+  /* The card is capped to fit the (fixed) window; never let focusing the notes
+     editor scroll the whole page and push the title off-screen. */
+  overflow: hidden;
+}
+
+/* The window tracks the card's height (see hooks/useBarAutoResize.ts), so these
+   two normally match. `#root` pins the card to one window edge — the top by
+   default (notes grow downward), or the bottom when Rust reports the bar was
+   summoned near the screen's bottom edge (`.anchor-bottom`, notes grow upward)
+   — which decides which end stays put on the frame between the card growing and
+   the window resize landing, and matches the edge Rust holds still. */
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* Painted only once Rust reports this reveal's anchor (`.bar-ready`), so a
+     reveal never shows the card at the previous summon's anchor for a frame.
+     The backing is transparent, so a hidden card shows nothing. */
+  opacity: 0;
+}
+:root.anchor-bottom #root {
+  justify-content: flex-end;
+}
+:root.bar-ready #root {
+  opacity: 1;
+}
+
+/* Toggled from hooks/useCursorAutohide.ts while the user is typing to hide the
+   mouse pointer (it opens right over the title field). Removed on the next
+   mouse move. The
+   `:root.cursor-hidden` compound out-specifies the input's UA text cursor and
+   any `cursor-*` utility, so no `!important` is needed. */
+:root.cursor-hidden * {
+  cursor: none;
+}
