@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=../../../../../tools/omnicui/schema/contract.schema.json
+# The desktop app's settings page (desktop/SPEC-APP.md, "todo.settings"): the theme, as a segmented control, and whether the
+# list's All filter shows completed tasks. The theme applies at once, to this screen too.
+id: todo.settings
+
+props:
+  theme:         { type: string, enum: [system, light, dark], default: system }
+  showCompleted: { type: boolean, default: true }
+
+events:
+  themeChanged:         { theme: { type: string, enum: [system, light, dark] } }
+  showCompletedChanged: { show: { type: boolean } }
+  closed:               {}
+
+parts:
+  themeSystem: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  themeLight: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  themeDark: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  showCompleted: { role: switch, same: [layout] }   # a switch: a web toggle, an NSSwitch on a Mac
+  settingsBack:  { role: button }
+
+tests:
+  - name: starts from the system theme, with completed tasks shown
+    expect:
+      - { part: themeSystem, selected: true, text: "System" }
+      - { part: themeLight, selected: false, text: "Light" }
+      - { part: themeDark, selected: false, text: "Dark" }
+      - { part: showCompleted, checked: true, name: "Show completed" }
+      - { part: settingsBack, name: "Back to tasks" }
+    screenshot: true
+
+  - name: choosing Dark selects it, reports it and darkens the screen
+    steps:
+      - { action: press, part: themeDark }
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+      - { event: themeChanged, times: 1, last: { theme: dark } }
+    screenshot: true
+
+  - name: a Light theme stays light whatever the system's scheme
+    props: { theme: light }
+    expect:
+      - { part: themeLight, selected: true }
+      - { part: themeSystem, selected: false }
+    screenshot: true
+
+  - name: choosing the theme already chosen reports nothing
+    steps:
+      - { action: press, part: themeSystem }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { event: themeChanged, times: 0 }
+
+  - name: Show completed turns off
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: false }
+      - { event: showCompletedChanged, times: 1, last: { show: false } }
+
+  - name: and on again
+    props: { showCompleted: false }
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: true }
+      - { event: showCompletedChanged, times: 1, last: { show: true } }
+
+  - name: leaving reports it
+    steps:
+      - { action: press, part: settingsBack }
+    expect:
+      - { event: closed, times: 1 }
+      - { event: themeChanged, times: 0 }
+
+  - name: Enter chooses the focused segment
+    steps:
+      - { action: focus, part: themeLight }
+      - { action: key, part: themeLight, key: Enter }
+    expect:
+      - { part: themeLight, selected: true, focused: true }
+      - { event: themeChanged, times: 1, last: { theme: light } }
+
+viewports: [{ width: 1024, height: 720 }]
+colorSchemes: [light, dark]
+# The web and macOS apps share one product design (design/DESIGN-DESKTOP.md): the same regions in
+# the same proportions and the same palette, each drawn the way its platform draws it. So every
+# part keeps its layout, colours and motion between them, never its pixels; a part that each
+# platform draws as its own native control keeps only its layout (`same: [layout]` below).
+same: [layout, colours, motion]
+keyboard: true

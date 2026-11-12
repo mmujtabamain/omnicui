@@ -1,6 +1,10 @@
-Gaps met while building the todo example (Android + web) against omnicui.
+Gaps met while building the todo example against omnicui.
 Each entry: what happened, and what I would have wanted to write instead. "OWN" marks my own
 mistakes; "PLATFORM" a limit of the platform, not omnicui's.
+
+Entries 1-18 were found while Android and the web were one project, compared with each other.
+Since then the example is two projects (mobile/: Android, later iOS; desktop/: the web, later
+macOS) with no checks between them; the entries say where that changed them. 19 and on are new.
 
 1. No way to say a part is absent.
    After Cancel, after going back, after a filter, the honest check is "the dialog / the detail /
@@ -26,11 +30,12 @@ mistakes; "PLATFORM" a limit of the platform, not omnicui's.
    `button` and check `selected`, which is right for both, but `role` can't be checked on them.
    Wanted: `role: radio` with `selected`/`checked`, accepted from aria-pressed too.
 
-5. The "traces and clip: first combination only" line names the run's first viewport, not the
+5. (Combined project only; gone with the split: each project now has one viewport.)
+   The "traces and clip: first combination only" line names the run's first viewport, not the
    target's. With per-platform viewports, android ran its trace at 360×640 (protocol.log), yet
    the console says "(1024×720 light)" under android. Cosmetic, but misleading.
 
-6. The render check (probe) is asked at the largest viewport of the whole run, 1024×720, even for
+6. (Combined project only; gone with the split.) The render check (probe) is asked at the largest viewport of the whole run, 1024×720, even for
    a target whose own viewports are 360×640. For android it means a landscape 1024×720 screen is
    set up only for the probe. Wanted: the probe at the target's own largest viewport.
 
@@ -79,7 +84,8 @@ mistakes; "PLATFORM" a limit of the platform, not omnicui's.
     screenshot each (held: false). The clips then measured 16 ms (checkbox) and 9.9 ms (dialog,
     over its box) apart from Android's.
 
-14. A real design difference, left as a warning: the Done switch's clip is 56 ms apart. Compose's
+14. (Combined project only: Android and the web are no longer compared.) A real design
+    difference, left as a warning: the Done switch's clip is 56 ms apart. Compose's
     Material switch first grows its thumb while pressed, then slides it; the web's slides it over
     150 ms ease-out. Both are each platform's own switch; the contract holds them to the same
     motion, and the warning says they aren't quite.
@@ -105,3 +111,40 @@ mistakes; "PLATFORM" a limit of the platform, not omnicui's.
 18. OWN: the contracts' oracles all passed on Android at their first run. The one real bug since
     (the web caret, 16) was caught, but that is one data point: a deliberate defect per contract,
     switched on to see it caught, would be better evidence, and I didn't add any.
+
+19. Two projects can't share anything but files. The fixtures (fixtures/seeds.json) and the
+    behaviour are the same for the phone and the desktop apps, but each project has its own four
+    contracts, and the behaviour tests are copies that will drift. Wanted: a contract that
+    includes another's tests (`tests: { from: ../../mobile/omnicui/contracts/list.contract.yaml }`)
+    or one project with per-project parts, so that only the look differs.
+
+20. A `same:` that no second target exercises yet can't be checked. The desktop contracts say
+    `same: [layout, colours, motion]` (and `[layout]` for native controls), but with the web as
+    the only desktop target nothing is compared, and a mistake there (a part held to the wrong
+    aspects, a box the Mac can't match) only shows when the macOS target arrives. Wanted:
+    comparing against saved screenshots or boxes from an earlier run, for a project with one
+    target per design.
+
+21. The desktop contracts lost their checkbox and switch clips. Native controls are held to
+    `[layout]` only, so a `record: { part: row1Check }` would be dropped without a word (7); I
+    removed those records rather than leave tests that silently compare nothing. The dialog's
+    trace and clip remain (its surface keeps motion). Wanted: the note from 7, or a warning from
+    `omnicui contracts` that a record's part keeps no motion.
+
+22. OWN: while splitting SPEC-APP.md I ran `rm SPEC-APP.md` in the same shell line as the script
+    that read it; the script failed and the file was gone. The committed copy in git had the last
+    version, so nothing was lost, but only by luck.
+
+23. OWN: Android carried a custom colour scheme and a custom dialog entrance that existed only to
+    match the web. Both are gone: Android now uses Material 3's dynamic colour (the baseline
+    scheme before Android 12) and the stock AlertDialog. Under Robolectric, dynamic colour comes
+    from the framework's default palette, so the screenshots show Android's default purple-blue.
+
+24. Joy UI, tried and removed on request (the desktop web app is plain React again). What it
+    showed while it was in: Joy's Checkbox and Switch put the state on a real <input> (role
+    checkbox; role switch on the Switch), so the part tag goes on the input through `slotProps`
+    and everything read right; the Modal renders in a portal, which the web adapter finds anyway
+    because it searches the whole document. The only adapter change it needed was the bundler's:
+    the reference web adapter's esbuild loaders know `.ttf` only, and Inter comes as .woff/.woff2.
+    Joy's colour scheme is set by JavaScript (CssVarsProvider reads matchMedia and sets an
+    attribute), not by a CSS media query, but every check still passed in light and dark.

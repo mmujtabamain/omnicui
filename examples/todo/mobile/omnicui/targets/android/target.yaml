@@ -1,0 +1,16 @@
+name: android
+language: kotlin
+# The app under test: examples/todo/mobile/apps/android (its `ui` library), an included Gradle build.
+# This folder only mounts its screens under Robolectric and answers omnicui's requests.
+#
+# Gradle is not started here. Build once with ./setup.sh: it compiles the adapter and writes the
+# exact classpath into build/adapter.args. Each check then starts one plain JVM, which keeps one
+# Robolectric sandbox for the whole run (about 13 s to start, measured in setup.sh).
+adapter: exec java -Xmx2g -XX:+UseParallelGC @build/adapter.args omnicui.android.Main
+platform: [mobile]
+os: android
+# Plain Material 3 as Google ships it; an iOS target will be `design: cupertino`. The mobile
+# contracts compare no pixels, colours, layout or motion between them (same: none).
+design: material
+stepTimeout: 30s
+startTimeout: 120s
