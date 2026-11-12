@@ -67,8 +67,15 @@ func TestAllPass(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	var pix, tim, mot int
+	var pix, tim, mot, dir int
 	for _, c := range rep.Comparisons {
+		if c.Kind == "direction" {
+			dir++
+			if c.Warning || c.Value != 0 {
+				t.Errorf("the two fakes move the thumb the same way: %+v", c)
+			}
+			continue
+		}
 		if c.Kind == "motion" {
 			mot++
 			if c.Warning || strings.HasPrefix(c.Note, "not compared") {
@@ -86,9 +93,9 @@ func TestAllPass(t *testing.T) {
 		}
 	}
 	// 5 tests take screenshots, one pair each; one trace: the pair and each target against the
-	// timing; one clip: the pair, by visual progress.
-	if pix != 5 || tim != 3 || mot != 1 {
-		t.Errorf("comparisons: %d pixels, %d timing, %d motion", pix, tim, mot)
+	// timing, and the pair's directions; one clip: the pair, by visual progress.
+	if pix != 5 || tim != 3 || mot != 1 || dir != 1 {
+		t.Errorf("comparisons: %d pixels, %d timing, %d motion, %d direction", pix, tim, mot, dir)
 	}
 	if r := result(t, rep, "a", "a press turns it on, and the thumb slides across"); r.Clip == "" || len(r.Traces) != 1 || len(r.Screenshots) != 2 {
 		t.Errorf("artifacts: %+v", r)

@@ -1,0 +1,41 @@
+[webalt 1/5] switch › starts off, with its label as its name  pass  1.2s
+[web 1/5] switch › starts off, with its label as its name  pass  1.2s
+[webalt 2/5] switch › starts on when asked  pass  1.0s
+[web 2/5] switch › starts on when asked  pass  1.0s
+[webalt 3/5] switch › a press turns it on, and the thumb slides across  fail  1.2s
+[webalt 4/5] switch › Space toggles it from the keyboard  fail  1.0s
+[web 3/5] switch › a press turns it on, and the thumb slides across  pass  3.2s
+[webalt 5/5] switch › keyboard: Space on `switch` does what a press does  fail  1.5s
+[web 4/5] switch › Space toggles it from the keyboard  pass  1.4s
+[web 5/5] switch › keyboard: Space on `switch` does what a press does  pass  1.3s
+designs: default: web · redesign: webalt (pixels compared within a design, colours across designs)
+
+ui.switch                                             web       webalt    
+  starts off, with its label as its name              pass      pass      
+    colours (other designs)                           web ↔ webalt 0.0%   pass (all under 15%)
+  starts on when asked                                pass      pass      
+    colours (other designs)                           web ↔ webalt 100.0%   warning: web ↔ webalt 100.0% above 15%
+                                                      web uses #1f5fbf (100%), which webalt doesn't use; webalt uses #2a9d8f (69.8%), which web doesn't use (320x240-light)
+  a press turns it on, and the thumb slides across    pass      FAIL      
+      webalt: trace ui.switch.thumb: no part ui.switch.thumb (not on screen at any frame) (if `thumb` appears during the steps, webalt's trace should look it up at each frame and start its samples when it is there: see the protocol's trace; if webalt's design has no `thumb`, mark the part `optional: true` in the contract) (320×240 light)
+      webalt: stderr | [web] trace failed: no part ui.switch.thumb (not on screen at any frame)
+      webalt: stderr | [web] bounds failed: no part ui.switch.thumb
+    colours (other designs)                           web ↔ webalt 73.2%   warning: web ↔ webalt 73.2% above 15%
+                                                      web uses #8ab4f8 (73.2%), which webalt doesn't use; webalt uses #7eddd0 (60.8%), which web doesn't use (320x240-dark)
+    trace thumb                                       web vs timing 0.2 ms   pass (all under 20 ms)
+                                                      traces and clip: first combination only (320×240 light)
+  Space toggles it from the keyboard                  pass      FAIL      
+      webalt: switch.checked: expected true, got false
+      webalt: toggled: expected 1 time, got 0 times
+  keyboard: Space on `switch` does what a press does  pass      FAIL      
+      webalt: Space on `switch` didn't do what a press does: a press gave event toggled {"on":true}, switch.checked true; the key gave switch.checked false
+      webalt: stderr | [web] read failed: no part ui.switch.thumb
+      webalt: stderr | [web] read failed: no part ui.switch.thumb
+      webalt: stderr | [web] read failed: no part ui.switch.thumb
+
+slowest: web switch › a press turns it on, and the thumb slides across 3.2s; webalt switch › keyboard: Space on `switch` does what a press does 1.5s; web switch › Space toggles it from the keyboard 1.4s; web switch › keyboard: Space on `switch` does what a press does 1.3s; webalt switch › starts off, with its label as its name 1.2s;
+  web took 10s, 1.7s of it starting
+  webalt took 8.0s, 1.6s of it starting
+
+7 pass · 3 fail · 0 broken · 0 not advertised · 2 warnings
+results: experiments/redesign/.omnicui/run/results.json   report: experiments/redesign/.omnicui/run/report.html

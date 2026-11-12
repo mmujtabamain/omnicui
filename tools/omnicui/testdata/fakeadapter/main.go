@@ -28,6 +28,16 @@
 //	FAKE_START_MS     wait this long, saying so on stderr, before answering anything
 //	FAKE_SPAN_FILE    append "<FAKE_NAME> start|stop <unix ns>" when starting and stopping
 //	FAKE_STDERR_ON    a method during which to write a line to stderr
+//	FAKE_NO_PARTS     parts this target's design doesn't have, e.g. thumb ("no part" for each)
+//	FAKE_TEXT_SUFFIX  what the counter's value shows after the number, e.g. " taps"
+//	FAKE_VERTICAL     the switch's thumb slides down instead of across
+//	FAKE_OS           the OS it reports in advertise (platform: {os})
+//	FAKE_REGIONS      kind:x,y,w,h;… regions its platform draws (a title bar), drawn in red and
+//	                  reported with each screenshot
+//	FAKE_BOUNDS       part=x,y,w,h;… boxes reported for those parts, instead of the drawn block
+//	FAKE_TITLEBAR     a title bar this many px tall above the content, as a desktop window has:
+//	                  the screenshot is that much taller, everything else moves down, and the bar
+//	                  is reported as a titlebar region
 //
 // The settings come from the environment, or from a file of KEY=VALUE lines given as the first
 // argument (so that no `env` command is needed, on any OS). As a stub generator:
@@ -138,7 +148,7 @@ func act(method string, p params) error {
 	}
 	part := strings.TrimPrefix(p.Part, st.component+".")
 	known := map[string]bool{"ui.counter.value": true, "ui.counter.increment": true, "ui.switch.switch": true, "ui.switch.thumb": true}
-	if !known[p.Part] {
+	if !known[p.Part] || has(os.Getenv("FAKE_NO_PARTS"), part) {
 		return &rpcErr{-32002, "no part " + p.Part}
 	}
 	press := func() {
@@ -183,7 +193,8 @@ func act(method string, p params) error {
 }
 
 func screenshot(path string) error {
-	img := image.NewRGBA(image.Rect(0, 0, st.w, st.h))
+	bar := envInt("FAKE_TITLEBAR")
+	img := image.NewRGBA(image.Rect(0, 0, st.w, st.h+bar))
 	bg := color.RGBA{0xfb, 0xfa, 0xf7, 0xff}
 	if st.dark {
 		bg = color.RGBA{0x1b, 0x1d, 0x19, 0xff}
@@ -191,20 +202,37 @@ func screenshot(path string) error {
 	v, _ := strconv.ParseUint(env("FAKE_COLOR", "1d1f1b"), 16, 32)
 	fg := color.RGBA{uint8(v >> 16), uint8(v >> 8), uint8(v), 0xff}
 	shift := envInt("FAKE_SHIFT")
+	// The settings, read once: this runs for every pixel of every frame of a clip.
+	regs, controls := regions(), os.Getenv("FAKE_CONTROLS") != ""
+	thumb := st.component == "ui.switch" && !has(os.Getenv("FAKE_NO_PARTS"), "thumb")
+	// The switch's thumb, where it is now (so that recorded frames show it slide).
+	tx, ty := 30+int(st.moved+0.5), 33
+	if os.Getenv("FAKE_VERTICAL") != "" {
+		tx, ty = 30, 33+int(st.moved+0.5)
+	}
 	for y := 0; y < st.h; y++ {
 		for x := 0; x < st.w; x++ {
 			c := bg
 			if x >= 24+shift && x < 84+shift && y >= 24 && y < 54 {
 				c = fg
 			}
-			if os.Getenv("FAKE_CONTROLS") != "" && x >= 100 && x < 120 && y >= 24 && y < 44 {
+			for _, r := range regs {
+				if x >= r.x && x < r.x+r.w && y >= r.y && y < r.y+r.h {
+					c = color.RGBA{0xd0, 0x20, 0x20, 0xff}
+				}
+			}
+			if controls && x >= 100 && x < 120 && y >= 24 && y < 44 {
 				c = color.RGBA{0xe0, 0x30, 0x30, 0xff}
 			}
-			// The switch's thumb, where it is now (so that recorded frames show it slide).
-			if tx := 30 + int(st.moved+0.5); st.component == "ui.switch" && x >= tx+shift && x < tx+12+shift && y >= 33 && y < 45 {
+			if thumb && x >= tx+shift && x < tx+12+shift && y >= ty && y < ty+12 {
 				c = color.RGBA{0xff, 0xff, 0xff, 0xff}
 			}
-			img.Set(x, y, c)
+			img.SetRGBA(x, y+bar, c)
+		}
+	}
+	for y := 0; y < bar; y++ {
+		for x := 0; x < st.w; x++ {
+			img.SetRGBA(x, y, color.RGBA{0x30, 0x30, 0x34, 0xff})
 		}
 	}
 	os.MkdirAll(filepath.Dir(path), 0o755)
@@ -213,7 +241,7 @@ func screenshot(path string) error {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	return (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(f, img)
 }
 
 // probe draws the render check's picture: white, a black square at 8,8 and a red one 8 px from
@@ -244,7 +272,7 @@ func probe(path string, w, h int) error {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	return (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(f, img)
 }
 
 func handle(n int, r req) (any, error) {
@@ -270,6 +298,9 @@ func handle(n int, r req) (any, error) {
 			}
 		}
 		ad := map[string]any{"protocol": "1", "can": can, "cannot": cannot}
+		if name := os.Getenv("FAKE_OS"); name != "" {
+			ad["platform"] = map[string]any{"os": name, "version": "1.0"}
+		}
 		// FAKE_KEYS: role=Key+Key,… the keys that activate each role here (advertise keys).
 		if v := os.Getenv("FAKE_KEYS"); v != "" {
 			keys := map[string][]string{}
@@ -321,7 +352,7 @@ func handle(n int, r req) (any, error) {
 		}
 		switch p.Part + "/" + p.Field {
 		case "ui.counter.value/text":
-			return strconv.Itoa(st.count), nil
+			return strconv.Itoa(st.count) + os.Getenv("FAKE_TEXT_SUFFIX"), nil
 		case "ui.counter.increment/name":
 			if has(os.Getenv("FAKE_BUG"), "no-name") {
 				return nil, nil
@@ -365,7 +396,14 @@ func handle(n int, r req) (any, error) {
 			return map[string]any{"x": 24, "y": 24, "width": 0, "height": 0}, nil
 		}
 		shift := envInt("FAKE_SHIFT")
-		return map[string]any{"x": 24 + shift, "y": 24, "width": 60, "height": 30}, nil
+		for _, kv := range strings.Split(os.Getenv("FAKE_BOUNDS"), ";") {
+			if k, v, ok := strings.Cut(kv, "="); ok && st.component+"."+k == p.Part {
+				var x, y, w, h float64
+				fmt.Sscanf(v, "%g,%g,%g,%g", &x, &y, &w, &h)
+				return map[string]any{"x": x, "y": y, "width": w, "height": h}, nil
+			}
+		}
+		return map[string]any{"x": 24 + shift, "y": 24 + envInt("FAKE_TITLEBAR"), "width": 60, "height": 30}, nil
 	case "probe":
 		return p.Path, probe(p.Path, p.Viewport.Width, p.Viewport.Height)
 	case "events":
@@ -376,12 +414,36 @@ func handle(n int, r req) (any, error) {
 		}
 		return out, nil
 	case "screenshot":
-		return p.Path, screenshot(p.Path)
+		if err := screenshot(p.Path); err != nil {
+			return nil, err
+		}
+		regs := regions()
+		if bar := envInt("FAKE_TITLEBAR"); bar > 0 {
+			regs = append(regs, region{kind: "titlebar", x: 0, y: 0, w: st.w, h: bar})
+		}
+		if len(regs) > 0 {
+			var out []map[string]any
+			for _, r := range regs {
+				out = append(out, map[string]any{"kind": r.kind, "x": r.x, "y": r.y, "width": r.w, "height": r.h})
+			}
+			return map[string]any{"path": p.Path, "regions": out}, nil
+		}
+		return p.Path, nil
 	case "trace", "record":
 		// FAKE_LATE_PART: the traced part only appears during the steps, and this target looks
 		// it up before them (as a target shouldn't).
 		if r.Method == "trace" && os.Getenv("FAKE_LATE_PART") != "" {
 			return nil, &rpcErr{-32002, "no part " + p.Part}
+		}
+		if r.Method == "trace" && has(os.Getenv("FAKE_NO_PARTS"), strings.TrimPrefix(p.Part, st.component+".")) {
+			// Like a real target, it ran the steps looking for the part at each frame.
+			for _, s := range p.Steps {
+				b, _ := json.Marshal(s)
+				var sp params
+				json.Unmarshal(b, &sp)
+				act(s["method"].(string), sp)
+			}
+			return nil, &rpcErr{-32002, "no part " + p.Part + " (not on screen at any frame)"}
 		}
 		start := st.moved
 		for _, s := range p.Steps {
@@ -407,6 +469,8 @@ func handle(n int, r req) (any, error) {
 			case r.Method == "trace" && p.Property == "opacity":
 				v := 1 - 0.5*ease(t)*math.Abs(end-start)/20
 				out = append(out, map[string]any{"ms": ms, "value": v})
+			case r.Method == "trace" && os.Getenv("FAKE_VERTICAL") != "":
+				out = append(out, map[string]any{"ms": ms, "x": 36.0, "y": x})
 			case r.Method == "trace":
 				out = append(out, map[string]any{"ms": ms, "x": x, "y": 36})
 			default:
@@ -516,4 +580,25 @@ func main() {
 		out.Write(append(b, '\n'))
 		out.Flush()
 	}
+}
+
+type region struct {
+	kind       string
+	x, y, w, h int
+}
+
+// regions are FAKE_REGIONS: kind:x,y,w,h;…
+func regions() []region {
+	var out []region
+	for _, r := range strings.Split(os.Getenv("FAKE_REGIONS"), ";") {
+		kind, box, ok := strings.Cut(r, ":")
+		if !ok {
+			continue
+		}
+		var g region
+		g.kind = kind
+		fmt.Sscanf(box, "%d,%d,%d,%d", &g.x, &g.y, &g.w, &g.h)
+		out = append(out, g)
+	}
+	return out
 }

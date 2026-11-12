@@ -30,7 +30,7 @@ usage:
   omnicui [--project <folder>] <command> …
 
   omnicui check [target…] [component…] [--test <name>]… [--failed] [--serial]
-                [--require target:capability]… [--out <folder>] [--fail-on warnings|pixels|timing|visibility]…
+                [--require target:capability]… [--out <folder>] [--fail-on warnings|pixels|palette|timing|direction|motion|visibility]…
                                        run every test of every contract on every target (or only those named);
                                        results go to .omnicui/run/ in the project, or to --out. One progress
                                        line per test, with its time, goes to standard error, and a line every
@@ -260,7 +260,7 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 	}
 	for _, f := range failOn {
 		if !check.FailOnKinds[f] {
-			fmt.Fprintf(stderr, "omnicui: --fail-on %s: expected warnings, pixels, timing or visibility\n", f)
+			fmt.Fprintf(stderr, "omnicui: --fail-on %s: expected warnings, pixels, palette, timing, direction, motion or visibility\n", f)
 			return 2
 		}
 	}
@@ -276,6 +276,18 @@ func doCheck(p project.Project, args []string, stdout, stderr io.Writer) int {
 	if len(targets) == 0 {
 		fmt.Fprintln(stderr, "omnicui: there are no targets; add one with `omnicui add <name>`")
 		return 2
+	}
+	// Platform selectors that match no form, OS, target or design: probably a typo.
+	var known []string
+	for _, t := range targets {
+		known = append(known, t.Name)
+		if t.Design != "" {
+			known = append(known, t.Design)
+		}
+	}
+	for _, pr := range contract.UnknownSelectors(contracts, known) {
+		fmt.Fprintln(stderr, pr)
+		problems = append(problems, pr)
 	}
 	ts, cs, err := selection(names, targets, contracts)
 	if err != nil {

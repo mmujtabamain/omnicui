@@ -60,8 +60,11 @@
             "$ref": "#/$defs/role"
           },
           "optional": {
-            "description": "The part is shown by some targets only (window controls in a desktop toolbar, say). A mask or a crop naming it covers it where it is, and is skipped where it isn't.",
+            "description": "The part is shown by some targets or designs only (window controls in a desktop toolbar; the thumb of a switch another design draws as a checkbox). Where a target has no such part, masks, crops, traces, clips and expectations on it are skipped, with a note, and a test whose steps act on it is not measured.",
             "type": "boolean"
+          },
+          "same": {
+            "$ref": "#/$defs/same"
           }
         }
       }
@@ -75,33 +78,72 @@
       }
     },
     "viewports": {
-      "description": "Window sizes. Every test runs at each one.",
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "width",
-          "height"
-        ],
-        "properties": {
-          "width": {
-            "type": "integer",
-            "minimum": 16,
-            "maximum": 4096
+      "description": "Window sizes. Every test runs at each one. Or per platform selector: { default: [...], mobile: [...] }: each target runs at the sizes of its most specific selector.",
+      "anyOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "width",
+              "height"
+            ],
+            "properties": {
+              "width": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "props": {
+                "description": "Props every test gets at this viewport; a test's own props win.",
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/selector"
           },
-          "height": {
-            "type": "integer",
-            "minimum": 16,
-            "maximum": 4096
-          },
-          "props": {
-            "description": "Props every test gets at this viewport; a test's own props win.",
-            "type": "object"
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "width",
+                "height"
+              ],
+              "properties": {
+                "width": {
+                  "type": "integer",
+                  "minimum": 16,
+                  "maximum": 4096
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 16,
+                  "maximum": 4096
+                },
+                "props": {
+                  "description": "Props every test gets at this viewport; a test's own props win.",
+                  "type": "object"
+                }
+              }
+            }
           }
         }
-      }
+      ]
     },
     "colorSchemes": {
       "description": "Colour schemes. Every test runs in each one.",
@@ -154,6 +196,21 @@
           "description": "How far apart two targets' clips may move, compared by visual progress. Default 40ms.",
           "type": "string",
           "pattern": "^[0-9]+ms$"
+        },
+        "palette": {
+          "description": "For targets of different designs (`design:` in target.yaml), whose screenshots are compared by the colours they draw with: the share of one's drawing that may be in colours the other doesn't use. Default 15%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
+        },
+        "direction": {
+          "description": "How far apart, in degrees, two targets may move a traced point. Default 30deg.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?deg$"
+        },
+        "layout": {
+          "description": "How far a part's box may move, relative to the component, between targets compared by layout: the largest difference in position or size as a share of the component's width. Default 10%.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?%$"
         }
       }
     },
@@ -167,6 +224,10 @@
       "items": {
         "$ref": "#/$defs/partName"
       }
+    },
+    "same": {
+      "description": "What parts hold the same between targets, unless a part says otherwise: aspects (default pixels), or per platform selector ({ default: pixels, mobile: none }). Targets of different designs compare at most colours and motion, unless a part says more.",
+      "$ref": "#/$defs/same"
     }
   },
   "$defs": {
@@ -327,6 +388,14 @@
         "allCombinations": {
           "description": "Take the traces and the clip at every viewport × colour scheme, not only the first.",
           "type": "boolean"
+        },
+        "only": {
+          "description": "Run this test only on targets that match one of these selectors; elsewhere it is not applicable.",
+          "$ref": "#/$defs/selectors"
+        },
+        "except": {
+          "description": "Don't run this test on targets that match one of these selectors (not applicable there).",
+          "$ref": "#/$defs/selectors"
         }
       }
     },
@@ -359,6 +428,11 @@
         "with": {
           "description": "Parameters of a `do` step, passed on to the target unchanged.",
           "type": "object"
+        },
+        "input": {
+          "description": "A named input from the project's platforms.yaml (back, contextMenu…): each target is sent its own platform's form of it.",
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
         }
       },
       "allOf": [
@@ -473,38 +547,282 @@
             "$ref": "#/$defs/partName"
           },
           "text": {
-            "type": "string"
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/textMatch"
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/$defs/textMatch"
+                    }
+                  ]
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "The text the part shows: exactly this string, or { contains: \"…\" }, or { matches: \"<regular expression>\" }. Or per platform: { default: \"Back\", ios: \"Trails\" }, with why:."
           },
           "name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/textMatch"
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/$defs/textMatch"
+                    }
+                  ]
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Its accessible name: exactly this string, or { contains: \"…\" }, or { matches: \"<regular expression>\" }. Or per platform: { default: \"Back\", ios: \"Trails\" }, with why:."
           },
           "disabled": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ]
           },
           "checked": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ]
           },
           "value": {
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ]
           },
           "focused": {
-            "description": "Whether the part has keyboard focus.",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether the part has keyboard focus."
           },
           "selected": {
-            "description": "Whether a button stays chosen: a chip, a tab, a segment (buttons only; the target must advertise selected).",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether a button stays chosen: a chip, a tab, a segment (buttons only; the target must advertise selected)."
           },
           "visible": {
-            "description": "Whether the part has a size on screen and is inside the viewport.",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether the part has a size on screen and is inside the viewport."
           },
           "role": {
             "description": "The role assistive technology reports for the part (WAI-ARIA).",
             "$ref": "#/$defs/role"
+          },
+          "why": {
+            "description": "Why an expectation differs by platform. Required when a value is given per platform; listed in the report as a platform exception.",
+            "type": "string",
+            "minLength": 1
           }
         },
         "additionalProperties": false
+      }
+    },
+    "textMatch": {
+      "description": "A looser text: the value contains a string, or matches a regular expression (RE2 syntax).",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "contains": {
+          "type": "string",
+          "description": "The value contains this string."
+        },
+        "matches": {
+          "type": "string",
+          "description": "The value matches this regular expression (RE2: Go's syntax), e.g. \"^3( taps)?$\"."
+        }
+      }
+    },
+    "selector": {
+      "description": "A platform selector: a target's name, an OS (linux, windows, macos, ios, android), a form (desktop, web, mobile, tablet), a design's name, or default. The most specific that matches a target wins: target > OS > form > design > default.",
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9-]*$"
+    },
+    "aspects": {
+      "description": "What is held the same between two targets: pixels (implies layout, colours and motion), none, or a list of layout, colours and motion.",
+      "anyOf": [
+        {
+          "enum": [
+            "pixels",
+            "none",
+            "layout",
+            "colours",
+            "motion"
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "layout",
+              "colours",
+              "motion"
+            ]
+          }
+        }
+      ]
+    },
+    "same": {
+      "description": "What this holds the same between targets: aspects for every platform, or per platform selector ({ default: pixels, mobile: [layout, colours] }).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/aspects"
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/selector"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/aspects"
+          }
+        }
+      ]
+    },
+    "selectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/selector"
       }
     }
   }

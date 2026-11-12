@@ -95,9 +95,10 @@ omnicui starts the adapter once per check and keeps it running. It sends one JSO
 
 **Q3: What is checked, and how are differences reported?** There are three checks:
 - **Tests** are exact. A mismatch **fails** the run.
-- **Pixels:** each screenshot is compared between every pair of targets that took it, by four measures (§5): **area** (how much of the drawn area differs, allowing for 2 px of placement noise), **strength** (how far off in colour), **shift** (how far pixels moved) and **spot** (how concentrated the difference is in its worst 24×24 px spot). Any measure above the contract's threshold for it prints a **warning**.
+- **Pixels:** each screenshot is compared between every pair of targets **of one design** that took it, by four measures (§5): **area** (how much of the drawn area differs, allowing for 2 px of placement noise), **strength** (how far off in colour), **shift** (how far pixels moved) and **spot** (how concentrated the difference is in its worst 24×24 px spot). Any measure above the contract's threshold for it prints a **warning**.
+- **Colours (design language):** targets of different designs (`design:` in target.yaml: a phone layout and a desktop one, a redesign) aren't compared pixel by pixel, which would only say that the layout differs, but by the colours they draw with: **palette** is the share of one's drawing in colours the other design uses in none of its screenshots at that colour scheme. Above `thresholds.palette` it prints a **warning**.
 - **Visibility:** a part whose text, name, value or checked state was read while it had no size on screen, or was outside the viewport, is a **warning** (targets that report `bounds`).
-- **Motion:** each trace (a point's position, or a part's opacity) is compared between targets and with the test's named timing function, if it has one. Each recorded clip is reduced to its **visual progress** (how far the picture has gone from its first frame to its last, over time) and compared between targets the same way, which covers fades, blurs and colour changes that have no position to trace. Above the threshold (`timing` for traces, `motion` for clips) it prints a **warning**.
+- **Motion:** each trace (a point's position, or a part's opacity) is compared between targets and with the test's named timing function, if it has one. Each recorded clip is reduced to its **visual progress** (how far the picture has gone from its first frame to its last, over time) and compared between targets the same way, which covers fades, blurs and colour changes that have no position to trace. Above the threshold (`timing` for traces, `motion` for clips) it prints a **warning**. Two traced points that move in directions more than `thresholds.direction` apart (a thumb sliding up against one sliding across) are a **warning** too.
 - **Keyboard:** with `keyboard: true`, every button, switch and checkbox gets a generated test per key its role is activated by; the key must do what a pointer press does. A difference **fails**.
 
 A warning never fails the run unless `check --fail-on` says so (for CI), and nothing is sent anywhere: the author reads it and decides. omnicui keeps no state between runs, and has no approval step and no baselines.
@@ -126,11 +127,11 @@ There is nothing to recover: each run starts clean and replaces the last run's f
 | **Step** | `action`, `part`, `times`, and `key`, `text` or `dx`/`dy` | its position | a test |
 | **Expectation** | either `part` and fields, or `event` with `times` and/or `last` | its position | a test |
 | **Trace spec** | `part`, `property` (`position`, the default, or `opacity`), `point` (`center` or `topLeft`; positions only), optional `timing` (`duration`, `easing`) | its position | a test |
-| **Target** | `name`, `language`, `adapter`, `stubs`, `stepTimeout`, `startTimeout` | `name` (equals its folder name) | `targets/<name>/target.yaml` |
+| **Target** | `name`, `language`, `adapter`, `stubs`, `stepTimeout`, `startTimeout`, `exclusive`, `design` | `name` (equals its folder name) | `targets/<name>/target.yaml` |
 | **Advertisement** | `protocol`, `can` (constructs), `cannot` (construct → reason) | none: one per target per run | the adapter |
 | **Run** | run id, the results of every test on every target, the comparisons, the summary | `<UTC time>-<12 hex digits>` | `.omnicui/run/` in the project, or the folder given by `check --out` |
 | **Test result** | contract, test, target, status, messages, screenshots, traces, clip, not-advertised capabilities | (contract, test, target) | a run |
-| **Comparison** | kind (`pixels` or `timing`), A, B (a target, or `timing`), combination, part, value, threshold, warning, diff image, note | (contract, test, kind, A, B, part) | a run |
+| **Comparison** | kind (`pixels`, `palette`, `timing`, `direction`, `motion` or `visibility`), A, B (a target, or `timing`), combination, part, value, threshold, warning, diff image, note | (contract, test, kind, A, B, part) | a run |
 
 **Roles** [R] (`internal/contract/roles.go`, tested by `TestErrors/role refuses action` and `TestErrors/role has no field`):
 
@@ -206,7 +207,8 @@ A hung adapter is gone after its timeout *(TestTimeout checks that the process n
 | pass | every expectation held | no |
 | fail | an expectation disagreed, a step acted on a part that does not exist, or the target has no such component | **yes** |
 | not advertised | the behaviour needs a construct the target did not advertise (the test can't run there) | no |
-| not measured | the test ran but had nothing to measure: a generated keyboard test whose part isn't on screen when the component mounts, or whose press changes nothing a test can read (§5) | no |
+| not applicable | the test is not for this platform (`only` / `except`), or it uses an input that is `none` there (§4.2a) | no |
+| not measured | the test ran but had nothing to measure: a generated keyboard test whose part isn't on screen when the component mounts, or whose press changes nothing a test can read (§5); a test whose steps act on an optional part this target's design doesn't have, or everything it checks is on such parts (§4.2) | no |
 | broken | the target broke during this test, or before it | **yes** |
 
 **Warnings** belong to comparisons, not to test results. A pass with a missing capability (for example, no `screenshot`) stays a pass, and the missing capability is counted in the summary as "not advertised". The **worst status over all combinations** is the test's status, in this order: broken > fail > not advertised, not measured > pass. "not measured" is counted in the summary only when there is one: `… · 2 not advertised · 3 not measured · 0 warnings`.
@@ -221,7 +223,7 @@ Every command takes the form `omnicui [--project <folder>] <command> …`.
 
 | Command | Does | Exit status |
 |---|---|---|
-| `omnicui check [target…] [component…] [--test <name>]… [--failed] [--serial] [--require target:capability]… [--out <folder>] [--fail-on warnings\|pixels\|timing\|visibility]…` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out`. One progress line per finished test, with its time, goes to standard error: `[web 12/38] counter › each press adds one  pass  0.4s`; while a target starts, a line every 10 s (§4.3) | 0 when nothing failed or broke; 1 when something did, a required capability is missing, or there is a warning of a kind `--fail-on` names; 2 for a usage or contract error |
+| `omnicui check [target…] [component…] [--test <name>]… [--failed] [--serial] [--require target:capability]… [--out <folder>] [--fail-on warnings\|pixels\|palette\|timing\|direction\|motion\|visibility]…` | runs every test of every contract (or only those named) on every target (or only those named); writes the results to `.omnicui/run/` in the project, or to `--out`. One progress line per finished test, with its time, goes to standard error: `[web 12/38] counter › each press adds one  pass  0.4s`; while a target starts, a line every 10 s (§4.3) | 0 when nothing failed or broke; 1 when something did, a required capability is missing, or there is a warning of a kind `--fail-on` names; 2 for a usage or contract error |
 | `omnicui targets` | starts each adapter, asks `advertise`, runs the render check (§4.4) on each target that advertises `screenshot` and `probe`, and prints its capabilities with reasons and the render check's outcome | 0; 2 if a target.yaml is invalid |
 | `omnicui compare <a.png> <b.png> [--diff <out.png>] [--json]` | measures two screenshots the way `check` does and prints the four measures against the default thresholds, for looking into one comparison or trying thresholds on saved screenshots | 0; 2 if a file can't be read |
 | `omnicui help contract` | one screen: every field of a contract, the defaults, the roles and their fields, and how each comparison is measured | 0 |
@@ -324,7 +326,7 @@ tests:
     steps:
       - { action: press, part: increment, times: 3 }  # press, focus, key (key:), type (text:), drag (dx:, dy:), hover
     expect:
-      - { part: value, text: "3" }                    # a part and the fields to check
+      - { part: value, text: "3" }                    # a part and the fields to check; text: { contains: "3" } or { matches: "^3\\b" }
       - { event: changed, times: 3, last: { count: 3 } }
     screenshot: true                                  # at every viewport and colour scheme; or { mask: [part…], part: <part> }
     trace:                                            # follow one point while the steps run
@@ -337,17 +339,27 @@ viewports:    [{ width: 320, height: 240, props: {} }] # default: 320×240; prop
 colorSchemes: [light, dark]                           # default: light
 keyboard:     true                                    # Enter/Space must do what a press does, per role
 mask:         []                                      # parts left out of every screenshot comparison
-thresholds:   { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms }   # the defaults
+thresholds:   { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms, palette: 15%, direction: 30deg }   # the defaults
 ```
 
 **Screenshots of part of a screen** [R]:
 - `screenshot: { mask: [a, b] }` on a test, and `mask: [a, b]` for every test of the contract, leave those parts' boxes out of the comparison. Every box either target of a pair reports is left out of both images, so what one target draws there and the other doesn't is not compared: masked pixels count as not drawn, and show grey in the diff image.
-- A part can be `optional: true`: shown by some targets only, such as window controls that a desktop toolbar has and the web one doesn't. A mask or a crop naming it covers it where it is, and is skipped where it isn't.
+- A part can be `optional: true`: shown by some targets or designs only, such as window controls that a desktop toolbar has and the web one doesn't. A mask or a crop naming it covers it where it is, and is skipped where it isn't.
 - `screenshot: { part: toolbar }` compares only that part's box on each target, wherever it sits on each; boxes of different sizes are compared from their top-left corners, and the difference in size counts.
 - The whole screenshots' measures stay in the comparison (`raw` in `results.json`) and in its note: `masked: keyboard (whole screenshots: area 41%, strength 30%, shift 2 px, spot 63%)`. A target that doesn't advertise `bounds` can't be masked: the note says so, and the whole screenshots are compared.
 *(TestMeasureView, TestMaskOptionalPart, TestScreenshotPart, TestMaskContractErrors)*
 
-**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
+**Parts some designs don't have** [R]. The same behaviour is often drawn differently: a switch with a sliding thumb on one target, a native checkbox with a tick on another (experiments/redesign). A part only some designs have is `optional: true`, and where a target replies "no part" (-32002) for it:
+- a trace of it is skipped, and the test's steps are run again, plainly, on a fresh component (the trace ran them once already);
+- a clip of it (`record: { part: x }`) is skipped when the part is there neither before nor after the steps;
+- what a test expects of it (`text`, `visible`, …) is skipped;
+- a test whose steps act on it is **not measured**, as is a test that skipped everything it checks, and a generated keyboard test on it.
+
+Each skip is noted under the test, on the console (`webalt: no `thumb` in webalt's design (an optional part): its trace is skipped`) and in `results.json` (`absent`); the rest of the test counts as usual. A part that isn't optional and that a target doesn't have fails, and the message says how to mark it: ``…if webalt's design has no `thumb`, mark the part `optional: true` in the contract``. *(TestOptionalPartAbsent, TestOptionalPartSteps)*
+
+**Looser text** [R]. `text` and `name` are a string the value must equal, or `{ contains: "3" }`, or `{ matches: "^3\\b" }` (a regular expression, RE2), for a design that shows more than the contract cares about ("3 taps"). A regular expression that doesn't compile is a contract error. `text` is what the part shows: the web adapter leaves out text that only a screen reader gets (an element clipped to a 1×1 box); JavaFX and egui read their labels' text. *(TestTextMatch, TestTextMatchContractError)*
+
+**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4), or `input`, a named input (§4.2a). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
 
 **Standards it follows:**
 - typing: JSON Schema 2020-12, through the `yaml-language-server` first line, a path relative to the contract file (the schema is `tools/omnicui/schema/contract.schema.json`, and is also embedded in the omnicui binary);
@@ -374,6 +386,71 @@ Other messages, as `TestErrors` checks them:
 - ``the default of `start` is a string, but its type is integer``
 - ``part `extra` is never used by any test`` (a warning)
 
+### 4.2a What may differ by platform [R]
+
+One contract holds every target to one behaviour and one look, and some platforms are meant to differ:
+- a desktop window has a title bar, and the web has none;
+- iOS draws its bars in Liquid Glass, while Android uses Material;
+- macOS goes back with ⌘[, Windows and Linux with Alt+←, and Android with its system back.
+
+A project says per part and per platform what must stay the same, and per platform how an input is given. Props and events never vary: they are the component's API, and two APIs are two contracts. With none of this written, a run compares exactly as in 0.2.3. (The design discussion: the per-platform verdict doc; the demonstration: `examples/todo/`.)
+
+**Platform tags.** A target is described by:
+- its **name**;
+- its **design** (`design:` in target.yaml);
+- its **forms** (`platform: [mobile]` in target.yaml: `desktop`, `web`, `mobile`, `tablet`);
+- its **OS**: what the adapter reports in advertise (`"platform": {"os": "android", "version": "16"}`), or else target.yaml's `os:`; one of `linux`, `windows`, `macos`, `ios`, `android`.
+
+A **selector** names one of these, or is `default`. Where several match a target, the most specific wins: target > OS > form > design > default. The console prints `platforms: web (web, linux) · android (mobile, android)`. A selector that matches no form, OS, target or design is a warning, with the nearest name. *(TestPlatformTags, TestUnknownSelectors)*
+
+**Viewports per platform:** `viewports: { default: [{ width: 1024, height: 720 }], mobile: [{ width: 360, height: 640 }] }`. Each target runs at its most specific selector's sizes. The i-th size of one target is compared with the i-th of another, at the same colour scheme, and labelled `1024x720-light / 360x640-light`. *(TestViewportsPerPlatform)*
+
+**`same:`: what each part holds the same.**
+- The aspects:
+  - `pixels`: all four pixel measures; it implies the three below;
+  - `layout`: a new measure from `bounds`. Each part's box is taken relative to the box around every part both targets show, scaled to its width. The largest difference in position or size, in percent of the width, is compared with `thresholds.layout` (default 10%). Parts in another reading order (top to bottom, then left to right) are 100%;
+  - `colours`: the palette (§5), over that part's box;
+  - `motion`: traces and clips of that part;
+  - `none`: nothing visual; behaviour still counts.
+- Where it is written:
+  - on a contract: `same: pixels` (the default), or per platform: `same: { default: pixels, mobile: none }`. Without it, targets of different designs compare colours and motion only; a contract that says it is taken at its word across designs too (`same: [layout, colours, motion]` for a web and a macOS app of one product, each idiomatic);
+  - on a part: `same: [layout, colours]`, or per platform: `same: { default: pixels, mobile: [layout, colours], ios: [layout] }`.
+- A target promises, for each part, its most specific selector's aspects, or else its contract-level promise (the contract's `same` for its platform). The pair's **base** is the intersection of the two contract-level promises, capped at `[colours, motion]` between designs when the contract doesn't say `same:` itself.
+- A pair is held to the **intersection** of the two promises, part by part. Neither side can be held to more than it promised, and adding a target never changes how the others are compared.
+  - The whole screen is compared at the base level, with every part the pair holds to less than that masked.
+  - Each such part is then compared as it was promised: by `colours` over its box, by `layout`, or not at all.
+  - A part both hold to more than the base (`pixels` across designs) is compared as a crop of that part.
+  - A trace or a clip of a part is compared only where both promised that part's `motion`.
+- The comparison's note says what was compared: `compared as pixels, except value: layout · increment: layout`. *(TestSamePerPart, TestSameMotion)*
+
+**System regions.** With each screenshot, a target may report the regions its platform drew rather than the app: `{"path": …, "regions": [{"kind": "titlebar", "x": 0, "y": 0, "width": 320, "height": 28}]}`. The kinds are `titlebar`, `statusbar`, `homeindicator`, `keyboard` and `scrollbar`. They are left out of every comparison, without any contract naming them, and the note says so: `left out, drawn by the platform: macos's titlebar`. A region across the whole width at the top or the bottom (a title bar, a status bar, a home indicator) is the platform's bar above or below the app, so it is **cut off** before comparing: the app's content under a 28 px title bar lines up with a target that has none. Other regions (a scrollbar) are masked. *(TestSystemRegions, TestTitleBarCropAndContractSame)*
+
+**Tests for some platforms:** `only: [desktop]` or `except: [ios]` on a test. Elsewhere its status is **not applicable**, which is neither a failure nor a gap (unlike "not advertised"). It is counted on its own: `… · 2 not applicable`. *(TestOnlyExcept)*
+
+**Named inputs.** `platforms.yaml`, next to `contracts/`, names the inputs whose form depends on the platform:
+
+```yaml
+inputs:
+  back:
+    default: { key: Alt+ArrowLeft }          # Windows, Linux
+    macos:   { key: Meta+BracketLeft }       # ⌘[
+    android: { do: back }                    # the system back
+    ios:     { do: swipe, with: { direction: right, from: edge } }
+  openMenuBar:
+    default: { key: F10 }
+    macos:   none                            # tests using it are not applicable there
+```
+
+Each form is one of:
+- `{ key: … }`;
+- `{ action: press | focus | hover }`;
+- `{ do: <name>, with: {…} }`;
+- `none`.
+
+A step `{ input: back }`, optionally with `part:`, is sent to each target in its platform's form; a key without a part is sent without one, to whatever has focus. Each result notes what it became: ``input `back`: do back (platforms.yaml, `android`)``. An input a contract names must be in platforms.yaml (``input `bak` is not in platforms.yaml; did you mean `back`?``). *(TestNamedInputs, TestNamedInputErrors)*
+
+**Platform exceptions.** An expected value may differ by platform, with a reason: `name: { default: "Back", ios: "Trails" }` with `why: "iOS names the back button after the previous screen"` on the expectation. A per-platform value without `why:` is a contract error. A target is held to its platform's value, and each one is listed under its result (`platform exception: back.name: "Trails" on ios (`ios`), not "Back"; why: …`) and counted in the summary (`· 3 platform exceptions`). *(TestPlatformExceptions)*
+
 ### 4.3 `target.yaml`
 
 `omnicui/targets/web/target.yaml`, without its comments:
@@ -386,9 +463,14 @@ stubs: node stubs.ts ../../../apps/web/src/omnicui   # optional; every contract 
 stepTimeout: 15s             # default 10s: any one request
 startTimeout: 120s           # default 120s: starting and answering advertise
 exclusive: false             # true: run this target with no other target alongside
+design: redesign             # optional: a design of its own (default: the one most targets share)
+platform: [desktop]          # optional: its forms (desktop, web, mobile, tablet), for platform selectors (§4.2a)
+os: macos                    # optional: its OS, when the adapter doesn't report it in advertise
 ```
 
 **Starting** [R]. While a target starts, a line every 10 s on standard error says so, with the time left and the last line its adapter wrote to standard error: `[android] starting: 40s of startTimeout 20m0s · adapter: > Task :adapter:compileDebugUnitTestKotlin`, and then `[android] started in 52s`. *(TestStartProgress)*
+
+**`design:`** [R] names a target's design when it isn't the one most targets share: a phone layout against a desktop one, a redesign. Screenshots are compared pixel by pixel only between targets of one design; between designs, by their colours (§5, Colours across designs). Behaviour, keyboard checks, traces, clips and visibility are compared between every target, whatever its design. The console says so when there is more than one: `designs: default: web · redesign: webalt (pixels compared within a design, colours across designs)`. *(TestDesigns)*
 
 **`exclusive: true`** [R] is for a target that needs the whole machine (an emulator, a simulator, a large JVM): it starts and runs with no other target alongside, and the others wait (`[ios] waiting for an exclusive target to finish`). Targets without it run side by side, as before. *(TestExclusive)*
 
@@ -414,7 +496,7 @@ Both commands run in the target's folder, so a relative path in them starts ther
 
 | Method | Params | Result | Required |
 |---|---|---|---|
-| `advertise` | `{protocol: "1"}` | `{protocol, can: [construct…], cannot: {construct: reason}}` | yes, the first request |
+| `advertise` | `{protocol: "1"}` | `{protocol, can: [construct…], cannot: {construct: reason}}`, and optionally `keys` (below) and `platform: {os, version}`: the OS it runs on (§4.2a) | yes, the first request |
 | `mount` | `{component, props, viewport: {width, height}, colorScheme}` | `null` | yes |
 | `press`, `focus`, `hover` | `{part}` | `null` | yes |
 | `key` | `{part, key}` | `null` | yes |
@@ -423,7 +505,7 @@ Both commands run in the target's folder, so a relative path in them starts ther
 | `do` | `{name, part?, with: {…}}` | `null` | optional: an action the target defines, advertised as `do.<name>` (see below) |
 | `read` | `{part, field}` | the value (string, boolean, number or null) | yes |
 | `events` | `{}` | `[{name, fields}…]` since the last call (mount clears) | yes |
-| `screenshot` | `{path}` | the path, after writing a PNG there | if it can render |
+| `screenshot` | `{path}` | the path, after writing a PNG there; or `{path, regions: [{kind, x, y, width, height}…]}`, with the regions its platform drew (§4.2a) | if it can render |
 | `trace` | `{part, point, steps: [{method, …params}…]}`, or `{part, property: "opacity" \| "scale", steps}` | `[{ms, x, y}…]`, sampled every frame while the steps run; for opacity `[{ms, value}…]`, the part's opacity times its ancestors' (capability `trace.opacity`); for scale, its width as drawn over its layout width, ancestors' transforms included (capability `trace.scale`). [R] The part is looked up at each frame, and samples start when it is first there: a part that appears during the steps (a sheet sliding in) is traced from its first frame. Not there at any frame: error -32002 | if it can render |
 | `record` | `{path, steps}` | `{frames: [{ms, file}…], inputs: [ms…], held}`: the frames written into `path`, when each step's input was delivered on the frames' clock, and whether frames come only when the picture changes (`held: true`, Chromium's screencast) rather than every pulse. A bare `[{ms, file}…]` (the first protocol 1 adapters) is still accepted | optional |
 | `probe` | `{path, viewport: {width, height}}` | the path, after writing the render check's picture there | optional; asked right after `advertise` when the target advertises `screenshot` and `probe` |
@@ -611,12 +693,19 @@ pub fn create(component: &str, props: Value) -> Result<Box<dyn Mounted>, String>
 - [R] **`thresholds.pixels` was renamed `area`** and is refused, with the new spelling: ``thresholds.pixels was renamed to area (the share of the drawn area that differs): write `area: 30%` ``. A threshold under a third of its default is allowed, with a warning that says what correct renderings usually measure. *(TestPixelsRenamedToArea, TestStrictThresholdWarns)*
 - [R] **Visibility.** On a target that advertises `bounds`, a part whose text, name, value or checked state was read is asked for its box; one with no size, or outside the viewport, is a `visibility` warning, unless the test checks `visible` itself. *(TestInvisibleReadWarns)*
 - [R] **Different sizes are 100% different**, with a note. *(TestPixelsSizes)*
+- [R] **Colours across designs** (`internal/compare/palette.go`). Two targets of different designs are compared, at each combination both took a screenshot at, by their **palettes**, and the worst combination is reported per pair:
+  - a palette is made of the solid pixels only, those whose 2×2 block is one colour (anti-aliased edges are blends every toolkit makes its own way), grouped into colours within the colour tolerance; the largest is the background, and a colour belongs to the palette when it covers at least 3% of the drawing (the solid pixels that aren't the background) and 0.1% of the picture;
+  - a colour of one is **used** by the other design when at least 0.05% of the other screenshot's pixels, solid or not, are within the tolerance of it, or of any other screenshot that design took in the run at the same colour scheme: a design language is the colours an app uses anywhere (the accent of a switch counts for a counter's button), and a colour one design fills a box with and another draws as lines and text is shared;
+  - **palette** is the larger, of the two, of the share of one's drawing in colours the other design doesn't use; different backgrounds are 100%.
+
+  Above `thresholds.palette` (default 15%) it is a warning that names the colours: `webalt uses #f4a261 (68%), #c77dff (22.2%), which web doesn't use`. Masks and a screenshot part apply as for pixels. Measured on the reference apps: one design drawn by web, egui and JavaFX, 0% on every screenshot; the redesign with a palette of its own, 73–100%; the same redesign in the reference palette and font, 0% (experiments/redesign). A run of one component knows only that component's colours, so a colour another component uses may warn there and not in a full run. Text colours drawn only as glyphs are seldom solid, so they rarely enter a palette. *(TestComparePalettes, TestDesigns)*
 - [R] **Round trips.** A trace, opacity or scale that goes out and comes back (a save star scaling 1 → 1.25 → 1, a hover in and out) is measured the same way as a round-trip clip, out and back. A round trip against a change that ends somewhere else is an infinite difference: ``one went out and came back, the other ended somewhere else``. *(TestRoundTripTraces, TestRoundTripAgainstOneWay, TestScaleTrace)*
 - [R] **Opacity and scale.** An opacity trace is analysed the same way, as the times its opacity covered 10%, … 90% of its change; a change under 0.02 is no change. A target that can't read opacity (egui paints it into colours) says so in `cannot`, and the test is "not advertised" there. *(TestAnalyzeValues, TestOpacityTrace)*
 - [R] **Clips** (`internal/compare/frames.go`). Each target records on its own clock (web: Chromium's screencast, a frame only when the page changes; JavaFX: a snapshot per pulse; egui: simulated frames at exactly 60 fps) and from its own moment, so clips are not compared frame by frame. Each clip becomes its **visual progress**: for every frame, 1 − its distance to the last frame / the first frame's distance to the last, over the pixels that change at all in the clip (the mean colour distance). When the target says its frames are held, frames more than 40 ms apart are a still picture, not a ramp; otherwise levels are interpolated across a gap (a slow pulse), as for traces. The curve is then compared like a trace; above `thresholds.motion` (default 40 ms, wider than `timing` because a clip shows every change on the screen and correct renderings measured up to 30 ms apart) it is a warning. A clip that ends close to where it started (a round trip) is measured out and back: up to 50% of its progress on the way out to the frame farthest from the first, the rest on the way back to the last, and says so in its note. `record: { part: x }` measures the clip over that part's box (before and after the steps, and 8 px around it) instead of the whole frame, so a small part's motion isn't lost in a phone screen. *(TestVisualProgress, TestRecordPartAndSelected)* On the reference switch, over 20 correct runs, clips measured 1.5–30 ms apart, 14 ms or less in 18 of them (position traces 0.0–0.5 ms); a 300 ms linear slide 76–104 ms; a 600 ms fade that only one target has, which no position trace sees, 182–189 ms. *(TestVisualProgress, TestClipMotionWarning, TestOldRecordReply; real: web.switch.dim, javafx.switch.dim)*
 - [R] **Clips are lossless animated PNGs** (`compare.APNG`, no external encoder), each frame shown for its own duration. report.html shows each combination's clips with a chart of their visual progress and a player that shows every target's frame for the same moment, lined up at its first input (or where its picture starts to change). *(TestAPNG, TestClipMotionWarning)*
 - [R] **Keyboard checks.** `keyboard: true` adds, for every part with role button (Enter, Space), switch or checkbox (Space), a test named ``keyboard: <key> on `<part>` does what a press does``: mount and press the part; mount, focus it and press the key; the events and every part's text, checked, value, disabled and (where advertised) selected must be the same. A difference fails, saying what each gave. Two cases are **not measured**, not passed or failed: the part isn't on screen when the component mounts (no box, or "no part"), with ``…isn't on screen when <id> mounts… If it is shown by a sheet, a dialog or another state, make that a component of its own (or a prop that mounts it shown), and give that component keyboard: true``; and the press changes nothing a test can read (choosing the segment already chosen), which leaves nothing to compare the key with. A target's `keys` (§4.4) leaves out the keys its platform doesn't use. *(TestKeyboardChecks, TestKeyboardPartNotShown, TestKeyboardInertPress, TestKeyboardTargetKeys; real: javafx.counter.no-enter)*
 - [R] **Motion.** A trace becomes the times at which the point reached 10%, 20%, … 90% of its movement, interpolated between samples. Two traces are first shifted to line up as well as possible, by the mean difference, and then compared by their largest remaining difference in ms. This compares the shape and the length of the movement (timing function and duration), not when each target reacted. A named timing is compared the same way with the CSS curve. Above `thresholds.timing` it is a warning. *(TestAnalyzeAlignsStart, TestExpectedMatchesEasing, TestDifferMeasures, TestTimingWarning)*
+- [R] **Direction.** Timing is measured along each trace's own movement, so it can't tell a thumb sliding up from one sliding across. Each pair of position traces is also compared by where the point went (from the first sample to the last, or to the farthest for a round trip): above `thresholds.direction` (default 30°) apart it is a warning, `web went right 20 px, webalt up 20 px`. Traced properties have no direction. *(TestDirection)*
 - [R] **Movement under 1 px is no movement.** Moving against still is an infinite difference, and still against still is 0. *(TestDifferMeasures)*
 - [R] **No retries.** A step that fails is reported, never repeated: a flaky target should show. *(the code has no retry path; TestFailMessage)*
 - [R] **No state between runs.** Each run replaces `.omnicui/run/` entirely, and running the same check twice gives the same results. *(TestRepeatable, TestRepeatable for the real targets)*

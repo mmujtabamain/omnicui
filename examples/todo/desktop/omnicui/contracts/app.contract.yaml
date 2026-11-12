@@ -1,0 +1,168 @@
+# yaml-language-server: $schema=../../../../../tools/omnicui/schema/contract.schema.json
+# The whole desktop app (desktop/SPEC-APP.md, "todo.app"): the header (the toolbar on a Mac), the
+# list in a sidebar, the open task in a pane beside it, and settings as a page of its own. Its
+# parts are the panes' parts of the same name (todo.app.row1 is the list's row1), and its own
+# openSettings. Each change of what is shown is reported as `navigated`; "back" (the browser's
+# back, Cmd+[ on a Mac) returns to the list.
+id: todo.app
+
+props:
+  seed: { type: string, enum: [empty, three, many], default: three }
+
+events:
+  navigated:            { screen: { type: string, enum: [list, detail, settings] }, id: { type: string } }
+  opened:               { id: { type: string } }
+  added:                { id: { type: string }, title: { type: string } }
+  toggled:              { id: { type: string }, done: { type: boolean } }
+  renamed:              { id: { type: string }, title: { type: string } }
+  deleted:              { id: { type: string } }
+  themeChanged:         { theme: { type: string, enum: [system, light, dark] } }
+  showCompletedChanged: { show: { type: boolean } }
+
+parts:
+  openSettings:  { role: button }
+  tasksHeading:  { role: heading }
+  left:          { role: status }
+  add:           { role: button }
+  newTitle: { role: textbox, same: [layout] }   # a text field: an HTML input, an NSTextField on a Mac
+  confirmAdd:    { role: button }
+  row1:          { role: button }
+  row2:          { role: button }
+  row1Check: { role: checkbox, same: [layout] }   # a checkbox: an HTML checkbox in the app's colours, an NSButton checkbox on a Mac
+  title: { role: textbox, same: [layout] }   # a text field: an HTML input, an NSTextField on a Mac
+  done: { role: switch, same: [layout] }   # a switch: a web toggle, an NSSwitch on a Mac
+  delete:        { role: button }
+  detailBack:    { role: button }
+  themeSystem: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  themeDark: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  showCompleted: { role: switch, same: [layout] }   # a switch: a web toggle, an NSSwitch on a Mac
+  settingsBack:  { role: button }
+
+tests:
+  - name: starts on the task list
+    expect:
+      - { part: tasksHeading, text: "Tasks" }
+      - { part: row1, text: "Buy milk" }
+      - { part: left, text: "2 left" }
+      - { part: openSettings, name: "Settings" }
+      - { event: navigated, times: 0 }
+    screenshot: true
+
+  - name: pressing a task opens its detail
+    steps:
+      - { action: press, part: row1 }
+    expect:
+      - { part: title, text: "Buy milk" }
+      - { part: done, checked: false }
+      - { event: opened, times: 1, last: { id: "t1" } }
+      - { event: navigated, times: 1, last: { screen: detail, id: "t1" } }
+    screenshot: true
+
+  - name: the task opens beside the list, which stays
+    steps:
+      - { action: press, part: row1 }
+    expect:
+      - { part: row1, visible: true }
+      - { part: title, text: "Buy milk", visible: true }
+      - { part: tasksHeading, visible: true }
+
+  - name: the detail's own back control returns to the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: detailBack }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: row1, text: "Buy milk", visible: true }
+
+  - name: back returns from a task to the list
+    steps:
+      - { action: press, part: row2 }
+      - { input: back }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: row2, text: "Call the plumber", visible: true }
+
+  - name: settings opens from the list, and back returns
+    steps:
+      - { action: press, part: openSettings }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { event: navigated, times: 1, last: { screen: settings, id: "" } }
+    screenshot: true
+
+  - name: back returns from settings to the list
+    steps:
+      - { action: press, part: openSettings }
+      - { input: back }
+    expect:
+      - { event: navigated, times: 2, last: { screen: list, id: "" } }
+      - { part: left, text: "2 left", visible: true }
+
+  - name: the Dark theme applies to the whole app
+    steps:
+      - { action: press, part: openSettings }
+      - { action: press, part: themeDark }
+      - { action: press, part: settingsBack }
+    expect:
+      - { event: themeChanged, times: 1, last: { theme: dark } }
+      - { event: navigated, last: { screen: list, id: "" } }
+      - { part: row1, text: "Buy milk" }
+    screenshot: true
+
+  - name: a title edited in the detail shows in the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: type, part: title, text: " today" }
+      - { action: press, part: detailBack }
+    expect:
+      - { event: renamed, last: { id: "t1", title: "Buy milk today" } }
+      - { part: row1, text: "Buy milk today" }
+
+  - name: Done in the detail checks the task in the list
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: done }
+      - { input: back }
+    expect:
+      - { part: row1Check, checked: true }
+      - { part: left, text: "1 left" }
+      - { event: toggled, times: 1, last: { id: "t1", done: true } }
+
+  - name: deleting a task returns to the list without it
+    steps:
+      - { action: press, part: row1 }
+      - { action: press, part: delete }
+    expect:
+      - { event: deleted, times: 1, last: { id: "t1" } }
+      - { event: navigated, last: { screen: list, id: "" } }
+      - { part: row1, text: "Call the plumber" }
+      - { part: left, text: "1 left" }
+
+  - name: Show completed off in settings hides done tasks from the list
+    steps:
+      - { action: press, part: openSettings }
+      - { action: press, part: showCompleted }
+      - { input: back }
+    expect:
+      - { event: showCompletedChanged, times: 1, last: { show: false } }
+      - { part: row2, text: "Book train tickets" }
+      - { part: left, text: "2 left" }
+
+  - name: a task added in the app is listed
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "Water the plants" }
+      - { action: press, part: confirmAdd }
+    expect:
+      - { event: added, times: 1, last: { id: "t1", title: "Water the plants" } }
+      - { part: row1, text: "Water the plants" }
+      - { event: navigated, times: 0 }
+
+viewports: [{ width: 1024, height: 720 }]
+colorSchemes: [light, dark]
+# The web and macOS apps share one product design (design/DESIGN-DESKTOP.md): the same regions in
+# the same proportions and the same palette, each drawn the way its platform draws it. So every
+# part keeps its layout, colours and motion between them, never its pixels; a part that each
+# platform draws as its own native control keeps only its layout (`same: [layout]` below).
+same: [layout, colours, motion]

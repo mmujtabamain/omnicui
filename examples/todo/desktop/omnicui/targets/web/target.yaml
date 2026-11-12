@@ -1,0 +1,19 @@
+name: web
+language: typescript
+# The app under test: examples/todo/desktop/apps/web (React), the npm dependency todo-web in
+# package.json. This folder only mounts its screens in Chromium (Playwright) and answers
+# omnicui's requests. Set up once: `npm ci && npx playwright install chromium` here.
+#
+# omnicui runs `adapter:` once per check, with /bin/sh -c, and talks JSON-RPC to it over
+# stdin/stdout. `exec` hands the shell's place to the adapter, so that closing its output is
+# seen at once.
+adapter: exec node adapter.ts
+# Reads every contract as JSON on stdin and writes the app's types into its src/omnicui/.
+stubs: node stubs.ts ../../../apps/web/src/omnicui
+# The desktop product design (design/DESIGN-DESKTOP.md), drawn the web's way; a macOS target
+# will be `design: macos`, `platform: [desktop]`. The contracts compare layout, colours and motion
+# between them, never pixels.
+platform: [web]
+design: web
+stepTimeout: 15s
+startTimeout: 120s

@@ -34,6 +34,34 @@ type Curve struct {
 	// RoundTrip: it went out and came back (a press that scales a star up and back, a hover in
 	// and out). The levels are then of the whole trip: up to 50% on the way out, the rest back.
 	RoundTrip bool `json:"roundTrip,omitempty"`
+	// DX and DY are where a traced point went, in pixels: from its first sample to its last, or
+	// to its farthest for a round trip. Zero for a traced property.
+	DX float64 `json:"dx,omitempty"`
+	DY float64 `json:"dy,omitempty"`
+}
+
+// Direction is the angle, in degrees (0–180), between where two traced points went, and false
+// when one of them has no direction (it didn't move, or it traced a property).
+func Direction(a, b Curve) (float64, bool) {
+	la, lb := math.Hypot(a.DX, a.DY), math.Hypot(b.DX, b.DY)
+	if !a.Moved || !b.Moved || la < 1 || lb < 1 {
+		return 0, false
+	}
+	cos := (a.DX*b.DX + a.DY*b.DY) / (la * lb)
+	return math.Acos(math.Max(-1, math.Min(1, cos))) * 180 / math.Pi, true
+}
+
+// Heading says in words where a traced point went: "right 20 px", "up-left 14 px". Screen y
+// grows downwards.
+func Heading(c Curve) string {
+	d := math.Hypot(c.DX, c.DY)
+	if d < 1 {
+		return "nowhere"
+	}
+	names := []string{"right", "down-right", "down", "down-left", "left", "up-left", "up", "up-right"}
+	a := math.Atan2(c.DY, c.DX) * 180 / math.Pi
+	k := int(math.Round(a/45)+8) % 8
+	return fmt.Sprintf("%s %.0f px", names[k], d)
 }
 
 // roundTrip is the progress of a change that ends where it started: half of it on the way out
@@ -118,6 +146,8 @@ func Analyze(samples []Sample) Curve {
 		if p := roundTrip(from, to, 1); p != nil {
 			c := levels(ms, p, math.Inf(1), slices.Max(from))
 			c.RoundTrip = true
+			k := slices.Index(from, slices.Max(from))
+			c.DX, c.DY = samples[k].X-p0.X, samples[k].Y-p0.Y
 			return c
 		}
 		return Curve{Distance: dist}
@@ -139,7 +169,7 @@ func Analyze(samples []Sample) Curve {
 		}
 		return pn.MS
 	}
-	c := Curve{Moved: true, Distance: dist}
+	c := Curve{Moved: true, Distance: dist, DX: dx, DY: dy}
 	for _, l := range Levels {
 		c.Times = append(c.Times, at(l))
 	}

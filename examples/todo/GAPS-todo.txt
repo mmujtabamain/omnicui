@@ -1,0 +1,150 @@
+Gaps met while building the todo example against omnicui.
+Each entry: what happened, and what I would have wanted to write instead. "OWN" marks my own
+mistakes; "PLATFORM" a limit of the platform, not omnicui's.
+
+Entries 1-18 were found while Android and the web were one project, compared with each other.
+Since then the example is two projects (mobile/: Android, later iOS; desktop/: the web, later
+macOS) with no checks between them; the entries say where that changed them. 19 and on are new.
+
+1. No way to say a part is absent.
+   After Cancel, after going back, after a filter, the honest check is "the dialog / the detail /
+   row 3 is gone". `visible: false` on a part that isn't there fails with "no part" (bounds and
+   read both reply -32002) unless the part is `optional`, and then the check is skipped instead.
+   The contracts check what replaced it (row1's new text, the empty state, `navigated` events).
+   Wanted: `{ part: newTaskDialog, present: false }` (or `visible: false` passing on -32002).
+
+2. No parts for a collection.
+   Rows are parts by position (row1, row2, row3), so a test can't say "the list has 3 rows" or
+   reach the 20th task of the `many` seed. Wanted: `rows: { role: button, each: true }` with
+   `{ part: rows, count: 3 }` and `{ part: rows[4], text: … }`.
+
+3. A component can't reuse other components' parts.
+   todo.app is the three screens together, so its parts are the screens' parts. The contract has
+   to declare them again, and each target needs a rule of its own (a todo.app.<name> part is the
+   shown screen's part tagged todo.<screen>.<name>; SPEC-APP.md, Parts). Wanted:
+   `parts: { row1: { from: todo.list.row1 } }`, or `includes: [todo.list, todo.detail]`.
+
+4. Roles: no radio, tab or option.
+   The filter and the theme are single-choice segmented buttons. Compose reports them as radio
+   buttons (Role.RadioButton), the web as buttons with aria-pressed. The contracts call them
+   `button` and check `selected`, which is right for both, but `role` can't be checked on them.
+   Wanted: `role: radio` with `selected`/`checked`, accepted from aria-pressed too.
+
+5. (Combined project only; gone with the split: each project now has one viewport.)
+   The "traces and clip: first combination only" line names the run's first viewport, not the
+   target's. With per-platform viewports, android ran its trace at 360×640 (protocol.log), yet
+   the console says "(1024×720 light)" under android. Cosmetic, but misleading.
+
+6. (Combined project only; gone with the split.) The render check (probe) is asked at the largest viewport of the whole run, 1024×720, even for
+   a target whose own viewports are 360×640. For android it means a landscape 1024×720 screen is
+   set up only for the probe. Wanted: the probe at the target's own largest viewport.
+
+7. A clip of a part whose `same:` leaves out motion is dropped without a word.
+   With the checkboxes at `same: none`, the test "checking a task marks it done" has
+   `record: { part: row1Check }`, both targets recorded it, and the console and results.json
+   show no clip comparison at all: no line, no note. I only noticed because a line was missing.
+   Wanted: "clip: not compared: row1Check keeps no motion between android and web (same: none)".
+   (The checkboxes and switches are now `same: motion`: both platforms animate them, and that
+   is worth holding.)
+
+8. No contract-level extension fields for shared values.
+   I wanted one place for the per-part `same:` value (`x-same: { shared: &shared … }`), but every
+   unknown top-level key is an error, so the YAML anchor is defined at its first use, inside a
+   part. It works; it reads oddly. Wanted: `x-` keys ignored, or named `same` presets.
+
+9. System regions: neither target reports any, because neither rendering draws one.
+   Robolectric runs no SystemUI, so there is no status bar, navigation bar or soft keyboard in
+   the Android pictures (the screen is the app's window only, 360×640). Chromium's headless
+   shell draws no scrollbars (the `many` list scrolls without one). Both screenshot replies are
+   a plain path. A real device or an emulator would have to report the status and navigation
+   bars.
+
+10. Keyboard checks still can't reach the dialog's buttons.
+    `confirmAdd` and `cancelAdd` are "not measured" (not on screen at mount), as the advice says.
+    The task fixed the components at four, so the dialog is not a component of its own; the
+    hand-written test "Enter in the title adds it too" covers the keyboard there. Wanted: the
+    review's proposal D, a keyboard check that replays a test's steps up to the press.
+
+11. PLATFORM (Robolectric): Compose's captureToImage() timed out on every call ("Condition still
+    not satisfied after 2000 ms": it waits for a frame the paused main looper never draws), and
+    it sees one window only. The adapter draws each window itself (View.draw on a native-graphics
+    Canvas, i.e. real Skia), places dialog windows by their gravity and dims behind them by their
+    dimAmount (0.6), as the window manager and compositor would. Software drawing has no
+    elevation shadows, so the FAB has none on Android.
+
+12. PLATFORM (Robolectric): a key event doesn't take Compose out of touch mode, and Compose lets
+    no clickable take focus in touch mode, so `focus` failed on every button and checkbox. The
+    adapter asks InputModeManager for keyboard mode before a focus request (what a hardware
+    keyboard's first key does on a device), and fails the step if focus still isn't granted.
+
+13. The reference web target's record (Chromium's screencast) missed short animations here: a
+    150 ms switch came out as one jump about 600 ms after the press, and the dialog's clip
+    started 150 ms late. The copy in targets/web now records on the page's own animation clock:
+    after each step it holds every animation at its start and steps them 16 ms at a time, with a
+    screenshot each (held: false). The clips then measured 16 ms (checkbox) and 9.9 ms (dialog,
+    over its box) apart from Android's.
+
+14. (Combined project only: Android and the web are no longer compared.) A real design
+    difference, left as a warning: the Done switch's clip is 56 ms apart. Compose's
+    Material switch first grows its thumb while pressed, then slides it; the web's slides it over
+    150 ms ease-out. Both are each platform's own switch; the contract holds them to the same
+    motion, and the warning says they aren't quite.
+
+15. OWN: the first Android clip of the dialog was blank ("nothing changes in the clip"). My record
+    advanced Compose's test clock but not the main looper's, so the new dialog window was never
+    laid out while recording. Fixed by idling the looper 16 ms per frame.
+
+16. `type` doesn't say where the text goes, and two targets put it in different places.
+    Typing " today" into "Buy milk": Compose (TextFieldState) appends at the end; the reference
+    web adapter's `pressSequentially` puts the caret at the start of a field that isn't focused
+    (Playwright does that itself), giving " todayBuy milk". OWN, in part: my first fix, moving
+    the caret in the app with a setTimeout after focus, raced Playwright and failed 1 run in 4
+    (full check #2). The real fix is in the web adapter: focus the field first (as a user does),
+    then type; the app also puts the caret at the end when a task is shown, and SPEC-APP.md states
+    the rule. Wanted in omnicui: `type` defined as "at the caret, after focusing the part as a
+    user would", or `{ action: type, at: end }`.
+
+17. OWN: the web's filled button drew its label in the wrong colour (a `.todo button { color:
+    inherit }` rule beat `.filled-button`); seen in the first screenshot, not by any check, since
+    the palette measure looks at filled areas, not glyphs.
+
+18. OWN: the contracts' oracles all passed on Android at their first run. The one real bug since
+    (the web caret, 16) was caught, but that is one data point: a deliberate defect per contract,
+    switched on to see it caught, would be better evidence, and I didn't add any.
+
+19. Two projects can't share anything but files. The fixtures (fixtures/seeds.json) and the
+    behaviour are the same for the phone and the desktop apps, but each project has its own four
+    contracts, and the behaviour tests are copies that will drift. Wanted: a contract that
+    includes another's tests (`tests: { from: ../../mobile/omnicui/contracts/list.contract.yaml }`)
+    or one project with per-project parts, so that only the look differs.
+
+20. A `same:` that no second target exercises yet can't be checked. The desktop contracts say
+    `same: [layout, colours, motion]` (and `[layout]` for native controls), but with the web as
+    the only desktop target nothing is compared, and a mistake there (a part held to the wrong
+    aspects, a box the Mac can't match) only shows when the macOS target arrives. Wanted:
+    comparing against saved screenshots or boxes from an earlier run, for a project with one
+    target per design.
+
+21. The desktop contracts lost their checkbox and switch clips. Native controls are held to
+    `[layout]` only, so a `record: { part: row1Check }` would be dropped without a word (7); I
+    removed those records rather than leave tests that silently compare nothing. The dialog's
+    trace and clip remain (its surface keeps motion). Wanted: the note from 7, or a warning from
+    `omnicui contracts` that a record's part keeps no motion.
+
+22. OWN: while splitting SPEC-APP.md I ran `rm SPEC-APP.md` in the same shell line as the script
+    that read it; the script failed and the file was gone. The committed copy in git had the last
+    version, so nothing was lost, but only by luck.
+
+23. OWN: Android carried a custom colour scheme and a custom dialog entrance that existed only to
+    match the web. Both are gone: Android now uses Material 3's dynamic colour (the baseline
+    scheme before Android 12) and the stock AlertDialog. Under Robolectric, dynamic colour comes
+    from the framework's default palette, so the screenshots show Android's default purple-blue.
+
+24. Joy UI, tried and removed on request (the desktop web app is plain React again). What it
+    showed while it was in: Joy's Checkbox and Switch put the state on a real <input> (role
+    checkbox; role switch on the Switch), so the part tag goes on the input through `slotProps`
+    and everything read right; the Modal renders in a portal, which the web adapter finds anyway
+    because it searches the whole document. The only adapter change it needed was the bundler's:
+    the reference web adapter's esbuild loaders know `.ttf` only, and Inter comes as .woff/.woff2.
+    Joy's colour scheme is set by JavaScript (CssVarsProvider reads matchMedia and sets an
+    attribute), not by a CSS media query, but every check still passed in light and dark.

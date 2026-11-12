@@ -1,0 +1,1410 @@
+{
+  "runId": "20261111T130148Z-4230b0e682b8",
+  "contracts": [
+    {
+      "id": "ui.switch",
+      "file": "experiments/redesign/contracts/switch.contract.yaml",
+      "props": [
+        {
+          "name": "on",
+          "type": "boolean",
+          "default": false,
+          "hasDefault": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "default": "Dark mode",
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "on",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "switch",
+          "role": "switch",
+          "id": "ui.switch.switch"
+        },
+        {
+          "name": "thumb",
+          "role": "generic",
+          "id": "ui.switch.thumb"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts off, with its label as its name",
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                },
+                {
+                  "field": "name",
+                  "want": "Dark mode"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "starts on when asked",
+          "props": {
+            "label": "Wi-Fi",
+            "on": true
+          },
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Wi-Fi"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a press turns it on, and the thumb slides across",
+          "steps": [
+            {
+              "action": "press",
+              "part": "switch",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "on": true
+              }
+            }
+          ],
+          "screenshot": true,
+          "trace": [
+            {
+              "part": "thumb",
+              "property": "position",
+              "point": "center",
+              "timing": {
+                "durationMs": 200,
+                "easing": "ease-out"
+              }
+            }
+          ],
+          "record": true
+        },
+        {
+          "name": "Space toggles it from the keyboard",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "switch",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "switch",
+              "key": "Space",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "switch",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1
+            }
+          ]
+        },
+        {
+          "name": "keyboard: Space on `switch` does what a press does",
+          "keyboard": {
+            "part": "switch",
+            "key": "Space"
+          }
+        }
+      ],
+      "viewports": [
+        {
+          "width": 320,
+          "height": 240
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "keyboard": true,
+      "pixelThresholds": {
+        "area": 30,
+        "strength": 28,
+        "shift": 8,
+        "spot": 2
+      },
+      "timingThreshold": 20,
+      "motionThreshold": 40,
+      "paletteThreshold": 15,
+      "directionThreshold": 30
+    }
+  ],
+  "targets": [
+    {
+      "name": "web",
+      "can": [
+        "bounds",
+        "drag",
+        "events",
+        "focus",
+        "focused",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "probe",
+        "read",
+        "record",
+        "role",
+        "screenshot",
+        "selected",
+        "trace",
+        "trace.opacity",
+        "trace.scale",
+        "type"
+      ],
+      "protocol": "1",
+      "probe": "passed",
+      "ms": 12086,
+      "startMs": 2307
+    },
+    {
+      "name": "webalt",
+      "design": "redesign",
+      "can": [
+        "bounds",
+        "drag",
+        "events",
+        "focus",
+        "focused",
+        "hover",
+        "key",
+        "mount",
+        "press",
+        "probe",
+        "read",
+        "record",
+        "role",
+        "screenshot",
+        "selected",
+        "trace",
+        "trace.opacity",
+        "trace.scale",
+        "type"
+      ],
+      "protocol": "1",
+      "probe": "passed",
+      "ms": 13660,
+      "startMs": 2402
+    }
+  ],
+  "results": [
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "web/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 125,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 128,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 125,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 128,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 1497
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "web/switch/starts-on-when-asked/320x240-light.png"
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 74,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 97,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 74,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 97,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 1006
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "web",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "property": "position",
+          "combo": "320x240-light",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 16.69999999999999,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 33.29999999999998,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 49.99999999999997,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 66.6,
+              "x": 137,
+              "y": 36
+            },
+            {
+              "ms": 83.29999999999998,
+              "x": 139.69190979003906,
+              "y": 36
+            },
+            {
+              "ms": 99.99999999999997,
+              "x": 142.20748901367188,
+              "y": 36
+            },
+            {
+              "ms": 116.70000000000002,
+              "x": 144.56796264648438,
+              "y": 36
+            },
+            {
+              "ms": 133.29999999999998,
+              "x": 146.76332092285156,
+              "y": 36
+            },
+            {
+              "ms": 149.99999999999997,
+              "x": 148.8145294189453,
+              "y": 36
+            },
+            {
+              "ms": 166.70000000000002,
+              "x": 150.6969451904297,
+              "y": 36
+            },
+            {
+              "ms": 183.4,
+              "x": 152.39453125,
+              "y": 36
+            },
+            {
+              "ms": 199.99999999999997,
+              "x": 153.87710571289062,
+              "y": 36
+            },
+            {
+              "ms": 216.6,
+              "x": 155.12652587890625,
+              "y": 36
+            },
+            {
+              "ms": 233.4,
+              "x": 156.11355590820312,
+              "y": 36
+            },
+            {
+              "ms": 249.9,
+              "x": 156.75701904296875,
+              "y": 36
+            },
+            {
+              "ms": 266.6,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 283.29999999999995,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 300,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 316.6,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 333.4,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 350,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 366.6,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 383.30000000000007,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 400,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 416.70000000000005,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 433.30000000000007,
+              "x": 157,
+              "y": 36
+            },
+            {
+              "ms": 450,
+              "x": 157,
+              "y": 36
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              79.00754802541704,
+              91.9839270658312,
+              105.60689739876918,
+              119.96681077324067,
+              135.22693263308238,
+              151.64541688958056,
+              169.6813011783952,
+              190.17927584858276,
+              214.9189565472265
+            ],
+            "duration": 176.79213042337284,
+            "dx": 20
+          }
+        }
+      ],
+      "clip": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip-320x240-light.png",
+      "clips": {
+        "320x240-light": {
+          "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip-320x240-light.png",
+          "frames": [
+            {
+              "ms": 0,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/0.png"
+            },
+            {
+              "ms": 247.150390625,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/1.png"
+            },
+            {
+              "ms": 263.816162109375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/2.png"
+            },
+            {
+              "ms": 280.482177734375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/3.png"
+            },
+            {
+              "ms": 297.148193359375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/4.png"
+            },
+            {
+              "ms": 313.814208984375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/5.png"
+            },
+            {
+              "ms": 330.480224609375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/6.png"
+            },
+            {
+              "ms": 347.146240234375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/7.png"
+            },
+            {
+              "ms": 363.812255859375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/8.png"
+            },
+            {
+              "ms": 380.478271484375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/9.png"
+            },
+            {
+              "ms": 397.144287109375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/10.png"
+            },
+            {
+              "ms": 413.81005859375,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/11.png"
+            },
+            {
+              "ms": 430.477294921875,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/12.png"
+            },
+            {
+              "ms": 447.14306640625,
+              "file": "web/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/13.png"
+            }
+          ],
+          "inputs": [
+            149.7001953125
+          ],
+          "progress": {
+            "moved": true,
+            "distance": 1,
+            "times": [
+              247.150390625,
+              272.49084399515067,
+              293.97104998444956,
+              310.6009927928059,
+              326.52235391225133,
+              342.49040258898697,
+              359.3162225124141,
+              377.80990676723593,
+              400.44071607760804
+            ],
+            "duration": 180.31556259377123
+          },
+          "values": [
+            0,
+            0.15697012284375023,
+            0.1688645863364494,
+            0.22868272116147936,
+            0.31679793653455823,
+            0.41987290591984505,
+            0.5249550724755949,
+            0.6290917419589175,
+            0.7261960852073635,
+            0.8140692008620398,
+            0.8885894661079866,
+            0.9462777561307937,
+            0.9874362904865647,
+            1
+          ]
+        }
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 125,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 148,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 125,
+            "y": 24,
+            "width": 44,
+            "height": 24
+          },
+          "thumb": {
+            "x": 148,
+            "y": 27,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 3204
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "web",
+      "status": "pass",
+      "ms": 1832
+    },
+    {
+      "contract": "ui.switch",
+      "test": "keyboard: Space on `switch` does what a press does",
+      "target": "web",
+      "status": "pass",
+      "ms": 1420
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "target": "webalt",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "webalt/switch/starts-off-with-its-label-as-its-name/320x240-dark.png",
+        "320x240-light": "webalt/switch/starts-off-with-its-label-as-its-name/320x240-light.png"
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 60,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 60,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 1680
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "target": "webalt",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "webalt/switch/starts-on-when-asked/320x240-dark.png",
+        "320x240-light": "webalt/switch/starts-on-when-asked/320x240-light.png"
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 40,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 40,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 1006
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "target": "webalt",
+      "status": "pass",
+      "screenshots": {
+        "320x240-dark": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-dark.png",
+        "320x240-light": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/320x240-light.png"
+      },
+      "traces": [
+        {
+          "part": "thumb",
+          "point": "center",
+          "property": "position",
+          "combo": "320x240-light",
+          "samples": [
+            {
+              "ms": 0,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 16.600000000000023,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 33.30000000000001,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 49.900000000000006,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 66.60000000000002,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 83.30000000000001,
+              "x": 53,
+              "y": 69
+            },
+            {
+              "ms": 99.90000000000003,
+              "x": 53,
+              "y": 68.17060089111328
+            },
+            {
+              "ms": 116.60000000000002,
+              "x": 53,
+              "y": 67.33560180664062
+            },
+            {
+              "ms": 133.3,
+              "x": 53,
+              "y": 66.50059700012207
+            },
+            {
+              "ms": 150,
+              "x": 53,
+              "y": 65.66560173034668
+            },
+            {
+              "ms": 166.7,
+              "x": 53,
+              "y": 64.83059883117676
+            },
+            {
+              "ms": 183.3,
+              "x": 53,
+              "y": 64.00059700012207
+            },
+            {
+              "ms": 200,
+              "x": 53,
+              "y": 63.16560173034668
+            },
+            {
+              "ms": 216.7,
+              "x": 53,
+              "y": 62.33059883117676
+            },
+            {
+              "ms": 233.3,
+              "x": 53,
+              "y": 61.50059700012207
+            },
+            {
+              "ms": 250,
+              "x": 53,
+              "y": 60.66560173034668
+            },
+            {
+              "ms": 266.6,
+              "x": 53,
+              "y": 59.835601806640625
+            },
+            {
+              "ms": 283.3,
+              "x": 53,
+              "y": 59.00059700012207
+            },
+            {
+              "ms": 300,
+              "x": 53,
+              "y": 58.16560173034668
+            },
+            {
+              "ms": 316.6,
+              "x": 53,
+              "y": 57.335601806640625
+            },
+            {
+              "ms": 333.3,
+              "x": 53,
+              "y": 56.50059700012207
+            },
+            {
+              "ms": 350.00000000000006,
+              "x": 53,
+              "y": 55.66560173034668
+            },
+            {
+              "ms": 366.7,
+              "x": 53,
+              "y": 54.83060073852539
+            },
+            {
+              "ms": 383.3,
+              "x": 53,
+              "y": 54.0005989074707
+            },
+            {
+              "ms": 400.00000000000006,
+              "x": 53,
+              "y": 53.16559982299805
+            },
+            {
+              "ms": 416.59999999999997,
+              "x": 53,
+              "y": 52.335601806640625
+            },
+            {
+              "ms": 433.3,
+              "x": 53,
+              "y": 51.50060272216797
+            },
+            {
+              "ms": 450.00000000000006,
+              "x": 53,
+              "y": 50.66559982299805
+            },
+            {
+              "ms": 466.59999999999997,
+              "x": 53,
+              "y": 49.835601806640625
+            },
+            {
+              "ms": 483.2,
+              "x": 53,
+              "y": 49.00559997558594
+            },
+            {
+              "ms": 500.00000000000006,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 516.7,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 533.3,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 549.9000000000001,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 566.5999999999999,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 583.3,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 600,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 616.7,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 633.3,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 649.9000000000001,
+              "x": 53,
+              "y": 49
+            },
+            {
+              "ms": 666.5999999999999,
+              "x": 53,
+              "y": 49
+            }
+          ],
+          "curve": {
+            "moved": true,
+            "distance": 20,
+            "times": [
+              123.3119974964766,
+              163.31198838691404,
+              203.31202310739135,
+              243.31199671979863,
+              283.31194007008116,
+              323.3119974964766,
+              363.3120187947855,
+              403.3120043754223,
+              443.3120196810285
+            ],
+            "duration": 384.00622099570273,
+            "dy": -20
+          }
+        }
+      ],
+      "clip": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip-320x240-light.png",
+      "clips": {
+        "320x240-light": {
+          "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/clip-320x240-light.png",
+          "frames": [
+            {
+              "ms": 0,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/0.png"
+            },
+            {
+              "ms": 261.5458984375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/1.png"
+            },
+            {
+              "ms": 278.2109375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/2.png"
+            },
+            {
+              "ms": 294.876953125,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/3.png"
+            },
+            {
+              "ms": 311.5439453125,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/4.png"
+            },
+            {
+              "ms": 328.208984375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/5.png"
+            },
+            {
+              "ms": 344.875,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/6.png"
+            },
+            {
+              "ms": 361.541015625,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/7.png"
+            },
+            {
+              "ms": 378.20703125,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/8.png"
+            },
+            {
+              "ms": 394.873046875,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/9.png"
+            },
+            {
+              "ms": 411.538818359375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/10.png"
+            },
+            {
+              "ms": 428.204833984375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/11.png"
+            },
+            {
+              "ms": 444.87109375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/12.png"
+            },
+            {
+              "ms": 461.536865234375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/13.png"
+            },
+            {
+              "ms": 478.203857421875,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/14.png"
+            },
+            {
+              "ms": 494.869140625,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/15.png"
+            },
+            {
+              "ms": 511.534912109375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/16.png"
+            },
+            {
+              "ms": 528.200927734375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/17.png"
+            },
+            {
+              "ms": 544.866943359375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/18.png"
+            },
+            {
+              "ms": 561.532958984375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/19.png"
+            },
+            {
+              "ms": 578.198974609375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/20.png"
+            },
+            {
+              "ms": 594.864990234375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/21.png"
+            },
+            {
+              "ms": 611.53076171875,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/22.png"
+            },
+            {
+              "ms": 628.197021484375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/23.png"
+            },
+            {
+              "ms": 644.863037109375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/24.png"
+            },
+            {
+              "ms": 661.52978515625,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/25.png"
+            },
+            {
+              "ms": 678.195068359375,
+              "file": "webalt/switch/a-press-turns-it-on-and-the-thumb-slides-across/frames-320x240-light/26.png"
+            }
+          ],
+          "inputs": [
+            150.10498046875
+          ],
+          "progress": {
+            "moved": true,
+            "distance": 1,
+            "times": [
+              275.19690970285137,
+              381.99328101772016,
+              426.836155307541,
+              466.170696885849,
+              502.9053502506993,
+              536.4431253371694,
+              568.4079025117808,
+              600.4822877111988,
+              631.2249777848564
+            ],
+            "duration": 394.08728647477983
+          },
+          "values": [
+            0,
+            0.0997992067546356,
+            0.1000443334498261,
+            0.10005346830859285,
+            0.10816424632051314,
+            0.12140492784488643,
+            0.13678455689082314,
+            0.16481691500267748,
+            0.19229254009000196,
+            0.22621862927308156,
+            0.26299251715506544,
+            0.30331112224466195,
+            0.3442053042618972,
+            0.3874578013680028,
+            0.43256965314342843,
+            0.477258091509301,
+            0.5244210536117953,
+            0.5755209945397481,
+            0.6250184110232724,
+            0.6787299507311959,
+            0.7302921158668525,
+            0.7824617602961678,
+            0.8344953754550958,
+            0.8903364439550017,
+            0.9435251164643782,
+            0.9999698101726071,
+            1
+          ]
+        }
+      },
+      "bounds": {
+        "320x240-dark": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 40,
+            "width": 18,
+            "height": 18
+          }
+        },
+        "320x240-light": {
+          "switch": {
+            "x": 40,
+            "y": 36,
+            "width": 26,
+            "height": 46
+          },
+          "thumb": {
+            "x": 44,
+            "y": 40,
+            "width": 18,
+            "height": 18
+          }
+        }
+      },
+      "ms": 4297
+    },
+    {
+      "contract": "ui.switch",
+      "test": "Space toggles it from the keyboard",
+      "target": "webalt",
+      "status": "pass",
+      "ms": 1794
+    },
+    {
+      "contract": "ui.switch",
+      "test": "keyboard: Space on `switch` does what a press does",
+      "target": "webalt",
+      "status": "pass",
+      "ms": 1820
+    }
+  ],
+  "comparisons": [
+    {
+      "contract": "ui.switch",
+      "test": "starts off, with its label as its name",
+      "kind": "palette",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "palette",
+      "value": 0,
+      "threshold": 15,
+      "warning": false,
+      "palette": {
+        "value": 0,
+        "backgroundA": "#fbfaf7",
+        "backgroundB": "#fbfbf8",
+        "a": [
+          {
+            "hex": "#fbfaf7",
+            "share": 0
+          },
+          {
+            "hex": "#8a8f84",
+            "share": 99.4
+          }
+        ],
+        "b": [
+          {
+            "hex": "#fbfbf8",
+            "share": 0
+          },
+          {
+            "hex": "#d8cfe8",
+            "share": 100
+          }
+        ]
+      },
+      "note": "web is the default design and webalt design redesign, so their colours are compared, not their pixels: the same colours"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "starts on when asked",
+      "kind": "palette",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "palette",
+      "value": 100,
+      "threshold": 15,
+      "warning": true,
+      "palette": {
+        "value": 100,
+        "backgroundA": "#fbfaf7",
+        "backgroundB": "#fbfaf8",
+        "onlyA": [
+          {
+            "hex": "#1f5fbf",
+            "share": 100
+          }
+        ],
+        "onlyB": [
+          {
+            "hex": "#2a9d8f",
+            "share": 67.7
+          }
+        ],
+        "a": [
+          {
+            "hex": "#fbfaf7",
+            "share": 0
+          },
+          {
+            "hex": "#1f5fbf",
+            "share": 100
+          }
+        ],
+        "b": [
+          {
+            "hex": "#fbfaf8",
+            "share": 0
+          },
+          {
+            "hex": "#2a9d8f",
+            "share": 67.7
+          },
+          {
+            "hex": "#d8cfe8",
+            "share": 32.3
+          }
+        ]
+      },
+      "note": "web is the default design and webalt design redesign, so their colours are compared, not their pixels: web uses #1f5fbf (100%), which webalt doesn't use; webalt uses #2a9d8f (67.7%), which web doesn't use"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "palette",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "palette",
+      "value": 99.4,
+      "threshold": 15,
+      "warning": true,
+      "palette": {
+        "value": 99.4,
+        "backgroundA": "#fbfaf7",
+        "backgroundB": "#fbfbf8",
+        "onlyA": [
+          {
+            "hex": "#1f5fbf",
+            "share": 99.4
+          }
+        ],
+        "onlyB": [
+          {
+            "hex": "#2a9d8f",
+            "share": 62.4
+          }
+        ],
+        "a": [
+          {
+            "hex": "#fbfaf7",
+            "share": 0
+          },
+          {
+            "hex": "#1f5fbf",
+            "share": 99.4
+          }
+        ],
+        "b": [
+          {
+            "hex": "#fbfbf8",
+            "share": 0
+          },
+          {
+            "hex": "#2a9d8f",
+            "share": 62.4
+          },
+          {
+            "hex": "#d8cfe8",
+            "share": 37.6
+          }
+        ]
+      },
+      "note": "web is the default design and webalt design redesign, so their colours are compared, not their pixels: web uses #1f5fbf (99.4%), which webalt doesn't use; webalt uses #2a9d8f (62.4%), which web doesn't use"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "thumb",
+      "value": 99.2,
+      "threshold": 20,
+      "warning": true,
+      "note": "largest at 10% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "direction",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "thumb",
+      "value": 90,
+      "threshold": 30,
+      "warning": true,
+      "note": "web went right 20 px, webalt up 20 px"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "web",
+      "b": "timing",
+      "combo": "320x240-light",
+      "part": "thumb",
+      "value": 0.2,
+      "threshold": 20,
+      "warning": false,
+      "note": "against 200ms ease-out; largest at 80% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "timing",
+      "a": "webalt",
+      "b": "timing",
+      "combo": "320x240-light",
+      "part": "thumb",
+      "value": 99.2,
+      "threshold": 20,
+      "warning": true,
+      "note": "against 200ms ease-out; largest at 10% of the movement"
+    },
+    {
+      "contract": "ui.switch",
+      "test": "a press turns it on, and the thumb slides across",
+      "kind": "motion",
+      "a": "web",
+      "b": "webalt",
+      "combo": "320x240-light",
+      "part": "clip",
+      "value": 134,
+      "threshold": 40,
+      "warning": true,
+      "note": "largest at 10% of the change"
+    }
+  ],
+  "summary": {
+    "pass": 10,
+    "fail": 0,
+    "broken": 0,
+    "notAdvertised": 0,
+    "notMeasured": 0,
+    "warnings": 6,
+    "requiredMissing": 0
+  }
+}

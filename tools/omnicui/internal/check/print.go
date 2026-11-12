@@ -25,8 +25,11 @@ func pairLabel(c Comparison) string {
 }
 
 func unit(kind string) string {
-	if kind == "pixels" {
+	switch kind {
+	case "pixels", "palette", "layout":
 		return "%"
+	case "direction":
+		return "°"
 	}
 	return " ms"
 }
@@ -35,8 +38,11 @@ func valueText(c Comparison) string {
 	if c.Value >= 1e9 {
 		return "∞"
 	}
-	if c.Kind == "pixels" {
+	switch c.Kind {
+	case "pixels", "palette", "layout":
 		return fmt.Sprintf("%.1f%%", c.Value)
+	case "direction":
+		return fmt.Sprintf("%.0f°", c.Value)
 	}
 	if c.Value < 10 {
 		return fmt.Sprintf("%.1f ms", c.Value)
@@ -96,6 +102,13 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			fmt.Fprintf(w, "%s: %d tests: %s\n", n, repeated[n][m], m)
 		}
 	}
+	// Designs: which targets are compared pixel by pixel, and which by their colours.
+	if line := designsLine(rep.Targets); line != "" {
+		fmt.Fprintln(w, line)
+	}
+	if line := platformsLine(rep.Targets); line != "" {
+		fmt.Fprintln(w, line)
+	}
 	col := 30
 	for _, c := range rep.Contracts {
 		for _, t := range c.Tests {
@@ -141,6 +154,15 @@ func Print(w io.Writer, rep *Report, runDir string) {
 						notes = append(notes, n+": stderr | "+l)
 					}
 				}
+				for _, a := range res.Absent {
+					notes = append(notes, n+": "+a)
+				}
+				for _, in := range res.Inputs {
+					notes = append(notes, n+": "+in)
+				}
+				for _, e := range res.Exceptions {
+					notes = append(notes, n+": platform exception: "+e)
+				}
 				for _, k := range sortedKeys(res.Missing) {
 					if res.Status == Pass {
 						missing[k] = append(missing[k], fmt.Sprintf("%s (%s)", n, res.Missing[k]))
@@ -165,8 +187,18 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				} else {
 					// One line per traced part (or clip) and combination.
 					key := "trace " + cmp.Part
-					if cmp.Kind == "motion" {
+					switch cmp.Kind {
+					case "motion":
 						key = "clip, visual progress"
+					case "direction":
+						key = "direction " + cmp.Part
+					case "palette":
+						key = "colours"
+						if cmp.Part != "" {
+							key += " " + cmp.Part
+						}
+					case "layout":
+						key = "layout"
 					}
 					if cmp.Combo != "" && len(Combos(c)) > 1 && test.AllCombinations {
 						key += " " + cmp.Combo
@@ -185,7 +217,10 @@ func Print(w io.Writer, rep *Report, runDir string) {
 						continue
 					}
 					label := pairLabel(p)
-					if len(Combos(c)) > 1 {
+					if p.Part != "" {
+						label += " " + p.Part
+					}
+					if len(Combos(c)) > 1 || strings.Contains(p.Combo, " / ") {
 						label += " " + p.Combo
 					}
 					rows = append(rows, MeasuresRow{Label: label, Measures: *p.Measures, Over: p.Over, Note: p.Note, SpotPart: p.SpotPart})
@@ -194,6 +229,19 @@ func Print(w io.Writer, rep *Report, runDir string) {
 			}
 			for _, p := range partOrder {
 				fmt.Fprintf(w, "    %s%s\n", pad(p, col-2), comparisonLine(traces[p]))
+				// What a palette or a direction warning is about: which colours, which way.
+				for _, cmp := range traces[p] {
+					if cmp.Warning && (cmp.Kind == "palette" || cmp.Kind == "direction" || cmp.Kind == "layout") {
+						note := cmp.Note
+						if cmp.Palette != nil {
+							note = cmp.Palette.Note(cmp.A, cmp.B)
+						}
+						if len(Combos(c)) > 1 && cmp.Kind == "palette" {
+							note += " (" + cmp.Combo + ")"
+						}
+						fmt.Fprintf(w, "    %s%s\n", pad("", col-2), note)
+					}
+				}
 			}
 			if combos := Combos(c); (len(test.Trace) > 0 || test.Record) && len(combos) > 1 && !test.AllCombinations {
 				fmt.Fprintf(w, "    %s%s\n", pad("", col-2), "traces and clip: first combination only ("+combos[0].Label()+")")
@@ -230,6 +278,12 @@ func Print(w io.Writer, rep *Report, runDir string) {
 	measured := ""
 	if s.NotMeasured > 0 {
 		measured = fmt.Sprintf(" · %d not measured", s.NotMeasured)
+	}
+	if s.NotApplicable > 0 {
+		measured += fmt.Sprintf(" · %d not applicable", s.NotApplicable)
+	}
+	if s.Exceptions > 0 {
+		measured += fmt.Sprintf(" · %d platform exceptions", s.Exceptions)
 	}
 	fmt.Fprintf(w, "\n%d pass · %d fail · %d broken · %d not advertised%s · %d warnings\n", s.Pass, s.Fail, s.Broken, s.NotAdvertised, measured, s.Warnings)
 	if wd, err := os.Getwd(); err == nil {
@@ -318,4 +372,46 @@ func shortID(id string) string {
 		return id[i+1:]
 	}
 	return id
+}
+
+// designsLine says which design each target is of, when they are not all of one: screenshots are
+// compared pixel by pixel within a design, and by their colours across designs.
+func designsLine(ts []TargetInfo) string {
+	groups := map[string][]string{}
+	var order []string
+	for _, t := range ts {
+		if _, ok := groups[t.Design]; !ok {
+			order = append(order, t.Design)
+		}
+		groups[t.Design] = append(groups[t.Design], t.Name)
+	}
+	if len(order) < 2 {
+		return ""
+	}
+	var parts []string
+	for _, d := range order {
+		name := d
+		if d == "" {
+			name = "default"
+		}
+		parts = append(parts, fmt.Sprintf("%s: %s", name, strings.Join(groups[d], ", ")))
+	}
+	return "designs: " + strings.Join(parts, " · ") + " (pixels compared within a design, colours across designs)"
+}
+
+// platformsLine says what each target runs on, when any says: "platforms: web (web, linux) ·
+// android (mobile, android)".
+func platformsLine(ts []TargetInfo) string {
+	var parts []string
+	any := false
+	for _, t := range ts {
+		p := t.Platform
+		p.Target, p.Design = t.Name, ""
+		any = any || p.OS != "" || len(p.Forms) > 0
+		parts = append(parts, p.String())
+	}
+	if !any {
+		return ""
+	}
+	return "platforms: " + strings.Join(parts, " · ")
 }

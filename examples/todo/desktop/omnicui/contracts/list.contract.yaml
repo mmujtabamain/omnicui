@@ -1,0 +1,245 @@
+# yaml-language-server: $schema=../../../../../tools/omnicui/schema/contract.schema.json
+# The desktop app's task list, its sidebar (desktop/SPEC-APP.md, "todo.list"): the filter, how
+# many are left, the tasks, and the dialog that adds one. Rows are parts by position: row1 is the top row shown, whichever task.
+id: todo.list
+
+props:
+  seed:          { type: string, enum: [empty, three, many], default: three }
+  showCompleted: { type: boolean, default: true }
+
+events:
+  added:         { id: { type: string }, title: { type: string } }
+  toggled:       { id: { type: string }, done: { type: boolean } }
+  opened:        { id: { type: string } }
+  filterChanged: { filter: { type: string, enum: [all, active, done] } }
+
+parts:
+  tasksHeading: { role: heading }
+  filterAll: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  filterActive: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  filterDone: { role: button, same: [layout] }   # a segment of a segmented control: web toggle buttons, an NSSegmentedControl on a Mac
+  left:         { role: status }
+  add:          { role: button }
+  row1:         { role: button }
+  row2:         { role: button }
+  row3:         { role: button }
+  row1Check: { role: checkbox, same: [layout] }   # a checkbox: an HTML checkbox in the app's colours, an NSButton checkbox on a Mac
+  row2Check: { role: checkbox, same: [layout] }   # a checkbox: an HTML checkbox in the app's colours, an NSButton checkbox on a Mac
+  row3Check: { role: checkbox, same: [layout] }   # a checkbox: an HTML checkbox in the app's colours, an NSButton checkbox on a Mac
+  empty:        { role: status }
+  newTaskDialog: { role: generic }
+  newTitle: { role: textbox, same: [layout] }   # a text field: an HTML input, an NSTextField on a Mac
+  confirmAdd:   { role: button }
+  cancelAdd:    { role: button }
+
+tests:
+  - name: three tasks, two of them left
+    expect:
+      - { part: tasksHeading, text: "Tasks" }
+      - { part: row1, text: "Buy milk" }
+      - { part: row1Check, checked: false, name: "Buy milk" }
+      - { part: row2, text: "Call the plumber" }
+      - { part: row2Check, checked: true, name: "Call the plumber" }
+      - { part: row3, text: "Book train tickets" }
+      - { part: row3Check, checked: false }
+      - { part: left, text: "2 left" }
+      - { part: filterAll, selected: true, text: "All" }
+      - { part: filterActive, selected: false, text: "Active" }
+      - { part: filterDone, selected: false, text: "Done" }
+      - { part: add, name: "Add task" }
+    screenshot: true
+
+  - name: an empty list says so
+    props: { seed: empty }
+    expect:
+      - { part: empty, text: "No tasks yet" }
+      - { part: left, text: "0 left" }
+    screenshot: true
+
+  - name: many tasks scroll, and the count covers them all
+    props: { seed: many }
+    expect:
+      - { part: row1, text: "Renew passport" }
+      - { part: row3Check, checked: true, name: "Pay the electricity bill" }
+      - { part: left, text: "14 left" }
+    screenshot: true
+
+  - name: the add button opens the dialog, which grows in, with Add off until there is a title
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+    expect:
+      - { part: newTitle, text: "", name: "Title", focused: true }
+      - { part: confirmAdd, disabled: true, text: "Add" }
+      - { part: cancelAdd, disabled: false, text: "Cancel" }
+      - { event: added, times: 0 }
+    screenshot: true
+    trace:
+      - { part: newTaskDialog, property: scale, timing: { duration: 200ms, easing: ease-out } }
+    # The dialog's box only: the scrim behind it changes the whole window at once.
+    record: { part: newTaskDialog }
+
+  - name: Add adds the task, trimmed, as active, with the next id
+    props: { seed: three }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "  Water the plants " }
+      - { action: press, part: confirmAdd }
+    expect:
+      - { event: added, times: 1, last: { id: "t4", title: "Water the plants" } }
+      - { part: left, text: "3 left" }
+      - { part: row1, text: "Buy milk" }
+
+  - name: a task added to an empty list is its first row
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "Water the plants" }
+      - { action: press, part: confirmAdd }
+    expect:
+      - { part: row1, text: "Water the plants" }
+      - { part: row1Check, checked: false }
+      - { part: left, text: "1 left" }
+      - { event: added, times: 1, last: { id: "t1", title: "Water the plants" } }
+
+  - name: Enter in the title adds it too
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "Pay rent" }
+      - { action: key, part: newTitle, key: Enter }
+    expect:
+      - { part: row1, text: "Pay rent" }
+      - { event: added, times: 1, last: { id: "t1", title: "Pay rent" } }
+
+  - name: Cancel closes the dialog and adds nothing
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "Something else" }
+      - { action: press, part: cancelAdd }
+    expect:
+      - { event: added, times: 0 }
+      - { part: left, text: "2 left" }
+      - { part: row3, text: "Book train tickets" }
+
+  - name: a blank title can't be added
+    props: { seed: empty }
+    steps:
+      - { action: press, part: add }
+      - { action: type, part: newTitle, text: "   " }
+    expect:
+      - { part: confirmAdd, disabled: true }
+      - { event: added, times: 0 }
+
+  - name: checking a task marks it done
+    steps:
+      - { action: press, part: row1Check }
+    expect:
+      - { part: row1Check, checked: true }
+      - { part: row1, text: "Buy milk" }
+      - { part: left, text: "1 left" }
+      - { event: toggled, times: 1, last: { id: "t1", done: true } }
+    screenshot: true
+
+  - name: unchecking a done task makes it active again
+    steps:
+      - { action: press, part: row2Check }
+    expect:
+      - { part: row2Check, checked: false }
+      - { part: left, text: "3 left" }
+      - { event: toggled, times: 1, last: { id: "t2", done: false } }
+
+  - name: Active shows only the tasks left
+    steps:
+      - { action: press, part: filterActive }
+    expect:
+      - { part: filterActive, selected: true }
+      - { part: filterAll, selected: false }
+      - { part: row1, text: "Buy milk" }
+      - { part: row2, text: "Book train tickets" }
+      - { part: left, text: "2 left" }
+      - { event: filterChanged, times: 1, last: { filter: active } }
+    screenshot: true
+
+  - name: Done shows only the done tasks
+    steps:
+      - { action: press, part: filterDone }
+    expect:
+      - { part: filterDone, selected: true }
+      - { part: row1, text: "Call the plumber" }
+      - { part: row1Check, checked: true }
+      - { part: left, text: "2 left" }
+      - { event: filterChanged, times: 1, last: { filter: done } }
+
+  - name: checking a task under Active takes it out of the list
+    steps:
+      - { action: press, part: filterActive }
+      - { action: press, part: row1Check }
+    expect:
+      - { part: row1, text: "Book train tickets" }
+      - { part: left, text: "1 left" }
+      - { event: toggled, times: 1, last: { id: "t1", done: true } }
+
+  - name: unchecking the last done task under Done leaves it empty
+    steps:
+      - { action: press, part: filterDone }
+      - { action: press, part: row1Check }
+    expect:
+      - { part: empty, text: "Nothing done yet" }
+      - { part: left, text: "3 left" }
+      - { event: toggled, times: 1, last: { id: "t2", done: false } }
+
+  - name: with nothing left, Active says so
+    props: { seed: three }
+    steps:
+      - { action: press, part: row1Check }
+      - { action: press, part: row3Check }
+      - { action: press, part: filterActive }
+    expect:
+      - { part: empty, text: "Nothing left to do" }
+      - { part: left, text: "0 left" }
+
+  - name: choosing the filter that is already chosen reports nothing
+    steps:
+      - { action: press, part: filterAll }
+    expect:
+      - { part: filterAll, selected: true }
+      - { event: filterChanged, times: 0 }
+
+  - name: pressing a row opens its task
+    steps:
+      - { action: press, part: row3 }
+    expect:
+      - { event: opened, times: 1, last: { id: "t3" } }
+      - { event: toggled, times: 0 }
+
+  - name: with Show completed off, All hides the done tasks
+    props: { showCompleted: false }
+    expect:
+      - { part: row1, text: "Buy milk" }
+      - { part: row2, text: "Book train tickets" }
+      - { part: left, text: "2 left" }
+
+  - name: with Show completed off, Done still shows them
+    props: { showCompleted: false }
+    steps:
+      - { action: press, part: filterDone }
+    expect:
+      - { part: row1, text: "Call the plumber" }
+
+  - name: Space checks the focused task
+    steps:
+      - { action: focus, part: row1Check }
+      - { action: key, part: row1Check, key: Space }
+    expect:
+      - { part: row1Check, checked: true, focused: true }
+      - { event: toggled, times: 1, last: { id: "t1", done: true } }
+
+viewports: [{ width: 1024, height: 720 }]
+colorSchemes: [light, dark]
+# The web and macOS apps share one product design (design/DESIGN-DESKTOP.md): the same regions in
+# the same proportions and the same palette, each drawn the way its platform draws it. So every
+# part keeps its layout, colours and motion between them, never its pixels; a part that each
+# platform draws as its own native control keeps only its layout (`same: [layout]` below).
+same: [layout, colours, motion]
+keyboard: true

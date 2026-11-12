@@ -90,6 +90,15 @@ type Target struct {
 	// Exclusive runs this target on its own: no other target starts or runs tests meanwhile.
 	// For targets that need the whole machine (an emulator, a simulator, a large JVM).
 	Exclusive bool `yaml:"exclusive"`
+	// Design names the target's design, when it isn't the one most targets share (a phone layout,
+	// a redesign). Screenshots are compared pixel by pixel only between targets of the same
+	// design; between designs, by the colours they draw with (their design language). Behaviour,
+	// keyboard and motion are compared between every target. Empty: the default design.
+	Design string `yaml:"design"`
+	// Platform: the target's forms (desktop, web, mobile, tablet), for the contracts' platform
+	// selectors. OS: the OS it runs on, for an adapter that doesn't report it in advertise.
+	Platform []string `yaml:"platform"`
+	OS       string   `yaml:"os"`
 
 	Dir string `yaml:"-"`
 	// Linked: targets/<name> is a link to a target folder elsewhere (another project's). Its stub
