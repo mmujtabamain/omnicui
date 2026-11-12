@@ -1,0 +1,105 @@
+iOS todo implementation and verification — 2026-11-12 (Asia/Karachi)
+
+Scope
+- Native SwiftUI app and reusable TodoUI framework: apps/ios/.
+- Prebuilt UIKit host and JSON-RPC adapter: omnicui/targets/ios/.
+- Go CLI built from the pulled devbench/parity-and-verification branch.
+- tools/omnicui/, the mobile contracts, and Android were not edited.
+- Android was not installed or run. No cross-phone comparisons were attempted.
+- Xcode 27.2 SDK, deployment target iOS 26.0, Simulator runtime iOS 26.5.
+
+Platform / target limits (reported honestly in advertise.cannot)
+1. key and focus: UIKit's public in-process APIs cannot inject hardware key
+   events or move hardware focus to arbitrary SwiftUI accessibility elements.
+   UITextInput inserts actual text, a character at a time; it is not used to
+   pretend that Space/Enter was delivered to a button or switch. Consequently,
+   the keyboard tests, including Enter in the add field, are unadvertised. The
+   shipping app keeps the platform's native keyboard behavior and onSubmit.
+   Wanted: an iOS automation API that delivers real keyboard input in-process.
+   This is a platform limit, not a contract error.
+2. Drag, hover, per-frame trace and recording are not implemented. Trace and
+   recording are this target's omissions, not claims that iOS cannot do them.
+   They are unadvertised; none of the supplied behavior tests needs them.
+3. The host enables Apple's lazily loaded accessibility runtime through
+   _AXSSetAutomationEnabled. This private Simulator test-host dependency is
+   confined to the target. The shipping app/framework use public APIs. Reads
+   then use live UIKit accessibility objects, not XCTest snapshots.
+   Wanted: a public API to enable/access SwiftUI's in-process accessibility tree.
+4. The 360x640-point hosting window is rendered directly at renderer scale 1.
+   SpringBoard's status bar and home indicator are outside that window; they
+   are not drawn and are not falsely reported as screenshot regions. Visible
+   UIKit input windows are composited at their native point frames and their
+   intersecting keyboard region is reported if drawn. The checked Simulator
+   configuration did not show a software keyboard; captured replies therefore
+   have regions: []. This is distinct from the standalone app, which displays
+   the normal device status bar and home indicator.
+5. Native edge-pop is enabled in the app. Protocol do.back activates the named
+   native navigation control (or dismisses the presented add sheet). The button
+   and modal-back paths are verified. Finger swipe input is not injected by
+   this target, so the physical edge gesture itself was not automated.
+
+Contracts and omnicui
+- No supplied contract required a platform exception or a change. None was
+  weakened, skipped by name, or worked around. Unsupported constructs are
+  advertised as unsupported, so they remain visible in the check summary.
+- The theme tests check selected segments and events, with screenshots for
+  review. They can pass while the rendered theme is wrong. Manual screenshot
+  inspection caught my hosting error below. Wanted to write an explicit
+  appearance expectation, e.g. {appearance: dark}, or check a rendered semantic
+  background color. This is a proposed addition, not valid current syntax.
+- A missing-part error suggests making a part optional, even when the cause is
+  a target's broken accessibility traversal. Wanted an initial diagnostic that
+  recommends inspecting the mounted tree/identifier before changing a contract.
+  I fixed my traversal and did not mark anything optional.
+- --test and component-focused checks were sufficient during development.
+  No tooling change or contract workaround was needed. No full check was used
+  as an edit/debug loop.
+
+Validation
+- Both the standalone Simulator app build and Todo.xcodeproj build succeeded.
+- Standalone Todo.app was installed, launched and visually checked on the same
+  reusable Simulator. Its raw device screenshot was only a local smoke check;
+  it is not an omnicui image and is not used in the evidence comparisons.
+- apps/ios/test.sh: fixture SHA-256, trimmed/blank adds, non-reused IDs after
+  deletion, order, filters, real-change events, edits, empty states, many seed.
+- target test_protocol.py: live roles/selection/frames, missing-part bounds,
+  missing-component/part and parse errors, event draining, per-keystroke title
+  events, modal back/reopen/focus, and exactly 360x640 PNG output.
+- Focused omnicui checks covered list, detail, settings and whole-app behavior
+  in light/dark. Screenshots were inspected for theme and native rendering.
+- Full-run evidence is in omnicui/targets/ios/evidence/.
+
+OWN mistakes (fixed; not omnicui bugs)
+- Wrong swiftc linker flag and initialization order in the first build.
+- First advertise omitted mount/read/events, so the first focused test was
+  correctly unadvertised. Fixed before any full check.
+- A Swift protocol cast missed dynamically exposed accessibility identifiers;
+  the adapter now asks the runtime object's actual identifier getter.
+- I initially treated toolbar controls and virtual segments like ordinary
+  SwiftUI buttons. The adapter now dispatches their native UIControl actions.
+- I initially drew a presented sheet separately, producing black areas and an
+  incorrect window size. Rendering the viewport-sized native window fixed it.
+- FocusState belonged in the sheet, not the presenting list. Moving it fixed
+  the required initial text-field focus without synthesizing a read value.
+- My absent-part bounds path logged too much while diagnosing an empty list.
+  It now returns the protocol's zero-size bounds for an unrendered part.
+- I embedded UIHostingController under an extra plain UIKit controller, which
+  blocked preferredColorScheme from changing the rendered theme. Mounting it
+  as the window root fixed the appearance, verified from light-to-dark captures.
+- Native switch accessibility nodes needed association with their UISwitch
+  backing view to distinguish a switch from a toggle-style checkbox.
+
+Last full check
+- Command: bin/omnicui --project examples/todo/mobile/omnicui check ios
+- Full checks performed: 1 (all earlier checks were component/test focused).
+- Summary: 46 pass · 0 fail · 0 broken · 39 not advertised · 0 warnings
+- iOS target start-up: 4584 ms (4.584 s).
+- iOS target total: 161522 ms (161.522 s), including start-up.
+- First-ever cold Simulator boot took about 116 s in a focused check. Subsequent
+  checks reused that Simulator; no device was created per check.
+- What omnicui got in my way: no blocking defect. Missing-part optional-part
+  advice and the absence of an appearance assertion are documented above;
+  --test, timing, probe and explicit capability reporting were useful.
+- OWN: early host accessibility, activation, sheet focus/rendering and theme
+  mistakes are listed above and fixed. No failing behavior check remains;
+  hardware key/focus coverage remains explicitly unadvertised.

@@ -1,0 +1,6345 @@
+{
+  "runId": "20261112T115227Z-542f5ee54b3f",
+  "contracts": [
+    {
+      "id": "todo.app",
+      "file": "examples/todo/mobile/omnicui/contracts/app.contract.yaml",
+      "props": [
+        {
+          "name": "seed",
+          "type": "string",
+          "enum": [
+            "empty",
+            "three",
+            "many"
+          ],
+          "default": "three",
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "navigated",
+          "fields": [
+            {
+              "name": "screen",
+              "type": "string",
+              "enum": [
+                "list",
+                "detail",
+                "settings"
+              ],
+              "hasDefault": false
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "opened",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "added",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "done",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "renamed",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "deleted",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "themeChanged",
+          "fields": [
+            {
+              "name": "theme",
+              "type": "string",
+              "enum": [
+                "system",
+                "light",
+                "dark"
+              ],
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "showCompletedChanged",
+          "fields": [
+            {
+              "name": "show",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "openSettings",
+          "role": "button",
+          "id": "todo.app.openSettings"
+        },
+        {
+          "name": "tasksHeading",
+          "role": "heading",
+          "id": "todo.app.tasksHeading"
+        },
+        {
+          "name": "left",
+          "role": "status",
+          "id": "todo.app.left"
+        },
+        {
+          "name": "add",
+          "role": "button",
+          "id": "todo.app.add"
+        },
+        {
+          "name": "newTitle",
+          "role": "textbox",
+          "id": "todo.app.newTitle"
+        },
+        {
+          "name": "confirmAdd",
+          "role": "button",
+          "id": "todo.app.confirmAdd"
+        },
+        {
+          "name": "row1",
+          "role": "button",
+          "id": "todo.app.row1"
+        },
+        {
+          "name": "row2",
+          "role": "button",
+          "id": "todo.app.row2"
+        },
+        {
+          "name": "row1Check",
+          "role": "checkbox",
+          "id": "todo.app.row1Check"
+        },
+        {
+          "name": "title",
+          "role": "textbox",
+          "id": "todo.app.title"
+        },
+        {
+          "name": "done",
+          "role": "switch",
+          "id": "todo.app.done"
+        },
+        {
+          "name": "delete",
+          "role": "button",
+          "id": "todo.app.delete"
+        },
+        {
+          "name": "detailBack",
+          "role": "button",
+          "id": "todo.app.detailBack"
+        },
+        {
+          "name": "themeSystem",
+          "role": "button",
+          "id": "todo.app.themeSystem"
+        },
+        {
+          "name": "themeDark",
+          "role": "button",
+          "id": "todo.app.themeDark"
+        },
+        {
+          "name": "showCompleted",
+          "role": "switch",
+          "id": "todo.app.showCompleted"
+        },
+        {
+          "name": "settingsBack",
+          "role": "button",
+          "id": "todo.app.settingsBack"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts on the task list",
+          "expect": [
+            {
+              "part": "tasksHeading",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Tasks"
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            },
+            {
+              "part": "openSettings",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Settings"
+                }
+              ]
+            },
+            {
+              "event": "navigated",
+              "times": 0
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "pressing a task opens its detail",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "title",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "event": "opened",
+              "times": 1,
+              "last": {
+                "id": "t1"
+              }
+            },
+            {
+              "event": "navigated",
+              "times": 1,
+              "last": {
+                "id": "t1",
+                "screen": "detail"
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the detail's own back control returns to the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "detailBack",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "navigated",
+              "times": 2,
+              "last": {
+                "id": "",
+                "screen": "list"
+              }
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                },
+                {
+                  "field": "visible",
+                  "want": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "back returns from a task to the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row2",
+              "times": 1
+            },
+            {
+              "action": "input",
+              "input": "back",
+              "part": "",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "navigated",
+              "times": 2,
+              "last": {
+                "id": "",
+                "screen": "list"
+              }
+            },
+            {
+              "part": "row2",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                },
+                {
+                  "field": "visible",
+                  "want": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "settings opens from the list, and back returns",
+          "steps": [
+            {
+              "action": "press",
+              "part": "openSettings",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "themeSystem",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "navigated",
+              "times": 1,
+              "last": {
+                "id": "",
+                "screen": "settings"
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "back returns from settings to the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "openSettings",
+              "times": 1
+            },
+            {
+              "action": "input",
+              "input": "back",
+              "part": "",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "navigated",
+              "times": 2,
+              "last": {
+                "id": "",
+                "screen": "list"
+              }
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                },
+                {
+                  "field": "visible",
+                  "want": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "the Dark theme applies to the whole app",
+          "steps": [
+            {
+              "action": "press",
+              "part": "openSettings",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "themeDark",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "settingsBack",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "themeChanged",
+              "times": 1,
+              "last": {
+                "theme": "dark"
+              }
+            },
+            {
+              "event": "navigated",
+              "last": {
+                "id": "",
+                "screen": "list"
+              }
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a title edited in the detail shows in the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "title",
+              "text": " today",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "detailBack",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "renamed",
+              "last": {
+                "id": "t1",
+                "title": "Buy milk today"
+              }
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk today"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Done in the detail checks the task in the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "done",
+              "times": 1
+            },
+            {
+              "action": "input",
+              "input": "back",
+              "part": "",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1 left"
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "deleting a task returns to the list without it",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "delete",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "deleted",
+              "times": 1,
+              "last": {
+                "id": "t1"
+              }
+            },
+            {
+              "event": "navigated",
+              "last": {
+                "id": "",
+                "screen": "list"
+              }
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1 left"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Show completed off in settings hides done tasks from the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "openSettings",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "showCompleted",
+              "times": 1
+            },
+            {
+              "action": "input",
+              "input": "back",
+              "part": "",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "showCompletedChanged",
+              "times": 1,
+              "last": {
+                "show": false
+              }
+            },
+            {
+              "part": "row2",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "a task added in the app is listed",
+          "props": {
+            "seed": "empty"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "Water the plants",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "confirmAdd",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "added",
+              "times": 1,
+              "last": {
+                "id": "t1",
+                "title": "Water the plants"
+              }
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Water the plants"
+                }
+              ]
+            },
+            {
+              "event": "navigated",
+              "times": 0
+            }
+          ]
+        }
+      ],
+      "viewports": [
+        {
+          "width": 360,
+          "height": 640
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "pixelThresholds": {
+        "area": 30,
+        "strength": 28,
+        "shift": 8,
+        "spot": 2
+      },
+      "timingThreshold": 20,
+      "motionThreshold": 40,
+      "same": "none",
+      "sameBy": {
+        "default": "none"
+      },
+      "layoutThreshold": 10,
+      "paletteThreshold": 15,
+      "directionThreshold": 30
+    },
+    {
+      "id": "todo.detail",
+      "file": "examples/todo/mobile/omnicui/contracts/detail.contract.yaml",
+      "props": [
+        {
+          "name": "seed",
+          "type": "string",
+          "enum": [
+            "empty",
+            "three",
+            "many"
+          ],
+          "default": "three",
+          "hasDefault": true
+        },
+        {
+          "name": "taskId",
+          "type": "string",
+          "default": "t1",
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "renamed",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "notesChanged",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "notes",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "done",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "deleted",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "closed",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "title",
+          "role": "textbox",
+          "id": "todo.detail.title"
+        },
+        {
+          "name": "notes",
+          "role": "textbox",
+          "id": "todo.detail.notes"
+        },
+        {
+          "name": "done",
+          "role": "switch",
+          "id": "todo.detail.done"
+        },
+        {
+          "name": "delete",
+          "role": "button",
+          "id": "todo.detail.delete"
+        },
+        {
+          "name": "detailBack",
+          "role": "button",
+          "id": "todo.detail.detailBack"
+        }
+      ],
+      "tests": [
+        {
+          "name": "shows the task",
+          "props": {
+            "taskId": "t3"
+          },
+          "expect": [
+            {
+              "part": "title",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                },
+                {
+                  "field": "name",
+                  "want": "Title"
+                }
+              ]
+            },
+            {
+              "part": "notes",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Friday 18:05 to Leeds"
+                },
+                {
+                  "field": "name",
+                  "want": "Notes"
+                }
+              ]
+            },
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                },
+                {
+                  "field": "name",
+                  "want": "Done"
+                }
+              ]
+            },
+            {
+              "part": "delete",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Delete"
+                }
+              ]
+            },
+            {
+              "part": "detailBack",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Back"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a done task with no notes",
+          "props": {
+            "taskId": "t2"
+          },
+          "expect": [
+            {
+              "part": "title",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                }
+              ]
+            },
+            {
+              "part": "notes",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": ""
+                }
+              ]
+            },
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the Done switch marks it done",
+          "steps": [
+            {
+              "action": "press",
+              "part": "done",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "and back again",
+          "props": {
+            "taskId": "t2"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "done",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": false,
+                "id": "t2"
+              }
+            }
+          ]
+        },
+        {
+          "name": "typing in the title renames it, at every change",
+          "steps": [
+            {
+              "action": "type",
+              "part": "title",
+              "text": " today",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "title",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk today"
+                }
+              ]
+            },
+            {
+              "event": "renamed",
+              "last": {
+                "id": "t1",
+                "title": "Buy milk today"
+              }
+            },
+            {
+              "event": "notesChanged",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "typing in the notes changes them",
+          "props": {
+            "taskId": "t2"
+          },
+          "steps": [
+            {
+              "action": "type",
+              "part": "notes",
+              "text": "Boiler, Tuesday",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "notes",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Boiler, Tuesday"
+                }
+              ]
+            },
+            {
+              "event": "notesChanged",
+              "last": {
+                "id": "t2",
+                "notes": "Boiler, Tuesday"
+              }
+            },
+            {
+              "event": "renamed",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "Delete reports the task deleted",
+          "props": {
+            "taskId": "t3"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "delete",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "deleted",
+              "times": 1,
+              "last": {
+                "id": "t3"
+              }
+            },
+            {
+              "event": "closed",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "leaving it reports it closed",
+          "props": {
+            "taskId": "t3"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "detailBack",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "closed",
+              "times": 1,
+              "last": {
+                "id": "t3"
+              }
+            },
+            {
+              "event": "deleted",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "Space flips the focused switch",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "done",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "done",
+              "key": "Space",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "done",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "focused",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyboard: Space on `done` does what a press does",
+          "keyboard": {
+            "part": "done",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `delete` does what a press does",
+          "keyboard": {
+            "part": "delete",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `delete` does what a press does",
+          "keyboard": {
+            "part": "delete",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `detailBack` does what a press does",
+          "keyboard": {
+            "part": "detailBack",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `detailBack` does what a press does",
+          "keyboard": {
+            "part": "detailBack",
+            "key": "Space"
+          }
+        }
+      ],
+      "viewports": [
+        {
+          "width": 360,
+          "height": 640
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "keyboard": true,
+      "pixelThresholds": {
+        "area": 30,
+        "strength": 28,
+        "shift": 8,
+        "spot": 2
+      },
+      "timingThreshold": 20,
+      "motionThreshold": 40,
+      "same": "none",
+      "sameBy": {
+        "default": "none"
+      },
+      "layoutThreshold": 10,
+      "paletteThreshold": 15,
+      "directionThreshold": 30
+    },
+    {
+      "id": "todo.list",
+      "file": "examples/todo/mobile/omnicui/contracts/list.contract.yaml",
+      "props": [
+        {
+          "name": "seed",
+          "type": "string",
+          "enum": [
+            "empty",
+            "three",
+            "many"
+          ],
+          "default": "three",
+          "hasDefault": true
+        },
+        {
+          "name": "showCompleted",
+          "type": "boolean",
+          "default": true,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "added",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "toggled",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            },
+            {
+              "name": "done",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "opened",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "filterChanged",
+          "fields": [
+            {
+              "name": "filter",
+              "type": "string",
+              "enum": [
+                "all",
+                "active",
+                "done"
+              ],
+              "hasDefault": false
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "tasksHeading",
+          "role": "heading",
+          "id": "todo.list.tasksHeading"
+        },
+        {
+          "name": "filterAll",
+          "role": "button",
+          "id": "todo.list.filterAll"
+        },
+        {
+          "name": "filterActive",
+          "role": "button",
+          "id": "todo.list.filterActive"
+        },
+        {
+          "name": "filterDone",
+          "role": "button",
+          "id": "todo.list.filterDone"
+        },
+        {
+          "name": "left",
+          "role": "status",
+          "id": "todo.list.left"
+        },
+        {
+          "name": "add",
+          "role": "button",
+          "id": "todo.list.add"
+        },
+        {
+          "name": "row1",
+          "role": "button",
+          "id": "todo.list.row1"
+        },
+        {
+          "name": "row2",
+          "role": "button",
+          "id": "todo.list.row2"
+        },
+        {
+          "name": "row3",
+          "role": "button",
+          "id": "todo.list.row3"
+        },
+        {
+          "name": "row1Check",
+          "role": "checkbox",
+          "id": "todo.list.row1Check"
+        },
+        {
+          "name": "row2Check",
+          "role": "checkbox",
+          "id": "todo.list.row2Check"
+        },
+        {
+          "name": "row3Check",
+          "role": "checkbox",
+          "id": "todo.list.row3Check"
+        },
+        {
+          "name": "empty",
+          "role": "status",
+          "id": "todo.list.empty"
+        },
+        {
+          "name": "newTitle",
+          "role": "textbox",
+          "id": "todo.list.newTitle"
+        },
+        {
+          "name": "confirmAdd",
+          "role": "button",
+          "id": "todo.list.confirmAdd"
+        },
+        {
+          "name": "cancelAdd",
+          "role": "button",
+          "id": "todo.list.cancelAdd"
+        }
+      ],
+      "tests": [
+        {
+          "name": "three tasks, two of them left",
+          "expect": [
+            {
+              "part": "tasksHeading",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Tasks"
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                },
+                {
+                  "field": "name",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "row2",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                }
+              ]
+            },
+            {
+              "part": "row2Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Call the plumber"
+                }
+              ]
+            },
+            {
+              "part": "row3",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            },
+            {
+              "part": "row3Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            },
+            {
+              "part": "filterAll",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                },
+                {
+                  "field": "text",
+                  "want": "All"
+                }
+              ]
+            },
+            {
+              "part": "filterActive",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                },
+                {
+                  "field": "text",
+                  "want": "Active"
+                }
+              ]
+            },
+            {
+              "part": "filterDone",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                },
+                {
+                  "field": "text",
+                  "want": "Done"
+                }
+              ]
+            },
+            {
+              "part": "add",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Add task"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "an empty list says so",
+          "props": {
+            "seed": "empty"
+          },
+          "expect": [
+            {
+              "part": "empty",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "No tasks yet"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "0 left"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "many tasks scroll, and the count covers them all",
+          "props": {
+            "seed": "many"
+          },
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Renew passport"
+                }
+              ]
+            },
+            {
+              "part": "row3Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Pay the electricity bill"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "14 left"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "the add button opens the dialog, with Add off until there is a title",
+          "props": {
+            "seed": "empty"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "newTitle",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": ""
+                },
+                {
+                  "field": "name",
+                  "want": "Title"
+                },
+                {
+                  "field": "focused",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "confirmAdd",
+              "checks": [
+                {
+                  "field": "disabled",
+                  "want": true
+                },
+                {
+                  "field": "text",
+                  "want": "Add"
+                }
+              ]
+            },
+            {
+              "part": "cancelAdd",
+              "checks": [
+                {
+                  "field": "disabled",
+                  "want": false
+                },
+                {
+                  "field": "text",
+                  "want": "Cancel"
+                }
+              ]
+            },
+            {
+              "event": "added",
+              "times": 0
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "Add adds the task, trimmed, as active, with the next id",
+          "props": {
+            "seed": "three"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "  Water the plants ",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "confirmAdd",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "added",
+              "times": 1,
+              "last": {
+                "id": "t4",
+                "title": "Water the plants"
+              }
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3 left"
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "a task added to an empty list is its first row",
+          "props": {
+            "seed": "empty"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "Water the plants",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "confirmAdd",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Water the plants"
+                }
+              ]
+            },
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1 left"
+                }
+              ]
+            },
+            {
+              "event": "added",
+              "times": 1,
+              "last": {
+                "id": "t1",
+                "title": "Water the plants"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enter in the title adds it too",
+          "props": {
+            "seed": "empty"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "Pay rent",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "newTitle",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Pay rent"
+                }
+              ]
+            },
+            {
+              "event": "added",
+              "times": 1,
+              "last": {
+                "id": "t1",
+                "title": "Pay rent"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel closes the dialog and adds nothing",
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "Something else",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "cancelAdd",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "added",
+              "times": 0
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            },
+            {
+              "part": "row3",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "a blank title can't be added",
+          "props": {
+            "seed": "empty"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "add",
+              "times": 1
+            },
+            {
+              "action": "type",
+              "part": "newTitle",
+              "text": "   ",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "confirmAdd",
+              "checks": [
+                {
+                  "field": "disabled",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "added",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "checking a task marks it done",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1Check",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1 left"
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "unchecking a done task makes it active again",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row2Check",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row2Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3 left"
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": false,
+                "id": "t2"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Active shows only the tasks left",
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterActive",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "filterActive",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "filterAll",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "row2",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            },
+            {
+              "event": "filterChanged",
+              "times": 1,
+              "last": {
+                "filter": "active"
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "Done shows only the done tasks",
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterDone",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "filterDone",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                }
+              ]
+            },
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            },
+            {
+              "event": "filterChanged",
+              "times": 1,
+              "last": {
+                "filter": "done"
+              }
+            }
+          ]
+        },
+        {
+          "name": "checking a task under Active takes it out of the list",
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterActive",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "row1Check",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "1 left"
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "unchecking the last done task under Done leaves it empty",
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterDone",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "row1Check",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "empty",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Nothing done yet"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "3 left"
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": false,
+                "id": "t2"
+              }
+            }
+          ]
+        },
+        {
+          "name": "with nothing left, Active says so",
+          "props": {
+            "seed": "three"
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "row1Check",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "row3Check",
+              "times": 1
+            },
+            {
+              "action": "press",
+              "part": "filterActive",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "empty",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Nothing left to do"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "0 left"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "choosing the filter that is already chosen reports nothing",
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterAll",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "filterAll",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "filterChanged",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "pressing a row opens its task",
+          "steps": [
+            {
+              "action": "press",
+              "part": "row3",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "opened",
+              "times": 1,
+              "last": {
+                "id": "t3"
+              }
+            },
+            {
+              "event": "toggled",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "with Show completed off, All hides the done tasks",
+          "props": {
+            "showCompleted": false
+          },
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Buy milk"
+                }
+              ]
+            },
+            {
+              "part": "row2",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Book train tickets"
+                }
+              ]
+            },
+            {
+              "part": "left",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "2 left"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "with Show completed off, Done still shows them",
+          "props": {
+            "showCompleted": false
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "filterDone",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1",
+              "checks": [
+                {
+                  "field": "text",
+                  "want": "Call the plumber"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Space checks the focused task",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "row1Check",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "row1Check",
+              "key": "Space",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "row1Check",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "focused",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "toggled",
+              "times": 1,
+              "last": {
+                "done": true,
+                "id": "t1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyboard: Enter on `filterAll` does what a press does",
+          "keyboard": {
+            "part": "filterAll",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `filterAll` does what a press does",
+          "keyboard": {
+            "part": "filterAll",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `filterActive` does what a press does",
+          "keyboard": {
+            "part": "filterActive",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `filterActive` does what a press does",
+          "keyboard": {
+            "part": "filterActive",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `filterDone` does what a press does",
+          "keyboard": {
+            "part": "filterDone",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `filterDone` does what a press does",
+          "keyboard": {
+            "part": "filterDone",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `add` does what a press does",
+          "keyboard": {
+            "part": "add",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `add` does what a press does",
+          "keyboard": {
+            "part": "add",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `row1` does what a press does",
+          "keyboard": {
+            "part": "row1",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row1` does what a press does",
+          "keyboard": {
+            "part": "row1",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `row2` does what a press does",
+          "keyboard": {
+            "part": "row2",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row2` does what a press does",
+          "keyboard": {
+            "part": "row2",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `row3` does what a press does",
+          "keyboard": {
+            "part": "row3",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row3` does what a press does",
+          "keyboard": {
+            "part": "row3",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row1Check` does what a press does",
+          "keyboard": {
+            "part": "row1Check",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row2Check` does what a press does",
+          "keyboard": {
+            "part": "row2Check",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Space on `row3Check` does what a press does",
+          "keyboard": {
+            "part": "row3Check",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `confirmAdd` does what a press does",
+          "keyboard": {
+            "part": "confirmAdd",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `confirmAdd` does what a press does",
+          "keyboard": {
+            "part": "confirmAdd",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `cancelAdd` does what a press does",
+          "keyboard": {
+            "part": "cancelAdd",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `cancelAdd` does what a press does",
+          "keyboard": {
+            "part": "cancelAdd",
+            "key": "Space"
+          }
+        }
+      ],
+      "viewports": [
+        {
+          "width": 360,
+          "height": 640
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "keyboard": true,
+      "pixelThresholds": {
+        "area": 30,
+        "strength": 28,
+        "shift": 8,
+        "spot": 2
+      },
+      "timingThreshold": 20,
+      "motionThreshold": 40,
+      "same": "none",
+      "sameBy": {
+        "default": "none"
+      },
+      "layoutThreshold": 10,
+      "paletteThreshold": 15,
+      "directionThreshold": 30
+    },
+    {
+      "id": "todo.settings",
+      "file": "examples/todo/mobile/omnicui/contracts/settings.contract.yaml",
+      "props": [
+        {
+          "name": "theme",
+          "type": "string",
+          "enum": [
+            "system",
+            "light",
+            "dark"
+          ],
+          "default": "system",
+          "hasDefault": true
+        },
+        {
+          "name": "showCompleted",
+          "type": "boolean",
+          "default": true,
+          "hasDefault": true
+        }
+      ],
+      "events": [
+        {
+          "name": "themeChanged",
+          "fields": [
+            {
+              "name": "theme",
+              "type": "string",
+              "enum": [
+                "system",
+                "light",
+                "dark"
+              ],
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "showCompletedChanged",
+          "fields": [
+            {
+              "name": "show",
+              "type": "boolean",
+              "hasDefault": false
+            }
+          ]
+        },
+        {
+          "name": "closed",
+          "fields": []
+        }
+      ],
+      "parts": [
+        {
+          "name": "themeSystem",
+          "role": "button",
+          "id": "todo.settings.themeSystem"
+        },
+        {
+          "name": "themeLight",
+          "role": "button",
+          "id": "todo.settings.themeLight"
+        },
+        {
+          "name": "themeDark",
+          "role": "button",
+          "id": "todo.settings.themeDark"
+        },
+        {
+          "name": "showCompleted",
+          "role": "switch",
+          "id": "todo.settings.showCompleted"
+        },
+        {
+          "name": "settingsBack",
+          "role": "button",
+          "id": "todo.settings.settingsBack"
+        }
+      ],
+      "tests": [
+        {
+          "name": "starts from the system theme, with completed tasks shown",
+          "expect": [
+            {
+              "part": "themeSystem",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                },
+                {
+                  "field": "text",
+                  "want": "System"
+                }
+              ]
+            },
+            {
+              "part": "themeLight",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                },
+                {
+                  "field": "text",
+                  "want": "Light"
+                }
+              ]
+            },
+            {
+              "part": "themeDark",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                },
+                {
+                  "field": "text",
+                  "want": "Dark"
+                }
+              ]
+            },
+            {
+              "part": "showCompleted",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                },
+                {
+                  "field": "name",
+                  "want": "Show completed"
+                }
+              ]
+            },
+            {
+              "part": "settingsBack",
+              "checks": [
+                {
+                  "field": "name",
+                  "want": "Back"
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "choosing Dark selects it, reports it and darkens the screen",
+          "steps": [
+            {
+              "action": "press",
+              "part": "themeDark",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "themeDark",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "themeSystem",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "event": "themeChanged",
+              "times": 1,
+              "last": {
+                "theme": "dark"
+              }
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "a Light theme stays light whatever the system's scheme",
+          "props": {
+            "theme": "light"
+          },
+          "expect": [
+            {
+              "part": "themeLight",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "part": "themeSystem",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": false
+                }
+              ]
+            }
+          ],
+          "screenshot": true
+        },
+        {
+          "name": "choosing the theme already chosen reports nothing",
+          "steps": [
+            {
+              "action": "press",
+              "part": "themeSystem",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "themeSystem",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "themeChanged",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "Show completed turns off",
+          "steps": [
+            {
+              "action": "press",
+              "part": "showCompleted",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "showCompleted",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": false
+                }
+              ]
+            },
+            {
+              "event": "showCompletedChanged",
+              "times": 1,
+              "last": {
+                "show": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "and on again",
+          "props": {
+            "showCompleted": false
+          },
+          "steps": [
+            {
+              "action": "press",
+              "part": "showCompleted",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "showCompleted",
+              "checks": [
+                {
+                  "field": "checked",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "showCompletedChanged",
+              "times": 1,
+              "last": {
+                "show": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "leaving reports it",
+          "steps": [
+            {
+              "action": "press",
+              "part": "settingsBack",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "event": "closed",
+              "times": 1
+            },
+            {
+              "event": "themeChanged",
+              "times": 0
+            }
+          ]
+        },
+        {
+          "name": "Enter chooses the focused segment",
+          "steps": [
+            {
+              "action": "focus",
+              "part": "themeLight",
+              "times": 1
+            },
+            {
+              "action": "key",
+              "part": "themeLight",
+              "key": "Enter",
+              "times": 1
+            }
+          ],
+          "expect": [
+            {
+              "part": "themeLight",
+              "checks": [
+                {
+                  "field": "selected",
+                  "want": true
+                },
+                {
+                  "field": "focused",
+                  "want": true
+                }
+              ]
+            },
+            {
+              "event": "themeChanged",
+              "times": 1,
+              "last": {
+                "theme": "light"
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyboard: Enter on `themeSystem` does what a press does",
+          "keyboard": {
+            "part": "themeSystem",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `themeSystem` does what a press does",
+          "keyboard": {
+            "part": "themeSystem",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `themeLight` does what a press does",
+          "keyboard": {
+            "part": "themeLight",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `themeLight` does what a press does",
+          "keyboard": {
+            "part": "themeLight",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `themeDark` does what a press does",
+          "keyboard": {
+            "part": "themeDark",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `themeDark` does what a press does",
+          "keyboard": {
+            "part": "themeDark",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Space on `showCompleted` does what a press does",
+          "keyboard": {
+            "part": "showCompleted",
+            "key": "Space"
+          }
+        },
+        {
+          "name": "keyboard: Enter on `settingsBack` does what a press does",
+          "keyboard": {
+            "part": "settingsBack",
+            "key": "Enter"
+          }
+        },
+        {
+          "name": "keyboard: Space on `settingsBack` does what a press does",
+          "keyboard": {
+            "part": "settingsBack",
+            "key": "Space"
+          }
+        }
+      ],
+      "viewports": [
+        {
+          "width": 360,
+          "height": 640
+        }
+      ],
+      "colorSchemes": [
+        "light",
+        "dark"
+      ],
+      "keyboard": true,
+      "pixelThresholds": {
+        "area": 30,
+        "strength": 28,
+        "shift": 8,
+        "spot": 2
+      },
+      "timingThreshold": 20,
+      "motionThreshold": 40,
+      "same": "none",
+      "sameBy": {
+        "default": "none"
+      },
+      "layoutThreshold": 10,
+      "paletteThreshold": 15,
+      "directionThreshold": 30
+    }
+  ],
+  "targets": [
+    {
+      "name": "ios",
+      "platform": {
+        "target": "ios",
+        "design": "cupertino",
+        "os": "ios",
+        "forms": [
+          "mobile"
+        ]
+      },
+      "osVersion": "26.5",
+      "design": "cupertino",
+      "can": [
+        "bounds",
+        "do.back",
+        "events",
+        "focused",
+        "mount",
+        "press",
+        "probe",
+        "read",
+        "role",
+        "screenshot",
+        "selected",
+        "type"
+      ],
+      "cannot": {
+        "drag": "No public in-process touch injection.",
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.",
+        "hover": "Touch interface; no pointer injection.",
+        "key": "No public in-process API injects hardware key events; UIKeyInput is used only for text insertion.",
+        "record": "Frame recording transport is not implemented.",
+        "trace": "Per-frame trace transport is not implemented."
+      },
+      "protocol": "1",
+      "probe": "passed",
+      "ms": 161522,
+      "startMs": 4584
+    }
+  ],
+  "results": [
+    {
+      "contract": "todo.app",
+      "test": "starts on the task list",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/app/starts-on-the-task-list/360x640-dark.png",
+        "360x640-light": "ios/app/starts-on-the-task-list/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        }
+      },
+      "ms": 1392
+    },
+    {
+      "contract": "todo.app",
+      "test": "pressing a task opens its detail",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/app/pressing-a-task-opens-its-detail/360x640-dark.png",
+        "360x640-light": "ios/app/pressing-a-task-opens-its-detail/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "left": {
+            "x": 52.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": -42,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": -76,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": -42,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 49.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333333,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "left": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        }
+      },
+      "ms": 2575
+    },
+    {
+      "contract": "todo.app",
+      "test": "the detail's own back control returns to the list",
+      "target": "ios",
+      "status": "pass",
+      "ms": 3589
+    },
+    {
+      "contract": "todo.app",
+      "test": "back returns from a task to the list",
+      "target": "ios",
+      "status": "pass",
+      "inputs": [
+        "input `back`: do back (platforms.yaml, `ios`)"
+      ],
+      "ms": 3449
+    },
+    {
+      "contract": "todo.app",
+      "test": "settings opens from the list, and back returns",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/app/settings-opens-from-the-list-and-back-returns/360x640-dark.png",
+        "360x640-light": "ios/app/settings-opens-from-the-list-and-back-returns/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "tasksHeading": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 52.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": -42,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": -76,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": -42,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "tasksHeading": {
+            "x": 49.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333333,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        }
+      },
+      "ms": 2493
+    },
+    {
+      "contract": "todo.app",
+      "test": "back returns from settings to the list",
+      "target": "ios",
+      "status": "pass",
+      "inputs": [
+        "input `back`: do back (platforms.yaml, `ios`)"
+      ],
+      "ms": 3490
+    },
+    {
+      "contract": "todo.app",
+      "test": "the Dark theme applies to the whole app",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/app/the-dark-theme-applies-to-the-whole-app/360x640-dark.png",
+        "360x640-light": "ios/app/the-dark-theme-applies-to-the-whole-app/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "delete": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "detailBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "done": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "openSettings": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "settingsBack": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "showCompleted": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          },
+          "themeDark": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "themeSystem": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "title": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        }
+      },
+      "ms": 5460
+    },
+    {
+      "contract": "todo.app",
+      "test": "a title edited in the detail shows in the list",
+      "target": "ios",
+      "status": "pass",
+      "ms": 10595
+    },
+    {
+      "contract": "todo.app",
+      "test": "Done in the detail checks the task in the list",
+      "target": "ios",
+      "status": "pass",
+      "inputs": [
+        "input `back`: do back (platforms.yaml, `ios`)"
+      ],
+      "ms": 5845
+    },
+    {
+      "contract": "todo.app",
+      "test": "deleting a task returns to the list without it",
+      "target": "ios",
+      "status": "pass",
+      "ms": 3629
+    },
+    {
+      "contract": "todo.app",
+      "test": "Show completed off in settings hides done tasks from the list",
+      "target": "ios",
+      "status": "pass",
+      "inputs": [
+        "input `back`: do back (platforms.yaml, `ios`)"
+      ],
+      "ms": 5126
+    },
+    {
+      "contract": "todo.app",
+      "test": "a task added in the app is listed",
+      "target": "ios",
+      "status": "pass",
+      "ms": 5941
+    },
+    {
+      "contract": "todo.detail",
+      "test": "shows the task",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/detail/shows-the-task/360x640-dark.png",
+        "360x640-light": "ios/detail/shows-the-task/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "notes": {
+            "x": 32,
+            "y": 225,
+            "width": 296,
+            "height": 85.33333333333331
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        },
+        "360x640-light": {
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "notes": {
+            "x": 32,
+            "y": 225,
+            "width": 296,
+            "height": 85.33333333333331
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        }
+      },
+      "ms": 941
+    },
+    {
+      "contract": "todo.detail",
+      "test": "a done task with no notes",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/detail/a-done-task-with-no-notes/360x640-dark.png",
+        "360x640-light": "ios/detail/a-done-task-with-no-notes/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "notes": {
+            "x": 32,
+            "y": 225,
+            "width": 296,
+            "height": 85.33333333333331
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        },
+        "360x640-light": {
+          "delete": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "detailBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "done": {
+            "x": 16,
+            "y": 325.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "notes": {
+            "x": 32,
+            "y": 225,
+            "width": 296,
+            "height": 85.33333333333331
+          },
+          "title": {
+            "x": 32,
+            "y": 166,
+            "width": 296,
+            "height": 29
+          }
+        }
+      },
+      "ms": 799
+    },
+    {
+      "contract": "todo.detail",
+      "test": "the Done switch marks it done",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1980
+    },
+    {
+      "contract": "todo.detail",
+      "test": "and back again",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2022
+    },
+    {
+      "contract": "todo.detail",
+      "test": "typing in the title renames it, at every change",
+      "target": "ios",
+      "status": "pass",
+      "ms": 4132
+    },
+    {
+      "contract": "todo.detail",
+      "test": "typing in the notes changes them",
+      "target": "ios",
+      "status": "pass",
+      "ms": 3734
+    },
+    {
+      "contract": "todo.detail",
+      "test": "Delete reports the task deleted",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2169
+    },
+    {
+      "contract": "todo.detail",
+      "test": "leaving it reports it closed",
+      "target": "ios",
+      "status": "pass",
+      "ms": 4963
+    },
+    {
+      "contract": "todo.detail",
+      "test": "Space flips the focused switch",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.detail",
+      "test": "keyboard: Space on `done` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.detail",
+      "test": "keyboard: Enter on `delete` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.detail",
+      "test": "keyboard: Space on `delete` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.detail",
+      "test": "keyboard: Enter on `detailBack` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.detail",
+      "test": "keyboard: Space on `detailBack` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "three tasks, two of them left",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/three-tasks-two-of-them-left/360x640-dark.png",
+        "360x640-light": "ios/list/three-tasks-two-of-them-left/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 1836
+    },
+    {
+      "contract": "todo.list",
+      "test": "an empty list says so",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/an-empty-list-says-so/360x640-dark.png",
+        "360x640-light": "ios/list/an-empty-list-says-so/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 16,
+            "y": 225.33333333333331,
+            "width": 328,
+            "height": 59
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.33333333333334,
+            "y": 155,
+            "width": 39.33333333333334,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 16,
+            "y": 225.33333333333331,
+            "width": 328,
+            "height": 59
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.33333333333334,
+            "y": 155,
+            "width": 39.33333333333334,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 859
+    },
+    {
+      "contract": "todo.list",
+      "test": "many tasks scroll, and the count covers them all",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/many-tasks-scroll-and-the-count-covers-them-all/360x640-dark.png",
+        "360x640-light": "ios/list/many-tasks-scroll-and-the-count-covers-them-all/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 156.5,
+            "y": 155,
+            "width": 47,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 156.5,
+            "y": 155,
+            "width": 47,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 1049
+    },
+    {
+      "contract": "todo.list",
+      "test": "the add button opens the dialog, with Add off until there is a title",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/the-add-button-opens-the-dialog-with-add-off-until-there-is-a-title/360x640-dark.png",
+        "360x640-light": "ios/list/the-add-button-opens-the-dialog-with-add-off-until-there-is-a-title/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 27.111111111111118,
+            "y": 245.31851851851852,
+            "width": 73.25925925925924,
+            "height": 34.400000000000006
+          },
+          "confirmAdd": {
+            "x": 279.37777777777774,
+            "y": 245.31851851851852,
+            "width": 53.51111111111112,
+            "height": 34.400000000000006
+          },
+          "empty": {
+            "x": 16,
+            "y": 225.33333333333331,
+            "width": 328,
+            "height": 59
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.33333333333334,
+            "y": 155,
+            "width": 39.33333333333334,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 38.57777777777778,
+            "y": 340.8740740740741,
+            "width": 282.84444444444443,
+            "height": 27.71111111111111
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 27.111111111111118,
+            "y": 245.31851851851852,
+            "width": 73.25925925925924,
+            "height": 34.400000000000006
+          },
+          "confirmAdd": {
+            "x": 279.37777777777774,
+            "y": 245.31851851851852,
+            "width": 53.51111111111112,
+            "height": 34.400000000000006
+          },
+          "empty": {
+            "x": 16,
+            "y": 225.33333333333331,
+            "width": 328,
+            "height": 59
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.33333333333334,
+            "y": 155,
+            "width": 39.33333333333334,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 38.57777777777778,
+            "y": 340.8740740740741,
+            "width": 282.84444444444443,
+            "height": 27.71111111111111
+          },
+          "row1": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row2Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 4463
+    },
+    {
+      "contract": "todo.list",
+      "test": "Add adds the task, trimmed, as active, with the next id",
+      "target": "ios",
+      "status": "pass",
+      "ms": 6331
+    },
+    {
+      "contract": "todo.list",
+      "test": "a task added to an empty list is its first row",
+      "target": "ios",
+      "status": "pass",
+      "ms": 6594
+    },
+    {
+      "contract": "todo.list",
+      "test": "Enter in the title adds it too",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `key`, which ios doesn't advertise (No public in-process API injects hardware key events; UIKeyInput is used only for text insertion.)"
+      ],
+      "notAdvertised": {
+        "key": "No public in-process API injects hardware key events; UIKeyInput is used only for text insertion."
+      },
+      "ms": 3
+    },
+    {
+      "contract": "todo.list",
+      "test": "Cancel closes the dialog and adds nothing",
+      "target": "ios",
+      "status": "pass",
+      "ms": 6668
+    },
+    {
+      "contract": "todo.list",
+      "test": "a blank title can't be added",
+      "target": "ios",
+      "status": "pass",
+      "ms": 9844
+    },
+    {
+      "contract": "todo.list",
+      "test": "checking a task marks it done",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/checking-a-task-marks-it-done/360x640-dark.png",
+        "360x640-light": "ios/list/checking-a-task-marks-it-done/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 161.66666666666666,
+            "y": 155,
+            "width": 36.66666666666666,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 161.66666666666666,
+            "y": 155,
+            "width": 36.66666666666666,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 66,
+            "y": 359.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row3Check": {
+            "x": 32,
+            "y": 360.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 5682
+    },
+    {
+      "contract": "todo.list",
+      "test": "unchecking a done task makes it active again",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1984
+    },
+    {
+      "contract": "todo.list",
+      "test": "Active shows only the tasks left",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/list/active-shows-only-the-tasks-left/360x640-dark.png",
+        "360x640-light": "ios/list/active-shows-only-the-tasks-left/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        },
+        "360x640-light": {
+          "add": {
+            "x": 304,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "cancelAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "confirmAdd": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "empty": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "filterActive": {
+            "x": 125,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterAll": {
+            "x": 16,
+            "y": 116,
+            "width": 109,
+            "height": 32
+          },
+          "filterDone": {
+            "x": 234,
+            "y": 116,
+            "width": 110,
+            "height": 32
+          },
+          "left": {
+            "x": 160.5,
+            "y": 155,
+            "width": 39,
+            "height": 27.333333333333343
+          },
+          "newTitle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row1": {
+            "x": 66,
+            "y": 241.33333333333331,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row1Check": {
+            "x": 32,
+            "y": 242.33333333333331,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row2": {
+            "x": 66,
+            "y": 300.3333333333333,
+            "width": 262,
+            "height": 27.333333333333314
+          },
+          "row2Check": {
+            "x": 32,
+            "y": 301.3333333333333,
+            "width": 26,
+            "height": 25.333333333333314
+          },
+          "row3": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "row3Check": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "tasksHeading": {
+            "x": 157.33333333333334,
+            "y": 70.33333333333334,
+            "width": 45.33333333333334,
+            "height": 27.33333333333333
+          }
+        }
+      },
+      "ms": 2965
+    },
+    {
+      "contract": "todo.list",
+      "test": "Done shows only the done tasks",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2179
+    },
+    {
+      "contract": "todo.list",
+      "test": "checking a task under Active takes it out of the list",
+      "target": "ios",
+      "status": "pass",
+      "ms": 3422
+    },
+    {
+      "contract": "todo.list",
+      "test": "unchecking the last done task under Done leaves it empty",
+      "target": "ios",
+      "status": "pass",
+      "ms": 3495
+    },
+    {
+      "contract": "todo.list",
+      "test": "with nothing left, Active says so",
+      "target": "ios",
+      "status": "pass",
+      "ms": 5037
+    },
+    {
+      "contract": "todo.list",
+      "test": "choosing the filter that is already chosen reports nothing",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2160
+    },
+    {
+      "contract": "todo.list",
+      "test": "pressing a row opens its task",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1966
+    },
+    {
+      "contract": "todo.list",
+      "test": "with Show completed off, All hides the done tasks",
+      "target": "ios",
+      "status": "pass",
+      "ms": 602
+    },
+    {
+      "contract": "todo.list",
+      "test": "with Show completed off, Done still shows them",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1982
+    },
+    {
+      "contract": "todo.list",
+      "test": "Space checks the focused task",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `filterAll` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `filterAll` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `filterActive` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `filterActive` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `filterDone` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `filterDone` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `add` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `add` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `row1` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row1` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `row2` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row2` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `row3` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row3` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row1Check` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row2Check` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `row3Check` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `confirmAdd` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `confirmAdd` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Enter on `cancelAdd` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.list",
+      "test": "keyboard: Space on `cancelAdd` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "starts from the system theme, with completed tasks shown",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/settings/starts-from-the-system-theme-with-completed-tasks-shown/360x640-dark.png",
+        "360x640-light": "ios/settings/starts-from-the-system-theme-with-completed-tasks-shown/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        },
+        "360x640-light": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        }
+      },
+      "ms": 935
+    },
+    {
+      "contract": "todo.settings",
+      "test": "choosing Dark selects it, reports it and darkens the screen",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/settings/choosing-dark-selects-it-reports-it-and-darkens-the-screen/360x640-dark.png",
+        "360x640-light": "ios/settings/choosing-dark-selects-it-reports-it-and-darkens-the-screen/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        },
+        "360x640-light": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        }
+      },
+      "ms": 2164
+    },
+    {
+      "contract": "todo.settings",
+      "test": "a Light theme stays light whatever the system's scheme",
+      "target": "ios",
+      "status": "pass",
+      "screenshots": {
+        "360x640-dark": "ios/settings/a-light-theme-stays-light-whatever-the-system-s-scheme/360x640-dark.png",
+        "360x640-light": "ios/settings/a-light-theme-stays-light-whatever-the-system-s-scheme/360x640-light.png"
+      },
+      "bounds": {
+        "360x640-dark": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        },
+        "360x640-light": {
+          "settingsBack": {
+            "x": 20,
+            "y": 66,
+            "width": 36,
+            "height": 36
+          },
+          "showCompleted": {
+            "x": 16,
+            "y": 259.33333333333337,
+            "width": 328,
+            "height": 59
+          },
+          "themeDark": {
+            "x": 229,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeLight": {
+            "x": 130,
+            "y": 178.33333333333334,
+            "width": 99,
+            "height": 32
+          },
+          "themeSystem": {
+            "x": 32,
+            "y": 178.33333333333334,
+            "width": 98,
+            "height": 32
+          }
+        }
+      },
+      "ms": 784
+    },
+    {
+      "contract": "todo.settings",
+      "test": "choosing the theme already chosen reports nothing",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1937
+    },
+    {
+      "contract": "todo.settings",
+      "test": "Show completed turns off",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2009
+    },
+    {
+      "contract": "todo.settings",
+      "test": "and on again",
+      "target": "ios",
+      "status": "pass",
+      "ms": 2141
+    },
+    {
+      "contract": "todo.settings",
+      "test": "leaving reports it",
+      "target": "ios",
+      "status": "pass",
+      "ms": 1980
+    },
+    {
+      "contract": "todo.settings",
+      "test": "Enter chooses the focused segment",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Enter on `themeSystem` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Space on `themeSystem` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Enter on `themeLight` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Space on `themeLight` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Enter on `themeDark` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Space on `themeDark` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Space on `showCompleted` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Enter on `settingsBack` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    },
+    {
+      "contract": "todo.settings",
+      "test": "keyboard: Space on `settingsBack` does what a press does",
+      "target": "ios",
+      "status": "not advertised",
+      "messages": [
+        "needs `focus`, which ios doesn't advertise (In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API.)"
+      ],
+      "notAdvertised": {
+        "focus": "In-process UIKit cannot move hardware keyboard focus to arbitrary SwiftUI controls through a public API."
+      },
+      "ms": 0
+    }
+  ],
+  "comparisons": null,
+  "summary": {
+    "pass": 46,
+    "fail": 0,
+    "broken": 0,
+    "notAdvertised": 39,
+    "notMeasured": 0,
+    "notApplicable": 0,
+    "platformExceptions": 0,
+    "warnings": 0,
+    "requiredMissing": 0
+  }
+}
