@@ -1,0 +1,17 @@
+name: gpui
+language: rust
+# The app under test: examples/taskscape/gpui, Taskscape's native GPUI port, linked as a Rust
+# crate. The adapter (src/main.rs) is one long-lived GPUI application: each mount loads a fixture
+# into a fresh data folder through the app's own Store (../../fixtures), and opens a real GPUI
+# window at the viewport's size with the app's surface in it (src/components.rs, the registry).
+# On Linux the windows are on an X server: Xvfb, which the adapter starts when DISPLAY is unset,
+# drawn by GPUI's Vulkan renderer (with no GPU, Mesa's lavapipe: set VK_ICD_FILENAMES). Input is
+# real X input (XTEST); parts are the app's own part tags; pictures are read back from the server.
+# Built once by ./setup.sh here.
+adapter: exec ../../../gpui/target/debug/taskscape-gpui-adapter
+# Taskscape's design, drawn natively: compared with the tauri reference by layout, colours and
+# motion (the contracts' `same:`), never by pixels.
+design: gpui
+platform: [desktop]
+stepTimeout: 30s
+startTimeout: 120s

@@ -105,6 +105,21 @@ Elevation is two shadows, both in a dark blue-grey (`oklch(0.2 0.02 262)`, `#141
 - **menu**: `0 10px 28px` at 20 % and `0 1px 3px` at 12 %: menus, sheets, the palette;
 - **lift**: `0 2px 8px` at 20 %: the toast, a note's delete button.
 
+## Controls drawn from the tokens
+
+Added after P1 asked (gpui/GAPS-P1.txt); from `common-ui/src/components/`.
+
+- **Backdrop** behind a sheet or the palette: black at 30 % (a strong one, black at 75 %, for the
+  lightbox), fading in over 160 ms.
+- **Key actions**, a sheet's buttons: 32 px tall, at least 84 px wide, `control` radius, an
+  `edge-2` border (`edge-3` on hover). Accept and Cancel are `surface-1` with `content-1` text
+  (`surface-3` on hover); a danger accept is `danger-500` with `on-accent` text. The key it
+  answers to is a small chip at the right (⏎, esc).
+- **Segmented control**: a recessed `surface-0` well with 1.75 px padding and `field` radius;
+  equal segments, 11–12 px semibold. The chosen one is the accent with `on-accent` text in the
+  filter panel, and `surface-3` with an `edge-2` border in Settings; the others `content-2`, with
+  `wash-1` on hover.
+
 ## Motion
 
 Durations and easings, from tokens.css:
@@ -114,6 +129,7 @@ Durations and easings, from tokens.css:
 | rise | 110 ms | `cubic-bezier(0.2, 0, 0, 1)` | up 3 px and in from transparent | the inspector, draft and multi inspectors, the toast |
 | panel-in | 120 ms | `cubic-bezier(0.2, 0, 0, 1)` | in from 6 px right, from transparent | a Settings pane |
 | sheet-in | 140 ms | `cubic-bezier(0.2, 0, 0, 1)` (`--ease-standard`) | scale 0.96 → 1, from transparent | sheets, the palette, the project menu |
+| scrim-in | 160 ms | `cubic-bezier(0.2, 0, 0, 1)` | the backdrop fades in | behind sheets and the palette |
 | scale-in | 280 ms | `cubic-bezier(0.22, 1, 0.36, 1)` (`--ease-out`) | scale 0.97 → 1, from transparent | the Settings window |
 | check draw | 160 ms after 80 ms | `cubic-bezier(0.2, 0, 0, 1)` | the tick's stroke drawn in | the done check |
 | notes open | none | | the capture bar's notes replace the Tab hint at once, and the window fits the card | the capture bar (`.llm/tray-app.md` describes a grid-row transition the code no longer has) |
