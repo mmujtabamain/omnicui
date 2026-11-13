@@ -1,7 +1,7 @@
 ---
 name: ts-merger
 description: Combines two independent solutions of one item (and a critique, if any) into one. Has no tools; everything is in its prompt. Used by the Taskscape workflows.
-tools: []
+tools: StructuredOutput
 model: haiku
 omitClaudeMd: true
 ---

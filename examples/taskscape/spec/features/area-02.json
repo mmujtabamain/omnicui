@@ -1,0 +1,2423 @@
+{
+ "area": 2,
+ "name": "Title bar and navigation",
+ "tier": "ordinary",
+ "counts": {
+  "A": 56,
+  "B": 24,
+  "critic_issues": null,
+  "merged": 63
+ },
+ "dropped": [
+  {
+   "title": "Drag grip icon in title bar (B)",
+   "reason": "Duplicate of 'Decorative drag-indicator grip icon after the window controls'; its exact values and sources were merged into that entry."
+  },
+  {
+   "title": "Project switcher pill shows the active project name (B)",
+   "reason": "Duplicate of 'Project switcher pill in the title bar'; its exact values and sources were merged into that entry."
+  },
+  {
+   "title": "Project menu opens below the project pill (B)",
+   "reason": "Duplicate of 'Project dropdown anchored under the pill'; its exact values and sources were merged into that entry."
+  },
+  {
+   "title": "Current project has a check mark in the project menu (B)",
+   "reason": "Duplicate of 'Checkmark on the active project row'; its exact values and sources were merged into that entry."
+  },
+  {
+   "title": "Rename and Delete buttons on a project menu row (B)",
+   "reason": "Duplicate of 'Hover reveals per-project rename and delete buttons'; its button boxes and hover colour were merged into that entry."
+  },
+  {
+   "title": "New project item in the project menu (B)",
+   "reason": "Duplicate of 'Create a new project from the dropdown'; its tone, icon and divider boxes were merged into that entry."
+  },
+  {
+   "title": "Switching to the Spring launch project (B)",
+   "reason": "Duplicate of 'Select a project from the dropdown'; its post-switch observations and backend commands were merged into that entry."
+  },
+  {
+   "title": "Traffic-light window controls (close, minimize, full screen) (B)",
+   "reason": "Duplicate of 'Traffic-light cluster on macOS (close, minimize, full screen)'; its light boxes, props and cmd-held glyph observations were merged into that entry."
+  },
+  {
+   "title": "List tab name labels and active/inactive tone (B)",
+   "reason": "Duplicate of 'Tab label styling, focus and hover state'; its label props and positions were merged into that entry."
+  },
+  {
+   "title": "Hover highlight on a list tab (B)",
+   "reason": "Duplicate of 'Tab label styling, focus and hover state' (both describe the hover wash on an unfocused tab); its hovered-area and tree observations were merged into that entry."
+  },
+  {
+   "title": "Click a list tab to make it the active list (B)",
+   "reason": "Duplicate of 'Click a tab to make it the active list'; its command, pane and footer observations were merged into that entry."
+  },
+  {
+   "title": "Right-click a list tab opens a context menu (B)",
+   "reason": "Duplicate of 'Right-click a tab for the list context menu'; its menu panel, item and divider boxes were merged into that entry."
+  },
+  {
+   "title": "Close (Delete list) button on each list tab (B)",
+   "reason": "Duplicate of 'Close button on each list tab'; its button box and positions were merged into that entry."
+  },
+  {
+   "title": "New list button after the last tab (B)",
+   "reason": "Duplicate of 'New list button at the end of the tabs'; its button box and positions were merged into that entry."
+  },
+  {
+   "title": "Split view toggle button (B)",
+   "reason": "Duplicate of 'Split-view toggle button'; its button box, icon and disabled state were merged into that entry."
+  },
+  {
+   "title": "Hide preview panel toggle (B)",
+   "reason": "Duplicate of 'Preview panel toggle button with shortcut hint'; its button box, icon and hint tooltip were merged into that entry."
+  },
+  {
+   "title": "Settings button (B)",
+   "reason": "Duplicate of 'Settings button with shortcut hint'; its button box, icon and hint tooltip were merged into that entry."
+  }
+ ],
+ "features": [
+  {
+   "title": "Double-click the title bar background to maximize or restore the window",
+   "trigger": "Double-click on the header's empty area (the element itself must carry the data-tauri-drag-region attribute)",
+   "context": "Any time the main window is open; header is the title bar",
+   "result": "Calls getCurrentWindow().toggleMaximize(). Double-clicks on interactive children (project pill, tabs, buttons) do not trigger it because the target must itself have the drag-region attribute.",
+   "exact": [
+    {
+     "what": "Header height class",
+     "value": "h-13"
+    },
+    {
+     "what": "Header bottom border classes (light/dark)",
+     "value": "border-edge-2l / dark:border-edge-2d"
+    },
+    {
+     "what": "Header background classes (light/dark)",
+     "value": "bg-surface-1l / dark:bg-surface-1d"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:41-47",
+    "main/src/components/TitleBar.tsx:41-47 (header has data-tauri-drag-region, onDoubleClick checks e.target hasAttribute data-tauri-drag-region then getCurrentWindow().toggleMaximize(); classes h-13, border-edge-2l dark:border-edge-2d, bg-surface-1l dark:bg-surface-1d all match). Drag-region attribute also on the drag-indicator slot at TitleBar.tsx:52 and on the trailing strip at main/src/components/ListTabs.tsx:303.",
+    "No double-click is recorded in any of the nine meta.json files (commands are only boot/list/setting calls). tree.txt line 2 shows TitleBar @0,0 1180x46 in all states, so the rendered header is 46px tall, but the class-to-pixel mapping for h-13 and the border/background classes are not in any tree. data-tauri-drag-region is not shown in the trees. Source not read, per instructions."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's narrow-window and main-default recordings measure the title bar at 46px high (the tab bar is 45px high at y=0 and panes start at y=46). This conflicts with the h-13 class in A's source; A's file:line value is kept and B's measurement is recorded here.",
+   "id": "F02-001",
+   "check": "corrected",
+   "edge_cases": [
+    "The drag-indicator slot (TitleBar.tsx:52) carries data-tauri-drag-region, so a double-click on it also toggles maximize.",
+    "The trailing empty strip in ListTabs (ListTabs.tsx:303) also carries the attribute, so a double-click there toggles maximize.",
+    "Non-mac spacer span className=\"w-3\" (TitleBar.tsx:49) and the view-controls wrapper (TitleBar.tsx:64) have no drag-region attribute, so a double-click there does nothing."
+   ],
+   "check_notes": "Checker B could not check (no double-click recorded, no source read). Checker A's edge cases are source-derived and adopted as is."
+  },
+  {
+   "title": "Window controls sit on the leading edge on macOS and the trailing edge elsewhere",
+   "trigger": "none (layout observed on launch)",
+   "context": "Title bar layout; isMac decides placement",
+   "result": "On macOS the custom traffic lights render at the left of the title bar, before the drag indicator. On non-macOS a 3-unit spacer (w-3) occupies the left and the Windows-style caption buttons render at the right end, after the Settings button.",
+   "exact": [
+    {
+     "what": "Non-mac left spacer class",
+     "value": "w-3"
+    },
+    {
+     "what": "Controls side constant",
+     "value": "'leading' on macOS, 'trailing' otherwise"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:49",
+    "main/src/components/TitleBar.tsx:105",
+    "main/src/components/windowChrome.tsx:6-10",
+    "main/src/components/TitleBar.tsx:49 (isMac ? <WindowControls /> : <span className=\"w-3\" />), TitleBar.tsx:105 (!isMac && <WindowControls />, placed after the view-controls group at lines 64-103), main/src/components/windowChrome.tsx:8-10 (controlsSide 'leading' on mac, 'trailing' otherwise). Note: the main TitleBar places controls by isMac directly; controlsSide is consumed by TrashPane.tsx:64 and windows/settings/SettingsTitleBar.tsx:27, not by TitleBar.tsx.",
+    "main-default/tree.txt:3-4 shows WindowControls/MacControls @0,0 84x45 before the Icon drag_indicator at tree.txt:9 (@85,12), so the macOS lights sit at the leading edge before the drag indicator in all nine recordings (all have MacControls at line 4). Not checkable from references: the non-mac w-3 spacer, the trailing Windows caption buttons, and the 'leading'/'trailing' constant (no non-mac recording exists)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's macOS recordings show the traffic-light cluster at the top-left of the window (WindowControls box @0,0 84x45), consistent with the leading placement.",
+   "id": "F02-002",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact for the macOS leading placement. The non-mac branch and the trailing Windows placement are not recorded and rest on source only."
+  },
+  {
+   "title": "Decorative drag-indicator grip icon after the window controls",
+   "trigger": "none (observed)",
+   "context": "Always shown in the title bar on every platform. B's recordings show it between the traffic lights and the project switcher in every state.",
+   "result": "A drag_indicator Material icon sits in a fixed-width slot. The slot and icon are pointer-events-none, so clicks pass through to the drag region.",
+   "exact": [
+    {
+     "what": "Slot classes",
+     "value": "pointer-events-none mr-2 flex h-full w-6 items-center justify-center"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:51-56",
+    "state:main-default tree.txt line 9",
+    "state:cmd-held tree.txt line 9",
+    "main/src/components/TitleBar.tsx:51-56. Slot div className is \"pointer-events-none mr-2 flex h-full w-6 items-center justify-center\" (line 53). Icon name drag_indicator, size={20}, className pointer-events-none (line 55) match. B position values not verifiable from code.",
+    "main-default/tree.txt:9 and cmd-held/tree.txt:9: Icon name=\"drag_indicator\" size=20 className=\"pointer-events-none\" @85,12 20x20. Line 9 is the same in all nine trees, so the 'every state' context holds. Not checkable: slot classes 'mr-2 flex h-full w-6 items-center justify-center' (no slot wrapper in the tree)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded no interaction with the grip (trigger none recorded). Whether the title bar drags the window is not in B's recordings. A's source (TitleBar.tsx:51-56) states the slot and icon are pointer-events-none.",
+   "id": "F02-003",
+   "check": "corrected"
+  },
+  {
+   "title": "Project switcher pill in the title bar",
+   "trigger": "Click the pill (button titled 'Switch project')",
+   "context": "Always shown; toggles the project dropdown open and closed. Left of the list tabs; the active project is Home by default in B's recordings.",
+   "result": "Clicking toggles the project menu open (click again to close). The pill shows the active project's name, or the fallback 'Taskscape' when no project is selected, followed by an unfold_more chevron icon.",
+   "exact": [
+    {
+     "what": "Button tooltip (title)",
+     "value": "Switch project"
+    },
+    {
+     "what": "Fallback label when no project selected",
+     "value": "Taskscape"
+    },
+    {
+     "what": "Label classes",
+     "value": "font-display max-w-44 text-[14px], tone primary, weight semibold, truncated"
+    },
+    {
+     "what": "Label props (B)",
+     "value": "tone=\"primary\" weight=\"semibold\" truncate=true className=\"font-display max-w-44 text-[14px]\""
+    },
+    {
+     "what": "Label position (B)",
+     "value": "@124,12 45x21"
+    },
+    {
+     "what": "Chevron icon",
+     "value": "unfold_more, size 15, weight 300"
+    },
+    {
+     "what": "Chevron classes (B)",
+     "value": "text-content-3l dark:text-content-3d"
+    },
+    {
+     "what": "Chevron position (B)",
+     "value": "@173,15 15x15"
+    },
+    {
+     "what": "Pill height",
+     "value": "h-8"
+    },
+    {
+     "what": "Pill box with Home (B)",
+     "value": "@112,8 85x28"
+    },
+    {
+     "what": "Pill box with Spring launch (B)",
+     "value": "@112,8 149x28"
+    },
+    {
+     "what": "Pill corner",
+     "value": "rounded-control"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:20-26",
+    "main/src/components/ProjectSwitcher.tsx:30-49",
+    "state:main-default tree.txt lines 10-12",
+    "state:project-launch tree.txt line 10",
+    "state:no-lists tree.txt line 10",
+    "state:project-menu tree.txt line 13 (ProjectMenu anchorRef)",
+    "state:project-menu shot.png",
+    "main/src/components/ProjectSwitcher.tsx:30-33 (button onClick toggles setOpen(v=>!v), title=\"Switch project\", classes include rounded-control and h-8), :35-42 (Label tone=\"primary\" weight=\"semibold\" truncate className=\"font-display max-w-44 text-[14px]\", fallback 'Taskscape' at line 41), :43-48 (Icon unfold_more size 15 weight 300, className text-content-3l dark:text-content-3d). Box/position (B) values not verifiable from code. TitleBar.tsx:58-60 places the pill before ListTabs (line 62).",
+    "main-default/tree.txt:10-12: ProjectSwitcher @112,8 85x28; Label tone=\"primary\" weight=\"semibold\" truncate=true className=\"font-display max-w-44 text-[14px]\" @124,12 45x21; Icon name=\"unfold_more\" size=15 weight=300 className=\"text-content-3l dark:text-content-3d\" @173,15 15x15. project-launch/tree.txt:10 ProjectSwitcher @112,8 149x28 and no-lists/tree.txt:10 are consistent with the Home default in main-default/shot.png. Not shown in any tree: title 'Switch project' (ProjectSwitcher has no props listed), fallback 'Taskscape', the toggle behaviour, the 'rounded-control' corner and the h-8 class mapping (observed box height is 28px)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflict on pill height: A's class h-8 (32px on the Tailwind default scale) versus B's measured pill box height of 28px (85x28 and 149x28). A's class value is kept with its file:line source; B's measured boxes are kept as exact entries. The fallback 'Taskscape' was not recorded in B's recordings, which always show a selected project.",
+   "id": "F02-004",
+   "check": "confirmed_by_both",
+   "check_notes": "Source (h-8 class) is kept. Checker B measured the pill box at 28px high (main-default/tree.txt:10), which does not match the default Tailwind h-8 (32px). The project may use a custom spacing scale, so this is recorded as an unresolved pixel discrepancy, not a value change. The Label is also 45x21 rather than the Tailwind default sizes."
+  },
+  {
+   "title": "Project dropdown anchored under the pill",
+   "trigger": "Click the 'Switch project' pill",
+   "context": "Only while the menu is open. B's recording shows it over the window content, anchored to the pill.",
+   "result": "A menu panel drops below the pill, aligned to its left edge, with a minimum width. It has a sheet-in entrance animation and sits at dropdown z-level. Its rows are the project list, then a divider, then 'New project…'.",
+   "exact": [
+    {
+     "what": "Menu position",
+     "value": "absolute top-10 left-0 min-w-60 origin-top-left"
+    },
+    {
+     "what": "Menu surface",
+     "value": "elevation menu, surface 3, radius panel"
+    },
+    {
+     "what": "Menu surface props (B)",
+     "value": "elevation=\"menu\" surface=3 radius=\"panel\""
+    },
+    {
+     "what": "Entrance animation class",
+     "value": "animate-sheet-in"
+    },
+    {
+     "what": "Z-level class",
+     "value": "z-dropdown"
+    },
+    {
+     "what": "Top padding class",
+     "value": "py-space-3"
+    },
+    {
+     "what": "Menu box (B)",
+     "value": "@112,43 210x112"
+    },
+    {
+     "what": "Visible rows in screenshot (B)",
+     "value": "Home (checked), Spring launch, divider, New project…"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:124-144",
+    "state:project-menu tree.txt lines 13-31",
+    "state:project-menu shot.png",
+    "main/src/components/ProjectSwitcher.tsx:135-139 (Surface elevation=\"menu\" surface={3} radius=\"panel\"; className \"z-dropdown animate-sheet-in py-space-3 absolute top-10 left-0 min-w-60 origin-top-left\"), rows from projects.map (53), Divider level={1} className=\"mx-space-5 my-space-3\" (98), then 'New project…' (110). Menu box (B) not verifiable from code.",
+    "project-menu/tree.txt:13-14: ProjectMenu @112,43 210x112; Surface2 elevation=\"menu\" surface=3 radius=\"panel\" className=\"z-dropdown animate-sheet-in py-space-3 absolute top-10 left-…\" (the 'min-w-60 origin-top-left' part is truncated in the tree). Rows in tree lines 15-31: check Home, Spring launch, Divider level=1 (line 28), Label 'New project' row (line 31). project-menu/shot.png shows Home (checked), Spring launch, a divider and New project…. Caveat: the menu top is 43 while the pill top is 8, so the top-10 offset cannot be confirmed without the spacing scale."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflicts with B's measurements: A's min-w-60 is a minimum width (240px on the default scale) while B measured the menu at 210px wide; A's top-10 offset from the pill differs from B's menu top at y=43 under a pill whose box is at y=8 and 28px high. A's class values are kept with file:line sources; B's measured box is kept as an exact entry.",
+   "id": "F02-005",
+   "check": "confirmed_by_both",
+   "check_notes": "Menu structure, classes and row order agree. The top-10 offset cannot be confirmed from the recording (menu top 43 vs pill top 8)."
+  },
+  {
+   "title": "Dismiss the project dropdown with Escape or a press outside, but not by re-pressing the pill",
+   "trigger": "Press Escape while the menu is open; or press anywhere outside the switcher (pill and menu together). The outside test uses mousedown on the window (overlay.ts:67), not click.",
+   "context": "Project menu open",
+   "result": "The menu closes. Pressing the pill itself is treated as a toggle, so it closes the menu rather than registering as an outside press.",
+   "exact": [
+    {
+     "what": "Dismiss hook",
+     "value": "useDismissable with onDismiss and ref = anchorRef"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:119-123",
+    "main/src/components/ProjectSwitcher.tsx:133",
+    "main/src/components/ProjectSwitcher.tsx:133 (useDismissable({ onDismiss, ref: anchorRef })), :119-123 comment (anchorRef spans pill and menu). common-ui/src/overlay.ts:55-59 (window keydown, 'Escape' calls preventDefault and onDismiss), :61-67 (window mousedown, dismisses if target outside ref), capture defaults to false (overlay.ts:47).",
+    "No Escape press, outside press or pill re-press is recorded in any meta.json, and the hook name useDismissable is not visible in any tree. project-menu/tree.txt:13 shows ProjectMenu anchorRef={…} onDismiss=ƒ, which supports the prop names only."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Escape and outside-press behaviour is described in the comment and implemented in the shared useDismissable hook from @taskscape/common-ui/overlay, which is outside this area. Only the wiring is visible here.",
+   "id": "F02-006",
+   "check": "corrected",
+   "edge_cases": [
+    "Escape is handled on the window keydown listener in the bubble phase (overlay.ts:66) because capture is false by default (overlay.ts:47).",
+    "Dismissal on mousedown means the menu closes as soon as the press starts, before any click."
+   ],
+   "check_notes": "Dismissal behaviour is source-only; checker B recorded no dismissal event."
+  },
+  {
+   "title": "Select a project from the dropdown",
+   "trigger": "Click a project row in the dropdown (B's recording infers this from the project-launch state; the selection click itself is not recorded)",
+   "context": "Project menu open; each row lists one project. B's recording starts from the Home project with Errands active.",
+   "result": "The selected project becomes active via selectProject(id) and the menu closes. The pill label updates to that project's name.",
+   "exact": [
+    {
+     "what": "Row height",
+     "value": "h-9"
+    },
+    {
+     "what": "Row name text size",
+     "value": "text-[13.5px], truncated, flex-1"
+    },
+    {
+     "what": "Pill after switch (B)",
+     "value": "Spring launch, widens to 149px"
+    },
+    {
+     "what": "List tabs after switch (B)",
+     "value": "Website (active), Press kit"
+    },
+    {
+     "what": "Search placeholder after switch (B)",
+     "value": "Search Website"
+    },
+    {
+     "what": "Task rows after switch (B)",
+     "value": "Rewrite the hero section (with 1/2 subtasks and a 2 attachment badge), Draft headline options, Pick the hero image (done), Pricing page: compare plans table, Collect FAQ questions from support"
+    },
+    {
+     "what": "Footer counter (B)",
+     "value": "1/5 DONE"
+    },
+    {
+     "what": "Footer percentage (B)",
+     "value": "20%"
+    },
+    {
+     "what": "Commands in order (B)",
+     "value": "set_active_project, set_active_list (meta.json lines 31-32)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:53-60",
+    "main/src/components/ProjectSwitcher.tsx:67-69",
+    "state:project-launch shot.png",
+    "state:project-launch meta.json lines 31-32",
+    "main/src/components/ProjectSwitcher.tsx:56-60 (row onClick calls selectProject(p.id) then setOpen(false)), :56 (row h-9), :67-69 (Label flex-1 text-[13.5px] truncate). main/src/commands/projects.ts:56-62 (selectProject sets the active project, resets layout to the first list of the project, clears selection focus). The B command order 'set_active_project, set_active_list' was not verified: selectProject itself does not call api directly, and the store/layout calls it makes were not opened (api.ts:148-149 defines both invoke wrappers).",
+    "project-launch/meta.json:31-32 lists set_active_project then set_active_list, matching the stated order. project-launch/shot.png shows the pill 'Spring launch', tabs 'Website' (active) and 'Press kit', placeholder 'Search Website', footer '1/5 DONE' and '20%'. project-launch/tree.txt:10 shows the pill at 149x28. Task rows in the shot match the listed rows. Starting state matches main-default/shot.png (Home, Errands active). Not checkable: the row click itself (not recorded, as the feature says), the row height h-9 (no row box in tree, observed row pitch 32px in project-menu/tree.txt:17 and 23), and selectProject/menu-closing code."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflict: A's source calls selectProject(id) only, while B's meta.json shows set_active_project followed by set_active_list on switching, so the backend also sets the active list. B's project-launch tree still shows the Errands list and StatsBar done=2 total=8 pct=25 while its screenshot shows Website and 1/5 DONE; see the separate tree-mismatch entry. B flagged its own inference as uncertain.",
+   "id": "F02-007",
+   "check": "confirmed_by_both",
+   "check_notes": "Command order is verified by checker B from project-launch/meta.json:31-32, which closes the gap checker A left open. The h-9 class is kept per source; checker B observed a 32px row pitch, which is recorded as an unresolved pixel discrepancy."
+  },
+  {
+   "title": "Project-launch tree does not match the screenshot",
+   "trigger": "none; data observation",
+   "context": "project-launch state only.",
+   "result": "The tree props still show the Errands list (TaskPane list=\"Errands\", placeholder \"Search Errands\", StatsBar done=2 total=8 pct=25) and a ListTabs with no tab labels, but the screenshot shows Website and Press kit tabs and 1/5 DONE. The screenshot is taken as the visual truth here; the tree is probably captured before the list update.",
+   "exact": [
+    {
+     "what": "Tree TaskPane",
+     "value": "TaskPane list=\"Errands\" isSplit=false @0,46 860x715"
+    },
+    {
+     "what": "Tree StatsBar",
+     "value": "StatsBar done=2 total=8 pct=25"
+    }
+   ],
+   "sources": [
+    "state:project-launch tree.txt lines 11, 23, 26, 33",
+    "state:project-launch shot.png",
+    "Depends only on state recordings (tree.txt, shot.png, meta.json) that were not in the permitted file list. Not checked.",
+    "project-launch/tree.txt:11-12: ListTabs @275,0 793x45 with no tab Label children (only the add IconButton). project-launch/tree.txt:23: TaskPane list={\"Errands\"} isSplit=false @0,46 860x715. project-launch/tree.txt:26: placeholder=\"Search Errands\". project-launch/tree.txt:33: StatsBar done=2 total=8 pct=25. project-launch/shot.png shows Website and Press kit tabs, placeholder 'Search Website' and '1/5 DONE'. The 'tree is captured before update' explanation is not verifiable."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B verified the stale-tree state from project-launch recordings: the tab bar shows no tab labels and the TaskPane still lists Errands with placeholder Search Errands, while the screenshot shows Website and Press kit. The explanation for the stale state is not verifiable."
+  },
+  {
+   "title": "Checkmark on the active project row",
+   "trigger": "none (state)",
+   "context": "Check icon tone 'accent' is set on the wrapping Label (ProjectSwitcher.tsx:62), and the Icon itself (line 64) has no tone prop.",
+   "result": "A check icon appears in a fixed 4-unit slot to the left of the active project's name. Other rows show an empty slot.",
+   "exact": [
+    {
+     "what": "Check icon box for Home (B)",
+     "value": "Icon box @122,56 15x15 (project-menu/tree.txt:16); the 14x15 box at @122,56 is the enclosing Label slot (project-menu/tree.txt:15)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:62-66",
+    "state:project-menu tree.txt lines 14-23",
+    "state:project-menu shot.png",
+    "main/src/components/ProjectSwitcher.tsx:62-66 (Label tone=\"accent\" className=\"flex w-4 items-center\" wraps Icon name=\"check\" size={15} weight={900} rendered only when p.id === selectedId, line 63). The accent tone is a prop on the wrapping Label (line 62), not on Icon (line 64, which takes no tone prop). Row pitch and box values (B) not verifiable from code.",
+    "project-menu/tree.txt:15-16: Label tone=\"accent\" className=\"flex w-4 items-center\" @122,56 14x15 wraps Icon name=\"check\" size=15 weight=900 @122,56 15x15. project-menu/tree.txt:22: empty Label tone=\"accent\" @122,95 14x0 for Spring launch. Rows at project-menu/tree.txt:17 (Home label y=53) and :23 (Spring label y=85) are 32px apart. project-menu/shot.png shows the check only on Home."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F02-009",
+   "check": "corrected",
+   "check_notes": "Both checkers agree the accent tone sits on the wrapping Label and that the check shows only for the selected project. The Label class is w-4 (16px) per source, but checker B measured the Label at 14px wide, which is recorded as a pixel discrepancy. Row pitch measured at 32px, against h-9 in source."
+  },
+  {
+   "title": "Hover reveals per-project rename and delete buttons",
+   "trigger": "Hover a project row in the dropdown",
+   "context": "Project menu open",
+   "result": "The row highlights on hover. Its rename (edit) and delete buttons fade in (opacity 0 to 100) only while the row is hovered.",
+   "exact": [
+    {
+     "what": "Rename button (B)",
+     "value": "IconButton icon=\"edit\" iconSize=16 iconWeight=500 variant=\"plain\" className=\"opacity-0 group-hover:opacity-100\" onClick=ƒ title=\"Rename project\" @265,53 21x21 (className and onClick were omitted)"
+    },
+    {
+     "what": "Delete button (B)",
+     "value": "IconButton icon=\"delete\" iconSize=16 iconWeight=500 variant=\"plain\" className=\"hover:text-danger-500l dark:hover:text-danger-500d opacity-0…\" onClick=ƒ title=\"Delete project\" @291,53 21x21 (className and onClick were omitted; the className is truncated with … in the tree)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:54-56",
+    "main/src/components/ProjectSwitcher.tsx:75",
+    "main/src/components/ProjectSwitcher.tsx:88",
+    "state:project-menu tree.txt lines 18-21",
+    "state:project-menu tree.txt lines 24-27",
+    "main/src/components/ProjectSwitcher.tsx:56 (row classes group, hover:bg-wash-2l dark:hover:bg-wash-2d, cursor-default), :75 (rename button className opacity-0 group-hover:opacity-100), :88 (delete button className hover:text-danger-500l dark:hover:text-danger-500d opacity-0 group-hover:opacity-100), :70-82 and :83-95 (IconButton icon edit/delete, iconSize 16, iconWeight 500, variant plain, titles 'Rename project' (81) and 'Delete project' (94)). No transition class appears on these elements, so any fade depends on IconButton defaults (not opened). Box (B) values not verifiable.",
+    "project-menu/tree.txt:18: IconButton icon=\"edit\" iconSize=16 iconWeight=500 variant=\"plain\" className=\"opacity-0 group-hover:opacity-100\" onClick=ƒ title=\"Rename project\" @265,53 21x21. project-menu/tree.txt:20: IconButton icon=\"delete\" iconSize=16 iconWeight=500 variant=\"plain\" className=\"hover:text-danger-500l dark:hover:text-danger-500d opacity-0…\" onClick=ƒ title=\"Delete project\" @291,53 21x21. Hover-to-reveal and row hover background (hover:bg-wash-2l) cannot be checked because no hover is recorded and the row className is not in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B did not record the hover itself (the trigger is inferred from the opacity-0 group-hover:opacity-100 class), so the fade-in is verified by A's class values. B's button positions are kept as exact entries.",
+   "id": "F02-010",
+   "check": "corrected",
+   "check_notes": "Checker B's corrections add the className and onClick fields to the button values. They do not conflict with checker A. Hover reveal is not recorded and remains unverified."
+  },
+  {
+   "title": "Rename a project from the dropdown",
+   "trigger": "Click the edit icon button on a project row (appears on row hover; tooltip 'Rename project')",
+   "context": "Project menu open; does not select the project",
+   "result": "The click does not propagate to the row (so the project is not selected). The menu closes and renameProject(project) runs.",
+   "exact": [
+    {
+     "what": "Button tooltip (title)",
+     "value": "Rename project"
+    },
+    {
+     "what": "Icon",
+     "value": "edit, size 16, weight 500, variant plain"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:70-82",
+    "main/src/components/ProjectSwitcher.tsx:70-82 (onClick e.stopPropagation(), setOpen(false), void renameProject(p); title \"Rename project\" line 81; icon edit, iconSize 16, iconWeight 500, variant plain lines 71-74).",
+    "project-menu/tree.txt:18-19: IconButton icon=\"edit\" iconSize=16 iconWeight=500 variant=\"plain\" title=\"Rename project\"; Icon name=\"edit\" size=16 weight=500. The button sits inside the row (project-menu/tree.txt:17-19). The click propagation, menu closing and renameProject call are not recorded and cannot be checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-011",
+   "check": "confirmed_by_both",
+   "check_notes": "Button attributes agree. The click behaviour is source-only."
+  },
+  {
+   "title": "Delete a project from the dropdown",
+   "trigger": "Click the delete icon button on a project row (appears on row hover; tooltip 'Delete project')",
+   "context": "Project menu open; does not select the project",
+   "result": "The click does not propagate to the row. The menu closes and deleteProject(project) runs. The icon turns the danger colour on hover.",
+   "exact": [
+    {
+     "what": "Button tooltip (title)",
+     "value": "Delete project"
+    },
+    {
+     "what": "Icon",
+     "value": "delete, size 16, weight 500, variant plain"
+    },
+    {
+     "what": "Hover colour classes",
+     "value": "hover:text-danger-500l dark:hover:text-danger-500d"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:83-95",
+    "main/src/components/ProjectSwitcher.tsx:88",
+    "main/src/components/ProjectSwitcher.tsx:83-95 (onClick e.stopPropagation(), setOpen(false), void deleteProject(p); title \"Delete project\" line 94; icon delete, iconSize 16, iconWeight 500, variant plain lines 84-87; hover colour classes line 88).",
+    "project-menu/tree.txt:20-21: IconButton icon=\"delete\" iconSize=16 iconWeight=500 variant=\"plain\" title=\"Delete project\"; Icon name=\"delete\" size=16 weight=500; className includes hover:text-danger-500l dark:hover:text-danger-500d (tree.txt:20). The click and deleteProject behaviour are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-012",
+   "check": "confirmed_by_both",
+   "check_notes": "Button attributes agree. The click and delete behaviour are source-only."
+  },
+  {
+   "title": "Create a new project from the dropdown",
+   "trigger": "Click the 'New project…' row at the bottom of the dropdown",
+   "context": "Project menu open; sits below a divider after the project rows",
+   "result": "The menu closes and createProject() runs. The row shows a plus icon in a muted label and the text 'New project…' (with a single ellipsis character).",
+   "exact": [
+    {
+     "what": "Add icon tone (B)",
+     "value": "muted, set on the wrapping Label (ProjectSwitcher.tsx:106) rather than on the Icon"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:98-112",
+    "state:project-menu tree.txt lines 28-31",
+    "state:project-menu shot.png",
+    "main/src/components/ProjectSwitcher.tsx:98-112 (button onClick setOpen(false) then void createProject(); className \"hover:bg-wash-2l dark:hover:bg-wash-2d gap-space-4 px-space-6 flex h-9 w-full items-center text-left\"; Icon add size 15 weight 900 line 107; Label tone=\"primary\" className \"text-[13.5px]\" line 109 with text 'New project…'; Divider level={1} className \"mx-space-5 my-space-3\" line 98). The tone=\"muted\" is a prop on the wrapping Label (line 106), not on the Icon.",
+    "project-menu/tree.txt:28: Divider level=1 className=\"mx-space-5 my-space-3\" @120,114 194x1. project-menu/tree.txt:29-31: Label tone=\"muted\" @122,127 14x15 wrapping Icon name=\"add\" size=15 weight=900 @122,127 15x15; Label tone=\"primary\" className=\"text-[13.5px]\" @141,124 94x20. project-menu/shot.png shows 'New project…' below the divider. The single-ellipsis character is consistent with the image but cannot be confirmed at character level. Not checkable: row h-9 w-full, the click and createProject."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Tone conflict: A's result describes a muted label, while B recorded the add icon as muted and the label text as tone primary. A's result is kept with its file:line source. B also observed that the item is not checked or highlighted.",
+   "id": "F02-013",
+   "check": "corrected",
+   "check_notes": "Both checkers place the muted tone on the wrapping Label. Checker B's measured Label box is 14x15 with the Icon at 15x15, which is consistent with the Label wrapper."
+  },
+  {
+   "title": "Default project name suggestion is a single celestial name",
+   "trigger": "none (used when a new project is created; caller is outside this area)",
+   "context": "Creating a project with no user-entered name",
+   "result": "A random single name is drawn from the project name list (61 names, from Acheron to Vesta). The user can overwrite it.",
+   "exact": [
+    {
+     "what": "Project name pool size",
+     "value": "61"
+    },
+    {
+     "what": "First pool entry",
+     "value": "Acheron"
+    },
+    {
+     "what": "Last pool entry",
+     "value": "Vesta"
+    },
+    {
+     "what": "Selection",
+     "value": "Math.random index"
+    }
+   ],
+   "sources": [
+    "main/src/lib/nameSuggest.ts:1-5",
+    "main/src/lib/nameSuggest.ts:5-67",
+    "main/src/lib/nameSuggest.ts:177-180",
+    "main/src/lib/nameSuggest.ts:5-67 (PROJECT_NAMES, 61 entries; first 'Acheron' at line 6, last 'Vesta' at line 66), :177-180 (suggestProjectName returns pick(PROJECT_NAMES)), :173-175 (pick uses Math.floor(Math.random() * arr.length)).",
+    "Source-only claim (nameSuggest.ts). No recording shows a created project name, and the source was not read per instructions."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The file defines suggestProjectName but the callers are not in these files, so when it is applied is not visible here.",
+   "id": "F02-014",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (source-only, no recording of a created project name)."
+  },
+  {
+   "title": "Default list name suggestion is an adjective plus noun",
+   "trigger": "none (used when a new list is created; caller is outside this area)",
+   "context": "Creating a list with no user-entered name",
+   "result": "A random two-word landscape name 'Adjective Noun' is drawn from 50 adjectives and 48 nouns (2400 combinations). The user can overwrite it.",
+   "exact": [
+    {
+     "what": "Adjective pool size",
+     "value": "50"
+    },
+    {
+     "what": "Noun pool size",
+     "value": "48"
+    },
+    {
+     "what": "Format",
+     "value": "`${adjective} ${noun}` with one space"
+    },
+    {
+     "what": "Example in comment",
+     "value": "Amber Valley"
+    },
+    {
+     "what": "Noun entry written in lowercase",
+     "value": "knoll"
+    }
+   ],
+   "sources": [
+    "main/src/lib/nameSuggest.ts:69-120",
+    "main/src/lib/nameSuggest.ts:122-171",
+    "main/src/lib/nameSuggest.ts:182-185",
+    "main/src/lib/nameSuggest.ts:69-120 (ADJECTIVES, 50 entries, lines 70-119), :122-171 (NOUNS, 48 entries, lines 123-170; 'knoll' at line 147), :182-185 (suggestListName returns `${pick(ADJECTIVES)} ${pick(NOUNS)}`; comment example 'Amber Valley' at line 182). 50 x 48 = 2400.",
+    "Source-only claim (nameSuggest.ts). No recording shows a created list name, and the source was not read per instructions."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Callers are outside this area. The noun 'knoll' is lowercase while the other nouns are capitalised; copied as shown.",
+   "id": "F02-015",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (source-only, no recording of a created list name)."
+  },
+  {
+   "title": "Split-view toggle button",
+   "trigger": "Click the vertical_split button in the title bar (B's recordings infer this from the IconButton onClick; no split-view state was recorded)",
+   "context": "The button is disabled when splitTargetId() returns null or undefined (TitleBar.tsx:88 uses 'splitTarget == null', not a falsy test). The click handler (TitleBar.tsx:37) uses a truthy check, so an empty-string target would enable the button but skip the toggle.",
+   "result": "Calls toggleSplit with the split target when one exists. The button is filled and in the active state while split view is on.",
+   "exact": [
+    {
+     "what": "Title when split is on",
+     "value": "Close split view (selected by truthiness of splitListId, TitleBar.tsx:89)"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:36-38",
+    "main/src/components/TitleBar.tsx:85-91",
+    "main/src/components/TitleBar.tsx:110-137",
+    "state:main-default tree.txt line 25",
+    "state:no-lists tree.txt lines 16-17",
+    "state:no-lists shot.png",
+    "main/src/components/TitleBar.tsx:28 (splitTarget = splitTargetId()), :36-38 (toggleSplit guards with a truthy check: if (splitTarget)), :85-91 (BarButton vertical_split, active={splitListId != null}, disabled={splitTarget == null}, title={splitListId ? 'Close split view' : 'Split view'}, onClick={toggleSplit}), :110-137 (IconButton size xl, radius control, iconSize 19, iconWeight 300, filled and active both bound to active).",
+    "main-default/tree.txt:25-26: BarButton icon=\"vertical_split\" active=false disabled=false title=\"Split view\" @1077,8 28x28; IconButton size=\"xl\" radius=\"control\" iconSize=19 iconWeight=300 filled=false; Icon name=\"vertical_split\" size=19 filled=false weight=300. no-lists/tree.txt:16-17: BarButton and IconButton both disabled=true. The button is on the right in every state. Not checkable: the 'Close split view' title (no split-on recording), the active/filled state while split is on, and the click or toggleSplit call."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Component name conflict: A's source (TitleBar.tsx:110-137) builds this as IconButton, while B's tree names it BarButton. A's IconButton is kept with its file:line source; B's BarButton name is recorded as observed. B's recordings show no shortcut hint on this button and TaskPane isSplit=false in all recorded states.",
+   "id": "F02-016",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the disabled state in no-lists and the Split view title in the split-off state. The Close split view title was not recorded."
+  },
+  {
+   "title": "Swap panes button appears only while split view is on",
+   "trigger": "Click the swap_horiz button (tooltip 'Swap panes')",
+   "context": "Visible only when splitListId is not null (split view on), placed before the split toggle",
+   "result": "Calls useLayoutStore.swapPanes(), exchanging the left and right panes.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "swap_horiz"
+    },
+    {
+     "what": "Tooltip",
+     "value": "Swap panes"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:78-84",
+    "main/src/components/TitleBar.tsx:78-84 ({splitListId != null && <BarButton icon=\"swap_horiz\" title=\"Swap panes\" onClick={() => useLayoutStore.getState().swapPanes()} />}), placed before the split toggle at line 85.",
+    "No swap_horiz icon appears in any of the nine tree.txt files, and every recording that has a TaskPane shows isSplit=false (for example main-default/tree.txt:34). That is consistent with the button being hidden while split is off, but no split-on state is recorded, so the swap button, its tooltip 'Swap panes' and swapPanes() cannot be checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-017",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source that the button is only rendered when split is on. Checker B could not check, since no split-on recording exists."
+  },
+  {
+   "title": "Preview panel toggle button with shortcut hint",
+   "trigger": "Click the right-panel button in the title bar (B's recordings infer this from the IconButton onClick; the hidden state is not recorded)",
+   "context": "Always shown; icon and tooltip depend on whether the preview panel is open. In B's recordings it sits on the right side next to the split view button and is active and filled while the preview panel is visible, which is every recorded state.",
+   "result": "Toggles the preview panel. The button is filled and active while the preview is open. The tooltip reads 'Hide preview panel' when open and 'Show preview panel' when closed, followed by the bound shortcut for toggle_preview when one is set.",
+   "exact": [
+    {
+     "what": "Icon when open",
+     "value": "right_panel_close"
+    },
+    {
+     "what": "Icon when closed",
+     "value": "right_panel_open"
+    },
+    {
+     "what": "Tooltip when open",
+     "value": "Hide preview panel"
+    },
+    {
+     "what": "Tooltip when closed",
+     "value": "Show preview panel"
+    },
+    {
+     "what": "Hotkey id used for hint",
+     "value": "toggle_preview"
+    },
+    {
+     "what": "Hint format",
+     "value": "two spaces then the formatted accelerator; empty when unbound"
+    },
+    {
+     "what": "Button box (B)",
+     "value": "BarButton icon=\"right_panel_close\" active=true @1110,8 28x28"
+    },
+    {
+     "what": "Icon filled (B)",
+     "value": "right_panel_close, size 19, weight 300, filled=true"
+    },
+    {
+     "what": "Tooltip without hint (B)",
+     "value": "Hide preview panel"
+    },
+    {
+     "what": "Tooltip with hint (B)",
+     "value": "Hide preview panel  ⌘\\\\ (two spaces before the glyph, printed with a doubled backslash in the tree)"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:92-97",
+    "main/src/components/TitleBar.tsx:30-34",
+    "state:main-default tree.txt line 28-29",
+    "state:list-switch-3 tree.txt lines 28-29",
+    "state:no-lists tree.txt lines 19-20",
+    "state:project-menu tree.txt lines 47-48",
+    "main/src/components/TitleBar.tsx:92-97 (icon previewOpen ? 'right_panel_close' : 'right_panel_open'; active={previewOpen}; title `${previewOpen ? 'Hide' : 'Show'} preview panel${hint('toggle_preview')}`; onClick togglePreview()), :31-34 (hint returns two spaces plus formatAccel result, empty when unbound). Default binding confirmed at common/src/hotkeys.rs:354-357 (toggle_preview, Cmd + Backslash), so the hint is ⌘\\ by default.",
+    "main-default/tree.txt:28-30: BarButton icon=\"right_panel_close\" active=true title=\"Hide preview panel\" @1110,8 28x28; IconButton filled=true active=true; Icon name=\"right_panel_close\" size=19 filled=true weight=300. The same active/filled pattern appears in all nine trees, and the button sits right of the split button. Hint form 'Hide preview panel  ⌘\\' (two spaces, glyph) appears in project-menu/tree.txt:47, list-switch-3/tree.txt:28, no-lists/tree.txt:19, project-launch/tree.txt:17. Not checkable: right_panel_open icon, 'Show preview panel' tooltip (no closed-state recording), the toggle_preview hotkey id, and the toggle behaviour."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The actual accelerator text for toggle_preview is defined outside these files (hotkeyStore map and formatAccel); not visible here. B's recordings show the hint as ⌘ followed by a backslash in list-switch-3, no-lists and project-menu, and no hint in other states (see the shortcut-hint entry).",
+   "id": "F02-018",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirm the Hide preview panel tooltip with the ⌘\\ hint in hint-present states. The default binding is from source. The Show state and toggle behaviour are not recorded."
+  },
+  {
+   "title": "Settings button with shortcut hint",
+   "trigger": "Click the settings gear in the title bar (B's recordings infer this from the IconButton onClick)",
+   "context": "Always shown at the right of the view controls. In B's recordings it is at the far right of the title bar in every state.",
+   "result": "Calls api.openSettings(). Tooltip reads 'Settings' followed by the bound shortcut for open_settings when set.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "settings"
+    },
+    {
+     "what": "Tooltip",
+     "value": "Settings"
+    },
+    {
+     "what": "Hotkey id used for hint",
+     "value": "open_settings"
+    },
+    {
+     "what": "Hint format",
+     "value": "two spaces then the formatted accelerator; empty when unbound"
+    },
+    {
+     "what": "Button box (B)",
+     "value": "BarButton icon=\"settings\" title=\"Settings\" @1143,8 28x28"
+    },
+    {
+     "what": "Icon filled (B)",
+     "value": "settings, size 19, weight 300, filled=false"
+    },
+    {
+     "what": "Tooltip with hint (B)",
+     "value": "Settings  ⌘,"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:98-102",
+    "main/src/components/TitleBar.tsx:30-34",
+    "state:main-default tree.txt lines 31-32",
+    "state:list-switch-3 tree.txt lines 31-32",
+    "state:no-lists tree.txt lines 22-23",
+    "main/src/components/TitleBar.tsx:98-102 (icon \"settings\", title `Settings${hint('open_settings')}`, onClick api.openSettings()), :31-34 (hint format). Default binding common/src/hotkeys.rs:359-363 (open_settings, Cmd + Comma), so the hint is ⌘,. api.ts:165 invokes 'open_settings'.",
+    "main-default/tree.txt:31-33: BarButton icon=\"settings\" title=\"Settings\" @1143,8 28x28; Icon name=\"settings\" size=19 filled=false weight=300. Hinted tooltip 'Settings  ⌘,' appears in project-menu/tree.txt:50, list-switch-3/tree.txt:31, no-lists/tree.txt:22. The far-right position holds in all nine trees. Not checkable: open_settings hotkey id and the click (onClick=ƒ only)."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The accelerator value for open_settings is not defined in these files. B's recordings show the hint Settings  ⌘, in some states only.",
+   "id": "F02-019",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree on the Settings tooltip with and without the hint. The hint-absent state in main-default is recorded in F02-020."
+  },
+  {
+   "title": "Shortcut hints in tooltips vary between states",
+   "trigger": "none recorded; the recordings do not show what triggers the hint text.",
+   "context": "The code shows the mechanism: the hint is appended only when the hotkey id has a binding in useHotkeyStore.map (TitleBar.tsx:23, 31-33); with no binding it is an empty string. Which states lack a binding is not visible in the code.",
+   "result": "Hints appear only when hotkeys[id] is bound in the hotkey store (TitleBar.tsx:31-33). Recorded hint-present states per checker B: list-switch-3, no-lists, project-launch, project-menu, tab-context-menu. Recorded hint-absent states: main-default, cmd-held, narrow-window, tab-hover. Hint presence per recorded state comes from the recordings, not from code.",
+   "exact": [
+    {
+     "what": "Hint strings",
+     "value": "Hide preview panel  ⌘\\\\ and Settings  ⌘,"
+    }
+   ],
+   "sources": [
+    "state:cmd-held tree.txt lines 28, 31",
+    "state:main-default tree.txt lines 28, 31",
+    "state:narrow-window tree.txt lines 28, 31",
+    "state:tab-hover tree.txt lines 28, 31",
+    "state:list-switch-3 tree.txt lines 28, 31",
+    "state:project-launch tree.txt lines 17, 20",
+    "state:no-lists tree.txt lines 19, 22",
+    "main/src/components/TitleBar.tsx:23 (hotkeys = useHotkeyStore((s) => s.map)), :31-33 (hint(id) = formatAccel(hotkeys[id] ?? '') and returns '' when empty). The state-by-state appearance (cmd-held, narrow-window, tab-hover, etc.) was not verified, since state recordings are not in the permitted file list.",
+    "Grep for the ⌘ hint across the nine tree.txt files: hints present in list-switch-3 (lines 28, 31), no-lists (19, 22), project-launch (17, 20), project-menu (47, 50), tab-context-menu (28, 31). No hint present in main-default, cmd-held, narrow-window or tab-hover (no ⌘ match at all). This matches the feature's partition. The cited cmd-held lines 28 and 31 show the hint-free strings."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-020",
+   "check": "corrected",
+   "check_notes": "Conflict to record: source says toggle_preview and open_settings have default bindings, so the hint should appear whenever the hotkey store is populated. Checker B found no hint in main-default, cmd-held, narrow-window or tab-hover. The likely cause is an unpopulated hotkey store in those states, but this is not verified."
+  },
+  {
+   "title": "Reduced-motion indicator icon",
+   "trigger": "none (shown when reduced motion is active)",
+   "context": "Shown only when useReducedMotion() is true; tooltip depends on Low Power Mode",
+   "result": "A motion_photos_off icon appears in the view-controls group. Hovering shows the tooltip: 'Reduced motion active on Low Power Mode' when low power mode is on, otherwise 'Reduced motion is on (Settings > General)'.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "motion_photos_off, size 19, weight 300"
+    },
+    {
+     "what": "Tooltip when low power",
+     "value": "Reduced motion active on Low Power Mode"
+    },
+    {
+     "what": "Tooltip otherwise",
+     "value": "Reduced motion is on (Settings > General)"
+    },
+    {
+     "what": "Slot size",
+     "value": "h-8 w-8, text-content-3l / dark:text-content-3d"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:19-20",
+    "main/src/components/TitleBar.tsx:64-76",
+    "main/src/components/TitleBar.tsx:19-20 (useReducedMotion, useLowPowerMode), :65-76 (shown when reducedMotion; title ternary 'Reduced motion active on Low Power Mode' / 'Reduced motion is on (Settings > General)'; wrapper className \"text-content-3l dark:text-content-3d grid h-8 w-8 shrink-0 place-items-center\"; Icon motion_photos_off size={19} weight={300}).",
+    "No motion_photos_off icon or reduced-motion tooltip appears in any of the nine tree.txt files, and no meta.json shows a reduced-motion setting. Nothing shows the behaviour either way."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-021",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no reduced-motion recording)."
+  },
+  {
+   "title": "Title-bar buttons are filled and inactive-greyed by state",
+   "trigger": "none (state-driven styling)",
+   "context": "Applies to swap, split, preview, and settings buttons",
+   "result": "A button is filled when its active flag is set. A disabled button is greyed and not clickable. The split button is disabled when there is no split target.",
+   "exact": [
+    {
+     "what": "Button component",
+     "value": "IconButton with size xl, radius control, iconSize 19, iconWeight 300, filled and active both bound to active"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:110-137",
+    "main/src/components/TitleBar.tsx:110-137 (BarButton passes size=\"xl\" radius=\"control\" iconSize={19} iconWeight={300} filled={active} active={active} disabled={disabled}). disabled is passed only for the split button (TitleBar.tsx:88); swap, preview and settings buttons pass no disabled prop. The greyed styling itself is inside IconButton, which was not opened.",
+    "main-default/tree.txt:26 and :29: IconButton size=\"xl\" radius=\"control\" iconSize=19 iconWeight=300 filled=false active=false (split) and filled=true active=true (preview), so filled and active are bound to the same flag. Settings at tree.txt:32 is filled=false active=false. no-lists/tree.txt:17 shows the split button disabled=true, and no-lists/shot.png shows it greyed. Source line references are not checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-022",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree that filled and active are bound to the same flag and that only the split button is disabled. The greyed styling was observed in no-lists/shot.png."
+  },
+  {
+   "title": "Traffic-light cluster on macOS (close, minimize, full screen)",
+   "trigger": "none (rendered on macOS). B's cmd-held state records the Command key held, which shows glyphs on the lights.",
+   "context": "Leading edge of the main window's title bar. B's recordings show it at the top-left of the window, always visible, recorded only in light theme.",
+   "result": "Three round discs in order red, yellow, green. When the window has focus, each disc shows its colour. When the window loses focus, all three turn grey (inactive colours). A glyph appears inside the disc only while hovering the cluster and only when the disc is lit.",
+   "exact": [
+    {
+     "what": "Close disc ring/fill/glyph colour",
+     "value": "#e24b41 / #ed6a5f / #460804"
+    },
+    {
+     "what": "Minimize disc ring/fill/glyph colour",
+     "value": "#e1a73e / #f6be50 / #90591d"
+    },
+    {
+     "what": "Fullscreen disc ring/fill/glyph colour",
+     "value": "#2dac2f / #61c555 / #2a6218"
+    },
+    {
+     "what": "Disc size",
+     "value": "size-4 (16px), svg viewBox 0 0 85.4 85.4"
+    },
+    {
+     "what": "Cluster classes",
+     "value": "group flex items-center gap-2 pr-3 pl-5"
+    },
+    {
+     "what": "Inactive fill and ring",
+     "value": "var(--tl-inactive-fill) and var(--tl-inactive-ring)"
+    },
+    {
+     "what": "Glyph reveal",
+     "value": "opacity-0 group-hover:opacity-100; glyph scale 1.12 about centre"
+    },
+    {
+     "what": "Disc order",
+     "value": "close, minimize, fullscreen"
+    },
+    {
+     "what": "Close light position and size (B)",
+     "value": "@18,15 14x14"
+    },
+    {
+     "what": "Minimize light position and size (B)",
+     "value": "@39,15 14x14"
+    },
+    {
+     "what": "Fullscreen light position and size (B)",
+     "value": "@60,15 14x14"
+    },
+    {
+     "what": "Light props (B)",
+     "value": "focused=true inert=false"
+    },
+    {
+     "what": "WindowControls box (B)",
+     "value": "@0,0 84x45"
+    },
+    {
+     "what": "Observed glyphs in cmd-held state (B)",
+     "value": "x on the red close light, a minus on the yellow minimize light and a diagonal-arrow glyph on the green full-screen light"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:8-10",
+    "main/src/components/WindowControls.tsx:12-43",
+    "main/src/components/WindowControls.tsx:48-90",
+    "main/src/components/WindowControls.tsx:105",
+    "main/src/components/windowChrome.tsx:14-26",
+    "state:cmd-held tree.txt lines 3-8",
+    "state:cmd-held shot.png",
+    "state:main-default tree.txt lines 3-8",
+    "state:main-default shot.png",
+    "main/src/components/WindowControls.tsx:10 (ORDER close, minimize, fullscreen), :22-42 (LIGHTS: close ring #e24b41 fill #ed6a5f glyphColor #460804; minimize #e1a73e / #f6be50 / #90591d; fullscreen #2dac2f / #61c555 / #2a6218), :68 (button className block size-4), :70-72 (svg viewBox 0 0 85.4 85.4), :76-77 (inactive var(--tl-inactive-ring) / var(--tl-inactive-fill) when not lit), :78 (glyph only when lit), :81-82 (transform and opacity-0 group-hover:opacity-100), :105 (cluster class group flex items-center gap-2 pr-3 pl-5); main/src/components/windowChrome.tsx:14-26 (useWindowFocused, initial state true at line 15). Box/position (B) values not verifiable.",
+    "cmd-held/tree.txt:3-8: WindowControls @0,0 84x45; MacLights focused=true; Light id=\"close\" @18,15 14x14; Light id=\"minimize\" @39,15 14x14; Light id=\"fullscreen\" @60,15 14x14, all focused=true inert=false. The cmd-held/shot.png shows a red x, a yellow minus and a green diagonal-arrow glyph on the three lit discs, matching the observed glyphs. The meta.json for cmd-held lists no hover or key command, so the glyph state with Command held was captured without a recorded hover, which conflicts with the 'only while hovering' rule. Light theme only (every meta.json has \"theme\": \"light\")."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflicts: (1) disc size: A's source gives size-4 (16px) while B measured 14x14 per light; A's value is kept with its file:line source. (2) glyph visibility: A's source shows glyphs only on hover, while B's cmd-held recording shows glyphs with the tree props identical in both states and hover not recorded; the cmd-held glyphs are kept as observed. (3) A's cluster padding pl-5 (20px) versus B's close light at x=18.",
+   "id": "F02-023",
+   "check": "corrected",
+   "edge_cases": [
+    "cmd-held/shot.png shows glyphs on all three lit discs, but meta.json records no hover, so the hover-only glyph rule is not confirmed for the Command-held state."
+   ],
+   "check_notes": "Source gives size-4 on the button (WindowControls.tsx:68) and is kept. Checker B measured the Light element boxes at 14x14 (cmd-held/tree.txt:6-8); these are not the size-4 button, so no conflict is recorded as a correction. Checker B's hover conflict is recorded as an edge case."
+  },
+  {
+   "title": "Traffic-light tooltips",
+   "trigger": "Hover a traffic-light disc",
+   "context": "Main window on macOS",
+   "result": "Each disc shows a native-style tooltip with its label. Close reads 'Close', minimize reads 'Minimize', fullscreen reads 'Full Screen' (with a space).",
+   "exact": [
+    {
+     "what": "Labels",
+     "value": "Close / Minimize / Full Screen"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:22-42",
+    "main/src/components/WindowControls.tsx:67",
+    "main/src/components/WindowControls.tsx:41 (label 'Full Screen'), :27 ('Close'), :35 ('Minimize'), :67 (title={title ?? light.label}), :112 (closeTitle passed only for close, undefined otherwise).",
+    "Light elements in the trees carry only id, focused, inert and onClick=ƒ (for example main-default/tree.txt:6-8); no title or tooltip text is shown and no hover is recorded."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-024",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no title or tooltip text in the trees and no hover recorded)."
+  },
+  {
+   "title": "Close, minimize and full-screen traffic lights act on the window",
+   "trigger": "Click the red, yellow or green disc on macOS",
+   "context": "Main window; all three are enabled unless disabled by a caller",
+   "result": "Red closes the window (win.close()). Yellow minimizes it (win.minimize()). Green toggles full screen: it reads the current state and calls setFullscreen with the opposite value.",
+   "exact": [
+    {
+     "what": "Close action",
+     "value": "void win.close()"
+    },
+    {
+     "what": "Minimize action",
+     "value": "void win.minimize()"
+    },
+    {
+     "what": "Fullscreen action",
+     "value": "void win.isFullscreen().then((f) => win.setFullscreen(!f))  (reads the state via isFullscreen() and passes the negation; the variable is named f, not isFullscreen)"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:136-146",
+    "main/src/components/WindowControls.tsx:138-143 (act object), :139 (close: () => void win.close()), :140 (minimize: () => void win.minimize()), :141-142 (fullscreen: () => void win.isFullscreen().then((f) => win.setFullscreen(!f))), :144 (for (const id of disabled) delete act[id]).",
+    "Light elements show onClick=ƒ only (main-default/tree.txt:6-8). No click is recorded in any meta.json, so win.close(), win.minimize() and setFullscreen cannot be checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-025",
+   "check": "corrected",
+   "check_notes": "Action bodies are source-only. Checker B could not check (no click recorded)."
+  },
+  {
+   "title": "Unsupported traffic lights render inert gray discs",
+   "trigger": "Hover or click a control listed in the disabled prop on macOS (for example a window that is neither minimizable nor maximizable)",
+   "context": "A control with no handler or in the disabled list",
+   "result": "The disc is greyed (inactive colours), the button is disabled, and no glyph appears on hover. Clicking does nothing.",
+   "exact": [
+    {
+     "what": "Disabled attribute",
+     "value": "disabled={inert}"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:66",
+    "main/src/components/WindowControls.tsx:92-94",
+    "main/src/components/WindowControls.tsx:124-127",
+    "main/src/components/WindowControls.tsx:144",
+    "main/src/components/WindowControls.tsx:66 (disabled={inert}), :111 (inert={!act[id]}), :62 (lit = focused && !inert, so no glyph when inert, line 78), :92-94 and :124-127 (comments).",
+    "All lights in the nine trees show inert=false (for example main-default/tree.txt:6-8), so no inert disc was recorded. The disabled={inert} attribute and the grey look are not observable."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-026",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no inert disc recorded)."
+  },
+  {
+   "title": "Dialog traffic lights: only the red disc is live",
+   "trigger": "Click the red disc in a dialog or panel on macOS",
+   "context": "Modal chrome inside a window; the close title can be overridden",
+   "result": "Only the red disc is active and calls onClose. Yellow and green are inert gray discs. The red disc tooltip defaults to 'Close' and can be overridden by closeTitle.",
+   "exact": [
+    {
+     "what": "Default close tooltip",
+     "value": "Close"
+    },
+    {
+     "what": "Override prop",
+     "value": "closeTitle"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:202-237",
+    "main/src/components/WindowControls.tsx:212-237 (DialogControls; on mac MacLights with act={{ close: onClose }} at line 234 and closeTitle at line 235, so only red is live), :214 (closeTitle = 'Close' default), :202-205 (DialogControlsProps). Caller at main/src/components/TrashPane.tsx:62 passes closeTitle=\"Close Trash\".",
+    "No dialog or panel window is recorded in any of the nine folders. Only the main window appears."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no dialog window recorded)."
+  },
+  {
+   "title": "Traffic lights gray out when the window loses focus",
+   "trigger": "Switch focus away from the main window (macOS)",
+   "context": "Main window and dialogs on macOS",
+   "result": "All lit discs become the inactive grey colours, and the window's focus state is read from focus-change events. The window starts as focused on load.",
+   "exact": [
+    {
+     "what": "Initial focus state",
+     "value": "true"
+    },
+    {
+     "what": "Inactive ring colour variable",
+     "value": "var(--tl-inactive-ring)"
+    },
+    {
+     "what": "Inactive fill colour variable",
+     "value": "var(--tl-inactive-fill)"
+    }
+   ],
+   "sources": [
+    "main/src/components/windowChrome.tsx:12-26",
+    "main/src/components/WindowControls.tsx:62",
+    "main/src/components/WindowControls.tsx:135",
+    "main/src/components/windowChrome.tsx:12-26 (useWindowFocused: useState(true) at line 15; onFocusChanged sets focused from payload at line 19), :76-77 in WindowControls.tsx (var(--tl-inactive-ring) and var(--tl-inactive-fill)), :62 (lit = focused && !inert), :216 (DialogControls also uses useWindowFocused). The CSS variable values are not in the permitted files.",
+    "Initial focus state matches: focused=true on all lights in all nine trees (for example main-default/tree.txt:5-8). No focus-loss recording exists, so the grey-out and the var(--tl-inactive-*) colours cannot be checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-028",
+   "check": "confirmed_by_one",
+   "check_notes": "Initial focused state confirmed by both. The grey-out on focus loss is not recorded."
+  },
+  {
+   "title": "Windows caption buttons: minimize, maximize or restore, close",
+   "trigger": "Click the corresponding button at the right edge of the title bar (non-macOS)",
+   "context": "Non-macOS only; each button is 46 units wide and full bar height",
+   "result": "Minimize calls win.minimize(). Maximize/restore calls win.toggleMaximize(). Close calls win.close(). The maximize button's icon and tooltip swap when the window is maximized.",
+   "exact": [
+    {
+     "what": "Minimize tooltip / icon",
+     "value": "Minimize / remove, size 20"
+    },
+    {
+     "what": "Maximize tooltip / icon (not maximized)",
+     "value": "Maximize / crop_square, size 14"
+    },
+    {
+     "what": "Restore tooltip / icon (maximized)",
+     "value": "Restore / filter_none, size 14"
+    },
+    {
+     "what": "Close tooltip / icon",
+     "value": "Close / close, size 20"
+    },
+    {
+     "what": "Button width and height",
+     "value": "w-[46px], h-full"
+    },
+    {
+     "what": "Hover background (minimize, maximize)",
+     "value": "hover:bg-wash-2l dark:hover:bg-wash-2d"
+    },
+    {
+     "what": "Hover background and text (close)",
+     "value": "hover:bg-[#e81123] hover:text-white"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:120-122",
+    "main/src/components/WindowControls.tsx:149-192",
+    "main/src/components/WindowControls.tsx:120-122 (WIN_BUTTON 'flex h-full w-[46px] items-center justify-center text-content-2l dark:text-content-2d'; WIN_CLOSE 'hover:bg-[#e81123] hover:text-white'), :164-190 (WinControls): minimize onClick win.minimize(), title \"Minimize\", Icon remove size 20 (:165-173); maximize onClick win.toggleMaximize(), title maximized ? 'Restore' : 'Maximize', Icon maximized ? 'filter_none' : 'crop_square' size 14 (:174-182); close onClick win.close(), title \"Close\", Icon close size 20 (:183-189). Hover bg wash-2 on minimize and maximize (line 167, 176).",
+    "All nine recordings are on macOS (MacControls in every tree.txt line 4). No Windows caption buttons appear, so w-[46px], the icons and tooltips cannot be checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Windows caption buttons are source-only. Checker B could not check (all recordings are macOS)."
+  },
+  {
+   "title": "Windows maximize icon tracks maximized state live",
+   "trigger": "Maximize or restore the window (by any means, including double-click on the title bar)",
+   "context": "Non-macOS caption buttons",
+   "result": "The button reads the maximized state on mount and again on every window resize event, so the icon and tooltip update to match.",
+   "exact": [
+    {
+     "what": "Resize event listener",
+     "value": "win.onResized"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:150-161",
+    "main/src/components/WindowControls.tsx:150 (maximized state useState(false)), :153-161 (sync() called on mount at line 155; win.onResized(sync) at line 157; unlisten on cleanup).",
+    "No Windows caption button appears in any recording (every tree shows MacControls), so the maximize icon tracking cannot be checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-030",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no Windows recording)."
+  },
+  {
+   "title": "Windows dialog close button",
+   "trigger": "Click the close button in a dialog on non-macOS",
+   "context": "Dialog or panel chrome on Windows",
+   "result": "Shows a single close button with a hover red background (#e81123) and white glyph. Clicking calls the supplied onClose handler. Tooltip defaults to 'Close' and can be overridden by closeTitle.",
+   "exact": [
+    {
+     "what": "Tooltip default",
+     "value": "Close"
+    },
+    {
+     "what": "Hover colour",
+     "value": "#e81123 with text-white"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:212-229",
+    "main/src/components/WindowControls.tsx:218-229 (non-mac branch: single button className WIN_BUTTON + WIN_CLOSE, onClick={onClose}, title={closeTitle}, Icon close size 20); WIN_CLOSE at line 122 gives hover:bg-[#e81123] hover:text-white; closeTitle default 'Close' at line 214.",
+    "No Windows dialog close button appears in any recording (every tree shows MacControls)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-031",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (no Windows dialog recorded)."
+  },
+  {
+   "title": "Settings window cannot minimize or maximize (documented intent)",
+   "trigger": "none (caller passes disabled list)",
+   "context": "Settings window, as described in the prop comment",
+   "result": "The Settings window passes ['minimize', 'fullscreen'] as disabled (SettingsTitleBar.tsx:12, 26). On macOS those discs are inert. On Windows the minimize button is omitted (WindowControls.tsx:165) and the maximize/restore button is also omitted, because it is gated by the 'fullscreen' key (WindowControls.tsx:174). The close button is never filtered.",
+   "exact": [
+    {
+     "what": "Disabled prop type",
+     "value": "readonly WindowControl[] (close, minimize, fullscreen)"
+    }
+   ],
+   "sources": [
+    "main/src/components/WindowControls.tsx:124-129",
+    "main/src/components/WindowControls.tsx:165",
+    "main/src/components/WindowControls.tsx:174",
+    "main/src/windows/settings/SettingsTitleBar.tsx:12 (const OFF = ['minimize', 'fullscreen'] as const), :26 (controls={<WindowControls disabled={OFF} />}), :10-11 (comment: Settings is built with minimizable(false)/maximizable(false)). WindowControls.tsx:128 (disabled?: readonly WindowControl[]), :8 (WindowControl = 'close' | 'minimize' | 'fullscreen'), :165 (minimize omitted on Windows when disabled), :174 (the maximize button is gated by disabled.includes('fullscreen'), not a separate key), :183-189 (Windows close button ignores the disabled list).",
+    "No settings window is recorded in the nine folders, so the disabled list for the settings window cannot be checked."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The Settings window's actual call site is not in these files; this is taken from the prop comment only.",
+   "id": "F02-032",
+   "check": "corrected",
+   "edge_cases": [
+    "On Windows, 'close' in the disabled list has no effect; the close button (WindowControls.tsx:183-189) is always rendered.",
+    "On Windows, 'fullscreen' removes the maximize/restore button, not a fullscreen control."
+   ],
+   "check_notes": "No settings window recording exists, so the disabled list is source-only."
+  },
+  {
+   "title": "Traffic-light disc geometry",
+   "trigger": "none (visual)",
+   "context": "Each disc is an outer ring with a lighter inner disc",
+   "result": "The ring and inner disc are drawn as circles inset from the 85.4 viewBox: outer radius 42.7, inner radius 39.1.",
+   "exact": [
+    {
+     "what": "Outer radius",
+     "value": "42.7"
+    },
+    {
+     "what": "Inner radius",
+     "value": "39.1"
+    },
+    {
+     "what": "Glyph transform",
+     "value": "translate(42.7 42.7) scale(1.12) translate(-42.7 -42.7)"
+    }
+   ],
+   "sources": [
+    "main/src/components/windowChrome.tsx:28-33",
+    "main/src/components/WindowControls.tsx:71-81",
+    "main/src/components/windowChrome.tsx:30-33 (OUTER path arc radius 42.7 from 'm42.7 85.4c23.6 0 42.7-19.1 42.7-42.7'; INNER path radius 39.1 from 'm42.7 81.8c21.6 0 39.1-17.5 39.1-39.1'); WindowControls.tsx:71 (viewBox 0 0 85.4 85.4), :81 (transform=\"translate(42.7 42.7) scale(1.12) translate(-42.7 -42.7)\").",
+    "Disc radii and the glyph transform are not in any tree (the trees show only element boxes such as 14x14 at main-default/tree.txt:6-8). The 85.4 viewBox cannot be checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by checker A from source. Checker B could not check (radii and transform are not in the trees)."
+  },
+  {
+   "title": "Dark mode colours for the title bar",
+   "trigger": "System or app dark mode",
+   "context": "Title bar, pill, tabs and dropdown",
+   "result": "Each surface, edge, text and hover colour has a dark variant applied with dark: classes (for example bg-surface-1d, border-edge-2d, text-content-3d, hover:bg-wash-2d, text-danger-500d, bg-accent-500d).",
+   "exact": [
+    {
+     "what": "Example dark classes",
+     "value": "dark:bg-surface-1d, dark:border-edge-2d, dark:text-content-3d, dark:hover:bg-wash-2d"
+    }
+   ],
+   "sources": [
+    "main/src/components/TitleBar.tsx:47",
+    "main/src/components/ProjectSwitcher.tsx:32",
+    "main/src/components/ListTabs.tsx:191-194",
+    "main/src/components/TitleBar.tsx:47 (dark:bg-surface-1d dark:border-edge-2d), ProjectSwitcher.tsx:32 (dark:bg-surface-0d, dark:hover:bg-wash-2d), ProjectSwitcher.tsx:47 (dark:text-content-3d), ListTabs.tsx:125 (dark:bg-accent-500d), ListTabs.tsx:191-194 (dark:hover:bg-wash-1d; the cited range does not itself contain dark:hover:bg-wash-2d or dark:text-content-3d, which exist in ProjectSwitcher.tsx:32, 47 and 56). The example classes all exist in the repo; only the cited line range is incomplete.",
+    "Every meta.json has \"theme\": \"light\", so no dark-mode state is recorded. The dark classes that appear in the trees are dark:border-edge-2d (main-default/tree.txt:88), dark:text-content-3d (main-default/tree.txt:12) and dark:hover:text-danger-500d (project-menu/tree.txt:20). dark:bg-surface-1d, dark:hover:bg-wash-2d and dark:bg-accent-500d do not appear in any tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified all example classes exist in the repo, though one cited line range is incomplete. Checker B found no dark-mode recording, so the dark appearance is unverified in rendering."
+  },
+  {
+   "title": "List tabs for the active project",
+   "trigger": "none (shown on launch and when switching project)",
+   "context": "Title bar, after the project pill",
+   "result": "Tabs show only lists whose project_id matches the active project, in the store's order. With no lists the strip shows only the New list button and the drag strip.",
+   "exact": [
+    {
+     "what": "Filter",
+     "value": "l.project_id === activeProjectId (the callback parameter is named l, ListTabs.tsx:31)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:27-32",
+    "main/src/components/ListTabs.tsx:252",
+    "main/src/components/ListTabs.tsx:29-32 (activeProjectId = useProjectStore(s => s.activeId); lists = useListStore(s => s.lists).filter((l) => l.project_id === activeProjectId)); no sort is applied, so store order is kept. :252-292 (trailing separator only when lists.length > 0), :293-301 (New list IconButton), :303 (trailing drag strip span).",
+    "main-default/tree.txt:13-22 shows three tab Labels (Errands, Reading, Garden per main-default/shot.png) for Home. project-launch/shot.png shows Website and Press kit for Spring launch, which is consistent with the project_id filter. no-lists/tree.txt:13-14 shows ListTabs with only the New list IconButton and no tab Labels, consistent with 'only the New list button'. The filter expression list.project_id === activeProjectId is source-only and was not checked. The drag strip is not in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-035",
+   "check": "corrected",
+   "check_notes": "Checker B's recordings are consistent with the project_id filter, and the exact expression is taken from source."
+  },
+  {
+   "title": "List tab bar layout",
+   "trigger": "none; layout of the list tabs",
+   "context": "Right of the project pill, in every state that has lists.",
+   "result": "Tabs sit in a row starting at x=211 when the project pill is the default 85px wide (main-default). In project-launch the pill is 149px wide and the ListTabs box starts at x=275 (tree line 10-11), so the first tab moves with the pill. The New list add button follows the last tab after a 14px gap, not at the far right. The bar is 45px high at y=0; the panes start at y=46.",
+   "exact": [
+    {
+     "what": "ListTabs box (project-launch)",
+     "value": "@275,0 793x45"
+    },
+    {
+     "what": "ProjectSwitcher box (project-launch)",
+     "value": "@112,8 149x28"
+    }
+   ],
+   "sources": [
+    "state:main-default tree.txt lines 13-23",
+    "state:main-default shot.png",
+    "state:project-launch tree.txt line 11-12",
+    "state:project-launch shot.png",
+    "ListTabs.tsx:96-99 (strip classes 'flex h-full min-w-0 flex-1 items-stretch overflow-x-auto'), ListTabs.tsx:100-251 (tab order, one separator span per tab), ListTabs.tsx:252-292 (trailing separator wrapper with class 'relative flex items-stretch pr-2'), ListTabs.tsx:299 (add button className 'my-auto ml-2 rounded-md'), ListTabs.tsx:303 (flex-1 spacer after the add button). The pixel values (x=211, 857x45, y=46, tab x-ranges, 25x25 buttons) are layout results not in these files. The '14px gap' has no literal in ListTabs.tsx; the code uses ml-2 on the add button and pr-2 on the trailing separator wrapper, and the theme spacing scale was not checked, so the 14px figure is unverified.",
+    "spec/references/main-default/tree.txt:13 (ListTabs @211,0 857x45), :23 (add IconButton @518,10 25x25); spec/references/project-launch/tree.txt:10-12 (ProjectSwitcher @112,8 149x28; ListTabs @275,0 793x45; add @491,10 25x25); main-default/shot.png (tab dividers and add button after Garden); the 14px gap is consistent with Garden ending at 504 and add at 518 (F02-036 exact values)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-036",
+   "edge_cases": [
+    "The x=211 start only holds for an 85px-wide project pill (main-default, no-lists, narrow-window); with a wider pill such as project-launch (149px) the strip starts at x=275."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A could not check the layout values from source. Checker B's recordings give the pixel values. The 14px gap is not a literal in source (A: ml-2 on the add button, pr-2 on the trailing separator wrapper, theme scale unchecked) and is supported only by B's tree values. The x=211 start is specific to the 85px pill."
+  },
+  {
+   "title": "Tab label styling, focus and hover state",
+   "trigger": "none (state); hover is visual only, per B's tab-hover recording",
+   "context": "Each list tab. B's hover recording is on the Reading tab with the Errands tab still active.",
+   "result": "The tab name is shown truncated at a max width. The focused tab has a raised background and a primary-tone label; other tabs use a muted label. Hovering an unfocused tab shows a light wash.",
+   "exact": [
+    {
+     "what": "Tab row classes",
+     "value": "group hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-4 pr-space-5 pl-space-7 relative flex cursor-default items-center border-b border-transparent (focused tabs add bg-surface-2l dark:bg-surface-2d; drag-over and dragging add their own classes)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:190-196",
+    "main/src/components/ListTabs.tsx:226-233",
+    "state:main-default tree.txt lines 14, 17, 20",
+    "state:list-switch-3 tree.txt lines 14, 17, 20",
+    "state:tab-hover shot.png",
+    "state:tab-hover tree.txt lines 14, 17, 20",
+    "ListTabs.tsx:190-196 (tab classes), ListTabs.tsx:226-233 (Label props and tone). Label classes, focused background, hover wash and tone match. The 'Tab row classes' value does not match the code: there is no 'h-stretch' in the class list, and the list is missing 'relative flex items-center' and the 'group' and hover classes. The focused tab also gets 'hover:bg-wash-1l' because the hover class is not gated on focus (ListTabs.tsx:191). Hover-recording values (B) are not checkable from source.",
+    "main-default/tree.txt:14,17,20 (Label truncate=true weight=\"medium\" tone=\"primary\"/\"muted\"/\"muted\" className=\"max-w-40 text-[13px] tracking-[0.01em]\" at @224,12, @322,12, @422,12, sizes 51x20, 54x20, 48x20); tab-hover/tree.txt:14,17,20 identical to main-default; tab-hover/shot.png shows grey wash over Reading (approx x 309-408, y 0-45) with Errands still active; list-switch-3/tree.txt:14,17,20 shows Garden primary. Not verifiable from any reference: the bg-surface-2l / bg-wash-1l / row classes (tree does not expose container classes)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B describes the active tab as primary and inactive tabs as muted, which matches A's focused and muted wording. Hover fill conflict: A's class is a light wash (hover:bg-wash-1l), while B's screenshot shows a grey background across the full tab height on Reading. A's class value is kept with its file:line source.",
+   "id": "F02-037",
+   "edge_cases": [
+    "The hover wash class is applied to every tab, including the focused one, so the 'unfocused' restriction in the result is not in the code; which background wins on the focused tab depends on CSS order (not checked).",
+    "'raised background' is not a value in the code; the code only sets bg-surface-2l / bg-surface-2d."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Label props and the hover wash on the unfocused tab from recordings. Checker B could not see container classes in the trees, so the row class list rests on checker A's source reading, which overrides the feature's value."
+  },
+  {
+   "title": "Focused-tab separators",
+   "trigger": "none (state)",
+   "context": "Separators on either side of the focused tab",
+   "result": "The separators next to the focused tab are taller (full height) and a stronger colour. Other separators are short thin lines.",
+   "exact": [
+    {
+     "what": "Default separator",
+     "value": "bg-edge-1l / dark:bg-edge-1d, h-4 w-px, my-auto, shrink-0"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:104",
+    "main/src/components/ListTabs.tsx:120-127",
+    "main/src/components/ListTabs.tsx:280-283",
+    "ListTabs.tsx:120-127 (separator span classes 'bg-edge-1l dark:bg-edge-1d my-auto h-4 w-px shrink-0' with adjacent-focus override 'bg-edge-2l dark:bg-edge-2d h-full'), ListTabs.tsx:104 (sepAdjacentActive = i === focusedIdx || i - 1 === focusedIdx), ListTabs.tsx:280-283 (trailing separator: focused only when the last tab is focused).",
+    "No reference tree exposes separator classes (only ListTabs label/IconButton children are listed). main-default/shot.png and tab-hover/shot.png show vertical separators but colour and height at pixel level cannot be confirmed from the image at this resolution."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-038",
+   "edge_cases": [
+    "The separator to the left of the focused tab and the one to the right of it are both highlighted (ListTabs.tsx:104).",
+    "The trailing separator after the last tab is highlighted full height only when the last tab is the focused one (ListTabs.tsx:282-283)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not confirm separator colour or height from screenshots, so the source reading by checker A is the only value evidence."
+  },
+  {
+   "title": "Click a tab to make it the active list",
+   "trigger": "Click a list tab (B's recording infers a click on the Garden tab from the list-switch-3 state; the click itself is not recorded)",
+   "context": "Any tab. In B's recording the tabs are Errands, Reading and Garden, with Errands active before the click.",
+   "result": "Calls selectList(list.id) through the layout store, changing the focused/active list.",
+   "exact": [
+    {
+     "what": "Command (B)",
+     "value": "set_active_list (last entry of meta.json)"
+    },
+    {
+     "what": "Pane list prop (B)",
+     "value": "TaskPane list={\"Garden\"}"
+    },
+    {
+     "what": "Footer counter (B)",
+     "value": "0/2 DONE"
+    },
+    {
+     "what": "Footer percentage (B)",
+     "value": "0%"
+    },
+    {
+     "what": "Search placeholder (B)",
+     "value": "Search Garden"
+    },
+    {
+     "what": "Pane rows (B)",
+     "value": "Order tomato seeds and Trim the hedge"
+    },
+    {
+     "what": "Progress bar (B)",
+     "value": "empty"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:130",
+    "main/src/components/ListTabs.tsx:48",
+    "state:list-switch-3 tree.txt lines 14, 17, 20, 34, 35-37, 54",
+    "state:list-switch-3 meta.json lines 21-32",
+    "state:list-switch-3 shot.png",
+    "ListTabs.tsx:130 (onClick={() => selectList(list.id)}), ListTabs.tsx:48 (selectList calls useLayoutStore.getState().selectList(id)), layoutStore.ts:84 (selectList defined in the layout store). The recording-based values (set_active_list in meta.json, TaskPane list, footer counts, placeholder, rows) are not in these files and were not checked. The set_active_list command is invoked from layoutStore.ts:63 and api.ts:148.",
+    "list-switch-3/meta.json:32 (\"set_active_list\" is the last entry; no click recorded, as stated); list-switch-3/tree.txt:34 (TaskPane list={\"Garden\"}), :44-49 (t-seeds, t-hedge rows), :54 (StatsBar done=0 total=2 pct=0), :59 (ProgressBar value=0), :37 (placeholder=\"Search Garden\"); list-switch-3/shot.png shows \"Order tomato seeds\", \"Trim the hedge\", \"0/2 DONE\", \"0%\". Errands as prior active list is consistent with main-default/tree.txt:34 and boot state, but the prior state itself is not recorded. The selectList(list.id) call is source-only and cannot be checked from these references."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B's recording shows the backend command set_active_list being sent on the switch; A's source shows only the layout-store call selectList(list.id). The Garden tab is the active tab in B's recording with the pane switched to Garden.",
+   "id": "F02-039",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker A confirmed the handler path in source. Checker B confirmed the recorded values. The prior active list (Errands) is inferred, not recorded."
+  },
+  {
+   "title": "Split-view pane indicator on tabs",
+   "trigger": "none (shown while split view is on)",
+   "context": "Tabs shown in the left pane and the right pane while split view is on",
+   "result": "The left pane tab (active list) shows a line_start_circle icon and the right pane tab (split list) shows a line_end_circle icon, both in the accent colour. No indicator when split view is off.",
+   "exact": [
+    {
+     "what": "Left-pane icon",
+     "value": "line_start_circle"
+    },
+    {
+     "what": "Right-pane icon",
+     "value": "line_end_circle"
+    },
+    {
+     "what": "Icon colour",
+     "value": "text-accent-500l / dark:text-accent-500d"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:108",
+    "main/src/components/ListTabs.tsx:197-202",
+    "ListTabs.tsx:46 (inSplit = splitListId != null), ListTabs.tsx:108 (paneDot = inSplit && (isLeft || isRight)), ListTabs.tsx:197-202 (Icon name is isLeft ? 'line_start_circle' : 'line_end_circle', class 'text-accent-500l dark:text-accent-500d'). Values match.",
+    "No reference has split view on, so the line_start_circle / line_end_circle indicators and their colour are not shown. Every reference tree shows TaskPane isSplit=false (main-default/tree.txt:34, list-switch-3/tree.txt:34, tab-context-menu/tree.txt:34)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-040",
+   "edge_cases": [
+    "'Split view is on' is implemented as splitListId != null (ListTabs.tsx:46).",
+    "If the same list is both the active list and the split list, isLeft is true, so only line_start_circle is rendered (ListTabs.tsx:199). Whether that state can occur was not checked."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A found the feature values match source. Checker B could not check the indicator because no reference has split view on."
+  },
+  {
+   "title": "Double-click a tab to rename it inline",
+   "trigger": "Double-click a list tab",
+   "context": "Any tab; the tab stops being draggable while editing",
+   "result": "The tab name is replaced by a text field pre-filled with the current name and focused automatically. Clicks and double-clicks inside the field do not select or re-enter edit mode.",
+   "exact": [
+    {
+     "what": "Input classes",
+     "value": "ring-focus-1l / dark:ring-focus-1d, px-space-4, h-6, max-w-40, py-0, font-medium, ring-1"
+    },
+    {
+     "what": "Draggable while editing",
+     "value": "false"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:129",
+    "main/src/components/ListTabs.tsx:131",
+    "main/src/components/ListTabs.tsx:203-224",
+    "ListTabs.tsx:129 (draggable={editingId !== list.id}), ListTabs.tsx:131 (onDoubleClick sets editingId), ListTabs.tsx:203-224 (TextInput with autoFocus, defaultValue={list.name}, class 'ring-focus-1l dark:ring-focus-1d px-space-4 h-6 max-w-40 py-0 font-medium ring-1', onClick and onDoubleClick stopPropagation at 207-208). The input classes, draggable flag and stopPropagation all match.",
+    "No reference records a double-click on a tab or an inline rename input (meta.json command lists in all nine folders contain no rename state; trees show only Label elements for tabs). Input classes and draggable=false are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-041",
+   "edge_cases": [
+    "The close (X) IconButton (ListTabs.tsx:235-247) only stops click propagation (line 242). Its double-click is not stopped in ListTabs.tsx, so a double-click on the X may bubble to the tab's onDoubleClick and start a rename. IconButton's internals were not checked, so this is uncertain."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A matched the source for the input and draggable flag. Checker B found no rename recording to compare against."
+  },
+  {
+   "title": "Press Enter to commit an inline tab rename",
+   "trigger": "Press Enter while the inline tab name field has focus",
+   "context": "Inline rename active",
+   "result": "The input value is trimmed. If it is non-empty and different from the current name, the list is renamed. Edit mode ends either way. Key events are stopped from propagating.",
+   "exact": [
+    {
+     "what": "Key",
+     "value": "Enter"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:209-216",
+    "ListTabs.tsx:209-216 (onKeyDown: e.stopPropagation() on every key at line 210; Enter at 211 trims the value (212), renames only if non-empty and changed (213-214), then setEditingId(null) (215)).",
+    "No reference shows an inline tab rename field with focus or an Enter key press (no key command in any meta.json; no input element in any ListTabs tree)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-042",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the Enter handler in source. Checker B could not check because no recording shows the rename field."
+  },
+  {
+   "title": "Press Escape to cancel an inline tab rename",
+   "trigger": "Press Escape while the inline tab name field has focus",
+   "context": "Inline rename active",
+   "result": "Edit mode ends and no rename is applied; the old name stays.",
+   "exact": [
+    {
+     "what": "Key",
+     "value": "Escape"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:216",
+    "ListTabs.tsx:210 (stopPropagation applies to every key, including Escape), ListTabs.tsx:216 (else if Escape → setEditingId(null)). No rename call happens on Escape. The blur handler at ListTabs.tsx:218-222 is not called by this path in the code, but a browser may fire blur when the focused input unmounts; that was not verified.",
+    "No reference shows an inline tab rename field or an Escape press (no key command in any meta.json; no input element in any ListTabs tree)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-043",
+   "edge_cases": [
+    "Escape keydown is stopped from propagating, same as Enter (ListTabs.tsx:210)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A corrected the feature by adding the Escape propagation edge case. Checker B could not check because no recording shows Escape."
+  },
+  {
+   "title": "Blur commits an inline tab rename",
+   "trigger": "Click elsewhere or move focus away from the inline tab name field",
+   "context": "Inline rename active",
+   "result": "Behaves like Enter: the value is trimmed, renamed if non-empty and changed, and edit mode ends. An empty name leaves the list unchanged.",
+   "exact": [
+    {
+     "what": "Empty-name rule",
+     "value": "ignored, keeps the existing name"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:218-222",
+    "ListTabs.tsx:218-222 (onBlur: trim, rename if name && name !== list.name, then setEditingId(null)). An empty name skips the rename and the edit ends, as in the result. Whether blur also fires when the input unmounts after Enter or Escape was not verified.",
+    "No reference shows an inline tab rename field or a blur event (no input element in any ListTabs tree; no relevant command in meta.json)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-044",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the blur path in source. Whether blur also fires on unmount after Enter or Escape was not verified by either checker."
+  },
+  {
+   "title": "Right-click a tab for the list context menu",
+   "trigger": "Right-click (context menu) on a list tab. B's right-click was over the Reading tab area; the target tab is not named in its tree.",
+   "context": "Any tab; the native menu is suppressed. In B's recording the tab bar has Errands active.",
+   "result": "Opens a context menu at the cursor position (clientX/clientY), clamped so the panel stays inside the viewport with a 4px margin (ContextMenu.tsx:84-87), with four items: Rename, Open in split view (or Close split), Export list…, Delete list….",
+   "exact": [
+    {
+     "what": "Menu item 1",
+     "value": "Rename (icon edit)"
+    },
+    {
+     "what": "Menu item 2",
+     "value": "Open in split view / Close split (icon vertical_split)"
+    },
+    {
+     "what": "Menu item 3",
+     "value": "Export list… (icon ios_share, divider above)"
+    },
+    {
+     "what": "Menu item 4",
+     "value": "Delete list… (icon delete, danger, divider above)"
+    },
+    {
+     "what": "Menu position",
+     "value": "clientX / clientY of the cursor"
+    },
+    {
+     "what": "Menu panel (B)",
+     "value": "MenuPanel items=[4] x=348 y=21, 158x145"
+    },
+    {
+     "what": "Item 1 (B)",
+     "value": "Rename (icon edit, size 15), MenuItem @349,26 156x30"
+    },
+    {
+     "what": "Item 2 (B)",
+     "value": "Open in split view (icon vertical_split, size 15), MenuItem @349,56 156x30, disabled=false"
+    },
+    {
+     "what": "Item 3 (B)",
+     "value": "Export list… (icon ios_share, size 15), MenuItem @349,94 156x30"
+    },
+    {
+     "what": "Item 4 (B)",
+     "value": "Delete list… (icon delete, size 15), MenuItem tone=\"danger\" @349,132 156x30"
+    },
+    {
+     "what": "Dividers (B)",
+     "value": "Divider @356,89 142x1 and @356,127 142x1"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:59-93",
+    "main/src/components/ListTabs.tsx:135",
+    "state:tab-context-menu tree.txt lines 102-115",
+    "state:tab-context-menu shot.png",
+    "ListTabs.tsx:59-93 (openMenu: e.preventDefault(), menu.open with x: e.clientX, y: e.clientY and four items), ListTabs.tsx:135 (onContextMenu={(e) => openMenu(e, list)}). Items match: 'Rename' icon 'edit' (65); 'Close split' / 'Open in split view' icon 'vertical_split' (68-69); 'Export list…' icon 'ios_share' with dividerAbove (74-76); 'Delete list…' icon 'delete' danger with dividerAbove (80-83). Pixel values (MenuPanel 158x145 at x=348 y=21, MenuItem positions) are not in source and were not checked. ContextMenu.tsx:79-88 applies the position.",
+    "tab-context-menu/tree.txt:104 (MenuPanel items=[4] x=348 y=21 @348,21 158x145); :106-115 (four MenuItems @349,26 / @349,56 / @349,94 / @349,132, each 156x30; Icons edit, vertical_split, ios_share, delete size 15; MenuItem tone=\"danger\" on item 4 at :114; disabled=false on item 2 at :108); :110 and :113 (Divider @356,89 and @356,127, 142x1); tab-context-menu/shot.png shows labels Rename, Open in split view, Export list…, Delete list…; tab-context-menu/tree.txt:14 (Errands primary). The menu anchor x=348 sits within the Reading tab area x 309-408 (main-default/tree.txt:17), consistent with the stated trigger. The clientX/clientY placement and the native menu suppression are not visible in the references."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B's target tab is inferred from the menu position over the Reading tab area (x 309-408). Errands was the active tab, so Open in split view is enabled (disabled=false), consistent with A's disabled condition, which applies only to the active tab. B's Delete list… is shown in danger red.",
+   "id": "F02-045",
+   "edge_cases": [
+    "The menu position is clamped to the window with a 4px margin, so it is not always exactly at the cursor (ContextMenu.tsx:85-86).",
+    "The tab's onContextMenu has no stop for a right-click inside the inline rename input (ListTabs.tsx:135, input at 203-224), so the menu can open while a tab is being renamed. Not verified in the input's own handlers."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B's recorded panel position (x=348, y=21, 158x145) and item labels match the items in source. The clamp behaviour is source-only; checker A did not check the pixel values."
+  },
+  {
+   "title": "Context menu Rename action",
+   "trigger": "Choose 'Rename' from a tab's right-click menu",
+   "context": "Tab context menu open",
+   "result": "Calls renameList(list), the rename flow in the commands layer (its UI is outside this area).",
+   "exact": [
+    {
+     "what": "Menu label",
+     "value": "Rename"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:65",
+    "main/src/components/ListTabs.tsx:87",
+    "ListTabs.tsx:65 (label 'Rename'), ListTabs.tsx:87 (if (id === 'rename') void renameList(list)). renameList is imported at ListTabs.tsx:10.",
+    "tab-context-menu/shot.png and tab-context-menu/tree.txt:106-107 (first MenuItem, Icon edit) show label \"Rename\". The renameList(list) call and its UI are not shown in any reference (cannot_check for the result)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-046",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the label. The renameList call and its UI are not visible in recordings."
+  },
+  {
+   "title": "Context menu split item toggles split view for that list",
+   "trigger": "Choose 'Open in split view' or 'Close split' from a tab's right-click menu",
+   "context": "Label reads 'Close split' when this tab is the split list; otherwise 'Open in split view'. Disabled when this tab is the active list and not the split list.",
+   "result": "Calls toggleSplit(list.id) on the layout store. A disabled item cannot be chosen.",
+   "exact": [
+    {
+     "what": "Label when it is the split list",
+     "value": "Close split"
+    },
+    {
+     "what": "Label otherwise",
+     "value": "Open in split view"
+    },
+    {
+     "what": "Disabled condition",
+     "value": "list.id === activeListId && list.id !== splitListId"
+    },
+    {
+     "what": "Icon",
+     "value": "vertical_split"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:66-71",
+    "main/src/components/ListTabs.tsx:88",
+    "ListTabs.tsx:66-71 (label list.id === splitListId ? 'Close split' : 'Open in split view'; disabled: list.id === activeListId && list.id !== splitListId; icon 'vertical_split'), ListTabs.tsx:88 (toggleSplit(list.id)), ListTabs.tsx:49 and layoutStore.ts:97 (toggleSplit store call). All values match. ListTabs.tsx:106-108 (onClick in ContextMenu MenuRow path) does not check disabled itself; the block relies on MenuRow (ContextMenu.tsx:102-107) to prevent a disabled item from being chosen, and MenuRow was not checked.",
+    "tab-context-menu/tree.txt:108-109 (second MenuItem disabled=false, Icon vertical_split size 15) and tab-context-menu/shot.png showing label \"Open in split view\". Consistent with the stated disabled rule because the menu was opened over the Reading tab (tree.txt:104, x=348), not the active Errands tab (tree.txt:14). The \"Close split\" label, toggleSplit call and the disabled condition itself are not shown (no split-on state)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-047",
+   "edge_cases": [
+    "The onPick handler does not check disabled itself (ListTabs.tsx:86-91 and ContextMenu.tsx:106-107). Blocking a disabled choice depends on the MenuRow component, which was not checked."
+   ],
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the label and the disabled state for a non-active tab. The Close split label and the disabled condition are not shown in recordings."
+  },
+  {
+   "title": "Context menu Export list action",
+   "trigger": "Choose 'Export list…' from a tab's right-click menu",
+   "context": "Tab context menu open",
+   "result": "Calls exportList(list) in the commands layer (UI outside this area).",
+   "exact": [
+    {
+     "what": "Menu label",
+     "value": "Export list…"
+    },
+    {
+     "what": "Icon",
+     "value": "ios_share"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:72-77",
+    "main/src/components/ListTabs.tsx:89",
+    "ListTabs.tsx:73-76 (id 'export', label 'Export list…', icon 'ios_share', dividerAbove true), ListTabs.tsx:89 (if (id === 'export') void exportList(list)).",
+    "tab-context-menu/tree.txt:111-112 (MenuItem with Icon name=\"ios_share\" size=15); tab-context-menu/shot.png shows label \"Export list…\". The exportList(list) call is not visible in any reference."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-048",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the label and icon. The exportList call is not visible in recordings."
+  },
+  {
+   "title": "Context menu Delete list action",
+   "trigger": "Choose 'Delete list…' from a tab's right-click menu",
+   "context": "Tab context menu open; marked as a danger item",
+   "result": "Calls deleteList(list) in the commands layer (confirmation UI, if any, is outside this area).",
+   "exact": [
+    {
+     "what": "Menu label",
+     "value": "Delete list…"
+    },
+    {
+     "what": "Icon",
+     "value": "delete"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:78-84",
+    "main/src/components/ListTabs.tsx:90",
+    "ListTabs.tsx:78-84 (id 'delete', label 'Delete list…', icon 'delete', danger true, dividerAbove true), ListTabs.tsx:90 (deleteList(list)). Confirmation UI is outside these files.",
+    "tab-context-menu/tree.txt:114-115 (MenuItem tone=\"danger\", Icon name=\"delete\" size=15); tab-context-menu/shot.png shows label \"Delete list…\" in red. The deleteList call and any confirmation are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-049",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the label, icon and danger tone. The deleteList call and any confirmation UI are outside the recordings and the source files read."
+  },
+  {
+   "title": "Tab context menu dismissal settings",
+   "trigger": "Click outside the menu or press Escape or change window (inferred from overlay props; not recorded).",
+   "context": "While the tab context menu is open.",
+   "result": "The overlay is a menu layer with no dim. Its props say it captures Escape and dismisses on window change. Backdrop2 covers the whole window.",
+   "exact": [
+    {
+     "what": "Overlay props (full)",
+     "value": "layer=\"menu\" placement=\"anchored\" dim=\"none\" onDismiss=ƒ captureEscape=true dismissOnWindowChange=true onContextMenu=ƒ @0,0 1180x760"
+    },
+    {
+     "what": "Backdrop (full)",
+     "value": "Backdrop2 dim=\"none\" blur=false layer=\"menu\" className=\"\" onContextMenu=ƒ onMouseDown=ƒ @0,0 1180x760"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu tree.txt line 102-103",
+    "ContextMenu.tsx:33-39 (Overlay with layer=\"menu\" placement=\"anchored\" dim=\"none\" onDismiss={close} captureEscape dismissOnWindowChange), ContextMenu.tsx:40-43 (onContextMenu prevents the native menu and closes the menu). The overlay props match the spec. The 'Backdrop2 dim=none blur=false @0,0 1180x760' value is not in these files and was not checked; the cited source 'state:tab-context-menu tree.txt' is a recording, not code.",
+    "tab-context-menu/tree.txt:102 (Overlay layer=\"menu\" placement=\"anchored\" dim=\"none\" onDismiss=ƒ captureEscape=true dismissOnWindowChange=true onContextMenu=ƒ @0,0 1180x760); tab-context-menu/tree.txt:103 (Backdrop2 dim=\"none\" blur=false layer=\"menu\" className=\"\" onContextMenu=ƒ onMouseDown=ƒ @0,0 1180x760). The trigger (click outside, Escape, window change) is inferred from these props, not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-050",
+   "edge_cases": [
+    "Right-clicking anywhere on the overlay (including outside the menu) is also a dismissal: it calls preventDefault and closes the menu (ContextMenu.tsx:40-43).",
+    "The Overlay also carries onDismiss and onContextMenu, and Backdrop2 carries onMouseDown and onContextMenu handlers; the click-outside path is consistent with the Backdrop2 onMouseDown handler but is not itself recorded."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A matched the overlay props in source. Checker B supplied the full recorded Overlay and Backdrop2 props, which are more exact than the spec values, and checker B's click-outside path is inferred from props, not recorded."
+  },
+  {
+   "title": "Middle-click a tab to delete the list",
+   "trigger": "Middle mouse button click (auxclick, button 1) on a list tab",
+   "context": "Any tab",
+   "result": "Calls deleteList(list) immediately from this handler.",
+   "exact": [
+    {
+     "what": "Mouse button",
+     "value": "1 (middle)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:132-134",
+    "ListTabs.tsx:132-134 (onAuxClick, if (e.button === 1) void deleteList(list)), ListTabs.tsx:133 is the call. Button 1 is the middle button, as in the spec.",
+    "No reference records a middle-click (auxclick) on a tab; no relevant command in any meta.json. Button value 1 is not visible in any tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the middle-button handler in source. Checker B could not check because no middle-click is recorded."
+  },
+  {
+   "title": "Close button on each list tab",
+   "trigger": "Click the small close (X) button at the right of a tab",
+   "context": "Always visible on each tab, not gated by hover. B's recordings show it on every tab, including inactive ones.",
+   "result": "Stops the click from selecting the tab and calls deleteList(list).",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "close, size 15, weight 500, variant danger"
+    },
+    {
+     "what": "Tooltip",
+     "value": "Delete list"
+    },
+    {
+     "what": "Button box (B)",
+     "value": "IconButton icon=\"close\" iconSize=15 iconWeight=500 variant=\"danger\" title=\"Delete list\" 21x21"
+    },
+    {
+     "what": "Button positions in main-default (B)",
+     "value": "@280,11; @380,11; @475,11"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:235-247",
+    "state:main-default tree.txt lines 15, 18, 21",
+    "state:main-default shot.png",
+    "ListTabs.tsx:235-247 (span wrapper, IconButton icon=\"close\" iconSize={15} iconWeight={500} variant=\"danger\" title=\"Delete list\", onClick with e.stopPropagation() then deleteList(list)). No hover gating on the button (no group-hover class in lines 236-246), so it is always visible. The 21x21 size and the button positions (B) are not in source and were not checked.",
+    "main-default/tree.txt:15,18,21 (IconButton icon=\"close\" iconSize=15 iconWeight=500 variant=\"danger\" title=\"Delete list\" at @280,11, @380,11, @475,11, each 21x21); :16,19,22 (Icon name=\"close\" size=15 weight=500); main-default/shot.png shows a close X on each tab including inactive Reading and Garden; list-switch-3/tree.txt:15,18,21 and narrow-window/tree.txt:15,18,21 show the same buttons. Click/stopPropagation behaviour is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B's recordings show no deletion or confirmation state, so the delete action is not observed.",
+   "id": "F02-052",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed the 21x21 size and positions from the trees, which checker A could not check from source. The click and stopPropagation behaviour is source-only."
+  },
+  {
+   "title": "Drag a tab to reorder it",
+   "trigger": "Drag a list tab and drop it on another tab",
+   "context": "Any tab except the one being dragged; the dragged tab fades while dragging",
+   "result": "Dropping on a tab moves the dragged tab before or after the drop target. Before is used when the cursor is in the left half of the target; after otherwise. A drop indicator bar appears in the separator at the chosen spot.",
+   "exact": [
+    {
+     "what": "Drag MIME type",
+     "value": "application/x-list-tab"
+    },
+    {
+     "what": "Drop position rule",
+     "value": "before when clientX < left + width/2"
+    },
+    {
+     "what": "Dragged tab opacity",
+     "value": "opacity-40"
+    },
+    {
+     "what": "Drop indicator classes",
+     "value": "bg-accent-500l / dark:bg-accent-500d h-6 w-1 rounded-full"
+    },
+    {
+     "what": "Drag effect",
+     "value": "move"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:22",
+    "main/src/components/ListTabs.tsx:136-145",
+    "main/src/components/ListTabs.tsx:146-168",
+    "main/src/components/ListTabs.tsx:173-189",
+    "main/src/components/ListTabs.tsx:113-127",
+    "main/src/components/ListTabs.tsx:194",
+    "ListTabs.tsx:22 (TAB_MIME = 'application/x-list-tab'), ListTabs.tsx:138 (effectAllowed 'move'), ListTabs.tsx:150/157 (dropEffect 'move'), ListTabs.tsx:161 (before = e.clientX < r.left + r.width / 2), ListTabs.tsx:194 (draggingTab === list.id && 'opacity-40'), ListTabs.tsx:124-125 (separator drop indicator 'bg-accent-500l dark:bg-accent-500d h-6 w-1 rounded-full'), ListTabs.tsx:154 (no drop on the dragged tab itself), ListTabs.tsx:187 (reorder with over?.before ?? true).",
+    "No reference records a drag (no drag-related props or commands in any tree or meta.json). Drag MIME type, opacity-40, drop indicator classes are not visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-053",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the drag behaviour in source. Checker B found no drag recording."
+  },
+  {
+   "title": "Drag a tab to the end of the strip",
+   "trigger": "Drag a list tab over the empty area right of the last tab and drop",
+   "context": "Only when there is at least one list and the dragged tab is not the last one",
+   "result": "Moves the dragged tab after the last tab. The trailing separator lights as a drop indicator while hovered.",
+   "exact": [
+    {
+     "what": "Trailing separator drop indicator",
+     "value": "bg-accent-500l dark:bg-accent-500d h-6 w-1 rounded-full"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:252-292",
+    "ListTabs.tsx:252-292 (trailing drop zone; onDragOver condition at 257-261 requires lists exist via the wrapper at 252, the tab type, draggingTab != null and draggingTab !== last.id; onDrop at 268-276 calls reorder(tabId, last.id, false)). Trailing separator classes at ListTabs.tsx:280-288 include 'bg-accent-500l dark:bg-accent-500d h-6 w-1 rounded-full'.",
+    "No reference records a drag to the end of the strip. The empty area right of the tabs exists in main-default/tree.txt:13 (ListTabs 857 wide, last add button at @518,10 ending near x 543), but no drag is shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-054",
+   "edge_cases": [
+    "The drop zone is the trailing separator wrapper directly right of the last tab (ListTabs.tsx:253-266), not the empty strip after the New list button; the empty strip (ListTabs.tsx:303) has no drop handler.",
+    "The trailing separator also lights when the last tab is the drop target with before=false (ListTabs.tsx:284-287)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A corrected the drop zone to the trailing separator wrapper. Checker B found no drag recording."
+  },
+  {
+   "title": "Drop a task onto a tab",
+   "trigger": "Drag a task over a list tab and drop it",
+   "context": "Drag carries the task MIME type application/x-task",
+   "result": "The tab highlights with a selection background while hovered. Dropping one task moves it into that list (actMove with null parent). Dropping multiple tasks moves the whole set via dropSetOnRoot.",
+   "exact": [
+    {
+     "what": "Task MIME type",
+     "value": "application/x-task"
+    },
+    {
+     "what": "Hover highlight classes",
+     "value": "bg-selection-1l / dark:bg-selection-1d"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:13-16",
+    "main/src/components/ListTabs.tsx:54-57",
+    "main/src/components/ListTabs.tsx:146-151",
+    "main/src/components/ListTabs.tsx:173-184",
+    "main/src/components/ListTabs.tsx:193",
+    "ListTabs.tsx:148 (types.includes('application/x-task')), ListTabs.tsx:151 (setDropOver), ListTabs.tsx:193 ('bg-selection-1l dark:bg-selection-1d'), ListTabs.tsx:55 (dropTask: actMove(taskId, null, listId)), ListTabs.tsx:57 (dropTaskSet: actDropSetOnRoot), ListTabs.tsx:179-184 (multiple → dropTaskSet, one → dropTask). The MIME literal is at line 148; the spec's cited range 13-16 is the import block.",
+    "No reference records a task drag onto a tab or the hover highlight (no drag state in any meta.json or tree)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-055",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the task-drop path in source. Checker B found no drag state in the recordings."
+  },
+  {
+   "title": "Drop highlight clears when the drag leaves a tab",
+   "trigger": "Drag a task or tab away from a tab without dropping",
+   "context": "Drag over a tab",
+   "result": "The hover highlight and drop indicator for that tab are removed.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ListTabs.tsx:169-172",
+    "main/src/components/ListTabs.tsx:141-145",
+    "ListTabs.tsx:169-172 (onDragLeave clears dropOver and tabOver for this tab), ListTabs.tsx:141-145 (onDragEnd clears draggingTab, tabOver and tabOverEnd), ListTabs.tsx:267 (trailing drop zone onDragLeave clears tabOverEnd). The spec's exact list is empty, which matches.",
+    "No reference records a drag leaving a tab; exact list is empty and no drag state is visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the empty exact list and the drag-leave clearing in source. Checker B found no drag recording."
+  },
+  {
+   "title": "New list button at the end of the tabs",
+   "trigger": "Click the plus (add) button after the tabs (B's recording infers the action from the IconButton; no creation state is recorded)",
+   "context": "Always shown in the tab strip. B's recordings show it right of the tabs in every state, including no-lists.",
+   "result": "Calls createList(). The new list is created through the commands layer; its default name comes from the caller, outside this area.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "add, size 18, weight 300"
+    },
+    {
+     "what": "Size",
+     "value": "lg"
+    },
+    {
+     "what": "Tooltip",
+     "value": "New list"
+    },
+    {
+     "what": "Classes",
+     "value": "my-auto ml-2 rounded-md"
+    },
+    {
+     "what": "Button box (B)",
+     "value": "IconButton icon=\"add\" iconSize=18 iconWeight=300 size=\"lg\" className=\"my-auto ml-2 rounded-md\" title=\"New list\" 25x25"
+    },
+    {
+     "what": "Positions (B)",
+     "value": "@218,10 (no lists), @491,10 (2 tabs), @518,10 (3 tabs)"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:293-301",
+    "state:no-lists tree.txt line 14",
+    "state:project-launch tree.txt line 12",
+    "state:main-default tree.txt line 23",
+    "state:narrow-window tree.txt line 23",
+    "state:narrow-window shot.png",
+    "ListTabs.tsx:293-301 (IconButton icon=\"add\" iconSize={18} iconWeight={300} size=\"lg\" onClick={() => void createList()} className=\"my-auto ml-2 rounded-md\" title=\"New list\"). Always rendered, no lists-based condition (ListTabs.tsx:293 is outside the lists.length check at 252). createList imported at ListTabs.tsx:7. The pixel positions (B) were not checked.",
+    "main-default/tree.txt:23-24 (IconButton icon=\"add\" iconSize=18 iconWeight=300 size=\"lg\" onClick=ƒ className=\"my-auto ml-2 rounded-md\" title=\"New list\" @518,10 25x25; Icon name=\"add\" size=18 weight=300); no-lists/tree.txt:14 (@218,10 25x25, zero tabs); project-launch/tree.txt:12 (@491,10, 2 tabs); narrow-window/tree.txt:23 (@518,10). No creation command appears in any meta.json, so the createList() call is not shown and the click is inferred, as the feature says."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "In the narrow-window state B's tree places the button at @518,10 but its screenshot does not clearly show a plus in the tab bar. B also records that the button follows the last tab after a 14px gap rather than sitting at the far right (see List tab bar layout).",
+   "id": "F02-057",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker A confirmed the button is always rendered. Checker B confirmed the positions from the trees. The createList click is inferred, not recorded."
+  },
+  {
+   "title": "Tab strip scrolls horizontally with a hidden scrollbar",
+   "trigger": "Scroll horizontally (wheel or trackpad) when tabs overflow",
+   "context": "Many lists in one project",
+   "result": "The strip scrolls sideways when tabs overflow; no scrollbar is shown.",
+   "exact": [
+    {
+     "what": "Strip classes",
+     "value": "overflow-x-auto [&::-webkit-scrollbar]:hidden"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:95-99",
+    "ListTabs.tsx:95-97 (overflow-x-auto [&::-webkit-scrollbar]:hidden). The strip class matches the spec.",
+    "No reference has overflowing tabs (no many-lists project; all trees show at most three tabs) and no scroll gesture. overflow-x-auto and the hidden scrollbar class are not visible."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-058",
+   "edge_cases": [
+    "The scrollbar is hidden only through the ::-webkit-scrollbar selector, so engines without that pseudo-element would still show a scrollbar. The target is WebKit (macOS), so this is a caveat only.",
+    "No wheel handler is present in ListTabs.tsx; a vertical wheel does not scroll the strip sideways unless the input device sends horizontal deltas."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A matched the strip class in source. Checker B found no overflowing tab recording."
+  },
+  {
+   "title": "Empty strip to the right of the tabs drags the window",
+   "trigger": "Press and drag on the empty area to the right of the tabs and the New list button",
+   "context": "Always present in the tab strip",
+   "result": "Dragging the empty area to the right of the tabs and the New list button moves the window, because the trailing span (ListTabs.tsx:303) carries data-tauri-drag-region. The strip wrapper itself is marked data-no-drag (ListTabs.tsx:96-99), not as a drag region.",
+   "exact": [
+    {
+     "what": "Strip classes",
+     "value": "min-w-6 flex-1 self-stretch"
+    }
+   ],
+   "sources": [
+    "main/src/components/ListTabs.tsx:302-303",
+    "ListTabs.tsx:302-303 (span data-tauri-drag-region with classes 'min-w-6 flex-1 self-stretch'). The strip wrapper at ListTabs.tsx:96-99 carries data-no-drag, not a drag region. TitleBar.tsx:42 gives the header data-tauri-drag-region.",
+    "The empty strip is present geometrically (main-default/tree.txt:13 ListTabs 857 wide; buttons end near x 543) but no drag gesture or window move is recorded, and min-w-6 flex-1 self-stretch classes are not exposed in the tree."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-059",
+   "edge_cases": [
+    "The header double-click handler toggles maximize only when the event target itself has data-tauri-drag-region (TitleBar.tsx:43-45).",
+    "Whether a drag starts from a span nested inside a data-no-drag ancestor depends on Tauri's runtime behaviour, which was not checked."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A corrected the result: the trailing span is the drag region, not the strip. Checker B saw the empty strip geometry but recorded no drag."
+  },
+  {
+   "title": "Title-bar pieces are excluded from window dragging",
+   "trigger": "none (applies to pill, tabs and dropdown)",
+   "context": "Title bar. data-no-drag is set on the project switcher (ProjectSwitcher.tsx:29), the list tab strip (ListTabs.tsx:98), and the window control clusters (WindowControls.tsx:105, 164, 220).",
+   "result": "The project switcher and tab strip carry the data-no-drag attribute (ProjectSwitcher.tsx:29, ListTabs.tsx:98). In this repo the attribute has no reader; window dragging is set by data-tauri-drag-region only, so the claim that data-no-drag stops window drags is not evidenced in these files.",
+   "exact": [
+    {
+     "what": "Attribute",
+     "value": "data-no-drag"
+    }
+   ],
+   "sources": [
+    "main/src/components/ProjectSwitcher.tsx:29",
+    "main/src/components/ListTabs.tsx:98",
+    "ProjectSwitcher.tsx:29 (data-no-drag on the root div) and ListTabs.tsx:98 (data-no-drag on the strip). The attribute also appears on WindowControls.tsx:105, 164 and 220, which the spec does not mention. A grep across ~/project/taskscape-tauri (excluding node_modules) for 'no-drag' found no handler that reads data-no-drag; the only drag-region attribute in these files is data-tauri-drag-region (TitleBar.tsx:42, TitleBar.tsx:52, ListTabs.tsx:303).",
+    "DOM attribute data-no-drag is not exposed in any tree (ProjectSwitcher and ListTabs props in main-default/tree.txt:10, :13 show no such attribute), and no drag gesture is recorded."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F02-060",
+   "edge_cases": [
+    "Elements in the tab strip are not drag regions themselves, so they do not start a window drag either way; the attribute's effect on Tauri's drag handling was not verified."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A found no reader for data-no-drag in the repo. Checker B could not see the DOM attribute in the trees."
+  },
+  {
+   "title": "Narrow window layout",
+   "trigger": "Resize the window to 820x640 (state name narrow-window; the resize itself is not recorded).",
+   "context": "Window at 820x640.",
+   "result": "The title bar stays 46px high. The right-side buttons move to x 717, 750 and 783. The list tabs bar is 497px wide. The task pane is 500px wide and 595px high. The preview panel keeps 319px width at x 501.",
+   "exact": [
+    {
+     "what": "App window",
+     "value": "820x640"
+    },
+    {
+     "what": "Split view button",
+     "value": "@717,8"
+    },
+    {
+     "what": "Hide preview button",
+     "value": "@750,8"
+    },
+    {
+     "what": "Settings button",
+     "value": "@783,8"
+    },
+    {
+     "what": "ListTabs",
+     "value": "@211,0 497x45"
+    },
+    {
+     "what": "TaskPane",
+     "value": "@0,46 500x595"
+    },
+    {
+     "what": "PreviewPanel",
+     "value": "@501,46 319x595"
+    }
+   ],
+   "sources": [
+    "state:narrow-window tree.txt lines 1-34",
+    "state:narrow-window shot.png",
+    "TitleBar.tsx:78-102 (button order: swap_horiz only when splitListId != null, then split button (vertical_split), preview toggle, Settings), TitleBar.tsx:41-48 (header height classes 'h-13' rather than an explicit 46px), ListTabs.tsx:96-99 (flex-1 min-w-0 strip). The pixel values (820x640 window, x 717/750/783, 497px, 500x595, 319px at x 501) are layout results and were not checked. No responsive breakpoint code was found in these files.",
+    "narrow-window/tree.txt:1 (App @0,0 820x640); :2 (TitleBar @0,0 820x46); :25 (Split view BarButton @717,8 28x28); :28 (Hide preview BarButton @750,8 28x28); :31 (Settings BarButton @783,8 28x28); :13 (ListTabs @211,0 497x45); :34 (TaskPane @0,46 500x595); :35 (InputWell 472 wide); :95 (PreviewPanel @501,46 319x595); narrow-window/shot.png shows the 820x640 window. The resize itself is not recorded in meta.json (no resize command), as the feature says."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The 46px title bar height conflicts with A's h-13 class (see the header double-click entry); B's measurement is kept as observed.",
+   "id": "F02-061",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the pixel values from the narrow-window tree. Checker A could not check them from source and found no responsive breakpoint code."
+  },
+  {
+   "title": "No-lists empty state in the title bar and pane",
+   "trigger": "State with no lists in the active project (fixture nolists).",
+   "context": "Home project with zero lists.",
+   "result": "The tab bar holds only the + New list button right after the project pill. The Split view button is disabled. The pane shows the empty state No lists yet with subtitle Create a list to start adding tasks. The preview panel still shows No task selected.",
+   "exact": [
+    {
+     "what": "Empty title",
+     "value": "No lists yet"
+    },
+    {
+     "what": "Empty subtitle",
+     "value": "Create a list to start adding tasks"
+    },
+    {
+     "what": "Empty background class",
+     "value": "bg-surface-2l dark:bg-surface-2d"
+    },
+    {
+     "what": "Add button",
+     "value": "@218,10"
+    },
+    {
+     "what": "Project pill",
+     "value": "@112,8 85x28"
+    }
+   ],
+   "sources": [
+    "state:no-lists tree.txt lines 10-25",
+    "state:no-lists shot.png",
+    "state:no-lists meta.json line 9 (fixture nolists)",
+    "App.tsx:95-104 (title 'No lists yet', subtitle 'Create a list to start adding tasks', the empty state with className 'bg-surface-2l dark:bg-surface-2d' at App.tsx:94). ListTabs.tsx:252 (trailing separator only when lists.length > 0), so with no lists the add button is directly after the project pill (ListTabs.tsx:293-301). TitleBar.tsx:88 (split button disabled={splitTarget == null}); splitTargetId is at commands/view.ts:9 and was not read. The pixel positions (@218,10, @112,8 85x28) and the 'No task selected' preview text were not checked.",
+    "no-lists/meta.json:9 (\"fixture\": \"nolists\"); no-lists/tree.txt:10 (ProjectSwitcher @112,8 85x28); :14 (IconButton add @218,10 25x25 as the only ListTabs child); :16 (Split view BarButton disabled=true, and :17 IconButton disabled=true); :25 (EmptyState className=\"bg-surface-2l dark:bg-surface-2d\" title=\"No lists yet\" subtitle=\"Create a list to start adding tasks\" @0,46 860x715); :30 (preview EmptyState title=\"No task selected\"); no-lists/shot.png shows the Home pill, the + button and the No lists yet text."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-062",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker A confirmed the empty-state text and the trailing-separator condition in source. Checker B confirmed the layout and disabled states in the no-lists recording."
+  },
+  {
+   "title": "Startup shows the window with Errands active on the Home project",
+   "trigger": "App launch (boot sequence).",
+   "context": "Standard fixture, light theme.",
+   "result": "After boot the window is revealed with Home selected in the pill and Errands as the active list. Commands in order include boot_done then reveal_main. Whether the last active list is remembered between launches is not shown.",
+   "exact": [
+    {
+     "what": "Startup commands",
+     "value": "boot_done, reveal_main (meta.json)"
+    },
+    {
+     "what": "Startup active list",
+     "value": "Errands"
+    },
+    {
+     "what": "Startup project",
+     "value": "Home"
+    }
+   ],
+   "sources": [
+    "state:main-default meta.json lines 31-33",
+    "state:main-default shot.png",
+    "api.ts:168 (revealMain → 'reveal_main'), api.ts:170 (bootDone → 'boot_done'). boot.ts:23 calls api.bootDone() inside dismissBoot(), and main.tsx:26-29 calls api.revealMain() in a double requestAnimationFrame. The call order between dismissBoot and the reveal is not fixed by these files, since dismissBoot's caller was not read. The default Home project and Errands active list were not checked (the Errands default is in the state, not in these files).",
+    "main-default/meta.json:32-33 (\"boot_done\", \"reveal_main\" as the last two entries; the feature's cited lines 31-33 include list_hotkeys at :31); main-default/meta.json:3 (\"theme\": \"light\"? no: \"theme\": \"light\" at line 11) and :12 (\"fixture\": \"standard\"); main-default/tree.txt:11 (ProjectSwitcher label, Home shown in main-default/shot.png); main-default/tree.txt:34 (TaskPane list={\"Errands\"}) and :14 (Errands primary). No reference shows whether the last list is remembered between launches."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F02-063",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A could not check the call order because dismissBoot's caller was not read. Checker B saw boot_done then reveal_main as the last two recorded commands and the Errands and Home defaults in the trees. Checker B's theme line in its evidence is a self-correction and was not used as a value. Whether the last list is remembered between launches is not recorded."
+  }
+ ]
+}

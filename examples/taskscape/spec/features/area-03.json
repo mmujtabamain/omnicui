@@ -1,0 +1,2545 @@
+{
+ "area": 3,
+ "name": "Task inspector and notes",
+ "tier": "high",
+ "counts": {
+  "A": 51,
+  "B": 43,
+  "critic_issues": 28,
+  "merged": 73
+ },
+ "dropped": [
+  {
+   "title": "Copy task button in the inspector (B)",
+   "reason": "Wrong: B presumed it duplicates the task. The source copies the markdown render (title plus notes) to the clipboard, swaps to check and Copied for 1200 ms, and falls back to the plain title (TaskInspector.tsx:245-256, 361-365). Replaced by the A entry Copy task button copies markdown and shows confirmation."
+  },
+  {
+   "title": "Created and Updated timestamps (B)",
+   "reason": "Duplicate of the header metadata entry, which is merged there. B's claim that the full date is an accessible label is wrong; the source uses a title tooltip (TaskInspector.tsx:320-323, 332-335). B's observed strings and example date are kept in the merged entry notes."
+  },
+  {
+   "title": "Breadcrumb line under the title (B)",
+   "reason": "Duplicate of Header metadata lines: project / list, created and updated; merged there with the observed strings."
+  },
+  {
+   "title": "Inspector title is an editable textarea (B)",
+   "reason": "Duplicate of Click title to start renaming in place; the textarea box and colour are merged into that entry, and the recorded font is kept as a conflict note."
+  },
+  {
+   "title": "Mark done checkbox in the inspector (B)",
+   "reason": "Duplicate of Inspector header done checkbox; merged. The strike-through difference is kept as its own entry."
+  },
+  {
+   "title": "Close panel button in the inspector (B)",
+   "reason": "Duplicate of Close panel button; B's presumed effect is settled by the source (setPreviewOpen(false)). Recorded box kept in the A entry notes."
+  },
+  {
+   "title": "Rename button in the inspector (B)",
+   "reason": "Duplicate of Pencil button starts rename; B's presumed effect is settled by the source (starts in-place title edit). Recorded box kept in notes."
+  },
+  {
+   "title": "Delete task button in the inspector (B)",
+   "reason": "Duplicate of Delete task button; B's presumed effect is settled by the source (requestDeleteTask). Recorded box and empty SheetHost and Toast note kept in notes."
+  },
+  {
+   "title": "Notes section header and count (B)",
+   "reason": "Duplicate of Notes section header and count (A); B's uppercase label styling and count values are merged into the entry."
+  },
+  {
+   "title": "Add note header button (+ Note) (B)",
+   "reason": "Duplicate of Add note from header Note button (A); B's recorded geometry and visible text are merged into it."
+  },
+  {
+   "title": "Empty Notes state: dashed Add note box (B)",
+   "reason": "Duplicate of Empty-state Add note dashed button (A); B's recorded geometry is merged."
+  },
+  {
+   "title": "Delete note button on a note card (B)",
+   "reason": "Duplicate of Note delete button on hover (A); B's recorded boxes and tooltip are merged into it. B's hover guess is settled by A's group-hover mechanism."
+  },
+  {
+   "title": "Note editor change, blur and save hooks (B)",
+   "reason": "Settled by the source and duplicated by Saved note is its own editor with debounced autosave and Blurring a saved note flushes its change. The prop names onSave, onChange, onBlur and onEmptied are kept in the notes of the autosave entry."
+  },
+  {
+   "title": "Mentions open from notes (B)",
+   "reason": "Duplicate of Clicking an attachment chip opens it; the critique confirms the handler (RichTextEditor.tsx:301-306, TaskInspector.tsx:106-113)."
+  },
+  {
+   "title": "Add link in the note toolbar (B)",
+   "reason": "Duplicate of Add link toolbar button (A), which has the exact prompt and tooltip values."
+  },
+  {
+   "title": "Subtasks section in the inspector (B)",
+   "reason": "Duplicate of Subtasks section and progress count (A); B's recorded count examples and label style are merged into it."
+  },
+  {
+   "title": "Subtask done checkbox in the inspector (B)",
+   "reason": "Duplicate of Subtask rows: checkbox, title and nesting (A); B's recorded checkbox size and check icon are merged there."
+  },
+  {
+   "title": "Done subtask title styling (B)",
+   "reason": "Duplicate of Subtask rows: checkbox, title and nesting; B's done and not-done class strings are merged there."
+  },
+  {
+   "title": "Subtask title is a button (B)",
+   "reason": "Duplicate of Subtask rows: checkbox, title and nesting; the effect is settled by the source (selectTask with the subtask id, TaskInspector.tsx:49-54)."
+  },
+  {
+   "title": "Formatting tools and tooltips in the note toolbar (B)",
+   "reason": "Duplicate of Formatting toolbar buttons (A); both list the same tools and tooltips. B's ordering and shortcut note are merged there."
+  },
+  {
+   "title": "Character counter in the note toolbar (B)",
+   "reason": "Duplicate of Character counter in the toolbar (A); B's 37/2000 recording is merged there."
+  },
+  {
+   "title": "Floating formatting toolbar appears above the note being edited (B)",
+   "reason": "Duplicate of Floating formatting toolbar appears on focus (A); B's recorded positions are merged there."
+  }
+ ],
+ "features": [
+  {
+   "title": "Preview panel routes what it shows from the focused pane's selection",
+   "trigger": "none (observed when selection changes in the focused list pane)",
+   "context": "The single-task inspector is chosen from selectionStore.selectedTaskId (PreviewPanel.tsx:16-19, task lookup at 17-19), not from the focused pane's selection set. The focused pane's selection set (focusSelIds, lines 23-26) drives only the multi-selection branch (selectionTasks.length > 1, line 44).",
+   "result": "Selection count > 1 shows MultiInspector; a single selected task shows TaskInspector (keyed by task id, so it remounts per task); a draft list shows DraftInspector; otherwise an empty state appears.",
+   "exact": [
+    {
+     "what": "empty state icon",
+     "value": "left_click"
+    },
+    {
+     "what": "empty state icon size",
+     "value": "28"
+    },
+    {
+     "what": "empty state title",
+     "value": "No task selected"
+    },
+    {
+     "what": "empty state subtitle",
+     "value": "Select a task to inspect it"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/PreviewPanel.tsx:44-57",
+    "main/src/components/preview/PreviewPanel.tsx:28-40",
+    "main/src/components/preview/PreviewPanel.tsx:16-57",
+    "main/src/components/preview/PreviewPanel.tsx:16-19, 28-40, 44-57. Empty-state values match exactly (left_click, iconSize 28, 'No task selected', 'Select a task to inspect it'). Multi-selection ordering via flattenVisible with appended picked ids matches lines 28-38.",
+    "None of the nine folders shows an empty state, multi-selection, or draft inspector. Only the single-task TaskInspector branch appears (state:inspector-notes tree.txt line 79). The empty-state icon, size 28, title 'No task selected', subtitle, and the flattenVisible ordering are unverifiable from these recordings."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Multi-selection order follows visual order via flattenVisible; picked ids that no longer flatten into view are appended."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "Critique confirmed the routing (PreviewPanel.tsx:16-57, 30-40, 51-56). The content of MultiInspector and DraftInspector is not described by either solution and is unverified; their files are outside the allowed sources and no recording covers a multi-selection or draft state.",
+   "id": "F03-001",
+   "check": "corrected",
+   "check_notes": "Checker A found the empty-state values exact in source and corrected the context of the single-task inspector selection. Checker B could not check any of this because no recording shows the empty or multi-selection state."
+  },
+  {
+   "title": "Inspector shows the selected task",
+   "trigger": "Click a task row in the list (inferred from state names such as row-selected and subtask-selected; no click is recorded)",
+   "context": "Preview panel visible on the right; one list row selected",
+   "result": "The right panel (TaskInspector) shows the selected task: title, breadcrumb, Created/Updated lines, then Notes, then Subtasks (only if the task has subtasks), then Attachments. The content swaps to the newly selected task. Task titles observed: Rewrite the hero section, Post the parcel to Mum, Book bike service, Buy groceries for the week, Sourdough loaf.",
+   "exact": [
+    {
+     "what": "Panel frame",
+     "value": "x 861, y 46, 319x715"
+    },
+    {
+     "what": "Panel content left inset",
+     "value": "content starts at x 873 (12px inset)"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree line 79)",
+    "state:done-row-selected (tree line 96)",
+    "state:subtask-selected (tree line 96)",
+    "TaskInspector.tsx:259-461 confirms section order: header with title, project/list line, Created and Updated lines (259-344), then Notes (378-441), then Subtasks only when children.length > 0 (443), then AttachmentSection (461). Panel frame coordinates (861,46 319x715), the 12px inset and the list of observed task titles are layout or recording values not in the files I was allowed to open.",
+    "state:inspector-notes tree.txt line 78: PreviewPanel @861,46 319x715; line 80: Checkbox @873,60 so content starts 12px in. TaskInspector lines: 79 (Rewrite the hero section), 96 in done-row-selected (Post the parcel to Mum), row-selected (Book bike service), row-with-subtasks-selected (Buy groceries for the week), subtask-selected (Sourdough loaf). All five titles observed. Section order matches: header/Created-Updated, Notes (inspector-notes line 94), Subtasks (inspector-notes line 139, absent in done-row-selected lines 112-116), Attachments (line 149). Breadcrumb 'Spring launch / Website' is visible in inspector-notes shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-002",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the panel frame, 12px inset, five observed titles and section order from recordings. Checker A confirmed section order in source but could not check the layout values, so this is confirmed by one checker."
+  },
+  {
+   "title": "Selecting a subtask shows the subtask in the inspector without a Subtasks section",
+   "trigger": "Click the subtask's title text (a Label rendered as a button, TaskInspector.tsx:51-53, onClick selectTask). The row container itself has no click handler; the checkbox on the same row toggles done instead (TaskInspector.tsx:45-50).",
+   "context": "Parent task Buy groceries for the week is expanded; subtask row is highlighted",
+   "result": "Inspector title becomes Sourdough loaf; breadcrumb reads Home / Errands (the parent task name is not shown); Notes shows the empty Add note box; there is no SUBTASKS header; Attachments section is present. The parent row is no longer highlighted.",
+   "exact": [
+    {
+     "what": "Breadcrumb text",
+     "value": "Home / Errands"
+    }
+   ],
+   "sources": [
+    "state:subtask-selected (tree lines 96, 111-115; no SectionHeader Subtasks)",
+    "state:subtask-selected shot.png",
+    "main/src/components/preview/TaskInspector.tsx:37-64 (SubtaskRow). The row div (41-44) has no onClick. The title is a Label as=\"button\" with onClick={() => selectTask(task.id)} (51-53). The checkbox (45-50) toggles done instead. Inspector without a Subtasks section: children.length > 0 gate at line 443. Notes empty box: DashedButton at 431-438. Attachments present at 461. The breadcrumb text 'Home / Errands' is a recording value; the code renders project name then '/ {listName}' (309-318).",
+    "state:subtask-selected tree.txt line 96 shows task 'Sourdough loaf'. Line 100 folder label is 34px wide (Home), matching the elements.json span 'Home' at 34px and '/ Errands' span in done-row-selected elements.json. subtask-selected shot.png shows breadcrumb 'Home / Errands', dashed '+ Add note' box, Attachments section, no SUBTASKS header, Sourdough loaf highlighted and Buy groceries not highlighted. Tree lines 111-115 have no Subtasks SectionHeader. The click trigger is not recorded (meta.json lists only commands), as the claim itself says."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-003",
+   "check": "corrected",
+   "check_notes": "Checker B's recordings confirm the displayed subtask inspector state, but the click trigger is not recorded. Source (checker A) shows only the title label is clickable, so the trigger is corrected to the title text."
+  },
+  {
+   "title": "Inspector header done checkbox",
+   "trigger": "click the large checkbox beside the task title (B: click the checkbox to the left of the inspector title)",
+   "context": "Single task inspector open; any selected task",
+   "result": "Toggles the task's done state via actToggleDone. Not done: empty square with tooltip Mark done. Done: blue filled square with white check icon and tooltip Mark not done.",
+   "exact": [
+    {
+     "what": "checkbox size",
+     "value": "md"
+    },
+    {
+     "what": "tooltip when not done",
+     "value": "Mark done"
+    },
+    {
+     "what": "tooltip when done",
+     "value": "Mark not done"
+    },
+    {
+     "what": "checkbox size and position (recorded)",
+     "value": "md, 18x18 at 873,60"
+    },
+    {
+     "what": "checked fill (recorded)",
+     "value": "oklch(0.62 0.13 255)"
+    },
+    {
+     "what": "checked check icon (recorded)",
+     "value": "check, size 14, weight 700, color oklch(0.99 0.005 255)"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:263-271",
+    "state:done-row-selected (tree lines 97-98; elements.json checkbox entry aria-checked=true)",
+    "state:inspector-notes (tree line 80)",
+    "TaskInspector.tsx:263-271: Checkbox size=\"md\", title 'Mark not done' when done and 'Mark done' when not (line 268), onClick actToggleDone(task) (269). Recorded geometry (18x18 at 873,60), oklch fills and check icon size 14/weight 700 are not in code I could open; not verified. Whether the Checkbox 'title' prop renders as a tooltip is in common-ui components, not opened.",
+    "state:inspector-notes tree.txt line 80: Checkbox checked=false size=md title='Mark done' @873,60 18x18. state:done-row-selected tree.txt lines 97-98: checked=true size=md title='Mark not done', Icon check size=14 weight=700 @875,61. done-row-selected elements.json checkbox entry: box [873,60,18,18], bg oklch(0.62 0.13 255), check color oklch(0.99 0.005 255), aria-checked=true. done-row-selected shot.png shows blue filled square with white check."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F03-004",
+   "check": "confirmed_by_both",
+   "check_notes": "Source (A) gives the title strings and toggle handler; recordings (B) give the 18x18 geometry, check icon size 14 and weight 700, and fills. The tooltip rendering was not verified by A."
+  },
+  {
+   "title": "Inspector title is not struck through when the task is done",
+   "trigger": "none (observed when a task is done and selected)",
+   "context": "Single task inspector open on a done task",
+   "result": "The inspector title is not struck through when the task is done, while the list row title is struck through. The title textarea has no done or line-through condition in its classes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:275-302",
+    "state:done-row-selected (tree lines 97-98)",
+    "TaskInspector.tsx:297-301: the title textarea className has no done or line-through condition; only editingTitle adds classes. The list-row strike-through is not in these files.",
+    "state:done-row-selected shot.png: inspector title 'Post the parcel to Mum' is not struck through while the list row of the same title is struck through. done-row-selected elements.json textarea entry has font '600 18px/21px' and no decoration recorded. Textarea classes are not in tree.txt."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Confirmed by critique: no line-through class is applied to the inspector title.",
+   "id": "F03-005",
+   "check": "confirmed_by_both",
+   "check_notes": "Source and recording agree that the inspector title is never struck through for a done task."
+  },
+  {
+   "title": "Click title to start renaming in place",
+   "trigger": "single click on the title text area",
+   "context": "Title not currently being edited (textarea is readOnly then)",
+   "result": "Title becomes editable in the same field; draft is reset to the current title, the field is focused and its whole text is selected. Cursor over title is a text cursor. The title is a textarea element and renders as wrapped text (for example Rewrite the hero section on two lines and Buy groceries for the week on two lines).",
+   "exact": [
+    {
+     "what": "title placeholder when empty",
+     "value": "Untitled"
+    },
+    {
+     "what": "title font size / leading / weight",
+     "value": "text-[18px] leading-6 font-semibold (font-display)"
+    },
+    {
+     "what": "spellcheck",
+     "value": "off"
+    },
+    {
+     "what": "title element (recorded)",
+     "value": "textarea box 894,58 246x21"
+    },
+    {
+     "what": "title font (recorded)",
+     "value": "600 18px/21px"
+    },
+    {
+     "what": "title color (recorded)",
+     "value": "oklch(0.26 0.012 262)"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:275-302",
+    "main/src/components/preview/TaskInspector.tsx:283-285",
+    "main/src/components/preview/TaskInspector.tsx:229-234",
+    "state:done-row-selected (elements.json textarea entry)",
+    "state:inspector-notes shot.png",
+    "TaskInspector.tsx:275-285 (readOnly={!editingTitle}, placeholder 'Untitled' at 280, spellCheck={false} at 278, onClick starts edit); 194-197 startTitleEdit sets draft to task.title; 229-234 focus() and select(); 298 classes include cursor-text, text-[18px] leading-6 font-semibold font-display and wrapped textarea. Uncertain: the recorded line height 21px (spec 'recorded 600 18px/21px') differs from the class leading-6; the theme that resolves leading-6 was not opened, so the recorded value is not reconciled.",
+    "state:done-row-selected elements.json textarea entry: box [894,58,246,21], font '600 18px/21px', color oklch(0.26 0.012 262) all match the claim. Wrapping on two lines is visible in state:inspector-notes shot.png ('Rewrite the hero section') and state:row-with-subtasks-selected shot.png ('Buy groceries for the / week'). Not observable: placeholder 'Untitled', spellcheck off, text cursor, and the click-to-edit behaviour (no editing state is recorded in any of the nine folders)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflict: the source sets text-[18px] leading-6 (24px line height), while B recorded 600 18px/21px. Critique treats the 21px as a screenshot-scale inconsistency (the 21px buttons show the same scaling); the source value is kept in exact. The source confirms that a click on the textarea starts editing.",
+   "id": "F03-006",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the recorded font, box and colour. Checker A confirmed the editing-related source. Unreconciled: the class leading-6 in source versus the recorded 21px line height; the theme was not opened."
+  },
+  {
+   "title": "Editing title visual state",
+   "trigger": "none (observed while the title is being edited)",
+   "context": "editingTitle is true",
+   "result": "The title field gets a surface fill and a 2px same-colour ring (halo) so it looks like a field without shifting layout; display and edit share the same height.",
+   "exact": [
+    {
+     "what": "ring width",
+     "value": "ring-2"
+    },
+    {
+     "what": "fill light/dark",
+     "value": "bg-surface-0l / bg-surface-0d"
+    },
+    {
+     "what": "ring light/dark",
+     "value": "ring-surface-0l / ring-surface-0d"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:297-301",
+    "main/src/components/preview/TaskInspector.tsx:236-243",
+    "TaskInspector.tsx:297-301: editingTitle && 'bg-surface-0l dark:bg-surface-0d ring-surface-0l dark:ring-surface-0d ring-2'.",
+    "No recording among the nine folders has editingTitle true. The title is never shown in an editing state, so ring-2, bg-surface-0l/0d and ring-surface-0l/0d cannot be checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-007",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only; no recording shows the editing state."
+  },
+  {
+   "title": "Title field grows to fit wrapped text",
+   "trigger": "none (observed when title text or draft changes)",
+   "context": "Any title change, draft typing, or edit toggle",
+   "result": "The textarea height is reset to auto and set to its scrollHeight, so long titles wrap and expand.",
+   "exact": [
+    {
+     "what": "textarea rows",
+     "value": "1"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:238-243",
+    "main/src/components/preview/TaskInspector.tsx:276-277",
+    "TaskInspector.tsx:238-243: style.height='auto' then scrollHeight px; deps [task.title, titleDraft, editingTitle] (243) match the context. rows={1} at line 277.",
+    "The textarea rows=1 value does not appear in tree.txt or elements.json. Growth of the title to two lines is visible in the shots (inspector-notes and row-with-subtasks-selected), but the auto/scrollHeight height logic cannot be checked from these recordings."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Source confirms the auto-height logic; recordings show two-line wrapping but not the mechanism."
+  },
+  {
+   "title": "Enter commits the title rename",
+   "trigger": "press Enter in the title field",
+   "context": "Title editing active",
+   "result": "Default prevented (no newline); commitTitle runs and editing ends.",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Enter"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:287-291",
+    "TaskInspector.tsx:287-291: key 'Enter' calls preventDefault() then commitTitle().",
+    "Enter-key behaviour in the title field is not captured. No recording shows title editing active (meta.json for each folder lists only commands, no key events)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-009",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only."
+  },
+  {
+   "title": "Escape cancels the title rename",
+   "trigger": "press Escape in the title field",
+   "context": "Title editing active",
+   "result": "Draft is reset to the saved task title and editing ends without saving.",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Escape"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:292-295",
+    "TaskInspector.tsx:292-295: key 'Escape' sets draft back to task.title and setEditingTitle(false); no updateTask call.",
+    "Escape-key behaviour in the title field is not captured in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only."
+  },
+  {
+   "title": "Blur commits the title rename",
+   "trigger": "click or tab away from the title field",
+   "context": "Title editing active",
+   "result": "Commits the same way as Enter. Commit only happens when the trimmed draft is non-empty and differs from the current title; an empty or unchanged draft reverts to the saved title. Successful commit calls updateTask with the trimmed title.",
+   "exact": [
+    {
+     "what": "trim",
+     "value": "String.trim applied to draft"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:199-205",
+    "main/src/components/preview/TaskInspector.tsx:286",
+    "TaskInspector.tsx:286 onBlur={commitTitle}; 199-205: returns if not editing; t = titleDraft.trim() (201); updateTask(task.id, { title: t }) only if t && t !== task.title (202); otherwise draft reset to task.title (203). No message is shown.",
+    "Blur-commit behaviour and trim/empty-revert rules are not captured in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Blurring with an empty title silently restores the previous title; no message is shown."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-011",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only."
+  },
+  {
+   "title": "Rename requested from elsewhere opens the title editor",
+   "trigger": "Rename request from a task row, F2 or Enter (routed through uiStore titleEditReq); the inspector opens editing for the matching task",
+   "context": "The requested task is the one shown in the inspector",
+   "result": "Title enters edit mode with the draft set to the task title and the focus/select effect runs; the request token is then cleared so it does not refire on later reselection. Also, the sending helper beginTitleEdit (commands/tasks.ts:85-90) first selects the task and opens the preview panel (setPreviewOpen(true)) before requesting the title edit.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:207-218",
+    "main/src/components/preview/TaskInspector.tsx:229-234",
+    "TaskInspector.tsx:207-218 (render-time setTitleDraft/setEditingTitle when titleEditReq.id matches; effect calls clearTitleEditReq) and 229-234 focus/select. The sender exists: main/src/commands/tasks.ts:85-90 beginTitleEdit focuses the row, calls setPreviewOpen(true) and requestTitleEdit(id). The F2/Enter key mapping is only in the code comment at TaskInspector.tsx:207; the key binding was not opened.",
+    "Rename request routed via titleEditReq is not captured. No recording shows the title editor opening from a row or from F2/Enter."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The trigger keys (F2/Enter from row) are stated only in a code comment (TaskInspector.tsx:207); the key binding itself was not opened."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-012",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the result to include the beginTitleEdit helper behaviour. Checker B could not check the rename request path, so the trigger keys remain unverified in code and recordings."
+  },
+  {
+   "title": "Pencil button starts rename",
+   "trigger": "click the edit icon button in the inspector header",
+   "context": "Single task inspector open",
+   "result": "Starts in-place title editing (same as clicking the title).",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "edit"
+    },
+    {
+     "what": "icon size",
+     "value": "15"
+    },
+    {
+     "what": "icon weight",
+     "value": "300"
+    },
+    {
+     "what": "tooltip",
+     "value": "Rename"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:353-359",
+    "TaskInspector.tsx:353-359: IconButton icon=\"edit\", iconSize={15}, iconWeight={300}, onClick=startTitleEdit, title=\"Rename\".",
+    "state:inspector-notes tree.txt lines 88-89: IconButton icon='edit' iconSize=15 iconWeight=300 title='Rename' @1150,77 21x21; Icon name='edit' size=15 weight=300. The click result (starting title edit) is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded the Rename button at 21x21 at 1150,77 (icon edit, size 15, weight 300); the effect was not recorded there. Critique confirms Rename starts in-place title edit (TaskInspector.tsx:353-359).",
+   "id": "F03-013",
+   "check": "confirmed_by_both",
+   "check_notes": "Icon, size, weight and title agree in source and recording. The click result is source-only."
+  },
+  {
+   "title": "Close panel button",
+   "trigger": "click the last_page icon button at the top of the inspector",
+   "context": "Single task inspector open",
+   "result": "Hides the preview panel (setPreviewOpen false).",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "last_page"
+    },
+    {
+     "what": "icon size",
+     "value": "16"
+    },
+    {
+     "what": "tooltip",
+     "value": "Close panel"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:347-352",
+    "TaskInspector.tsx:347-352: icon last_page, iconSize 16, onClick setPreviewOpen(false), title 'Close panel'.",
+    "state:inspector-notes tree.txt lines 86-87: IconButton icon='last_page' iconSize=16 title='Close panel' @1150,54; Icon name='last_page' size=16. The setPreviewOpen(false) result is source-only; the preview-hidden state (state:preview-hidden tree.txt) is consistent but the click is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded the button at 21x21 at 1150,54 (icon last_page, size 16).",
+   "id": "F03-014",
+   "check": "confirmed_by_both",
+   "check_notes": "Button properties agree; the close action itself is source-only."
+  },
+  {
+   "title": "Copy task button copies markdown and shows confirmation",
+   "trigger": "click the content_copy icon button in the inspector header",
+   "context": "Single task inspector open; available in both states",
+   "result": "Requests the backend markdown render of the task (title plus its notes) and writes it to the clipboard. On success the icon becomes check and the tooltip becomes Copied for 1.2 seconds, then reverts. If the render is empty the plain task title is copied instead. Clipboard failures are silently ignored.",
+   "exact": [
+    {
+     "what": "icon idle",
+     "value": "content_copy"
+    },
+    {
+     "what": "icon after copy",
+     "value": "check"
+    },
+    {
+     "what": "tooltip idle",
+     "value": "Copy task"
+    },
+    {
+     "what": "tooltip after copy",
+     "value": "Copied"
+    },
+    {
+     "what": "confirmation duration",
+     "value": "1200 ms"
+    },
+    {
+     "what": "icon size",
+     "value": "15"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:245-256",
+    "main/src/components/preview/TaskInspector.tsx:361-365",
+    "TaskInspector.tsx:245-256: api.copyTasks([task.id]) (249), navigator.clipboard.writeText(md || task.title) (250), setCopied(true) (251), setTimeout(...,1200) (252), catch ignores errors (253-255). Button at 360-365: icon copied ? 'check' : 'content_copy' (361), size 15 (362), title copied ? 'Copied' : 'Copy task' (364). Comment at 246: title and all its notes travel together.",
+    "Idle values confirmed: state:inspector-notes tree.txt lines 90-91 IconButton icon='content_copy' iconSize=15 title='Copy task'; Icon content_copy size=15. The post-copy icon 'check', tooltip 'Copied', the 1200 ms duration, and the clipboard write are not in any of the nine folders' trees or meta.json commands."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B recorded the button at 21x21 at 1150,100 (icon content_copy, size 15); B's presumed duplicate behaviour is wrong per critique.",
+   "id": "F03-015",
+   "edge_cases": [
+    "Each click starts its own 1200 ms reset timer and the timer is not cleared on unmount (TaskInspector.tsx:252), so rapid clicks or a switch of task within 1.2 s can reset the copied state later than expected."
+   ],
+   "check": "corrected",
+   "check_notes": "Idle icon and title match in both sources. Post-copy state is source-only. Checker A added the timer edge case."
+  },
+  {
+   "title": "Delete task button",
+   "trigger": "click the delete icon button in the inspector header",
+   "context": "Single task inspector open",
+   "result": "Calls requestDeleteTask for this task (the confirmation flow lives in the commands module, not in these files).",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "delete"
+    },
+    {
+     "what": "icon size",
+     "value": "15"
+    },
+    {
+     "what": "variant",
+     "value": "danger"
+    },
+    {
+     "what": "tooltip",
+     "value": "Delete task"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:366-372",
+    "TaskInspector.tsx:366-372: icon 'delete', iconSize 15, variant 'danger', onClick requestDeleteTask(task) (imported from commands/tasks, line 13), title 'Delete task'.",
+    "state:inspector-notes tree.txt lines 92-93: IconButton icon='delete' iconSize=15 variant='danger' title='Delete task' @1150,123; Icon name='delete' size=15. The requestDeleteTask call is source-only and not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded the button at 21x21 at 1150,123 and noted that SheetHost and Toast are empty in all recorded states, so no confirmation was recorded.",
+   "id": "F03-016",
+   "check": "confirmed_by_both",
+   "check_notes": "Properties agree; the delete request is source-only."
+  },
+  {
+   "title": "Header metadata lines: project / list, created and updated",
+   "trigger": "none (observed)",
+   "context": "Single task inspector open",
+   "result": "Shows a folder line with the project name (or an em dash when unknown) followed by / and the list name when present; then Created <relative time> and Updated <relative time>. Hovering the created or updated line shows the absolute date and time as a tooltip.",
+   "exact": [
+    {
+     "what": "project fallback",
+     "value": "—"
+    },
+    {
+     "what": "folder icon",
+     "value": "folder_open"
+    },
+    {
+     "what": "created icon",
+     "value": "schedule"
+    },
+    {
+     "what": "updated icon",
+     "value": "update"
+    },
+    {
+     "what": "icon size / weight",
+     "value": "13 / 300"
+    },
+    {
+     "what": "created text",
+     "value": "Created {relativeTime}"
+    },
+    {
+     "what": "updated text",
+     "value": "Updated {relativeTime}"
+    },
+    {
+     "what": "text size",
+     "value": "11.5px, tabular-nums"
+    },
+    {
+     "what": "text font (recorded)",
+     "value": "400 11.5px/17.25px"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:303-344",
+    "main/src/components/preview/TaskInspector.tsx:80-82",
+    "main/src/components/preview/TaskInspector.tsx:320-323",
+    "main/src/components/preview/TaskInspector.tsx:332-335",
+    "state:inspector-notes (tree lines 81-85)",
+    "state:done-row-selected (elements.json Created 6d ago and Updated 6d ago entries)",
+    "TaskInspector.tsx:303-344: folder_open icon size 13 weight 300 (309-313); projectName ?? '—' (316); '/ {listName}' only when listName (318); schedule icon (324-328) with 'Created {relativeTime(task.created_at)}' (330); update icon (336-340) with 'Updated {relativeTime(task.updated_at)}' (342); title=absoluteDateTime(...) on the created and updated spans (322, 334); text-[11.5px] tabular-nums (306). The recorded 400 11.5px/17.25px is not verified. Source lines 80-82 confirmed.",
+    "Confirmed: state:inspector-notes tree.txt lines 82-85 (folder_open, schedule, update, size 13, weight 300, text-[11.5px] tabular-nums at line 81). state:done-row-selected elements.json: 'Home' + '/ Errands' spans, 'Created 6d ago' and 'Updated 6d ago' at font '400 11.5px/17.25px', with aria label 'Nov 7, 2026, 9:00 AM'. Not verified: the em-dash project fallback, since every folder has a project name."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Recorded observed strings: Spring launch / Website and Home / Errands (breadcrumb, project name in secondary tone, slash and list name muted, folder_open icon size 13 weight 300); relative ages observed: 6d ago, 5d ago, 4d ago, 1w ago (Created 1w ago; Updated 1w ago; Created 6d ago; Updated 6d ago; Created 5d ago; Created 4d ago). Full date seen as a hover tooltip for a task shown as 6d ago: Nov 7, 2026, 9:00 AM. Critique: the full date is a title tooltip, not an accessible label.",
+   "id": "F03-017",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the source structure. Checker B's recordings show the 400 11.5px/17.25px font and the aria date, which A had not verified. The em-dash fallback is untested by either checker."
+  },
+  {
+   "title": "Accent tick marks the inspector as receiving the selection",
+   "trigger": "none (observed on mount)",
+   "context": "Single task inspector open",
+   "result": "A thin accent-coloured bar sits at the left edge of the header, and the inspector fades/rises in on mount.",
+   "exact": [
+    {
+     "what": "bar size",
+     "value": "h-4 w-0.5 at left-0, top-4.75 (absolute)"
+    },
+    {
+     "what": "entry animation class",
+     "value": "animate-rise (on the inspector root div, TaskInspector.tsx:259, not on the bar)"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:259-262",
+    "TaskInspector.tsx:259 root div has class 'animate-rise flex min-h-0 flex-1 flex-col'; 262 span 'bg-accent-500l dark:bg-accent-500d absolute top-4.75 left-0 h-4 w-0.5'.",
+    "A blue tick at the header's left edge is visible in state:inspector-notes shot.png and state:subtask-selected shot.png. The h-4 w-0.5 size and animate-rise class do not appear in tree.txt or elements.json, and the mount animation cannot be seen in a static shot."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-018",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the animation class location to the root div. Checker B saw the blue tick in screenshots only."
+  },
+  {
+   "title": "Hide preview panel toggle (title bar)",
+   "trigger": "Click the title bar toggle button (TitleBar.tsx:93-96), or press the toggle_preview hotkey (useAppKeyboard.ts:81-83; catalog entry hotkeys.rs:353-356). The default key is documented as ⌘\\ in .plans/done.qol-improvements.md:112, which is a plan doc, not code.",
+   "context": "Preview panel visible; toggle is active (filled icon)",
+   "result": "The preview panel and its resizer are removed and the task list fills the window (see the next feature). The button icon becomes right_panel_open and its tooltip changes to Show preview panel.",
+   "exact": [
+    {
+     "what": "Tooltip text as shown in tree prop",
+     "value": "Hide preview panel  ⌘\\\\ (two spaces before the symbol; tree prop shows two backslash characters)"
+    },
+    {
+     "what": "Button",
+     "value": "BarButton 28x28 at 1110,8; icon right_panel_close, filled=true, active=true"
+    },
+    {
+     "what": "Button position order",
+     "value": "Split view at 1077, toggle at 1110, Settings at 1143"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 25-26)",
+    "state:done-row-selected (tree lines 28-29)",
+    "main/src/components/TitleBar.tsx:92-97: icon right_panel_close when open, right_panel_open when hidden; active={previewOpen}; title is `${previewOpen ? 'Hide' : 'Show'} preview panel${hint('toggle_preview')}`; onClick togglePreview(). Keyboard binding: main/src/hooks/useAppKeyboard.ts:81-83 (pressed('toggle_preview') then togglePreview). Command id/label: common/src/hotkeys.rs:353-356 (id toggle_preview, label 'Toggle preview'). The ⌘\\ text is produced by hint() and was not opened, so the literal two-space string is not verified. 28x28 at 1110,8 not verifiable.",
+    "state:inspector-notes tree.txt lines 25-26 and state:done-row-selected lines 28-29: BarButton 1110,8 28x28, icon right_panel_close active=true filled=true; button order Split view 1077, toggle 1110, Settings 1143 confirmed. The tooltip is 'Hide preview panel  ⌘\\' with two spaces, which matches. The backslash count is wrong: state:done-row-selected elements.json line 1 writes the label as \"Hide preview panel  ⌘\\\\\" in valid JSON, which decodes to ONE backslash. tree.txt uses the same escaped form, so the actual string is one backslash character."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-019",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the trigger to include the title bar button and the hotkey. Checker B reports the tooltip has one backslash after JSON decoding, but checker A did not open hint(), so the code does not settle the backslash count; left unresolved and not added to corrections. Button geometry and icon confirmed by B; not verifiable by A."
+  },
+  {
+   "title": "Show preview panel toggle (panel hidden)",
+   "trigger": "Click the title bar toggle button (TitleBar.tsx:96 onClick togglePreview), or press the toggle_preview hotkey (useAppKeyboard.ts:81-83). Presumed-only wording in the spec is now confirmed by code.",
+   "context": "Preview panel hidden",
+   "result": "Button shows the hidden-state icon and tooltip. The panel reappearing on click is not recorded; only the hidden state is recorded.",
+   "exact": [
+    {
+     "what": "Tooltip text as shown in tree prop",
+     "value": "Show preview panel  ⌘\\\\ (two spaces before the symbol)"
+    },
+    {
+     "what": "Icon",
+     "value": "right_panel_open, filled=false, active=false"
+    }
+   ],
+   "sources": [
+    "state:preview-hidden (tree lines 28-29)",
+    "state:preview-hidden shot.png",
+    "TitleBar.tsx:92-97 (same button; tooltip 'Show preview panel' + hint('toggle_preview') when hidden; icon right_panel_open). useAppKeyboard.ts:81-83 also toggles on the hotkey. Two-space separator is produced by hint(), not verified.",
+    "state:preview-hidden tree.txt lines 28-29: BarButton icon='right_panel_open' active=false title='Show preview panel  ⌘\\\\' (two spaces); IconButton filled=false active=false. Icon and state match. Same escaping issue as F03-019: elements.json encodes backslashes as two characters in valid JSON, so the label holds one backslash. The panel-reappearing click is not recorded, as the claim says."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-020",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the trigger to the title bar button and hotkey. Checker B's backslash-count correction is the same unresolved point as F03-019 (hint() not opened by A). Icon and hidden state confirmed by B."
+  },
+  {
+   "title": "Layout when the preview panel is hidden",
+   "trigger": "Hide preview panel toggle (state name preview-hidden)",
+   "context": "Panel hidden and the Trash view and Filter view both closed. When trashOpen or filterOpen is true, the preview column and Resizer still render even with previewOpen false (App.tsx:108-110).",
+   "result": "Task pane spans the full window width (1180px). Search field widens to 1053px with its options button at x 1104 and New task button at x 1136. Rows widen to 1180px and the status bar spreads across the full width (progress bar at x 1051, percent label at x 1140). No Resizer and no PreviewPanel appear in the tree.",
+   "exact": [
+    {
+     "what": "Task pane",
+     "value": "0,46 1180x715"
+    },
+    {
+     "what": "Search input",
+     "value": "46,63 1053x21"
+    },
+    {
+     "what": "Progress bar",
+     "value": "1051,743 84x4"
+    }
+   ],
+   "sources": [
+    "state:preview-hidden (tree lines 34-37, 44-93)",
+    "state:preview-hidden shot.png",
+    "main/src/App.tsx:108-110: the Resizer and the preview column render when (previewOpen || trashOpen || filterOpen). Pixel values (1180, 1053, 1104, 1136, 1051, 1140) are recording values not verified.",
+    "state:preview-hidden tree.txt line 34: TaskPane @0,46 1180x715. Line 37: TextInput2 @46,63 1053x21. Line 38: ScopeFields @1104,63. Line 42: New task IconButton @1136,63. Line 44: TaskRow2 1180x46. Line 92: ProgressBar @1051,743 84x4. Line 93: percent Label @1140,737. No Resizer or PreviewPanel in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-021",
+   "check": "corrected",
+   "check_notes": "Checker B's recording confirms the hidden layout with Trash and Filter closed. Checker A's correction adds the Trash and Filter cases that the recording did not cover."
+  },
+  {
+   "title": "Preview panel width and resizer",
+   "trigger": "Drag the resizer strip at x 860 (onResize prop; drag behaviour inferred)",
+   "context": "Preview panel visible",
+   "result": "Panel is 319px wide in the recording, filling x 861 to 1180. Stored default width is 320 (layoutStore.ts:71), kept in localStorage key 'ui.previewW' (layoutStore.ts:165). The Resizer is also shown while the Trash or Filter view is open with the panel otherwise hidden (App.tsx:108-110).",
+   "exact": [
+    {
+     "what": "Default stored width",
+     "value": "320 (layoutStore.ts:71, key 'ui.previewW')"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 77-78)",
+    "App.tsx:108-110 (Resizer rendered when previewOpen || trashOpen || filterOpen; onResize at 110-111). main/src/stores/layoutStore.ts:71: previewW default num('ui.previewW', 320), persisted to localStorage key 'ui.previewW' (setPreviewW at 164-166). Min and max widths are not in the opened files.",
+    "state:inspector-notes tree.txt line 77: Resizer onResize=ƒ @860,46 4x715. Line 78: PreviewPanel @861,46 319x715. 861+319=1180, matching App 1180 width (line 1). Drag behaviour and min/max are not recorded, as the claim says."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-022",
+   "check": "corrected",
+   "check_notes": "Recording (B) gives the 319px rendered width from x 861 to 1180 with the Resizer at 860. Source (A) gives the stored default of 320. The rendered width and stored default are different values for different things; both are kept."
+  },
+  {
+   "title": "Persistence of the hidden preview panel",
+   "trigger": "none recorded",
+   "context": "Across app launches",
+   "result": "The hidden state is saved on each change to browser localStorage under key 'ui.preview' ('0' when hidden, '1' when shown) and is read back on startup, defaulting to shown when the key is absent or not '0' (layoutStore.ts:70, 159-161). The recording only shows get_setting calls and no set_setting; the persistence is via localStorage, not the backend settings command.",
+   "exact": [
+    {
+     "what": "Storage key",
+     "value": "ui.preview (values '1' / '0')"
+    }
+   ],
+   "sources": [
+    "state:preview-hidden (meta.json commands)",
+    "main/src/stores/layoutStore.ts:70: previewOpen initial value = localStorage.getItem('ui.preview') !== '0' (so default open). setPreviewOpen at 159-161 writes localStorage 'ui.preview' as '1' or '0'. This is local storage, not set_setting, so the recording's missing set_setting call does not mean the state is not saved.",
+    "state:preview-hidden meta.json lines 11-30: no set_setting entry, so the 'no set_setting' statement holds. The listed names are the de-duplicated set of the 20 recorded calls, not the full recorded list, which has duplicates."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-023",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed no set_setting call in the recording and noted that meta.json lists de-duplicated names. Checker A's source shows persistence through localStorage rather than the backend settings command, which the corrections reflect."
+  },
+  {
+   "title": "Notes section header and count",
+   "trigger": "none (observed)",
+   "context": "Task has at least one note",
+   "result": "Header labelled Notes shows the note count, followed by a Note toolbar button. The count is absent when the task has no notes.",
+   "exact": [
+    {
+     "what": "section label",
+     "value": "Notes"
+    },
+    {
+     "what": "count style",
+     "value": "11px, tabular-nums, muted"
+    },
+    {
+     "what": "button icon / size",
+     "value": "add / 14"
+    },
+    {
+     "what": "button label",
+     "value": "Note"
+    },
+    {
+     "what": "button tooltip",
+     "value": "Add note"
+    },
+    {
+     "what": "label style (recorded)",
+     "value": "NOTES; 10.5px, weight semibold, tracking 0.12em, uppercase, muted"
+    },
+    {
+     "what": "count observed",
+     "value": "2 in inspector-notes, 1 in row-with-subtasks-selected"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:378-398",
+    "state:inspector-notes (tree lines 94-96; shot.png shows NOTES 2)",
+    "state:row-with-subtasks-selected (tree lines 111-113)",
+    "TaskInspector.tsx:378-398: SectionHeader label 'Notes' (380); trailing shown only when notes.length > 0 (382); count Label text-[11px] tabular-nums muted (384); ToolbarButton icon 'add', iconSize 14 (388-389), title 'Add note' (391), children 'Note' (393). Label style (10.5px, tracking, uppercase) lives in SectionHeader, not opened.",
+    "state:inspector-notes tree.txt lines 94-96 and shot.png: 'Notes' label, count '2' (Label @1094,184), then ToolbarButton icon add size 14 title 'Add note' @1104,180 64x25. state:row-with-subtasks-selected shot.png shows count '1'. state:done-row-selected tree.txt line 112: SectionHeader label='Notes' with no trailing element, so the count and the + Note toolbar button are both absent when there are no notes. Label style (line 95 class text-[10.5px] tracking-[0.12em] uppercase; semibold; muted) and count style (text-[11px] tabular-nums, line 96) match. Icon add size 14 (line 98) matches."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Critique: the count and Note button appear only when notes exist (TaskInspector.tsx:378-398 SectionHeader). The uppercase label and hairline rule come from SectionHeader, outside the allowed sources.",
+   "id": "F03-024",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B's verdict was 'corrected' but it gave no concrete correction, and its evidence matches the source values (trailing only with notes, count style, add icon size 14). No value conflict, so treated as confirmed by both. Label style was checked only against the recording's class string, not SectionHeader source."
+  },
+  {
+   "title": "Add note from header Note button",
+   "trigger": "click the Note toolbar button (tooltip Add note) in the Notes header",
+   "context": "Task has notes",
+   "result": "Opens a new note editor at the bottom of the notes list.",
+   "exact": [
+    {
+     "what": "button geometry (recorded)",
+     "value": "ToolbarButton 64x25 at 1104,180; icon add size 14"
+    },
+    {
+     "what": "visible text (recorded)",
+     "value": "+ Note"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:387-394",
+    "state:inspector-notes (tree lines 97-98; shot.png)",
+    "state:row-with-subtasks-selected (tree lines 114-115)",
+    "TaskInspector.tsx:387-394: ToolbarButton onClick setAddingNote(true) (390). The new editor renders after the notes map (401-439), i.e. at the bottom of the list. Geometry 64x25 at 1104,180 is a recording value, not verified.",
+    "state:inspector-notes tree.txt lines 97-98: ToolbarButton icon='add' iconSize=14 title='Add note' @1104,180 64x25; Icon add size=14 @1111,185. inspector-notes shot.png and row-with-subtasks-selected shot.png show visible text '+ Note'. Opening the editor is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F03-025",
+   "check": "confirmed_by_both",
+   "check_notes": "Toolbar properties agree; the click that opens the editor is source-only and the bottom placement is not in any recording."
+  },
+  {
+   "title": "Empty-state Add note dashed button",
+   "trigger": "click the dashed Add note button",
+   "context": "Task has no notes and no editor is open",
+   "result": "Opens the new note editor. The header shows only the NOTES label (no count, no + Note button) in this state.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Add note"
+    },
+    {
+     "what": "icon / size",
+     "value": "add / 16"
+    },
+    {
+     "what": "size",
+     "value": "h-24 w-full, font-semibold"
+    },
+    {
+     "what": "box (recorded)",
+     "value": "DashedButton, 295x84 at 873,181"
+    },
+    {
+     "what": "icon position (recorded)",
+     "value": "add, size 16, at 975,215"
+    },
+    {
+     "what": "text (recorded)",
+     "value": "font 600 14px/21px; radius 7px; background oklch(1 0 0) in light state"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:431-438",
+    "state:done-row-selected (tree lines 111-115; elements.json add Add note entry)",
+    "state:row-selected (tree lines 111-114)",
+    "state:subtask-selected (tree lines 111-114)",
+    "TaskInspector.tsx:431-438: when notes.length === 0 and no editor open, DashedButton onClick setAddingNote(true), className 'h-24 w-full font-semibold', Icon name 'add' size 16, text 'Add note'. Trailing header is undefined when no notes (382, 396), so only the NOTES label shows.",
+    "state:done-row-selected tree.txt lines 112-115: SectionHeader Notes with only the label (no count, no toolbar); DashedButton className='h-24 w-full font-semibold' @873,181 295x84; Icon add size=16 @975,215 16x16. done-row-selected elements.json entry 'add Add note': font '600 14px/21px', radius 7px, bg oklch(1 0 0), color oklch(0.62 0.013 264). Opening the editor is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Shown for tasks Post the parcel to Mum, Book bike service and Sourdough loaf in the recordings. Dark-mode state of this box is in the dark appearance feature.",
+   "id": "F03-026",
+   "check": "confirmed_by_both",
+   "check_notes": "Source and recording agree on the empty-state dashed button and label-only header. The click to open the editor is not recorded."
+  },
+  {
+   "title": "New note editor placeholder and focus",
+   "trigger": "none (appears after Add note)",
+   "context": "Add-note editor open",
+   "result": "Editor opens focused at the end and shows a placeholder until typed.",
+   "exact": [
+    {
+     "what": "placeholder",
+     "value": "Write a note ... (drop an attachment to @mention it)"
+    },
+    {
+     "what": "min height",
+     "value": "min-h-24"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:413-418",
+    "main/src/components/preview/RichTextEditorLazy.tsx:13-17",
+    "common-ui/src/RichTextEditor.tsx:250",
+    "TaskInspector.tsx:413-418: autoFocus; placeholder=\"Write a note ... (drop an attachment to @mention it)\" (417); minHeightClass=\"min-h-24\" (418). Focus at end: common-ui/src/RichTextEditor.tsx:250 (autofocus 'end'). Placeholder extension at common-ui RichTextEditor.tsx:246.",
+    "No recording has an add-note editor open, so the placeholder text, focus, and min-h-24 cannot be checked. min-h-24 appears only in the claim's sources, not in the trees."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only; no recording shows the add-note editor open."
+  },
+  {
+   "title": "New note is created on first keystroke and streams saves",
+   "trigger": "type into the new note editor",
+   "context": "Add-note editor open",
+   "result": "Each change restarts a 500 ms debounce, so the note is created on the backend after a 500 ms pause. A blur finishes the draft immediately only if the document still has focus (TaskInspector.tsx:428); if focus has left the window, blur does nothing and the pending 500 ms timer still creates the note. Later changes are sent as updates after the pause. Writes are serialized so creation can't double-fire.",
+   "exact": [
+    {
+     "what": "autosave debounce",
+     "value": "500 ms (AUTOSAVE_MS)"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:142-179",
+    "main/src/components/preview/TaskInspector.tsx:145-164",
+    "main/src/components/preview/TaskInspector.tsx:166-192",
+    "main/src/components/preview/noteEditing.ts:3-4",
+    "TaskInspector.tsx:142-179: addNoteSave serializes via addChain (166-171); scheduleAddNote sets window.setTimeout(..., AUTOSAVE_MS) (173-179) and clears the old timer each change. AUTOSAVE_MS = 500 at main/src/components/preview/noteEditing.ts:4. Blur path: TaskInspector.tsx:423-429 calls finishAddNote only when document.hasFocus() is true (428).",
+    "No recording has an add-note editor open, and no typing is recorded. The 500 ms AUTOSAVE_MS and create-on-first-keystroke behaviour cannot be checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Corrected per critique: creation is not immediate on the first keystroke. A's earlier wording said the first non-empty change creates the note; the source schedules it through scheduleAddNote (TaskInspector.tsx:166-179) and finishAddNote (TaskInspector.tsx:181-192) calls enqueueAddNote(true) right away.",
+   "id": "F03-028",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the result to describe the 500 ms debounce and the focus-gated blur path. Checker B could not check any of it since no add-note typing is recorded."
+  },
+  {
+   "title": "Blurring the new note editor finalizes it only while the window has focus",
+   "trigger": "click or tab away from the new note editor",
+   "context": "Add-note editor open",
+   "result": "If the document still has focus (clicked elsewhere in this window), the draft is finalized: the note is appended to the notes list and the editor closes. If focus left the window (for example the link sheet or switching apps), the editor stays open so the user can return to it.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:181-192",
+    "main/src/components/preview/TaskInspector.tsx:423-429",
+    "TaskInspector.tsx:423-429: onBlur calls finishAddNote only if document.hasFocus(). finishAddNote (181-192): clears timer, enqueues final save, setAddingNote(false) (188), appends the note with its content if created and html (189-190).",
+    "Blur-finalize behaviour on the new note editor is not recorded in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only."
+  },
+  {
+   "title": "Empty new note is discarded on blur",
+   "trigger": "clear the new note editor and blur it",
+   "context": "Add-note editor open",
+   "result": "If a backend note was already created and the content is now empty, that note is deleted. If nothing was created, nothing happens and the editor closes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:147-155",
+    "main/src/components/preview/TaskInspector.tsx:181-192",
+    "TaskInspector.tsx:145-155 (addNoteSave: when html is empty and final and addCreated exists, the backend note is deleted via api.deleteNote, and addCreated is cleared); 181-192 finishAddNote (setAddingNote(false) at 188; created is null so it is not appended); gate at 428 (document.hasFocus()).",
+    "Empty-note discard on blur is not recorded in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-030",
+   "edge_cases": [
+    "The discard only runs when the blur passes the document.hasFocus() gate (TaskInspector.tsx:428); if focus has left the window the editor stays open and nothing is deleted yet."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A added the focus-gate edge case. Checker B could not check the discard path."
+  },
+  {
+   "title": "Plain Enter in the add-note editor does not submit",
+   "trigger": "press Enter in the new note editor",
+   "context": "Add-note editor open; no onSubmit is passed by the inspector",
+   "result": "Enter inserts a new paragraph; the add-note editor is not submitted by Enter. The code comment describes plain Enter as submitting, but the inspector passes no onSubmit, so the submit branch does not run.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:413-430",
+    "common-ui/src/RichTextEditor.tsx:292-298",
+    "TaskInspector.tsx:413-430: the add-note RichTextEditor gets no onSubmit prop. In common-ui/src/RichTextEditor.tsx:292-298 the submit branch requires c.onSubmit, so it does not run and Enter falls through to ProseMirror, creating a new paragraph. The contradicting comment is at RichTextEditor.tsx:43-45 and 287-289.",
+    "Enter behaviour in the add-note editor is not recorded. The inspector tree passes onChange/onBlur but no onSubmit, but that is source wiring and no key event is captured."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "edge_cases": [
+    "Uncertain only because the default-submit comment conflicts with the wiring; the code path is clear."
+   ],
+   "id": "F03-031",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the missing onSubmit wiring in the recording tree, but no key event was captured. Checker A's source reading shows Enter creates a paragraph; a code comment contradicts this and was noted."
+  },
+  {
+   "title": "Saved note is its own editor with debounced autosave",
+   "trigger": "type into an existing note",
+   "context": "Note card shown in the Notes list",
+   "result": "Each change restarts a 500 ms timer; when it fires, the HTML is saved if it is non-empty and differs from the last saved version. The note content is not refetched, so the editor is not remounted.",
+   "exact": [
+    {
+     "what": "autosave debounce",
+     "value": "500 ms"
+    },
+    {
+     "what": "min height",
+     "value": "min-h-14"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/NoteCard.tsx:25-37",
+    "main/src/components/preview/NoteCard.tsx:52-64",
+    "main/src/components/preview/TaskInspector.tsx:115-120",
+    "main/src/components/preview/NoteCard.tsx:59-63",
+    "NoteCard.tsx:4 imports AUTOSAVE_MS (= 500, noteEditing.ts:4); NoteCard.tsx:59-62 onChange clears and restarts the timer with AUTOSAVE_MS; save() at 31-37 saves only when html is non-empty and differs from lastSaved; TaskInspector.tsx:118-120 saveNote calls api.updateNote without refetch (comment 115-117); minHeightClass 'min-h-14' at NoteCard.tsx:55.",
+    "NoteCard minHeightClass='min-h-14' is confirmed at state:note-editing tree.txt line 100 and state:inspector-notes line 100. The 500 ms debounce and save-if-changed behaviour are not visible in any recording (note-editing shot shows focus on the second note only)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "NoteCard and RichTextEditor carry onSave, onChange, onBlur and onEmptied props (recorded by B in the inspector-notes tree, lines 99-100). Critique settles their behaviour: onChange restarts the AUTOSAVE_MS timer, onSave runs when it fires, and blur flushes (see the blur entry). B's inferred autosave is confirmed by source.",
+   "id": "F03-032",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the save logic in source; checker B confirmed the min-h-14 class in the tree but not the debounce or save behaviour."
+  },
+  {
+   "title": "Blurring a saved note flushes its change",
+   "trigger": "click or tab away from a saved note's editor",
+   "context": "Note card editor focused",
+   "result": "Pending timer is cancelled. If the note is now empty and it had content before, the note is removed from the list and deleted on the backend with no confirmation. If non-empty, any unsaved change is saved immediately.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/NoteCard.tsx:39-48",
+    "main/src/components/preview/TaskInspector.tsx:122-126",
+    "NoteCard.tsx:39-48 flush(): clears timer; if html empty and lastSaved.current !== '' calls onEmptied(note.id), otherwise returns; non-empty calls save(). TaskInspector.tsx:122-126 discardNote removes from state and calls api.deleteNote with no confirmation (contrast removeNote at 128-140, which asks askConfirm).",
+    "Blur-flush behaviour and delete-on-empty for saved notes are not recorded in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source only."
+  },
+  {
+   "title": "Pending note autosave is dropped on unmount",
+   "trigger": "switch to another task within 500 ms of typing",
+   "context": "A note has a pending autosave timer",
+   "result": "The card's unmount cleanup clears the timer without calling save, so a change made in the last 500 ms may not be saved by the timer; whether blur on unmount saves it is not visible in these files.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/NoteCard.tsx:29",
+    "main/src/components/preview/TaskInspector.tsx:76-104",
+    "NoteCard.tsx:29: useEffect cleanup only calls window.clearTimeout(timer.current), no save. TaskInspector is keyed by task.id at main/src/components/preview/PreviewPanel.tsx:47, so switching tasks unmounts the card. Whether the editor's blur fires during teardown is not visible in these files.",
+    "Unmount-drop of a pending autosave is not recorded in any of the nine folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed in source that the cleanup clears the timer without saving; whether blur fires during teardown is not determined by either checker."
+  },
+  {
+   "title": "Note delete button on hover",
+   "trigger": "hover over a saved note; click the X at the top-right corner of the note card",
+   "context": "Note card shown; the X is opacity-0 until the card is hovered (group-hover/note). Visible on the focused note in the recording, not in the inspector-notes screenshot.",
+   "result": "A round close button fades in at the note's top-right corner; clicking it asks for confirmation before deleting. The icon turns the danger colour on hover.",
+   "exact": [
+    {
+     "what": "confirmation glyph",
+     "value": "delete_forever"
+    },
+    {
+     "what": "confirmation tone",
+     "value": "danger"
+    },
+    {
+     "what": "confirmation headline",
+     "value": "Delete note?"
+    },
+    {
+     "what": "confirmation detail",
+     "value": "Notes skip the Trash — this one is gone for good."
+    },
+    {
+     "what": "confirmation accept button",
+     "value": "Delete"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/NoteCard.tsx:65-73",
+    "state:inspector-notes (tree lines 117-118, 137-138)",
+    "state:note-editing (tree line 139; shot.png X at right of focused note)",
+    "NoteCard.tsx:51 group/note wrapper; 65-73 IconButton icon 'close', iconSize 14, iconWeight 400, variant 'plain', onClick onDelete, title 'Delete note', classes '-top-2 -right-2 rounded-full' and 'opacity-0 group-hover/note:opacity-100', hover:text-danger-500l. Confirmation is in TaskInspector.tsx:128-136.",
+    "Confirmed: state:inspector-notes tree.txt lines 117-118: IconButton icon='close' iconSize=14 iconWeight=400 variant='plain' title='Delete note' @1154,204 21x21; Icon close size=14 weight=400. Lines 137-138: same for note 2 @1154,329 21x21. note-editing shot.png shows the X at the top-right of the focused note only, matching the claim. The -top-2 -right-2 / rounded-full / opacity classes are in a truncated className in the tree, and the confirmation and hover-colour behaviour are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F03-035",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the confirmation dialog details from TaskInspector.tsx:128-136. Checker B confirmed the button icon, size, weight and title in recordings but did not check the confirmation."
+  },
+  {
+   "title": "Delete note confirmation",
+   "trigger": "click the Delete note button on a note",
+   "context": "Confirmation sheet shown",
+   "result": "Asks before deleting; accepting removes the note from the list and deletes it on the backend, then refreshes. Cancelling changes nothing. Notes skip the Trash.",
+   "exact": [
+    {
+     "what": "glyph",
+     "value": "delete_forever"
+    },
+    {
+     "what": "tone",
+     "value": "danger"
+    },
+    {
+     "what": "headline",
+     "value": "Delete note?"
+    },
+    {
+     "what": "detail",
+     "value": "Notes skip the Trash — this one is gone for good."
+    },
+    {
+     "what": "accept button",
+     "value": "Delete"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:128-140",
+    "main/src/components/preview/NoteCard.tsx:65-73",
+    "TaskInspector.tsx:128-140 (askConfirm glyph 'delete_forever', tone 'danger', headline 'Delete note?', detail 'Notes skip the Trash — this one is gone for good.', accept 'Delete'; cancel returns at :136; setNotes filter :137, api.deleteNote :138, refresh :139). NoteCard.tsx:65-73 (IconButton title 'Delete note', onClick onDelete, hover-only opacity classes).",
+    "Trigger matches: IconButton title='Delete note' on each NoteCard at spec/references/inspector-notes/tree.txt:117 and :137 (same in note-editing/tree.txt:118 and :139). No confirmation sheet is recorded in any state: SheetHost is empty at inspector-notes/tree.txt:163 and in every other tree.txt. Glyph, tone, headline, detail, accept button and the delete/refresh result are not shown by any recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-036",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B could only confirm the trigger (IconButton title 'Delete note' present on each NoteCard). The confirmation sheet content and the delete result are not recorded in any state. Checker A's code evidence stands."
+  },
+  {
+   "title": "Note list order",
+   "trigger": "none (observed)",
+   "context": "Notes list",
+   "result": "Notes appear in the order seeded from the task; a newly finished note is appended at the end.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:104",
+    "main/src/components/preview/TaskInspector.tsx:190",
+    "TaskInspector.tsx:104 (notes seeded from task.note_items), :190 (finished add-note appended with [...prev, ...]).",
+    "Observed order matches: note 1 ('Lead with the one-line promise...') then note 2 ('Ask design for two layouts by Friday.') at spec/references/inspector-notes/tree.txt:99 and :119, and in inspector-notes/shot.png. The append-at-end behaviour for a newly finished note is not recorded; no state finishes a note."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-037",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B saw the seeded order match (note 1 then note 2) in the tree and screenshot. No state finishes a note, so the append-at-end behaviour at TaskInspector.tsx:190 is not recorded."
+  },
+  {
+   "title": "Note cards stack with rich text",
+   "trigger": "none",
+   "context": "Task has notes",
+   "result": "Each note is a card 295px wide at x 873, showing its rich text. Cards stack with a gap of about 7px (first card y 211 to 329, second card from y 336). Card height follows content: the three-bullet note is 118px tall, the one-line note 51px tall. Text formatting shown: bold phrase, bullet list, paragraphs.",
+   "exact": [
+    {
+     "what": "Note 1 text",
+     "value": "Lead with the one-line promise, then three proof points. (bullets: Fast capture, Works offline, Keyboard first; bold: one-line promise)"
+    },
+    {
+     "what": "Note 2 text",
+     "value": "Ask design for two layouts by Friday."
+    },
+    {
+     "what": "Note 3 text (row-with-subtasks-selected)",
+     "value": "Check the cupboard before going."
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 99-100, 119-120; shot.png)",
+    "state:row-with-subtasks-selected (tree line 116)",
+    "Pixel geometry (295px, x 873, y 211/336, 118px/51px heights) and the note text are recorded state values; no such values exist in the listed source files. Uncertain: NoteCard.tsx:55 passes minHeightClass 'min-h-14' to the editor content (RichTextEditor.tsx:257-260), which would give a minimum content height of 56px at a 16px root, so a 51px one-line card is not obviously consistent with the code. Not changed.",
+    "Card boxes: spec/references/inspector-notes/tree.txt:99 NoteCard @873,211 295x118 (211 to 329); :119 NoteCard @873,336 295x51 (second card from 336, gap 7). row-with-subtasks-selected/tree.txt:116 NoteCard @873,211 295x51 with initialHtml '<p>Check the cupboard before going.</p>' (Note 3 matches). inspector-notes/tree.txt:120 initialHtml '<p>Ask design for two layouts by Friday.</p>' (Note 2 matches). inspector-notes/shot.png shows note 1 as 'Lead with the one-line promise, then three proof points.' with bold 'one-line promise' and bullets Fast capture, Works offline, Keyboard first. The tree truncates note 1 (tree.txt:100), so the full wording is confirmed from the screenshot only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-038",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded the card geometry (295x118 and 295x51) and the note text. Checker A did not verify these values and flagged a possible conflict: NoteCard.tsx:55 passes min-h-14 to the editor content, which gives a 56px minimum content height at a 16px root, and a 51px one-line card does not obviously fit that. Left open with no correction applied. A root font size difference is a plausible cause (unverified)."
+  },
+  {
+   "title": "Note card editor chrome and focused-note outline",
+   "trigger": "Focus a note (state note-editing; click into the note text)",
+   "context": "Note card focused; NoteCard does not pass wrapperClassName, so the default wrapper applies",
+   "result": "The editor uses the default inset-field chrome: a border, a surface-2 fill, and on focus-within an accent border and accent ring. The focused card (second note) shows a blue outline (about 2px, rounded) around the card. Other cards have no outline.",
+   "exact": [
+    {
+     "what": "Focused card box (recorded)",
+     "value": "873,336 to 1168,387 (approx)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:566-568",
+    "main/src/components/preview/NoteCard.tsx:52-64",
+    "state:note-editing (shot.png)",
+    "RichTextEditor.tsx:566-568 (default wrapper: border, bg-surface-2l, focus-within:border-accent-500l, focus-within:ring-accent-500l, focus-within:ring). NoteCard.tsx:52-64 passes no wrapperClassName. Note: the '2px' outline width is the sum of a 1px border and the 'ring' utility as recorded; the exact ring width is not stated in code.",
+    "note-editing/tree.txt:119: NoteCard @873,336 295x51, so the focused card spans x 873 to 1168 and y 336 to 387, matching the recorded box. note-editing/tree.txt:120-121: RichTextEditor props have no wrapperClassName, consistent with the claim. note-editing/shot.png shows a blue rounded outline around the second note only; the first note has none. Border, surface-2 fill and ring classes are not in the recording beyond the visible outline."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Critique: the default wrapper classes include focus-within:border-accent-500 and a focus ring (RichTextEditor.tsx:566-568). B's blue outline matches this default.",
+   "id": "F03-039",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers matched the default wrapper class set and the absence of wrapperClassName on NoteCard. The exact ring width is not stated in code (checker A), and the 2px outline is recorded only."
+  },
+  {
+   "title": "Typing @ opens the attachment mention popup",
+   "trigger": "type @ followed by optional text (no spaces or @ after it) in a note editor",
+   "context": "Task has attachments; caret is a collapsed selection",
+   "result": "A popup lists attachments whose name contains the query text (case-insensitive), at most 6 items. No popup appears when nothing matches or there are no attachments.",
+   "exact": [
+    {
+     "what": "match pattern",
+     "value": "/@([^@\\s]*)$/ on text before caret"
+    },
+    {
+     "what": "max results",
+     "value": "6"
+    },
+    {
+     "what": "popup size",
+     "value": "w-60, max-h-56, scrolls"
+    },
+    {
+     "what": "row icon size / weight",
+     "value": "15 / 300"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:170-177",
+    "common-ui/src/RichTextEditor.tsx:199-221",
+    "common-ui/src/RichTextEditor.tsx:598-630",
+    "RichTextEditor.tsx:199-221 (refreshMention; empty selection check :201; regex /@([^@\\s]*)$/ at :211 on text before caret, inline chips rendered as spaces :205-210), :170-177 (case-insensitive includes, slice(0,6), mentionOpen requires matches :177), :598-602 (w-60 max-h-56 overflow-y-auto), :620-625 (Icon size 15 weight 300).",
+    "No state shows a mention popup (see note-editing/shot.png and inspector-notes/shot.png). The context 'task has attachments' is supported: NoteCard attachments=[2] at inspector-notes/tree.txt:99. Match pattern, max 6, popup size and icon size/weight are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-040",
+   "check": "corrected",
+   "edge_cases": [
+    "The pattern does not require a space or line start before '@', so an '@' inside a word (for example 'me@x') also opens the popup.",
+    "Popup also requires attachments.length > 0 (RichTextEditor.tsx:201) and a collapsed selection; with a non-empty selection the popup closes."
+   ],
+   "check_notes": "Checker B recorded no mention popup state, so the popup behaviour is verified from code only. Checker B confirmed the context (NoteCard attachments=[2] at inspector-notes/tree.txt:99)."
+  },
+  {
+   "title": "Mention popup keyboard navigation",
+   "trigger": "ArrowDown / ArrowUp, Enter or Tab, Escape while the popup is open",
+   "context": "Mention popup open",
+   "result": "ArrowDown and ArrowUp move the highlight with wrap-around. Enter or Tab inserts the highlighted attachment. Escape closes only the popup (the editor stays open). These keys are consumed and do not insert text.",
+   "exact": [
+    {
+     "what": "keys",
+     "value": "ArrowDown, ArrowUp, Enter, Tab, Escape"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:262-286",
+    "common-ui/src/RichTextEditor.tsx:379-391",
+    "RichTextEditor.tsx:262-286 (handleKeyDown: ArrowDown/ArrowUp via moveMention, Enter/Tab via pickCurrent, Escape via closeMention returning true before onEscape at :283). Wrap-around at :384-386. Keys consumed by returning true. Composition guard at :263. Sources :379-391 wire cb.current.",
+    "No recorded state has the mention popup open, so ArrowDown, ArrowUp, Enter, Tab and Escape behaviour is not shown in any tree.txt or shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-041",
+   "check": "corrected",
+   "edge_cases": [
+    "Enter and Tab pick the highlighted row regardless of Shift or other modifiers (no modifier check at RichTextEditor.tsx:274-277), so Shift+Enter also picks while the popup is open.",
+    "While IME composition is active (event.isComposing) the handler returns false before any popup key is handled (RichTextEditor.tsx:263)."
+   ],
+   "check_notes": "Checker B recorded no state with the mention popup open, so the key handling is verified from code only."
+  },
+  {
+   "title": "Mention popup mouse behaviour and highlight",
+   "trigger": "hover a popup row; click (mousedown) a popup row",
+   "context": "Mention popup open",
+   "result": "Hover moves the highlight to that row. Mousedown picks the row and keeps editor focus (default prevented). The highlighted row uses the selection colour with primary text; others use secondary text.",
+   "exact": [
+    {
+     "what": "highlight classes",
+     "value": "bg-selection-1l dark:bg-selection-1d text-content-1l dark:text-content-1d"
+    },
+    {
+     "what": "other row text",
+     "value": "text-content-2l dark:text-content-2d"
+    },
+    {
+     "what": "row padding and text",
+     "value": "px-2.5 py-1.5, text-[13px], truncated name"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:603-628",
+    "RichTextEditor.tsx:603-628: onMouseDown preventDefault + pickMention (607-610), onMouseEnter sets index (611-613), classes 'bg-selection-1l dark:bg-selection-1d text-content-1l dark:text-content-1d' (616), 'text-content-2l dark:text-content-2d' (617), 'flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px]' (614), name in span.truncate (626).",
+    "No recorded state has the mention popup open; hover, mousedown, highlight classes and row padding are not shown in any tree.txt or shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-042",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded no state with the popup open, so hover, mousedown, highlight classes and row padding are verified from code only."
+  },
+  {
+   "title": "Picking a mention inserts a chip and a trailing space",
+   "trigger": "choose a popup row (Enter, Tab, or mousedown on the row; the row listens to onMouseDown, not click)",
+   "context": "Mention popup open",
+   "result": "The typed @query text is replaced with an attachment chip followed by a single space; the popup closes.",
+   "exact": [
+    {
+     "what": "inserted text after chip",
+     "value": "space"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:352-367",
+    "RichTextEditor.tsx:352-367 (pickMention: from = to - (query.length + 1) at :355, deleteRange and insertContent of chip plus text ' ' at :360-363, setMention(null) at :366). Pick triggers: Enter/Tab at :274-277; popup row picks on onMouseDown at :607-610, not on click.",
+    "No recording shows a chip inserted after picking a popup row; no note text in any tree.txt contains a chip or a trailing space after one."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-043",
+   "check": "corrected",
+   "edge_cases": [
+    "If no attachment matches the picked row (att undefined), the popup closes and nothing is inserted (RichTextEditor.tsx:353, :366)."
+   ],
+   "check_notes": "Checker B recorded no chip insertion in any state. The trigger correction comes from checker A's code evidence."
+  },
+  {
+   "title": "Attachment mention chip appearance and behaviour",
+   "trigger": "none (observed in note content)",
+   "context": "Note contains an @mention",
+   "result": "Rendered as an inline atomic chip showing @name. It cannot be typed into and deletes as one unit.",
+   "exact": [
+    {
+     "what": "chip text",
+     "value": "@{name}"
+    },
+    {
+     "what": "class",
+     "value": "att-chip"
+    },
+    {
+     "what": "contenteditable",
+     "value": "false"
+    },
+    {
+     "what": "stored attribute",
+     "value": "data-att"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:83-119",
+    "RichTextEditor.tsx:83-119: renderHTML 'span' with class 'att-chip' and contenteditable 'false' (:112-115), text `@${node.attrs.name}` (:116), attribute 'data-att' (:100), atom: true (:92), parseHTML span[data-att] (:106).",
+    "No note in any state contains an @mention chip: initialHtml values at inspector-notes/tree.txt:100,120 and row-with-subtasks-selected/tree.txt:117 are plain text or bold only. att-chip class, contenteditable and data-att are not visible in any recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-044",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B found no note with a mention chip in any state. The chip markup is verified from code only."
+  },
+  {
+   "title": "Clicking an attachment chip opens it",
+   "trigger": "click an @mention chip in a note",
+   "context": "Note editor showing a chip",
+   "result": "If the attachment is on the task, the attachment lightbox opens at its index. The remote-open fallback looks up the same name again, so it does not add a different outcome.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:301-306",
+    "main/src/components/preview/TaskInspector.tsx:106-113",
+    "RichTextEditor.tsx:301-306 (handleClickOn for the chip calls onOpenMention(node.attrs.name)). TaskInspector.tsx:106-113 (openMention: findIndex at :107 then setLightboxIndex at :108; fallback at :110-111 uses the same name predicate and calls api.openAttachment).",
+    "No recording shows a chip click or a lightbox opened from a note. SheetHost is empty in every tree.txt and no lightbox appears in any shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded that a mention opening was not observed; the critique confirms handleClickOn calls onOpenMention, which opens the lightbox at the attachment's index (TaskInspector.tsx:106-113).",
+   "id": "F03-045",
+   "check": "corrected",
+   "edge_cases": [
+    "The remote-open fallback (TaskInspector.tsx:110-111) uses the same predicate as findIndex, so it only runs when findIndex already returned -1 and find also returns undefined. In practice api.openAttachment is never reached from a chip click."
+   ],
+   "check_notes": "Checker B recorded no chip click and no lightbox opened from a note. The correction comes from checker A's code evidence."
+  },
+  {
+   "title": "Attachment lightbox from a note mention",
+   "trigger": "click a chip (see above)",
+   "context": "Attachment found on the task",
+   "result": "AttachmentLightbox opens showing the task's attachments at the chosen index; closing clears it; deleting an attachment closes it and refreshes; renaming refreshes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:468-480",
+    "TaskInspector.tsx:468-480 (AttachmentLightbox with attachments, index, onClose sets null :473, onDeleted sets null then refresh :474-477, onRenamed refresh :478).",
+    "No state shows AttachmentLightbox open. Every tree.txt ends with an empty SheetHost (inspector-notes/tree.txt:163) and no shot.png shows a lightbox."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-046",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded no state with AttachmentLightbox open. The props wiring is verified from code only."
+  },
+  {
+   "title": "Dragging an attachment into a note inserts a chip",
+   "trigger": "drag an attachment from the attachment list onto a note editor and release",
+   "context": "Drag data carries the attachment MIME type",
+   "result": "The drop position becomes a mention chip followed by a space; the drop is accepted only for the attachment MIME type. Unrelated drags are not prevented.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:308-337",
+    "RichTextEditor.tsx:308-328 (handleDrop: getData(ATTACHMENT_MIME), returns false without preventDefault if empty; otherwise insertContentAt chip then text ' ' at :322-325), :330-336 (dragover preventDefault only when dataTransfer.types includes ATTACHMENT_MIME).",
+    "No recording shows a drag of an attachment onto a note editor."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-047",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded no drag of an attachment onto a note editor. The drop handling is verified from code only."
+  },
+  {
+   "title": "Renaming an attachment updates its mention chips",
+   "trigger": "rename an attachment (triggers propagateAttachmentRename)",
+   "context": "Owning task's notes contain chips with the old name",
+   "result": "Each note's chips are rewritten to the new name; notes without the old name are left alone; no action when the old name is empty or equal to the new name.",
+   "exact": [],
+   "sources": [
+    "main/src/lib/mentions.ts:6-19",
+    "mentions.ts:6-19 (return when !oldName or oldName === newName at :11; api.listNotes; per-note renameMentionInHtml; api.updateNote only when next != null at :16). sanitizeHtml.ts:184-201 (rewrites span.att-chip with matching data-att, returns null when no chip changed).",
+    "No recording shows an attachment rename or any chip rewritten after a rename."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-048",
+   "check": "corrected",
+   "edge_cases": [
+    "An empty newName is not guarded (mentions.ts:11 checks only the empty oldName and equal names), so chips would be rewritten to '@' with an empty data-att."
+   ],
+   "check_notes": "Checker B recorded no attachment rename in any state. The correction comes from checker A's code evidence."
+  },
+  {
+   "title": "Add link toolbar button",
+   "trigger": "click the link icon button in a note's toolbar",
+   "context": "Note editor (inspector passes onRequestLink); toolbar visible",
+   "result": "Opens a URL prompt. A non-empty trimmed URL is inserted as a link: with no selection the URL is typed as linked text followed by a space; with a selection the selected text is linked. Cancel or empty leaves the note unchanged.",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Add link"
+    },
+    {
+     "what": "icon",
+     "value": "link"
+    },
+    {
+     "what": "prompt headline",
+     "value": "Add link"
+    },
+    {
+     "what": "prompt placeholder",
+     "value": "https://…"
+    },
+    {
+     "what": "prompt accept button",
+     "value": "Add link"
+    },
+    {
+     "what": "prompt glyph",
+     "value": "add_link"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:458-488",
+    "common-ui/src/RichTextEditor.tsx:530-540",
+    "main/src/components/preview/noteEditing.ts:6-15",
+    "RichTextEditor.tsx:458-488 (addLink: trim, return on empty, insert linked URL plus ' ' when no selection :465-478; setLink on selection :479-486), :530-538 (button rendered only when onRequestLink; title 'Add link', icon 'link'). noteEditing.ts:8-14 (askText glyph 'add_link', headline 'Add link', placeholder 'https://…', accept 'Add link'). Cancel returns null (noteEditing.ts:8) so the note is unchanged.",
+    "Tooltip and icon are consistent: inspector-notes/tree.txt:114 ToolButton icon='link' title='Add link'; onRequestLink=ƒ on RichTextEditor at inspector-notes/tree.txt:100 (context matches). The URL prompt, its headline, placeholder, accept button and glyph are not recorded in any state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B recorded the Add link tool in the note toolbar (tooltip Add link, icon link) with no effect recorded; the source above confirms the behaviour (requestNoteLink).",
+   "id": "F03-049",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the Add link tool (icon 'link', title 'Add link') and the onRequestLink prop context. The URL prompt text, headline, placeholder, accept button and glyph are not recorded in any state, so they are verified from code only."
+  },
+  {
+   "title": "Bare domains auto-link only for listed TLDs",
+   "trigger": "type or paste a bare domain such as name.tld into a note",
+   "context": "Note editor",
+   "result": "Auto-linking happens only for hosts ending in the curated list; other dotted names (for example notes.md, app.py, report.pdf) stay plain text. Pasted URLs are linked on paste. Clicking a link in the note editor does not open it (openOnClick is false).",
+   "exact": [
+    {
+     "what": "TLDs",
+     "value": "com, org, net, io, dev, app, co, ai, edu, gov, me, xyz, gg, so, sh, tech, info, design"
+    },
+    {
+     "what": "default protocol",
+     "value": "https"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:67-81",
+    "common-ui/src/RichTextEditor.tsx:235-241",
+    "RichTextEditor.tsx:67-71 (COMMON_TLD list in the listed order: com|org|net|io|dev|app|co|ai|edu|gov|me|xyz|gg|so|sh|tech|info|design), :75-81 (hostname test), :235-240 (openOnClick false, autolink true, linkOnPaste true, defaultProtocol 'https', shouldAutoLink). Note: linkOnPaste behaviour on paste is Tiptap internals, not verified here.",
+    "No recording shows typing or pasting a bare domain, and no note in any state contains a dotted host. The TLD list and default protocol are not visible in any recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Links have openOnClick set to false, so clicking a link in the editor does not open it in these files."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "Corrected per critique: A's unfinished result text ('Links open on click only when... (see notes)') is replaced with the source behaviour (RichTextEditor.tsx:235-241: openOnClick false, autolink true, linkOnPaste true, defaultProtocol https).",
+   "id": "F03-050",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded no typed or pasted bare domain. Tiptap's linkOnPaste behaviour is not verified by either checker."
+  },
+  {
+   "title": "Floating formatting toolbar appears on focus",
+   "trigger": "focus a note editor (click in it or Add note)",
+   "context": "Inspector note editors use the default floating toolbar; appears above the note being edited (for example, the focused note in the recording)",
+   "result": "A fixed popover above the note fades and scales in when the editor gains focus and fades out on blur. It re-positions on scroll and window resize. In the recording it covers the bottom line of the note above it.",
+   "exact": [
+    {
+     "what": "transition",
+     "value": "opacity and transform, duration-75"
+    },
+    {
+     "what": "hidden state",
+     "value": "scale-95, opacity-0, pointer-events-none"
+    },
+    {
+     "what": "shown state",
+     "value": "scale-100, opacity-100"
+    },
+    {
+     "what": "gap above editor",
+     "value": "6 px"
+    },
+    {
+     "what": "recorded position",
+     "value": "toolbar about x 873 to 1120, y about 300 to 329; tools sit at y 305 for the focused note; the same tool buttons at 12,736 in inspector-notes (not visible)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:397-412",
+    "common-ui/src/RichTextEditor.tsx:572-583",
+    "common-ui/src/RichTextEditor.tsx:344-349",
+    "state:note-editing (tree lines 122-137; shot.png)",
+    "RichTextEditor.tsx:397-412 (place(): bottom = innerHeight - rect.top + 6 at :403, scroll and resize listeners :406-407), :572-583 (fixed popover, transition-[opacity,transform] duration-75, shown 'pointer-events-auto scale-100 opacity-100', hidden 'pointer-events-none scale-95 opacity-0' at :575-579), :344-349 (onFocus shows, onBlur hides). The recorded coordinates (873-1120, y 300-329, tools at y 305, 12,736) are observations not verifiable from code.",
+    "Visible toolbar tools sit at y 305: note-editing/tree.txt:123-136 (ToolButton @880,305 21x21 onward; Add link @1036,305). Hidden toolbars for unfocused notes at 12,736: inspector-notes/tree.txt:102-115, matching 'not visible'. note-editing/shot.png shows the floating bar at about x 873 to 1120 and y 300 to 329, over the bottom line of note 1 ('Keyboard first'), with the focused note directly below. Transition classes, the 6 px gap and the fade are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's recorded positions. Active state recorded as active=false on all tools in every recorded state.",
+   "id": "F03-051",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree on the toolbar row at y 305. Checker B matched the floating bar geometry (about x 873 to 1120, y 300 to 329) to the screenshot. The 6px gap, the fade and the transition classes are not recorded or verified from the recording."
+  },
+  {
+   "title": "Formatting toolbar buttons",
+   "trigger": "click a toolbar button (mousedown; focus stays in the editor)",
+   "context": "Floating toolbar shown",
+   "result": "Toggles the format on the current selection. Active formats show a wash background and primary text. Seven tools in order: Bold, Italic, Underline, Strikethrough, Bulleted list, Numbered list, Add link. Only Bold, Italic and Underline show a keyboard shortcut in the tooltip.",
+   "exact": [
+    {
+     "what": "button size",
+     "value": "h-6 w-6 (24x24 at the default spacing scale, RichTextEditor.tsx:655) per code. Recorded 21x21 in the floating bar (note-editing/tree.txt:123) and 20x20 in the inline toolbars (inspector-notes/tree.txt:102). Code decides per the merge rule; the recorded sizes are not explained by the code."
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:493-529",
+    "common-ui/src/RichTextEditor.tsx:636-664",
+    "common-ui/src/RichTextEditor.tsx:655",
+    "state:note-editing (tree lines 123-135; shot.png)",
+    "state:inspector-notes (tree lines 102-115)",
+    "RichTextEditor.tsx:493-529 (Bold 'Bold  ⌘B', Italic 'Italic  ⌘I', Underline 'Underline  ⌘U', Strikethrough, Bulleted list, Numbered list, Add link 'link'), :636-664 (ToolButton mousedown preventDefault and onRun at :651-654; active classes 'bg-wash-1l dark:bg-wash-1d text-content-1l dark:text-content-1d' at :657; Icon size 16 weight 400 at :661), :655 ('rounded-field grid h-6 w-6 ...').",
+    "Tooltips match exactly: inspector-notes/tree.txt:102-115 and note-editing/tree.txt:123-136 (titles 'Bold  ⌘B', 'Italic  ⌘I', 'Underline  ⌘U', 'Strikethrough', 'Bulleted list', 'Numbered list', 'Add link'). Icons match the list and are in order, and Icon size=16 weight=400 matches. Only Bold, Italic and Underline carry a shortcut. Button size conflicts: the recorded ToolButton boxes are 21x21 in the floating bar (note-editing/tree.txt:123) and 20x20 in the hidden inline toolbars (inspector-notes/tree.txt:102). h-6 w-6 would be 24px and is not what the recording shows. Every recorded ToolButton has active=false, so the active-state wash and primary text are not verified."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflict: source h-6 w-6 (24px) versus B's recorded 21x21. Critique: may be screenshot scale (24 x 0.875 = 21); the recordings could not be confirmed, so the source value is kept and the recorded size is treated as uncertain.",
+   "id": "F03-052",
+   "check": "corrected",
+   "edge_cases": [
+    "No recorded state has an active format (every ToolButton is active=false), so the active-state wash and primary text are not verified."
+   ],
+   "check_notes": "Checker A and checker B both found the button size conflicts with the code. Tooltips, icons and the icon size and weight match in both. Code value kept as the decider, and the recorded sizes are flagged as an open conflict."
+  },
+  {
+   "title": "Toolbar dividers",
+   "trigger": "none (observed)",
+   "context": "Floating toolbar shown",
+   "result": "Thin vertical separators sit between the text-format group, the list group, the link button, and the character counter. Recorded dividers (from screenshot) are after Strikethrough and after Numbered list.",
+   "exact": [
+    {
+     "what": "recorded dividers (from screenshot)",
+     "value": "three: after Strikethrough; after Numbered list; after Add link (before the 37/2000 counter)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:517",
+    "common-ui/src/RichTextEditor.tsx:532",
+    "common-ui/src/RichTextEditor.tsx:541-547",
+    "RichTextEditor.tsx:517 (separator after Strikethrough), :532 (separator before Add link), :541-547 (separator before the counter), all 'h-4 w-px'. Separator after Numbered list is at :532 (before Add link); in code the list group is followed by the link divider, which matches the recorded divider after Numbered list.",
+    "note-editing/shot.png shows three thin vertical separators in the floating bar: after Strikethrough, after Numbered list, and between Add link and the 37/2000 counter. The tree shows no Divider inside the toolbar. The tool x-gaps in note-editing/tree.txt:125-136 are about 11 px after Strikethrough (97 to 108) and after Numbered list (149 to 160), consistent with the two group dividers. The separator class h-4 w-px is not in the recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Critique: B's divider list misses the divider before the character counter; the source has it (ml-auto when not floating, mx-1 when floating).",
+   "id": "F03-053",
+   "check": "corrected",
+   "check_notes": "Checker A matched the code: three h-4 w-px separators at RichTextEditor.tsx:517, :532 and :541-547. The code's 'before Add link' divider is the same as the recorded 'after Numbered list' divider, and the 'before counter' divider is the recorded 'after Add link' divider. Checker B's correction adds the recorded positions only, and the code does not contradict them."
+  },
+  {
+   "title": "Character counter in the toolbar",
+   "trigger": "none (observed while typing)",
+   "context": "Note editor toolbar shown; inspector does not pass maxLength so the default applies. Note focused in edit mode.",
+   "result": "Shows chars/max at the right end of the toolbar. Turns the danger colour once the count exceeds 90% of the max. Recorded example: 37/2000 for the focused note Ask design for two layouts by Friday.",
+   "exact": [
+    {
+     "what": "format",
+     "value": "{chars}/{maxLength}"
+    },
+    {
+     "what": "maxLength default",
+     "value": "2000"
+    },
+    {
+     "what": "warning threshold",
+     "value": "chars > maxLength * 0.9 (1800 by default)"
+    },
+    {
+     "what": "normal colour",
+     "value": "text-content-3l dark:text-content-3d"
+    },
+    {
+     "what": "warning colour",
+     "value": "text-danger-500l dark:text-danger-500d"
+    },
+    {
+     "what": "text size",
+     "value": "10.5px, tabular-nums"
+    },
+    {
+     "what": "counter text (recorded)",
+     "value": "37/2000"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:142",
+    "common-ui/src/RichTextEditor.tsx:243",
+    "common-ui/src/RichTextEditor.tsx:548-556",
+    "state:note-editing (shot.png; not in tree)",
+    "RichTextEditor.tsx:142 (maxLength default 2000), :243 (CharacterCount limit), :548-556 (text-[10.5px] tabular-nums; warning when st.chars > maxLength * 0.9 at :550; danger class at :551, normal class at :552; text '{st.chars}/{maxLength}' at :555). NoteCard and the add-note editor pass no maxLength (TaskInspector.tsx:414-430; NoteCard.tsx:52-64). Typing block beyond 2000 is not verified.",
+    "note-editing/shot.png shows the counter '37/2000' at the right end of the floating toolbar on the focused note. The focused text 'Ask design for two layouts by Friday.' is 37 characters. 2000 x 0.9 = 1800, matching the threshold. The counter is not in tree.txt (the spec's own note). Colours (text-content-3 vs text-danger-500) and the 10.5px size are not recorded. No maxLength prop is passed: note-editing/tree.txt:120-121."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "CharacterCount is configured with the limit; whether typing is blocked beyond 2000 is the extension's behaviour and not verified in these files."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The 37 matches the length of the focused note Ask design for two layouts by Friday. The 2000 limit is confirmed by the source default (RichTextEditor.tsx:142).",
+   "id": "F03-054",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed the 37/2000 counter at the right end of the focused toolbar and the 0.9 threshold (2000 x 0.9 = 1800). Colours and the 10.5px size are not recorded. Typing beyond 2000 is not verified by either checker."
+  },
+  {
+   "title": "Note placeholder text",
+   "trigger": "none (observed when the editor is empty)",
+   "context": "Add-note editor empty; saved note editors have no placeholder",
+   "result": "Empty add-note editor shows the placeholder 'Write a note ... (drop an attachment to @mention it)'. Note cards pass no placeholder, so none appears.",
+   "exact": [
+    {
+     "what": "placeholder text (add-note)",
+     "value": "Write a note ... (drop an attachment to @mention it)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:244-246",
+    "main/src/components/preview/TaskInspector.tsx:417",
+    "TaskInspector.tsx:413-417 (add-note editor placeholder string). RichTextEditor.tsx:246 (Placeholder configured with placeholder ?? ''). NoteCard.tsx:52-64 passes no placeholder.",
+    "Note cards pass no placeholder: RichTextEditor props at inspector-notes/tree.txt:100 and :120 have no placeholder. No state shows an empty add-note editor; the Add note DashedButton at row-selected/tree.txt:113 is a button, not an editor. The empty add-note placeholder text is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-055",
+   "check": "corrected",
+   "check_notes": "Checker B recorded no empty add-note editor state (the Add note control is a button, not an editor), so the placeholder is verified from code only."
+  },
+  {
+   "title": "Editor loads lazily with no fallback",
+   "trigger": "none (observed when a note editor first mounts)",
+   "context": "Any note editor",
+   "result": "The rich text editor is loaded on demand in its own module; while it loads nothing is shown (fallback is null).",
+   "exact": [
+    {
+     "what": "fallback",
+     "value": "null"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/RichTextEditorLazy.tsx:9-25",
+    "RichTextEditorLazy.tsx:13-25 (lazy import of the editor module), :21 (Suspense fallback={null}).",
+    "Only the loaded RichTextEditor2 wrapper appears in the trees (inspector-notes/tree.txt:100-101). No loading state is recorded, so the null fallback is not verified."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded only the loaded RichTextEditor2 wrapper. No loading state is recorded, so the null Suspense fallback is verified from code only."
+  },
+  {
+   "title": "Keystrokes stay inside the note editor",
+   "trigger": "any key press inside a note editor",
+   "context": "Any note editor",
+   "result": "Key events stop propagating from the editor wrapper to host containers; the editor handles its own Enter and Escape.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:562-565",
+    "RichTextEditor.tsx:562-565 (wrapper onKeyDown stopPropagation). Enter and Escape are handled in the editor at :262-300.",
+    "Key-event propagation is not recorded; meta.json for every state lists no key events."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded no key events (meta.json lists none), so the propagation behaviour is verified from code only."
+  },
+  {
+   "title": "Allowed formatting in notes",
+   "trigger": "none (observed in note content)",
+   "context": "Any note editor",
+   "result": "Headings, code blocks, blockquotes, horizontal rules and inline code are disabled; bold, italic, underline, strikethrough, bullet and numbered lists and links are available.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/RichTextEditor.tsx:225-242",
+    "RichTextEditor.tsx:225-242 (StarterKit configured with heading, codeBlock, blockquote, horizontalRule and code all false at :229-233; link configured at :235-241). Bold, italic, strike, lists and link are used at :497-538. Underline is used at :509 but no Underline extension is configured here; its availability is presumed to come from StarterKit defaults and is not verified in these files.",
+    "The note toolbar lists exactly seven tools: Bold, Italic, Underline, Strikethrough, Bulleted list, Numbered list and Add link (inspector-notes/tree.txt:102-115). No heading, code block, blockquote, rule or inline-code control appears. The disabled state of those formats is not directly tested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-058",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed exactly seven tools in the note toolbar, with no heading, code block, blockquote, rule or inline-code control. Underline (RichTextEditor.tsx:509) has no extension configured in the listed files. It is presumed to come from StarterKit defaults, which is not verified here, and the recording shows only the Underline tooltip."
+  },
+  {
+   "title": "Subtasks section and progress count",
+   "trigger": "none (observed)",
+   "context": "Task has child tasks; sits between Notes and Attachments; hidden when the task has no children",
+   "result": "A Subtasks section shows the count of done children over total, for example 2 done / 5 (format observed as code string). Hidden when the task has no children.",
+   "exact": [
+    {
+     "what": "section label",
+     "value": "Subtasks"
+    },
+    {
+     "what": "count format",
+     "value": "{doneChildren} done / {children.length}"
+    },
+    {
+     "what": "label style (recorded)",
+     "value": "SUBTASKS; 10.5px semibold, tracking 0.12em, uppercase, muted"
+    },
+    {
+     "what": "count (recorded)",
+     "value": "1 done / 2 (Rewrite the hero section); 1 done / 3 (Buy groceries for the week); 11.5px tabular-nums"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:443-459",
+    "main/src/components/preview/TaskInspector.tsx:84",
+    "state:inspector-notes (tree lines 139-141; shot.png)",
+    "state:row-with-subtasks-selected (tree lines 137-139; shot.png)",
+    "TaskInspector.tsx:443-459 (Subtasks block shown only when children.length > 0; SectionHeader label 'Subtasks' at :446; count '{doneChildren} done / {children.length}' at :449 with text-[11.5px] tabular-nums), :84 (doneChildren filter). Section order: Notes (:377-441), Subtasks (:443), Attachments (:461). The label style (uppercase, 10.5px, tracking) lives in SectionHeader, which is not in the listed files and was not verified. The example '2 done / 5' in the result is not a recorded or coded value.",
+    "Label 'Subtasks' with className 'text-[10.5px] tracking-[0.12em] uppercase', weight semibold, tone muted: inspector-notes/tree.txt:139-140 (elements.json shows the uppercase transform). Count 'Label text-[11.5px] tabular-nums' at tree.txt:141, and the text '1 done / 2' appears in inspector-notes/elements.json. The buy-groceries count '1 done / 3' is shown in row-with-subtasks-selected/shot.png. The section is absent for tasks with no children: subtask-selected/tree.txt (Sourdough loaf, no Subtasks header) and row-selected/tree.txt:111-115. It sits between Notes and Attachments in inspector-notes/tree.txt:99-149. The count format code string is not checkable from source."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Absent for tasks without subtasks (Post the parcel to Mum, Book bike service, Sourdough loaf in the recordings). The uppercase label is from SectionHeader, outside the allowed sources.",
+   "id": "F03-059",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed the Subtasks label style via elements.json and the count format with '1 done / 2' and '1 done / 3'. The section is absent for tasks with no children. Checker A notes the example '2 done / 5' in the result is neither recorded nor coded. The SectionHeader style is not verified by either checker from source."
+  },
+  {
+   "title": "Subtask rows: checkbox, title and nesting",
+   "trigger": "click a subtask's checkbox; click a subtask title",
+   "context": "Subtasks section open",
+   "result": "Checkbox toggles that subtask's done state. Clicking its title selects that subtask (focus). Done subtasks show muted, struck-through titles. Child subtasks render recursively, indented by 18 px per level from a base of 6 px; rows are 32 px tall with a hover wash. Not-done title is primary tone and not struck through.",
+   "exact": [
+    {
+     "what": "checkbox tooltip",
+     "value": "Done subtask: 'Mark not done'; not-done subtask: 'Mark done' (TaskInspector.tsx:48)"
+    }
+   ],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:32",
+    "main/src/components/preview/TaskInspector.tsx:37-70",
+    "main/src/components/preview/TaskInspector.tsx:49-54",
+    "state:row-with-subtasks-selected (tree lines 140-149, 143)",
+    "state:inspector-notes (tree lines 142-148)",
+    "TaskInspector.tsx:32 (SUBTASK_INDENT = 18), :37-70 (SubtaskRow), :42 (row 'flex h-8 ... -mx-1.5 hover:bg-wash-1l dark:hover:bg-wash-1d'), :43 (paddingLeft 6 + depth * SUBTASK_INDENT), :45-49 (Checkbox size 'sm', title ternary, onClick actToggleDone), :51-63 (Label onClick selectTask, title={task.title}, tone muted/primary, 'min-w-0 flex-1 text-left text-[13.5px]' plus 'line-through' when done), :65-67 (recursive children, depth + 1).",
+    "SubtaskRow boxes are 305x28 (inspector-notes/tree.txt:142,145; row-with-subtasks-selected/tree.txt:140,144,147), so the recorded row is 28 px, not 32 px. Checkbox size='sm', 16x16 at x 874 and check icon size 12 weight 700 match (inspector-notes/tree.txt:143,146; row-with-subtasks-selected/tree.txt:141-142). Tooltips 'Mark done' and 'Mark not done' match (tree.txt:143, 146 and row-with-subtasks-selected/tree.txt:141,145). Titles: done 'min-w-0 flex-1 text-left text-[13.5px] line-through' tone muted (row-with-subtasks-selected/tree.txt:143; inspector-notes/tree.txt:148); not-done tone primary (tree.txt:146). Title tooltips Oat milk, Sourdough loaf, Apples, Draft headline options, Pick the hero image all match. Checkbox left edge 874 = 868 + 6, consistent with paddingLeft 6 at depth 0. Hover wash and the 18 px per-level indent are not verified: no nested SubtaskRow appears in any state. subtask-selected/shot.png shows a click on a subtask selecting it (Sourdough loaf highlighted and shown in the inspector)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Critique: clicking a subtask title calls selectTask(subtask id) (TaskInspector.tsx:49-54). The recorded row-with-subtasks-selected state shows Oat milk done. Subtask title is a button whose tooltip is its own name (recorded). The subtask check icon size 12 is recorded by B only.",
+   "id": "F03-060",
+   "check": "corrected",
+   "edge_cases": [
+    "No nested subtask row is recorded in any state, so the 18 px per-level indent for child subtasks is unverified.",
+    "The hover wash is not verified by the recording."
+   ],
+   "check_notes": "Checker B recorded SubtaskRow boxes 305x28 (28px), while checker A's code gives the row class h-8 (32px, TaskInspector.tsx:42). Per the merge rule the code decides, so the 32px value is kept and the recorded 28px is an open conflict. The recorded 28px is consistent with a root font size of 14px (2rem = 28px), which is unverified. Checker B's checkbox size, tooltips and title styling match the code."
+  },
+  {
+   "title": "Subtask order and row geometry",
+   "trigger": "none",
+   "context": "Subtasks section visible",
+   "result": "Subtasks are listed in list order, not sorted by done state: Draft headline options (not done) then Pick the hero image (done); Oat milk (done), Sourdough loaf, Apples. Recorded rows are 28px tall at a 28px pitch, starting at x 868 with width 305.",
+   "exact": [
+    {
+     "what": "row height and pitch",
+     "value": "32px per code (h-8 class at TaskInspector.tsx:42, no gap between rows, so a 32px pitch; assumes a 16px root). Recording shows 28px height and a 28px pitch (y 299, 327, 355 and 424, 452)."
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 142-148)",
+    "state:row-with-subtasks-selected (tree lines 140-149)",
+    "TaskInspector.tsx:83 (children from store with no sort in the inspector), :453-456 (children mapped in store order inside '-mb-2' wrapper), :42 (row class h-8 = 32px, no gap between rows). Recorded row order is consistent with store order. The recorded 28px height and 28px pitch conflict with the code's h-8 rows (32px) and with F03-060.",
+    "Order in inspector-notes/tree.txt:142-148: Draft headline options (not done) then Pick the hero image (done). row-with-subtasks-selected/tree.txt:140-149: Oat milk (done), Sourdough loaf, Apples. Row y values: 299, 327, 355 (row-with-subtasks-selected/tree.txt:140,144,147) and 424, 452 (inspector-notes/tree.txt:142,145). Rows are 305x28 at x 868, pitch 28. Visible in both shot.png files."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Conflict: source row height is h-8 (32px) in TaskInspector.tsx:37-70, while B recorded 28px rows at a 28px pitch. The source value is kept in the subtask rows entry; the recorded geometry is kept here as observed.",
+   "id": "F03-061",
+   "check": "corrected",
+   "check_notes": "Checker B recorded rows at 305x28 with a 28px pitch and the correct order (Draft headline options, Pick the hero image; Oat milk, Sourdough loaf, Apples). Checker A's code gives h-8 (32px) with no gap. Per the merge rule the code decides and the 32px value is kept as the correction. The 28px pitch is a recorded conflict, possibly explained by a 14px root (unverified). Order is confirmed by both."
+  },
+  {
+   "title": "Attachments section header and header buttons",
+   "trigger": "none for the header; buttons below",
+   "context": "Any selected task",
+   "result": "Uppercase label ATTACHMENTS with three text buttons at the right: Shot, Link, File. Shown in both empty and filled states.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Attachments; 10.5px semibold, tracking 0.12em, uppercase, muted"
+    },
+    {
+     "what": "Buttons",
+     "value": "Shot (icon screenshot_monitor), Link (icon add_link), File (icon note_add); ToolbarButton, 14px icons"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 149-157; shot.png)",
+    "state:row-selected (tree lines 116-123)",
+    "main/src/components/preview/TaskInspector.tsx:461-465",
+    "AttachmentSection.tsx:169 (SectionHeader label 'Attachments'), :172-194 (ToolbarButtons: Shot with Icon screenshot_monitor size 14 at :185-187, Link with icon add_link iconSize 14 at :189-190, File with icon note_add iconSize 14 at :192-193). Label style not verified (SectionHeader not in listed files). While capturing, the Shot label reads 'Capturing …' (:187).",
+    "SectionHeader label='Attachments' with className 'text-[10.5px] tracking-[0.12em] uppercase', weight semibold, tone muted: inspector-notes/tree.txt:150-151. Buttons with icons screenshot_monitor, add_link and note_add at size 14: tree.txt:152-157. Labels Shot, Link and File appear in done-row-selected/elements.json ('screenshot_monitor Shot', 'add_link Link', 'note_add File'). Header shown when empty (row-selected/tree.txt:116) and when filled (inspector-notes/tree.txt:150)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Critique: the AttachmentSection mount and its onRefresh and onOpenLightbox wiring are confirmed (TaskInspector.tsx:461-465); the section component file itself is outside the allowed sources, so the B recording values are unverified from source.",
+   "id": "F03-062",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed the Attachments header label and the Shot, Link and File buttons with size 14 icons from elements.json and the tree. Checker A noted that the Shot label reads 'Capturing …' while a capture runs. The SectionHeader label style is not verified from source by either checker."
+  },
+  {
+   "title": "Shot button captures the full screen",
+   "trigger": "Click the Shot button (tooltip shown on hover)",
+   "context": "Any selected task",
+   "result": "Tooltip reads Capture the full screen and attach it. Effect as described by the tooltip (inferred to attach a screenshot to the task). The button's disabled style is set but no disabled state is recorded.",
+   "exact": [
+    {
+     "what": "Button",
+     "value": "ToolbarButton 63x25 at 990,278 when the Attachments header is at y 278 (no notes or subtasks: row-selected, done-row-selected); at 990,388 in row-with-subtasks-selected; at 990,485 in inspector-notes; icon screenshot_monitor size 14; label Shot"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 152-153)",
+    "state:done-row-selected (elements.json Shot button entry)",
+    "AttachmentSection.tsx:172-178 (ToolbarButton tooltip ternary; the non-capturing branch is 'Capture the full screen and attach it' at :178), :185 (Icon screenshot_monitor size 14), :187 (label 'Shot'). Button size 63x25 at 990,278 is recorded, not verifiable from code.",
+    "Tooltip 'Capture the full screen and attach it' matches (inspector-notes/tree.txt:152; row-selected/tree.txt:118). Label 'Shot' and icon screenshot_monitor size 14 confirmed by done-row-selected/elements.json (box [990,278,63,25], text 'screenshot_monitor Shot'). The y value 278 is only the header position when there are no notes or subtasks (row-selected/tree.txt:118, done-row-selected elements). The same button is at y 485 in inspector-notes/tree.txt:152 and y 388 in row-with-subtasks-selected/tree.txt:153."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-063",
+   "check": "corrected",
+   "edge_cases": [
+    "While a capture is running the label reads 'Capturing …' (AttachmentSection.tsx:187) instead of 'Shot'."
+   ],
+   "check_notes": "Checker B confirmed the tooltip, the icon and the label from the tree and elements.json. The button position depends on the state (y 278, 388 or 485), so the position is recorded per state."
+  },
+  {
+   "title": "Link button in the Attachments header",
+   "trigger": "Click the Link button (presumed)",
+   "context": "Any selected task",
+   "result": "Clicking Link opens a text prompt via askText (AttachmentSection.tsx:88-94) with headline 'Link a file or page', accept button 'Link', glyph 'add_link'. The cited aria label is set as a title attribute on the empty-state half (AttachmentSection.tsx:261), not on this header button.",
+   "exact": [
+    {
+     "what": "empty-state half title (not aria label)",
+     "value": "Link a file or URL without copying (title attribute, AttachmentSection.tsx:261)"
+    },
+    {
+     "what": "prompt headline",
+     "value": "Link a file or page"
+    },
+    {
+     "what": "prompt accept button",
+     "value": "Link"
+    },
+    {
+     "what": "prompt glyph",
+     "value": "add_link"
+    },
+    {
+     "what": "Button",
+     "value": "ToolbarButton 60x25 at 1054,278 when the Attachments header is at y 278 (row-selected, done-row-selected); at 1054,388 in row-with-subtasks-selected; at 1054,485 in inspector-notes; icon add_link size 14; label Link"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 154-155)",
+    "state:done-row-selected (elements.json Link button entry)",
+    "AttachmentSection.tsx:88-94 (addLink opens askText with glyph 'add_link', headline 'Link a file or page', accept 'Link'), :189-190 (header Link ToolbarButton, icon add_link size 14, label 'Link'), :260-261 (empty-state half uses a title attribute, not aria-label).",
+    "ToolbarButton 60x25 at 1054,278 with icon add_link size 14 and label Link confirmed by done-row-selected/elements.json (box [1054,278,60,25], text 'add_link Link') and row-selected/tree.txt:120. The y value depends on state: 1054,388 in row-with-subtasks-selected/tree.txt:155 and 1054,485 in inspector-notes/tree.txt:154. The click result is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-064",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the header Link button (60x25, icon add_link size 14, label Link) and its position varies by state. The click result is not recorded, so the prompt is verified from code only."
+  },
+  {
+   "title": "File button in the Attachments header",
+   "trigger": "Click the File button (presumed)",
+   "context": "Any selected task",
+   "result": "Clicking File calls addFile (AttachmentSection.tsx:192 and :66). Its exact behaviour was not read. The cited text 'Copy a file into this task' is a title attribute (tooltip) on the empty-state half (AttachmentSection.tsx:252), not an aria label.",
+   "exact": [
+    {
+     "what": "empty-state half title (not aria label)",
+     "value": "Copy a file into this task (title attribute, AttachmentSection.tsx:252)"
+    },
+    {
+     "what": "Button",
+     "value": "ToolbarButton 56x25 at 1116,278 when the Attachments header is at y 278 (row-selected, done-row-selected); at 1116,388 in row-with-subtasks-selected; at 1116,485 in inspector-notes; icon note_add size 14; label File"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 156-157)",
+    "state:done-row-selected (elements.json File button entry)",
+    "AttachmentSection.tsx:66 (addFile function exists; body not read), :192-193 (header File ToolbarButton, icon note_add size 14, label 'File'), :251-252 (empty-state Copy a file button with onClick addFile and title attribute 'Copy a file into this task').",
+    "ToolbarButton 56x25 at 1116,278 with icon note_add size 14 and label File confirmed by done-row-selected/elements.json (box [1116,278,56,25], text 'note_add File') and row-selected/tree.txt:122. The y value depends on state: 1116,388 in row-with-subtasks-selected/tree.txt:157 and 1116,485 in inspector-notes/tree.txt:156. The click result is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-065",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the header File button (56x25, icon note_add size 14, label File) and that its position varies by state. The click result is not recorded, so the addFile behaviour is verified from code only (and was not read)."
+  },
+  {
+   "title": "Empty Attachments box with Copy a file and Add a link",
+   "trigger": "Click the Copy a file half or the Add a link half (presumed; not recorded)",
+   "context": "Task has no attachments",
+   "result": "A dashed box split by a vertical divider into two halves: Copy a file (icon note_add) and Add a link (icon add_link), with labels below each icon.",
+   "exact": [
+    {
+     "what": "Left half aria label (not aria)",
+     "value": "title attribute 'Copy a file into this task' (AttachmentSection.tsx:252)"
+    },
+    {
+     "what": "Right half aria label (not aria)",
+     "value": "title attribute 'Link a file or URL without copying' (AttachmentSection.tsx:261)"
+    },
+    {
+     "what": "recorded half boxes (done-row-selected/elements.json)",
+     "value": "'Copy a file' half 139x63 at 879,313; 'Add a link' half 139x63 at 1024,313 (checker B). Outer dashed box about 875,309 to 1165,378 is not a tree node."
+    }
+   ],
+   "sources": [
+    "state:row-selected (tree lines 116-126; shot.png)",
+    "state:done-row-selected (elements.json entries for Copy a file into this task and Link a file or URL without copying)",
+    "AttachmentSection.tsx:251-256 (Copy a file half: onClick addFile, title 'Copy a file into this task', Icon note_add size 18 at :255, label 'Copy a file' at :256), :260-265 (Add a link half: onClick addLink, title 'Link a file or URL without copying', Icon add_link size 18 at :264, label 'Add a link' at :265). Box and divider dimensions were not verified.",
+    "done-row-selected/elements.json: button 'Copy a file into this task' (text 'note_add Copy a file') box [879,313,139,63]; button 'Link a file or URL without copying' (text 'add_link Add a link') box [1024,313,139,63]. row-selected/tree.txt:124-126: Icon note_add 18 at 939,324; Divider vertical level=2 1x49 at 1020,320; Icon add_link 18 at 1084,324. The outer dashed box (about 875,309 to 1165,378) is not a tree node; row-with-subtasks-selected/shot.png and row-selected-dark/shot.png show a dashed box split by a divider with labels Copy a file and Add a link under the icons. Shown only with no attachments (empty state)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-066",
+   "check": "corrected",
+   "edge_cases": [
+    "The empty-state split box is shown only with no attachments (empty state) (checker B)."
+   ],
+   "check_notes": "Checker B matched the labels, icons and tooltips and the empty-state-only display. B's elements.json lists the title text as the element name, which may reflect the title attribute rather than an aria-label; the accessible name source is not confirmed. Box and divider dimensions in checker A were not verified; B recorded the half boxes and the divider at 1020,320 (1x49)."
+  },
+  {
+   "title": "Attachment tiles in the Attachments section",
+   "trigger": "none for the display",
+   "context": "Task has attachments (2 in inspector-notes)",
+   "result": "Tiles show each attachment: a link attachment as a white tile with a link icon and caption Brand brief, and an image attachment as a gradient thumbnail with caption hero-sketch.png. Captions are 11px, muted, centred and truncated, below each tile.",
+   "exact": [
+    {
+     "what": "Tile 1",
+     "value": "link icon size 22 at 911,552; caption Brand brief at 875,614 94x17"
+    },
+    {
+     "what": "Tile 2",
+     "value": "image thumbnail; caption hero-sketch.png at 974,614 94x17"
+    },
+    {
+     "what": "Caption style",
+     "value": "mt-1 text-center text-[11px], tone muted, truncate"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 158-162; shot.png)",
+    "AttachmentSection.tsx:233 (open_in_full icon size 14 on tiles), :238-240 (caption tone 'muted', truncate, className 'mt-1 text-center text-[11px]'). Link icon size 22 and thumbnail rendering were not verified.",
+    "inspector-notes/tree.txt:158 Icon link size 22 at 911,552; :160 caption Label mt-1 text-center text-[11px] tone muted truncate at 875,614 94x17; :162 caption at 974,614 94x17; :161 open_in_full at 1047,523. inspector-notes/shot.png shows a white link tile captioned 'Brand brief' and a gradient image tile captioned 'hero-sketch.png'. Context 2 attachments: inspector-notes/tree.txt:99 attachments=[2]."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-067",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker B confirmed the link tile icon (size 22), the caption style (text-[11px], muted, truncate) and the caption boxes in the tree and screenshot. Checker A had not verified the link icon size 22 or thumbnail rendering; B's recording supplies those values."
+  },
+  {
+   "title": "Open-expand icon on each attachment tile",
+   "trigger": "Click a tile (onOpenLightbox prop; presumed to open a lightbox)",
+   "context": "Task has attachments",
+   "result": "Each tile shows an open_in_full icon (size 14) at its top-right (tree positions 948,523 and 1047,523), but the icon is not visible in shot.png. Whether it shows only on hover or is hidden is not recorded. Opening the lightbox on click is inferred from onOpenLightbox (AttachmentSection.tsx:103).",
+   "exact": [
+    {
+     "what": "Icons",
+     "value": "open_in_full size 14 at 948,523 and 1047,523"
+    }
+   ],
+   "sources": [
+    "state:inspector-notes (tree lines 159, 161)",
+    "AttachmentSection.tsx:233 (Icon open_in_full size 14 on each tile), :103 (tile click calls onOpenLightbox with the attachment index). Top-right placement is not verified in the grep output.",
+    "Positions match: inspector-notes/tree.txt:159 Icon open_in_full size 14 at 948,523 and :161 at 1047,523. However, inspector-notes/shot.png does not show these icons on the tiles at the top-right. Whether they appear only on hover, or are hidden, is not recorded (uncertain)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-068",
+   "check": "corrected",
+   "check_notes": "Checker A confirmed the code (open_in_full size 14 on each tile; tile click calls onOpenLightbox). Checker B confirmed the icon positions in the tree but found the icons not visible in the screenshot, so visibility (hover-only or hidden) is an open question. The correction is a recording-visibility caveat, not a code value conflict."
+  },
+  {
+   "title": "Option held changes list row check controls from circles to squares",
+   "trigger": "Hold the Option key (from state name option-held-selected)",
+   "context": "Task list visible; Book bike service selected; Option held",
+   "result": "Row leading controls change shape: with Option held they show square checkboxes (a blue filled square with white check for done rows such as Post the parcel to Mum, empty squares for not-done rows). Without Option the controls are round circles, and done rows show an empty circle with a struck title. The row props are identical in both states, so the change is visual only.",
+   "exact": [
+    {
+     "what": "Row control box",
+     "value": "h-4.5 w-4.5 (18x18 by Tailwind spacing, TaskRow.tsx:527) per code. The recorded 16x16 (checker B, at x 20 for top-level rows and x 44 for subtasks) is not explained by the code."
+    },
+    {
+     "what": "Normal aria label",
+     "value": "title 'Select' when not picked (or 'Deselect' when picked); aria-pressed equals picked (TaskRow.tsx:520, :525). aria-pressed=false applies only to unpicked rows."
+    },
+    {
+     "what": "Option-held aria labels (option-held-selected/elements.json)",
+     "value": "done rows: 'Mark not done', aria-pressed=true, bg oklch(0.62 0.13 255), radius 4.375px (square); not-done rows: 'Mark done', aria-pressed=false, radius 4.375px"
+    }
+   ],
+   "sources": [
+    "state:option-held-selected (tree lines 44-86 identical Check props; shot.png)",
+    "state:row-selected (tree lines 44-86; shot.png)",
+    "state:done-row-selected (elements.json Select entries radius 3.35544e+07px)",
+    "TaskRow.tsx:510-512 (alt from useAltPressed; doneMode = alt; active = doneMode ? done : picked), :514-520 (title 'Mark not done'/'Mark done' in done mode, 'Deselect'/'Select' otherwise), :523-528 (button h-4.5 w-4.5; rounded-field when doneMode, rounded-full otherwise), :525 (aria-pressed={active}), :533-535 (click with altKey toggles done). altKeyStore.ts:16-18 syncs from e.altKey.",
+    "Control boxes 16x16 at x 20 for top-level rows and at x 44 for subtasks: option-held-selected/tree.txt:42,45 and :73,78 (also row-selected/tree.txt:45, :73). Props identical with row-selected (Check done/picked lines match). option-held-selected/shot.png shows square checkboxes: blue filled with white check for Post the parcel to Mum and Oat milk; empty squares for not-done rows. done-row-selected/elements.json: 'Select' with aria-pressed=false, radius 3.35544e+07px (circles). option-held-selected/elements.json: done rows are 'Mark not done' aria-pressed=true with bg oklch(0.62 0.13 255) and radius 4.375px; not-done rows are 'Mark done' aria-pressed=false, radius 4.375px. The option-held aria labels are missing from the spec. Option is not a key event in meta.json: the trigger rests only on the state name."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "List-row feature outside the inspector area; kept as reported by B and not settled by the allowed sources.",
+   "id": "F03-069",
+   "check": "corrected",
+   "edge_cases": [
+    "Option plus click on the control toggles done instead of selecting (TaskRow.tsx:535).",
+    "The square or circle shape change is driven by the Option key state (doneMode, TaskRow.tsx:511, :528).",
+    "meta.json for option-held-selected lists no key event, so the Option key trigger is taken from the state name only (checker B)."
+   ],
+   "check_notes": "Checker B recorded the control boxes at 16x16 while the code gives h-4.5 w-4.5 (18x18). Per the merge rule the code decides, so the 18x18 value is kept and the recorded 16x16 is an open conflict (a 14px root would give about 16px, unverified). Checker B confirmed the x positions 20 and 44 and the Option-held square and circle shapes, and the option-held labels, which match the code's doneMode branch."
+  },
+  {
+   "title": "Dark appearance of the task list and inspector",
+   "trigger": "App theme set to dark (meta.json theme dark and set_window_theme command); the user trigger is not recorded",
+   "context": "Book bike service selected in dark mode",
+   "result": "Window, list and inspector surfaces are dark; selected row has a dark blue-grey highlight; the Add note dashed box and the Attachments dashed box use darker surfaces; text is light.",
+   "exact": [
+    {
+     "what": "Theme",
+     "value": "dark"
+    }
+   ],
+   "sources": [
+    "state:row-selected-dark (meta.json theme; shot.png)",
+    "set_window_theme exists in main/src/api.ts:172 (setWindowTheme invoke 'set_window_theme' with dark). The meta.json theme state, dark colours and the selected-row highlight are not in the listed source files and were not verified.",
+    "row-selected-dark/meta.json: 'theme': 'dark' and set_window_theme in commands. row-selected-dark/shot.png: dark window, list and inspector; dark blue-grey selected row for Book bike service; light text. Uncertain: the Add note and Attachments dashed boxes look slightly lighter, not darker, than the panel in shot.png. Pixel values were not measured, so this part of the claim is not confirmed."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-070",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the dark theme from row-selected-dark/meta.json ('theme': 'dark') and the set_window_theme command in the recording. Checker A confirmed that setWindowTheme exists (api.ts:172) but the dark colours and the selected-row highlight are not in the listed code. Checker B's doubt about the lighter Add note and Attachments dashed boxes is unmeasured and left open."
+  },
+  {
+   "title": "Dark mode colours for inspector surfaces",
+   "trigger": "system or app appearance set to dark",
+   "context": "Inspector, title, notes, toolbar, popup",
+   "result": "Each surface, text and ring uses a separate dark token (dark: variants) such as title text content-1d, placeholder content-3d, toolbar popover surface-3d, and mention popup selection selection-1d.",
+   "exact": [],
+   "sources": [
+    "main/src/components/preview/TaskInspector.tsx:262-300",
+    "common-ui/src/RichTextEditor.tsx:566-632",
+    "TaskInspector.tsx:298 (text-content-1l dark:text-content-1d; placeholder:text-content-3l dark:placeholder:text-content-3d); TaskInspector.tsx:300 (ring-surface-0l dark:ring-surface-0d, bg-surface-0l dark:bg-surface-0d when editing); RichTextEditor.tsx:575 (floating toolbar bg-surface-3l dark:bg-surface-3d); RichTextEditor.tsx:600 (mention popup container bg-surface-3l dark:bg-surface-3d); RichTextEditor.tsx:616 (selected mention item bg-selection-1l dark:bg-selection-1d). The result says 'such as', so the listed examples match. Note: the mention popup container also uses surface-3d (RichTextEditor.tsx:600), which the feature does not mention.",
+    "Checked spec/references/row-selected-dark/tree.txt and meta.json (theme \"dark\" at meta.json:9; set_window_theme command at meta.json:14) and shot.png. Partial support only: dark: variants exist on inspector metadata icons (row-selected-dark/tree.txt:99,101,102 use dark:text-content-3d) and the StatsBar uses dark:border-edge-2d and dark:bg-sur… (tree.txt:88, truncated). Not shown in any named folder: title text content-1d (the inspector title Label is not listed in the tree), placeholder content-3d (TextInput2 at tree.txt:37 has no class), toolbar popover surface-3d (no popover open), mention popup selection-1d (no mention popup). Grep of inspector-notes, note-editing, preview-hidden, option-held-selected and done-row-selected found only light-theme recordings with the same icon dark: classes. No note card or rich text editor is rendered in the dark recording."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F03-071",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified every listed dark-mode class against source (TaskInspector.tsx, RichTextEditor.tsx) and found the examples match. Checker B could not check: the dark recording does not render the title, placeholder, toolbar popover or mention popup. Only the icon dark: classes and StatsBar partially match. Source-based verification is the basis for the exact verdict. Edge case from A: the mention popup container also uses surface-3d (RichTextEditor.tsx:600), which the feature does not mention. This is an omission noted for reference, not a wrong value, so no correction is recorded."
+  },
+  {
+   "title": "Selected row highlight that links to the inspector",
+   "trigger": "Plain click on a task row (code: selectionStore.ts:51-71, :68 sets selectedTaskId to the clicked id and resets the bulk set). No recording's meta.json records a click, so the trigger is supported by code only.",
+   "context": "Row selected in the list",
+   "result": "The selected row gets a light blue background band across the row (full row width in the list); the inspector shows that task. The parent row keeps the highlight when a subtask is selected only if the parent is selected; in subtask-selected only the subtask row is highlighted.",
+   "exact": [
+    {
+     "what": "Selected band extent",
+     "value": "y 175 to 207 (TaskRow2 taskId=\"t-bike\" @0,175 860x32, row-selected/tree.txt:55); band spans full list width (x 0 to about 860) per row-selected/shot.png"
+    },
+    {
+     "what": "Inspector task in row-selected state",
+     "value": "Book bike service (row-selected/tree.txt:96)"
+    }
+   ],
+   "sources": [
+    "state:row-selected (shot.png)",
+    "state:subtask-selected (shot.png)",
+    "selectionStore.ts:51-71 and :68 show a plain row click sets selectedTaskId to the clicked id and resets the bulk set (so the 'click a task row' trigger is supported by code). The light blue band, its colour, the y 175 to 207 extent, and the parent/subtask highlight rules depend on the row render styles and the screenshot (state:row-selected, state:subtask-selected), which I did not open. Not verified: the pixel band, the full-row-width claim, and the parent-highlight rule.",
+    "row-selected/tree.txt:55 TaskRow2 taskId=\"t-bike\" @0,175 860x32 gives band y 175 to 207, which matches the exact value. row-selected/shot.png shows the light blue band spanning the full list width (x 0 to about 860). Inspector shows Book bike service (row-selected/tree.txt:96). subtask-selected/shot.png shows only the Sourdough loaf row highlighted and the parent Buy groceries row not highlighted; subtask-selected/tree.txt:96 shows the inspector task as Sourdough loaf. row-with-subtasks-selected/shot.png shows the parent row highlighted. meta.json for row-selected, row-with-subtasks-selected and subtask-selected lists no click or selection command (only get_setting, list_projects, list_lists, all_tasks, list_hotkeys, boot_done, reveal_main, set_active_list)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-072",
+   "check": "corrected",
+   "edge_cases": [
+    "Parent and subtask selected at the same time is not recorded in any named folder.",
+    "Parent-highlight rule is confirmed only for single selections: parent highlighted when parent selected (row-with-subtasks-selected/shot.png); only the subtask is highlighted when a subtask is selected (subtask-selected/shot.png)."
+   ],
+   "check_notes": "Band extent y 175 to 207 and the full-width band are confirmed by checker B's recording (row-selected/tree.txt:55, shot.png). Checker A could not check the pixel band, so B's recording is the only support for it. The click trigger is supported by code (selectionStore.ts:51-71, :68) but no recording records a click, so it stays presumed in the recordings. Parent-highlight rule: for single selections, the parent is highlighted only when the parent itself is selected (row-with-subtasks-selected) and not when only a subtask is selected (subtask-selected). Simultaneous parent and subtask selection is not recorded. Band colour was not verified by either checker."
+  },
+  {
+   "title": "Expand chevron and subtask badge on a parent row",
+   "trigger": "The chevron's visibility and rotation are driven by the row's expanded state, not by selection (TaskRow.tsx:422-436). The 'chevron appears with the parent row selected' trigger is not supported by the code. The screenshot pattern (parent selected shows chevron, subtask selected does not) is not explained by the code and is unresolved.",
+   "context": "Parent task with children; the badge renders when children.length > 0 (TaskRow.tsx:441). The chevron is tied to the row's expanded state, not to row selection.",
+   "result": "A chevron_left icon sits left of the done/total badge, rotated -90 degrees (pointing down) while the row is expanded. While expanded it is at opacity-0 and appears on row hover; when collapsed it is at full opacity. It rotates with a 100ms transition (duration-100). The badge shows done/total, e.g. 1/3, with tooltip '1 of 3 subtasks done' (format is `${doneChildren} of ${children.length} subtasks done`).",
+   "exact": [
+    {
+     "what": "Chevron",
+     "value": "chevron_left size 16 weight 300, class 'transition-transform duration-100' with '-rotate-90' when expanded (TaskRow.tsx:430-436); 16x16 at @771,246 (row-with-subtasks-selected/tree.txt:68)"
+    },
+    {
+     "what": "Badge",
+     "value": "Badge className 'px-space-3' with text '{doneChildren}/{children.length}', 32x18 at @793,245 (row-with-subtasks-selected/tree.txt:69); tooltip template `${doneChildren} of ${children.length} subtasks done` (TaskRow.tsx:444), rendered as '1 of 3 subtasks done' in the recording"
+    }
+   ],
+   "sources": [
+    "state:row-with-subtasks-selected (tree lines 68-69; shot.png)",
+    "state:subtask-selected (tree lines 68-69; shot.png shows no chevron)",
+    "TaskRow.tsx:429-436: Icon name=\"chevron_left\" size={16} weight={300}, className 'transition-transform duration-100' plus '-rotate-90' when expanded. TaskRow.tsx:441-449: Badge shows <span>{doneChildren}</span>/<span>{children.length}</span> with title `${doneChildren} of ${children.length} subtasks done` (TaskRow.tsx:444). TaskRow.tsx:422-425: the chevron button is opacity-0 when expanded (visible only on group hover) and opacity-100 when collapsed.",
+    "Parent task with children (the badge renders when children.length > 0, TaskRow.tsx:441). The chevron is tied to the row's expanded state, not to row selection.",
+    "The chevron's visibility and rotation are driven by the row's expanded state, not by selection. Remove 'the chevron appears with the parent row selected'. The row-selected rule is not supported by TaskRow.tsx:422-436.",
+    "chevron_left size 16 weight 300, class 'transition-transform duration-100' with '-rotate-90' when expanded (TaskRow.tsx:430-436). The coordinates 771,246 were not verified (screenshot).",
+    "Badge className 'px-space-3' with text '{doneChildren}/{children.length}' (TaskRow.tsx:443-448). The 32x18 size and the 793,245 position were not verified (screenshot). Tooltip template: `${doneChildren} of ${children.length} subtasks done` (TaskRow.tsx:444).",
+    "Chevron opacity-0 while expanded, shown only on hover (TaskRow.tsx:422-425). The feature does not mention this.",
+    "Chevron render condition (the block around TaskRow.tsx:415-440) was not fully read; uncertain whether it is shown only for rows with children.",
+    "row-with-subtasks-selected/tree.txt:68 Icon name=\"chevron_left\" size=16 weight=300 className=\"transition-transform duration-100 -rotate-90\" @771,246 16x16 and :69 Badge className=\"px-space-3\" title=\"1 of 3 subtasks done\" @793,245 32x18 match the exact values. row-with-subtasks-selected/shot.png shows a down-pointing chevron left of the 1/3 badge. subtask-selected/shot.png shows no chevron and the 1/3 badge still present. However subtask-selected/tree.txt:68-69 lists the same chevron Icon and Badge with identical props and coordinates. meta.json in both folders records no click or selection command.",
+    "No trigger is recorded (meta.json in both folders has no click or selection command). The observed condition is parent row selected: chevron visible in row-with-subtasks-selected/shot.png, not visible in subtask-selected/shot.png.",
+    "subtask-selected/tree.txt:68-69 still contains the chevron Icon and Badge, so the absence of the chevron is visual only in the screenshot and is not reflected in the tree; the mechanism that hides it is not shown by any named folder.",
+    "No expand or collapse action or state is recorded, despite the title \"Expand chevron\"."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F03-073",
+   "check": "corrected",
+   "edge_cases": [
+    "Chevron opacity-0 while expanded, shown only on hover (TaskRow.tsx:422-425). The feature does not mention this.",
+    "Chevron render condition (the block around TaskRow.tsx:415-440) was not fully read; uncertain whether it is shown only for rows with children.",
+    "subtask-selected/tree.txt:68-69 still contains the chevron Icon and Badge; the absence of the chevron in subtask-selected/shot.png is not explained by the tree.",
+    "No expand or collapse action or state is recorded in the recordings, despite the title \"Expand chevron\"."
+   ],
+   "check_notes": "Conflict on the trigger: checker B's screenshots suggest the chevron is visible when the parent is selected and hidden when a subtask is selected. Checker A's source read shows visibility is driven by the row's expanded state (TaskRow.tsx:422-436), not by selection. Per the source-code rule, A's code finding decides. B's observation is recorded as a visual observation only. B's tree for subtask-selected still lists the chevron Icon and Badge, so the screenshot absence is not explained by the tree. Coordinates 771,246 (chevron) and 793,245 (32x18 badge) and tooltip '1 of 3 subtasks done' are confirmed by B's tree (row-with-subtasks-selected/tree.txt:68-69), which A had not verified. Edge case from A: chevron is opacity-0 while expanded and shown only on hover (TaskRow.tsx:422-425), which the feature does not mention."
+  },
+  {
+   "title": "Previewed task stays in the inspector and stays the target of palette and keyboard commands when search or filters hide it",
+   "trigger": "A task is selected or previewed, then a search query or Filter & Sort refine/show setting hides its row in the list.",
+   "context": "The preview target is one global selectedTaskId in the selection store (selectionStore.ts:22), not a per-pane field.",
+   "result": "The inspector keeps showing a task that is hidden by search or filter, since PreviewPanel and the command helpers read taskById[selectedTaskId] directly. Palette Delete (palette.ts:157-163) acts on that task. Space and Option+Space (useAppKeyboard.ts:263-281) act on the selected task when it is not hidden by filter. Nothing in the reviewed code clears selectedTaskId when a row is hidden by a filter or search; the filter/search code was not read.",
+   "exact": [
+    {
+     "what": "Clearing paths for selectedTaskId",
+     "value": "Not only the reload prune. focus(null) is called at: tasks.ts:158 (startNewTask, new draft), projects.ts:61, TaskPane.tsx:273 (click on blank pane space, after clear(list.id)), and useAppKeyboard.ts:297 (Escape with no pane selection). Prune (pruneToAlive, selectionStore.ts:117-122) clears only when the id is absent from the alive set passed by bootstrap.ts:62 (all tasks in state.tasks)."
+    },
+    {
+     "what": "Keyboard Space paths",
+     "value": "Space toggles pane selection for the active task (useAppKeyboard.ts:278-280, paneToggleSelect). Option+Space marks done: selected pane ids via actSetTasksDone (useAppKeyboard.ts:268-273), or the active task via actToggleDone (useAppKeyboard.ts:274-276). The original citation 57-62 only covers the read of selectedTaskId."
+    },
+    {
+     "what": "Palette Copy / Mark done",
+     "value": "Not verified: palette.ts only showed Delete (lines 157-163) in this check."
+    }
+   ],
+   "sources": [
+    "main/src/stores/selectionStore.ts:22",
+    "main/src/stores/selectionStore.ts:49",
+    "main/src/stores/selectionStore.ts:106-123",
+    "main/src/components/preview/PreviewPanel.tsx:16-18",
+    "main/src/commands/palette.ts:33-35",
+    "main/src/commands/tasks.ts:211-213",
+    "main/src/hooks/useAppKeyboard.ts:57-62",
+    "selectionStore.ts:22 (selectedTaskId), :49 (focus sets it), :106-123 (pruneToAlive), :117-122 (selectedTaskId cleared only when not in alive). bootstrap.ts:62 passes new Set(state.tasks.map(t => t.id)) as alive. PreviewPanel.tsx:16-18 resolves task from taskById[selectedTaskId]. palette.ts:33-35 reads selectedTaskId; palette.ts:157-163 Delete uses selectedTask. tasks.ts:211-213 (attachShotHere) and :236-238 (reorderSelected) read selectedTaskId from the store. useAppKeyboard.ts:57-62 is the destructuring of selectedTaskId; the Space / Option+Space behaviour is at useAppKeyboard.ts:263-281.",
+    "The preview target is one global selectedTaskId in the selection store (selectionStore.ts:22), not a per-pane field. The clearing claim needs correcting: selectedTaskId is also cleared by focus(null) in several places (see result).",
+    "The inspector keeps showing a task that is hidden by search or filter, since PreviewPanel and the command helpers read taskById[selectedTaskId] directly. Palette Delete (palette.ts:157-163) acts on that task. Space and Option+Space (useAppKeyboard.ts:263-281) act on the selected task when it is not hidden by filter. Nothing in the reviewed code clears selectedTaskId when a row is hidden by a filter or search; the filter/search code was not read.",
+    "Clearing paths for selectedTaskId: Not only the reload prune. focus(null) is called at: tasks.ts:158 (startNewTask, new draft), projects.ts:61, TaskPane.tsx:273 (click on blank pane space, after clear(list.id)), and useAppKeyboard.ts:297 (Escape with no pane selection). Prune (pruneToAlive, selectionStore.ts:117-122) clears only when the id is absent from the alive set passed by bootstrap.ts:62 (all tasks in state.tasks).",
+    "Keyboard Space paths: Space toggles pane selection for the active task (useAppKeyboard.ts:278-280, paneToggleSelect). Option+Space marks done: selected pane ids via actSetTasksDone (useAppKeyboard.ts:268-273), or the active task via actToggleDone (useAppKeyboard.ts:274-276). The original citation 57-62 only covers the read of selectedTaskId.",
+    "Palette Copy / Mark done: Not verified: palette.ts only showed Delete (lines 157-163) in this check.",
+    "Checked: no named folder records a search query or filter that hides a selected task. TextInput2 value=\"\" at row-selected/tree.txt:37, row-with-subtasks-selected/tree.txt:37, subtask-selected/tree.txt:37, row-selected-dark/tree.txt:37 and done-row-selected/tree.txt:37. The rendered behaviour, the inspector staying on a hidden task, and palette, Delete, Copy or Mark done acting on it are not shown in any named recording. Disclosure: a recursive grep over the references directory matched lines in folders outside the named list (palette-search, palette-no-match, search-typed, search-no-match, settings-search). I did not use those results."
+   ],
+   "why_missed": "Spans area 3 (inspector) with area 5 (filter and search hiding rows) and area 6 (palette running commands). Per-area audits saw the inspector, the filter, and the palette separately, and none covered the shared selection state across them.",
+   "id": "F03-074",
+   "found_by": [
+    "seams"
+   ],
+   "check": "corrected",
+   "edge_cases": [
+    "Escape clears the pane selection first, and only clears the active task when no pane selection exists (useAppKeyboard.ts:295-297).",
+    "Clicking blank pane space clears the pane selection and the preview (TaskPane.tsx:269-273)."
+   ],
+   "check_notes": "Checker A's source read supports the single global selectedTaskId model and the corrected clearing paths (focus(null) callers and pruneToAlive). Checker B could not check: no named recording shows a search or filter hiding a selected task. The hidden-task result in A's code read is based on PreviewPanel and palette reads of taskById[selectedTaskId], but the filter/search code was not read by either checker, so the claim that the inspector keeps a filtered-out task is source-supported only for the read path, not for the filter path. Palette Copy and Mark done were not verified. B's disclosed grep hits in palette-search, palette-no-match, search-typed, search-no-match and settings-search folders were outside the named list and were not used by B."
+  }
+ ]
+}

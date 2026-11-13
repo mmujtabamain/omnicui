@@ -1,0 +1,3389 @@
+{
+ "area": 6,
+ "name": "Command palette, menus, toast and sheets",
+ "tier": "high",
+ "counts": {
+  "A": 90,
+  "B": 23,
+  "critic_issues": 17,
+  "merged": 103
+ },
+ "dropped": [
+  {
+   "title": "B: Sheets dismiss with Escape and with a click on the backdrop",
+   "reason": "Duplicate of A's 'Escape dismisses the sheet' and 'Press on the scrim dismisses the sheet'. Its Overlay and Backdrop props were merged into those entries; its inferred results were replaced by the critique-verified results."
+  },
+  {
+   "title": "B: Sheet focus is trapped inside the dialog",
+   "reason": "Duplicate of A's 'Focus is trapped in the sheet'. Merged with found_by A and B; the inferred wording was replaced by the source-verified behaviour."
+  },
+  {
+   "title": "B: Sheet visual styling and dim",
+   "reason": "Duplicate of A's sheet surface and overlay scrim entries. Its dialog size, overflow class, surface and dim values were merged into 'Sheet appears centred over the window'."
+  },
+  {
+   "title": "B: New list sheet opens as a centred modal over the window",
+   "reason": "Same behaviour as A's 'Sheet appears centred over the window'. Merged into that entry with found_by A and B, keeping the recorded New list values and sources."
+  },
+  {
+   "title": "B: New list name field is prefilled with a generated name and its text is selected",
+   "reason": "Same behaviour as A's 'Prompt field is prefilled and selected'. Merged into that entry; the inferred placeholder 'Name this list' was not kept because the critique shows it is caller-supplied and unconfirmed."
+  },
+  {
+   "title": "B: Cancel button on the sheets",
+   "reason": "Same behaviour as A's 'Cancel button dismisses the sheet'. Merged into that entry with found_by A and B; the recorded control position was kept."
+  },
+  {
+   "title": "B: Toast 'Undo' button",
+   "reason": "Same behaviour as A's 'Toast action button (Undo)'. Merged into that entry with found_by A and B."
+  },
+  {
+   "title": "B: Toast dismiss (x) button",
+   "reason": "Same behaviour as A's 'Toast close button'. Merged into that entry with found_by A and B."
+  },
+  {
+   "title": "B: 'Roll another name' dice button in the name field",
+   "reason": "Same behaviour as A's 'Dice button rolls a new name'. Merged into that entry with found_by A and B; the critique's source-verified focus behaviour was kept and the unverifiable 'random' claim noted."
+  },
+  {
+   "title": "B: Tab close button tooltip 'Delete list' on each list tab",
+   "reason": "Tab strip is not in the allowed source files and does not belong to the menus, toast and sheets area (critique: move or drop)."
+  },
+  {
+   "title": "B: 'New list' plus button at the end of the tab strip",
+   "reason": "Tab strip is not in the allowed source files and does not belong to the menus, toast and sheets area (critique: move or drop)."
+  },
+  {
+   "title": "B: Deleting a task moves it to Trash and updates the status bar counts",
+   "reason": "Outside area 6: status bar, task deletion and the delete_tasks command are not in any allowed source file (critique recommends dropping the status-bar counts and task name). The toast-only part is kept as 'Toast Moved to Trash appears after a task is deleted'."
+  }
+ ],
+ "features": [
+  {
+   "title": "Command palette input is focused when it opens",
+   "trigger": "none (opened by the palette trigger, which is not in these files; the file header describes it as ⌘K)",
+   "context": "Palette open",
+   "result": "The search field receives focus on mount, so typing goes straight into the filter.",
+   "exact": [
+    {
+     "what": "header comment",
+     "value": "⌘K command palette"
+    },
+    {
+     "what": "input placeholder",
+     "value": "Run a command or jump to…"
+    },
+    {
+     "what": "header icon",
+     "value": "bolt, size 18, weight 300"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:24",
+    "main/src/components/CommandPalette.tsx:40-42",
+    "main/src/components/CommandPalette.tsx:85-99",
+    "A: CommandPalette.tsx:24 (header comment '⌘K command palette: ...'); :40-42 (useEffect inputRef.current?.focus() on mount); :85-90 (Icon name=\"bolt\" size={18} weight={300}); :99 (placeholder=\"Run a command or jump to…\")",
+    "B: spec/references/palette/tree.txt:104 Icon name=\"bolt\" size=18 weight=300 and :105 TextInput2 placeholder=\"Run a command or jump to…\" match the feature's exact values. Focus on mount is not shown: the input node at :105 lists no autoFocus or focus state, and palette/meta.json has no key or focus command. The ⌘K trigger and the header comment are source-only and not observable in these files."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The palette trigger key is not defined in the assigned files; only the ⌘K description in the doc comment is present.",
+   "edge_cases": [],
+   "id": "F06-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Icon and placeholder confirmed by both. Focus on mount verified only from source (A); B could not observe it. The ⌘K trigger is source-only."
+  },
+  {
+   "title": "Command palette layout",
+   "trigger": "none",
+   "context": "Palette open",
+   "result": "A panel, top-aligned in a dimmed full-window scrim, with a fixed header row and a scrolling list below it.",
+   "exact": [
+    {
+     "what": "overlay layer",
+     "value": "overlay (Backdrop maps it to class z-overlay, Backdrop.tsx:25)"
+    },
+    {
+     "what": "overlay placement",
+     "value": "top: 'px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh]' (Overlay.tsx:18); horizontal centring is justify-center"
+    },
+    {
+     "what": "scrim dim",
+     "value": "soft (default, not passed by the palette): bg-black/30 plus animate-scrim-in (Backdrop.tsx:19, 52)"
+    },
+    {
+     "what": "panel classes",
+     "value": "animate-sheet-in flex max-h-[60vh] w-[min(35rem,100%)] flex-col overflow-hidden (CommandPalette.tsx:82)"
+    },
+    {
+     "what": "header classes",
+     "value": "gap-space-5 px-space-6 flex h-11 shrink-0 items-center border-b (CommandPalette.tsx:84); h-11 is the 44px header row, border-b is the bottom border"
+    },
+    {
+     "what": "list classes",
+     "value": "py-space-3 min-h-0 flex-1 overflow-y-auto (CommandPalette.tsx:117)"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:70-84",
+    "main/src/components/CommandPalette.tsx:115-118",
+    "common-ui/src/components/surfaces/Overlay.tsx:18",
+    "A: CommandPalette.tsx:70-84, 115-118; common-ui/src/components/surfaces/Overlay.tsx:18 (PLACEMENT.top); common-ui/src/components/surfaces/Backdrop.tsx:19, 25, 49-52 (dim default 'soft', layer 'overlay' -> z-overlay, animate-scrim-in)",
+    "B: spec/references/palette/tree.txt:101 Overlay layer=\"overlay\" placement=\"top\"; :102 Backdrop2 dim=\"soft\" blur=false, className begins \"px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh…\"; :103 Surface2 elevation=\"menu\" surface=2 radius=\"panel\" className containing \"animate-sheet-in flex max-h-[60vh] w-[min(35rem,100%)]\" @345,91 490x456. Panel top 91 equals 12vh of 760. max-h 456 equals 60vh. Header h-11 and list py-space-3/overflow-y-auto have no tree node, so they are not verified. The screenshot palette/shot.png shows the header separator at roughly y=130, which I could not measure precisely."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Dark mode: border uses edge-1d, icon uses content-3d (CommandPalette.tsx:84,89).",
+   "edge_cases": [],
+   "id": "F06-002",
+   "check": "corrected",
+   "check_notes": "Layer, placement, scrim dim and panel classes agree between A and B. Header h-11 and list classes are verified only by A (source); B had no tree node for them. B's approximate separator position (y=130) was not measured precisely and does not contradict the 44px header from source."
+  },
+  {
+   "title": "Command catalog is built once per open",
+   "trigger": "none (every time the palette opens)",
+   "context": "Palette open",
+   "result": "The command list is built from live store state when the palette opens, and not rebuilt while it stays open.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:34",
+    "main/src/commands/palette.ts:1-2",
+    "main/src/commands/palette.ts:25-36",
+    "A: CommandPalette.tsx:34 (useState(getCommands) runs the builder once per mount, not on re-render); palette.ts:1-2 (comment: built once each time the palette opens); palette.ts:25-36 (buildCommands reads live store state)",
+    "B: spec/references/palette/tree.txt:100 CommandPalette getCommands=ƒ. The catalog source and rebuild timing are not visible. Nothing in palette/meta.json or the three palette snapshots shows whether the catalog is built once per open."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The builder runs once per open, so the list always matches the current project and lists when opened.",
+   "edge_cases": [],
+   "id": "F06-003",
+   "check": "confirmed_by_one",
+   "check_notes": "Build-once-per-mount verified from source (A). B could only see getCommands=ƒ in the tree and could not observe rebuild timing."
+  },
+  {
+   "title": "Typing filters commands by label",
+   "trigger": "Typing in the palette input",
+   "context": "Palette open; query non-empty after trimming",
+   "result": "Only commands whose label contains the query remain. Matching is case-insensitive, substring-based, and applied to the trimmed query. Matches that start earlier in the label rank higher; ties keep catalog order.",
+   "exact": [
+    {
+     "what": "match",
+     "value": "label.toLowerCase().indexOf(needle) >= 0 (code: c.label.toLowerCase().indexOf(needle), filtered by x.i >= 0, CommandPalette.tsx:49-50)"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:44-55",
+    "A: CommandPalette.tsx:44-55 (needle = q.trim().toLowerCase(); map to i: c.label.toLowerCase().indexOf(needle); filter x.i >= 0; sort a.i - b.i; comment 'Earlier matches rank higher; stable within a rank.')",
+    "B: spec/references/palette-search/shot.png shows query \"new\" with only New task (TASK), New list and New project (MANAGE) left. Commands such as Toggle preview and Undo are removed, and lowercase \"new\" matches capitalised labels. Conflict: palette-search/tree.txt:105 has value=\"ne\" and no MenuItem nodes, so the tree disagrees with the screenshot. The match expression, trimming and ranking (earlier match index first) are not observable here."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Only label is matched; group names and accelerators are not searched.",
+   "edge_cases": [
+    "The needle is the trimmed query only; spaces inside the query are kept, so 'new  list' with two spaces matches only labels containing two spaces.",
+    "Only the label is searched (group names and accelerators are not matched)."
+   ],
+   "id": "F06-004",
+   "check": "corrected",
+   "check_notes": "Substring match on lowercased label, case-insensitive, confirmed by B's screenshot. Conflict: B's palette-search/tree.txt:105 records value=\"ne\" while the screenshot shows query \"new\"; the tree and screenshot disagree. Per the source (A), the match uses the trimmed query and ranks earlier matches first; B could not observe trimming or ranking."
+  },
+  {
+   "title": "Empty query shows every command",
+   "trigger": "Empty input, or input containing only whitespace",
+   "context": "Palette open",
+   "result": "All commands are listed in catalog order, grouped under their group headings.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:45-46",
+    "A: CommandPalette.tsx:45-46 (if (!needle) return commands; needle is q.trim()); :128-141 (group headings still rendered for the unfiltered list)",
+    "B: spec/references/palette/tree.txt:105 value=\"\" and :106-179 list all 19 rows (data-idx 0-18) under group headings at :106, :133, :151, :168, :175 in catalog order. palette/shot.png shows VIEW, TASK and MANAGE with an empty input. The whitespace-only trigger is not in evidence. The panel clips the list, so rows below MANAGE are not visible in the screenshot."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-005",
+   "check": "confirmed_by_both",
+   "check_notes": "Empty query shows the full catalog with headings, confirmed by both. The whitespace-only trigger (trim) is verified only from source (A)."
+  },
+  {
+   "title": "Typing resets the highlight to the first row",
+   "trigger": "Any change to the palette input",
+   "context": "Palette open",
+   "result": "The highlighted row goes back to index 0 on every keystroke.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:95-98",
+    "A: CommandPalette.tsx:95-98 (onChange: setQ(e.target.value); setActive(0))",
+    "B: spec/references/palette-search/shot.png shows the first row \"New task\" highlighted after typing \"new\". palette/tree.txt:107 has data-idx=0 active=true on the open palette. The per-keystroke reset is not shown, only the resulting state. palette-search/tree.txt has no MenuItem nodes, so the active flag is evidenced by the screenshot only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-006",
+   "check": "confirmed_by_both",
+   "check_notes": "Typing resets the active row to the first result, confirmed by source and by the resulting screenshot state. B did not observe the per-keystroke reset itself."
+  },
+  {
+   "title": "ArrowDown moves highlight down",
+   "trigger": "ArrowDown in the palette input",
+   "context": "Palette open; results present",
+   "result": "Highlight moves down one row and stops at the last row. The default key action is prevented.",
+   "exact": [
+    {
+     "what": "step",
+     "value": "+1"
+    },
+    {
+     "what": "lower clamp",
+     "value": "results.length - 1"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:101-104",
+    "A: CommandPalette.tsx:101-104 (setActive((a) => Math.min(a + 1, results.length - 1)); preventDefault at :103)",
+    "B: palette/meta.json and palette-search/meta.json contain no ArrowDown key events. The only active-row evidence is data-idx=0 active=true at palette/tree.txt:107. Nothing shows a move down or the clamp at the last row."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The highlight scrolls into view (see the scroll feature).",
+   "edge_cases": [
+    "With no results, Math.min(a + 1, results.length - 1) evaluates to -1, so active becomes -1 rather than staying 0. Enter then runs runAt(-1), which returns early because results[-1] is undefined (CommandPalette.tsx:63-65). The code has no guard for the empty case."
+   ],
+   "id": "F06-007",
+   "check": "corrected",
+   "check_notes": "ArrowDown clamp at the last row is from source (A); B recorded no ArrowDown events and could not check it. Source shows the empty-results edge case."
+  },
+  {
+   "title": "ArrowUp moves highlight up",
+   "trigger": "ArrowUp in the palette input",
+   "context": "Palette open",
+   "result": "Highlight moves up one row and stops at the first row. The default key action is prevented.",
+   "exact": [
+    {
+     "what": "step",
+     "value": "-1"
+    },
+    {
+     "what": "upper clamp",
+     "value": "0"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:105-107",
+    "A: CommandPalette.tsx:105-107 (setActive((a) => Math.max(a - 1, 0)); preventDefault at :106)",
+    "B: No ArrowUp event appears in any meta.json (palette/meta.json:10-30). Nothing shows a move up or the clamp at index 0."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-008",
+   "check": "confirmed_by_one",
+   "check_notes": "ArrowUp clamp at index 0 verified from source only."
+  },
+  {
+   "title": "Enter runs the highlighted command",
+   "trigger": "Enter in the palette input",
+   "context": "Palette open; at least one result",
+   "result": "The palette closes first, then the highlighted command runs.",
+   "exact": [
+    {
+     "what": "order",
+     "value": "onClose() then cmd.run()"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:108-111",
+    "main/src/components/CommandPalette.tsx:63-68",
+    "A: CommandPalette.tsx:108-111 (Enter: preventDefault(); runAt(active)); :63-68 (runAt: onClose() then cmd.run())",
+    "B: palette/tree.txt:105 TextInput2 has onKeyDown=ƒ, but which keys it handles and the order onClose() then cmd.run() are not visible. No Enter event is recorded in meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-009",
+   "check": "confirmed_by_one",
+   "check_notes": "Enter runs the active command via runAt, verified from source. B saw only onKeyDown=ƒ on the input and recorded no Enter event."
+  },
+  {
+   "title": "Enter with no results does nothing except prevent default",
+   "trigger": "Enter in the palette input",
+   "context": "Query matches no command",
+   "result": "No command runs and the palette stays open. The default key action is still prevented.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:108-110",
+    "main/src/components/CommandPalette.tsx:63-65",
+    "A: CommandPalette.tsx:108-110 (preventDefault runs before runAt); :63-65 (if (!cmd) return, before onClose() at :66, so the palette stays open)",
+    "B: spec/references/palette-no-match/tree.txt:103 Surface2 490x109 and :106 Label as=\"p\" show the palette open with zero rows, query \"zzzz\" at :105. No Enter event appears in palette-no-match/meta.json, and nothing shows that no command ran."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Enter with no matching row keeps the palette open, from source. B observed the zero-row open state but no Enter event."
+  },
+  {
+   "title": "Click a row runs that command",
+   "trigger": "Single click on a command row",
+   "context": "Palette open",
+   "result": "The palette closes, then the clicked command runs.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:146",
+    "main/src/components/CommandPalette.tsx:63-68",
+    "A: CommandPalette.tsx:146 (onClick={() => runAt(i)}); :63-68 (close then run)",
+    "B: palette/tree.txt:107 and the other MenuItem nodes have onClick=ƒ, but the handler's effect is not visible. No click event is recorded in palette/meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-011",
+   "check": "confirmed_by_one",
+   "check_notes": "Click runs the row via runAt, verified from source. B saw onClick=ƒ on rows but recorded no click."
+  },
+  {
+   "title": "Hover moves the highlight to the hovered row",
+   "trigger": "Mouse moves over a command row",
+   "context": "Palette open",
+   "result": "The highlight jumps to that row, so the mouse and keyboard share one selection.",
+   "exact": [],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:145",
+    "A: CommandPalette.tsx:145 (onMouseMove={() => setActive(i)}). It is onMouseMove, so it fires on every mouse move over the row, not only on entry.",
+    "B: Each MenuItem node (palette/tree.txt:107, :111, :116 and onward) has onMouseMove=ƒ. The highlight jumping to the hovered row is not shown in any snapshot, and no mouse move is recorded in meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-012",
+   "check": "confirmed_by_one",
+   "check_notes": "Hover sets the active row via onMouseMove, verified from source. B saw onMouseMove=ƒ on rows but recorded no mouse move."
+  },
+  {
+   "title": "Highlighted row scrolls into view",
+   "trigger": "Any change to the highlight (keyboard or hover)",
+   "context": "Palette open; list taller than the panel",
+   "result": "The highlighted row is scrolled into view with the nearest alignment.",
+   "exact": [
+    {
+     "what": "scrollIntoView block",
+     "value": "nearest"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:57-61",
+    "A: CommandPalette.tsx:57-61 (useEffect keyed on [active]; scrollIntoView({ block: 'nearest' }) on querySelector(`[data-idx=\"${active}\"]`))",
+    "B: Context holds: palette/tree.txt:103 Surface2 height 456, and rows :107-:179 extend well beyond it. The scrollIntoView block value \"nearest\" and any scroll position change are not visible in the tree or screenshot."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "The effect depends only on active. A typed query that leaves active at 0 does not re-run it, so the list keeps its scroll position and the first row is not scrolled into view. Hover that sets the already-active index also does not re-run it."
+   ],
+   "id": "F06-013",
+   "check": "corrected",
+   "check_notes": "Scroll-into-view behaviour is from source (A). B confirmed only the overflow context (panel height 456 with rows beyond it) and could not observe scrolling."
+  },
+  {
+   "title": "Empty state text when nothing matches",
+   "trigger": "Typing a query that matches no label (also rendered whenever the results list is empty, including when the catalog itself has no commands)",
+   "context": "Palette open",
+   "result": "A centred muted line reads exactly 'No matching commands'.",
+   "exact": [
+    {
+     "what": "element",
+     "value": "<p> (Label as=\"p\", tone muted)"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:119-127",
+    "A: CommandPalette.tsx:119-127 (renders when results.length === 0; Label as=\"p\" tone=\"muted\" className=\"px-space-7 py-6 text-center text-[13px]\")",
+    "B: spec/references/palette-no-match/tree.txt:106 Label as=\"p\" tone=\"muted\" className=\"px-space-7 py-6 text-center text-[13px]\" @346,134 488x62. palette-no-match/shot.png shows \"No matching commands\" centred and muted, with query \"zzzz\" (:105). The element is a <p>, which the feature does not state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "The condition is results.length === 0 (CommandPalette.tsx:119), so it also appears when the catalog is empty."
+   ],
+   "id": "F06-014",
+   "check": "corrected",
+   "check_notes": "Empty-state text, muted styling and classes confirmed by both. B noted the element is a <p>, which is also in source (Label as=\"p\"). Source adds that the empty state also appears when the catalog itself is empty."
+  },
+  {
+   "title": "Group heading appears when the group changes",
+   "trigger": "none (rendering)",
+   "context": "Palette open; results shown",
+   "result": "A small uppercase heading with the group name appears above the first row of each run of same-group rows. Repeated groups are not merged after filtering, so a heading shows again whenever the previous row belongs to another group.",
+   "exact": [
+    {
+     "what": "spacing",
+     "value": "mt-space-3 mb-space-1 px-space-6 (margin-top, margin-bottom, horizontal padding)"
+    },
+    {
+     "what": "element",
+     "value": "Label as=\"div\""
+    },
+    {
+     "what": "font size",
+     "value": "text-[10.5px]"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:128-141",
+    "A: CommandPalette.tsx:128-141 (prevGroup = results[i - 1]?.group; heading shown when cmd.group !== prevGroup; Label as=\"div\" tone=\"muted\" weight=\"semibold\" className=\"mt-space-3 mb-space-1 px-space-6 text-[10.5px] tracking-widest uppercase\")",
+    "B: spec/references/palette/tree.txt:106 Label tone=\"muted\" weight=\"semibold\" className=\"mt-space-3 mb-space-1 px-space-6 text-[10.5px] tracking-wide…\". The className is truncated, so \"tracking-widest\" cannot be confirmed (the visible prefix is consistent with it). Uppercase is visible in palette/shot.png (VIEW, TASK, MANAGE) and palette-search/shot.png (TASK, MANAGE). The repeated-group rule is not shown by any reference."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Group names used: View, Task, Manage, Go to list, Go to project.",
+   "edge_cases": [
+    "The first row always gets a heading, because prevGroup is undefined for index 0 (CommandPalette.tsx:129)."
+   ],
+   "id": "F06-015",
+   "check": "corrected",
+   "check_notes": "Spacing, weight, size and uppercase are consistent across both. B's tree truncates the className, so tracking-widest is verified only from source (A). The repeated-group heading rule is verified only from source."
+  },
+  {
+   "title": "Row icon with fallback",
+   "trigger": "none (rendering)",
+   "context": "Each command row",
+   "result": "Each row shows its icon, or chevron_right if the command has none.",
+   "exact": [
+    {
+     "what": "icon size",
+     "value": "16"
+    },
+    {
+     "what": "icon weight",
+     "value": "300"
+    },
+    {
+     "what": "fallback icon",
+     "value": "chevron_right"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:147-153",
+    "A: CommandPalette.tsx:147-153 (Icon name={cmd.icon ?? 'chevron_right'} size={16} weight={300})",
+    "B: palette/tree.txt:108, :112, :117 and every other MenuItem leading Icon show size=16 weight=300. No row lacks an icon in any reference, so the chevron_right fallback is not exercised."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-016",
+   "check": "confirmed_by_both",
+   "check_notes": "Icon size and weight confirmed by both. The chevron_right fallback is verified only from source (A)."
+  },
+  {
+   "title": "Row shows the command's shortcut hint",
+   "trigger": "none (rendering)",
+   "context": "Command has an accelerator in the hotkey map",
+   "result": "The row's trailing slot shows a HotkeyHint (size md, tone inherit) for the command's accelerator. Commands without an accelerator show no hint.",
+   "exact": [
+    {
+     "what": "hint size",
+     "value": "md"
+    },
+    {
+     "what": "hint tone",
+     "value": "inherit"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:154-162",
+    "main/src/commands/palette.ts:27",
+    "A: CommandPalette.tsx:154-162 (trailing={cmd.accel && <HotkeyHint hotkey={parseAccel(cmd.accel)} size=\"md\" tone=\"inherit\" />}); palette.ts:27 (accel helper reads useHotkeyStore map)",
+    "B: spec/references/palette/tree.txt:109 HotkeyHint hotkey={…} size=\"md\" tone=\"inherit\" on Toggle preview. Rows with no trailing HotkeyHint: :116 Swap panes, :162 Open Trash, :169, :171, :173 (Go to list), :176, :178. palette/shot.png shows no hint for Swap panes."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Accelerator values come from the runtime hotkey map and are not defined in these files. Commands with no accel: Toggle split view is accel-linked, but Swap panes, Open Trash, Delete selected task, every go-to-list and go-to-project row have none.",
+   "edge_cases": [],
+   "id": "F06-017",
+   "check": "confirmed_by_both",
+   "check_notes": "Hint rendering and its absence on rows without accelerators confirmed by both."
+  },
+  {
+   "title": "Escape or a press on the scrim closes the palette",
+   "trigger": "Escape key, or mouse press on the dimmed area outside the panel",
+   "context": "Palette open",
+   "result": "The palette closes without running a command. Escape is captured so the app's key map does not also act on it.",
+   "exact": [
+    {
+     "what": "dismiss press",
+     "value": "mousedown on scrim (default dismissOn)"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:72-76",
+    "common-ui/src/components/surfaces/Overlay.tsx:70",
+    "common-ui/src/components/surfaces/Overlay.tsx:89-97",
+    "common-ui/src/overlay.ts:55-60",
+    "A: CommandPalette.tsx:72-76 (onDismiss={onClose}, captureEscape); common-ui/src/components/surfaces/Overlay.tsx:70 (dismissOn default 'mousedown'); :86-97 (dismissFromScrim: only when e.target === e.currentTarget); common-ui/src/overlay.ts:55-60 (Escape handler, stopPropagation when capture, preventDefault)",
+    "B: spec/references/palette/tree.txt:101 Overlay captureEscape=true onDismiss=ƒ; :102 Backdrop2 onMouseDown=ƒ on the scrim. dismissOn is not listed, so the default is not shown. The palette closing on Escape or press is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "The scrim press dismisses on mousedown, and only when the mousedown target is the scrim itself (Overlay.tsx:89-90). A press that starts on the panel and is released on the scrim does not close the palette.",
+    "Escape is handled on the window in the capture phase (overlay.ts:66), with stopPropagation and preventDefault (overlay.ts:57-58)."
+   ],
+   "id": "F06-018",
+   "check": "corrected",
+   "check_notes": "captureEscape and the scrim onMouseDown handler are confirmed by B's tree. Dismissal behaviour (mousedown default, target-must-be-scrim, capture-phase Escape) is from source (A); B did not observe closing."
+  },
+  {
+   "title": "Focus is trapped in the palette",
+   "trigger": "Tab / Shift+Tab inside the palette",
+   "context": "Palette open",
+   "result": "Tab cycles inside the overlay and does not reach the window behind it. On close, focus returns to the element focused before opening unless focus was taken by something outside.",
+   "exact": [
+    {
+     "what": "trapFocus",
+     "value": "true"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:75-76",
+    "common-ui/src/overlay.ts:100-151",
+    "A: CommandPalette.tsx:75-76 (trapFocus); common-ui/src/components/surfaces/Overlay.tsx:84 (useFocusTrap(scrimRef, trapFocus && !!onDismiss)), :105 (tabIndex -1 on scrim); common-ui/src/overlay.ts:100-151 (onKey wraps Tab only at first/last item, :123-140; opener captured :106; hand-back skipped when claimedOutside, :148)",
+    "B: spec/references/palette/tree.txt:101 Overlay trapFocus=true. Tab cycling and focus return on close are not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "The trap is enabled only when onDismiss is set (Overlay.tsx:84). The palette sets it, so it is active.",
+    "Tab wraps only at the first and last focusable item (overlay.ts:129-139). Tab between them moves focus natively.",
+    "The return of focus to the opener is skipped if anything outside the overlay took focus while it was open (overlay.ts:107-120, 148)."
+   ],
+   "id": "F06-019",
+   "check": "corrected",
+   "check_notes": "trapFocus=true confirmed by B's tree. Tab wrapping and focus return are from source (A); B did not observe them."
+  },
+  {
+   "title": "Run 'Toggle preview'",
+   "trigger": "Select the 'Toggle preview' row (click or Enter)",
+   "context": "Palette open",
+   "result": "Toggles the preview panel.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Toggle preview"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "right_panel_open"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id toggle_preview (value from hotkey map)"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:39-46",
+    "A: commands/palette.ts:39-46 (id toggle_preview, group 'View', label 'Toggle preview', icon 'right_panel_open', accel: accel('toggle_preview'), run: layout.togglePreview())",
+    "B: palette/tree.txt:106 VIEW heading; :107 MenuItem data-idx=0 active=true; :108 Icon name=\"right_panel_open\" size=16 weight=300. palette/shot.png row 1 reads \"Toggle preview\" with hint ⌘\\. The hotkey id toggle_preview is not visible. Toggling is not observed. The heading is uppercase in the render, so the DOM string \"View\" is not confirmed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-020",
+   "check": "confirmed_by_both",
+   "check_notes": "Row label, group, icon and hint confirmed by both. The toggle action and the DOM string 'View' (rendered uppercase) are not observed by B."
+  },
+  {
+   "title": "Run 'Toggle split view'",
+   "trigger": "Select the 'Toggle split view' row",
+   "context": "Palette open; split target exists",
+   "result": "Toggles split view for the target from splitTargetId(). If there is no target, nothing happens.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Toggle split view"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "vertical_split"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id toggle_split"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:47-57",
+    "A: commands/palette.ts:47-57 (label 'Toggle split view', group 'View', icon 'vertical_split', accel: accel('toggle_split'); run: splitTargetId(), then if (t) layout.toggleSplit(t) at line 55)",
+    "B: palette/tree.txt:111-115 MenuItem data-idx=1 with Icon name=\"vertical_split\" size=16 weight=300 (:112) and hint command and option keys (:114-115). palette/shot.png shows \"Toggle split view\" ⌘⌥S. Note: palette/tree.txt:34 TaskPane isSplit=false, yet the row is listed (:111), so a split target is not a precondition for the row being listed. The hotkey id is not visible. The toggle itself is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-021",
+   "check": "confirmed_by_both",
+   "check_notes": "Row listed with split closed (isSplit=false) per B, which is consistent with source: the row is always built and the split target is only used inside run. The toggle itself is not observed."
+  },
+  {
+   "title": "Run 'Swap panes'",
+   "trigger": "Select the 'Swap panes' row",
+   "context": "Palette open",
+   "result": "Calls layoutStore.swapPanes(). No shortcut hint is shown.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Swap panes"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "swap_horiz"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:58-64",
+    "A: commands/palette.ts:58-64 (label 'Swap panes', group 'View', icon 'swap_horiz', no accel key; run: layout.swapPanes())",
+    "B: palette/tree.txt:116-117 MenuItem data-idx=2 with leading Icon name=\"swap_horiz\" size=16 weight=300 and no trailing HotkeyHint; palette/shot.png shows \"Swap panes\" with no hint; it sits under the VIEW heading at :106. The swapPanes call is not observable."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-022",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and absence of a hint confirmed by both. The swapPanes call is not observed."
+  },
+  {
+   "title": "Run 'Show / hide completed'",
+   "trigger": "Select the 'Show / hide completed' row",
+   "context": "Palette open",
+   "result": "Toggles the show-completed setting.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Show / hide completed"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "visibility"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id toggle_completed"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:65-72",
+    "A: commands/palette.ts:65-72 (label 'Show / hide completed' line 68, group 'View', icon 'visibility', accel: accel('toggle_completed') line 70, run: useSettingsStore.getState().toggleShowCompleted() line 71)",
+    "B: palette/tree.txt:118-122 MenuItem data-idx=3 with Icon name=\"visibility\" size=16 weight=300 (:119) and hint keyboard_command_key plus shift (:121-122). palette/shot.png shows \"Show / hide completed\" with ⌘⇧H. The hotkey id is not visible. The toggle is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-023",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The toggle action is not observed by B."
+  },
+  {
+   "title": "Run 'Collapse all'",
+   "trigger": "Select the 'Collapse all' row",
+   "context": "Palette open",
+   "result": "Runs collapseAll from tasks.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Collapse all"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "unfold_less"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id collapse_all"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:73-80",
+    "A: commands/palette.ts:73-80 (label 'Collapse all', group 'View', icon 'unfold_less', accel: accel('collapse_all'), run: collapseAll at line 79); import of collapseAll from './tasks' at palette.ts:17-22",
+    "B: palette/tree.txt:123-127 MenuItem data-idx=4 with Icon name=\"unfold_less\" size=16 weight=300 (:124) and hint command and option keys. palette/shot.png shows \"Collapse all\" with ⌘⌥-. The collapseAll call is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-024",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The collapseAll call is not observed by B."
+  },
+  {
+   "title": "Run 'Expand all'",
+   "trigger": "Select the 'Expand all' row",
+   "context": "Palette open",
+   "result": "Runs expandAll from tasks.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Expand all"
+    },
+    {
+     "what": "group",
+     "value": "View"
+    },
+    {
+     "what": "icon",
+     "value": "unfold_more"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id expand_all"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:81-88",
+    "A: commands/palette.ts:81-88 (label 'Expand all', group 'View', icon 'unfold_more', accel: accel('expand_all'), run: expandAll at line 87)",
+    "B: palette/tree.txt:128-132 MenuItem data-idx=5 with Icon name=\"unfold_more\" size=16 weight=300 (:129) and hint command and option keys. palette/shot.png shows \"Expand all\" with ⌘⌥=. The expandAll call is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-025",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The expandAll call is not observed by B."
+  },
+  {
+   "title": "Run 'New task' in the focused list",
+   "trigger": "Select the 'New task' row",
+   "context": "Palette open; a focused list exists",
+   "result": "Starts a new task in the focused list. With no focused list, nothing happens.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "New task"
+    },
+    {
+     "what": "group",
+     "value": "Task"
+    },
+    {
+     "what": "icon",
+     "value": "add"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id new_task"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:89-98",
+    "A: commands/palette.ts:89-98 (label 'New task' line 92, group 'Task', icon 'add', accel: accel('new_task'), run: if (focusedListId) startNewTask(focusedListId) lines 95-97)",
+    "B: palette/tree.txt:133 TASK heading; :134 MenuItem data-idx=6 with Icon name=\"add\" size=16 weight=300 (:135) and hint (:136); palette/shot.png shows \"New task\" ⌘N. The focused-list context is not visible (TaskPane list=\"Errands\" at :34). Creation is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-026",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The focused-list guard is source-only; creation not observed."
+  },
+  {
+   "title": "Run 'Search this list'",
+   "trigger": "Select the 'Search this list' row",
+   "context": "Palette open; a focused list exists",
+   "result": "Calls focusSearch for the focused list, which invokes the search focuser registered for that list. If no focuser is registered for it, nothing happens. With no focused list, nothing happens.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Search this list"
+    },
+    {
+     "what": "group",
+     "value": "Task"
+    },
+    {
+     "what": "icon",
+     "value": "search"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id search"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:99-108",
+    "A: commands/palette.ts:99-108 (label 'Search this list', group 'Task', icon 'search', accel: accel('search'); run: if (focusedListId) focusSearch(focusedListId)); main/src/lib/searchFocus.ts:16-17 (focusSearch(listId, seed?) calls focusers.get(listId)?.(seed))",
+    "B: palette/tree.txt:138-141 MenuItem data-idx=7 with Icon name=\"search\" size=16 weight=300 (:139) and hint (:140); palette/shot.png shows \"Search this list\" ⌘F. The focused-list context and focus effect are not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "focusSearch is a no-op when no focuser is registered for the list (searchFocus.ts:17)."
+   ],
+   "id": "F06-027",
+   "check": "corrected",
+   "check_notes": "Row, icon and hint confirmed by both. The focus effect is source-only (A); B did not observe it."
+  },
+  {
+   "title": "Run 'Undo'",
+   "trigger": "Select the 'Undo' row",
+   "context": "Palette open",
+   "result": "Calls history undo.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Undo"
+    },
+    {
+     "what": "group",
+     "value": "Task"
+    },
+    {
+     "what": "icon",
+     "value": "undo"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id undo"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:109-116",
+    "A: commands/palette.ts:109-116 (label 'Undo' line 112, group 'Task', icon 'undo', accel: accel('undo'), run: void useHistoryStore.getState().undo() line 115)",
+    "B: palette/tree.txt:142-145 MenuItem data-idx=8 with Icon name=\"undo\" size=16 weight=300 (:143) and hint (:144); palette/shot.png shows \"Undo\" ⌘Z. The history undo call is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-028",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The undo call is not observed by B."
+  },
+  {
+   "title": "Run 'Redo'",
+   "trigger": "Select the 'Redo' row",
+   "context": "Palette open",
+   "result": "Calls history redo.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Redo"
+    },
+    {
+     "what": "group",
+     "value": "Task"
+    },
+    {
+     "what": "icon",
+     "value": "redo"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id redo"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:117-124",
+    "A: commands/palette.ts:117-124 (label 'Redo' line 120, group 'Task', icon 'redo', accel: accel('redo'), run: void useHistoryStore.getState().redo() line 123)",
+    "B: palette/tree.txt:146-150 MenuItem data-idx=9 with Icon name=\"redo\" size=16 weight=300 (:147) and hint command plus shift (:149-150); palette/shot.png shows \"Redo\" ⌘⇧Z. The history redo call is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-029",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The redo call is not observed by B."
+  },
+  {
+   "title": "Run 'New list'",
+   "trigger": "Select the 'New list' row",
+   "context": "Palette open",
+   "result": "Runs createList.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "New list"
+    },
+    {
+     "what": "group",
+     "value": "Manage"
+    },
+    {
+     "what": "icon",
+     "value": "playlist_add"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id new_list"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:125-132",
+    "A: commands/palette.ts:125-132 (label 'New list' line 128, group 'Manage', icon 'playlist_add', accel: accel('new_list'), run: createList line 131)",
+    "B: palette/tree.txt:151 MANAGE heading covers data-idx 10-13; :152 MenuItem data-idx=10 with Icon name=\"playlist_add\" size=16 weight=300 (:153) and hint command plus shift (:155-156); palette-search/shot.png shows \"New list\" ⌘⇧N. The createList run is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-030",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The createList run is not observed by B."
+  },
+  {
+   "title": "Run 'New project'",
+   "trigger": "Select the 'New project' row",
+   "context": "Palette open",
+   "result": "Runs createProject.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "New project"
+    },
+    {
+     "what": "group",
+     "value": "Manage"
+    },
+    {
+     "what": "icon",
+     "value": "create_new_folder"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id new_project"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:133-140",
+    "A: commands/palette.ts:133-140 (label 'New project' line 136, group 'Manage', icon 'create_new_folder', accel: accel('new_project'), run: createProject line 139)",
+    "B: palette/tree.txt:157 MenuItem data-idx=11 with Icon name=\"create_new_folder\" size=16 weight=300 (:158) and hint command plus shift (:160-161); palette-search/shot.png shows \"New project\" ⌘⇧P. The createProject run is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-031",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The createProject run is not observed by B."
+  },
+  {
+   "title": "Run 'Open Trash'",
+   "trigger": "Select the 'Open Trash' row",
+   "context": "Palette open",
+   "result": "Opens the Trash view (setTrashOpen(true)).",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Open Trash"
+    },
+    {
+     "what": "group",
+     "value": "Manage"
+    },
+    {
+     "what": "icon",
+     "value": "delete"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:141-147",
+    "A: commands/palette.ts:141-147 (label 'Open Trash' line 144, group 'Manage', icon 'delete' line 145, no accel key, run: useUiStore.getState().setTrashOpen(true) line 146)",
+    "B: palette/tree.txt:162-163 MenuItem data-idx=12 under the MANAGE heading (:151), with Icon name=\"delete\" size=16 weight=300 and no trailing hint. The label \"Open Trash\" is not in the tree text and this row is clipped from palette/shot.png, so the label is unverified. The Trash-open effect is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "No shortcut hint is shown.",
+   "edge_cases": [],
+   "id": "F06-032",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and absence of hint confirmed by both. The label 'Open Trash' is verified from source only; B could not see it because the row is clipped."
+  },
+  {
+   "title": "Run 'Settings'",
+   "trigger": "Select the 'Settings' row",
+   "context": "Palette open",
+   "result": "Calls api.openSettings().",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Settings"
+    },
+    {
+     "what": "group",
+     "value": "Manage"
+    },
+    {
+     "what": "icon",
+     "value": "settings"
+    },
+    {
+     "what": "accel",
+     "value": "hotkey id open_settings"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:148-155",
+    "A: commands/palette.ts:148-155 (label 'Settings' line 151, group 'Manage', icon 'settings' line 152, accel: accel('open_settings') line 153, run: api.openSettings() line 154)",
+    "B: palette/tree.txt:164-167 MenuItem data-idx=13 under the MANAGE heading (:151), with Icon name=\"settings\" size=16 weight=300 (:165) and a command-key hint (:166-167). palette/tree.txt:31 BarButton title=\"Settings  ⌘,\" supports the ⌘, glyph. The label \"Settings\" is clipped from palette/shot.png and not in the tree, so it is unverified. api.openSettings() is not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-033",
+   "check": "confirmed_by_both",
+   "check_notes": "Row, icon and hint confirmed by both. The label 'Settings' is verified from source only; B could not see it. api.openSettings() is not observed."
+  },
+  {
+   "title": "Delete row appears when a task is selected",
+   "trigger": "Select the 'Delete “<title>”' row",
+   "context": "Palette open; a task is selected (selectedTaskId resolves to a task)",
+   "result": "The row reads Delete “<task title>” with the task's exact title, and runs requestDeleteTask for it. The row is absent when no task is selected.",
+   "exact": [
+    {
+     "what": "label template",
+     "value": "Delete “${selectedTask.title}”"
+    },
+    {
+     "what": "group",
+     "value": "Task"
+    },
+    {
+     "what": "icon",
+     "value": "delete"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:33-36",
+    "main/src/commands/palette.ts:157-164",
+    "A: commands/palette.ts:33-36 (selectedTask = selectedTaskId ? taskById[selectedTaskId] : null); :157-164 (pushed only if selectedTask; label `Delete “${selectedTask.title}”` line 161; group 'Task' line 160; icon 'delete' line 162; run: void requestDeleteTask(selectedTask) line 163)",
+    "B: palette/tree.txt:96 PreviewPanel shows EmptyState title=\"No task selected\", and the TASK group (:133-150) holds only data-idx 6-9 with no Delete row. The absence when no task is selected is confirmed. The label template, the present state and requestDeleteTask are not observable."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Curly quotes “ ” are used in the label.",
+   "edge_cases": [
+    "The row is pushed after the built-in commands, so it appears after the 'Manage' rows, and its 'Task' group heading repeats there (CommandPalette.tsx:132 heading logic). It is not placed under the first 'Task' heading.",
+    "The row has no accel key, so it shows no shortcut hint."
+   ],
+   "id": "F06-034",
+   "check": "corrected",
+   "check_notes": "Absence when no task is selected confirmed by B (no Delete row in the TASK group). Presence state, label template and requestDeleteTask are from source (A) only. The row placement after the Manage rows comes from source."
+  },
+  {
+   "title": "Go-to-list rows for the active project",
+   "trigger": "Select a row under 'Go to list'",
+   "context": "Palette open; one row per list in the active project",
+   "result": "Selects that list in the layout. The row label is the list's name.",
+   "exact": [
+    {
+     "what": "group",
+     "value": "Go to list"
+    },
+    {
+     "what": "icon",
+     "value": "list"
+    },
+    {
+     "what": "label",
+     "value": "list name"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:29-31",
+    "main/src/commands/palette.ts:165-172",
+    "A: commands/palette.ts:29-31 (listsInProject(useProjectStore.getState().activeId)); :165-172 (for each list: id go-list-${l.id}, group 'Go to list' line 168, label l.name line 169, icon 'list' line 170, run: layout.selectList(l.id) line 171); :173-180 (project rows, not covered by this feature)",
+    "B: palette/tree.txt:168 heading, then MenuItem data-idx=14, 15, 16 at :169, :171, :173, each with Icon name=\"list\" size=16 weight=300 (:170, :172, :174). That is three rows. The ListTabs at :14, :17, :20 show three lists (Errands, Reading, Garden), consistent with one row per list. Row label text is not in the tree or screenshot. Note: a further group heading at :175 with two folder-icon rows (data-idx 17, 18 at :176, :178) follows and is not covered by any feature in chunk 6.1."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Lists come from listsInProject(active project id).",
+   "edge_cases": [
+    "Separate 'Go to project' rows (group 'Go to project', icon 'folder', run selectProject(p.id)) are built at palette.ts:173-180. They are not described by this feature."
+   ],
+   "id": "F06-035",
+   "check": "corrected",
+   "check_notes": "One 'Go to list' row per list in the active project, icon list, confirmed by both (three rows matching three ListTabs). Row label text is verified from source only. B noted a following 'Go to project' group (data-idx 17, 18) that the source also places outside this feature."
+  },
+  {
+   "title": "Go-to-project rows",
+   "trigger": "Select a row under 'Go to project'",
+   "context": "Palette open; one row per project",
+   "result": "Selects that project. The row label is the project's name.",
+   "exact": [
+    {
+     "what": "group",
+     "value": "Go to project"
+    },
+    {
+     "what": "icon",
+     "value": "folder"
+    },
+    {
+     "what": "label",
+     "value": "project name"
+    }
+   ],
+   "sources": [
+    "main/src/commands/palette.ts:32",
+    "main/src/commands/palette.ts:173-180",
+    "Checker A: palette.ts:32 (projects from useProjectStore), palette.ts:173-180 (loop: group 'Go to project', label p.name, icon 'folder', run selectProject(p.id))",
+    "Checker B: palette/tree.txt:177 and :179 show Icon name=\"folder\" on rows data-idx 17 and 18, so the folder icon is consistent. The group heading text ('Go to project') and row labels are not in tree.txt, and palette/shot.png is cut off before those rows."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-036",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the source. B confirmed only the folder icon on the recorded rows; the group heading and labels were not recorded."
+  },
+  {
+   "title": "Palette ArrowDown with no results leaves the highlight at -1",
+   "trigger": "ArrowDown in the palette input",
+   "context": "Palette open; query matches no command",
+   "result": "ArrowDown computes Math.min(a + 1, results.length - 1). With no results this is Math.min(a + 1, -1), which gives -1. runAt(-1) returns without running anything, and no row is highlighted. Typing resets the highlight to 0.",
+   "exact": [
+    {
+     "what": "computed index",
+     "value": "Math.min(a + 1, results.length - 1)"
+    }
+   ],
+   "sources": [
+    "main/src/components/CommandPalette.tsx:101-104",
+    "main/src/components/CommandPalette.tsx:63-65",
+    "Checker A: CommandPalette.tsx:101-104 (ArrowDown: setActive((a) => Math.min(a + 1, results.length - 1))), CommandPalette.tsx:63-65 (runAt returns when results[i] is undefined), CommandPalette.tsx:95-97 (onChange resets setActive(0)).",
+    "Checker B: palette-no-match/tree.txt:105 has TextInput2 value=\"zzzz\" and :106 shows the message label; no MenuItem rows appear in tree.txt:103-106, consistent with no highlighted row. The ArrowDown key, the Math.min computation and the reset on typing are not recorded (palette-no-match/meta.json:9-30 has no key command)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "critic"
+   ],
+   "notes": "Harmless edge case that neither solution noticed.",
+   "edge_cases": [],
+   "id": "F06-037",
+   "check": "corrected",
+   "check_notes": "Correction from A (source code). B's no-match recording is consistent with no highlighted row but did not record the key press."
+  },
+  {
+   "title": "Context menu opens at a coordinate",
+   "trigger": "none in these files (callers invoke useContextMenu().open({ items, x, y, onPick }); the right-click trigger is in other areas)",
+   "context": "Any window",
+   "result": "A single menu panel is pinned at x,y. Opening another menu replaces the current one.",
+   "exact": [
+    {
+     "what": "open payload",
+     "value": "{ items, x, y, onPick }"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:16-17",
+    "main/src/components/ContextMenu.tsx:23-27",
+    "main/src/components/contextMenuContext.ts:15-30",
+    "Checker A: contextMenuContext.ts:15-20 (OpenMenu { items, x, y, onPick }), ContextMenu.tsx:16-17 (open API comment), ContextMenu.tsx:23 and :27 (single menu state, open: setMenu replaces the current menu).",
+    "Checker B: tab-context-menu/tree.txt:104 MenuPanel items=[4] x=348 y=21 onPick=ƒ, and multi-context-menu/tree.txt:131 MenuPanel items=[5] x=101 y=221 onPick=ƒ. These props match the open payload fields. Replacement by a second menu is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Without a provider the default open is a no-op (contextMenuContext.ts:22-24).",
+   "edge_cases": [],
+   "id": "F06-038",
+   "check": "confirmed_by_both",
+   "check_notes": "Replacement by a second menu is supported by code only (A); not recorded (B)."
+  },
+  {
+   "title": "Context menu is clamped inside the window",
+   "trigger": "none",
+   "context": "Menu opened near an edge",
+   "result": "After it renders, the panel moves so it stays at least 4px from every window edge.",
+   "exact": [
+    {
+     "what": "minimum margin",
+     "value": "4px"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:78-88",
+    "Checker A: ContextMenu.tsx:78-88 (useLayoutEffect after render): x: Math.max(4, Math.min(x, window.innerWidth - r.width - 4)), y: Math.max(4, Math.min(y, window.innerHeight - r.height - 4)).",
+    "Checker B: No recorded menu sits within 4px of a window edge: tab-context-menu/tree.txt:104 is at @348,21 158x145 and multi-context-menu/tree.txt:131 is at @101,221 154x175. The clamp is not exercised by any recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-039",
+   "check": "confirmed_by_one",
+   "check_notes": "Clamp verified in code only; no recording exercises it."
+  },
+  {
+   "title": "Escape closes the context menu",
+   "trigger": "Escape key",
+   "context": "Context menu open",
+   "result": "The menu closes. The key is captured first.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:33-38",
+    "common-ui/src/overlay.ts:55-60",
+    "Checker A: ContextMenu.tsx:33-38 (Overlay captureEscape), overlay.ts:55-60 (keydown Escape: stopPropagation when capture, preventDefault, onDismiss).",
+    "Checker B: tab-context-menu/tree.txt:102 and multi-context-menu/tree.txt:129 show captureEscape=true on the menu Overlay, but no Escape press is recorded (meta.json commands contain none)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-040",
+   "check": "confirmed_by_one",
+   "check_notes": "captureEscape=true is recorded; the Escape behaviour is verified in code only."
+  },
+  {
+   "title": "Outside press closes the context menu",
+   "trigger": "Mouse press (mousedown) anywhere outside the menu",
+   "context": "Context menu open",
+   "result": "The menu closes and the press is absorbed by the invisible scrim, so it does not reach the content below.",
+   "exact": [
+    {
+     "what": "dim",
+     "value": "none"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:33-37",
+    "common-ui/src/components/surfaces/Backdrop.tsx:4-5",
+    "common-ui/src/components/surfaces/Overlay.tsx:89-97",
+    "Checker A: ContextMenu.tsx:33-37 (layer menu, dim none, onDismiss close), Overlay.tsx:70 (dismissOn default 'mousedown'), Overlay.tsx:89-97 (dismissFromScrim fires only when e.target === e.currentTarget), Backdrop.tsx:4-5 (none still absorbs presses), Backdrop.tsx:17-21 (DIM none = '').",
+    "Checker B: dim=\"none\" on the menu Overlay (tab-context-menu/tree.txt:102) and Backdrop2 dim=\"none\" (tree.txt:103). The Backdrop2 @0,0 1180x760 covers the full window. The press-absorption behaviour itself is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-041",
+   "check": "confirmed_by_both",
+   "check_notes": "Press absorption is verified in code only."
+  },
+  {
+   "title": "Right-click outside closes the menu instead of opening the OS menu",
+   "trigger": "Right-click (contextmenu event) on the scrim",
+   "context": "Context menu open",
+   "result": "The default browser/OS context menu is prevented and the menu closes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:40-43",
+    "Checker A: ContextMenu.tsx:40-43 (onContextMenu: e.preventDefault(); close()); Overlay.tsx:107 passes onContextMenu to Backdrop.",
+    "Checker B: onContextMenu=ƒ is present on the menu Overlay and Backdrop2 (tab-context-menu/tree.txt:102-103; multi-context-menu/tree.txt:129-130). No right-click on the scrim is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-042",
+   "check": "confirmed_by_one",
+   "check_notes": "Handler presence is recorded; the right-click behaviour is verified in code only."
+  },
+  {
+   "title": "Window blur or resize closes the context menu",
+   "trigger": "Window loses focus (blur) or is resized",
+   "context": "Context menu open",
+   "result": "The menu closes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:39",
+    "common-ui/src/overlay.ts:68-71",
+    "Checker A: ContextMenu.tsx:39 (dismissOnWindowChange), overlay.ts:68-71 (window blur and resize listeners call onDismiss).",
+    "Checker B: dismissOnWindowChange=true on the menu Overlay (tab-context-menu/tree.txt:102; multi-context-menu/tree.txt:129), which is consistent with the claim. No blur or resize is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-043",
+   "check": "confirmed_by_one",
+   "check_notes": "Prop is recorded; blur and resize dismissal are verified in code only."
+  },
+  {
+   "title": "Context menu sits above sheets",
+   "trigger": "none",
+   "context": "A sheet is open and a menu is opened",
+   "result": "The menu renders on the menu layer, above the modal (sheet) layer.",
+   "exact": [
+    {
+     "what": "layer",
+     "value": "menu"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:29-34",
+    "common-ui/src/components/surfaces/Backdrop.tsx:23-29",
+    "Checker A: ContextMenu.tsx:34 (layer=\"menu\") and ContextMenu.tsx:29-34 (comment: rides above the sheet layer) match the layer value. Backdrop.tsx:23-29 maps menu to z-menu, but the z-index values that put z-menu above z-modal are defined outside the allowed files, so the stacking order is not verified.",
+    "Checker B: layer=\"menu\" on the menu Overlay and Backdrop2 (tab-context-menu/tree.txt:102-103; multi-context-menu/tree.txt:129-130). No recorded menu is open over a sheet, so the stacking order is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-044",
+   "check": "confirmed_by_one",
+   "check_notes": "The layer value is confirmed by both. The stacking order above the sheet layer is unverified by either checker."
+  },
+  {
+   "title": "Context menu row click picks the item",
+   "trigger": "Single click on a non-submenu row. Disabled rows are not excluded in ContextMenu.tsx (see F06-051).",
+   "context": "Context menu open",
+   "result": "The menu closes, then onPick is called with the item id.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:49-52",
+    "main/src/components/ContextMenu.tsx:106-108",
+    "Checker A: ContextMenu.tsx:49-52 (onPick: close() then menu.onPick(id)), ContextMenu.tsx:106-108 (onClick: if (!item.submenu) onPick(item.id)). The onClick does not check item.disabled.",
+    "Checker B: No row click is recorded in any of the nine folders' meta.json command lists."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "ContextMenu.tsx does not check item.disabled in onClick, so onPick is called for a disabled row unless the common MenuItem suppresses the click (not in these files)."
+   ],
+   "id": "F06-045",
+   "check": "corrected",
+   "check_notes": "Corrections from A (source code). B recorded no row click."
+  },
+  {
+   "title": "Clicking a row with a submenu does nothing",
+   "trigger": "Click on a row that has submenu items",
+   "context": "Context menu open",
+   "result": "Nothing is picked and the menu stays open; the submenu is shown on hover instead.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:106-108",
+    "Checker A: ContextMenu.tsx:106-108 (no onPick when item.submenu is set; the menu is not closed), ContextMenu.tsx:105 and :123 (submenu shown on hover via subFor).",
+    "Checker B: multi-context-menu/tree.txt:140-142 'Move to list' has trailing chevron_right size=14, so it is a submenu row. No click on it is recorded, and no submenu panel appears in any tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-046",
+   "check": "confirmed_by_one",
+   "check_notes": "Submenu row is recorded; the click behaviour is verified in code only."
+  },
+  {
+   "title": "Hovering a submenu row opens its submenu",
+   "trigger": "Mouse enters a row with submenu items",
+   "context": "Context menu open",
+   "result": "The submenu appears beside the row.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:105",
+    "main/src/components/ContextMenu.tsx:123-133",
+    "Checker A: ContextMenu.tsx:105 (onMouseEnter sets subFor to item.id when item.submenu), ContextMenu.tsx:123-133 (Submenu rendered beside the row inside the relative row div).",
+    "Checker B: No hover is recorded. multi-context-menu/tree.txt has only one MenuPanel (line 131), so no open submenu is shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-047",
+   "check": "confirmed_by_one",
+   "check_notes": "Verified in code only."
+  },
+  {
+   "title": "Hovering a plain row closes any open submenu",
+   "trigger": "Mouse enters a row without submenu items",
+   "context": "A submenu is open",
+   "result": "The open submenu closes.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:105",
+    "Checker A: ContextMenu.tsx:105 (onMouseEnter sets subFor to null for a row without submenu).",
+    "Checker B: No hover sequence with an open submenu is recorded in any folder."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-048",
+   "check": "confirmed_by_one",
+   "check_notes": "Verified in code only."
+  },
+  {
+   "title": "Submenu flips side near the window edge",
+   "trigger": "none",
+   "context": "Submenu opened near the right or left edge",
+   "result": "The submenu opens to the right of its row, and flips to the left if its right edge would pass the window edge minus 4px. It flips back to the right if its left edge is less than 4px.",
+   "exact": [
+    {
+     "what": "edge margin",
+     "value": "4px"
+    },
+    {
+     "what": "open-right class",
+     "value": "left-full ml-0.5"
+    },
+    {
+     "what": "open-left class",
+     "value": "right-full mr-0.5"
+    },
+    {
+     "what": "vertical offset",
+     "value": "absolute top-0 -mt-1"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:140-165",
+    "Checker A: ContextMenu.tsx:140-165 (Submenu). Margin 4 at :150-151. Classes at :158-159: 'absolute top-0 -mt-1', side right 'left-full ml-0.5', side left 'right-full mr-0.5'. The layout effect has an empty dependency array at :152.",
+    "Checker B: No submenu is open in any recorded tree, so the flip classes (left-full ml-0.5, right-full mr-0.5, absolute top-0 -mt-1) and the 4px margin are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Submenus skip the viewport clamp (ContextMenu.tsx:80).",
+   "edge_cases": [
+    "The side is measured once on mount (useLayoutEffect with [] deps at ContextMenu.tsx:152), not on every render or window resize."
+   ],
+   "id": "F06-049",
+   "check": "corrected",
+   "check_notes": "Correction from A (source code). B recorded no open submenu, so the flip is unverified by recording."
+  },
+  {
+   "title": "Context menu row styling",
+   "trigger": "none (rendering)",
+   "context": "Context menu open",
+   "result": "Items show an optional icon (size 15), label, and trailing shortcut text (11px) and/or a chevron_right (size 14) for submenus. Dividers and danger tone are applied per item.",
+   "exact": [
+    {
+     "what": "icon size",
+     "value": "15"
+    },
+    {
+     "what": "shortcut text size",
+     "value": "11px"
+    },
+    {
+     "what": "submenu chevron",
+     "value": "chevron_right, size 14"
+    },
+    {
+     "what": "panel",
+     "value": "py-space-3, min-w-44, elevation menu, surface 3, radius panel"
+    },
+    {
+     "what": "divider class",
+     "value": "mx-space-5 my-space-3"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:90-122",
+    "main/src/components/ContextMenu.tsx:101",
+    "Checker A: ContextMenu.tsx:109 (Icon size={15}), :114 (text-[11px]), :116 (chevron_right size 14), :97 (absolute py-space-3 min-w-44), :93-94 (elevation menu, surface 3, radius panel), :101 (Divider className mx-space-5 my-space-3), :103 (tone danger).",
+    "Checker B: Icon size=15 on items (tab-context-menu/tree.txt:107; multi-context-menu/tree.txt:134). chevron_right size=14 (multi-context-menu/tree.txt:142). Surface2 elevation=\"menu\" surface=3 radius=\"panel\" className=\"absolute py-space-3 min-w-44\" (tab-context-menu/tree.txt:105; multi-context-menu/tree.txt:132). Divider className=\"mx-space-5 my-space-3\" (tab-context-menu/tree.txt:110,113; multi-context-menu/tree.txt:135,143). Danger tone on Delete task (multi-context-menu/tree.txt:144). The shortcut text 11px is not recorded: no recorded menu row has a shortcut."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Danger tone: tone 'danger' when item.danger is true, otherwise 'default' (ContextMenu.tsx:103).",
+   "edge_cases": [],
+   "id": "F06-050",
+   "check": "confirmed_by_both",
+   "check_notes": "The 11px shortcut text is verified in code only (ContextMenu.tsx:114); no recorded row has a shortcut."
+  },
+  {
+   "title": "Disabled context menu rows",
+   "trigger": "Click on a row with disabled set",
+   "context": "Context menu open",
+   "result": "The row is rendered disabled. Whether a click still calls onPick depends on the common MenuItem, which is not in these files.",
+   "exact": [],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:104",
+    "main/src/components/ContextMenu.tsx:106-108",
+    "Checker A: ContextMenu.tsx:104 (disabled={item.disabled}), ContextMenu.tsx:106-108 (onClick is not gated on disabled). The MenuItem behaviour is outside the allowed files, so the result's hedge is correct.",
+    "Checker B: Only disabled=false appears (tab-context-menu/tree.txt:108; multi-context-menu/tree.txt:140). No disabled row is recorded, so neither the disabled rendering nor the click handling is shown."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "ContextMenu.tsx itself does not block the click for disabled rows.",
+   "edge_cases": [],
+   "id": "F06-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Click handling is not gated in ContextMenu.tsx (A). No disabled row is recorded (B)."
+  },
+  {
+   "title": "Right-click on a list tab opens the tab context menu",
+   "trigger": "Right-click on a list tab in the tab strip. The target tab is not recorded; the menu is anchored near the Reading tab (x=348). No right-click command appears in meta.json, so the trigger is not evidenced.",
+   "context": "The menu is anchored at y=21 (tab-context-menu/tree.txt:104), inside the tab strip's vertical span (ListTabs @211,0 857x45, tree.txt:13), so it overlaps the lower part of the strip under the Reading tab label. It is not below the strip. Errands is the active tab (TaskPane list={\"Errands\"}, tree.txt:34). No sheet is open (SheetHost empty, tree.txt:100).",
+   "result": "A menu appears with four actions in three groups separated by two dividers: [Rename, Open in split view] | [Export list…] | [Delete list…] (tree.txt:110 and :113; shot.png).",
+   "exact": [
+    {
+     "what": "Overlay",
+     "value": "layer=\"menu\" placement=\"anchored\" dim=\"none\" onDismiss=ƒ captureEscape=true dismissOnWindowChange=true onContextMenu=ƒ @0,0 1180x760"
+    },
+    {
+     "what": "Backdrop",
+     "value": "Backdrop2 dim=\"none\" blur=false layer=\"menu\" className=\"\" onContextMenu=ƒ onMouseDown=ƒ @0,0 1180x760"
+    },
+    {
+     "what": "Panel",
+     "value": "MenuPanel items=[4] x=348 y=21 onPick=ƒ @348,21 158x145; Surface2 elevation=\"menu\" surface=3 radius=\"panel\" style={…} className=\"absolute py-space-3 min-w-44\" @348,21 158x145"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:102-105)",
+    "state:tab-context-menu (shot.png)",
+    "main/src/components/ContextMenu.tsx:33-43",
+    "main/src/components/ContextMenu.tsx:91-97",
+    "common-ui/src/components/surfaces/Overlay.tsx:70",
+    "Checker A: ContextMenu.tsx:33-43 matches the Overlay props (layer menu, placement anchored, dim none, captureEscape, dismissOnWindowChange, onContextMenu) and the Backdrop props (dim none, layer menu, onContextMenu, onMouseDown via Overlay.tsx:70 and :89-97). Overlay.tsx:70 supports the default. The tab-strip right-click trigger, the x=348 anchor, and the four items are in the tab strip source, which is not in the allowed files. The state spec labels the panel 'Surface2' but the code uses surface={3} (ContextMenu.tsx:94), so that label is a naming discrepancy, not a value.",
+    "Checker B: tab-context-menu/tree.txt:102-105 (Overlay, Backdrop2, MenuPanel, Surface2); tree.txt:110,113 (dividers); tree.txt:13 (ListTabs @211,0 857x45); tab-context-menu/shot.png; tab-context-menu/meta.json:11-31 (no right-click command recorded)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Critique verified the container values against source: Overlay layer menu, anchored, dim none, captureEscape, dismissOnWindowChange and onContextMenu match, and the panel is elevation menu, surface 3, radius panel, absolute py-space-3 min-w-44. Outside-press dismissal is confirmed by Overlay's default dismissOn mousedown on the scrim. Menu is not dimmed; right-click on the backdrop is handled by onContextMenu.",
+   "edge_cases": [
+    "The anchor coordinate and the right-clicked tab are not recorded beyond the Reading tab position (x=348).",
+    "The right-click that opened the menu is not in meta.json.",
+    "The sheet-rename-list recording shows the value \"Reading\" (sheet-rename-list/shot.png), which suggests the Reading tab was the target. This is an inference across states, not a recorded fact for this state."
+   ],
+   "id": "F06-052",
+   "check": "corrected",
+   "check_notes": "A could not check the tab strip source. B's corrections are the recorded values and are used. The 'Surface2' label in the spec is a naming discrepancy: the recorded tree also shows surface=3 (A's ContextMenu.tsx:94)."
+  },
+  {
+   "title": "Tab menu item 'Rename'",
+   "trigger": "Click 'Rename' in the tab context menu (top item, icon edit).",
+   "context": "Menu open from a list tab.",
+   "result": "Opens the Rename list sheet (see the Rename list entry; state 'sheet-rename-list').",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Rename"
+    },
+    {
+     "what": "Icon",
+     "value": "edit size 15"
+    },
+    {
+     "what": "Row",
+     "value": "MenuItem tone=\"default\" @349,26 156x30"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:106-107)",
+    "state:tab-context-menu (shot.png)",
+    "state:sheet-rename-list (shot.png)",
+    "Checker A: The Rename label, icon and tab-menu row are defined in the tab strip source, which is not in the allowed files. Only the generic MenuItem tone mapping is in scope (ContextMenu.tsx:103). The state:tab-context-menu and state:sheet-rename-list references were not readable.",
+    "Checker B: tab-context-menu/tree.txt:106-107: MenuItem tone=\"default\" onMouseEnter onClick leading @349,26 156x30 with Icon name=\"edit\" size=15; shot.png shows the label 'Rename' at the top. The click is not recorded. sheet-rename-list/shot.png shows the 'Rename list' dialog. The sheet-rename-list/tree.txt file contains only 'App'."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Link from Rename item to the sheet is inferred from the state names. Item labels and order are defined by the caller and are not in the allowed files, so they are unverifiable; the row mechanics are as described in the context menu entries.",
+   "edge_cases": [],
+   "id": "F06-053",
+   "check": "confirmed_by_one",
+   "check_notes": "B recorded the row and icon. The click result is not recorded."
+  },
+  {
+   "title": "Tab menu item 'Open in split view'",
+   "trigger": "Click 'Open in split view' in the tab context menu (second item, icon vertical_split).",
+   "context": "Menu open from a list tab.",
+   "result": "Result not recorded. Likely opens the list in split view (inferred from the label and the Split view toolbar button).",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Open in split view"
+    },
+    {
+     "what": "Icon",
+     "value": "vertical_split size 15"
+    },
+    {
+     "what": "Disabled",
+     "value": "false"
+    },
+    {
+     "what": "Row",
+     "value": "MenuItem @349,56 156x30"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:108-109)",
+    "state:tab-context-menu (shot.png)",
+    "Checker A: The 'Open in split view' item, its vertical_split icon and its handler are not in the allowed files. The result is marked 'not recorded' in the spec.",
+    "Checker B: tab-context-menu/tree.txt:108-109: MenuItem tone=\"default\" disabled=false @349,56 156x30 with Icon name=\"vertical_split\" size=15; shot.png shows 'Open in split view'. The click and result are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Item labels and order are caller-defined and not in the allowed files, so they are unverifiable.",
+   "edge_cases": [],
+   "id": "F06-054",
+   "check": "confirmed_by_one",
+   "check_notes": "Row and icon are recorded by B. The handler and result are not verified."
+  },
+  {
+   "title": "Tab menu item 'Export list…'",
+   "trigger": "Click 'Export list…' in the tab context menu (third group, icon ios_share).",
+   "context": "Menu open from a list tab. The item is the middle group, between the two dividers (tree.txt:110 and :113), i.e. the second group, not the third group.",
+   "result": "Label shown only; export result not recorded.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Export list…"
+    },
+    {
+     "what": "Icon",
+     "value": "ios_share size 15"
+    },
+    {
+     "what": "Row",
+     "value": "MenuItem @349,94 156x30"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:111-112)",
+    "state:tab-context-menu (shot.png)",
+    "Checker A: The 'Export list…' item and its ios_share icon are not in the allowed files. The state:tab-context-menu reference was not readable.",
+    "Checker B: tab-context-menu/tree.txt:110-112: Divider @356,89, then MenuItem @349,94 156x30 with Icon name=\"ios_share\" size=15, then Divider @356,127 (tree.txt:113). The shot.png label reads 'Export list…'."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Item labels and order are caller-defined and not in the allowed files, so they are unverifiable.",
+   "edge_cases": [],
+   "id": "F06-055",
+   "check": "corrected",
+   "check_notes": "B's recording places Export list in the middle group (second group), per tree.txt:110-113. A could not verify this from source."
+  },
+  {
+   "title": "Tab menu item 'Delete list…' in danger style",
+   "trigger": "Click 'Delete list…' at the bottom of the tab context menu (icon delete).",
+   "context": "Menu open from a list tab. Separated from Export list… by a divider.",
+   "result": "Label drawn in red (tone danger). Result, including any confirmation, is not recorded.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Delete list…"
+    },
+    {
+     "what": "Icon",
+     "value": "delete size 15"
+    },
+    {
+     "what": "Tone",
+     "value": "danger"
+    },
+    {
+     "what": "Row",
+     "value": "MenuItem tone=\"danger\" @349,132 156x30"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:114-115)",
+    "state:tab-context-menu (shot.png)",
+    "main/src/components/ContextMenu.tsx:103",
+    "Checker A: The 'Delete list…' item, its label and delete icon are defined outside the allowed files. The mapping danger to tone danger is consistent with ContextMenu.tsx:103 (tone={item.danger ? 'danger' : 'default'}). The red colour is inside MenuItem, which is not in these files.",
+    "Checker B: tab-context-menu/tree.txt:114-115: MenuItem tone=\"danger\" onMouseEnter onClick leading @349,132 156x30 with Icon name=\"delete\" size=15; shot.png shows 'Delete list…' in red. The delete-confirm folder is a task 'Move to Trash?' dialog (delete-confirm/shot.png), not a list confirmation, so it does not show the list confirmation step."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Critique: a danger item renders with tone danger, as ContextMenu.tsx:103 defines. Confirmation step not recorded. Same action name as the tab's x button ('Delete list' tooltip).",
+   "edge_cases": [
+    "Confirmation step before deleting is not recorded."
+   ],
+   "id": "F06-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Danger tone is recorded and consistent with ContextMenu.tsx:103. The list confirmation step is not shown by any recording."
+  },
+  {
+   "title": "Tab menu dividers and item hover",
+   "trigger": "Move the mouse over a menu item.",
+   "context": "Tab context menu open.",
+   "result": "Two dividers separate the four items into three groups: [Rename, Open in split view] | [Export list…] | [Delete list…]. The hover highlight is drawn by the common MenuItem, which is not in the allowed files; ContextMenu's onMouseEnter only sets submenu state, so it does not draw a highlight. The hover colour is not recorded.",
+   "exact": [
+    {
+     "what": "Dividers",
+     "value": "Divider className=\"mx-space-5 my-space-3\" @356,89 142x1 and @356,127 142x1"
+    },
+    {
+     "what": "Item size",
+     "value": "156x30 each, panel 158x145"
+    }
+   ],
+   "sources": [
+    "state:tab-context-menu (tree.txt:106-114)",
+    "main/src/components/ContextMenu.tsx:101",
+    "main/src/components/ContextMenu.tsx:105",
+    "Checker A: ContextMenu.tsx:101 (Divider className mx-space-5 my-space-3) and ContextMenu.tsx:105 (onMouseEnter only sets submenu state, so no highlight is drawn here) match. The 156x30 item size, panel 158x145 and divider coordinates come from the state tree, not from code, and the hover colour is inside MenuItem, not in these files.",
+    "Checker B: tab-context-menu/tree.txt:106-114: four MenuItem rows each @x,y 156x30; Divider @356,89 142x1 (tree.txt:110) and Divider @356,127 142x1 (tree.txt:113); MenuPanel 158x145 (tree.txt:104). Hover colour is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "B had inferred the hover highlight from onMouseEnter; the critique shows onMouseEnter only sets submenu state, so that inference is withdrawn.",
+   "edge_cases": [],
+   "id": "F06-057",
+   "check": "corrected",
+   "check_notes": "Layout corrections come from B's recording. A confirmed the divider classes and that onMouseEnter draws no highlight. Hover colour is unverified."
+  },
+  {
+   "title": "Sheet appears centred over the window",
+   "trigger": "none (opened by openSheet, askText or askConfirm). Recorded instance: the new-list shortcut is pressed; the key combination is not recorded in this share (sheet-new-list/meta.json lists list_hotkeys but no key is shown). The palette reference shows the New list command hint as ⌘⇧N (palette/shot.png), but the sheet folder does not record the key press itself.",
+   "context": "A sheet is requested. Recorded instance: main window, Errands list active, tabs Errands / Reading / Garden, no task selected, light theme. Confirmed by sheet-new-list/meta.json (window main, theme light) and tree.txt:34, 44-86, 96, and ListTabs labels.",
+   "result": "One dialog card appears centred on a dimmed, modal-layer scrim and takes focus. In the recorded New list sheet, the card is headed 'New list', the name field is focused with its text selected, and the footer shows 'Import JSON…' (left) and 'Cancel' and 'Create' (right).",
+   "exact": [
+    {
+     "what": "role/aria",
+     "value": "role dialog, aria-modal, aria-labelledby=\"_r_0_\" (aria-describedby not recorded)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:64-83",
+    "main/src/components/SheetHost.tsx:31-43",
+    "main/src/lib/sheet.ts:51-53",
+    "state:sheet-new-list (tree.txt:100-105)",
+    "state:sheet-new-list (shot.png)",
+    "state:sheet-new-list (meta.json: areas 6,9)",
+    "Checker A: Sheet.tsx:64-70 (Overlay layer modal, placement center, onDismiss, captureEscape, trapFocus), Overlay.tsx:70 (dim soft default), Sheet.tsx:71-82 (role dialog, aria-modal, aria-labelledby, aria-describedby when detail, elevation menu, surface 2, radius panel, className 'animate-sheet-in w-[min(26rem,100%)] overflow-hidden'), Sheet.tsx:101-106 (h2, font-display, semibold, text-[15px], leading-5, tone primary), Sheet.tsx:98 (Icon size 18), SheetHost.tsx:122 (tone default accent), SheetHost.tsx:103-108 (name field focused and selected). The recorded New list spec values (glyph, headline, geometry) are at the call site, outside the allowed files, and were not verified.",
+    "Checker B: sheet-new-list/tree.txt:100-114: SheetHost, SheetView, Sheet glyph=\"list_alt_add\" tone=\"accent\" headline=\"New list\" onDismiss=ƒ instead=<el> accept=<el>; Overlay layer=\"modal\" placement=\"center\" onDismiss=ƒ captureEscape=true trapFocus=true; Backdrop2 dim=\"soft\"; Surface2 role=\"dialog\" aria-modal=true aria-labelledby=\"_r_0_\" elevation=\"menu\" surface=2 radius=\"panel\" className=\"animate-sheet-in w-[min(26rem,100%)] overflow-hidden\" @408,309 364x141 (tree.txt:105); Label as=\"h2\" (tree.txt:107); TextInput2 autoFocus=true value=\"Gilded Fjord\" (tree.txt:109); footer KeyActions at tree.txt:112-114; meta.json areas [6,9]. The palette/tree.txt:152-156 row 'New list' hint shows ⌘⇧ (palette/shot.png shows ⌘⇧N)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The separator line above the footer is visible in the screenshot at about y 404 (inferred from the image). Animation duration is not recorded; only the class animate-sheet-in is present. Dark theme is not recorded in these five states (theme=light for all). The 'instead' slot is present only on the New list sheet (not on New project or Rename list), which is why it appears only in that recording. The sheet.ts:1-2 'dropped from the top' comment is stale: the card is centred (see the headline entry).",
+   "edge_cases": [
+    "Animation duration is not recorded.",
+    "The aria-describedby attribute is not recorded for the sheet Surface2 (tree.txt:105 shows only aria-labelledby). 'Described by detail' cannot be confirmed, and the recorded New list sheet has no detail prop."
+   ],
+   "id": "F06-058",
+   "check": "corrected",
+   "check_notes": "A verified the sheet code values; B recorded the New list instance (glyph list_alt_add, headline New list, geometry Surface2 @408,309 364x141). The recorded geometry and spec values are from B's recording and were not checked against code. aria-describedby is code-only (applies only when detail is set) and not recorded."
+  },
+  {
+   "title": "Only one sheet at a time",
+   "trigger": "none (a second sheet is opened while one is up)",
+   "context": "A sheet is on screen",
+   "result": "The first sheet is dismissed (its promise resolves as dismiss) and the new one appears.",
+   "exact": [
+    {
+     "what": "sheet id",
+     "value": "8 characters of a random UUID"
+    }
+   ],
+   "sources": [
+    "main/src/stores/sheetStore.ts:27-31",
+    "main/src/stores/sheetStore.ts:17-18",
+    "Checker A: sheetStore.ts:27-31 (get().current?.resolve({ action: 'dismiss' }) before replacing), sheetStore.ts:30 (id: crypto.randomUUID().slice(0, 8)).",
+    "Checker B: No recording shows two sheets, or a sheet being replaced. The sheet id format is not recorded in any tree or meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-059",
+   "check": "confirmed_by_one",
+   "check_notes": "Verified in code only."
+  },
+  {
+   "title": "Answering a sheet with a stale id does nothing",
+   "trigger": "none (internal)",
+   "context": "A sheet was replaced",
+   "result": "The answer is ignored.",
+   "exact": [],
+   "sources": [
+    "main/src/stores/sheetStore.ts:32-37",
+    "Checker A: sheetStore.ts:32-37 (answer returns early when cur?.id !== id).",
+    "Checker B: No stale-id answer is recorded in any folder."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-060",
+   "check": "confirmed_by_one",
+   "check_notes": "Verified in code only."
+  },
+  {
+   "title": "Sheet accent or danger tone",
+   "trigger": "none (set by spec.tone; default accent)",
+   "context": "Sheet shown",
+   "result": "Accent (default, undoable) or danger (not undoable). The tone colours the glyph badge and the accept button.",
+   "exact": [
+    {
+     "what": "default tone",
+     "value": "accent"
+    },
+    {
+     "what": "accent badge",
+     "value": "bg-selection-1l / text-accent-500l (dark: bg-selection-1d / text-accent-500d)"
+    },
+    {
+     "what": "danger badge",
+     "value": "bg-danger-100l / text-danger-500l (dark: bg-danger-100d / text-danger-500d)"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:122",
+    "common-ui/src/components/surfaces/Sheet.tsx:9-21",
+    "main/src/lib/sheet.ts:30-31",
+    "Checker A: SheetHost.tsx:122 (tone = spec.tone ?? 'accent'), sheet.ts:30-31 (accent for undoable, danger for non-undoable), Sheet.tsx:16-21 (BADGE accent: bg-selection-1l dark:bg-selection-1d text-accent-500l dark:text-accent-500d; danger: bg-danger-100l dark:bg-danger-100d text-danger-500l dark:text-danger-500d), SheetHost.tsx:143 (accept button variant danger when tone is danger).",
+    "Checker B: sheet-new-list/tree.txt:102 has tone=\"accent\", consistent with the default accent tone. The badge class tokens (bg-selection-1l, text-accent-500l, etc.) are not in any tree. delete-confirm/shot.png shows a 'Move to Trash?' sheet with a blue-looking badge and a non-red 'Move' button, but delete-confirm/tree.txt:127 has an empty SheetHost, so its tone cannot be read from the tree. The danger tone is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-061",
+   "check": "confirmed_by_one",
+   "check_notes": "Accent tone is recorded on New list. The delete-confirm sheet is a Move to Trash dialog with a blue-looking badge, which would be consistent with an undoable (accent) sheet under sheet.ts:30-31; this is not verified. The danger tone is not recorded."
+  },
+  {
+   "title": "Sheet glyph badge",
+   "trigger": "none (set by spec.glyph)",
+   "context": "Sheet with a glyph",
+   "result": "A 32px rounded badge holds the Material Symbols glyph at size 18, on the left of the headline. With no glyph the headline starts flush left.",
+   "exact": [
+    {
+     "what": "badge size",
+     "value": "size-8"
+    },
+    {
+     "what": "glyph size",
+     "value": "18"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:89-100",
+    "Checker A: Sheet.tsx:89-100 (glyph badge rounded-control grid size-8 shrink-0, BADGE tone colour, Icon size 18, rendered only when glyph is set).",
+    "Checker B: sheet-new-list/tree.txt:106: Icon name=\"list_alt_add\" size=18 @423,324 18x18, consistent with glyph size 18. The size-8 badge class and its 32px size are not in any tree. The badge's rendered size is not measured in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-062",
+   "check": "confirmed_by_one",
+   "check_notes": "Icon size 18 is recorded; the size-8 badge is code-only."
+  },
+  {
+   "title": "Sheet headline",
+   "trigger": "none (spec.headline)",
+   "context": "Any sheet",
+   "result": "Headline is a semibold display-font line at 15px that wraps onto more lines rather than truncating.",
+   "exact": [
+    {
+     "what": "font",
+     "value": "font-display, semibold, text-[15px], leading-5, text-pretty"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:101-109",
+    "common-ui/src/components/surfaces/Sheet.tsx:27-28",
+    "main/src/lib/sheet.ts:32",
+    "Checker A: Sheet.tsx:101-106 (Label as h2, font-display, weight semibold, text-[15px], leading-5, text-pretty, no truncate class), Sheet.tsx:27-28 (comment: wraps rather than truncates), sheet.ts:32 (headline doc).",
+    "Checker B: sheet-new-list/tree.txt:107 and sheet-new-project/tree.txt:107: Label as=\"h2\" className=\"font-display min-w-0 flex-1 text-[15px] leading-5 text-prett…\" (the className is truncated in the tree; text-pretty is partly visible). No truncate class is present. Weight semibold and tone primary are shown on the same line."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Critique resolved the source conflict: the rendered code wraps (text-pretty, no truncate class) and the card is centred. The sheet.ts:32 comment 'truncates, so keep it short' is stale.",
+   "edge_cases": [],
+   "id": "F06-063",
+   "check": "confirmed_by_both",
+   "check_notes": "Recorded className is truncated in the tree but shows no truncate class."
+  },
+  {
+   "title": "Sheet detail line",
+   "trigger": "none (spec.detail)",
+   "context": "Sheet with a detail",
+   "result": "A secondary-tone 12.5px line under the headline, wrapping. The field sits below it with a larger gap. Absent when no detail is given.",
+   "exact": [
+    {
+     "what": "font size",
+     "value": "12.5px"
+    },
+    {
+     "what": "tone",
+     "value": "secondary"
+    },
+    {
+     "what": "gap above",
+     "value": "mt-space-6"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:112-123",
+    "Checker A: Sheet.tsx:112-120 (detail rendered only when set; tone secondary; text-[12.5px]; mt-space-6), Sheet.tsx:123 (children wrapper mt-space-7).",
+    "Checker B: No recorded sheet has a detail prop (sheet-new-list/tree.txt:102 and sheet-new-project/tree.txt:102 have none), so the detail line is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-064",
+   "check": "confirmed_by_one",
+   "check_notes": "Verified in code only."
+  },
+  {
+   "title": "Sheet footer buttons",
+   "trigger": "none",
+   "context": "Any sheet",
+   "result": "A bordered footer row holds an optional instead button on the left, and on the right two equal-width buttons: Cancel, then the accept button. Each is at least min-w-24.",
+   "exact": [
+    {
+     "what": "cancel label",
+     "value": "Cancel"
+    },
+    {
+     "what": "footer",
+     "value": "border-t, px-space-6 pt-space-6 pb-space-6, grid 2 columns, min-w-24 buttons"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:126-131",
+    "Checker A: Sheet.tsx:126 (border-t, px-space-6 pt-space-6 pb-space-6), Sheet.tsx:127-128 (instead on the left; grid-cols-2; [&>button]:min-w-24), Sheet.tsx:129 (KeyAction label Cancel), Sheet.tsx:130 (accept on the right).",
+    "Checker B: sheet-new-list/tree.txt:112-114: KeyAction label=\"Import JSON…\" @418,413 127x28 (left); KeyAction label=\"Cancel\" @589,413 84x28; KeyAction label=\"Create\" variant=\"accept\" @678,413 84x28. The border line above the footer is visible in sheet-new-list/shot.png. sheet-new-project/tree.txt:112-113 has Cancel and Create only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The recorded New project and Rename list sheets have no instead button; the recorded New list sheet has 'Import JSON…' on the left.",
+   "edge_cases": [
+    "Recorded Cancel and Create buttons are each 84px wide (84x28). At a 16px root, min-w-24 gives 96px, so the 'at least min-w-24' claim is not supported by the recording as written. Uncertain: depends on the root font size, which is not recorded."
+   ],
+   "id": "F06-065",
+   "check": "corrected",
+   "check_notes": "The min-w-24 value is kept from the source (A, Sheet.tsx:127-128). B's recorded 84px buttons conflict with a 96px minimum at a 16px root, so this is recorded as an edge case rather than a value change. The left instead slot is consistent with the recording (Import JSON…)."
+  },
+  {
+   "title": "Cancel button dismisses the sheet",
+   "trigger": "Click the Cancel button in the sheet footer.",
+   "context": "Any sheet. Recorded on the New list, New project and Rename list sheets.",
+   "result": "The sheet closes with action 'dismiss'. For askText the result is null; for askConfirm it is false.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Cancel"
+    },
+    {
+     "what": "Control (recorded)",
+     "value": "KeyAction label=\"Cancel\" onClick=ƒ @589,413 84x28 (New list and New project); @589,413 in Rename list screenshot"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:129",
+    "main/src/components/SheetHost.tsx:74",
+    "main/src/lib/sheet.ts:55-73",
+    "state:sheet-new-list (tree.txt:113)",
+    "state:sheet-new-project (tree.txt:112)",
+    "state:sheet-rename-list (shot.png)",
+    "Checker A: Sheet.tsx:129 (KeyAction label=\"Cancel\" onClick=onDismiss), SheetHost.tsx:74 (dismiss = answer({ action: 'dismiss' })), sheet.ts:64 (askText returns null unless accept), sheet.ts:72 (askConfirm returns true only on accept, so false otherwise).",
+    "Checker B: KeyAction label=\"Cancel\" onClick=ƒ @589,413 84x28 in sheet-new-list/tree.txt:113 and sheet-new-project/tree.txt:112. sheet-rename-list/shot.png shows Cancel at the same position. The dismiss result (null for askText, false for askConfirm) is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Critique verified: Cancel calls onDismiss, which answers action 'dismiss'. B had inferred this from the label.",
+   "edge_cases": [],
+   "id": "F06-066",
+   "check": "confirmed_by_both",
+   "check_notes": "Dismiss result is verified in code only."
+  },
+  {
+   "title": "Escape dismisses the sheet",
+   "trigger": "Escape key",
+   "context": "Any sheet",
+   "result": "Same as Cancel: the sheet closes with action 'dismiss'.",
+   "exact": [
+    {
+     "what": "Overlay props (recorded New list and New project)",
+     "value": "layer=\"modal\" placement=\"center\" onDismiss=ƒ captureEscape=true trapFocus=true"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:64-68",
+    "common-ui/src/overlay.ts:55-60",
+    "state:sheet-new-list (tree.txt:103-104)",
+    "state:sheet-new-project (tree.txt:103-104)",
+    "Checker A: Sheet.tsx:64-70 (Overlay layer modal, placement center, onDismiss, captureEscape, trapFocus), overlay.ts:55-60 (Escape calls onDismiss), SheetHost.tsx:74 (dismiss action).",
+    "Checker B: sheet-new-list/tree.txt:103 and sheet-new-project/tree.txt:103: Overlay layer=\"modal\" placement=\"center\" onDismiss=ƒ captureEscape=true trapFocus=true. The Escape press and its result are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Critique verified the Escape-to-dismiss result from source; B had only inferred it.",
+   "edge_cases": [],
+   "id": "F06-067",
+   "check": "confirmed_by_both",
+   "check_notes": "Escape press result is verified in code only."
+  },
+  {
+   "title": "Press on the scrim dismisses the sheet",
+   "trigger": "Mouse press on the dimmed area outside the card",
+   "context": "Any sheet",
+   "result": "Same as Cancel: the sheet closes with action 'dismiss'.",
+   "exact": [
+    {
+     "what": "Backdrop props (recorded New list and New project)",
+     "value": "Backdrop2 dim=\"soft\" blur=false layer=\"modal\" tabIndex=-1 className=\"p-space-8 flex items-center justify-center\" onMouseDown=ƒ"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Overlay.tsx:89-97",
+    "common-ui/src/components/surfaces/Sheet.tsx:64-67",
+    "state:sheet-new-list (tree.txt:104-105)",
+    "Checker A: Overlay.tsx:70 (dismissOn default 'mousedown'), Overlay.tsx:89-97 (dismissFromScrim only when target is the scrim), Overlay.tsx:105 (tabIndex -1 when trapFocus), Overlay.tsx:100-102 (Backdrop dim default soft, layer modal), Backdrop.tsx:52-53 (animate-scrim-in when dim is not none; blur off by default), Sheet.tsx:64-67 (onDismiss wired).",
+    "Checker B: sheet-new-list/tree.txt:104 and sheet-new-project/tree.txt:104: Backdrop2 dim=\"soft\" blur=false layer=\"modal\" tabIndex=-1 className=\"p-space-8 flex items-center justify-center\" onMouseDown=ƒ @0,0 1180x760. The scrim press result is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Only presses that start on the scrim itself dismiss (critique: Overlay.tsx:86-91).",
+   "edge_cases": [],
+   "id": "F06-068",
+   "check": "corrected",
+   "check_notes": "Backdrop props are recorded by B and match A's code values (dim soft, layer modal, tabIndex -1). The scrim press result is verified in code only."
+  },
+  {
+   "title": "Focus is trapped in the sheet",
+   "trigger": "Tab / Shift+Tab inside the sheet",
+   "context": "Any sheet",
+   "result": "Tab cycles inside the dialog only; Tab and Shift+Tab wrap between the first and last focusable items. On close, focus returns to the opener unless something outside took focus while it was open.",
+   "exact": [
+    {
+     "what": "trapFocus",
+     "value": "true"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:64-70",
+    "common-ui/src/overlay.ts:123-140",
+    "common-ui/src/components/surfaces/Overlay.tsx:84",
+    "common-ui/src/overlay.ts:144-149",
+    "state:sheet-new-list (tree.txt:103)",
+    "state:sheet-new-project (tree.txt:103)",
+    "Checker A: overlay.ts:123-140 (Tab wraps: Shift+Tab from first or the panel goes to last, Tab from last goes to first), overlay.ts:116-121 (claimedOutside tracking via focusin), overlay.ts:144-149 (opener focus restored unless claimedOutside), Overlay.tsx:84 (useFocusTrap(scrimRef, trapFocus && !!onDismiss)), Sheet.tsx:64-70 (trapFocus true).",
+    "Checker B: trapFocus=true on the Overlay in sheet-new-list/tree.txt:103 and sheet-new-project/tree.txt:103. Tab wrap and focus return are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B had inferred this without observing it; the critique confirmed trapFocus is enabled through Overlay (Overlay.tsx:84) and the wrap and opener-restore logic in overlay.ts.",
+   "edge_cases": [],
+   "id": "F06-069",
+   "check": "confirmed_by_both",
+   "check_notes": "trapFocus is recorded; Tab wrap and focus return are verified in code only."
+  },
+  {
+   "title": "Enter accepts the sheet",
+   "trigger": "Enter key anywhere in the window while a sheet is open",
+   "context": "Any sheet",
+   "result": "Enter is handled on the window and default is prevented. The accept action runs: with a prompt, the trimmed text (plus any tail) is returned; with no prompt, the result is action accept with empty text.",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Enter"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:110-120",
+    "main/src/components/SheetHost.tsx:78-88",
+    "Checker A: SheetHost.tsx:110-120 (window keydown on Enter: preventDefault, accept()), SheetHost.tsx:78-88 (accept: when ask is set and the trimmed text is empty, it focuses the input and returns without answering; otherwise answers with trimmed + (ask.tail ?? '') or ''), SheetHost.tsx:144 (accept button disabled when ask and empty).",
+    "Checker B: No Enter key press is recorded (sheet-new-list/meta.json and sheet-new-project/meta.json have no key command). The prefilled 'Gilded Fjord' and 'Titan' values do not show the accept result."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Enter is also captured while typing in the prompt field.",
+   "edge_cases": [
+    "With a prompt and an empty trimmed field, Enter does not accept: it focuses the field and returns (SheetHost.tsx:80-83). The accept button is disabled in that state (SheetHost.tsx:144).",
+    "With no prompt the accept result has text '' (SheetHost.tsx:86)."
+   ],
+   "id": "F06-070",
+   "check": "corrected",
+   "check_notes": "Corrections from A (source code). B recorded no Enter press."
+  },
+  {
+   "title": "Accept button",
+   "trigger": "Click the accept button",
+   "context": "Any sheet",
+   "result": "Runs the same accept as Enter. Its label is the spec's accept text. For a danger tone it uses the danger variant; otherwise accept.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "spec.accept (for example 'Create', 'Delete list')"
+    },
+    {
+     "what": "variant",
+     "value": "danger when tone is danger, else accept"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:140-146",
+    "main/src/lib/sheet.ts:38-39",
+    "main/src/components/SheetHost.tsx:140-146 (KeyAction label={spec.accept}, variant tone==='danger'?'danger':'accept', onClick=accept); SheetHost.tsx:112-120 (window Enter handler calls accept()); SheetHost.tsx:122 (tone defaults to 'accent'); main/src/lib/sheet.ts:38-39 (accept is the verb on the Enter button).",
+    "sheet-new-list/tree.txt:114 KeyAction label=\"Create\" variant=\"accept\" disabled=false; sheet-new-project/tree.txt:113 same; sheet tone=\"accent\" at sheet-new-list/tree.txt:102 gives the accept variant. Not in recordings: the Enter equivalence and the danger variant (no danger-tone sheet recorded)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-071",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found this exact. The Enter-key equivalence and the danger variant rest on the source reading only, since no danger-tone sheet was recorded."
+  },
+  {
+   "title": "Accept is disabled while a prompt field is empty",
+   "trigger": "none (field is empty or whitespace only)",
+   "context": "Prompt sheet with an empty or whitespace-only field",
+   "result": "The accept button is disabled.",
+   "exact": [],
+   "sources": [
+    "main/src/components/SheetHost.tsx:144",
+    "main/src/components/SheetHost.tsx:144 (disabled={!!ask && !text.trim()}); text state at SheetHost.tsx:56-58.",
+    "sheet-new-list/tree.txt:109 value=\"Gilded Fjord\" and sheet-new-project/tree.txt:109 value=\"Titan\" are both non-empty; the accept button is recorded only as disabled=false (tree.txt:114, 113). No empty or whitespace-only prompt was recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-072",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the disabled expression in source. Checker B could not check because no empty or whitespace-only prompt was recorded."
+  },
+  {
+   "title": "Enter in an empty prompt focuses the field instead of accepting",
+   "trigger": "Enter with an empty or whitespace-only prompt field",
+   "context": "Prompt sheet",
+   "result": "Nothing is resolved; the field is focused.",
+   "exact": [],
+   "sources": [
+    "main/src/components/SheetHost.tsx:76-83",
+    "main/src/components/SheetHost.tsx:76-83 (accept(): if ask and trimmed is empty, inputRef.focus() and return without answer); SheetHost.tsx:112-116 (Enter keydown calls accept).",
+    "No recording has an empty prompt field; all prompt recordings have a non-empty value (sheet-new-list/tree.txt:109, sheet-new-project/tree.txt:109)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-073",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the guard in source. Checker B could not check because no recording has an empty prompt field."
+  },
+  {
+   "title": "Instead button",
+   "trigger": "Click the instead button in the footer's left corner",
+   "context": "Sheet with spec.instead",
+   "result": "The sheet closes with action 'instead' and the instead id.",
+   "exact": [
+    {
+     "what": "button label",
+     "value": "instead.label from the caller's spec (sheet.ts:24-25; SheetHost.tsx:134-135)"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:132-139",
+    "main/src/lib/sheet.ts:21-25",
+    "state:sheet-new-list (tree.txt:100-105)",
+    "main/src/components/SheetHost.tsx:132-139 (instead rendered only when spec.instead is set; KeyAction label={alt.label} onClick answer({action:'instead', id: alt.id})); main/src/lib/sheet.ts:21-25 (InsteadSpec id and label); common-ui/src/components/surfaces/Sheet.tsx:126-127 (instead sits at the start of the footer row; ml-auto pushes Cancel/accept right).",
+    "sheet-new-list/tree.txt:102 Sheet has instead=<el>; sheet-new-project/tree.txt:102 has no instead slot. The footer-left KeyAction 'Import JSON…' (sheet-new-list/tree.txt:112 @418,413) is consistent with being the instead button, but the tree does not say so, and the click result {action:'instead', id} is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Only one instead button is shown; it appears only when spec.instead is set. B recorded the instead slot on the New list sheet, where its label is 'Import JSON…'; the meaning of the action is inferred from that label and not recorded beyond the button being present.",
+   "edge_cases": [
+    "No instead button is rendered unless spec.instead is set (SheetHost.tsx:132-133)."
+   ],
+   "id": "F06-074",
+   "check": "corrected",
+   "check_notes": "No value conflict. Checker B's recordings agree with the edge case: the New list sheet has an instead slot and the New project sheet has none. Checker B did not confirm that the footer-left 'Import JSON…' button is the instead button, and the click result was not recorded."
+  },
+  {
+   "title": "Prompt field is prefilled and selected",
+   "trigger": "none (on open)",
+   "context": "Prompt sheet",
+   "result": "The field starts with ask.value if given, otherwise a rolled name when a dice pool is set, otherwise empty. A non-empty initial value is selected on open, so typing replaces it. In the recorded New list sheet the field shows 'Gilded Fjord' selected on open.",
+   "exact": [
+    {
+     "what": "Input props (recorded New list)",
+     "value": "TextInput2 bare=true autoFocus=true value=\"Gilded Fjord\" spellCheck=false placeholder=\"Name this list\" onChange=ƒ onFocus=ƒ className=\"text-[14px]\" aria-label=\"New list\" @428,366 295x21"
+    },
+    {
+     "what": "Field container (recorded New list)",
+     "value": "InputWell className=\"h-10 text-[14px] border border-edge-2l dark:border-edge-2d b…\" trailing=<el> @418,359 345x35 (class truncated in tree)"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:52-58",
+    "main/src/components/SheetHost.tsx:103-108",
+    "main/src/lib/sheet.ts:12-14",
+    "state:sheet-new-list (tree.txt:108-109)",
+    "state:sheet-new-list (shot.png)",
+    "main/src/components/SheetHost.tsx:56-58 (text = ask.value ?? rollName(ask.dice), else ''); SheetHost.tsx:103-108 (on open: focus, and select() if textRef.current is non-empty, so a rolled name is also selected); sheet.ts:12-14. Recorded values 'Gilded Fjord', aria-label, Input props and InputWell class come from the state tree/screenshot which is outside the files I was given, and the name generator lib/nameSuggest was not opened, so those recorded values are not verified.",
+    "sheet-new-list/tree.txt:108-109: InputWell has trailing=<el>; TextInput2 has value=\"Gilded Fjord\", placeholder=\"Name this list\", aria-label=\"New list\". sheet-new-list/shot.png shows 'Gilded Fjord' highlighted on open. The spec's 'Input props' string omits component name, value, placeholder and aria-label."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The field is focused on open (autoFocus and the effect at SheetHost.tsx:103-108). Critique confirmed the selection on open, so typing replaces the value. The placeholder 'Name this list' that B inferred is not kept: it is supplied by the caller (ask.placeholder) and SheetHost has no default, so it cannot be confirmed from source.",
+   "edge_cases": [
+    "The value is a generated name, not an empty field, on open."
+   ],
+   "id": "F06-075",
+   "check": "corrected",
+   "check_notes": "Checker A verified the initialisation and the select-on-open behaviour in source, but did not verify the recorded values. Checker B confirmed the recorded value 'Gilded Fjord', the placeholder, the aria-label and the highlighted selection from the tree and screenshot, and supplied the full recorded Input props and InputWell strings. No conflict between the checkers."
+  },
+  {
+   "title": "Prompt field selects its value on focus",
+   "trigger": "Focus enters the prompt field (plain or suffix field) while the spec's ask.value is a non-empty string",
+   "context": "Prompt sheet created with ask.value set. A value from ask.dice is not 'ask.value', so focusing a dice-rolled field does not select it on focus (the value is selected once on open instead, SheetHost.tsx:103-108).",
+   "result": "The whole value is selected on focus, only when ask.value is truthy.",
+   "exact": [],
+   "sources": [
+    "main/src/components/SheetHost.tsx:158",
+    "main/src/components/SheetHost.tsx:189",
+    "main/src/components/SheetHost.tsx:158 and :189 (onFocus={(e) => ask.value && e.currentTarget.select()}).",
+    "sheet-new-list/tree.txt:109 shows onFocus=ƒ on the input only. The select-on-focus behaviour is not recorded; the shot.png selection on open is consistent with it but does not show it."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-076",
+   "check": "corrected",
+   "check_notes": "Checker B could not check. It saw onFocus=ƒ on the input but did not record the select-on-focus behaviour. Checker A's correction limits select-on-focus to ask.value and excludes dice-rolled values."
+  },
+  {
+   "title": "Prompt field styling",
+   "trigger": "none (rendering)",
+   "context": "Prompt sheet; resting and focused",
+   "result": "Field is 40px tall (h-10), 14px text, with a resting 1px edge-2 border. On focus the border turns accent-500 and no focus ring is drawn.",
+   "exact": [
+    {
+     "what": "height",
+     "value": "h-10 (2.5rem)"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:14-19",
+    "main/src/components/SheetHost.tsx:163-164",
+    "main/src/components/SheetHost.tsx:18-19 (FIELD: h-10 text-[14px] border border-edge-2l dark:border-edge-2d bg-surface-1l dark:bg-surface-1d focus-within:ring-0 focus-within:border-accent-500l dark:focus-within:border-accent-500d); applied at SheetHost.tsx:159 and :164.",
+    "sheet-new-list/tree.txt:108 InputWell className=\"h-10 text-[14px] border border-edge-2l…\" @418,359 345x35: the field measures 35px, not 40px. The same tree gives Surface2 w-[min(26rem,100%)] at 364px (sheet-new-list/tree.txt:105) and palette Surface2 w-[min(35rem,100%)] at 490px (palette/tree.txt:103), so 1rem = 14px in this recording and h-10 = 35px. Background and focus classes are truncated ('b…') and not visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [
+    "The background (bg-surface-1l) and focus-within classes are truncated in tree.txt:108 and are not confirmed by the recording."
+   ],
+   "id": "F06-077",
+   "check": "corrected",
+   "check_notes": "The checkers differ on the pixel value. Checker A's source class is h-10 (2.5rem), and per the source-code rule that value is kept. Checker B measured 35px (InputWell @418,359 345x35) and inferred 1rem = 14px in this recording, so h-10 = 35px there. The px figure depends on the root font size and is not fixed by the source. The focus ring is absent (ring-0), which B also observed as no focus ring with the border turning accent-500. The background and focus classes were truncated in the tree, so B could not confirm them."
+  },
+  {
+   "title": "Prompt with a locked tail suffix",
+   "trigger": "none (spec ask.tail set, for example '.png')",
+   "context": "Prompt sheet with a tail",
+   "result": "The field is a suffix input: the tail is shown greyed and locked after the editable text, and is appended to the trimmed result on accept.",
+   "exact": [
+    {
+     "what": "example tail",
+     "value": ".png"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:149-161",
+    "main/src/components/SheetHost.tsx:78-87",
+    "main/src/lib/sheet.ts:14-15",
+    "main/src/components/SheetHost.tsx:149-161 (SuffixInput with suffix={ask.tail}); SheetHost.tsx:86 (text: trimmed ? trimmed + (ask?.tail ?? '') : ''); SheetHost.tsx:80-83 (empty prompt cannot accept); main/src/lib/sheet.ts:14-15 (tail is locked, greyed, appended on accept). The greying and the lock behaviour live in the SuffixInput component, which is in common-ui and was not opened.",
+    "No recording shows a tail. sheet-new-list/tree.txt:108 InputWell has only trailing=<el> (the dice button, tree.txt:110); no suffix text appears in tree.txt:109 or in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Correction from the critique: the earlier claim that an empty editable text returns '' and skips the tail was wrong. When a prompt is set and the trimmed text is empty, accept focuses the field and returns without answering (SheetHost.tsx:78-87). The '' result is reached only when there is no prompt. The suffix field has no spellCheck override.",
+   "edge_cases": [
+    "Tail is appended only to a non-empty trimmed value (SheetHost.tsx:86). An empty field is blocked from accepting by SheetHost.tsx:80-83, so the tail alone is never returned.",
+    "A prompt with a tail uses SuffixInput and has no dice button (SheetHost.tsx:149-161)."
+   ],
+   "id": "F06-078",
+   "check": "corrected",
+   "check_notes": "Checker B could not check because no recording shows a tail. Checker A did not open the SuffixInput component in common-ui, so the greying and lock behaviour are unverified."
+  },
+  {
+   "title": "Dice button rolls a new name",
+   "trigger": "Click the casino (dice) icon button at the right of the prompt field (in the recorded sheets: the dice icon at the right end of the name field).",
+   "context": "Prompt sheet with ask.dice set ('project' or 'list'). Recorded on the New list, New project and Rename list sheets.",
+   "result": "The field is replaced with a new suggested name, the field is focused, and its text is selected on the next frame. The button does not take focus on mousedown (its mousedown default is prevented).",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "casino"
+    },
+    {
+     "what": "icon size",
+     "value": "16 (button size lg)"
+    },
+    {
+     "what": "variant",
+     "value": "ghostStrong"
+    },
+    {
+     "what": "tab index",
+     "value": "-1"
+    },
+    {
+     "what": "title and aria-label",
+     "value": "Roll another name"
+    },
+    {
+     "what": "Position (recorded New list)",
+     "value": "@728,365 25x25 (icon 16x16 @732,369)"
+    },
+    {
+     "what": "Handlers",
+     "value": "onMouseDown=ƒ onClick=ƒ"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:163-179",
+    "main/src/components/SheetHost.tsx:95-101",
+    "state:sheet-new-list (tree.txt:110-111)",
+    "state:sheet-new-project (tree.txt:110)",
+    "state:sheet-rename-list (shot.png)",
+    "main/src/components/SheetHost.tsx:163-179 (dice IconButton is the trailing of InputWell); :95-101 (roll(): edit(rollName(ask?.dice)), el.focus(), requestAnimationFrame(() => el.select())); :168-176 (icon casino, size lg, iconSize 16, variant ghostStrong, tabIndex -1, aria-label and title 'Roll another name', onMouseDown preventDefault, onClick roll); main/src/lib/sheet.ts:17-18 (dice: 'project' | 'list'). Recorded position and handler names are from the state tree, not opened.",
+    "sheet-new-list/tree.txt:110-111: IconButton icon=\"casino\" size=\"lg\" iconSize=16 variant=\"ghostStrong\" tabIndex=-1 aria-label=\"Roll another name\" title=\"Roll another name\" onMouseDown=ƒ onClick=ƒ @728,365 25x25; Icon name=\"casino\" size=16 @732,369 16x16. Same control at sheet-new-project/tree.txt:110. Rename list: shot.png shows the dice icon, no tree. Result (replaced name, focus, selection on next frame, mousedown default prevented) is not recorded beyond the handler names."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "The replacement name generator (suggestListName / suggestProjectName) is in ../lib/nameSuggest, which is not in the allowed files, so whether the name is random is unverifiable. The new name itself is not recorded in B's share. The suffix (tail) prompt has no dice button.",
+   "edge_cases": [
+    "tabIndex=-1 means the button is skipped by Tab key navigation.",
+    "The dice button is rendered only in the plain InputWell branch (SheetHost.tsx:163-179). When ask.tail is set the SuffixInput branch (SheetHost.tsx:149-161) has no dice button, even if ask.dice is set."
+   ],
+   "id": "F06-079",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the control's props and handler names. Checker B did not record the roll result (replaced name, focus, selection) and saw the dice icon in the Rename list screenshot only."
+  },
+  {
+   "title": "Dice pools produce project or list names",
+   "trigger": "none (rendering with ask.dice)",
+   "context": "Prompt sheet with dice",
+   "result": "Project dice uses suggestProjectName(); list dice uses suggestListName(). The generators are in another module.",
+   "exact": [
+    {
+     "what": "pool 'project'",
+     "value": "suggestProjectName()"
+    },
+    {
+     "what": "pool 'list'",
+     "value": "suggestListName()"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:22-26",
+    "main/src/lib/sheet.ts:17-18",
+    "main/src/components/SheetHost.tsx:22-26 (rollName: 'project' -> suggestProjectName(), 'list' -> suggestListName(), '' otherwise); SheetHost.tsx:10 (imported from '../lib/nameSuggest'); main/src/lib/sheet.ts:17-18.",
+    "The generator functions are not in any recording. The names 'Titan' (sheet-new-project/tree.txt:109) and 'Gilded Fjord' (sheet-new-list/tree.txt:109) are rolled names, but the pool-to-function mapping is not shown."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The name content comes from ../lib/nameSuggest, which is not in these files.",
+   "edge_cases": [],
+   "id": "F06-080",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the mapping in source. Checker B could not check the generator functions, although the rolled names it recorded are consistent with them."
+  },
+  {
+   "title": "Prompt placeholder and field labelling",
+   "trigger": "none (ask.placeholder)",
+   "context": "Prompt sheet",
+   "result": "The placeholder is ask.placeholder. The field's accessible label is the headline.",
+   "exact": [
+    {
+     "what": "spellcheck (plain field)",
+     "value": "false"
+    }
+   ],
+   "sources": [
+    "main/src/components/SheetHost.tsx:156",
+    "main/src/components/SheetHost.tsx:160",
+    "main/src/components/SheetHost.tsx:186-187",
+    "main/src/components/SheetHost.tsx:191",
+    "main/src/components/SheetHost.tsx:156 and :187 (placeholder={ask.placeholder}); :160 and :191 (aria-label={spec.headline}); :186 (spellCheck={false} on the plain TextInput). SuffixInput (line 151-161) sets no spellCheck.",
+    "Placeholders: sheet-new-list/tree.txt:109 placeholder=\"Name this list\"; sheet-new-project/tree.txt:109 placeholder=\"Name this project\". Accessible label: aria-label=\"New list\" equals headline=\"New list\" (tree.txt:102); aria-label=\"New project\" equals headline=\"New project\" (sheet-new-project/tree.txt:102, 109). spellCheck=false on both (tree.txt:109)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Critique: the placeholder is caller-supplied, so any specific placeholder text seen in a recording (for example 'Name this list' or 'Name this project', which B inferred) is not confirmed by source.",
+   "edge_cases": [],
+   "id": "F06-081",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found this exact. Checker B's recordings are both plain InputWell cases, so the SuffixInput note (no spellCheck) is source-only."
+  },
+  {
+   "title": "Sheet result values for callers",
+   "trigger": "none (programmatic)",
+   "context": "Caller awaits openSheet, askText or askConfirm",
+   "result": "askText resolves with the trimmed value with any ask.tail appended on accept (SheetHost.tsx:86), or null on any other exit. askConfirm resolves true only on accept. openSheet resolves with { action: 'accept', text }, { action: 'instead', id }, or { action: 'dismiss' }. A sheet that is still open when a newer openSheet call arrives resolves with dismiss (sheetStore.ts:29).",
+   "exact": [],
+   "sources": [
+    "main/src/lib/sheet.ts:49-73",
+    "main/src/stores/sheetStore.ts:27-31",
+    "main/src/lib/sheet.ts:49-50 and :56-64 (askText returns res.text on accept, else null; text is the trimmed value with ask.tail appended); :68-73 (askConfirm returns true only when action === 'accept'); main/src/stores/sheetStore.ts:27-31 and :28-29 (open() resolves the previous sheet with dismiss when a new one opens); SheetHost.tsx:86.",
+    "Programmatic return values (openSheet, askText, askConfirm) are not visible in any tree, meta.json or screenshot in the named folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-082",
+   "check": "corrected",
+   "check_notes": "Checker B could not check because return values are not visible in any recording. The corrected result comes from Checker A's source reading."
+  },
+  {
+   "title": "Overlay scrim dim levels",
+   "trigger": "none (set by caller)",
+   "context": "Overlay open",
+   "result": "Scrim dims the window: soft is black at 30%, strong is black at 75%, none is transparent but still absorbs presses. The non-none dims animate in.",
+   "exact": [
+    {
+     "what": "blur option",
+     "value": "prop blur (boolean, default false, Overlay.tsx:63) adds backdrop-blur-sm (Backdrop.tsx:53)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Backdrop.tsx:17-21",
+    "common-ui/src/components/surfaces/Backdrop.tsx:52-53",
+    "common-ui/src/components/surfaces/Overlay.tsx:62",
+    "common-ui/src/components/surfaces/Backdrop.tsx:17-21 (DIM: none '', soft 'bg-black/30', strong 'bg-black/75'); :42 (default dim 'soft'); :52 (animate-scrim-in when dim !== 'none'); :53 (backdrop-blur-sm when blur); common-ui/src/components/surfaces/Overlay.tsx:62-63 (default dim 'soft', blur default false).",
+    "Backdrop2 dim=\"soft\" blur=false at sheet-new-list/tree.txt:104 and palette/tree.txt:102; dim=\"none\" blur=false with onMouseDown=ƒ at multi-context-menu/tree.txt:130. The opacity classes (bg-black/30, bg-black/75), animate-scrim-in, backdrop-blur-sm and the default dim are not in the tree; the strong level is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Recorded sheets use dim=\"soft\" and blur=false (see the scrim entry).",
+   "edge_cases": [],
+   "id": "F06-083",
+   "check": "corrected",
+   "check_notes": "Checker A verified the dim levels and the blur prop in source. Checker B recorded dim soft with blur=false (sheet-new-list, palette) and dim none with blur=false (multi-context-menu). It did not record the opacity classes or the strong level, so those remain source-only."
+  },
+  {
+   "title": "Overlay stacking layers",
+   "trigger": "none",
+   "context": "Multiple overlays",
+   "result": "Each overlay sits on a named z-layer: dropdown, overlay, modal, menu, tooltip. The menu layer is above modal, so context menus show over sheets.",
+   "exact": [
+    {
+     "what": "layers",
+     "value": "z-dropdown, z-overlay, z-modal, z-menu, z-tooltip"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Backdrop.tsx:23-29",
+    "common-ui/src/components/surfaces/Backdrop.tsx:10-15 (OverlayLayer union: dropdown, overlay, modal, menu, tooltip) and :23-29 (z-dropdown, z-overlay, z-modal, z-menu, z-tooltip). The menu-above-sheet ordering is stated in the comment at main/src/components/ContextMenu.tsx:30-32 and uses layer=\"menu\" (ContextMenu.tsx:34). The numeric z-index values are in CSS, not opened.",
+    "Layer values seen: overlay (palette/tree.txt:101), modal (sheet-new-list/tree.txt:103), menu (multi-context-menu/tree.txt:129). dropdown and tooltip are not recorded, and no z-index values appear. No recording in the named folders shows a menu and a sheet open together, so 'menu above modal' is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "The relative order of the layers as listed in the CSS mapping is the order they appear in the source; stacking values are defined elsewhere.",
+   "edge_cases": [],
+   "id": "F06-084",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the layer union and z-index class names in source; the numeric z-index values are in CSS and were not opened. Checker B recorded the overlay, modal and menu layers but not dropdown or tooltip, and no recording shows a menu and sheet open together, so the menu-above-modal ordering is source-only."
+  },
+  {
+   "title": "Overlay placements",
+   "trigger": "none",
+   "context": "Overlay with a placement",
+   "result": "center centres the panel; top places it at the top with 12vh top and 8vh bottom padding; fill gives the full window; anchored positions nothing so the caller places the content.",
+   "exact": [
+    {
+     "what": "center",
+     "value": "p-space-8 flex items-center justify-center"
+    },
+    {
+     "what": "top",
+     "value": "px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh]"
+    },
+    {
+     "what": "fill",
+     "value": "flex flex-col"
+    },
+    {
+     "what": "anchored",
+     "value": "no classes"
+    }
+   ],
+   "sources": [
+    "common-ui/src/components/surfaces/Overlay.tsx:11-21",
+    "common-ui/src/components/surfaces/Overlay.tsx:16-21 (PLACEMENT: center 'p-space-8 flex items-center justify-center'; top 'px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh]'; fill 'flex flex-col'; anchored ''). Backdrop is fixed inset-0 (Backdrop.tsx:49).",
+    "center: sheet-new-list/tree.txt:103 placement=\"center\"; Backdrop className=\"p-space-8 flex items-center justify-center\" at tree.txt:104. top: palette/tree.txt:101 placement=\"top\"; Backdrop className=\"px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh…\" (tree.txt:102, truncated); palette Surface y=91 = 12% of 760 (palette/tree.txt:103). anchored: multi-context-menu/tree.txt:129 placement=\"anchored\"; Backdrop className=\"\" (tree.txt:130). fill is not recorded in the named folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-085",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the center, top and anchored placements exact. Checker B did not record the fill placement, so it rests on the source only."
+  },
+  {
+   "title": "Overlay renders into the document body",
+   "trigger": "none",
+   "context": "Any overlay",
+   "result": "Overlays are portalled to document.body, so no ancestor clips or re-stacks them.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/components/surfaces/Overlay.tsx:54-55",
+    "common-ui/src/components/surfaces/Overlay.tsx:99-113",
+    "common-ui/src/components/surfaces/Overlay.tsx:54-55 (comment) and :99-113 (createPortal(..., document.body)).",
+    "The trees show the React component nesting only (for example Overlay under Sheet at sheet-new-list/tree.txt:102-103), not the DOM parent. Portal placement is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-086",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the createPortal call in source. Checker B could not check because the trees show React nesting only, not the DOM parent."
+  },
+  {
+   "title": "Overlay depth counter disables the app key map",
+   "trigger": "none (any overlay mounted)",
+   "context": "Any overlay open",
+   "result": "A global counter tracks open overlays so the app's key map can defer while any overlay is on screen.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/overlay.ts:11-25",
+    "common-ui/src/overlay.ts:11-15 (depth counter, overlayOpen = depth > 0); :18-25 (useOverlayDepth increments and decrements depth); :50 (useDismissable holds a depth slot).",
+    "No key-map or counter behaviour is recorded in any named recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Key map behaviour itself is in another area.",
+   "edge_cases": [],
+   "id": "F06-087",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the depth counter in source. Checker B recorded no counter or key-map behaviour."
+  },
+  {
+   "title": "Focus returns to the opener on close",
+   "trigger": "Overlay closes",
+   "context": "Overlay with trapFocus AND an onDismiss handler. Overlay.tsx:84 enables the focus trap (and so the focus hand-back) only when both are set; overlay.ts:104 returns early when not enabled.",
+   "result": "Focus goes back to the element that had it when the overlay opened, unless something outside the overlay took focus while it was open.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/overlay.ts:93-99",
+    "common-ui/src/overlay.ts:104-107",
+    "common-ui/src/overlay.ts:146-149",
+    "common-ui/src/overlay.ts:93-99 (focus-return comment), :104-107 (opener = document.activeElement at open), :116-121 (focusin sets claimedOutside), :146-149 (cleanup refocuses opener unless claimedOutside); common-ui/src/components/surfaces/Overlay.tsx:84 (useFocusTrap(scrimRef, trapFocus && !!onDismiss)).",
+    "No focus-return behaviour on close is recorded in any named recording (no focus state recorded after close)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-088",
+   "check": "corrected",
+   "check_notes": "Checker B could not check because no focus state after close was recorded. The context correction comes from Checker A's source reading."
+  },
+  {
+   "title": "Overlay parks focus on its scrim when nothing inside asked for focus",
+   "trigger": "none",
+   "context": "Overlay open with trapFocus and onDismiss set, and no focused element inside",
+   "result": "On the next frame the full-window scrim (the Backdrop element with tabIndex -1), not the panel, is focused.",
+   "exact": [
+    {
+     "what": "focus target",
+     "value": "scrimRef (Backdrop div, tabIndex -1)"
+    },
+    {
+     "what": "condition",
+     "value": "trapFocus && !!onDismiss (Overlay.tsx:84)"
+    }
+   ],
+   "sources": [
+    "common-ui/src/overlay.ts:109-114",
+    "common-ui/src/components/surfaces/Overlay.tsx:75",
+    "common-ui/src/components/surfaces/Overlay.tsx:84",
+    "common-ui/src/components/surfaces/Overlay.tsx:99-105",
+    "common-ui/src/overlay.ts:109-114 (requestAnimationFrame: if ref.current does not contain document.activeElement, focus it); common-ui/src/components/surfaces/Overlay.tsx:75 (scrimRef), :84 (trapFocus && !!onDismiss), :105 (tabIndex -1 when trapFocus), :99-105 (ref on Backdrop).",
+    "Inputs are present: sheet-new-list/tree.txt:103 trapFocus=true onDismiss=ƒ; tree.txt:104 Backdrop2 tabIndex=-1. But the recorded New list has an autoFocus input (tree.txt:109), so the 'no focused element inside' case is not recorded, and the scrim focus result is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Corrected from the critique: A said the panel is focused, but the code focuses the scrim. overlay.ts comments say 'panel' while the code focuses the scrim. It does not run for ContextMenu, which has no trapFocus.",
+   "edge_cases": [],
+   "id": "F06-089",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the scrim focus logic in source. Checker B confirmed the inputs (trapFocus, onDismiss, tabIndex -1) but did not record the 'no focused element inside' case or the resulting scrim focus."
+  },
+  {
+   "title": "Overlay window blur and resize dismissal",
+   "trigger": "Window blur or window resize",
+   "context": "Overlay with dismissOnWindowChange (the context menu)",
+   "result": "The overlay dismisses on window blur and on resize.",
+   "exact": [
+    {
+     "what": "events",
+     "value": "blur, resize"
+    }
+   ],
+   "sources": [
+    "common-ui/src/overlay.ts:36-39",
+    "common-ui/src/overlay.ts:68-71",
+    "common-ui/src/overlay.ts:36-39 (onWindowChange comment), :68-71 (addEventListener 'blur' and 'resize' when onWindowChange), :74-77 (removed on cleanup); main/src/components/ContextMenu.tsx:39 (dismissOnWindowChange).",
+    "Context is present: multi-context-menu/tree.txt:129 Overlay dismissOnWindowChange=true. The blur and resize events and the dismissal result are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-090",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the blur and resize listeners in source. Checker B confirmed the dismissOnWindowChange=true prop only; the events and dismissal were not recorded."
+  },
+  {
+   "title": "Toast appears at bottom centre",
+   "trigger": "none (shown by toastStore.show)",
+   "context": "A toast is set",
+   "result": "A single toast card appears centred at the bottom of the window. Clicks pass through the empty area around it.",
+   "exact": [
+    {
+     "what": "position",
+     "value": "fixed inset-x-0 bottom-5, flex justify-center"
+    },
+    {
+     "what": "stack layer",
+     "value": "z-overlay"
+    },
+    {
+     "what": "card surface",
+     "value": "elevation lift, surface 3, radius control"
+    },
+    {
+     "what": "card animation",
+     "value": "animate-rise"
+    }
+   ],
+   "sources": [
+    "main/src/components/Toast.tsx:9-19",
+    "main/src/components/Toast.tsx:14 (z-overlay pointer-events-none fixed inset-x-0 bottom-5 flex justify-center); :15-19 (Surface elevation=\"lift\" surface={3} radius=\"control\", animate-rise, pointer-events-auto on the card).",
+    "toast-after-delete/tree.txt:96 Toast @0,702 1180x41 is full width; the card at @477,702 225x41 (tree.txt:97) is centred (477+225/2 = 589.5, window 1180/2 = 590). Bottom gap is 760-743 = 17px, consistent with bottom-5 (1.25rem = 17.5px at the 14px rem shown above). Card surface values match (tree.txt:97: elevation lift, surface 3, radius control, animate-rise). The Toast element className (bottom-5, inset-x-0, flex justify-center), z-overlay and pointer pass-through are not in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-091",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the classes in source. Checker B's recorded geometry is consistent with the card being centred and bottom-5 spacing, and its card surface values match, but B could not check the Toast element className, z-overlay or pointer pass-through because they are not in the tree."
+  },
+  {
+   "title": "Toast message text",
+   "trigger": "none",
+   "context": "Toast visible",
+   "result": "The message is shown in primary-tone medium-weight 13px text.",
+   "exact": [
+    {
+     "what": "font size",
+     "value": "13px"
+    },
+    {
+     "what": "weight",
+     "value": "medium"
+    },
+    {
+     "what": "tone",
+     "value": "primary"
+    }
+   ],
+   "sources": [
+    "main/src/components/Toast.tsx:21-23",
+    "main/src/components/Toast.tsx:21-23 (Label tone=\"primary\" weight=\"medium\" className=\"text-[13px]\").",
+    "toast-after-delete/tree.txt:98 Label tone=\"primary\" weight=\"medium\" className=\"text-[13px]\" with text 'Moved to Trash' in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-092",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found this exact."
+  },
+  {
+   "title": "Toast action button (Undo)",
+   "trigger": "Click the toast action button (in the recorded state: the 'Undo' button)",
+   "context": "Toast has an action",
+   "result": "The action runs, then the toast is dismissed.",
+   "exact": [
+    {
+     "what": "default label",
+     "value": "Undo"
+    },
+    {
+     "what": "icon",
+     "value": "undo, size 14"
+    },
+    {
+     "what": "variant",
+     "value": "accent"
+    },
+    {
+     "what": "Control (recorded)",
+     "value": "ToolbarButton icon=\"undo\" iconSize=14 variant=\"accent\" onClick=ƒ @596,710 67x25"
+    }
+   ],
+   "sources": [
+    "main/src/components/Toast.tsx:24-36",
+    "state:toast-after-delete (tree.txt:99-100)",
+    "state:toast-after-delete (shot.png)",
+    "main/src/components/Toast.tsx:24-36 (ToolbarButton icon=\"undo\" iconSize={14} variant=\"accent\"; onClick runs toast.action?.() then dismiss(); label toast.actionLabel ?? 'Undo' at :34). The recorded Control line is from the state tree, not opened.",
+    "toast-after-delete/tree.txt:99-100 ToolbarButton icon=\"undo\" iconSize=14 variant=\"accent\" onClick=ƒ @596,710 67x25; Icon name=\"undo\" size=14. Label 'Undo' visible in toast-after-delete/shot.png. The action and dismissal result are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Label is actionLabel when given, otherwise 'Undo'. The button is absent when no action was given. The recorded effect of the click is not in B's share.",
+   "edge_cases": [],
+   "id": "F06-093",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the control exact. The action and dismissal results were not recorded by Checker B. The 'Undo' label is the fallback when toast.actionLabel is unset (Toast.tsx:34)."
+  },
+  {
+   "title": "Toast close button",
+   "trigger": "Click the close (×) button on the toast",
+   "context": "Toast visible",
+   "result": "The toast is dismissed immediately.",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "close, size lg, icon size 14"
+    },
+    {
+     "what": "tooltip/title",
+     "value": "Dismiss"
+    },
+    {
+     "what": "Control (recorded)",
+     "value": "IconButton icon=\"close\" size=\"lg\" iconSize=14 onClick=ƒ title=\"Dismiss\" @670,710 25x25"
+    }
+   ],
+   "sources": [
+    "main/src/components/Toast.tsx:37-43",
+    "state:toast-after-delete (tree.txt:101-102)",
+    "main/src/components/Toast.tsx:37-43 (IconButton icon=\"close\" size=\"lg\" iconSize={14} onClick dismiss() title=\"Dismiss\").",
+    "toast-after-delete/tree.txt:101-102 IconButton icon=\"close\" size=\"lg\" iconSize=14 onClick=ƒ title=\"Dismiss\" @670,710 25x25; Icon name=\"close\" size=14. Dismissal result is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "",
+   "edge_cases": [],
+   "id": "F06-094",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the control exact. Checker B did not record the dismissal result."
+  },
+  {
+   "title": "Toast auto-dismisses after 6 seconds",
+   "trigger": "none (timer)",
+   "context": "Toast visible and not replaced or dismissed",
+   "result": "The toast disappears after 6000 ms.",
+   "exact": [
+    {
+     "what": "duration",
+     "value": "6000 ms"
+    }
+   ],
+   "sources": [
+    "main/src/stores/toastStore.ts:26",
+    "main/src/stores/toastStore.ts:26 (window.setTimeout(() => set({ toast: null }), 6000)).",
+    "No timer or auto-hide behaviour is recorded. The F06-098 edge case itself says toast lifetime is not recorded in this share."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's share does not record the lifetime; the critique confirms the 6000 ms value from source.",
+   "edge_cases": [],
+   "id": "F06-095",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the 6000 ms timeout in source. Checker B recorded no auto-hide behaviour."
+  },
+  {
+   "title": "A new toast replaces the current one and restarts the timer",
+   "trigger": "none (a caller calls show while a toast is visible)",
+   "context": "Toast visible",
+   "result": "The old toast is removed at once, the new one appears, and the 6-second timer starts again.",
+   "exact": [],
+   "sources": [
+    "main/src/stores/toastStore.ts:23-26",
+    "main/src/stores/toastStore.ts:23-26 (show: clearTimeout(timer), set new toast with new id, start a new 6000 ms timer).",
+    "No second toast or replacement is recorded in the named folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Each toast gets an increasing numeric id (toastStore.ts:19,25). Only one toast exists at a time.",
+   "edge_cases": [],
+   "id": "F06-096",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the replacement logic in source. Checker B recorded no second toast."
+  },
+  {
+   "title": "Dismissing a toast cancels its timer",
+   "trigger": "Click the Undo button or the close button",
+   "context": "Toast visible",
+   "result": "The pending 6-second timer is cleared and the toast is removed.",
+   "exact": [],
+   "sources": [
+    "main/src/stores/toastStore.ts:28-31",
+    "main/src/components/Toast.tsx:29-31",
+    "main/src/stores/toastStore.ts:28-31 (dismiss: clearTimeout(timer) then toast null); main/src/components/Toast.tsx:29-31 (Undo runs action then dismiss); Toast.tsx:41 (close calls dismiss).",
+    "No dismissal timing is recorded; the close and Undo controls exist (toast-after-delete/tree.txt:99-102) but the timer clearing is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Toast state is in memory only; no persistence across launches (toastStore.ts:21).",
+   "edge_cases": [],
+   "id": "F06-097",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified dismiss and timer clearing in source. Checker B confirmed the close and Undo controls exist but did not record the timer clearing."
+  },
+  {
+   "title": "Toast 'Moved to Trash' appears after a task is deleted",
+   "trigger": "A task is deleted (state name 'toast-after-delete'; the delete action and its key or menu are not recorded).",
+   "context": "Errands list; a task was removed. Light theme.",
+   "result": "A small floating toast appears near the bottom of the window with the text 'Moved to Trash', an 'Undo' button and a dismiss x button. The toast sits over the bottom of the task pane and the status bar.",
+   "exact": [
+    {
+     "what": "Toast text",
+     "value": "Moved to Trash"
+    },
+    {
+     "what": "Text style",
+     "value": "text-[13px], tone primary, weight medium"
+    },
+    {
+     "what": "Toast container",
+     "value": "Toast @0,702 1180x41 (full window width; content centred)"
+    },
+    {
+     "what": "Toast surface",
+     "value": "Surface2 elevation=\"lift\" surface=3 radius=\"control\" className=\"animate-rise gap-space-5 py-space-5 pr-space-5 pl-space-7 po…\" @477,702 225x41"
+    }
+   ],
+   "sources": [
+    "state:toast-after-delete (tree.txt:96-98)",
+    "state:toast-after-delete (shot.png)",
+    "The message text is confirmed at main/src/commands/tasks.ts:82 (showUndoToast('Moved to Trash')). Toast styling is consistent with main/src/components/Toast.tsx:21-23 and :15-19. The state tree/screenshot (toast-after-delete), the pixel geometry, and the showUndoToast action label were not opened, so the layout and the 'Undo' button presence for this recording are not verified.",
+    "toast-after-delete/tree.txt:34 TaskPane list={\"Errands\"}; tree.txt:96 Toast @0,702 1180x41; tree.txt:98 Label text-[13px] tone primary weight medium; tree.txt:97 Surface2 elevation=\"lift\" surface=3 radius=\"control\" className=\"animate-rise gap-space-5 py-space-5 pr-space-5 pl-space-7 po…\" @477,702 225x41. meta.json:8 theme light; meta.json:31-33 set_active_list, set_active_list, delete_tasks. shot.png shows 'Moved to Trash', Undo, x, overlapping the bottom of the task pane and status bar."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The message is caller-supplied (toastStore.ts). Toast is absent (empty 'Toast' element) in every other state of this share. Motion class animate-rise; duration not recorded in the share; the 6000 ms lifetime is in the source (toastStore.ts:26).",
+   "edge_cases": [
+    "Toast lifetime (auto-hide timing) is not recorded in this share."
+   ],
+   "id": "F06-098",
+   "check": "confirmed_by_one",
+   "check_notes": "The checkers differ in verdict but not in fact. Checker A could not check the recording and did not open the showUndoToast action label. Checker B confirmed the message, the layout, and the Undo and x controls from the recording. The 'Undo' label is also the Toast.tsx:34 fallback when toast.actionLabel is unset."
+  },
+  {
+   "title": "New project sheet opens with a generated project name",
+   "trigger": "The new-project action is used. The state name is 'sheet-new-project'; the shortcut or menu item is not recorded in this share.",
+   "context": "Same window and dim as the New list sheet. Light theme.",
+   "result": "A dialog headed 'New project' appears in the centre. The name field holds 'Titan' with its text selected. Only two footer buttons: 'Cancel' and 'Create'.",
+   "exact": [
+    {
+     "what": "Input props",
+     "value": "TextInput2 bare=true autoFocus=true value=\"Titan\" spellCheck=false placeholder=\"Name this project\" onChange=ƒ onFocus=ƒ className=\"text-[14px]\" aria-label=\"New project\" @428,366 295x21"
+    },
+    {
+     "what": "Dialog Surface",
+     "value": "Surface2 role=\"dialog\" aria-modal=true aria-labelledby=\"_r_0_\" elevation=\"menu\" surface=2 radius=\"panel\" className=\"animate-sheet-in w-[min(26rem,100%)] overflow-hidden\" @408,309 364x141"
+    }
+   ],
+   "sources": [
+    "state:sheet-new-project (tree.txt:102-113)",
+    "state:sheet-new-project (shot.png)",
+    "state:sheet-new-project (meta.json)",
+    "main/src/commands/projects.ts:14-15 (glyph 'create_new_folder', headline 'New project'). Dialog attributes match common-ui/src/components/surfaces/Sheet.tsx:71-77 (role dialog, aria-modal, elevation menu, surface 2, radius panel) and centre placement Sheet.tsx:65-66. Input props match SheetHost.tsx:181-191. Footer Cancel is Sheet.tsx:129. The generated name 'Titan' and the recorded geometry were not verified.",
+    "sheet-new-project/tree.txt:102 Sheet glyph=\"create_new_folder\" tone=\"accent\" headline=\"New project\" onDismiss=ƒ accept=<el> (no instead); tree.txt:105 Surface2; tree.txt:109 TextInput2; tree.txt:112-113 footer Cancel and Create only. shot.png shows the heading and 'Titan' selected. The spec's 'Input props' and 'Dialog Surface' strings omit values and attributes present in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The New project sheet has no 'Import JSON…' button and no alternate-action slot. The placeholder that B inferred ('Name this project') is not kept: it is caller-supplied and cannot be confirmed from source.",
+   "edge_cases": [],
+   "id": "F06-099",
+   "check": "corrected",
+   "check_notes": "Both checkers found the source and recorded structure consistent. Checker A did not verify the generated name 'Titan' or the geometry, and Checker B confirmed 'Titan' and its selection in shot.png and supplied the full recorded Input props and Dialog Surface strings. No conflict."
+  },
+  {
+   "title": "Rename list sheet opens prefilled with the current list name",
+   "trigger": "Inferred: 'Rename' item in the tab right-click menu. The state name is 'sheet-rename-list'; the trigger is not recorded directly.",
+   "context": "The Reading tab is the list being renamed (its name is prefilled). Errands is still the active tab in the screenshot.",
+   "result": "A dialog headed 'Rename list' with a pencil icon, the current name 'Reading' in the field (highlighted), and two footer buttons 'Cancel' and 'Rename'. The dice button is shown in the field.",
+   "exact": [
+    {
+     "what": "Heading text",
+     "value": "Rename list"
+    },
+    {
+     "what": "Input value",
+     "value": "Reading"
+    },
+    {
+     "what": "Footer buttons",
+     "value": "Cancel | Rename"
+    },
+    {
+     "what": "Icon",
+     "value": "pencil glyph (visual only; the tree for this state is not available)"
+    }
+   ],
+   "sources": [
+    "state:sheet-rename-list (shot.png)",
+    "state:sheet-rename-list (tree.txt contains only 'App')",
+    "Headline 'Rename list' confirmed at main/src/commands/lists.ts:54. A grep for 'pencil' in main/src found no match, so the glyph is not verified. The 'Reading' value is runtime data, and the inferred trigger and the recorded tree were not opened.",
+    "Visible values in sheet-rename-list/shot.png: heading 'Rename list', pencil glyph, field 'Reading' highlighted, dice icon in the field, footer 'Cancel' and 'Rename'. Errands is the active tab and Reading is present in the tab bar. sheet-rename-list/tree.txt contains only 'App', so the props are unverified. The trigger ('Rename' in the tab right-click menu) is inferred and not recorded in the named folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The rename dialog has no 'Import JSON…' button and no 'Create' button. The tree for this state is not recorded, so the exact component props, positions and glyph name are not confirmed.",
+   "edge_cases": [
+    "The tree for this state is not recorded, so the exact component props, positions and glyph name are not confirmed."
+   ],
+   "id": "F06-100",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the headline in source but found no literal 'pencil' string in main/src, so the glyph is not verified from source; the glyph may be named differently. Checker B saw the pencil glyph, the highlighted 'Reading' field, the dice icon and the Cancel/Rename footer in the screenshot, but the tree holds only 'App', so the props and trigger are unverified."
+  },
+  {
+   "title": "'Import JSON…' button on the New list sheet only",
+   "trigger": "Click the 'Import JSON…' button in the New list sheet footer, left side.",
+   "context": "Present only on the New list sheet; absent from New project and Rename list sheets.",
+   "result": "Button label is shown. What happens after click is not recorded in this share.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Import JSON…"
+    },
+    {
+     "what": "Control",
+     "value": "KeyAction label=\"Import JSON…\" onClick=ƒ @418,413 127x28"
+    }
+   ],
+   "sources": [
+    "state:sheet-new-list (tree.txt:112)",
+    "state:sheet-new-list (shot.png)",
+    "main/src/commands/lists.ts:43 (instead: { id: 'import', label: 'Import JSON…' }); main/src/components/SheetHost.tsx:132-139 (instead rendered as KeyAction); common-ui/src/components/surfaces/Sheet.tsx:126-127 (footer left corner). Absence from the other sheets in commands/projects.ts was not fully checked.",
+    "sheet-new-list/tree.txt:112 KeyAction label=\"Import JSON…\" onClick=ƒ @418,413 127x28 (matches spec exactly). Absent from sheet-new-project/tree.txt:112-113 (only Cancel and Create). Post-click result not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Import of a list from a JSON file is inferred from the label; the file dialog and results are not recorded.",
+   "edge_cases": [],
+   "id": "F06-101",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found this exact. Checker A did not fully check the absence from the other sheets in commands/projects.ts; Checker B confirmed the absence from the New project sheet. The post-click result was not recorded."
+  },
+  {
+   "title": "'Create' button on New list and New project sheets",
+   "trigger": "Click the 'Create' button in the sheet footer (keyboard activation not recorded).",
+   "context": "Enabled (disabled=false) with the generated name in the field on both sheets.",
+   "result": "Button label is shown in the accept style. The creation result is not recorded.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Create"
+    },
+    {
+     "what": "Variant",
+     "value": "accept"
+    },
+    {
+     "what": "Disabled",
+     "value": "false"
+    },
+    {
+     "what": "Control",
+     "value": "KeyAction label=\"Create\" variant=\"accept\" disabled=false onClick=ƒ @678,413 84x28"
+    }
+   ],
+   "sources": [
+    "state:sheet-new-list (tree.txt:114)",
+    "state:sheet-new-project (tree.txt:113)",
+    "state:sheet-new-list (shot.png)",
+    "The accept label 'Create' is set by a caller that was not opened (commands/projects.ts and commands/lists.ts beyond lines 14-15 and 43, 54). The accept variant rule (non-danger gives 'accept') is confirmed at main/src/components/SheetHost.tsx:143. disabled=false is not verified.",
+    "sheet-new-list/tree.txt:114 and sheet-new-project/tree.txt:113: KeyAction label=\"Create\" variant=\"accept\" disabled=false onClick=ƒ @678,413 84x28 (identical strings). Creation result and keyboard activation not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The created list is expected to be added as a new tab, but this is not recorded. In the screenshots 'Create' looks visually similar to 'Cancel' in the light theme; the accent colour is not clearly visible (visual observation, uncertain).",
+   "edge_cases": [],
+   "id": "F06-102",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A could not check the 'Create' label source or disabled=false, but confirmed the accept variant rule. Checker B recorded label 'Create', variant accept and disabled=false in both recordings. The creation result and keyboard activation were not recorded."
+  },
+  {
+   "title": "Recordings for context and row menus and delete confirmations",
+   "trigger": "none (caller-defined; recordings row-context-menu, row-more-menu, multi-context-menu, attachment-menu, delete-confirm, sheet-delete-list)",
+   "context": "Source path for the danger-tone rule is main/src/lib/sheet.ts:30-31 (the cited common-ui path was not verified). Menu layer is ContextMenu.tsx:34; 4px clamp is ContextMenu.tsx:85-86; submenu flip is ContextMenu.tsx:140-152. The contents of the recorded surfaces were not verified.",
+   "result": "These surfaces render through ContextMenu (menu layer, 4px edge clamp, submenus) or SheetHost (danger tone when a delete is not undoable). The multi-context-menu recording does show an open ContextMenu: Overlay layer=\"menu\" placement=\"anchored\" dismissOnWindowChange=true with a 5-item MenuPanel that includes a submenu item and a danger-tone delete item. The attachment-menu and delete-confirm recordings show no menu or sheet open. The 4px edge clamp and the SheetHost danger tone are not confirmed by these recordings.",
+   "exact": [
+    {
+     "what": "multi-context-menu MenuPanel",
+     "value": "items=[5] x=101 y=221 @101,221 154x175; Overlay layer=\"menu\" placement=\"anchored\" dim=\"none\" dismissOnWindowChange=true"
+    }
+   ],
+   "sources": [
+    "main/src/components/ContextMenu.tsx:16-17",
+    "main/src/components/ContextMenu.tsx:78-88",
+    "main/src/components/ContextMenu.tsx:33-43",
+    "main/src/components/SheetHost.tsx:122",
+    "main/src/components/SheetHost.tsx:140-146",
+    "common-ui/src/lib/sheet.ts:30-31",
+    "main/src/components/ContextMenu.tsx:34 (layer=\"menu\"), :85-86 (viewport clamp Math.max(4, ...), giving the 4px edge clamp), :140-152 (Submenu flips side when overflowing). main/src/lib/sheet.ts:30-31 (tone rule: 'danger' for anything not undoable). The cited path common-ui/src/lib/sheet.ts:30-31 was not opened; the tone comment I read is in main/src/lib/sheet.ts. ContextMenu.tsx:33-43 is the Overlay props, not the clamp.",
+    "multi-context-menu/tree.txt:96 TaskInspector 'Cut a spare key'; tree.txt:129 Overlay layer=\"menu\" placement=\"anchored\" dim=\"none\" dismissOnWindowChange=true; tree.txt:131 MenuPanel items=[5] x=101 y=221 @101,221 154x175. Items: content_copy (tree.txt:133-134), subdirectory_arrow_right (136-137), edit (138-139), arrow_forward with chevron_right submenu marker (140-142), delete with tone=\"danger\" (144-145). attachment-menu/tree.txt:163 and delete-confirm/tree.txt:127-128 show an empty SheetHost and no Overlay, so neither shows a menu or sheet open. The 4px edge clamp and the SheetHost danger tone are not shown. row-context-menu, row-more-menu and sheet-delete-list are outside the folders named for this task and were not checked. Note: one broad content search over the references directory also matched folders outside the named set; none of those results were used."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "critic"
+   ],
+   "notes": "Critique proposal. The recordings themselves were not opened, so nothing in them is verified; only the mechanics are source-backed. The sheet.ts path is main/src/lib/sheet.ts:30-31 (cited by the critique as sheet.ts:30-31).",
+   "edge_cases": [],
+   "id": "F06-103",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the danger-tone source path to main/src/lib/sheet.ts:30-31, because the cited common-ui path was not verified. Checker B's multi-context-menu recording confirms an open ContextMenu with layer menu, anchored placement, dim none, dismissOnWindowChange true, a 5-item MenuPanel, a submenu item and a danger-tone delete item. The attachment-menu and delete-confirm recordings show no menu or sheet open. The 4px edge clamp was not confirmed by any recording. row-context-menu, row-more-menu and sheet-delete-list were outside the named folders and were not checked. A broad references search matched folders outside the named set; those results were discarded."
+  }
+ ]
+}

@@ -1,0 +1,1617 @@
+{
+ "area": 15,
+ "name": "Main app, native side",
+ "tier": "ordinary",
+ "counts": {
+  "A": 48,
+  "B": 16,
+  "critic_issues": null,
+  "merged": 57
+ },
+ "dropped": [
+  {
+   "title": "Main window unminimizes and focuses on /focus (B)",
+   "reason": "Duplicate of B's own 'Tray Open Taskscape brings the main window forward' entry (B's note flags it as a duplicate trigger view of the same POST /focus behaviour); its content is merged into the merged tray-focus entry, which also carries A's /focus entry."
+  }
+ ],
+ "features": [
+  {
+   "title": "List menu item \"Import List from JSON…\" opens the import flow",
+   "trigger": "Click the \"Import List from JSON…\" item in the \"List\" submenu of the app menu bar (no keyboard accelerator is assigned in code)",
+   "context": "Main app window menu bar; menu built in run() on top of Menu::default",
+   "result": "The native menu click is forwarded as the frontend event \"menu:import-list\" emitted to the \"main\" window; the frontend runs the import flow (file dialog is frontend-driven). No accelerator is set.",
+   "exact": [
+    {
+     "what": "Menu item label",
+     "value": "Import List from JSON…"
+    },
+    {
+     "what": "Menu item id",
+     "value": "import_list"
+    },
+    {
+     "what": "Submenu label",
+     "value": "List"
+    },
+    {
+     "what": "Emitted event",
+     "value": "menu:import-list"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:961-977",
+    "main/src-tauri/src/lib.rs:982-985",
+    "Checker A: lib.rs:960-979 (MenuItem::with_id \"import_list\", label \"Import List from JSON…\" at 965, accelerator None at 967, Submenu::with_items \"List\" at 976); lib.rs:983-984 emit_to(\"main\", \"menu:import-list\", ())",
+    "Checker B: None of the three reference docs (main-app.md, architecture.md, build-and-run.md) mention the List submenu, the menu item, or the menu:import-list event. main-app.md:3 only says 'no menu-bar/NSPanel tricks'."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the menu item, label, accelerator and event in source. Checker B could not check because no reference doc covers the List submenu."
+  },
+  {
+   "title": "List menu item \"Export List to JSON…\" opens the export flow",
+   "trigger": "Click the \"Export List to JSON…\" item in the \"List\" submenu of the app menu bar (no keyboard accelerator is assigned in code)",
+   "context": "Main app window menu bar",
+   "result": "The click is forwarded as the frontend event \"menu:export-list\" emitted to the \"main\" window; the frontend supplies the destination path.",
+   "exact": [
+    {
+     "what": "Menu item label",
+     "value": "Export List to JSON…"
+    },
+    {
+     "what": "Menu item id",
+     "value": "export_list"
+    },
+    {
+     "what": "Emitted event",
+     "value": "menu:export-list"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:969-976",
+    "main/src-tauri/src/lib.rs:986-989",
+    "Checker A: lib.rs:969-977 (id \"export_list\" at 971, label \"Export List to JSON…\" at 972, accelerator None at 974); lib.rs:986-987 emit_to(\"main\", \"menu:export-list\", ())",
+    "Checker B: No reference doc mentions the Export List to JSON item, export_list, or menu:export-list."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-002",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the menu item, label, accelerator and event in source. Checker B could not check because no reference doc covers it."
+  },
+  {
+   "title": "Standard App and Edit menus are kept alongside the List menu",
+   "trigger": "none (observed: menu bar contents; ⌘C, ⌘V, ⌘X, ⌘A work in text fields)",
+   "context": "Main app window menu bar",
+   "result": "The menu starts from Menu::default, so the standard App/Edit menus remain and their clipboard shortcuts keep working; the \"List\" submenu is appended at the end.",
+   "exact": [
+    {
+     "what": "Appended submenu",
+     "value": "List"
+    },
+    {
+     "what": "Shortcuts kept",
+     "value": "⌘C, ⌘V, ⌘X, ⌘A"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:958-961",
+    "main/src-tauri/src/lib.rs:977-978",
+    "Checker A: lib.rs:958-961 comment and Menu::default(handle) at 961 (App/Edit kept, ⌘C/⌘V/⌘X/⌘A per comment at 958-959); lib.rs:977 menu.append(&list_menu) appends \"List\" last",
+    "Checker B: No reference doc mentions Menu::default, the App/Edit menus, or the clipboard shortcuts. main-app.md:3 is the only related text and does not address them."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-003",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the menu structure in source. Checker B could not check because no reference doc covers the menus."
+  },
+  {
+   "title": "Export writes a list as pretty-printed JSON with schema version 1",
+   "trigger": "Invoke export_list for a list (triggered from the Export List to JSON… menu item via the frontend)",
+   "context": "Writes the file at the path the frontend supplies; includes tasks, subtasks, notes, and reference attachments",
+   "result": "The whole list is serialized with top-level keys taskscape_export (value 1), list {name}, and tasks (tree of {title, done, notes, attachments, children}); written pretty-printed with serde_json::to_string_pretty. Each note is written as its stored rich-text content string (sanitized HTML), not stripped to plain text. Copied-file attachments are excluded because they live under ~/.taskscape/. Only reference-type attachments are exported (name and location). Unknown list id returns an error.",
+   "exact": [
+    {
+     "what": "Schema version key and value",
+     "value": "taskscape_export: 1"
+    },
+    {
+     "what": "Error text when list missing",
+     "value": "list not found: {list_id}"
+    },
+    {
+     "what": "Serialization",
+     "value": "serde_json::to_string_pretty"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:389-422",
+    "main/src-tauri/src/lib.rs:424-443",
+    "main/src-tauri/src/lib.rs:445-470",
+    "Checker A: lib.rs:447-470 export_list; ListExport taskscape_export: u32 at 394, set to 1 at 464; ListMeta{name} 400-402; ExportTask fields title/done/notes/attachments/children 405-415; attachments filtered to LinkType::Reference at 432 and exported as name+location 433-436; error format!(\"list not found: {list_id}\") at 460; serde_json::to_string_pretty at 468; std::fs::write(&path) at 469; note content copied raw via n.content.clone() at 428 (comment at 408 says sanitized HTML)",
+    "Checker B: export_list is not in the command list at main-app.md:22-24. No doc describes the export file format, taskscape_export, or the error text."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "edge_cases": [
+    "Unknown list id returns the error \"list not found: {list_id}\"",
+    "Copied-file attachments are not written to the export file",
+    "Notes are exported as raw stored HTML content strings, not plain text"
+   ],
+   "id": "F15-004",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the export description from source. Checker B could not check because the export format is not documented. The export is the full list tree, written pretty-printed, with raw note HTML and only reference attachments."
+  },
+  {
+   "title": "Import creates a new list from an exported JSON file, recreating the full tree",
+   "trigger": "Invoke import_list with a project id, a file path and an optional name (triggered from the Import List from JSON… menu item via the frontend)",
+   "context": "Creates a new list inside the given project; does not merge into an existing list",
+   "result": "A new list is created; each exported task is recreated with its title, done state (done is set only when true), its notes in order, its reference attachments, and its children recursively under the new parent. Copy attachments are not in the file, so none are restored.",
+   "exact": [
+    {
+     "what": "Name rule",
+     "value": "The provided name is used only when it is non-blank after trimming; otherwise the document's embedded list name is used"
+    },
+    {
+     "what": "Done rule",
+     "value": "Done is applied only when the exported task's done flag is true"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:472-527",
+    "Checker A: lib.rs:504-527 import_list; name filter !s.trim().is_empty() with fallback export.list.name at 516-518; create_list(&project_id, &list_name) at 519-522 (new list, no merge); import_task 474-502: title at 481, done applied only if t.done at 484-489, create_note per note in order at 490-492, attach_reference per reference attachment at 493-497, children recursively via Box::pin at 498-500; no copy attachments in format so none restored",
+    "Checker B: import_list is not in the command list at main-app.md:22-24. No doc describes the import behaviour or the name rule."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "edge_cases": [
+    "Copy attachments are not restored on import",
+    "No transaction: the list and any tasks created before a failing task are left in place when an error is returned (lib.rs:519-525 uses ? with no rollback)",
+    "Malformed JSON or an unreadable file returns an error before any list is created (lib.rs:514-515)"
+   ],
+   "id": "F15-005",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the edge cases from source. Checker B could not check because import is not documented."
+  },
+  {
+   "title": "Copy tasks produces a Markdown checklist of the selected tasks",
+   "trigger": "Invoke copy_tasks with selected task ids (Select mode's copy action; the trigger UI lives in the frontend)",
+   "context": "Only the exact selected tasks appear, in tree order; ids not selected are omitted",
+   "result": "Each selected task becomes a line \"- [ ] title\" (or \"- [x] title\" when done). Nesting depth equals the count of selected ancestors, rendered as two spaces per level. Each non-empty note block follows its task as a blockquote line \"> text\" indented one level deeper than the task. Note HTML is converted to plain text with taskscape_common::storage::strip_html before the empty check (lib.rs:352-355). Empty notes are skipped. Output has trailing whitespace trimmed (trim_end on the whole output). A lone selected child renders flush left.",
+   "exact": [
+    {
+     "what": "Unchecked marker",
+     "value": "- [ ] "
+    },
+    {
+     "what": "Checked marker",
+     "value": "- [x] "
+    },
+    {
+     "what": "Indent unit",
+     "value": "two spaces per level"
+    },
+    {
+     "what": "Note prefix",
+     "value": "> "
+    },
+    {
+     "what": "Note indent",
+     "value": "depth + 1 levels of two spaces"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:331-373",
+    "main/src-tauri/src/lib.rs:375-387",
+    "Checker A: lib.rs:336-373 render_markdown: indent two spaces per depth at 345-347; \"- [x] \" / \"- [ ] \" at 348; title at 349; note skipped if empty after strip_html at 351-355; note indent depth+1 two-space units at 359-361; \"> \" prefix at 362; copy_tasks 376-387 with out.trim_end() at 386; depth increments only for selected ancestors via picked at 343/367",
+    "Checker B: copy_tasks is not listed in main-app.md:22-24. No doc gives the Markdown checklist markers or indent rules."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-006",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the Markdown output rules from source. Checker B could not check because copy_tasks is not documented."
+  },
+  {
+   "title": "Bulk mark selected tasks done or not done",
+   "trigger": "Invoke set_tasks_done with ids and a done boolean (bulk mark done / not done from Select mode; trigger UI in frontend)",
+   "context": "Applies to every id in the selection in one call",
+   "result": "Each task's done flag is set to the given value; errors stop the loop and are returned.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:299-314",
+    "Checker A: lib.rs:299-314 set_tasks_done: loops over ids calling store.update_task(id, None, None, Some(done)) at 308-310; errors propagated with map_err(err)? at 311, stopping the loop",
+    "Checker B: set_tasks_done is not listed in main-app.md:22-24."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-007",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the loop and error propagation in source. Checker B could not check because set_tasks_done is not documented."
+  },
+  {
+   "title": "Delete a task moves it and its subtree to the Trash (soft delete)",
+   "trigger": "Invoke delete_task or delete_tasks (delete action from the frontend; for several tasks, the caller passes the forest roots of the selection)",
+   "context": "Subtree goes with the task; the set of stamped ids is returned so the caller can undo the exact set",
+   "result": "Tasks are soft-deleted in one transaction and returned as ids (the frontend uses them for undo/restore).",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:226-232",
+    "main/src-tauri/src/lib.rs:259-269",
+    "Checker A: lib.rs:226-232 delete_task calls store.soft_delete_tasks(&[id]) and returns Vec<String>; lib.rs:259-269 delete_tasks doc comment (forest roots, one transaction, stamped ids returned) and soft_delete_tasks(&ids) at 268",
+    "Checker B: delete_task is named in the Tasks command list at main-app.md:23. delete_tasks is not listed. No doc describes soft delete, subtree behaviour, or returned ids."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's separate entry \"Create, update and delete tasks; set due date\" names delete_task without the soft-delete or subtree detail; kept as a separate entry, no conflict.",
+   "id": "F15-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified delete_task and delete_tasks in source. Checker B could not check because the soft-delete behaviour is not documented."
+  },
+  {
+   "title": "Restore tasks from the Trash (undo delete or restore from Trash)",
+   "trigger": "Invoke restore_tasks with ids (undo of a delete, or restore action in Trash)",
+   "context": "Trash view / undo",
+   "result": "The listed soft-deleted tasks are restored.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:271-276",
+    "Checker A: lib.rs:271-276 restore_tasks(ids) calls store.restore_tasks(&ids); doc comment at 271 \"undo a delete / restore from Trash\"",
+    "Checker B: restore_tasks is not in main-app.md:22-24."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-009",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the call and doc comment in source. Checker B could not check because restore_tasks is not documented."
+  },
+  {
+   "title": "Permanently delete chosen tasks from the Trash",
+   "trigger": "Invoke purge_tasks with ids (purge action in Trash)",
+   "context": "Trash view only",
+   "result": "The listed tasks are removed permanently.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:278-283",
+    "Checker A: lib.rs:278-283 purge_tasks(ids) calls store.purge_tasks(&ids); doc comment at 278 \"Permanently remove tasks from the Trash.\"",
+    "Checker B: purge_tasks is not in main-app.md:22-24."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the call and doc comment in source. Checker B could not check because purge_tasks is not documented."
+  },
+  {
+   "title": "Trash listing ordering",
+   "trigger": "Invoke list_trashed (opening the Trash view)",
+   "context": "Trash view",
+   "result": "Returns everything in the Trash with the most-recently-deleted first (ordering documented here; implementation is in the common crate).",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:285-290",
+    "Checker A: lib.rs:285-290 list_trashed calls store.list_trashed(); the only ordering evidence is the doc comment at 285 \"most-recently-deleted first\". The ordering implementation is in the common crate, which is outside the allowed scope.",
+    "Checker B: list_trashed is not in main-app.md:22-24. No doc gives the trash ordering."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-011",
+   "check": "unverified",
+   "check_notes": "Checker A could only confirm the call and a doc comment, and the ordering implementation is in the common crate, outside its scope. Checker B could not check because list_trashed is not documented. The most-recently-deleted-first ordering is unverified."
+  },
+  {
+   "title": "Empty Trash permanently",
+   "trigger": "Invoke empty_trash (empty-trash action in the Trash view)",
+   "context": "Trash view",
+   "result": "Everything in the Trash is removed permanently.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:292-297",
+    "Checker A: lib.rs:292-297 empty_trash calls store.empty_trash(); doc comment at 292 \"Permanently empty the Trash.\"",
+    "Checker B: empty_trash is not in main-app.md:22-24."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-012",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the call and doc comment in source. Checker B could not check because empty_trash is not documented."
+  },
+  {
+   "title": "Capture screenshot without attaching it",
+   "trigger": "Invoke capture_screenshot (frontend grabs the shot before deciding to create a task)",
+   "context": "Captures full screen or interactive region per the user's screenshot_mode setting; runs off the async runtime",
+   "result": "Returns the saved PNG path, or nothing when a region capture is cancelled, so a cancelled capture leaves no empty task behind.",
+   "exact": [
+    {
+     "what": "Setting consulted",
+     "value": "screenshot_mode"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:615-627",
+    "Checker A: lib.rs:615-627 capture_screenshot: spawn_blocking(screenshot::capture) at 622-624, returns Option<String> path at 626; doc comment 615-619 (screenshot_mode, None on cancelled region capture, no empty task left behind)",
+    "Checker B: capture_screenshot is not in main-app.md:22-24. architecture.md:37 names ~/.taskscape/screenshots/ as the captures folder, but nothing covers screenshot_mode, region cancel, or the returned path."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "edge_cases": [
+    "A cancelled region capture returns nothing"
+   ],
+   "id": "F15-013",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified capture_screenshot in source. Checker B could not check the feature itself. It found only that architecture.md names the captures folder."
+  },
+  {
+   "title": "Attach a screenshot to a task",
+   "trigger": "Invoke attach_screenshot with a task id (screenshot action)",
+   "context": "Capture then attach; mode from screenshot_mode setting; screencapture runs on a blocking thread",
+   "result": "A new copy attachment named \"screenshot.png\" is added to the task. If the region capture was cancelled, nothing is attached and no error is shown.",
+   "exact": [
+    {
+     "what": "Attachment name",
+     "value": "screenshot.png"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:629-656",
+    "Checker A: lib.rs:629-656 attach_screenshot: blocking capture at 639-643; cancelled capture returns Ok(None) with no error at 644-646; attach_copy with name Some(\"screenshot.png\") at 651; Ok(Some(attachment)) at 654",
+    "Checker B: attach_screenshot is not in main-app.md:22-24. No doc gives the attachment name screenshot.png."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "edge_cases": [
+    "A cancelled region capture attaches nothing and shows no error"
+   ],
+   "id": "F15-014",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified attach_screenshot in source. Checker B could not check because the command is not documented."
+  },
+  {
+   "title": "Screen Recording permission prompt on first capture (macOS)",
+   "trigger": "First screenshot capture after app launch (capture_screenshot or attach_screenshot)",
+   "context": "macOS only",
+   "result": "macOS prompts for Screen Recording permission the first time the app triggers a capture (OS prompt, not drawn by the app).",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:629-632",
+    "Checker A: lib.rs:629-632 doc comment: \"macOS prompts for Screen Recording permission the first time this app triggers a capture.\" Applies to attach_screenshot (633-656) and capture_screenshot (620-627) via the same capture call",
+    "Checker B: No reference doc mentions macOS Screen Recording permission."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-015",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the doc comment in source. Checker B could not check because no reference doc mentions Screen Recording permission."
+  },
+  {
+   "title": "Add a reference attachment (URL, file or network path)",
+   "trigger": "Invoke add_reference with task id, name and location",
+   "context": "Attachment is stored as a reference, not a copy",
+   "result": "A reference attachment is created on the task.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:571-582",
+    "Checker A: lib.rs:571-582 add_reference(task_id, name, location) calls taskscape_common::attachments::attach_reference; reference-type confirmed by ExportTask filter LinkType::Reference at lib.rs:432",
+    "Checker B: add_reference is named in the Attachments list at main-app.md:24. No doc describes its reference-vs-copy behaviour or its arguments."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's umbrella entry \"Attachments: add reference, add copy, delete, open\" covers this command; kept as a separate entry, no conflicting value.",
+   "id": "F15-016",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the call in source. Checker B could not check because the reference-vs-copy behaviour is not documented."
+  },
+  {
+   "title": "Add a copied file attachment",
+   "trigger": "Invoke add_copy with task id, source file path and optional name",
+   "context": "Copy is stored under ~/.taskscape/attachments/ (the copied-files folder inside the ~/.taskscape/ root, per architecture.md:36).",
+   "result": "The file is copied into the app's data folder and attached as a copy; the name is optional.",
+   "exact": [
+    {
+     "what": "Storage root",
+     "value": "~/.taskscape/"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:584-595",
+    "main/src-tauri/src/lib.rs:719-720",
+    "Checker A: lib.rs:584-595 add_copy(task_id, source_path, name: Option<String>) calls attach_copy(..., name.as_deref()); storage root \"~/.taskscape/\" appears only in comments at lib.rs:390 and lib.rs:720 (the copy path resolution itself lives in common)",
+    "Checker B: add_copy is named at main-app.md:24. architecture.md:36 places copied files in ~/.taskscape/attachments/ (copied files), and architecture.md:35-37 lists the ~/.taskscape/ tree. The feature's storage root '~/.taskscape/' is consistent with these lines."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Conflict: B's umbrella entry says copies are copied into ~/.taskscape/attachments/ (doc:main-app.md:24, doc:architecture.md:36). A's code source gives the storage root as ~/.taskscape/ and does not name an attachments subfolder. Kept A's value because it has a file:line source; the attachments/ subfolder is unverified in code.",
+   "id": "F15-017",
+   "check": "corrected",
+   "check_notes": "Checker A verified the add_copy call and that the ~/.taskscape/ root appears only in comments, and it said the copy path resolution lives in the common crate. Checker A did not verify the attachments/ subfolder. Checker B found architecture.md:36 placing copies under ~/.taskscape/attachments/, so B's correction is applied with that source. The subfolder is not confirmed by source code in this check."
+  },
+  {
+   "title": "Delete and rename attachments",
+   "trigger": "Invoke delete_attachment with id, or rename_attachment with id and new name",
+   "context": "Attachment list on a task",
+   "result": "The attachment is removed, or renamed; rename returns the updated attachment.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:597-613",
+    "Checker A: lib.rs:597-601 delete_attachment(id) returns Result<(), String>; lib.rs:603-613 rename_attachment(id, name) returns Result<Attachment, String> via attachments::rename_attachment",
+    "Checker B: delete_attachment is named at main-app.md:24. rename_attachment is not listed. No doc describes rename behaviour or the returned attachment."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-018",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified both commands in source. Checker B could not check rename_attachment because it is not documented, and it found only delete_attachment named in the docs."
+  },
+  {
+   "title": "Open an attachment with the OS default handler",
+   "trigger": "Invoke open_attachment with link type and location (open action on an attachment)",
+   "context": "Copies resolve to a file under ~/.taskscape/; references open as given (URL or path)",
+   "result": "The OS \"open\" command is run on the target. Only a failure to start the command is returned as an error; the exit status of \"open\" is not inspected, so a non-zero exit is not reported.",
+   "exact": [
+    {
+     "what": "Copy target",
+     "value": "resolved under ~/.taskscape/"
+    },
+    {
+     "what": "Reference target",
+     "value": "opened as stored"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:719-735",
+    "Checker A: lib.rs:721-735 open_attachment: copy target resolved via paths::resolve at 723-726; reference target used as-is at 728; Command::new(\"open\").arg(&target).status() at 730-733; only the spawn error is mapped with map_err(err)? at 733, the exit status returned by status() is never checked",
+    "Checker B: open_attachment is named at main-app.md:24. No doc describes the OS open command or the failure reporting. architecture.md:36 places copies under ~/.taskscape/attachments/, which is consistent with 'resolved under ~/.taskscape/' but does not confirm the resolution rule."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-019",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the result from source: the exit status of open is not inspected. Checker B could not check because the failure reporting is not documented."
+  },
+  {
+   "title": "Reveal an attachment in Finder",
+   "trigger": "Invoke reveal_attachment with link type and location (reveal action on an attachment)",
+   "context": "Copies resolve under ~/.taskscape/; file references reveal as given; web URLs cannot be revealed",
+   "result": "The file is revealed in Finder/Explorer. For a non-copy location starting with http:// or https:// the command fails with an error instead of revealing. A copy attachment is always resolved to its file path and is not URL-checked.",
+   "exact": [
+    {
+     "what": "Error text for URL",
+     "value": "cannot reveal a URL in the file manager"
+    },
+    {
+     "what": "URL prefixes checked",
+     "value": "http:// and https://"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:737-752",
+    "Checker A: lib.rs:740-752 reveal_attachment: copy target resolved under ~/.taskscape/ at 742-745; URL check at 746 applies only in the else-if branch, i.e. when link_type is not \"copy\"; error \"cannot reveal a URL in the file manager\" at 747; file references as given at 749; tauri_plugin_opener::reveal_item_in_dir at 751",
+    "Checker B: reveal_attachment is not listed in main-app.md:22-24. No doc gives the URL error text or the URL prefixes checked."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-020",
+   "edge_cases": [
+    "A copy attachment whose location starts with http:// or https:// is resolved to a file path and not rejected"
+   ],
+   "check": "corrected",
+   "check_notes": "Checker A corrected the reveal behaviour from source: the URL check applies only to non-copy attachments, so a copy attachment whose location starts with http:// or https:// is not rejected. Checker B could not check because the command is not documented."
+  },
+  {
+   "title": "Show the data folder paths for the Settings window",
+   "trigger": "Invoke data_paths (Settings window reads the paths to display)",
+   "context": "Settings window",
+   "result": "Returns the absolute data_dir (the .taskscape root) and screenshots_dir strings for display and opening.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:754-770",
+    "Checker A: lib.rs:754-770 DataPaths{data_dir, screenshots_dir} filled from taskscape_common::paths::root_dir() and screenshots_dir() as strings at 764-769; doc comment 754-756 (Settings window reads them)",
+    "Checker B: data_paths is not listed in main-app.md:22-24. architecture.md:35-37 lists ~/.taskscape/taskscape.db, ~/.taskscape/attachments/ and ~/.taskscape/screenshots/, which is consistent with a data_dir root and screenshots_dir, but the command itself is not documented."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-021",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the struct and paths in source. Checker B could not check because data_paths is not documented. architecture.md lists the same tree, which is consistent but does not confirm the command."
+  },
+  {
+   "title": "Open a data folder in Finder, falling back to the nearest existing parent",
+   "trigger": "Invoke open_path with a path (open action on a data location, e.g. screenshots folder)",
+   "context": "Subfolders such as screenshots may not exist yet; no folder is created by this action",
+   "result": "Opens the path; if it does not exist, the nearest existing ancestor folder is opened instead. Only if no ancestor exists is an error returned.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "{path} does not exist"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:772-785",
+    "Checker A: lib.rs:772-785 open_path: while !target.exists() { target.pop() } at 779-783; returns Err(format!(\"{path} does not exist\")) at 781 only when pop() fails; opens nearest existing ancestor via tauri_plugin_opener::open_path at 784; no directory created (comment 772-775)",
+    "Checker B: open_path is not listed in main-app.md:22-24. No doc gives the nearest-ancestor fallback or the error text."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-022",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the ancestor fallback and error text in source. Checker B could not check because open_path is not documented."
+  },
+  {
+   "title": "Open Settings window (singleton)",
+   "trigger": "Invoke open_settings (Settings action from the app)",
+   "context": "If Settings is already open it is focused instead of creating a second one",
+   "result": "A frameless, rounded, shadowed, resizable window titled \"Settings\" is built hidden at 640×520 and minimum 640×520; minimize and maximize are disabled; it is skipped in the taskbar. It is revealed later by present_window. Destroyed on close.",
+   "exact": [
+    {
+     "what": "Window title",
+     "value": "Settings"
+    },
+    {
+     "what": "Default size",
+     "value": "640 × 520"
+    },
+    {
+     "what": "Minimum size",
+     "value": "640 × 520"
+    },
+    {
+     "what": "Corner radius",
+     "value": "13 pt"
+    },
+    {
+     "what": "Resizable",
+     "value": "true"
+    },
+    {
+     "what": "Minimizable / maximizable",
+     "value": "false / false"
+    },
+    {
+     "what": "Decorations",
+     "value": "false"
+    },
+    {
+     "what": "Shadow",
+     "value": "true"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:798-834",
+    "main/src-tauri/src/lib.rs:873-893",
+    "main/src-tauri/src/panels.rs:276-309",
+    "Checker A: lib.rs:873-893 open_settings: singleton check get_webview_window(\"settings\") then set_focus and return at 877-880; build_panel(label \"settings\", title \"Settings\", 640., 520., resizable true, min Some((640., 520.))) at 882-891; panels.rs build_panel lib.rs:813-823 sets minimizable(false), maximizable(false), decorations(false), shadow(true), visible(false), skip_taskbar(true); round_corners at lib.rs:829-832; panels.rs:285 CORNER_RADIUS = 13.0; Destroyed on close lib.rs:1147",
+    "Checker B: open_settings is not listed in main-app.md:22-24. main-app.md:26 mentions Settings as the place to edit shortcuts only. No doc gives the window title, size, minimum size, decorations, shadow, or singleton behaviour."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-023",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the window title, size, minimum size, decorations, shadow and singleton behaviour in source. Checker B could not check because open_settings is not documented."
+  },
+  {
+   "title": "Settings window is measured, sized, centered over the main window, then shown",
+   "trigger": "Invoke present_window from the Settings window once its content is measured",
+   "context": "Settings window appears on screen already laid out",
+   "result": "The window is resized to the given logical size, positioned centered over the main window (scaled by the main window's display factor), then shown and focused. If no main window exists it is centered on screen. A shadow invalidation runs afterward.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:836-871",
+    "main/src-tauri/src/panels.rs:256-274",
+    "Checker A: lib.rs:840-871 present_window: set_size(LogicalSize) at 847-849; x/y centered over main using main outer_position/outer_size and main.scale_factor() at 850-863; window.center() when no main at 864; show() 866; set_focus() 867; invalidate_shadow run afterward at 868-869 (panels.rs:259-274)",
+    "Checker B: present_window is not listed in main-app.md:22-24. No doc describes the measure, center, show, or shadow steps."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-024",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified present_window in source. Checker B could not check because present_window is not documented."
+  },
+  {
+   "title": "Closing Settings tells the main window and tray to reload hotkeys",
+   "trigger": "Close the Settings window (it is destroyed on close); B: close the settings window after editing shortcuts",
+   "context": "Settings window closed",
+   "result": "The main window receives \"hotkeys-changed\" so it rebuilds its key map, and the tray receives a POST to /reload-hotkeys to re-register its global shortcuts. Main emits hotkeys-changed to its own webview and POSTs /reload-hotkeys to the tray; both apps re-apply their keyboard bindings immediately. Bindings are applied after the settings window closes.",
+   "exact": [
+    {
+     "what": "Event",
+     "value": "hotkeys-changed"
+    },
+    {
+     "what": "Tray route",
+     "value": "/reload-hotkeys"
+    },
+    {
+     "what": "HTTP route",
+     "value": "POST /reload-hotkeys on :7421"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1147-1158",
+    "doc:main-app.md:26",
+    "Checker A: lib.rs:1147-1158 Destroyed on \"settings\": emit_to(\"main\", \"hotkeys-changed\", ()) at 1149; post_json(TRAY_PORT, \"/reload-hotkeys\") at 1150-1155. The numeric port value is a constant in the common crate and was not checked here.",
+    "Checker B: main-app.md:26: 'When the settings window closes, main emits hotkeys-changed to its webview and POSTs /reload-hotkeys to the tray (:7421) so both sides re-apply bindings.' This matches the event name hotkeys-changed, the route /reload-hotkeys, the POST to the tray on :7421, and the immediate re-apply. Not covered by the docs: 'the Settings window is destroyed on close' and 'bindings are applied after the window closes' (the latter is only implied by 'when the settings window closes')."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged duplicate of A's Settings-close entry and B's 'Hotkey changes apply to both apps on settings close'. B's doc does not say whether a save button exists (none is mentioned).",
+   "id": "F15-025",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the event name, route, and the POST to the tray port exact. Checker B found the hotkeys-changed event and /reload-hotkeys route in main-app.md:26. Checker B noted two claims its docs do not cover: the Settings window being destroyed on close and bindings being applied after close. Checker A verified the Destroyed handler in source. The port number is a constant in the common crate and was not checked by A."
+  },
+  {
+   "title": "Closing the main window quits the app",
+   "trigger": "Close the main window (the Destroyed event)",
+   "context": "Main window",
+   "result": "The whole app exits (exit code 0), so the hidden panels do not keep it running headless.",
+   "exact": [
+    {
+     "what": "Exit code",
+     "value": "0"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1126-1129",
+    "Checker A: lib.rs:1126-1129 on_window_event (\"main\", WindowEvent::Destroyed) => window.app_handle().exit(0)",
+    "Checker B: No reference doc states that closing the main window quits the app or that the exit code is 0. main-app.md:3 only says it is a conventional Tauri app."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-026",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the exit on main window destruction in source. Checker B could not check because no reference doc covers it."
+  },
+  {
+   "title": "Main window focus changes are reported to the tray",
+   "trigger": "Main window gains or loses focus",
+   "context": "Lets the tray's global ⌘Enter / ⌘⇧Enter act on the main window (new task / screenshot) while it is frontmost",
+   "result": "Focus posts /main-focused to the tray, blur posts /main-blurred; no visible UI change in this app.",
+   "exact": [
+    {
+     "what": "Tray routes",
+     "value": "/main-focused, /main-blurred"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1071-1072",
+    "main/src-tauri/src/lib.rs:1130-1142",
+    "Checker A: lib.rs:1130-1142 Focused(focused): \"/main-focused\" when focused, \"/main-blurred\" otherwise, posted via server::client::post_json(TRAY_PORT, path, ...) at 1139-1140",
+    "Checker B: No reference doc mentions /main-focused or /main-blurred. The routes are not in main-app.md:30-34 or architecture.md:28-47."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the focus routes in source. Checker B could not check because the routes are not documented."
+  },
+  {
+   "title": "Global ⌘Enter from the tray creates a new task when main is frontmost",
+   "trigger": "Press ⌘Enter while the main window is frontmost (forwarded by the tray)",
+   "context": "Main window frontmost",
+   "result": "The tray posts /new-task to main, which emits \"new-task\" to the frontend instead of the mini bar opening.",
+   "exact": [
+    {
+     "what": "Event",
+     "value": "new-task"
+    },
+    {
+     "what": "Route",
+     "value": "/new-task"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1071-1079",
+    "Checker A: lib.rs:1073-1079 route \"/new-task\" handler calls app.emit(\"new-task\", ()) and returns StatusCode::OK; comment at 1071-1072 (tray forwards ⌘Enter when main is frontmost)",
+    "Checker B: architecture.md:44 says 'User hits ⌘Return -> tray shows the mini bar at the cursor.' The docs use the key name ⌘Return, not ⌘Enter. They do not mention the main-frontmost exception, /new-task, or the new-task event."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Key label conflict: B's entry 'Tray capture shows on next open when main is closed' names the tray-side capture hotkey as ⌘Return. A names ⌘Enter. Both may refer to the same key with different labels; not verified against code. Kept A's ⌘Enter.",
+   "id": "F15-028",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the /new-task route and event in source. Checker B could not check the main-frontmost exception or the route, and found only the ⌘Return shortcut in architecture.md:44."
+  },
+  {
+   "title": "Global ⌘⇧Enter from the tray attaches a screenshot when main is frontmost",
+   "trigger": "Press ⌘⇧Enter while the main window is frontmost (forwarded by the tray)",
+   "context": "Main window frontmost",
+   "result": "The tray posts /attach-screenshot to main, which emits \"attach-screenshot\" to the frontend.",
+   "exact": [
+    {
+     "what": "Event",
+     "value": "attach-screenshot"
+    },
+    {
+     "what": "Route",
+     "value": "/attach-screenshot"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1080-1086",
+    "Checker A: lib.rs:1080-1086 route \"/attach-screenshot\" handler calls app.emit(\"attach-screenshot\", ())",
+    "Checker B: No reference doc mentions ⌘⇧Enter, /attach-screenshot, or the attach-screenshot event."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the /attach-screenshot route and event in source. Checker B could not check because the shortcut and route are not documented."
+  },
+  {
+   "title": "Tray Refresh signal reloads the main window data",
+   "trigger": "POST /refresh from the tray after a change made there; B: tray writes data and POSTs /refresh to :7420 while the main window is open",
+   "context": "Main window running; B: main window is open while a task is captured or changed from the tray",
+   "result": "Emits \"refresh\" to the frontend so it reloads live data. The open window reloads its data automatically via the refresh event, so the tray-side change appears without the user doing anything.",
+   "exact": [
+    {
+     "what": "Event",
+     "value": "refresh"
+    },
+    {
+     "what": "Route",
+     "value": "/refresh"
+    },
+    {
+     "what": "HTTP route",
+     "value": "POST /refresh on :7420"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1043-1051",
+    "doc:main-app.md:32",
+    "doc:main-app.md:42",
+    "doc:architecture.md:44-47",
+    "Checker A: lib.rs:1043-1051 route \"/refresh\" handler calls app.emit(\"refresh\", ()); served on MAIN_PORT via server::serve at lib.rs:1099-1100 (port constant defined in common, not checked here)",
+    "Checker B: main-app.md:32: 'POST /refresh → emits a refresh event to the webview so the open window live-reloads after the tray writes data.' main-app.md:30 sets the main HTTP port as :7420. main-app.md:42 says the frontend listens for the refresh event. architecture.md:47 says the tray POSTs /refresh to main (:7420). The event name, route, port and trigger all match."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged A's 'Tray Refresh signal' and B's 'Live refresh when the tray changes data'. B's doc does not describe any visual flash or indicator on reload. Port 7420 is from B's doc; A's code source names MAIN_PORT.",
+   "id": "F15-030",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the /refresh route and refresh event exact. Checker B confirmed the :7420 port in main-app.md:30 and architecture.md:47. Checker A left the port constant unchecked in the common crate."
+  },
+  {
+   "title": "Tray focus request brings main window forward",
+   "trigger": "POST /focus from the tray (e.g. user opens main from the tray); B: click the tray menu item 'Open Taskscape', which POSTs /focus to :7420",
+   "context": "Main window may be minimized, hidden, or behind other windows",
+   "result": "The main window is unminimized, shown, and focused.",
+   "exact": [
+    {
+     "what": "Route",
+     "value": "/focus"
+    },
+    {
+     "what": "Tray menu label",
+     "value": "Open Taskscape"
+    },
+    {
+     "what": "HTTP route",
+     "value": "POST /focus on :7420"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1053-1062",
+    "doc:main-app.md:33",
+    "Checker A: lib.rs:1053-1062 route \"/focus\": get_webview_window(\"main\") then unminimize(), show(), set_focus(). The tray menu label \"Open Taskscape\" is in the tray crate and was not checked.",
+    "Checker B: main-app.md:33: 'POST /focus → unminimize + show + focus the window (used by the tray's \"Open Taskscape\").' main-app.md:30 gives :7420. The route, the result (unminimized, shown, focused) and the tray label 'Open Taskscape' all match."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged A's /focus entry and B's 'Tray Open Taskscape brings the main window forward'. B's separate 'Main window unminimizes and focuses on /focus' entry was dropped as a duplicate and its content is folded here.",
+   "id": "F15-031",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the /focus route exact. Checker A did not check the tray label 'Open Taskscape', which is in the tray crate. Checker B matched the label against main-app.md:33."
+  },
+  {
+   "title": "Tray Quit Taskscape closes the main app",
+   "trigger": "POST /quit from the tray's Quit Taskscape item; B: click the tray menu item 'Quit Taskscape', which POSTs /quit to :7420",
+   "context": "Whole app; main app is running",
+   "result": "The app exits with code 0. The main app exits (app.exit(0)), so the main window closes too.",
+   "exact": [
+    {
+     "what": "Tray menu label",
+     "value": "Quit Taskscape"
+    },
+    {
+     "what": "Exit code",
+     "value": "0"
+    },
+    {
+     "what": "HTTP route",
+     "value": "POST /quit on :7420"
+    },
+    {
+     "what": "Exit call",
+     "value": "app.exit(0)"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1064-1070",
+    "doc:main-app.md:34",
+    "Checker A: lib.rs:1064-1070 route \"/quit\": app.exit(0) then StatusCode::OK; comment at 1063. The tray menu label \"Quit Taskscape\" is in the tray crate and was not checked.",
+    "Checker B: main-app.md:34: 'POST /quit → app.exit(0), so the tray's \"Quit Taskscape\" closes this window too.' main-app.md:30 gives :7420. The route, the label 'Quit Taskscape', the app.exit(0) call and exit code 0 (implied by app.exit(0)) all match."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged A's /quit entry and B's 'Tray Quit Taskscape closes the main app'. B's doc does not say whether a confirmation or unsaved-change prompt appears.",
+   "id": "F15-032",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the /quit route exact. Checker A did not check the tray label 'Quit Taskscape', which is in the tray crate. Checker B matched the label and the app.exit(0) call against main-app.md:34."
+  },
+  {
+   "title": "Main window starts hidden and reveals in stages (boot sequence)",
+   "trigger": "App launch (none)",
+   "context": "Startup; window is visible immediately with a native boot box while the webview is transparent",
+   "result": "The window is shown at once with its themed background and a native empty checkbox drawn at the window's center; the webview stays invisible until the frontend calls reveal_main, which fades it in over 180 ms. If the frontend never calls it, the webview is faded in after 4 seconds as a fallback.",
+   "exact": [
+    {
+     "what": "Fade-in duration",
+     "value": "0.18 s (180 ms)"
+    },
+    {
+     "what": "Fallback delay",
+     "value": "4 seconds"
+    },
+    {
+     "what": "Boot box size",
+     "value": "25 × 25"
+    },
+    {
+     "what": "Boot box corner radius",
+     "value": "7"
+    },
+    {
+     "what": "Boot box stroke",
+     "value": "1.5"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1003-1022",
+    "main/src-tauri/src/lib.rs:1024-1040",
+    "main/src-tauri/src/lib.rs:895-911",
+    "main/src-tauri/src/panels.rs:30-60",
+    "main/src-tauri/src/panels.rs:81-111",
+    "main/src-tauri/src/panels.rs:113-133",
+    "Checker A: lib.rs:895-911 reveal_main swaps WEBVIEW_REVEALED and calls panels::reveal_webview; lib.rs:1003-1021 setup: show_boot_box at 1014 and hide_webview_and_reveal_window at 1021; panels.rs:45-79 sets alphaValue 0 and shows window; panels.rs:88-111 fade duration 0.18 at line 102; lib.rs:1031-1039 fallback sleep Duration::from_secs(4) then reveal; panels.rs:122 BOOT_BOX_SIZE 25.0, :124 BOOT_BOX_RADIUS 7.0, :126 BOOT_BOX_STROKE 1.5; centered frame panels.rs:163-172",
+    "Checker B: No reference doc mentions the boot sequence, reveal_main, the 180 ms fade, the 4 second fallback, or the boot box. main-app.md:3 and architecture.md do not cover them."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the reveal, fade, fallback and boot box sizes in source. Checker B could not check because the boot sequence is not documented."
+  },
+  {
+   "title": "Boot box colour in light and dark appearance",
+   "trigger": "none (observed during launch)",
+   "context": "Light vs dark resolved theme",
+   "result": "Light: a dark-grey outline at 30% opacity; dark: a near-white outline at 24% opacity.",
+   "exact": [
+    {
+     "what": "Light edge colour (sRGB + alpha)",
+     "value": "(0.176, 0.201, 0.240, 0.30)"
+    },
+    {
+     "what": "Dark edge colour (sRGB + alpha)",
+     "value": "(0.959, 0.975, 1.0, 0.24)"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/panels.rs:126-131",
+    "main/src-tauri/src/panels.rs:140-150",
+    "Checker A: panels.rs:129 BOOT_EDGE_LIGHT = (0.176, 0.201, 0.240, 0.30); panels.rs:131 BOOT_EDGE_DARK = (0.959, 0.975, 1.0, 0.24); selected by dark flag at panels.rs:146-150",
+    "Checker B: No reference doc gives the boot box colours or opacities."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the boot box colours in source. Checker B could not check because no reference doc gives them."
+  },
+  {
+   "title": "Boot box is removed after the boot overlay is dismissed",
+   "trigger": "Frontend calls boot_done",
+   "context": "After first paint",
+   "result": "The native boot box is removed from the window; not visibly different because the page covers it.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:913-921",
+    "main/src-tauri/src/panels.rs:212-254",
+    "Checker A: lib.rs:913-921 boot_done calls panels::remove_boot_box; doc comment 913-914 (opaque page covers it since first paint); panels.rs:212-254 removes NSView matched by identifier BOOT_BOX_ID",
+    "Checker B: No reference doc mentions boot_done or removal of the boot box."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-035",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified boot_done and the box removal in source. Checker B could not check because no reference doc mentions it."
+  },
+  {
+   "title": "Main window background matches the theme (light and dark)",
+   "trigger": "App launch, and live theme changes via set_window_theme",
+   "context": "Theme from saved \"theme\" setting, or system appearance when unset",
+   "result": "Main window background is near-white cool grey in light and graphite in dark; only the main window is painted (Settings and other panels are skipped).",
+   "exact": [
+    {
+     "what": "Light background (RGBA)",
+     "value": "244, 244, 246, 255"
+    },
+    {
+     "what": "Dark background (RGBA)",
+     "value": "22, 23, 25, 255"
+    },
+    {
+     "what": "Theme setting values",
+     "value": "\"dark\" forces dark, \"light\" forces light, anything else follows system appearance"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:40-60",
+    "main/src-tauri/src/lib.rs:62-74",
+    "main/src-tauri/src/lib.rs:928-934",
+    "A: lib.rs:44-45 (WINDOW_BG_LIGHT = Color(244,244,246,255), WINDOW_BG_DARK = Color(22,23,25,255)); lib.rs:65-74 resolve_dark: \"dark\"->true, \"light\"->false, other -> window.theme() == Dark (error maps to false); lib.rs:928-934 set_window_theme paints only when label()==\"main\"; lib.rs:1003-1009 setup paints at launch.",
+    "B (cannot_check): Checked .llm/main-app.md, architecture.md and build-and-run.md. None gives the window background RGBA values, the theme setting values, or the theme logic. Source files were not read per the task scope."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-036",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the values and theme logic from source. B could not check because the docs do not cover them."
+  },
+  {
+   "title": "Traffic light buttons hidden on the main window",
+   "trigger": "none (observed: no native close/minimize/zoom buttons on the main window)",
+   "context": "macOS main window; the frontend draws its own window controls",
+   "result": "The close, minimize and zoom buttons are hidden; rounded corners, shadow and resize behaviour are kept.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/panels.rs:4-28",
+    "main/src-tauri/src/lib.rs:1001-1005",
+    "A: panels.rs:4-28 hide_traffic_lights loops kinds 0..=2 (close, miniaturize, zoom) and sets setHidden:true (panels.rs:16-24); panels.rs:5-6 says the Overlay titlebar keeps rounded corners, shadow and resize; lib.rs:1003-1005 calls it for the \"main\" window in setup.",
+    "B (cannot_check): main-app.md:3 says only that it is a conventional Tauri app with no menu-bar/NSPanel tricks. No doc mentions traffic-light buttons, window controls or macOS window decorations."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-037",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B found no documentation covering it."
+  },
+  {
+   "title": "Low Power Mode state and live changes",
+   "trigger": "macOS Low Power Mode toggled (observer); frontend calls is_low_power_mode once at startup",
+   "context": "macOS only; always false elsewhere",
+   "result": "The current state is returned at startup; each flip emits \"power-state-changed\" with the new boolean. The frontend forces reduced motion (zero animation durations) and shows a title-bar indicator.",
+   "exact": [
+    {
+     "what": "Event",
+     "value": "power-state-changed"
+    },
+    {
+     "what": "Event payload",
+     "value": "boolean Low Power Mode state"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/power.rs:1-37",
+    "main/src-tauri/src/power.rs:39-83",
+    "main/src-tauri/src/lib.rs:936-941",
+    "main/src-tauri/src/lib.rs:997-998",
+    "A: power.rs:12 POWER_EVENT = \"power-state-changed\"; power.rs:68 observes NSProcessInfoPowerStateDidChangeNotification; power.rs:97 emits is_low_power_mode() (boolean payload); power.rs:49-52 registers observer once; power.rs:33-36 returns false off macOS; lib.rs:938-941 is_low_power_mode command; lib.rs:997-998 starts watching. Frontend reduced-motion and title-bar indicator not checked (outside scope).",
+    "B (cannot_check): No mention of Low Power Mode, power-state-changed, is_low_power_mode or reduced motion in main-app.md, architecture.md or build-and-run.md."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-038",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the Rust side. The frontend reduced-motion and title-bar indicator were not checked by either checker."
+  },
+  {
+   "title": "Remember the last open list and project across launches",
+   "trigger": "Changing the open list invokes set_active_list (documented in main-app.md:25; the frontend trigger is not verified in source). set_active_project has no documented trigger (not in main-app.md; frontend not checked).",
+   "context": "Persisted in the store (not documented in the cited doc lines); the tray uses last_active_list for captures (main-app.md:25).",
+   "result": "set_active_list writes the id to last_active_list and set_active_project writes the id to last_active_project in the store (lib.rs:659-676); get_setting reads either value back (lib.rs:678-683). No Rust code reads them on launch, so restore is frontend-driven. Per main-app.md:25 the tray reads last_active_list to decide where captures go (tray side not checked in source).",
+   "exact": [
+    {
+     "what": "Setting keys",
+     "value": "last_active_list (set_active_list, lib.rs:659-666; documented in main-app.md:25); last_active_project (set_active_project, lib.rs:669-676; not in the docs)"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:658-676",
+    "main/src-tauri/src/lib.rs:678-693",
+    "doc:main-app.md:25",
+    "doc:main-app.md:12-13",
+    "A: lib.rs:659-666 set_active_list writes setting key \"last_active_list\"; lib.rs:669-676 set_active_project writes \"last_active_project\"; lib.rs:678-683 get_setting reads back. No main-side reader on launch (restore is frontend-driven, consistent with the feature). Tray reading last_active_list is outside src-tauri/src. Doc citations (doc:main-app.md) not in permitted scope, not checked.",
+    "B: main-app.md:25 documents set_active_list writing last_active_list, which the tray reads to decide where captures go. main-app.md:22-26 lists no set_active_project command and no last_active_project key. main-app.md:12-13 are the App.tsx and Sidebar.tsx file-table rows and do not support the setting-key or persistence claims. Doc does not say sidebar selection invokes set_active_list, nor that the value is read back on launch."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged A's set_active_list/set_active_project entry and B's 'Active list is remembered for tray captures'. B's sidebar-selection trigger and cross-launch persistence were inferred from the Sidebar.tsx 'List navigation' role and the key name, not stated in the doc; the sidebar trigger is unverified, so the entry is marked uncertain. Only A names set_active_project.",
+   "id": "F15-039",
+   "check": "corrected",
+   "check_notes": "A verified the code, including the last_active_project key, which B's doc-based check missed. B's claims that set_active_project and last_active_project are undocumented are doc-scope only, so the code-verified key is kept. B's trigger correction is kept because A did not verify the frontend trigger. B's two setting-key entries were merged into one; the doc-only entry was dropped as a duplicate."
+  },
+  {
+   "title": "Generic settings get and set",
+   "trigger": "Invoke get_setting or set_setting with key and value",
+   "context": "Any persisted preference",
+   "result": "Value is read or stored; get returns nothing when unset.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:678-693",
+    "A: lib.rs:679-683 get_setting(key) -> Result<Option<String>,String> (None when unset); lib.rs:685-693 set_setting(key, value) stores via store.set_setting.",
+    "B (cannot_check): get_setting and set_setting do not appear in main-app.md commands list (main-app.md:22-26) or elsewhere in the three docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-040",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the signatures and behaviour from source. B found no documentation covering them."
+  },
+  {
+   "title": "Keyboard shortcut list shows effective (customised) combos",
+   "trigger": "Invoke list_hotkeys (Shortcuts editor opens)",
+   "context": "Shortcuts editor in Settings",
+   "result": "Returns the hotkey catalog with user-customised combos applied over defaults.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:695-702",
+    "A: lib.rs:695-702 list_hotkeys returns hotkeys::resolve(&store) with doc comment \"effective (user-customized) combos\"; registered in lib.rs:1207. The default-merge logic lives in taskscape_common::hotkeys, not checked.",
+    "B (cannot_check): main-app.md:26 names list_hotkeys as a thin wrapper over common::hotkeys, edited in Settings ▸ Shortcuts. The doc does not say the list includes user-customised combos over defaults, nor that it runs when the Shortcuts editor opens."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Overlaps B's umbrella entry 'Keyboard shortcut settings in Settings ▸ Shortcuts' (which names list_hotkeys); kept separately.",
+   "id": "F15-041",
+   "check": "confirmed_by_one",
+   "check_notes": "A's code evidence confirms the effective, user-customized combos. The docs do not say this, which is a documentation gap rather than a conflict."
+  },
+  {
+   "title": "Set a single shortcut, unbind with empty value, conflict message shown inline",
+   "trigger": "Invoke set_hotkey with id and accel (edited in the Shortcuts editor); empty string \"\" unbinds",
+   "context": "Shortcuts editor",
+   "result": "The binding is saved; a conflict is returned as an error whose text the editor shows inline.",
+   "exact": [
+    {
+     "what": "Unbind value",
+     "value": "\"\" (empty string)"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:704-710",
+    "A: lib.rs:704-710 set_hotkey(id, accel); doc comment at lib.rs:704 says \"\" unbinds; conflict message carried in the error via hotkeys::set_binding(...).map_err(err) at lib.rs:709; registered lib.rs:1208. Inline display is frontend, not checked.",
+    "B (cannot_check): main-app.md:26 names set_hotkey and says hotkeys are edited in Settings ▸ Shortcuts. The docs do not describe the accel parameter, the empty-string unbind value, or the inline conflict error."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Overlaps B's umbrella entry 'Keyboard shortcut settings in Settings ▸ Shortcuts' (which names set_hotkey); kept separately.",
+   "id": "F15-042",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the unbind value and the conflict error from source. The inline display is frontend and was not checked."
+  },
+  {
+   "title": "Reset one shortcut to its default",
+   "trigger": "Invoke reset_hotkey with id (reset action in the Shortcuts editor)",
+   "context": "Shortcuts editor",
+   "result": "That binding is restored to its default combo.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:712-717",
+    "A: lib.rs:712-717 reset_hotkey(id) -> hotkeys::reset_binding; registered lib.rs:1209.",
+    "B (cannot_check): main-app.md:26 names reset_hotkey and the Settings ▸ Shortcuts location. The docs do not describe restoring a default combo or the reset action."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "Overlaps B's umbrella entry 'Keyboard shortcut settings in Settings ▸ Shortcuts' (which names reset_hotkey); kept separately.",
+   "id": "F15-043",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the command from source. B found no documentation covering it."
+  },
+  {
+   "title": "Note edits are saved in order by a background queue",
+   "trigger": "Typing in a note (autosave calls update_note; no visible control here)",
+   "context": "Autosave while typing",
+   "result": "Each edit is queued (bounded at 512) and applied in arrival order by one worker so concurrent edits to one note never race; failures are only logged. The command is fire-and-forget: it awaits the queue send and returns Ok once enqueued, but when the 512-slot queue is full the send waits for space, and it returns an error only if the worker has stopped.",
+   "exact": [
+    {
+     "what": "Queue capacity",
+     "value": "512"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:81-85",
+    "main/src-tauri/src/lib.rs:545-554",
+    "main/src-tauri/src/lib.rs:953",
+    "main/src-tauri/src/lib.rs:1105-1123",
+    "A: Capacity 512: lib.rs:953 channel::<(String,String)>(512), rationale lib.rs:949-952. Single worker: lib.rs:1108-1123. Arrival order: lib.rs:1118 while let recv. Failures logged only: lib.rs:1119-1121. update_note: lib.rs:545-554 does queue.0.send((id, content)).await.map_err(err).",
+    "B (cannot_check): update_note is not in the main-app.md commands list (main-app.md:22-26). No doc describes autosave, the 512-entry queue, or the background worker."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-044",
+   "check": "corrected",
+   "edge_cases": [
+    "When the queue is full, update_note blocks on send until a slot frees; it does not return immediately.",
+    "An update to a note deleted meanwhile is logged as 'queued note update failed' and skipped (lib.rs:1105-1107, 1119-1121)."
+   ],
+   "check_notes": "Only A checked the source. The docs do not cover the queue, so B's cannot_check does not conflict."
+  },
+  {
+   "title": "Copy a note's text as plain text into markdown",
+   "trigger": "Included in Copy tasks (see copy feature)",
+   "context": "Note blocks with empty text after stripping HTML are dropped",
+   "result": "Note content is stripped of HTML before being written after the task line.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:351-365",
+    "A: lib.rs:343-344 only selected (picked) tasks emit note text; lib.rs:352 strip_html; lib.rs:353-355 empty text skipped; lib.rs:359-364 note written as a '> ' blockquote line indented depth+1 levels of two spaces, after the task line (lib.rs:348-350). copy_tasks at lib.rs:376-377 is the Copy entry point (its body not re-read).",
+    "B (cannot_check): No doc mentions note copy, HTML stripping, or Copy tasks in main-app.md, architecture.md or build-and-run.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-045",
+   "check": "corrected",
+   "edge_cases": [
+    "Only notes of tasks that are selected for copy are written (lib.rs:343-344); notes of unselected ancestors are not.",
+    "Each non-empty note becomes a Markdown blockquote line '> ' (lib.rs:362) aligned to the task's content column, so it renders under the task rather than in its title line (lib.rs:356-358).",
+    "Empty note text after stripping HTML is skipped (lib.rs:353-355)."
+   ],
+   "check_notes": "Only A checked the source, and only the edge cases were corrected. The copy_tasks body (lib.rs:376-377) was not re-read."
+  },
+  {
+   "title": "Embedded menu-bar tray launches with the macOS app",
+   "trigger": "App startup on macOS when the packaged bundle contains the tray; B: launching main opens the nested tray helper",
+   "context": "Packaged macOS app only; dev uses run-dev.sh to start the tray (B: scripts/run-dev.sh; dev builds are a no-op)",
+   "result": "The nested taskscape-tray.app is opened with the system open command; open without -n reuses a running instance so no duplicate tray appears. The main app opens the tray helper nested at Contents/Library/LoginItems/taskscape-tray.app, so the menu-bar capture agent appears without a separate install. If a tray is already running it is reused, not duplicated.",
+   "exact": [
+    {
+     "what": "Nested tray path",
+     "value": "Contents/Library/LoginItems/taskscape-tray.app"
+    },
+    {
+     "what": "Nested tray path (full, from doc)",
+     "value": "Taskscape.app/Contents/Library/LoginItems/taskscape-tray.app"
+    },
+    {
+     "what": "open flag",
+     "value": "open without -n"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:87-108",
+    "main/src-tauri/src/lib.rs:995",
+    "doc:main-app.md:36-38",
+    "doc:build-and-run.md:14",
+    "doc:build-and-run.md:72",
+    "A: lib.rs:97-101 path computed as <bundle>/Contents/Library/LoginItems/taskscape-tray.app; lib.rs:105-106 runs Command::new(\"open\").arg(&tray) with no -n flag; lib.rs:89-91 comment that open without -n reuses a running instance; lib.rs:994-995 launched in setup; lib.rs:90-91 and 105 make dev a no-op when the nested bundle is absent. The full 'Taskscape.app/...' path is from doc and not checked. The open exit status is ignored (lib.rs:106).",
+    "B: main-app.md:38: on macOS startup the main app opens the tray bundle nested at Contents/Library/LoginItems/taskscape-tray.app, packaged builds only, a no-op in dev where scripts/run-dev.sh starts the tray; uses open without -n so a running tray is reused. build-and-run.md:72 gives the full path Taskscape.app/Contents/Library/LoginItems/taskscape-tray.app. build-and-run.md:14 gives the dev no-op. architecture.md:22 supports the nested-tray install without a separate step."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged A's embedded-tray entry and B's 'Launching main auto-starts the embedded tray agent'. Observable only indirectly (tray agent present after launch).",
+   "id": "F15-046",
+   "check": "confirmed_by_both",
+   "check_notes": "Both agree. The full Taskscape.app path comes from build-and-run.md:72 and was not checked in source. The exit status of open is ignored (lib.rs:106)."
+  },
+  {
+   "title": "Local data server on the main port for the tray and other clients",
+   "trigger": "App startup (none)",
+   "context": "Background; the store opens in the background so the window paints first. MAIN_PORT is imported from taskscape_common (lib.rs:10-12); its value is defined in the common crate and was not verified here.",
+   "result": "The shared data_router is served on MAIN_PORT (:7420 per main-app.md:30 and build-and-run.md:11, 23) together with the app routes /refresh, /focus, /quit, /new-task and /attach-screenshot (lib.rs:1044-1100). The docs list only /refresh, /focus and /quit (main-app.md:32-34).",
+   "exact": [
+    {
+     "what": "Port constant",
+     "value": "MAIN_PORT (imported from taskscape_common, lib.rs:11)"
+    }
+   ],
+   "sources": [
+    "main/src-tauri/src/lib.rs:1088-1103",
+    "main/src-tauri/src/lib.rs:25-38",
+    "doc:main-app.md:32-34",
+    "A: MAIN_PORT is imported from taskscape_common at lib.rs:10-12 (not defined in lib.rs). lib.rs:25-38 is the StoreCell doc, not the port constant, so the cited source range is wrong. Routes: lib.rs:1044-1081 app_routes (/refresh 1045-1051, /focus 1052-1062, /quit 1064-1070, /new-task 1073-1079, /attach-screenshot 1080-1086); lib.rs:1099-1100 data_router(store).merge(app_routes) served on MAIN_PORT. Store opens in background: lib.rs:1088-1098 and warm-up lib.rs:945-946. The value 7420 is not in src-tauri/src and was not checked.",
+    "B: main-app.md:30 says main mounts the shared data_router on :7420, matching the port 7420 in build-and-run.md:11 and 23 and MAIN_PORT in build-and-run.md:23. main-app.md:32-34 lists only /refresh, /focus and /quit as the extra main routes. /new-task and /attach-screenshot are not in any doc. The store opening in the background is not documented."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's docs give the main port as :7420 for /refresh, /focus and /quit; A's code source names only the MAIN_PORT constant. The numeric value 7420 is from the doc and is not checked against lib.rs:25-38 here.",
+   "id": "F15-047",
+   "check": "corrected",
+   "check_notes": "Route conflict: B's docs list only /refresh, /focus and /quit, and do not mention /new-task or /attach-screenshot. A's code shows both registered in app_routes, so the code list is kept. The value 7420 comes from the docs only and was not verified in source. The background store opening is confirmed by A's code and is not documented."
+  },
+  {
+   "title": "Frontend-driven window presentation of panels is hidden-until-measured",
+   "trigger": "Opening any panel window",
+   "context": "Panel windows are built hidden and only shown after present_window",
+   "result": "Panels never visibly resize or jump on opening.",
+   "exact": [],
+   "sources": [
+    "main/src-tauri/src/lib.rs:798-802",
+    "main/src-tauri/src/lib.rs:836-839",
+    "A: lib.rs:821 build_panel sets .visible(false); lib.rs:798-802 doc says panels are built hidden and revealed via present_window; lib.rs:840-870 present_window sets size, centers over main (or window.center()), then show() at lib.rs:866 and set_focus at 867. Only open_settings (lib.rs:875-893) builds a panel in this code. Frontend measurement call not checked.",
+    "B (cannot_check): No doc mentions hidden-until-measured panel windows, present_window, or panel resizing."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F15-048",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B found no documentation covering it."
+  },
+  {
+   "title": "Main window opens at 800×600",
+   "trigger": "none",
+   "context": "Launching the main app (Taskscape.app / taskscape-main) on macOS",
+   "result": "The main app opens as a conventional, normal-sized Tauri window at 800×600. It is not a menu-bar popover or panel.",
+   "exact": [
+    {
+     "what": "window width × height",
+     "value": "800×600"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:3",
+    "doc:main-app.md:11",
+    "A (cannot_check): No 800 or 600 size appears in main/src-tauri/src (grep returned no match). The main window is declared outside src (tauri.conf.json, not in permitted scope), and the doc:main-app.md citation is outside permitted scope. Not verified.",
+    "B: main-app.md:11 gives the normal 800×600 window (src-tauri/tauri.conf.json). main-app.md:3 says it is a conventional Tauri app with no menu-bar/NSPanel tricks, matching not-a-popover-or-panel. The doc does not say macOS-only for this window size."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Doc states the window is a normal window with no menu-bar/NSPanel behaviour. Window chrome and title are not described in the doc.",
+   "id": "F15-049",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed only from docs (B), not from source; the size is declared in tauri.conf.json, which is outside src. The docs do not make this size macOS-only."
+  },
+  {
+   "title": "Tray capture shows on next open when main is closed",
+   "trigger": "none (tray POST /refresh finds no running main)",
+   "context": "Main app is not running when a capture is made from the tray (⌘Return flow)",
+   "result": "The capture is already saved to the database; it is shown the next time the main window is opened, with no refresh needed.",
+   "exact": [
+    {
+     "what": "capture hotkey (tray side)",
+     "value": "⌘Return"
+    }
+   ],
+   "sources": [
+    "doc:architecture.md:44-47",
+    "A (cannot_check): The ⌘Return capture hotkey is tray-side code (outside permitted scope); grep for 'Return' in main src-tauri/src found no match. Main side: /refresh emits 'refresh' only to a running app (lib.rs:1045-1051). Note lib.rs:1071 and lib.rs:1130 mention a tray global ⌘Enter / ⌘⇧Enter, not ⌘Return; the discrepancy is unresolved here. doc:architecture.md not checked.",
+    "B: architecture.md:44 gives ⌘Return as the tray capture hotkey. architecture.md:46-47: tray writes to SQLite, POSTs /refresh to main (:7420); if main is not running the change is already persisted and shows next time main opens."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Persistence feature. The ⌘Return hotkey is owned by the tray; listed here only for the main-side consequence. Label differs from A's ⌘Enter for the tray-side capture key; see the ⌘Enter entry.",
+   "id": "F15-050",
+   "check": "confirmed_by_one",
+   "check_notes": "Unresolved discrepancy: B's doc (architecture.md:44) gives ⌘Return, while A found ⌘Enter and ⌘⇧Enter in the comments at lib.rs:1071 and lib.rs:1130 and no 'Return' in main src. A could not check the tray code, so the doc value is kept and the mismatch is recorded here."
+  },
+  {
+   "title": "Sidebar list navigation",
+   "trigger": "Click a list in the sidebar (inferred)",
+   "context": "Main window",
+   "result": "The sidebar lists the user's lists and switches the task view between them. Exact labels, counts, and empty states are not documented.",
+   "exact": [],
+   "sources": [
+    "doc:main-app.md:13",
+    "A (cannot_check): Sidebar rendering and click behaviour are frontend code. Rust side only has set_active_list (lib.rs:659-666). Nothing in src-tauri/src to confirm the trigger.",
+    "B: main-app.md:13: Sidebar.tsx is for list navigation. The doc does not document the click trigger, the task-view switch, labels, counts or empty states. The chunk itself marks the trigger as inferred, and the result's not-documented note matches."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Only the file role 'List navigation' is documented. No behaviour, labels, or states are given.",
+   "id": "F15-051",
+   "check": "confirmed_by_one",
+   "check_notes": "B confirmed the doc scope only. The click trigger remains inferred, as the chunk itself notes."
+  },
+  {
+   "title": "Task list and task item rendering",
+   "trigger": "none (view of lists/tasks)",
+   "context": "Main window with a list or 'all tasks' view selected",
+   "result": "Tasks are rendered in a list via TaskList and individual rows via TaskItem. Exact row content, done state, and ordering are not documented.",
+   "exact": [],
+   "sources": [
+    "doc:main-app.md:14",
+    "A (cannot_check): TaskList and TaskItem are frontend components; no Rust code in src-tauri/src governs rendering. Feature itself states details are undocumented.",
+    "B: main-app.md:14: TaskList.tsx and TaskItem.tsx are for task rendering. Exact row content, done state and ordering are not documented, matching the result."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Doc only names the components. Task commands exist: list_tasks, all_tasks, create_task, update_task, delete_task, set_task_due. Ordering rules and due-date UI not documented.",
+   "id": "F15-052",
+   "check": "confirmed_by_one",
+   "check_notes": "A found the rendering is frontend-only. B confirmed that the docs do not cover the details."
+  },
+  {
+   "title": "Create, rename and delete lists",
+   "trigger": "Not documented (commands: create_list, rename_list, delete_list)",
+   "context": "Sidebar/list management",
+   "result": "Lists can be created, renamed and deleted through the shared Store. Trigger elements, confirmations and empty states are not documented.",
+   "exact": [],
+   "sources": [
+    "doc:main-app.md:22",
+    "A: Commands exist: create_list lib.rs:153, rename_list lib.rs:163, delete_list lib.rs:169; all registered in generate_handler at lib.rs:1168-1170. They operate on the shared Store via store_of (lib.rs:153-170).",
+    "B: main-app.md:22 lists create_list, rename_list, delete_list. main-app.md:20 says all commands are thin wrappers over the shared Store. No trigger elements or confirmations are documented, matching the result."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Only command names are given. No UI text, shortcuts or confirmation wording.",
+   "id": "F15-053",
+   "check": "confirmed_by_both",
+   "check_notes": "Both agree. Trigger elements and confirmations are not documented."
+  },
+  {
+   "title": "Create, update and delete tasks; set due date",
+   "trigger": "Not documented (commands: create_task, update_task, delete_task, delete_tasks; set_task_due is not registered)",
+   "context": "Task list/item",
+   "result": "Tasks can be created (create_task), updated (update_task: title, notes, done) and deleted; delete is a soft delete that moves the task and its subtree to the Trash (lib.rs:226-227). No set_task_due command exists in the main app, and update_task takes no due-date field, so setting a due date is not available through these commands.",
+   "exact": [],
+   "sources": [
+    "doc:main-app.md:23",
+    "A: create_task lib.rs:197-209; update_task lib.rs:212-224 takes only id, title, notes, done (no due date); delete_task lib.rs:226-231 is a soft delete to Trash. grep for set_task_due in src-tauri/src returned no match and it is not in generate_handler (lib.rs:1161-1216).",
+    "B: main-app.md:23 lists create_task, update_task, delete_task, set_task_due (plus list_tasks and all_tasks, not in the chunk). Exact controls are not documented, matching the result."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Command names only. Overlaps A's soft-delete entry 'Delete a task moves it and its subtree to the Trash' for delete_task; no conflict.",
+   "id": "F15-054",
+   "check": "corrected",
+   "check_notes": "Conflict: B's doc (main-app.md:23) lists set_task_due, but A found no set_task_due in src-tauri/src and no registration, so the code decides and set_task_due is excluded. A's trigger correction names delete_tasks, which A did not cite and B's doc does not list; it is kept as A wrote it but is unverified. list_tasks and all_tasks are outside this chunk."
+  },
+  {
+   "title": "Attachments: add reference, add copy, delete, open",
+   "trigger": "Not documented (commands: list_attachments, add_reference, add_copy, delete_attachment, open_attachment, reveal_attachment, rename_attachment, capture_screenshot, attach_screenshot)",
+   "context": "Task with attachments",
+   "result": "A user can list a task's attachments, add a reference to a file, add a copy of a file, delete an attachment, open an attachment (copies resolve under ~/.taskscape/, references open as given), and also reveal an attachment in Finder/Explorer, rename an attachment, and capture/attach a screenshot.",
+   "exact": [
+    {
+     "what": "attachments folder",
+     "value": "~/.taskscape/attachments/"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:24",
+    "doc:architecture.md:36",
+    "A: Commands: list_attachments lib.rs:563, add_reference lib.rs:572, add_copy lib.rs:585, delete_attachment lib.rs:598, open_attachment lib.rs:722; all registered lib.rs:1192-1199. Extra commands registered: rename_attachment (lib.rs:1196), reveal_attachment (lib.rs:741, 1200), capture_screenshot and attach_screenshot (lib.rs:1197-1198). Copies resolve under ~/.taskscape/ via taskscape_common::paths::resolve (lib.rs:720, 724). The attachments folder path is in the common crate and not checked.",
+    "B: main-app.md:24 lists list_attachments, add_reference, add_copy, delete_attachment, open_attachment. architecture.md:36 gives ~/.taskscape/attachments/ (copied files). The doc does not say the folder is in the trigger or context, which is consistent with the chunk."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Difference between reference and copy is inferred from the command names and the 'copied files' comment in architecture.md. Trigger controls and UI text not documented. Conflict with A's 'Add a copied file attachment' (storage root ~/.taskscape/, lib.rs:584-595 and 719-720): B's attachments/ subfolder is not verified in code. Only list_attachments is unique to this entry; the other commands also appear in A's entries.",
+   "id": "F15-055",
+   "check": "corrected",
+   "check_notes": "Code (A) registers reveal_attachment, rename_attachment, capture_screenshot and attach_screenshot, which the docs (main-app.md:24) do not list. Code wins, so these are included. The ~/.taskscape/attachments/ folder from architecture.md:36 is doc-only; A did not check the common crate path."
+  },
+  {
+   "title": "Keyboard shortcut settings in Settings ▸ Shortcuts",
+   "trigger": "Open the settings window and go to Shortcuts (path as written in doc); set or reset a hotkey via set_hotkey / reset_hotkey",
+   "context": "Settings window",
+   "result": "The user can view (list_hotkeys), change (set_hotkey) and reset (reset_hotkey) hotkey bindings. When the settings window closes, main emits hotkeys-changed to its webview and POSTs /reload-hotkeys to the tray (:7421), so both sides re-apply the bindings (main-app.md:26).",
+   "exact": [
+    {
+     "what": "settings location",
+     "value": "Settings ▸ Shortcuts"
+    },
+    {
+     "what": "commands",
+     "value": "list_hotkeys, set_hotkey, reset_hotkey"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:26",
+    "A: Commands registered: list_hotkeys, set_hotkey, reset_hotkey at lib.rs:1207-1209. Bindings applied after settings closes: lib.rs:1147-1158 on Settings Destroyed emits hotkeys-changed to 'main' and POSTs /reload-hotkeys to TRAY_PORT. The 'Settings ▸ Shortcuts' location is frontend/doc and was not checked.",
+    "B: main-app.md:26: hotkeys are edited in Settings ▸ Shortcuts, with list_hotkeys, set_hotkey and reset_hotkey. main-app.md:26 also says that when the settings window closes, main emits hotkeys-changed to its webview and POSTs /reload-hotkeys to the tray (:7421) so both sides re-apply bindings. The chunk's result omits the event and the tray POST."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Doc says hotkeys are thin wrappers over common::hotkeys and are edited in Settings ▸ Shortcuts. Specific key-capture behaviour and button labels are not documented. Umbrella entry overlapping A's list_hotkeys, set_hotkey and reset_hotkey entries; kept as the only statement of the Settings ▸ Shortcuts location.",
+   "id": "F15-056",
+   "check": "corrected",
+   "check_notes": "A's code evidence (lib.rs:1147-1158) confirms the hotkeys-changed emit and the /reload-hotkeys POST to TRAY_PORT, which supports B's correction. The port 7421 comes from the docs. The Settings ▸ Shortcuts location was not verified in source."
+  },
+  {
+   "title": "Packaged app is unsigned; first launch needs right-click → Open",
+   "trigger": "Right-click Taskscape.app and choose Open on first launch (or run xattr -dr com.apple.quarantine <app> in Terminal)",
+   "context": "First launch of a packaged .dmg build",
+   "result": "macOS blocks the unsigned app until opened via right-click → Open or quarantine is removed; the xattr command also clears the nested tray helper.",
+   "exact": [
+    {
+     "what": "menu item",
+     "value": "Open"
+    },
+    {
+     "what": "command",
+     "value": "xattr -dr com.apple.quarantine <app>"
+    }
+   ],
+   "sources": [
+    "doc:build-and-run.md:75",
+    "A (cannot_check): Gatekeeper, quarantine, and xattr behaviour are not in the Rust source in src-tauri/src. The doc:build-and-run.md citation is outside permitted scope. No code evidence either way.",
+    "B: build-and-run.md:75: bundles are unsigned; first launch needs right-click → Open, or xattr -dr com.apple.quarantine <app>, which recurses into the nested tray helper. build-and-run.md:66 and 73 give dist/Taskscape.dmg with the /Applications symlink. The doc does not mention Terminal, which the chunk trigger adds."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Build/distribution detail that a user observes on first launch. Dev ports, Vite, and npm scripts are developer-only and excluded.",
+   "id": "F15-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed by B from docs only. A found no code evidence either way. The Terminal trigger is not in the docs."
+  }
+ ]
+}

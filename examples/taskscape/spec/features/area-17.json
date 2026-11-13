@@ -1,0 +1,2461 @@
+{
+ "area": 17,
+ "name": "Shared services",
+ "tier": "ordinary",
+ "counts": {
+  "A": 67,
+  "B": 23,
+  "critic_issues": null,
+  "merged": 78
+ },
+ "dropped": [
+  {
+   "title": "Rename an attachment (B)",
+   "reason": "Duplicate of A's 'Rename a reference attachment' and 'Rename a copied attachment'. B's generic entry only confirms rename_attachment exists and its control is undocumented; A's type-specific entries cover the behaviour. Doc source doc:common-crate.md:18 is recorded under the copy attachment entry."
+  },
+  {
+   "title": "Keyboard shortcut bindings are stored and conflict-checked (B)",
+   "reason": "Duplicate of A's 'Stored hotkey overrides persistence' and 'Conflict rejection within a scope'. Its source doc:common-crate.md:11 was merged into both entries; the rejection message and UI were not documented by B."
+  },
+  {
+   "title": "Preferences kept separate from data (B)",
+   "reason": "Duplicate of A's 'Settings file location and atomic writes'. Merged into that entry, including the copy-without-preferences statement and the string to string map shape."
+  },
+  {
+   "title": "Errors shown as HTTP 500 with message (B)",
+   "reason": "Duplicate of A's 'Get a stored hotkey list via common data endpoints', which already gives HTTP 500 with the message as body. Doc source doc:common-crate.md:98 merged in."
+  },
+  {
+   "title": "Data stored in ~/.taskscape/ on disk (B)",
+   "reason": "Duplicate of A's 'Data folder layout'. Its paths and Finder note were merged into that entry."
+  },
+  {
+   "title": "Screenshot capture is full-screen and silent by default (B)",
+   "reason": "Duplicate of A's 'Fullscreen screenshot'. Merged there; B's trigger was undocumented and A's Cmd+Shift+Enter trigger from code is kept."
+  },
+  {
+   "title": "Interactive region/window screenshot when screenshot_mode is set to interactive (B)",
+   "reason": "Duplicate of A's 'Region screenshot'. Merged there; B's non-default value string was not documented, so A's region value is kept."
+  },
+  {
+   "title": "Cancelling the region selection does nothing (B)",
+   "reason": "Duplicate of A's 'Cancelled region screenshot is silent'. Merged there; the Ok(None) return value was added as an exact value."
+  },
+  {
+   "title": "First screenshot triggers macOS Screen Recording permission prompt (B)",
+   "reason": "Duplicate of A's 'Screen Recording permission prompt'. Merged there."
+  },
+  {
+   "title": "Screenshots unavailable on non-macOS platforms (B)",
+   "reason": "Duplicate of A's 'Screenshot on non-macOS'. Merged there; B did not document the error text, so A's code text is kept."
+  },
+  {
+   "title": "Attach a copy of a file (copy attachment) (B)",
+   "reason": "Duplicate of A's 'Attach file by copy'. Merged there, adding link type copy and the copy destination."
+  },
+  {
+   "title": "Attach a reference to a file or URL (reference attachment) (B)",
+   "reason": "Duplicate of A's 'Attach file by reference'. Merged there, adding link type reference and the GET/POST route note."
+  }
+ ],
+ "features": [
+  {
+   "title": "Capture bar hotkey",
+   "trigger": "Cmd+Enter (global, OS-wide)",
+   "context": "Global scope; registered by the tray. Command id toggle_capture_bar.",
+   "result": "Dispatches the command labelled \"Capture bar\". Binding can be overridden in settings.",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Enter"
+    },
+    {
+     "what": "label",
+     "value": "Capture bar"
+    },
+    {
+     "what": "scope",
+     "value": "Global"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:329-334",
+    "Checker A: hotkeys.rs:329-334 (id toggle_capture_bar, label \"Capture bar\", Scope::Global, accel!(Cmd + Enter)); hotkeys.rs:39 (Global registered by tray via tauri-plugin-global-shortcut); hotkeys.rs:17-20 and 558-569 (overrides stored in settings under key \"hotkeys\", so the binding can be overridden in settings). Edge case not in feature: an empty-string override means intentionally unbound (hotkeys.rs:19-20, 541-542).",
+    "Checker B: Partial support only. architecture.md:44 says \"User hits **⌘Return** → tray shows the mini bar at the cursor\", which matches the trigger's Cmd+Enter as a key naming. common-crate.md:11 says hotkeys.rs holds the command catalog and resolve/set_binding over settings key `hotkeys`, which loosely supports the override claim. Nothing in either doc gives the command id toggle_capture_bar, the label \"Capture bar\", the Global scope, or that the tray registers it."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope, default accel and settings override against source. Checker B could not check the id, label, scope or tray registration, but its partial support is consistent with A. A noted an edge case not in the feature text: an empty-string override means intentionally unbound (hotkeys.rs:19-20, 541-542). Recorded here, not as a correction, because the verdict is exact."
+  },
+  {
+   "title": "Screenshot capture hotkey",
+   "trigger": "Cmd+Shift+Enter (global, OS-wide)",
+   "context": "Global scope. Command id screenshot_capture.",
+   "result": "Dispatches the command labelled \"Screenshot capture\", which runs the screenshot flow described under Screenshot capture modes.",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+Enter"
+    },
+    {
+     "what": "label",
+     "value": "Screenshot capture"
+    },
+    {
+     "what": "scope",
+     "value": "Global"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:335-340",
+    "Checker A: hotkeys.rs:335-340 (id screenshot_capture, label \"Screenshot capture\", Scope::Global, accel!(Cmd + Shift + Enter)). The 'screenshot flow under Screenshot capture modes' claim is not verifiable in the files scoped to this area (hotkeys.rs only dispatches the command id).",
+    "Checker B: No mention of Cmd+Shift+Enter, screenshot_capture, \"Screenshot capture\", or a global scope in architecture.md or common-crate.md. common-crate.md:17 and :102-108 describe screencapture capture modes via the screenshot_mode setting, but do not connect them to a hotkey."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-002",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. A could not verify the 'screenshot flow under Screenshot capture modes' claim from the scoped files. Checker B could not check the binding; its only related material is the screenshot_mode setting, which is not tied to a hotkey in either doc."
+  },
+  {
+   "title": "New task hotkey",
+   "trigger": "Cmd+N in the main window",
+   "context": "Main scope (webview keydown handler).",
+   "result": "Dispatches command \"New task\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+N"
+    },
+    {
+     "what": "label",
+     "value": "New task"
+    },
+    {
+     "what": "scope",
+     "value": "Main"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:341-346",
+    "Checker A: hotkeys.rs:341-346 (id new_task, label \"New task\", Scope::Main, accel!(Cmd + N)); hotkeys.rs:41 (Main matched by webview keydown handler).",
+    "Checker B: No mention of Cmd+N, \"New task\", or main-scope keydown handling in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-003",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope, accel and keydown dispatch. Checker B could not check."
+  },
+  {
+   "title": "Search hotkey",
+   "trigger": "Cmd+F in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Search\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+F"
+    },
+    {
+     "what": "label",
+     "value": "Search"
+    },
+    {
+     "what": "scope",
+     "value": "Main"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:347-352",
+    "Checker A: hotkeys.rs:347-352 (id search, label \"Search\", Scope::Main, accel!(Cmd + F)).",
+    "Checker B: No mention of Cmd+F, \"Search\", or main scope in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-004",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Toggle preview hotkey",
+   "trigger": "Cmd+\\ (Cmd+Backslash) in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Toggle preview\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Backslash (token \\)"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:353-358",
+    "Checker A: hotkeys.rs:353-358 (id toggle_preview, label \"Toggle preview\", Scope::Main, accel!(Cmd + Backslash)); hotkeys.rs:116 (Backslash => \"\\\\\" in Rust source, which is ONE backslash character).",
+    "Checker B: No mention of Cmd+Backslash, token \\\\, or \"Toggle preview\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-005",
+   "check": "corrected",
+   "check_notes": "Checker A verified the id, label, scope and accel, and corrected the default accel token to a single backslash character. Checker B could not check."
+  },
+  {
+   "title": "Open settings hotkey",
+   "trigger": "Cmd+, (Cmd+Comma) in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Open settings\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Comma (canonical string form Cmd+,  token \",\")"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:359-364",
+    "Checker A: hotkeys.rs:359-364 (id open_settings, label \"Open settings\", Scope::Main, accel!(Cmd + Comma)); hotkeys.rs:116-117 (Comma => \",\" so the canonical string is \"Cmd+,\"); hotkeys.rs:9-13 and 233 (canonical Display form uses the token).",
+    "Checker B: No mention of Cmd+Comma, \"Open settings\", or main scope in either doc. common-crate.md:62 mentions settings methods only in the store sense."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-006",
+   "check": "corrected",
+   "check_notes": "Checker A verified the id, label, scope and accel, and corrected the canonical string form to use the comma token. Checker B could not check."
+  },
+  {
+   "title": "Delete task hotkey",
+   "trigger": "Cmd+Backspace in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Delete task\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Backspace"
+    },
+    {
+     "what": "label",
+     "value": "Delete task"
+    },
+    {
+     "what": "scope",
+     "value": "Main"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:365-370",
+    "Checker A: hotkeys.rs:365-370 (id delete_task, label \"Delete task\", Scope::Main, accel!(Cmd + Backspace)).",
+    "Checker B: No mention of Cmd+Backspace or \"Delete task\" as a hotkey in either doc. common-crate.md:49 covers task cascade deletion at the DB level only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-007",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check; common-crate.md:49 covers DB-level cascade deletion only."
+  },
+  {
+   "title": "Switch to list 1 hotkey",
+   "trigger": "Cmd+1 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 1\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+1"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 1"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:371-376",
+    "Checker A: hotkeys.rs:371-376 (id switch_list_1, label \"Switch to list 1\", accel!(Cmd + Digit1), token \"1\" at line 103).",
+    "Checker B: No mention of Cmd+1 or \"Switch to list 1\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 2 hotkey",
+   "trigger": "Cmd+2 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 2\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+2"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 2"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:377-382",
+    "Checker A: hotkeys.rs:377-382 (id switch_list_2, label \"Switch to list 2\", accel!(Cmd + Digit2)).",
+    "Checker B: No mention of Cmd+2 or \"Switch to list 2\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-009",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 3 hotkey",
+   "trigger": "Cmd+3 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 3\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+3"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 3"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:383-388",
+    "Checker A: hotkeys.rs:383-388 (id switch_list_3, label \"Switch to list 3\", accel!(Cmd + Digit3)).",
+    "Checker B: No mention of Cmd+3 or \"Switch to list 3\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 4 hotkey",
+   "trigger": "Cmd+4 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 4\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+4"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 4"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:389-394",
+    "Checker A: hotkeys.rs:389-394 (id switch_list_4, label \"Switch to list 4\", accel!(Cmd + Digit4)).",
+    "Checker B: No mention of Cmd+4 or \"Switch to list 4\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-011",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 5 hotkey",
+   "trigger": "Cmd+5 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 5\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+5"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 5"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:395-400",
+    "Checker A: hotkeys.rs:395-400 (id switch_list_5, label \"Switch to list 5\", accel!(Cmd + Digit5)).",
+    "Checker B: No mention of Cmd+5 or \"Switch to list 5\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-012",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 6 hotkey",
+   "trigger": "Cmd+6 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 6\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+6"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 6"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:401-406",
+    "Checker A: hotkeys.rs:401-406 (id switch_list_6, label \"Switch to list 6\", accel!(Cmd + Digit6)).",
+    "Checker B: No mention of Cmd+6 or \"Switch to list 6\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-013",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 7 hotkey",
+   "trigger": "Cmd+7 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 7\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+7"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 7"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:407-412",
+    "Checker A: hotkeys.rs:407-412 (id switch_list_7, label \"Switch to list 7\", accel!(Cmd + Digit7)).",
+    "Checker B: No mention of Cmd+7 or \"Switch to list 7\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-014",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 8 hotkey",
+   "trigger": "Cmd+8 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 8\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+8"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 8"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:413-418",
+    "Checker A: hotkeys.rs:413-418 (id switch_list_8, label \"Switch to list 8\", accel!(Cmd + Digit8)).",
+    "Checker B: No mention of Cmd+8 or \"Switch to list 8\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-015",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Switch to list 9 hotkey",
+   "trigger": "Cmd+9 in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Switch to list 9\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+9"
+    },
+    {
+     "what": "label",
+     "value": "Switch to list 9"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:419-424",
+    "Checker A: hotkeys.rs:419-424 (id switch_list_9, label \"Switch to list 9\", accel!(Cmd + Digit9)).",
+    "Checker B: No mention of Cmd+9 or \"Switch to list 9\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-016",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label and accel. Checker B could not check."
+  },
+  {
+   "title": "Previous list tab hotkey",
+   "trigger": "Cmd+Alt+ArrowLeft in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Previous list tab\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+ArrowLeft"
+    },
+    {
+     "what": "label",
+     "value": "Previous list tab"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:425-430",
+    "Checker A: hotkeys.rs:425-430 (id prev_tab, label \"Previous list tab\", Scope::Main, accel!(Cmd + Alt + ArrowLeft)).",
+    "Checker B: No mention of Cmd+Alt+ArrowLeft or \"Previous list tab\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-017",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Next list tab hotkey",
+   "trigger": "Cmd+Alt+ArrowRight in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Next list tab\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+ArrowRight"
+    },
+    {
+     "what": "label",
+     "value": "Next list tab"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:431-436",
+    "Checker A: hotkeys.rs:431-436 (id next_tab, label \"Next list tab\", Scope::Main, accel!(Cmd + Alt + ArrowRight)).",
+    "Checker B: No mention of Cmd+Alt+ArrowRight or \"Next list tab\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-018",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Previous project hotkey",
+   "trigger": "Cmd+Shift+[ in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Previous project\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+BracketLeft (token [)"
+    },
+    {
+     "what": "label",
+     "value": "Previous project"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:437-442",
+    "Checker A: hotkeys.rs:437-442 (id prev_project, label \"Previous project\", Scope::Main, accel!(Cmd + Shift + BracketLeft)); hotkeys.rs:117 (BracketLeft => \"[\").",
+    "Checker B: No mention of Cmd+Shift+[ , BracketLeft, or \"Previous project\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-019",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Next project hotkey",
+   "trigger": "Cmd+Shift+] in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Next project\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+BracketRight (token ])"
+    },
+    {
+     "what": "label",
+     "value": "Next project"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:443-448",
+    "Checker A: hotkeys.rs:443-448 (id next_project, label \"Next project\", Scope::Main, accel!(Cmd + Shift + BracketRight)); hotkeys.rs:117 (BracketRight => \"]\").",
+    "Checker B: No mention of Cmd+Shift+], BracketRight, or \"Next project\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-020",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Move task up hotkey",
+   "trigger": "Cmd+Alt+ArrowUp in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Move task up\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+ArrowUp"
+    },
+    {
+     "what": "label",
+     "value": "Move task up"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:449-454",
+    "Checker A: hotkeys.rs:449-454 (id move_up, label \"Move task up\", Scope::Main, accel!(Cmd + Alt + ArrowUp)).",
+    "Checker B: No mention of Cmd+Alt+ArrowUp or \"Move task up\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-021",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Move task down hotkey",
+   "trigger": "Cmd+Alt+ArrowDown in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Move task down\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+ArrowDown"
+    },
+    {
+     "what": "label",
+     "value": "Move task down"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:455-460",
+    "Checker A: hotkeys.rs:455-460 (id move_down, label \"Move task down\", Scope::Main, accel!(Cmd + Alt + ArrowDown)).",
+    "Checker B: No mention of Cmd+Alt+ArrowDown or \"Move task down\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-022",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Select all tasks hotkey",
+   "trigger": "Cmd+A in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Select all tasks\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+A"
+    },
+    {
+     "what": "label",
+     "value": "Select all tasks"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:461-466",
+    "Checker A: hotkeys.rs:461-466 (id select_all, label \"Select all tasks\", Scope::Main, accel!(Cmd + A)).",
+    "Checker B: No mention of Cmd+A or \"Select all tasks\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-023",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Command palette hotkey",
+   "trigger": "Cmd+K in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Command palette\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+K"
+    },
+    {
+     "what": "label",
+     "value": "Command palette"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:467-472",
+    "Checker A: hotkeys.rs:467-472 (id command_palette, label \"Command palette\", Scope::Main, accel!(Cmd + K)).",
+    "Checker B: No mention of Cmd+K or \"Command palette\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-024",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Toggle split view hotkey",
+   "trigger": "Cmd+Alt+S in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Toggle split view\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+S"
+    },
+    {
+     "what": "label",
+     "value": "Toggle split view"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:473-478",
+    "Checker A: hotkeys.rs:473-478 (id toggle_split, label \"Toggle split view\", Scope::Main, accel!(Cmd + Alt + S)).",
+    "Checker B: No mention of Cmd+Alt+S or \"Toggle split view\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-025",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Focus other pane hotkey",
+   "trigger": "Cmd+Alt+O in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Focus other pane\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+O"
+    },
+    {
+     "what": "label",
+     "value": "Focus other pane"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:479-484",
+    "Checker A: hotkeys.rs:479-484 (id focus_other_pane, label \"Focus other pane\", Scope::Main, accel!(Cmd + Alt + O)).",
+    "Checker B: No mention of Cmd+Alt+O or \"Focus other pane\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-026",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "New list hotkey",
+   "trigger": "Cmd+Shift+N in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"New list\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+N"
+    },
+    {
+     "what": "label",
+     "value": "New list"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:485-490",
+    "Checker A: hotkeys.rs:485-490 (id new_list, label \"New list\", Scope::Main, accel!(Cmd + Shift + N)).",
+    "Checker B: No mention of Cmd+Shift+N or \"New list\" as a hotkey in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "New project hotkey",
+   "trigger": "Cmd+Shift+P in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"New project\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+P"
+    },
+    {
+     "what": "label",
+     "value": "New project"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:491-496",
+    "Checker A: hotkeys.rs:491-496 (id new_project, label \"New project\", Scope::Main, accel!(Cmd + Shift + P)).",
+    "Checker B: No mention of Cmd+Shift+P or \"New project\" as a hotkey in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-028",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Show/hide completed hotkey",
+   "trigger": "Cmd+Shift+H in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command labelled \"Show/hide completed\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+H"
+    },
+    {
+     "what": "label",
+     "value": "Show/hide completed"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:497-502",
+    "Checker A: hotkeys.rs:497-502 (id toggle_completed, label \"Show/hide completed\", Scope::Main, accel!(Cmd + Shift + H)).",
+    "Checker B: No mention of Cmd+Shift+H or \"Show/hide completed\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Collapse all hotkey",
+   "trigger": "Cmd+Alt+- (Cmd+Alt+Minus) in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Collapse all\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+Minus (token -)"
+    },
+    {
+     "what": "label",
+     "value": "Collapse all"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:503-508",
+    "Checker A: hotkeys.rs:503-508 (id collapse_all, label \"Collapse all\", Scope::Main, accel!(Cmd + Alt + Minus)); hotkeys.rs:118 (Minus => \"-\").",
+    "Checker B: No mention of Cmd+Alt+Minus or \"Collapse all\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-030",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Expand all hotkey",
+   "trigger": "Cmd+Alt+= (Cmd+Alt+Equal) in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Expand all\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Alt+Equal (token =)"
+    },
+    {
+     "what": "label",
+     "value": "Expand all"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:509-514",
+    "Checker A: hotkeys.rs:509-514 (id expand_all, label \"Expand all\", Scope::Main, accel!(Cmd + Alt + Equal)); hotkeys.rs:118 (Equal => \"=\").",
+    "Checker B: No mention of Cmd+Alt+Equal or \"Expand all\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-031",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Undo hotkey",
+   "trigger": "Cmd+Z in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Undo\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Z"
+    },
+    {
+     "what": "label",
+     "value": "Undo"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:515-520",
+    "Checker A: hotkeys.rs:515-520 (id undo, label \"Undo\", Scope::Main, accel!(Cmd + Z)).",
+    "Checker B: No mention of Cmd+Z or \"Undo\" as a hotkey in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-032",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Redo hotkey",
+   "trigger": "Cmd+Shift+Z in the main window",
+   "context": "Main scope.",
+   "result": "Dispatches command \"Redo\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+Z"
+    },
+    {
+     "what": "label",
+     "value": "Redo"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:521-526",
+    "Checker A: hotkeys.rs:521-526 (id redo, label \"Redo\", Scope::Main, accel!(Cmd + Shift + Z)).",
+    "Checker B: No mention of Cmd+Shift+Z or \"Redo\" in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope and accel. Checker B could not check."
+  },
+  {
+   "title": "Clear capture draft hotkey",
+   "trigger": "Cmd+Shift+Backspace in the tray mini bar",
+   "context": "Tray scope (webview keydown handler of the mini bar).",
+   "result": "Dispatches command \"Clear capture draft\".",
+   "exact": [
+    {
+     "what": "default accel",
+     "value": "Cmd+Shift+Backspace"
+    },
+    {
+     "what": "label",
+     "value": "Clear capture draft"
+    },
+    {
+     "what": "scope",
+     "value": "Tray"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:527-532",
+    "Checker A: hotkeys.rs:527-532 (id clear_draft, label \"Clear capture draft\", Scope::Tray, accel!(Cmd + Shift + Backspace)); hotkeys.rs:43 (Tray matched by webview keydown handler of the mini bar).",
+    "Checker B: No mention of Cmd+Shift+Backspace, the tray mini bar keydown handler, or \"Clear capture draft\" in either doc. architecture.md:44-47 describes the capture flow without a clear-draft key."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified id, label, scope, accel and keydown dispatch. Checker B could not check."
+  },
+  {
+   "title": "Customisable hotkey catalog excludes structural keys",
+   "trigger": "none (catalog rule)",
+   "context": "Source comment at hotkeys.rs:326-327 lists 'Escape, Enter, Tab, arrows, …' (open-ended). The catalog holds 34 commands, ids toggle_capture_bar (hotkeys.rs:330) through clear_draft (hotkeys.rs:528).",
+   "result": "Escape, Enter, Tab, arrows and similar structural keys are not customisable commands; the catalog holds only the 37 commands listed above (ids toggle_capture_bar through clear_draft).",
+   "exact": [
+    {
+     "what": "command count",
+     "value": "34"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:326-327",
+    "common/src/hotkeys.rs:328-533",
+    "Checker A: hotkeys.rs:328-533: the COMMANDS array holds 34 entries (toggle_capture_bar at line 330 through clear_draft at line 528), not 37. hotkeys.rs:326-327 says 'Structural keys (Escape, Enter, Tab, arrows, …) are deliberately not here'; the source list is open-ended with '…' and the catalog's Cmd+Enter/Cmd+Shift+Enter default accels show the rule concerns command entries, not key tokens.",
+    "Checker B: neither doc gives the count of 37, the id range toggle_capture_bar through clear_draft, or the exclusion of Escape, Enter, Tab and arrows; common-crate.md:11 says hotkeys.rs holds the command catalog, but nothing more."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-035",
+   "check": "corrected",
+   "check_notes": "Checker A counted 34 catalog entries in hotkeys.rs:328-533, not 37, and corrected the count. Checker B could not check the count and found no support for 37 in the docs. The exclusion list is open-ended ('…') in the source comment at hotkeys.rs:326-327."
+  },
+  {
+   "title": "Accepted key vocabulary",
+   "trigger": "Typing or recording a key combo",
+   "context": "Canonical key names used in accelerators.",
+   "result": "Letters A-Z, digits 0-9, F1-F12, named keys, and punctuation keys are accepted; Plus stands in for the + key.",
+   "exact": [
+    {
+     "what": "named keys",
+     "value": "Enter, Backspace, Delete, Space, Tab, Escape, Plus, ArrowUp, ArrowDown, ArrowLeft, ArrowRight"
+    },
+    {
+     "what": "punctuation tokens",
+     "value": ", \\ / . ; ' [ ] - = `"
+    },
+    {
+     "what": "F-keys",
+     "value": "F1-F12"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:97-119",
+    "hotkeys.rs:97-119 (keys! table: letters 98-101, digits 103-104, F1-F12 106-107, named keys 109-114 incl. Plus => \"Plus\" at 112, punctuation 116-118 with Comma \",\", Backslash \"\\\\\", Slash \"/\", Period \".\", Semicolon \";\", Quote \"'\", BracketLeft \"[\", BracketRight \"]\", Minus \"-\", Equal \"=\", Backquote \"`\").",
+    ".llm/common-crate.md:11 only says hotkeys.rs holds the command catalog and canonical accel format. No key vocabulary, named keys or punctuation tokens are listed in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-036",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the keys! table in hotkeys.rs against the feature. Checker B could not check, because common-crate.md:11 and architecture.md list no key vocabulary."
+  },
+  {
+   "title": "Lenient key parse for recordings and stored overrides",
+   "trigger": "Recording a key that is a lowercase letter or a literal space",
+   "context": "Runtime input parsing.",
+   "result": "A lowercase letter is accepted and normalised to uppercase (e.g. k becomes K); a literal space becomes Space.",
+   "exact": [
+    {
+     "what": "example",
+     "value": "k -> K, ' ' -> Space"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:121-136",
+    "hotkeys.rs:121-136 Key::parse: literal space -> Space (127-128); single ASCII lowercase letter -> uppercase token (130-132). Tests hotkeys.rs:692-693 (\"Shift+Alt+Cmd+k\" parses equal to Cmd+Alt+Shift+K; \" \" -> Key::Space). FromStr splits parts through Key::parse (hotkeys.rs:262), so set_binding also accepts these.",
+    "No lenient-parse, lowercase-to-uppercase or literal-space behaviour in common-crate.md or architecture.md. common-crate.md:11 mentions only resolve/set_binding."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-037",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified literal space to Space and single-letter lowercasing to uppercase tokens, and that FromStr routes through Key::parse, so set_binding also accepts these. Checker B could not check."
+  },
+  {
+   "title": "Accelerator display glyphs on macOS",
+   "trigger": "none (display form)",
+   "context": "glyphs() (hotkeys.rs:204) is a plain method with no platform check. The macOS-only use is decided by its caller, which is not in the cited files; the claim that the frontend requests the display form is not evidenced in the common crate.",
+   "result": "Modifiers render in the order Cmd, Ctrl, Alt, Shift, then the key glyph. Example Cmd+Shift+Enter renders as ⌘⇧↩.",
+   "exact": [
+    {
+     "what": "Cmd glyph",
+     "value": "⌘"
+    },
+    {
+     "what": "Ctrl glyph",
+     "value": "⌃"
+    },
+    {
+     "what": "Alt glyph",
+     "value": "⌥"
+    },
+    {
+     "what": "Shift glyph",
+     "value": "⇧"
+    },
+    {
+     "what": "Enter",
+     "value": "↩"
+    },
+    {
+     "what": "Backspace",
+     "value": "⌫"
+    },
+    {
+     "what": "Delete",
+     "value": "⌦"
+    },
+    {
+     "what": "Tab",
+     "value": "⇥"
+    },
+    {
+     "what": "Escape",
+     "value": "⎋"
+    },
+    {
+     "what": "Space",
+     "value": "␣"
+    },
+    {
+     "what": "ArrowUp/Down/Left/Right",
+     "value": "↑ ↓ ← →"
+    },
+    {
+     "what": "Plus",
+     "value": "+"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:158-175",
+    "common/src/hotkeys.rs:203-218",
+    "hotkeys.rs:204-218 glyphs(): order Cmd(207), Ctrl(208), Alt(209), Shift(210), then key glyph (216). Glyph values hotkeys.rs:161-171 (Enter ↩, Backspace ⌫, Delete ⌦, Tab ⇥, Escape ⎋, Space ␣, Arrows ↑ ↓ ← →, Plus +). Example comment hotkeys.rs:203. Sources 158-175 and 203-218 match.",
+    "No macOS display glyphs or modifier render order in common-crate.md or architecture.md."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-038",
+   "check": "corrected",
+   "check_notes": "Checker A confirmed the glyph order and values, and corrected only the context. Checker B could not check. The claim that the frontend requests the display form is not evidenced in the common crate."
+  },
+  {
+   "title": "Canonical accelerator string form",
+   "trigger": "none (stored and sent format)",
+   "context": "Used for IPC payloads and stored overrides.",
+   "result": "Modifiers are written in the fixed order Cmd, Ctrl, Alt, Shift, followed by the key token. Parsing accepts any modifier order and lowercase letters for keys; modifier names themselves must be spelled exactly Cmd, Ctrl, Alt, Shift. A string with two keys, no key, or an unknown token is rejected.",
+   "exact": [
+    {
+     "what": "example",
+     "value": "Cmd+Alt+Shift+K"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:221-235",
+    "common/src/hotkeys.rs:249-271",
+    "hotkeys.rs:221-235 Display writes Cmd, Ctrl, Alt, Shift in that order (223-228) then key token (233). hotkeys.rs:249-271 FromStr accepts any modifier order (test 692) and lowercase letters via Key::parse (130). Example test hotkeys.rs:689-690 (\"Cmd+Alt+Shift+K\"). Modifier names are matched case-sensitively (257-260), and malformed input is rejected: two keys (263-265), missing key (269), and test cases \"Cmd+Shft+K\", \"Cmd+K+J\", \"Cmd\" (hotkeys.rs:697-712).",
+    ".llm/common-crate.md:11 confirms a 'canonical accel format' exists, but gives no modifier order, token form or example such as Cmd+Alt+Shift+K."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-039",
+   "check": "corrected",
+   "edge_cases": [
+    "Modifier names are case-sensitive (hotkeys.rs:257-260); shift+K is not accepted."
+   ],
+   "check_notes": "Checker A corrected the modifier order and parsing rules. Checker B could not check, since its docs give no modifier order or token form."
+  },
+  {
+   "title": "Reject a bare key binding",
+   "trigger": "Assigning a shortcut with no ⌘, ⌃ or ⌥ (a non-F key) via set_binding",
+   "context": "Applies to every command except F-keys.",
+   "result": "The assignment is refused with the message shortcut needs ⌘, ⌃ or ⌥. Shift alone does not count as a primary modifier. F1-F12 may be bound with no modifier.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "shortcut needs ⌘, ⌃ or ⌥"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:605-609",
+    "common/src/hotkeys.rs:66-69",
+    "common/src/hotkeys.rs:138-140",
+    "hotkeys.rs:607-609 bail!(\"shortcut needs ⌘, ⌃ or ⌥\") when !has_primary() && !is_function(). has_primary = CMD|CTRL|ALT only, so Shift does not count (hotkeys.rs:66-69). is_function covers F1-F12 (hotkeys.rs:138-156). Empty string bypasses the check (599-601).",
+    "common-crate.md:11 says set_binding is conflict-checked. No bare-key rule, no error text and no F1-F12 exception appear in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-040",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the bare-key rejection, the Shift-does-not-count rule, the F1-F12 exception and the empty-string bypass. Checker B could not check, since common-crate.md:11 only says set_binding is conflict-checked."
+  },
+  {
+   "title": "Conflict rejection within a scope",
+   "trigger": "Assigning a combo already bound to another command in the same scope",
+   "context": "Conflicts are checked per scope; same combo may exist in different scopes.",
+   "result": "The assignment is refused with the message already used by “<label of holder>”, naming the other command.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "already used by “{label}”"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:610-614",
+    "common/src/hotkeys.rs:34-35",
+    "doc:common-crate.md:11",
+    "hotkeys.rs:610-614: loop over resolve(store), requires other.id != id and other.scope == command.scope and other.accel == Some(parsed); bail!(\"already used by “{}”\", other.label) at 612. Scope doc hotkeys.rs:34-35. The doc:common-crate.md:11 citation is outside the allowed files and was not checked.",
+    "common-crate.md:11 says set_binding is 'conflict-checked'. The per-scope rule, the message 'already used by ...' and the naming of the holder are not in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B saw a conflict check documented only generally (common-crate.md:11) and recorded that the rejection message and UI are not documented. A's code-level message is kept. The frontend twin common-ui/src/hotkeys.ts was not read by either solution.",
+   "id": "F17-041",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the per-scope conflict loop and the 'already used by' message. The doc citation common-crate.md:11 was outside A's allowed files and was not checked. Checker B found that the doc says set_binding is conflict-checked, which is consistent but does not show the per-scope rule."
+  },
+  {
+   "title": "Invalid shortcut text rejected",
+   "trigger": "Assigning a string that does not parse as an accelerator",
+   "context": "set_binding.",
+   "result": "Refused with invalid shortcut: <text>.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "invalid shortcut: {accel}"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:602-604",
+    "hotkeys.rs:602-604: map_err(|_| anyhow!(\"invalid shortcut: {accel}\")) on accel.parse().",
+    "No invalid-shortcut error text or rejection behaviour in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-042",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the invalid-shortcut error text. Checker B could not check."
+  },
+  {
+   "title": "Unknown command id rejected",
+   "trigger": "Assigning a binding for an id not in the catalog",
+   "context": "set_binding.",
+   "result": "Refused with unknown hotkey command: <id>.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "unknown hotkey command: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:594-597",
+    "hotkeys.rs:594-597: ok_or_else(|| anyhow!(\"unknown hotkey command: {id}\")) on COMMANDS lookup. This check runs first in set_binding.",
+    "No unknown-command-id error text in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-043",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the unknown-command error text, which runs first in set_binding. Checker B could not check."
+  },
+  {
+   "title": "Unbind a command with empty string",
+   "trigger": "Assigning the empty string \"\" to a command",
+   "context": "Intentionally unbound state.",
+   "result": "The command has no shortcut. It is stored as an empty override and served to the frontend as the empty string.",
+   "exact": [
+    {
+     "what": "stored value",
+     "value": "\"\""
+    },
+    {
+     "what": "served value",
+     "value": "\"\" (empty string)"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:599-601",
+    "common/src/hotkeys.rs:622-626",
+    "common/src/hotkeys.rs:541-556",
+    "hotkeys.rs:599-601 empty accel -> bound = None. hotkeys.rs:619-626: when bound is not the default, overrides.insert(id, bound.map(|a| a.to_string()).unwrap_or_default()) stores \"\". hotkeys.rs:548-556 serialize_opt_accel serializes None as \"\" (serialize_str(\"\") at 554). hotkeys.rs:582-583 a stored \"\" fails to parse and .ok() gives None.",
+    "No empty-string unbind behaviour in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-044",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that an empty accel stores \"\" as an unbind override, and that a stored \"\" resolves to None. Checker B could not check."
+  },
+  {
+   "title": "Assigning the default removes the override",
+   "trigger": "Setting a command back to its default combo",
+   "context": "Override map cleanup.",
+   "result": "The stored override for that command is deleted, so the default is used again.",
+   "exact": [],
+   "sources": [
+    "common/src/hotkeys.rs:619-621",
+    "hotkeys.rs:619-621: if bound == Some(command.default_accel) { overrides.remove(id); } then save_overrides at 628.",
+    "No override-removal-on-default behaviour in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-045",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that setting the default removes the override. Checker B could not check."
+  },
+  {
+   "title": "Reset a binding to default",
+   "trigger": "Reset action for one command (caller of reset_binding)",
+   "context": "Persisted override map.",
+   "result": "The override for that command is removed and the default restored. Nothing is written if no override existed.",
+   "exact": [],
+   "sources": [
+    "common/src/hotkeys.rs:632-638",
+    "hotkeys.rs:632-638 reset_binding: overrides.remove(id).is_some() gates save_overrides (634-636); nothing is written when no override existed.",
+    "reset_binding is not mentioned in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-046",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that reset_binding writes nothing when no override exists. Checker B could not check, since reset_binding is not mentioned in its docs."
+  },
+  {
+   "title": "Stored hotkey overrides persistence",
+   "trigger": "none (persistence)",
+   "context": "Stored in settings.json under key hotkeys as a JSON object of command id to accelerator string.",
+   "result": "Overrides persist across launches. A corrupt or unreadable hotkeys value is treated as no overrides. A stored value that no longer parses resolves to unbound rather than the default.",
+   "exact": [
+    {
+     "what": "settings key",
+     "value": "hotkeys"
+    },
+    {
+     "what": "accel format",
+     "value": "canonical accel format"
+    }
+   ],
+   "sources": [
+    "common/src/hotkeys.rs:31-32",
+    "common/src/hotkeys.rs:558-563",
+    "common/src/hotkeys.rs:571-589",
+    "doc:common-crate.md:11",
+    "HOTKEYS_KEY = \"hotkeys\". hotkeys.rs:32 HOTKEYS_KEY = \"hotkeys\". hotkeys.rs:558-569 load/save as JSON of BTreeMap<String,String> via serde_json. hotkeys.rs:560 unwrap_or_default: corrupt JSON is treated as no overrides. hotkeys.rs:582-583: stored value that does not parse resolves to None (unbound). storage.rs:46-52: get_setting/set_setting delegate to crate::settings::get/set, so the value is in settings.json. settings.rs:28-33: a missing or unreadable file is an empty map (Err arm at 31), so an unreadable hotkeys value reads as no overrides.",
+    "Confirmed: common-crate.md:11 names settings.json (~/.taskscape/settings.json) and key hotkeys, and says the hotkey store uses the canonical accel format. Not in the doc: the JSON-object shape, the corrupt-value rule and the unparseable-value rule."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Keyboard shortcut bindings are stored and conflict-checked' entry. B's value (settings key hotkeys, canonical accel format) matches A. B marked its entry uncertain because the control is not documented.",
+   "id": "F17-047",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the storage key, the JSON map shape, the corrupt-JSON and unparseable-value rules, and the settings.json backing. Checker B could not check the shape or the rules, but its doc (common-crate.md:11) does name settings.json, the hotkeys key and the canonical accel format."
+  },
+  {
+   "title": "Settings file location and atomic writes",
+   "trigger": "none (persistence)",
+   "context": "Main app writes settings; tray only reads. App settings (for example screenshot_mode or hotkeys) persist separately from data.",
+   "result": "Settings live in ~/.taskscape/settings.json, separate from taskscape.db. Writes go to a temp file then rename, so the other process never reads a half-written file. Reads re-parse the file every call, so a change in one process is immediately visible in the other. A missing or corrupt settings file reads as empty. Copying taskscape.db carries data without preferences.",
+   "exact": [
+    {
+     "what": "settings path",
+     "value": "~/.taskscape/settings.json"
+    },
+    {
+     "what": "temp file",
+     "value": "settings.json.tmp"
+    },
+    {
+     "what": "settings shape",
+     "value": "string to string map"
+    }
+   ],
+   "sources": [
+    "common/src/settings.rs:1-9",
+    "common/src/settings.rs:28-56",
+    "common/src/paths.rs:15-19",
+    "doc:common-crate.md:13",
+    "doc:common-crate.md:52-54",
+    "doc:common-crate.md:62",
+    "paths.rs:15-19 settings_path = root_dir().join(\"settings.json\"); paths.rs:3-8 root = home/.taskscape. settings.rs:52 tmp = path.with_extension(\"json.tmp\") gives settings.json.tmp; settings.rs:53-54 write then rename. settings.rs:28-33 load() reads and re-parses every call; missing or corrupt reads as empty (30-31). settings.rs:24 type Map = BTreeMap<String,String>. settings.rs:1-9 module doc: separate from taskscape.db, main app writes and tray reads. storage.rs:46-52 confirms hotkeys go through the same store.",
+    "Confirmed: common-crate.md:13 (settings.rs row) gives ~/.taskscape/settings.json as a string-to-string map persisted as JSON, kept out of the DB, with atomic writes and read-through. common-crate.md:52-54 says copying taskscape.db carries data without preferences. Not in the doc: the settings.json.tmp temp-file name, the re-parse-every-call behaviour, the rule that a missing or corrupt file reads as empty, and 'tray only reads'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Preferences kept separate from data'. B's persistence-between-launches claim is implied by file-backed storage only.",
+   "id": "F17-048",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the temp-file name, atomic write, re-parse on every call, and the missing-or-corrupt-as-empty rule. Checker B could not check these, but common-crate.md:13 confirms the string map persisted as JSON, outside the DB, with atomic writes and read-through."
+  },
+  {
+   "title": "Screenshot capture mode setting",
+   "trigger": "Choosing the screenshot mode in Settings (persisted as screenshot_mode)",
+   "context": "Read at the moment of capture.",
+   "result": "The value region selects interactive region capture; any other value or unset selects fullscreen capture.",
+   "exact": [
+    {
+     "what": "setting key",
+     "value": "screenshot_mode"
+    },
+    {
+     "what": "region value",
+     "value": "region"
+    },
+    {
+     "what": "default",
+     "value": "Fullscreen"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:5-27",
+    "doc:common-crate.md:17",
+    "screenshot.rs:17 SCREENSHOT_MODE_KEY = \"screenshot_mode\". screenshot.rs:22-27 current(): Some(\"region\") => Region, _ => Fullscreen (unset or other values give Fullscreen). Read at capture time: screenshot.rs:51. The Settings UI trigger is not in the cited files and was not checked.",
+    "common-crate.md:17 and :105 confirm the screenshot_mode setting chooses full-screen (-x) or interactive region (-i). The doc gives the default as 'full-screen' (common-crate.md:105-106), not the feature's 'Fullscreen'. The stored string 'region' and the default stored value are not documented."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Conflict on default value name: A (code, screenshot.rs:5-27) gives Fullscreen; B (doc:common-crate.md:17) names the default full-screen. The code value is kept. B also could not confirm the non-default value string from the docs; the code value region is kept.",
+   "id": "F17-049",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the storage key, the Region/Fullscreen selection and the read at capture time. Checker B could not check the stored values. B noted that its doc (common-crate.md:105-106) gives the default as 'full-screen', not the code variant name 'Fullscreen'. Code decides, and the code defaults to Fullscreen when unset. The Settings UI trigger was not checked by A."
+  },
+  {
+   "title": "Fullscreen screenshot",
+   "trigger": "Screenshot capture hotkey (Cmd+Shift+Enter) while mode is Fullscreen (default)",
+   "context": "macOS only. Default screenshot_mode when unset.",
+   "result": "Whole screen grabbed instantly with no capture sound (screencapture -x) and saved as a PNG. The result path is attached as a screenshot.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "screencapture -x"
+    },
+    {
+     "what": "flag",
+     "value": "-x"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:9-10",
+    "common/src/screenshot.rs:48-54",
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:102-106",
+    "doc:architecture.md:45",
+    "screenshot.rs:48-51: comment \"-x: do not play the capture sound\"; cmd = Command::new(\"screencapture\") with arg -x (49-50), -i added only for Region (51-53). Filename screenshot-{millis}.png at screenshot.rs:45-46. macOS only: screenshot.rs:39 cfg(target_os=\"macos\"). Hotkey default screenshot_capture = Cmd+Shift+Enter, Global scope (hotkeys.rs:335-340). Note: the code does not show the path being attached as a screenshot; that attach step is outside the cited files and was not checked.",
+    "Confirmed: common-crate.md:102-104 says macOS screencapture with -x, silent full-screen grab, PNG output at ~/.taskscape/screenshots/. architecture.md:44 gives ⌘Return as the tray hotkey, and neither doc names Cmd+Shift+Enter as the screenshot trigger. 'Instantly' and 'attached as a screenshot' are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Screenshot capture is full-screen and silent by default'. B did not document the trigger control; it inferred the tray capture bar screenshot attach from architecture.md:45. The Cmd+Shift+Enter trigger comes from A's code.",
+   "id": "F17-050",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the screencapture invocation, the PNG filename, the macOS gate and the default hotkey Cmd+Shift+Enter at hotkeys.rs:335-340. Checker B found no doc naming Cmd+Shift+Enter as the screenshot trigger, since architecture.md:44 gives ⌘Return for the tray. The code is authoritative, so the default stands. Neither checker verified the 'instantly' wording or the attach-as-screenshot step."
+  },
+  {
+   "title": "Region screenshot",
+   "trigger": "Screenshot capture hotkey (Cmd+Shift+Enter) while mode is region",
+   "context": "macOS only; native interactive selection.",
+   "result": "Native selection opens: drag a region, press Space to pick a window, press Esc to cancel.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "screencapture -x -i"
+    },
+    {
+     "what": "flag",
+     "value": "-i"
+    },
+    {
+     "what": "keys",
+     "value": "drag region; Space picks window; Esc cancels"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:11-13",
+    "common/src/screenshot.rs:48-54",
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:104-105",
+    "screenshot.rs:11-13 doc: Region = screencapture -i, drag, Space to pick a window, Esc to cancel. screenshot.rs:50-53 args: -x then -i for Region. Keys are documented in the comment, not enforced in code.",
+    "common-crate.md:104-105 and architecture.md:17 describe full-screen (-x) and interactive region (-i) as alternatives ('or'). Neither doc gives a combined 'screencapture -x -i' command. Keys drag/Space/Esc are not documented. Native window selection (-i) is confirmed at common-crate.md:104-105."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Interactive region/window screenshot when screenshot_mode is set to interactive'. B's non-default value string is not documented; the code value region is used.",
+   "id": "F17-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that Region passes -x and then -i, so the code emits both flags. Checker B's correction to a bare 'screencapture -i' rests on the docs listing the modes as alternatives. Code decides, so the combined -x -i stands. The key bindings are documented in the code comment at screenshot.rs:11-13, which A saw and B did not check. B reports the drag, Space and Esc keys as undocumented in its docs."
+  },
+  {
+   "title": "Cancelled region screenshot is silent",
+   "trigger": "Esc or empty selection during region capture",
+   "context": "Interactive capture exits successfully but writes no file.",
+   "result": "No file is saved and no error is shown; capture returns no path and the caller treats it as a no-op.",
+   "exact": [
+    {
+     "what": "return value on cancel",
+     "value": "Ok(None)"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:32-34",
+    "common/src/screenshot.rs:60-64",
+    "doc:common-crate.md:106-107",
+    "screenshot.rs:60-64: if !path.exists() return Ok(None), with comment about cancel being a no-op. screenshot.rs:33-34 doc: Ok(None) on cancel (Esc or empty selection), caller treats it as no-op.",
+    "Confirmed: common-crate.md:106-107 says a cancelled region selection returns Ok(None) and callers treat it as a silent no-op. Not in either doc: the Esc and empty-selection triggers."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Cancelling the region selection does nothing'. B inferred Escape as the cancel key; A's code confirms Esc or an empty selection.",
+   "id": "F17-052",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the Ok(None) return when no file is produced. Checker B confirmed the Ok(None) cancel behaviour in common-crate.md:106-107, but could not check the Esc and empty-selection triggers."
+  },
+  {
+   "title": "Screenshot file naming and location",
+   "trigger": "Any successful capture",
+   "context": "Saved under the screenshots folder.",
+   "result": "PNG saved as screenshot-<epoch millis>.png under ~/.taskscape/screenshots/; the path is returned to the caller.",
+   "exact": [
+    {
+     "what": "filename pattern",
+     "value": "screenshot-{millis}.png"
+    },
+    {
+     "what": "folder",
+     "value": "~/.taskscape/screenshots/"
+    },
+    {
+     "what": "path pattern",
+     "value": "~/.taskscape/screenshots/screenshot-<millis>.png"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:44-46",
+    "common/src/screenshot.rs:65",
+    "common/src/paths.rs:26-29",
+    "doc:common-crate.md:102-106",
+    "doc:architecture.md:45",
+    "screenshot.rs:44-46: screenshots_dir().join(format!(\"screenshot-{}.png\", util::now_millis())). util.rs:4-9 now_millis = duration since UNIX_EPOCH in millis. paths.rs:26-29 screenshots_dir = root/screenshots. Returned path screenshot.rs:65.",
+    "common-crate.md:103 gives ~/.taskscape/screenshots/screenshot-<millis>.png and says the path is returned. common-crate.md:28 shows screenshots/ in the data tree. Note: the feature cites architecture.md:45, which does not cover naming; the correct source is common-crate.md:103."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "B's saved file path pattern matches A's naming; B's default-mode entry was merged here.",
+   "id": "F17-053",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers verified the naming pattern. Checker B noted the feature cites architecture.md:45, which does not cover naming. The correct source is common-crate.md:103."
+  },
+  {
+   "title": "Screen Recording permission prompt",
+   "trigger": "First screenshot triggered by an app on macOS (first use per app after install)",
+   "context": "Handled by macOS.",
+   "result": "macOS prompts the user to grant Screen Recording permission to that app.",
+   "exact": [
+    {
+     "what": "permission name",
+     "value": "Screen Recording"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:36-38",
+    "doc:common-crate.md:107",
+    "screenshot.rs:36-38 doc comment: on macOS the first time an app triggers capture, macOS prompts for Screen Recording permission. This is a code comment only; behaviour is macOS's, not shown in code.",
+    "common-crate.md:107 says the first use triggers the macOS Screen Recording permission prompt for that app."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'First screenshot triggers macOS Screen Recording permission prompt'. The prompt is owned by macOS; the app only triggers it.",
+   "id": "F17-054",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the Screen Recording prompt. A noted that this is a code comment only, and the prompt behaviour is macOS's own."
+  },
+  {
+   "title": "Screenshot on non-macOS",
+   "trigger": "Screenshot capture on a non-macOS platform",
+   "context": "Non-macOS build.",
+   "result": "Fails with the error: screen capture is currently only implemented on macOS.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "screen capture is currently only implemented on macOS"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:68-71",
+    "doc:common-crate.md:108",
+    "screenshot.rs:68-71: #[cfg(not(target_os = \"macos\"))] anyhow::bail!(\"screen capture is currently only implemented on macOS\").",
+    "common-crate.md:108 says non-macOS targets bail!, which supports an error. The exact text 'screen capture is currently only implemented on macOS' is not in either doc."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Screenshots unavailable on non-macOS platforms'. B said the call bails and did not document the error text; A's code text is kept.",
+   "id": "F17-055",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the non-macOS bail text. Checker B could not check the exact text, but common-crate.md:108 supports a bail on non-macOS targets."
+  },
+  {
+   "title": "Screencapture failure reported",
+   "trigger": "screencapture exits with non-success status",
+   "context": "macOS.",
+   "result": "Capture errors with \"screencapture exited with status Some(<code>)\" (Debug format of the Option), or \"... status None\" when there is no exit code.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "screencapture exited with status {:?} of status.code(), i.e. \"screencapture exited with status Some(<code>)\" (Debug form of Option<i32>), or \"screencapture exited with status None\" when no exit code is available"
+    }
+   ],
+   "sources": [
+    "common/src/screenshot.rs:56-58",
+    "screenshot.rs:56-58: bail!(\"screencapture exited with status {:?}\", status.code()). The {:?} formats an Option<i32>, so the text is not a bare code.",
+    "No screencapture exit-status error text in common-crate.md or architecture.md."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-056",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the error text. The {:?} formats an Option<i32>, so the text is not a bare code. Checker B could not check."
+  },
+  {
+   "title": "Attach file by reference",
+   "trigger": "POST /tasks/{id}/attachments with name and location (localhost :7420 main or :7421 tray)",
+   "context": "Records a pointer only; nothing is copied. Location can be an online URL, file:// URL or network path.",
+   "result": "Attachment row added with link type reference.",
+   "exact": [
+    {
+     "what": "route",
+     "value": "/tasks/{id}/attachments"
+    },
+    {
+     "what": "body fields",
+     "value": "name, location"
+    },
+    {
+     "what": "link type value",
+     "value": "reference"
+    }
+   ],
+   "sources": [
+    "common/src/server.rs:35-38",
+    "common/src/server.rs:128-136",
+    "common/src/server.rs:181-184",
+    "common/src/attachments.rs:8-19",
+    "doc:common-crate.md:77-78",
+    "doc:common-crate.md:94",
+    "server.rs:35-38 route /tasks/{id}/attachments with .post(add_reference). server.rs:181-184 CreateReference { name, location }. server.rs:128-136 add_reference calls attachments::attach_reference. attachments.rs:8-19 records by reference, doc says online URL, file:// URL or network path, no copying, and calls add_attachment with LinkType::Reference (17). Ports lib.rs:27 MAIN_PORT = 7420 and lib.rs:28 TRAY_PORT = 7421 (grep result).",
+    "Confirmed: common-crate.md:94 lists GET/POST /tasks/{id}/attachments as add-by-reference; common-crate.md:77-78 says reference copies nothing and stores a URL/path; common-crate.md:83 says each app serves data_router on its port (:7420 and :7421 at architecture.md:31). Not in the doc: the body field names name and location, the file:// and network-path forms, and the 'reference' string value."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Attach a reference to a file or URL'. B did not document the trigger control; it found GET/POST on /tasks/{id}/attachments, with POST adding by reference. A's route is kept.",
+   "id": "F17-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the reference route, the body fields, the LinkType Reference and the ports. Checker B could not check the body field names or the file:// and network-path forms, but confirmed the add-by-reference route and the ports."
+  },
+  {
+   "title": "Attach file by copy",
+   "trigger": "POST /tasks/{id}/attachments/copy with source_path and optional name",
+   "context": "Copies the source file into the attachments folder.",
+   "result": "File copied to ~/.taskscape/attachments/ with stored name <new id>-<file name>; attachment recorded as copy at location attachments/<stored name>. Display name is the given name, else the source file name, else attachment. The original file is not referenced.",
+   "exact": [
+    {
+     "what": "route",
+     "value": "/tasks/{id}/attachments/copy"
+    },
+    {
+     "what": "stored name pattern",
+     "value": "<id>-<file_name>"
+    },
+    {
+     "what": "fallback name",
+     "value": "attachment"
+    },
+    {
+     "what": "link type value",
+     "value": "copy"
+    },
+    {
+     "what": "copy destination",
+     "value": "~/.taskscape/attachments/"
+    }
+   ],
+   "sources": [
+    "common/src/server.rs:39",
+    "common/src/server.rs:138-147",
+    "common/src/server.rs:186-191",
+    "common/src/attachments.rs:21-45",
+    "doc:common-crate.md:27",
+    "doc:common-crate.md:77-78",
+    "doc:common-crate.md:95",
+    "doc:common-crate.md:18",
+    "server.rs:39 route /tasks/{id}/attachments/copy with post(add_copy). server.rs:186-191 CreateCopy { name: Option<String>, source_path: String }. attachments.rs:23-45: file_name = name, else source file name, else \"attachment\" (30-33); stored_name = format!(\"{}-{}\", util::new_id(), file_name) (35); dest = attachments_dir().join(stored_name) (36, paths.rs:22-24 = root/attachments); copy with std::fs::copy (38); location = attachments/{stored_name} (41); LinkType::Copy (43). util.rs:12-14 new_id is a UUID v4.",
+    "Confirmed: common-crate.md:95 gives POST /tasks/{id}/attachments/copy; common-crate.md:27 and :78 say copy writes into attachments/. common-crate.md:10 names LinkType Copy. Not in the doc: source_path, the <id>-<file_name> stored name, the attachment fallback name, and the location attachments/<stored name> form."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Attach a copy of a file (copy attachment)'. B did not document the trigger control. B's relative-location statement matches A's attachments/<stored name> location.",
+   "id": "F17-058",
+   "check": "corrected",
+   "edge_cases": [
+    "A given name is taken as-is: attachments.rs:30-31 uses name.map(...) without trimming or empty checks, so name \"\" gives display name \"\" and stored name \"<id>-\" (no fallback to the source file name). The fallback applies only when name is absent (None).",
+    "<id> is a UUID v4 string (util.rs:12-14)."
+   ],
+   "check_notes": "Checker A verified the copy route, the fallback chain, the stored-name pattern and the LinkType Copy. A corrected the edge cases for an empty name and the UUID id. Checker B could not check, but confirmed the route and the attachments/ copy target."
+  },
+  {
+   "title": "List task attachments over HTTP",
+   "trigger": "GET /tasks/{id}/attachments",
+   "context": "Localhost API.",
+   "result": "Returns the task's attachments as JSON.",
+   "exact": [
+    {
+     "what": "route",
+     "value": "/tasks/{id}/attachments"
+    }
+   ],
+   "sources": [
+    "common/src/server.rs:35-38",
+    "common/src/server.rs:121-126",
+    "server.rs:35-38 get(get_attachments) on /tasks/{id}/attachments; server.rs:121-126 returns Json(store.list_attachments(&id)) as Vec<Attachment>.",
+    "common-crate.md:94 confirms GET/POST /tasks/{id}/attachments. The 'as JSON' return is only inferred from common-crate.md:10 ('The JSON contract'). No endpoint response is documented."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-059",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the GET route and that it returns the list as JSON. Checker B could not check the response, since its docs give no response for this endpoint, but it confirmed the GET/POST route."
+  },
+  {
+   "title": "Rename a reference attachment",
+   "trigger": "Attachment rename (caller of rename_attachment) on a reference attachment",
+   "context": "Reference attachments.",
+   "result": "Only the display name changes; the URL or path is left unchanged. Name is trimmed first.",
+   "exact": [],
+   "sources": [
+    "common/src/attachments.rs:47-59",
+    "attachments.rs:51-53: get_attachment, then new_name.trim(). attachments.rs:58-59 LinkType::Reference => store.update_attachment(id, new_name, &att.location): only the display name changes, location unchanged.",
+    "rename_attachment appears only in common-crate.md:18 and :65 as a name. No reference-rename behaviour, trimming rule or URL-unchanged rule appears in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-060",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that reference rename changes only the display name and leaves the location unchanged. Checker B could not check."
+  },
+  {
+   "title": "Rename a copied attachment",
+   "trigger": "Attachment rename (caller of rename_attachment) on a copied attachment",
+   "context": "Copies only.",
+   "result": "The file on disk is renamed to <new id>-<sanitized name>, the original extension is kept if the new name lacks it (case-insensitive match), and the stored location updates to attachments/<new id>-<sanitized name>. The display name stored is the sanitized base (with the extension appended if needed), not the raw trimmed input. If the backing file is missing, the display name is still the sanitized base and the location is kept.",
+   "exact": [
+    {
+     "what": "stored name pattern",
+     "value": "<id>-<name>"
+    }
+   ],
+   "sources": [
+    "common/src/attachments.rs:58-96",
+    "attachments.rs:58-96: old_ext from att.location (61-66). base = sanitize_filename(new_name) (69); extension appended if missing, compared with eq_ignore_ascii_case (70-79). stored_name = format!(\"{}-{}\", new_id(), base) (81); rename on disk when old_abs.exists() (83-89). Missing file: update_attachment(id, &base, &att.location) (91-92). Copy branch: update_attachment(id, &base, &new_location) (89).",
+    "No copy-rename behaviour, extension rule or stored-name pattern <id>-<name> in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-061",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the copy rename result. The on-disk file is renamed and the stored location is updated, but the display name is the sanitized base. Checker B could not check."
+  },
+  {
+   "title": "Empty attachment name rejected",
+   "trigger": "Renaming an attachment to a name that is empty after trimming",
+   "context": "Any attachment type.",
+   "result": "Refused with attachment name cannot be empty.",
+   "exact": [
+    {
+     "what": "error text",
+     "value": "attachment name cannot be empty"
+    }
+   ],
+   "sources": [
+    "common/src/attachments.rs:51-56",
+    "attachments.rs:53-56: trim, then if new_name.is_empty() anyhow::bail!(\"attachment name cannot be empty\"). This runs before the Reference/Copy branch, so it applies to any type (the attachment lookup at 52 runs first).",
+    "No empty-name error text in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-062",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the empty-name check and its message, which runs for any attachment type. Checker B could not check."
+  },
+  {
+   "title": "Filename sanitising on copied attachments",
+   "trigger": "Renaming a copied attachment",
+   "context": "On-disk file name safety.",
+   "result": "Characters / \\ : and NUL become _, control characters become _, leading and trailing whitespace and dots are trimmed, and an empty result becomes attachment.",
+   "exact": [
+    {
+     "what": "replaced characters",
+     "value": "/ \\ : NUL and control chars -> _"
+    },
+    {
+     "what": "fallback",
+     "value": "attachment"
+    }
+   ],
+   "sources": [
+    "common/src/attachments.rs:98-114",
+    "attachments.rs:98-114 sanitize_filename: '/' '\\\\' ':' '\\0' -> '_' (103); control chars (c.is_control()) -> '_' (104); cleaned.trim().trim_matches('.').trim() (108); empty -> \"attachment\" (109-111).",
+    "No filename sanitising rules in common-crate.md or architecture.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-063",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the sanitize_filename rules. Checker B could not check."
+  },
+  {
+   "title": "Common data endpoints over localhost HTTP",
+   "trigger": "none (cross-process)",
+   "context": "The routes are the shared data endpoints (server.rs:28-41). No route lists or stores hotkeys; the hotkey list is served by the hotkeys module, not by these endpoints.",
+   "result": "GET /health returns ok; the other data routes list and create lists and tasks, update title/notes/done, and delete tasks (204 on success). Any handler error returns HTTP 500 with the error message as body.",
+   "exact": [
+    {
+     "what": "health body",
+     "value": "ok"
+    },
+    {
+     "what": "error status",
+     "value": "500"
+    },
+    {
+     "what": "delete success",
+     "value": "204 No Content"
+    },
+    {
+     "what": "main port",
+     "value": "127.0.0.1:7420"
+    },
+    {
+     "what": "tray port",
+     "value": "127.0.0.1:7421"
+    }
+   ],
+   "sources": [
+    "common/src/server.rs:28-41",
+    "common/src/server.rs:55",
+    "common/src/server.rs:116-119",
+    "common/src/server.rs:193-202",
+    "doc:common-crate.md:98",
+    "server.rs:28-41 data_router routes: /health GET; /lists GET/POST; /lists/{id}/tasks GET; /tasks GET/POST; /tasks/{id} PATCH/DELETE; /tasks/{id}/attachments GET/POST; /tasks/{id}/attachments/copy POST. No hotkey route. health returns \"ok\" (server.rs:55-57). 500 on handler error via AppError (server.rs:196-202). delete returns StatusCode::NO_CONTENT (server.rs:113-119). Ports: lib.rs:27-28 (MAIN_PORT 7420, TRAY_PORT 7421); serve binds 127.0.0.1 (server.rs:44-45).",
+    "Confirmed: common-crate.md:89 gives GET /health with body \"ok\" (quoted in the doc); common-crate.md:92-94 lists task and list routes; common-crate.md:98 says errors become HTTP 500 with the message; ports 7420 and 7421 at architecture.md:31 and CLAUDE.md. Not in the doc: the 204 No Content delete status, 127.0.0.1 bind address, and any hotkey route. The title's 'hotkey list' has no support in the docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Errors shown as HTTP 500 with message'. B could not document how the message is shown in the UI.",
+   "id": "F17-064",
+   "check": "corrected",
+   "edge_cases": [
+    "The 500 rule covers errors returned by handlers (AppError, server.rs:196-211). Request-extraction failures such as a malformed JSON body are handled by axum's extractors, not AppError, and are not shown to be 500.",
+    "Ports 7420 and 7421 are defined in lib.rs:27-28, not in the cited server.rs lines."
+   ],
+   "check_notes": "Checker A corrected the title, the context and the edge cases. The routes are the shared data endpoints, and no route lists or stores hotkeys. Checker B confirmed GET /health with body \"ok\" and the ports, but found no doc support for the 204, the 127.0.0.1 bind, or any hotkey route."
+  },
+  {
+   "title": "Default project fallback for new lists over HTTP",
+   "trigger": "POST /lists without project_id",
+   "context": "Localhost API.",
+   "result": "The list is created in the default project.",
+   "exact": [],
+   "sources": [
+    "common/src/server.rs:63-72",
+    "common/src/server.rs:152-157",
+    "server.rs:63-72 create_list: project_id None -> store.default_project().await?.id. server.rs:152-157 CreateList with #[serde(default)] project_id: Option<String> and comment \"Omit to fall into the default project.\" storage.rs:99-111 default_project: returns the oldest project (order_by_asc CreatedAt); if none exists, it creates one with crate::names::suggest_project_name().",
+    "common-crate.md:63 lists Store default_project, but the doc does not say POST /lists falls back to it when project_id is missing."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-065",
+   "check": "corrected",
+   "edge_cases": [
+    "If no project exists, default_project creates one with a suggested name (storage.rs:101-111), then the list is created in it.",
+    "The default is the project with the earliest created_at (storage.rs:102-107)."
+   ],
+   "check_notes": "Checker A corrected the edge cases for the default-project fallback. The default project is the earliest created project, and one is created with a suggested name if none exists. Checker B could not find doc support for POST /lists falling back to the default project."
+  },
+  {
+   "title": "Create subtask over HTTP",
+   "trigger": "POST /tasks with parent_id set",
+   "context": "Localhost API.",
+   "result": "Creates the task as a subtask of the given task.",
+   "exact": [
+    {
+     "what": "body field",
+     "value": "parent_id"
+    }
+   ],
+   "sources": [
+    "common/src/server.rs:159-168",
+    "common/src/server.rs:85-99",
+    "server.rs:33 POST /tasks -> create_task. server.rs:159-168 CreateTask.parent_id: Option<String>, comment \"Set to create the task as a subtask of an existing task.\" server.rs:85-99 passes body.parent_id.as_deref() to store.create_task (95).",
+    "common-crate.md:74 says Task has an optional parent_id, and common-crate.md:92 says POST /tasks creates a task. The doc does not say POST /tasks accepts parent_id as a body field."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F17-066",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that POST /tasks passes parent_id through to create_task. Checker B could not check, since its docs do not say parent_id is a body field."
+  },
+  {
+   "title": "Data folder layout",
+   "trigger": "none (filesystem)",
+   "context": "Root data directory.",
+   "result": "Root is ~/.taskscape with taskscape.db, settings.json, attachments/ and screenshots/. attachments and screenshots folders are created when needed. Files are visible in Finder; no UI is described.",
+   "exact": [
+    {
+     "what": "root",
+     "value": "~/.taskscape"
+    },
+    {
+     "what": "database",
+     "value": "taskscape.db"
+    },
+    {
+     "what": "database path",
+     "value": "~/.taskscape/taskscape.db"
+    },
+    {
+     "what": "settings",
+     "value": "settings.json"
+    },
+    {
+     "what": "attachments folder",
+     "value": "attachments"
+    },
+    {
+     "what": "attachments path",
+     "value": "~/.taskscape/attachments/"
+    },
+    {
+     "what": "screenshots folder",
+     "value": "screenshots"
+    },
+    {
+     "what": "screenshots path",
+     "value": "~/.taskscape/screenshots/"
+    }
+   ],
+   "sources": [
+    "common/src/paths.rs:3-41",
+    "doc:common-crate.md:24-29",
+    "paths.rs:3-8 root ~/.taskscape; paths.rs:10-13 taskscape.db; paths.rs:15-19 settings.json; paths.rs:21-24 attachments; paths.rs:26-29 screenshots; paths.rs:37-41 ensure_dirs creates attachments and screenshots. ensure_dirs is called on copy (attachments.rs:37), rename (attachments.rs:84) and capture (screenshot.rs:44). No Finder/UI code in the cited files.",
+    "common-crate.md:24-29 tree shows ~/.taskscape/ with taskscape.db, attachments/ and screenshots/ (no settings.json in the tree). settings.json is named at common-crate.md:13 and :52-54. common-crate.md:16 says paths.rs has ensure_dirs(), which suggests folders are ensured at startup, not 'when needed'. Finder visibility is not in the docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Data stored in ~/.taskscape/ on disk'.",
+   "id": "F17-067",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the paths and that ensure_dirs runs at the copy, rename and capture call sites. Checker B's inference that folders are created at startup is not supported, and code decides. Checker B also noted that the docs' tree omits settings.json. Finder visibility is not verified by either checker, since no Finder or UI code is in the cited files."
+  },
+  {
+   "title": "Delete an attachment",
+   "trigger": "Deleting an attachment (exact control not documented)",
+   "context": "An attachment exists",
+   "result": "The attachment record is removed via delete_attachment",
+   "exact": [],
+   "sources": [
+    "doc:common-crate.md:65",
+    "storage.rs:510-515 pub async fn delete_attachment(&self, id) -> attachments::Entity::delete_by_id(...). Only the row is deleted; no file operation there. attachments.rs has no delete function. server.rs:35-39 has no DELETE on attachment routes.",
+    "common-crate.md:65 lists delete_attachment in the attachments method group. The doc says nothing about the control, which the feature also says is undocumented."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Whether the copied file in attachments/ is also removed from disk is not documented.",
+   "id": "F17-068",
+   "check": "corrected",
+   "edge_cases": [
+    "Only the attachment row is removed (storage.rs:510-515); a copied file on disk under ~/.taskscape/attachments/ is not removed by this call.",
+    "No HTTP route deletes attachments (server.rs:35-39)."
+   ],
+   "check_notes": "Checker A corrected the edge cases. Deleting removes only the attachment row, leaving any copied file on disk, and no HTTP route deletes attachments. Checker B confirmed that delete_attachment is listed in the doc's method group, which does not conflict with A's corrections."
+  },
+  {
+   "title": "Deleting a task deletes its whole subtree",
+   "trigger": "Deleting a task that has subtasks (exact control not documented)",
+   "context": "Task has nested subtasks at any depth",
+   "result": "The task and all descendant subtasks are removed in the database, along with their attachments and notes",
+   "exact": [
+    {
+     "what": "nesting",
+     "value": "subtasks nest arbitrarily deep"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:48-50",
+    "doc:common-crate.md:74-75",
+    "storage.rs:286-291 delete_task runs a single delete_by_id for that id. storage.rs:293-295 comment: the cascade FK only fires on a hard delete, and soft_delete_tasks walks the subtree and stamps deleted_at (storage.rs:293-297). Whether the FK cascade removes descendants, attachments and notes depends on the schema, which is not in the allowed files. The doc citations were not checked.",
+    "common-crate.md:47-50 and :74 confirm the cascade: tasks have a parent_id self-FK with cascade, so deleting a task drops its whole subtree, and attachments and task_notes cascade. common-crate.md:35-36 says the cascade rules fire only because foreign_keys=ON is set on every connection."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Attachments and notes cascade via FK on task deletion (common-crate.md:50).",
+   "id": "F17-069",
+   "check": "corrected",
+   "edge_cases": [
+    "The DB cascade only fires when foreign_keys=ON is set on every connection (common-crate.md:35-36). The pool sets it, so the cascade depends on that setting."
+   ],
+   "check_notes": "Checker A could not check the schema, so the cascade of descendants, attachments and notes is unverified in code. Checker B confirmed the cascade from its doc (common-crate.md:47-50) and corrected the edge case that it depends on foreign_keys=ON."
+  },
+  {
+   "title": "Deleting a list or project cascades to its contents",
+   "trigger": "Deleting a list or project (exact control not documented)",
+   "context": "List or project has tasks, attachments, or notes",
+   "result": "Deleting a project removes its lists; deleting a list removes its tasks; children are removed with them",
+   "exact": [],
+   "sources": [
+    "doc:common-crate.md:47-50",
+    "storage.rs:92-97 delete_project and storage.rs:167-172 delete_list each delete one row by id (delete_by_id). Removal of children depends on DB foreign-key cascade, whose schema is not in the allowed files. The doc:common-crate.md:47-50 citation was not checked.",
+    "common-crate.md:47-50 confirms projects to lists (FK, cascade) to tasks (FK, cascade) to attachments and task_notes (FK, cascade). The same cascade depends on foreign_keys=ON (common-crate.md:35-36)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Cascade rules are documented as FK ON DELETE CASCADE; the exact confirmation (if any) is not documented.",
+   "id": "F17-070",
+   "check": "corrected",
+   "edge_cases": [
+    "The cascade fires only when foreign_keys=ON is set on every connection (common-crate.md:35-36)."
+   ],
+   "check_notes": "Checker A could not check the schema, since foreign-key cascade is not in the allowed files. Checker B confirmed the project-to-list-to-task cascade in common-crate.md:47-50 and corrected the edge case that it depends on foreign_keys=ON."
+  },
+  {
+   "title": "Subtasks nest arbitrarily deep",
+   "trigger": "Creating a subtask under a task: POST /tasks with a parent_id in the body (common/src/server.rs:85-99, 165-167), or re-homing a task via Store::move_task with parent_id (common/src/storage.rs:378-384). Control is code-visible, not undocumented.",
+   "context": "Any task depth",
+   "result": "A task can have an optional parent; nesting has no depth limit",
+   "exact": [
+    {
+     "what": "depth limit",
+     "value": "none (arbitrary)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:74-75",
+    "common/src/models.rs:42-45 (\"Parent task id when this is a subtask... Subtasks may nest arbitrarily deep.\"); common/src/server.rs:165-167 (CreateTask.parent_id, \"Set to create the task as a subtask of an existing task.\"); common/src/storage.rs:378-434 (move_task); common/migrations/20260709090335_baseline.sql:26,40 (parent_id column, idx_tasks_parent). doc:common-crate.md:74-75 not opened (outside the allowed file list).",
+    "common-crate.md:74-75 says Task has an optional parent_id and 'subtasks nest arbitrarily deep', matching 'none (arbitrary)'. The doc names no creation control, so the trigger cannot be verified and the feature itself says it is undocumented."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Related to A's HTTP-level 'Create subtask over HTTP' (parent_id); that entry covers the route, this one covers unlimited depth. Subtask creation control is not documented.",
+   "id": "F17-071",
+   "check": "corrected",
+   "edge_cases": [
+    "move_task refuses to move a task under itself (storage.rs:394-396) or under its own subtask by walking the parent chain (storage.rs:402-413); there is no depth counter.",
+    "Moving a task to a new list relists its whole subtree (storage.rs:429-431, relist_task_tree at storage.rs:729-751)."
+   ],
+   "check_notes": "Checker B marked exact for the nesting value (common-crate.md:74-75, 'none (arbitrary)') but could not verify the trigger because the doc names no creation control. Checker A verified the trigger in code (server.rs:85-99, 165-167; storage.rs:378-384), so A's trigger and edge cases are used. B's 'none (arbitrary)' matches A's 'no depth counter'. No value conflict."
+  },
+  {
+   "title": "Task notes are rich text with a plain-text preview",
+   "trigger": "Editing a task's notes (control not documented)",
+   "context": "Task has one or more note blocks (task_notes rows). The derived plaintext is rebuilt on every note create/update.",
+   "result": "Notes are stored as sanitized HTML in task_notes.content, with the caller doing the sanitizing (Store does not sanitize, storage.rs:527-528); a derived plain-text preview is kept in tasks.notes for the list-row preview and search (models.rs:48-49).",
+   "exact": [
+    {
+     "what": "stored format",
+     "value": "sanitized HTML (content)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:72",
+    "doc:common-crate.md:76",
+    "doc:common-crate.md:67-68",
+    "common/src/models.rs:48-49 and 54 (\"`content` is sanitized HTML\"); common/src/storage.rs:527-528 (create_note: content is sanitized HTML from the caller); storage.rs:702-724 (recompute_task_notes); storage.rs:708-718; storage.rs:762-771 (plaintext_to_html, strip_html); common/migrations/20260709090335_baseline.sql:28 and 55-61 (tasks.notes nullable, task_notes.content text NOT NULL). doc:common-crate.md not opened.",
+    "common-crate.md:72 says Task.notes is a derived plaintext preview of rich note_items, kept for the list-row preview and search. common-crate.md:76 says Note.content is sanitized HTML. common-crate.md:67-68 says the note write plus preview recompute runs in a transaction. The doc does not state the context 'one or more note blocks' and does not document the editing control."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "The preview is recomputed on note write (common-crate.md:68).",
+   "id": "F17-072",
+   "check": "corrected",
+   "edge_cases": [
+    "The derived tasks.notes is built by stripping tags from each block and joining the non-empty results with \"  ·  \" (storage.rs:711).",
+    "tasks.notes is set to NULL when the joined plaintext is empty or whitespace (storage.rs:712-716).",
+    "Plain-text legacy notes are wrapped as <p>...</p> with <br> for newlines and HTML-escaped (storage.rs:761-764, plaintext_to_html)."
+   ],
+   "check_notes": "Checker B marked exact on the doc-level facts: sanitized HTML content (common-crate.md:76), derived plaintext preview for list-row and search (common-crate.md:72), and transactional recompute (common-crate.md:67-68). B did not check the context or the storage-level derivation, so A's corrections are used. No value conflict."
+  },
+  {
+   "title": "Task ordering and done state persisted by sort order",
+   "trigger": "Reordering or moving tasks: Store::reorder_task (storage.rs:436) or Store::move_task (storage.rs:378). Toggling done: PATCH /tasks/{id} with body field done (server.rs:101-111, UpdateTask.done at server.rs:177).",
+   "context": "Any list of tasks or lists",
+   "result": "Position is stored as a REAL sort_order; move_task relists the subtree; done is a stored flag",
+   "exact": [
+    {
+     "what": "sort_order type",
+     "value": "REAL NOT NULL"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:50",
+    "doc:common-crate.md:62-64",
+    "doc:common-crate.md:72-75",
+    "common/migrations/20260709090335_baseline.sql:29-30 (`done` integer NOT NULL DEFAULT 0; `sort_order` real NOT NULL); common/src/models.rs:31-35; storage.rs:193 and 207 (sort_order defaults to now as f64); storage.rs:378-434 (move_task); storage.rs:429-431 (relist only if target list differs); storage.rs:436-447 (reorder_task); server.rs:101-111 (PATCH /tasks/{id} with done); doc:common-crate.md not opened.",
+    "common-crate.md:50 says sort_order is REAL NOT NULL everywhere. common-crate.md:62-64 lists move_task and reorder_task. common-crate.md:67-68 says move_task plus subtree relist runs in a transaction. common-crate.md:72 lists done in the Task model. No toggle-done control is documented."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Specific drag or keyboard behaviour is not documented.",
+   "id": "F17-073",
+   "check": "corrected",
+   "edge_cases": [
+    "move_task relists the subtree only when the target list differs from the current list (storage.rs:429-431); a same-list move updates only the task row.",
+    "New tasks default sort_order to the creation time in millis as f64 (storage.rs:193, 207)."
+   ],
+   "check_notes": "Checker B marked exact (sort_order REAL NOT NULL at common-crate.md:50, move_task and reorder_task at :62-64, done in the Task model at :72). B stated no toggle-done control is documented; checker A found it in code (PATCH /tasks/{id} with done, server.rs:101-111, UpdateTask.done at server.rs:177), so A's trigger is used. No value conflict."
+  },
+  {
+   "title": "Timestamps recorded for tasks",
+   "trigger": "none (observed in data)",
+   "context": "Any create or update of a project, list, task, note or attachment; updated_at is also refreshed by reorder, move, note recompute and subtree relist, not only by explicit edits.",
+   "result": "created_at and updated_at are stored as unix millis",
+   "exact": [
+    {
+     "what": "unit",
+     "value": "unix millis"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:74",
+    "doc:common-crate.md:78",
+    "common/src/util.rs:3-9 (now_millis, unix ms, returns 0 on clock error); storage.rs:61-62, 124-125, 193-195, 464, 536-538 (created_at/updated_at set from now_millis/now); storage.rs:267, 320, 338, 426, 439, 556, 719, 745 (updated_at refreshed on updates); common/src/models.rs:8-9, 21-22, 36-37, 62-63.",
+    "common-crate.md:74 says created_at/updated_at are unix millis. common-crate.md:78 says timestamps come from util::now_millis()."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Timestamps are not documented as user-visible.",
+   "id": "F17-074",
+   "check": "corrected",
+   "edge_cases": [
+    "now_millis returns 0 if the system clock is before the UNIX epoch (util.rs:8)."
+   ],
+   "check_notes": "Checker B marked exact (unix millis at common-crate.md:74, util::now_millis() at :78). Checker A added the other write paths (reorder, move, note recompute, subtree relist) and the zero-on-clock-error behaviour from code. No value conflict."
+  },
+  {
+   "title": "Capture from the tray writes straight to shared storage and asks main to refresh",
+   "trigger": "Submitting a capture from the mini bar: Enter (no Shift) in the title field saves the draft (tray/src/App.tsx:42-44). Note that ⌘Enter is a global shortcut; while the bar is open it emits capture-enter (tray/src-tauri/src/lib.rs:120-132), which the bar handles by submitting from the notes editor or dismissing from the title, per the comment at lib.rs:127-129.",
+   "context": "Tray app running; main app may or may not be running",
+   "result": "Task (plus any notes and screenshot attachments) is written to SQLite through the shared Store; the tray then spawns a POST /refresh to main on port 7420 whose result is ignored (task.rs:43-45). Main's /refresh handler emits a refresh event to its webview (main/src-tauri/src/lib.rs:1045-1050). If main is not running the POST fails silently and the task shows the next time main opens.",
+   "exact": [
+    {
+     "what": "main port",
+     "value": "7420"
+    },
+    {
+     "what": "tray port",
+     "value": "7421"
+    },
+    {
+     "what": "refresh route",
+     "value": "POST /refresh"
+    }
+   ],
+   "sources": [
+    "doc:architecture.md:44-47",
+    "doc:architecture.md:31-34",
+    "doc:common-crate.md:9",
+    "tray/src/App.tsx:41-44 (plain Enter without Shift in the title field calls draft.save()); tray/src-tauri/src/lib.rs:117-131 (global ⌘Enter emits capture-enter when the bar is open); tray/src/hooks/useCaptureBarEvents.ts:9,33; tray/src-tauri/src/task.rs:25-29 (notes saved), 31-41 (screenshot attachments), 43-45 (POST /refresh to MAIN_PORT, error ignored), 47 (dismiss); common/src/lib.rs:27-28 (MAIN_PORT 7420, TRAY_PORT 7421); tray/src-tauri/src/task.rs:44 (route \"/refresh\"). Doc architecture.md not opened.",
+    "architecture.md:44 says ⌘Return shows the mini bar. architecture.md:45 says the user presses Enter. architecture.md:46 says the tray writes the task into SQLite via the shared Store. architecture.md:47 says the tray POSTs /refresh to main on :7420, and that main live-reloads if running, otherwise the change shows next time main opens. architecture.md:31 gives main HTTP :7420 and tray HTTP :7421. common-crate.md:9 names MAIN_PORT/TRAY_PORT but gives no numeric values, so it does not support the port numbers."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Architecture.md:28 numbering shows the signalling list. B's tray port 7421 matches A's code value. B's '10 in common-crate.md' reference is not a conflicting port value.",
+   "id": "F17-075",
+   "check": "corrected",
+   "check_notes": "Checker B marked exact: architecture.md:44-47 (⌘Return shows the bar, Enter, tray writes via shared Store, POST /refresh to :7420, live reload or next open) and :31 (main :7420, tray :7421). Checker B noted common-crate.md:9 gives no numeric ports; checker A confirmed MAIN_PORT 7420 and TRAY_PORT 7421 in common/src/lib.rs:27-28. Checker A's trigger covers the Enter submit path; the bar-opening gesture (⌘Return in architecture.md:44) is not part of A's correction and is not contradicted. No value conflict."
+  },
+  {
+   "title": "Focus request to main window",
+   "trigger": "Tray requests focus via focus_or_launch_main_async (tray/src-tauri/src/lib.rs:61-63), which is the tray's Open Taskscape action per .llm/main-app.md:33. It is not a separate user gesture.",
+   "context": "Main app running. If the /focus POST fails, the tray launches the installed main app instead (tray/src-tauri/src/lib.rs:69-71).",
+   "result": "Main is asked to focus its window via POST /focus on port 7420; the handler unminimizes, shows and focuses the window labelled \"main\" (main/src-tauri/src/lib.rs:1055-1058).",
+   "exact": [
+    {
+     "what": "route",
+     "value": "/focus"
+    }
+   ],
+   "sources": [
+    "doc:architecture.md:28",
+    "doc:common-crate.md:84",
+    "main/src-tauri/src/lib.rs:1052-1062 (POST /focus: unminimize, show, set_focus on window \"main\"); tray/src-tauri/src/lib.rs:61-71 (focus_or_launch_main_async posts /focus to MAIN_PORT, else launches via `open -b com.taskscape.main.app`); tray/src-tauri/src/lib.rs:43-56 (route_to_main_or, other routes); common/src/lib.rs:27 (MAIN_PORT 7420). doc:architecture.md:28 not opened.",
+    "architecture.md:28 says a focus request is 'please focus your window'. architecture.md:31-33 gives main at :7420 serving /refresh and /focus. common-crate.md:84 says main adds /refresh, /focus, /quit. The feature's sources omit architecture.md:31-33, which is where the port is shown. The trigger is not documented."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Which user action sends /focus is not documented here.",
+   "id": "F17-076",
+   "check": "corrected",
+   "check_notes": "Checker B marked exact on the /focus request at :7420 (architecture.md:28, :31-33) and noted the trigger is not documented there. Checker A sourced the trigger to the tray's Open Taskscape action (.llm/main-app.md:33, tray/src-tauri/src/lib.rs:61-63) and the launch fallback (lib.rs:69-71), so A's corrections are used. No value conflict."
+  },
+  {
+   "title": "Database storage in WAL mode with busy timeout",
+   "trigger": "none (observed in files)",
+   "context": "Any database access by either app",
+   "result": "SQLite runs in WAL mode; concurrent writers wait up to 5 seconds before failing; foreign keys enforced",
+   "exact": [
+    {
+     "what": "foreign_keys",
+     "value": "ON, set on every connection (common-crate.md:35-36)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:33-36",
+    "common/src/storage.rs:609-625 (connect): journal_mode(SqliteJournalMode::Wal) line 617; busy_timeout(Duration::from_secs(5)) line 618; foreign_keys(true) line 619; max_connections(4) line 621; comment lines 609-610 says every connection gets these settings. doc:common-crate.md:33-36 not opened.",
+    "common-crate.md:33-36 says the SQLx pool sets journal_mode=WAL, busy_timeout=5s, foreign_keys=ON on every connection, and max_connections = 4 (line 33). The doc says foreign_keys=ON is required for ON DELETE CASCADE. It does not say 'before failing'. architecture.md:35 says both apps share the DB."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Implementation detail; included because it affects what persists and how the two apps interact.",
+   "id": "F17-077",
+   "check": "corrected",
+   "edge_cases": [
+    "foreign_keys=ON is applied per connection and is required for ON DELETE CASCADE to fire (common-crate.md:35-36)",
+    "'fail after 5 seconds' is the implied busy_timeout behaviour, not stated verbatim in common-crate.md"
+   ],
+   "check_notes": "Checker A marked exact: code at storage.rs:609-625 sets journal_mode WAL (617), busy_timeout 5s (618), foreign_keys(true) (619), max_connections(4) (621), and the comment at 609-610 says every connection gets these settings. Checker B marked corrected only to add detail: foreign_keys=ON is per connection and required for ON DELETE CASCADE (common-crate.md:35-36), and that 'fail after 5 seconds' is implied rather than stated. B's added values agree with A's code evidence, so no value is overridden. The 'corrected' verdict reflects B's additions. Doc line refs were not verified by A."
+  },
+  {
+   "title": "Migrations applied at startup and data preserved",
+   "trigger": "none (observed on app launch after a schema change)",
+   "context": "App launch with unapplied migrations",
+   "result": "At startup, every migration file whose version (file stem, e.g. 20260709090335_baseline) is not in schema_migrations is replayed in filename order, each in its own transaction together with its schema_migrations insert (migrations.rs:45-75). Versions are Atlas timestamp-prefixed, not 0002-style numbers.",
+   "exact": [
+    {
+     "what": "migration table",
+     "value": "schema_migrations"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:39-41",
+    "doc:common-crate.md:60",
+    "common/src/migrations.rs:1-8, 23-25 (versions are Atlas sortable UTC timestamp filenames); migrations.rs:26-33 (CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)); migrations.rs:45-60 (*.sql in filename order, skip applied); migrations.rs:65-75 (each migration in its own transaction, version row inserted in same txn); Glob of common/migrations: 20260709090335_baseline.sql, 20260713135048_drop_settings.sql, 20260713143924_add_task_deleted_at.sql. No 0002 file exists. CLAUDE.md states \"Migrations from 0002 on must preserve data\" as a repo rule, not enforced in code.",
+    "common-crate.md:39-41 says migrations.rs records applied versions in schema_migrations and replays new ones in a transaction at startup. common-crate.md:15 says it applies unrecorded versions at startup. common-crate.md:60 is about regenerating entities with gen-entities.sh, not migration data preservation. The claim 'migrations from 0002 on must preserve data' is stated in CLAUDE.md (Gotchas section, provided in context), not in the two named docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Developer-facing; included for completeness.",
+   "id": "F17-078",
+   "check": "corrected",
+   "edge_cases": [
+    "The data-preservation rule (\"from 0002 on\") is a CLAUDE.md guideline; no code checks it, and no 0002 file exists in common/migrations."
+   ],
+   "check_notes": "Both checkers agree that migrations are recorded in schema_migrations and replayed in a transaction at startup. Checker A's corrections give the code-level detail (Atlas timestamp-prefixed versions, filename order, per-migration transaction). Checker B's doc citations (common-crate.md:15, :39-41) support this. B noted that common-crate.md:60 is about gen-entities.sh, not data preservation, and that the 'from 0002 on must preserve data' rule is in CLAUDE.md Gotchas. A's edge case already records that the rule is a CLAUDE.md guideline with no code enforcement and no 0002 file, so B's sourcing point is merged into that edge case rather than duplicated."
+  }
+ ]
+}

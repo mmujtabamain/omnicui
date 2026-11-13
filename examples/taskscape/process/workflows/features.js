@@ -140,10 +140,15 @@ Rules:
 - Drop only duplicates${C ? ' and what the critique shows is wrong' : ''}; list every drop in "dropped" with its reason.
 - Keep every string, key and number exactly as given. Don't shorten results or edge cases.`
 
-// The ts-* agent types need a session restart to load; until then the built-in read-only Plan type,
-// which also runs without the workspace instructions.
-const TYPE = args.agentTypes ?? { solver: 'Plan', critic: 'Plan', merger: 'Plan' }
+const TYPE = args.agentTypes ?? { solver: 'ts-solver', critic: 'ts-critic', merger: 'ts-merger' }
 const OPTS = { agentType: TYPE.solver, model: 'haiku', effort: 'medium' }
+// A solver that answers without reading returns an empty list; give it one more try.
+const solve = async (prompt, opts) => {
+  const r = await agent(prompt, opts)
+  if (r && r.features.length >= 3) return r
+  return agent(`${prompt}\n\nRead every listed file or folder before answering. This area has many features; an empty or near-empty list is wrong.`, { ...opts, label: `${opts.label} (retry)` })
+}
+
 const results = await pipeline(
   args.areas,
   async (a) => {
@@ -151,9 +156,9 @@ const results = await pipeline(
     const parts = []
     for (let i = 0; i < Math.max(a.statesB.length, 1); i += 9) parts.push(a.statesB.slice(i, i + 9))
     const [A, ...Bs] = await parallel([
-      () => agent(solverA(a), { ...OPTS, schema: SOLUTION, label: `A ${a.n} ${a.name}`, phase: 'Solve' }),
+      () => solve(solverA(a), { ...OPTS, schema: SOLUTION, label: `A ${a.n} ${a.name}`, phase: 'Solve' }),
       ...parts.map((part, i) => () =>
-        agent(solverB(args, a, part, parts.length), { ...OPTS, schema: SOLUTION, label: `B${parts.length > 1 ? i + 1 : ''} ${a.n} ${a.name}`, phase: 'Solve' })),
+        solve(solverB(args, a, part, parts.length), { ...OPTS, schema: SOLUTION, label: `B${parts.length > 1 ? i + 1 : ''} ${a.n} ${a.name}`, phase: 'Solve' })),
     ])
     const ok = Bs.filter(Boolean)
     return [A, ok.length ? { features: ok.flatMap((b) => b.features) } : null]
@@ -161,7 +166,11 @@ const results = await pipeline(
   async ([A, B], a) => {
     if (!A || !B) return { A, B, C: null }
     if (a.tier !== 'high') return { A, B, C: null }
-    const C = await agent(critic(a, A, B), { ...OPTS, agentType: TYPE.critic, schema: CRITIQUE, label: `critic ${a.n}`, phase: 'Critique' })
+    const copts = { ...OPTS, agentType: TYPE.critic, schema: CRITIQUE, label: `critic ${a.n}`, phase: 'Critique' }
+    let C = await agent(critic(a, A, B), copts)
+    // Two independent lists of this size always differ somewhere; an empty critique means it didn't look.
+    if (C && !C.issues.length)
+      C = await agent(`${critic(a, A, B)}\n\nCompare the two lists entry by entry before answering; they differ.`, { ...copts, label: `critic ${a.n} (retry)` })
     return { A, B, C }
   },
   async ({ A, B, C }, a) => {

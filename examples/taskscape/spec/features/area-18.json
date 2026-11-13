@@ -1,0 +1,2807 @@
+{
+ "area": 18,
+ "name": "Design intent",
+ "tier": "ordinary",
+ "counts": {
+  "A": 55,
+  "B": 47,
+  "critic_issues": null,
+  "merged": 91
+ },
+ "dropped": [
+  {
+   "title": "Toggle task done from the checkbox (B)",
+   "reason": "Conflicts with the current round-checkbox behaviour in A (checkbox selects the row, TaskRow.tsx:493, review P0). B's entry rests only on the onToggleDone prop name and no recorded click. A's sourced entry is kept; the conflict is recorded in the notes of the round row checkbox feature."
+  },
+  {
+   "title": "Picked (selected) state on a checkbox (B)",
+   "reason": "Merged into 'Round row checkbox selects the row by default (current behaviour)', which describes the same checkbox-to-select behaviour."
+  },
+  {
+   "title": "Empty preview state (B)",
+   "reason": "Merged into 'Preview panel empty state when no task is selected'. Same empty state and label, with B's exact values added."
+  },
+  {
+   "title": "Title-bar toolbar icon style (B)",
+   "reason": "Merged into 'Title bar icon-only tool cluster'. Same title bar toolbar, with B's 28x28 and icon size 19 values added."
+  },
+  {
+   "title": "Drag handle beside the traffic lights (B)",
+   "reason": "Merged into 'Drag-indicator glyph in title bar'. Same drag_indicator element."
+  },
+  {
+   "title": "Project switcher button (B)",
+   "reason": "Merged into 'Project switcher pill'. Same title bar project switcher with max-w-44 truncation."
+  },
+  {
+   "title": "Delete list button on each tab (B)",
+   "reason": "Merged into 'Each list tab shows a delete x'. Same close x on each tab with the Delete list tooltip."
+  },
+  {
+   "title": "Search well (B)",
+   "reason": "Merged into 'Task pane search well'. Same search well with placeholder, well class and divider values added."
+  },
+  {
+   "title": "Stats footer (B)",
+   "reason": "Merged into 'Task pane footer swaps between stats and bulk actions'. Same footer with the 2/8 DONE, 25% and progress bar values added."
+  },
+  {
+   "title": "Subtask progress badge (B)",
+   "reason": "Merged into 'Task row right-edge badges'. Same right-edge badge element, showing 1 / 3."
+  },
+  {
+   "title": "Expand chevron on parent rows (B)",
+   "reason": "Merged into 'Subtask disclosure chevron appears on hover when expanded'. Same chevron with the chevron_left and transition class values added."
+  }
+ ],
+ "features": [
+  {
+   "title": "Task row click previews the task",
+   "trigger": "Plain click on a task row (not the round checkbox)",
+   "context": "Task list in the main window",
+   "result": "Row is previewed/focused in the right-side preview panel. Doc describes this as the current behaviour, and the target model is that row click focuses and inspects.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:53",
+    "docs/main-app-design-review-2026-08-13.md:336",
+    "main/src/components/TaskRow.tsx:328",
+    "A: main/src/stores/selectionStore.ts:63-70 (plain click sets selectedTaskId and drops bulk selection); main/src/components/TaskRow.tsx:328-334 (row onClick passes metaKey/ctrlKey/shiftKey); main/src/components/preview/PreviewPanel.tsx:46-47 (single task shows TaskInspector). Design doc main-app-design-review-2026-08-13.md:53 and :336.",
+    "B: No click on a task row is recorded. meta.json commands (main-dark/meta.json:10-31, main-default/meta.json:13-34) have no click, key or hover input. Both trees show picked=false and the empty preview state (main-dark/tree.txt:95-96)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the behaviour from source. Checker B could not check because no row click is recorded in meta.json, and both trees show every row unselected with the preview empty. No conflict."
+  },
+  {
+   "title": "Round row checkbox selects the row by default (current behaviour)",
+   "trigger": "Click the round checkbox on a task row",
+   "context": "Default state, Option not held. B recorded the same control as onToggleSelect (inferred) on task rows.",
+   "result": "Row is selected for bulk action rather than marked done. Review calls this the P0 mismatch with task-manager expectations.",
+   "exact": [
+    {
+     "what": "control name in review",
+     "value": "the round \"checkbox\""
+    },
+    {
+     "what": "prop and state (B)",
+     "value": "picked=false, onToggleSelect"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:24",
+    "docs/main-app-design-review-2026-08-13.md:53",
+    "docs/main-app-design-review-2026-08-13.md:177",
+    "main/src/components/TaskRow.tsx:493",
+    "state:main-dark tree.txt line 45",
+    "state:main-dark tree.txt line 51",
+    "state:main-dark tree.txt line 56",
+    "A: main/src/components/TaskRow.tsx:493-498 (default round select handle, picked row fills accent); TaskRow.tsx:510-520 (title 'Select' / 'Deselect' when not in Option mode); TaskRow.tsx:535-536 (click without altKey calls onToggleSelect); TaskRow.tsx:380 (onToggleSelect wired to paneToggleSelect). Review P0 at main-app-design-review-2026-08-13.md:51-56.",
+    "B: spec/references/main-dark/tree.txt:45 shows Check done=false picked=false onToggleDone=ƒ onToggleSelect=ƒ on TaskRow2 taskId=\"t-pharmacy\"; same pattern at lines 51, 56, 61. Click result not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Picked (selected) state on a checkbox'. B recorded: 'Each row has a picked state, which is false in all recorded rows. The trigger and visual are not recorded.' Conflict: B's dropped entry 'Toggle task done from the checkbox' says a click on the checkbox toggles done (inferred from the onToggleDone prop only). A's entry with the TaskRow.tsx:493 source is kept as the current behaviour; the done-on-click reading is treated as the proposed behaviour in A's 'Proposed: row checkbox defaults to completion'.",
+   "id": "F18-002",
+   "edge_cases": [
+    "The Check element carries both onToggleDone and onToggleSelect handler props (main-dark/tree.txt:45), so the prop list alone does not show which handler a click calls.",
+    "The recording shows picked=false on every row. No modifier is held in meta.json, so 'Option not held' is consistent with the recording but not separately recorded."
+   ],
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the select handle behaviour. B's verdict is corrected only through edge notes: the element is named Check in the tree, not checkbox, and the click result is not recorded because meta.json has no click. No value conflict, so A's source result stands."
+  },
+  {
+   "title": "Option-held checkbox turns into a done control",
+   "trigger": "Hold Option and click the round checkbox on a task row",
+   "context": "Option mode also changes the control shape (rounded-field instead of rounded-full) and the tooltip (title) to 'Mark done' or 'Mark not done'. The modifier is read from the click event (e.altKey) and from a live Alt-key store (main/src/stores/altKeyStore.ts:16-18), so the click action follows the modifier as it is at the click.",
+   "result": "The same control means mark done instead of select while Option is held. The review calls this a hidden modifier state that a user must discover.",
+   "exact": [
+    {
+     "what": "modifier",
+     "value": "Option (Alt in code: e.altKey)"
+    },
+    {
+     "what": "tooltip in Option mode",
+     "value": "Mark done / Mark not done"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:53",
+    "docs/main-app-design-review-2026-08-13.md:177",
+    "docs/main-app-design-review-2026-08-13.md:241",
+    "main/src/components/TaskRow.tsx:493",
+    "A: main/src/components/TaskRow.tsx:510-511 (doneMode = useAltPressed()); TaskRow.tsx:535 (if e.altKey return onToggleDone()); TaskRow.tsx:514-520 (title 'Mark done' / 'Mark not done' in Option mode); TaskRow.tsx:527-528 (shape rounded-field in done mode, rounded-full otherwise); TaskRow.tsx:493-498 (doc comment: action follows the modifier live).",
+    "B: main-dark/meta.json:10-31 has no modifier input; main-dark/tree.txt:45 shows no modifier state on Check. Cannot check."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-003",
+   "edge_cases": [
+    "Option mode toggles done state: the title is 'Mark not done' when the task is already done (TaskRow.tsx:516-517)."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source corrections stand. B could not check: no Option-modified click is recorded in meta.json, and tree.txt:45 shows no modifier state on Check."
+  },
+  {
+   "title": "Double-click on a task row marks it done",
+   "trigger": "Double-click a task row",
+   "context": "Task list",
+   "result": "Double-click on the row calls toggleDone(), which toggles the task's done state. It marks a done task as not done too. Double-clicking the round checkbox does not toggle done (the checkbox stops propagation). Keyboard behaviour follows the same select/done split: Space toggles selection and Option+Space marks done (or toggles done for the active task).",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:53",
+    "docs/main-app-design-review-2026-08-13.md:54",
+    "main/src/hooks/useAppKeyboard.ts:40",
+    "A: main/src/components/TaskRow.tsx:335-338 (onDoubleClick calls e.stopPropagation() then toggleDone()); TaskRow.tsx:538 (checkbox stops double-click propagation); main/src/hooks/useAppKeyboard.ts:263-281 (Space toggles selection, Option+Space marks done).",
+    "B: main-dark/tree.txt:44 shows TaskRow2 taskId=\"t-pharmacy\" depth=0 with no onDoubleClick; main-dark/tree.txt:48 shows IconButton icon=\"more_horiz\" title=\"More\" onDoubleClick=ƒ. No double-click performed."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-004",
+   "edge_cases": [
+    "Double-click on an expand chevron (TaskRow.tsx:420) or on the checkbox (TaskRow.tsx:538) does not toggle done."
+   ],
+   "check": "corrected",
+   "check_notes": "Conflict on where the double-click handler sits. B saw onDoubleClick on the More IconButton (main-dark/tree.txt:48, and lines 53, 58, 63, 70, 75, 80, 85), not on the TaskRow2 root (tree.txt:44, which lists only taskId and depth). A's source (TaskRow.tsx:335-338, row onDoubleClick calling stopPropagation then toggleDone) decides the result. No double-click was performed, so the marks-done result is unchecked by B."
+  },
+  {
+   "title": "Keyboard shortcut handling for task selection and done state",
+   "trigger": "Keyboard input in the main app: Space (toggle selection of the active row), Option+Space (mark done; whole selection if one exists, else the active task), F2 or Enter (begin title edit on the selected task).",
+   "context": "Main window global keyboard hook (useAppKeyboard.ts). Rows, tabs and menus are handled by this hook, not by native controls.",
+   "result": "Keyboard behaviour mirrors the mouse split between preview/select and done. Global keyboard handling is used for rows, tabs and menus.",
+   "exact": [
+    {
+     "what": "keys",
+     "value": "Space; Option+Space (also matched via e.code 'Space' for non-breaking space); F2; Enter"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:53",
+    "docs/main-app-design-review-2026-08-13.md:85",
+    "main/src/hooks/useAppKeyboard.ts:40",
+    "A: main/src/hooks/useAppKeyboard.ts:263-281 (Space and Option+Space handling); useAppKeyboard.ts:282-284 (F2 or Enter begins title edit); useAppKeyboard.ts:40 is the global keyboard hook.",
+    "B: main-dark/meta.json:10-31 has no key input; list_hotkeys called at lines 26 and 28 but output not in folder. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-005",
+   "edge_cases": [
+    "Option+Space marks done for all selected rows (actSetTasksDone with !allDone) when a selection exists (useAppKeyboard.ts:269-273)."
+   ],
+   "check": "corrected",
+   "check_notes": "A's keyboard mapping is from useAppKeyboard.ts. B could not check: no key press is recorded. meta.json calls list_hotkeys (lines 26 and 28), but its output is not in the folder."
+  },
+  {
+   "title": "Split view shows two panes, one tab per pane",
+   "trigger": "Click the title bar split control (icon vertical_split, title 'Split view'; title 'Close split view' while split is on; disabled when there is no split target), or the tab right-click menu item 'Open in split view' (or 'Close split' when already split).",
+   "context": "Split view on; tab strip shows tabs for both panes",
+   "result": "Tabs represent both panes. Pane ownership is only lightly marked. Review flags this as the signature feature with the most ambiguity.",
+   "exact": [
+    {
+     "what": "split control title",
+     "value": "Split view / Close split view"
+    },
+    {
+     "what": "split control icon",
+     "value": "vertical_split"
+    },
+    {
+     "what": "tab menu label",
+     "value": "Open in split view / Close split"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:43",
+    "docs/main-app-design-review-2026-08-13.md:61",
+    "main/src/App.tsx:60",
+    "main/src/components/ListTabs.tsx:100",
+    "A: main/src/components/TitleBar.tsx:85-91 (BarButton icon vertical_split, title 'Close split view' when split is active else 'Split view', disabled when splitTarget is null); main/src/components/ListTabs.tsx:66-68 (tab menu labels 'Close split' or 'Open in split view'); ListTabs.tsx:105-108.",
+    "B: main-dark/tree.txt:25-26 BarButton icon=\"vertical_split\" active=false disabled=false title=\"Split view\"; main-dark/tree.txt:34 isSplit=false."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-006",
+   "edge_cases": [
+    "Both recordings have split off (main-dark/tree.txt:34 and main-default/tree.txt:34 isSplit=false), so tab-per-pane behaviour is not shown.",
+    "The recorded split BarButton is icon-only with no Label child (main-dark/tree.txt:25-26)."
+   ],
+   "check": "corrected",
+   "check_notes": "B recorded the split control title 'Split view' and icon vertical_split with split off, which matches A. The 'Close split view' title and the tab menu labels were not observed. Both recordings have split off (tree.txt:34 isSplit=false)."
+  },
+  {
+   "title": "Clicking an already-open tab can change focus instead of content",
+   "trigger": "Click a list tab that is already open in a pane",
+   "context": "Split view",
+   "result": "Focus moves to that pane rather than the content changing. Review flags this as ambiguous.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:61",
+    "main/src/components/ListTabs.tsx:100",
+    "A: main/src/stores/layoutStore.ts:82-83 (comment: clicking a tab already shown just focuses that pane), layoutStore.ts:84-87 (if id equals activeListId or splitListId, set paneFocus only), layoutStore.ts:91-92 (other tab loads into focused pane).",
+    "B: No tab click and no split view recorded. Split is off (main-dark/tree.txt:34 isSplit=false). Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-007",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: no tab click or split view is recorded."
+  },
+  {
+   "title": "Filter edits can synchronise both split panes",
+   "trigger": "Change a filter in the Filter panel while split view is on",
+   "context": "Split view; filter panel",
+   "result": "Filter changes can apply to both panes unexpectedly. Review recommends keeping filters independent by default unless the user explicitly links the panes.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:61",
+    "docs/main-app-design-review-2026-08-13.md:64",
+    "main/src/components/preview/FilterPanel.tsx:87",
+    "A: main/src/components/preview/FilterPanel.tsx:77-79 (targets are active and split list), FilterPanel.tsx:87-93 (while split each edit writes the full view to every visible pane); FilterPanel.tsx:94-97 (resetAll resets every target pane).",
+    "B: No filter change recorded; split off (main-dark/tree.txt:34). No FilterPanel in either tree. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-008",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: no filter change is recorded and split is off."
+  },
+  {
+   "title": "Preview panel empty state when no task is selected",
+   "trigger": "Open the right panel with no task selected",
+   "context": "Right rail; no selection. Preview panel with no task selected.",
+   "result": "A centred empty state with a left_click icon (size 28), then the title and subtitle. The panel width comes from the layout store: previewW defaults to 320 (persisted under ui.previewW), not 319px. The empty state only shows when there is no selection: if several tasks are selected MultiInspector shows instead, and if a draft list is open DraftInspector shows instead (PreviewPanel.tsx:44-49).",
+   "exact": [
+    {
+     "what": "panel width",
+     "value": "320px default (layoutStore.ts:71 previewW 320); user-adjustable and persisted as ui.previewW"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:39",
+    "docs/main-app-design-review-2026-08-13.md:67",
+    "docs/main-app-design-review-2026-08-13.md:71",
+    "docs/main-app-design-review-2026-08-13.md:191",
+    "docs/main-app-design-review-2026-08-13.md:215",
+    "main/src/components/preview/PreviewPanel.tsx:51",
+    "common-ui/src/components/content/EmptyState.tsx:24",
+    "state:main-default tree.txt lines 95-99",
+    "state:main-dark tree.txt lines 95-99",
+    "A: main/src/components/preview/PreviewPanel.tsx:48-56 (no task selected: EmptyState icon left_click, iconSize 28, title 'No task selected', subtitle 'Select a task to inspect it'); common-ui/src/components/content/EmptyState.tsx:27, :38-49; main/src/stores/layoutStore.ts:71 (previewW default 320); main/src/App.tsx:118.",
+    "B: main-dark/tree.txt:95-99 and main-default/tree.txt:95-99 show PreviewPanel @861,46 319x715; EmptyState icon=\"left_click\" iconSize=28 title=\"No task selected\" subtitle=\"Select a task to inspect it\"; Label classes at lines 97-99."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Empty preview state'. Trigger recorded by B as none (shown when no task is selected). Description conflict: the review calls the panel large and visually inert (A), while the recording shows a 319px-wide panel with a small centred empty state (B). Both descriptions are kept.",
+   "id": "F18-009",
+   "edge_cases": [
+    "Empty state is replaced by MultiInspector when more than one task is selected, and by DraftInspector when a draft list is active (PreviewPanel.tsx:44-49).",
+    "The panel is dark in main-dark and light grey in main-default (B screenshots)."
+   ],
+   "check": "corrected",
+   "check_notes": "Conflict on panel width. A's source sets previewW default 320 (layoutStore.ts:71, user-adjustable and persisted), so A's 320 decides. B measured PreviewPanel at 319x715 (tree.txt:95-99) and said 319 matches. The 319 measured box may be the rendered width, but the code default is 320. The empty-state content (icon left_click size 28, title, subtitle, centred) matches in both checkers."
+  },
+  {
+   "title": "Task pane shows \"Nothing here yet\" for filtered or hidden tasks",
+   "trigger": "Filter or hide completed so no task is visible while tasks exist, with no search text (the 'Nothing here yet' case). A non-empty search that matches nothing shows a different empty state.",
+   "context": "Task pane with tasks that are filtered out or hidden",
+   "result": "With no search text, the task pane shows 'Nothing here yet' when filter or hide-completed removes every task, which is the same copy as a truly empty list. When a search query is set and matches nothing, the pane shows 'No matches in {list name}' instead, with the subtitle 'Try a different search or scope' (icon search_off).",
+   "exact": [
+    {
+     "what": "empty copy (no search)",
+     "value": "Nothing here yet"
+    },
+    {
+     "what": "empty copy (search, no match)",
+     "value": "No matches in {list.name}"
+    },
+    {
+     "what": "search empty subtitle",
+     "value": "Try a different search or scope"
+    },
+    {
+     "what": "empty icon",
+     "value": "landscape (no search) / search_off (search); iconSize 30"
+    },
+    {
+     "what": "empty subtitle (no search)",
+     "value": "Press + or ⌘N to add a task, or {captureHint} anywhere to capture one (when a capture hotkey is set), else Press + or ⌘N to add a task"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:77",
+    "docs/main-app-design-review-2026-08-13.md:171",
+    "docs/main-app-design-review-2026-08-13.md:214",
+    "main/src/components/TaskPane.tsx:78",
+    "main/src/components/TaskPane.tsx:308",
+    "A: main/src/components/TaskPane.tsx:75-76 (searching = query.trim().length > 0); TaskPane.tsx:78-81 (visibleRoots filtered by isVisibleInPane); TaskPane.tsx:308-320 (EmptyState shown when visibleRoots is empty; title is searching ? 'No matches in {list.name}' : 'Nothing here yet').",
+    "B: No filter, search or hide-completed state recorded; all tasks visible in both shots. 'Nothing here yet' appears in neither tree.txt. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-010",
+   "check": "corrected",
+   "check_notes": "A's source-verified copy stands. B could not check: no filter, search or hide-completed state is recorded, and the 'Nothing here yet' string is absent from both trees."
+  },
+  {
+   "title": "First-load failure leaves a blank or stale surface with no error",
+   "trigger": "App fails to load tasks on boot",
+   "context": "Boot / first load. The app dismisses the boot overlay in finally, with no catch and no load-error state.",
+   "result": "The boot overlay is dismissed by dismissBoot after initialLoad settles, whether it succeeds or fails (App.tsx:47). No user-facing load-error state or Retry control exists in main/src. Retry is a review proposal, not current UI.",
+   "exact": [
+    {
+     "what": "suggested CTA (proposed, not in code)",
+     "value": "Retry"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:77",
+    "docs/main-app-design-review-2026-08-13.md:80",
+    "docs/main-app-design-review-2026-08-13.md:117",
+    "docs/main-app-design-review-2026-08-13.md:120",
+    "main/src/App.tsx:45",
+    "main/src/stores/bootstrap.ts:47",
+    "A: main/src/App.tsx:45-47 (void initialLoad().finally(dismissBoot), no catch); main/src/stores/bootstrap.ts (no error handling found); Retry not found in main/src.",
+    "B: main-dark/meta.json:9,29-32 and main-default/meta.json:12,32-35 show boot_done, reveal_main, fixture standard, problems []. No load failure recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-011",
+   "edge_cases": [
+    "Both recordings show boot_done and reveal_main with problems [] (fixture standard), so the failure path is not exercised."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source shows the boot overlay dismissed in finally with no error state. B could not check the failure path: boot succeeded in both recordings (boot_done and reveal_main, problems []), so the load-failure path is not exercised."
+  },
+  {
+   "title": "Note autosave failure is silent",
+   "trigger": "Note autosave fails in the Task Inspector",
+   "context": "Inspector notes section",
+   "result": "No per-note save status or retry is shown. Review recommends per-note save status or retry.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:31",
+    "docs/main-app-design-review-2026-08-13.md:117",
+    "docs/main-app-design-review-2026-08-13.md:120",
+    "main/src/components/preview/TaskInspector.tsx:118",
+    "A: main/src/components/preview/TaskInspector.tsx:115-120 (saveNote: void api.updateNote(id, html), fire-and-forget, no status or retry); TaskInspector.tsx:167-170 (new-note save chain ends with .catch(() => {})).",
+    "B: Task Inspector not open (main-dark/tree.txt:95-96 show EmptyState). No note autosave recorded. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-012",
+   "edge_cases": [
+    "New-note saves also swallow errors: the addChain promise ends with .catch(() => {}) (TaskInspector.tsx:167-170), so failure gives no message either."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source corrections stand. B could not check: the Task Inspector is not open in either recording, so no note autosave is recorded."
+  },
+  {
+   "title": "Proposed empty-state helper labels for failure and filtered states",
+   "trigger": "Proposed behaviour, not current",
+   "context": "Future empty/error states",
+   "result": "Review proposes separate states for \"no tasks\", \"no results\", \"filtered out\", \"completed hidden\", and \"load failed\", each with a direct CTA such as \"Clear filters\", \"Show completed\" or \"Retry\".",
+   "exact": [
+    {
+     "what": "CTA examples",
+     "value": "Clear filters; Show completed; Retry"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:80",
+    "A: Proposal only: review main-app-design-review-2026-08-13.md:80 (separate states and CTAs 'Clear filters', 'Show completed', 'Retry'). Grep of main/src found no empty-state CTA with these labels; 'Show completed tasks' appears only as a settings toggle title (main/src/windows/settings/generalPane.tsx:84, :91).",
+    "B: Feature describes proposed behaviour. Neither recording shows 'Clear filters', 'Show completed' or 'Retry'. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-013",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified that the proposed states and CTAs are not in the code (grep). B could not check: the feature is proposed behaviour and neither recording shows the states or the CTAs."
+  },
+  {
+   "title": "Task rows, list tabs and project menu rows are click-only divs",
+   "trigger": "Keyboard or assistive-tech navigation of these surfaces",
+   "context": "Main window navigation",
+   "result": "These rows use clickable div elements instead of native button, tab or treeitem semantics. Review flags weak tab-only and assistive-tech support.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:85",
+    "docs/main-app-design-review-2026-08-13.md:182",
+    "main/src/components/TaskRow.tsx:265",
+    "main/src/components/ListTabs.tsx:128",
+    "main/src/components/ProjectSwitcher.tsx:53",
+    "A: main/src/components/TaskRow.tsx:263-266 (row is a div with draggable and data-task-id, not a button); main/src/components/ListTabs.tsx:128-131 (tab is a div with onClick and onDoubleClick); main/src/components/ProjectSwitcher.tsx:53-59 (project menu rows are div elements with onClick).",
+    "B: DOM element types of row, tab and project-menu roots not in tree (main-dark/tree.txt:44 shows component props only). Cannot check."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-014",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: the DOM element types are not in the tree dump, and no keyboard or assistive-tech navigation is recorded."
+  },
+  {
+   "title": "Title bar icon-only tool cluster",
+   "trigger": "Hover an icon in the title bar (native tooltip via title)",
+   "context": "Shell top bar",
+   "result": "Preview, split, swap, settings and reduced-motion controls appear as icon-only buttons with similar visual weight. Labels come only from the title attribute. Toolbar buttons are 28x28 with radius control and an icon size of 19. The active state fills the icon.",
+   "exact": [
+    {
+     "what": "icon controls named in review",
+     "value": "Swap panes (swap_horiz, shown only when split), Split view (vertical_split), preview toggle (right_panel_open / right_panel_close), Settings (settings), reduced-motion status (motion_photos_off, shown only when reduced motion is on)"
+    },
+    {
+     "what": "button size",
+     "value": "32x32 (IconButton size xl = h-8 w-8). 28x28 is the lg size, not used here."
+    },
+    {
+     "what": "icon size",
+     "value": "19, weight 300"
+    },
+    {
+     "what": "preview toggle title (recorded while preview open)",
+     "value": "Hide preview panel"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:101",
+    "docs/main-app-design-review-2026-08-13.md:153",
+    "docs/main-app-design-review-2026-08-13.md:230",
+    "main/src/components/TitleBar.tsx:40",
+    "main/src/components/TitleBar.tsx:78",
+    "state:main-dark tree.txt lines 25-33",
+    "A: main/src/components/TitleBar.tsx:79-101 (BarButtons: swap_horiz 'Swap panes', vertical_split, right_panel_open/right_panel_close, settings); TitleBar.tsx:124-135 (size 'xl', iconSize 19, iconWeight 300); common-ui/src/components/buttons/IconButton.tsx:13 (xl h-8 w-8); TitleBar.tsx:65-75 (reduced-motion icon motion_photos_off).",
+    "B: main-dark/tree.txt:25-33: vertical_split (title \"Split view\", active=false), right_panel_close (title \"Hide preview panel\", active=true, filled=true), settings (title \"Settings\"); each IconButton 28x28 radius=\"control\" iconSize=19 iconWeight=300."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Title-bar toolbar icon style'. The recording shows split, preview toggle and settings icons; swap and reduced-motion are from the review only.",
+   "id": "F18-015",
+   "edge_cases": [
+    "Neither recording shows a swap control or a reduced-motion control (main-dark/tree.txt:25-33 and main-default/tree.txt:25-33); consistent with split off and reduced motion off."
+   ],
+   "check": "corrected",
+   "check_notes": "Conflict on button size. A's source gives size xl (TitleBar.tsx:124-135; IconButton xl = h-8 w-8, 32x32). B measured IconButton 28x28 (tree.txt:25-33). Source decides: 32x32. B's recording also shows only three title-bar controls (vertical_split, right_panel_close, settings) with no swap or reduced-motion control, which is consistent with A's conditional display (split off, reduced motion off). B confirmed icon size 19 and weight 300."
+  },
+  {
+   "title": "Reduced-motion status glyph in title bar",
+   "trigger": "Shown only while reduced motion is on; hover shows the native tooltip (title).",
+   "context": "Title bar, reduced-motion status",
+   "result": "A status glyph reads as a stray status icon rather than part of the shell. Review calls it thoughtful but visually detached.",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "motion_photos_off, size 19, weight 300"
+    },
+    {
+     "what": "tooltip (lowPower)",
+     "value": "Reduced motion active on Low Power Mode"
+    },
+    {
+     "what": "tooltip (default)",
+     "value": "Reduced motion is on (Settings > General)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:261",
+    "main/src/components/TitleBar.tsx:65",
+    "A: main/src/components/TitleBar.tsx:65-75 (reduced-motion block rendered only when reducedMotion; Icon motion_photos_off size 19 weight 300; title is 'Reduced motion active on Low Power Mode' when lowPower, else 'Reduced motion is on (Settings > General)').",
+    "B: No reduced-motion status glyph in title bar of either recording (drag_indicator at 85,12 and controls at lines 10-33 only). Whether it appears under a reduced-motion setting is not recorded (no set-setting command in meta.json)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-016",
+   "check": "disputed",
+   "check_notes": "B's not_found: no reduced-motion glyph appears in either recording. B could not exercise the condition because no set-setting command is in meta.json, so reduced motion was not on. A verified the glyph and tooltips from source (TitleBar.tsx:65-75). The source behaviour is conditional and was not triggered in the recordings, so the two checkers disagree on whether it appears."
+  },
+  {
+   "title": "Drag-indicator glyph in title bar",
+   "trigger": "none (observed). B inferred the drag from pointer-events-none on the icon.",
+   "context": "Title bar. Drag handle beside the traffic lights.",
+   "result": "A drag-indicator glyph shows in the title bar. Review calls it cryptic, reading as leftover chrome. A drag_indicator icon sits in the title bar. It ignores the pointer, so the bar behind it is what drags the window.",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "drag_indicator size 20"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:152",
+    "main/src/components/TitleBar.tsx:51",
+    "state:main-dark tree.txt line 9",
+    "A: main/src/components/TitleBar.tsx:51-56 (drag_indicator Icon size 20 with pointer-events-none; wrapper div data-tauri-drag-region with pointer-events-none); TitleBar.tsx:42 (header is the drag region). Icon placed after window controls on macOS (TitleBar.tsx:49).",
+    "B: main-dark/tree.txt:9 Icon name=\"drag_indicator\" size=20 className=\"pointer-events-none\" @85,12 20x20, beside WindowControls (line 3). Whether dragging works is not recorded."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Drag handle beside the traffic lights'. Review and recording agree on the element.",
+   "id": "F18-017",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree: the drag_indicator icon is size 20, pointer-events-none, beside the window controls. B's tree confirms the class. Dragging the window was not recorded."
+  },
+  {
+   "title": "Project switcher pill",
+   "trigger": "Click the project switcher pill in the title bar. It opens a project menu (it does not select a 'Home' project directly).",
+   "context": "Shell chrome; title bar, left of the list tabs",
+   "result": "Shows the current project name in a recessed pill, with an unfold_more chevron. Clicking opens the project menu. The name is clipped (truncate) at max-w-44.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Selected project name (fallback text Taskscape when none is selected); 'Home' is only example data from the review"
+    },
+    {
+     "what": "tooltip",
+     "value": "Switch project"
+    },
+    {
+     "what": "label weight",
+     "value": "semibold is the Label weight prop (tone primary), not part of the class font-display max-w-44 text-[14px]"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:37",
+    "docs/main-app-design-review-2026-08-13.md:151",
+    "docs/main-app-design-review-2026-08-13.md:259",
+    "main/src/components/ProjectSwitcher.tsx:28",
+    "main/src/components/ProjectSwitcher.tsx:39",
+    "state:main-dark tree.txt lines 10-12",
+    "A: main/src/components/ProjectSwitcher.tsx:30-34 (pill button onClick toggles the project menu; title 'Switch project'); ProjectSwitcher.tsx:35-42 (Label tone primary weight semibold truncate class 'font-display max-w-44 text-[14px]'; fallback 'Taskscape'); ProjectSwitcher.tsx:43-48 (Icon unfold_more size 15 weight 300).",
+    "B: main-dark/tree.txt:10 ProjectSwitcher @112,8 85x28; line 11 Label tone=\"primary\" weight=\"semibold\" truncate=true className=\"font-display max-w-44 text-[14px]\"; line 12 Icon unfold_more size=15 weight=300. No click on pill recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "edge_cases": [
+    "Long project names are truncated at max-w-44 (truncate class).",
+    "Recording shows only the short name Home, so overflow truncation is not shown (main-dark/tree.txt:11 truncate=true)."
+   ],
+   "notes": "Merged with B's 'Project switcher button'.",
+   "id": "F18-018",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the label class and the max-w-44 cap. B clarified that semibold is a separate Label prop and not part of the class. B's recording shows the name 'Home' only, so truncation is not observed. No value conflict."
+  },
+  {
+   "title": "Project menu edit and delete controls appear on hover",
+   "trigger": "Hover a project menu row",
+   "context": "Project menu",
+   "result": "Edit and delete controls appear only on hover of the row. Review notes the row and its actions read as separate layers.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:162",
+    "A: main/src/components/ProjectSwitcher.tsx:56 (row class group ... hover:bg-wash-2l); ProjectSwitcher.tsx:75 and :88 (edit and delete buttons have opacity-0 group-hover:opacity-100).",
+    "B: No project menu open and no hover recorded (main-dark/tree.txt:10-12 show only the switcher pill). Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-019",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source (opacity-0 group-hover:opacity-100 on edit and delete). B could not check: no project menu is open and no hover is recorded."
+  },
+  {
+   "title": "Middle-click deletes a list tab",
+   "trigger": "Middle-click (mouse button 3 / wheel click) a list tab",
+   "context": "List tab strip",
+   "result": "Middle-click opens a danger confirmation sheet before anything is deleted. It is not an immediate delete. Confirming deletes the list. The sheet headline is 'Delete “{list name}”?' and the detail reads 'Its N tasks go with it. No undo.' (or 'The list is empty. No undo.' when empty), with the accept button 'Delete list'.",
+   "exact": [
+    {
+     "what": "mouse button",
+     "value": "middle-click (e.button === 1 on auxclick)"
+    },
+    {
+     "what": "confirmation headline",
+     "value": "Delete “{list name}”?"
+    },
+    {
+     "what": "confirmation accept",
+     "value": "Delete list"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:160",
+    "docs/main-app-design-review-2026-08-13.md:242",
+    "main/src/components/ListTabs.tsx:132",
+    "A: main/src/components/ListTabs.tsx:132-134 (onAuxClick: if e.button === 1 calls deleteList(list)); main/src/commands/lists.ts:63-78 (deleteList opens askConfirm before removing).",
+    "B: main-dark/tree.txt:15, 18, 21 show IconButton onClick=ƒ with title=\"Delete list\". No middle-click recorded. Cannot check."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-020",
+   "edge_cases": [
+    "Deletion is confirmed through the sheet; cancelling leaves the list (lists.ts:77)."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source shows middle-click opens a confirmation sheet rather than deleting. B could not check: no middle-click is recorded. B's tree shows the close IconButton with title Delete list (main-dark/tree.txt:15, 18, 21) but no mouse-button handler."
+  },
+  {
+   "title": "Each list tab shows a delete x",
+   "trigger": "none (always visible on every tab). B recorded: click the close x on a tab.",
+   "context": "List tab strip; each list tab has one",
+   "result": "A close x is visible on every tab at all times (no hover class). Clicking it calls deleteList, which opens a danger confirmation sheet with 'No undo.' text. The list is removed only after confirmation.",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Delete list"
+    },
+    {
+     "what": "icon",
+     "value": "close, iconSize 15, iconWeight 500, variant danger"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:161",
+    "state:main-dark tree.txt lines 15, 18, 21",
+    "A: main/src/components/ListTabs.tsx:235-246 (IconButton icon close, iconSize 15, iconWeight 500, variant danger, title 'Delete list'; no hover-only class); main/src/commands/lists.ts:63-78 (confirmation sheet).",
+    "B: main-dark/tree.txt:15, 18, 21 IconButton icon=\"close\" iconSize=15 iconWeight=500 variant=\"danger\" onClick=ƒ title=\"Delete list\"; Icon name=\"close\" size=15 weight=500 (lines 16, 19, 22). Danger colour not visually confirmed in shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Delete list button on each tab'.",
+   "id": "F18-021",
+   "check": "corrected",
+   "check_notes": "A's source corrections stand. B's tree matches the tooltip, icon size, weight and danger variant (main-dark/tree.txt:15-22). B's shots show an x on every tab, but the glyph colour looks neutral grey, so the danger colour is not visually confirmed. The click-x recording is not in meta.json."
+  },
+  {
+   "title": "List tab strip contents",
+   "trigger": "none (observed)",
+   "context": "Tab strip",
+   "result": "Separators, hover states, drag states, split indicators, inline rename, close buttons and an add button share one shallow band.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:159",
+    "main/src/components/ListTabs.tsx:118",
+    "A: main/src/components/ListTabs.tsx:118-127 (separators); :190-196 (hover, focused and drag classes); :197-202 (split indicator); :203-234 (inline rename); :235-247 (close button); :293-301 (add button, title 'New list').",
+    "B: main-dark/tree.txt:13-24 ListTabs children: Label x3, IconButton close x3, IconButton add (icon add, size=\"lg\", title=\"New list\", @518,10 25x25). No separator, hover, drag, split-indicator or rename element listed."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-022",
+   "edge_cases": [
+    "Separators are visible in the shots (around x=308, 408 and 503 in shot.png) but are not listed in the ListTabs children (main-dark/tree.txt:13-24). Hover, drag, split-indicator and inline-rename states are not in either recording."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source (separators, hover, focused and drag classes, split indicator, inline rename, close and add buttons) stands. B's correction is about the tree dump: separators are visible in the shots but not listed in the ListTabs children. This is not a value conflict."
+  },
+  {
+   "title": "Split-pane markers on tabs",
+   "trigger": "none (observed)",
+   "context": "Split view on",
+   "result": "Split-pane markers are very subtle. Review rates this as one of the most important clarity problems.",
+   "exact": [
+    {
+     "what": "split marker icons",
+     "value": "line_start_circle (left pane, active list); line_end_circle (right pane, split list); class text-accent-500l dark:text-accent-500d"
+    },
+    {
+     "what": "when shown",
+     "value": "Only when split view is on, on both panes' tabs"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:163",
+    "A: main/src/components/ListTabs.tsx:105-108 (split marker shown on both panes only while split is on); :197-201 (icon line_start_circle for left pane and line_end_circle for right pane, colour accent-500).",
+    "B: Split off in both recordings (main-dark/tree.txt:34 and main-default/tree.txt:34 isSplit=false). No split-pane marker recorded. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-023",
+   "check": "corrected",
+   "check_notes": "A's source corrections stand. B could not check: split view is off in both recordings (tree.txt:34 isSplit=false), so no split-pane marker is recorded."
+  },
+  {
+   "title": "Task pane search well",
+   "trigger": "Click into or type in the search well. B recorded: click into the Search Errands field (focus), type to filter.",
+   "context": "Task pane header. B recorded: top of the task pane, empty value.",
+   "result": "One row holds search, scope options, match count, clear, a divider, a new task control and an optional split-close control. Review flags it as overloaded. Input well with search icon on the left, placeholder text Search Errands (list name interpolated), a tune button and a + New task button on the right, separated by a 1px vertical divider.",
+   "exact": [
+    {
+     "what": "placeholder pattern",
+     "value": "Search {list name}"
+    },
+    {
+     "what": "placeholder example",
+     "value": "Search Errands (list name interpolated)"
+    },
+    {
+     "what": "well class",
+     "value": "mx-4 mt-3 mb-2 h-10 shrink-0"
+    },
+    {
+     "what": "search icon",
+     "value": "search size 18 weight 300"
+    },
+    {
+     "what": "tune button title",
+     "value": "Search options (icon tune, size 15, weight 300)"
+    },
+    {
+     "what": "new task button title",
+     "value": "New task (icon add, size 18, weight 400; icon only, no visible text label)"
+    },
+    {
+     "what": "split close title",
+     "value": "Close split (icon close)"
+    },
+    {
+     "what": "divider",
+     "value": "vertical, 1px wide, class h-4 shrink-0 (recorded measured box 1x14)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:167",
+    "docs/main-app-design-review-2026-08-13.md:168",
+    "main/src/components/TaskPane.tsx:204",
+    "state:main-dark tree.txt lines 35-37",
+    "A: main/src/components/TaskPane.tsx:204-206 (InputWell className 'mx-4 mt-3 mb-2 h-10 shrink-0', leading Icon search size 18 weight 300); :212 (placeholder Search ${list.name}); :215-225; :227-240; :246 (Divider w-px); :247-253 (IconButton icon add, iconSize 18, iconWeight 400, title 'New task'); :254-263 (close split); ScopeFields TaskPane.tsx:391-400 (icon tune size 15 weight 300, title 'Search options').",
+    "B: main-dark/tree.txt:35 InputWell className=\"mx-4 mt-3 mb-2 h-10 shrink-0\" (measured 832x35); :36 Icon search size=18 weight=300; :37 TextInput2 placeholder=\"Search Errands\"; :38-39 IconButton icon=\"tune\" iconSize=15 iconWeight=300 title=\"Search options\"; :41 Divider orientation=\"vertical\" className=\"h-4 shrink-0\" 1x14; :42 IconButton icon=\"add\" iconSize=18 iconWeight=400 title=\"New task\" 21x21."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Search well'. B recorded only the tune and + New task controls in the empty-value state; A's review also lists scope options, match count, clear and the split-close control.",
+   "id": "F18-024",
+   "edge_cases": [
+    "Escape clears the search and blurs the field; Enter and Shift+Enter cycle through matches (TaskPane.tsx:219-222).",
+    "With an empty value, no clear control and no match count appear in the tree (main-dark/tree.txt:35-43) or the shot. Whether they appear with text is not recorded.",
+    "The split-close control is absent in the recordings because isSplit=false (main-dark/tree.txt:34)."
+   ],
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the search icon, placeholder, tune button title and the new task button. Conflict: the InputWell class is h-10 (40px) but B measured the box at 832x35 (tree.txt:35). Code decides: h-10. B also recorded the divider as class h-4 with measured box 1x14, which adds to the divider description. B saw no clear control or match count with an empty value. B's split-close control is absent because split is off."
+  },
+  {
+   "title": "Task pane footer swaps between stats and bulk actions",
+   "trigger": "Enter bulk selection so the footer changes. B recorded: none (observed).",
+   "context": "Task pane footer; bulk selection. B recorded: bottom of the task pane.",
+   "result": "Passive stats and the bulk action bar share the footer and swap. Review says the swap is abrupt and the footer is cramped. A bar at the bottom shows 2/8 DONE on the left (uppercase) and a progress bar with 25% on the right.",
+   "exact": [
+    {
+     "what": "text",
+     "value": "2/8 done in source, shown as 2/8 DONE by CSS uppercase"
+    },
+    {
+     "what": "percent",
+     "value": "25%"
+    },
+    {
+     "what": "stats",
+     "value": "done=2 total=8 pct=25 (computed: pct = Math.round(done/total*100))"
+    },
+    {
+     "what": "progress bar",
+     "value": "w-24 h-1 (96x4 px), value done/total (0.25 for 2 of 8)"
+    },
+    {
+     "what": "footer left control",
+     "value": "ViewControl with Icon name=\"tune\" size=14 weight=300"
+    },
+    {
+     "what": "footer divider",
+     "value": "vertical Divider h-3 between tune control and progress bar"
+    },
+    {
+     "what": "percent label class",
+     "value": "w-8 text-right"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:170",
+    "docs/main-app-design-review-2026-08-13.md:172",
+    "main/src/components/TaskPane.tsx:328",
+    "state:main-dark tree.txt lines 87-93",
+    "state:main-dark shot.png",
+    "A: main/src/components/TaskPane.tsx:328-332 (StatsBar when selCount is 0); :494-523 (StatsBar text '{done}/{total} done' with uppercase tracking-[0.08em]; ProgressBar; Label '{pct}%'); :96 (pct = Math.round(done/total*100)); common-ui/src/components/content/ProgressBar.tsx:15 (h-1 w-24).",
+    "B: main-dark/tree.txt:87 StatsBar done=2 total=8 pct=25 @0,729 860x32; line 92 ProgressBar value=0.25 @731,743 84x4; line 93 Label tone=\"secondary\" className=\"w-8 text-right\"; lines 89-91 ViewControl Icon tune size=14 weight=300 and Divider h-3. Shot shows 2/8 DONE and 25%."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Stats footer'.",
+   "id": "F18-025",
+   "check": "corrected",
+   "check_notes": "Conflict on the progress bar width. A's source sets the class w-24 (96x4, ProgressBar.tsx:15). B measured the ProgressBar at 84x4 (tree.txt:92). Code decides: 96x4. Both agree on done=2, total=8, pct=25, and the 0.25 value. B also recorded the footer tune control and divider."
+  },
+  {
+   "title": "Task row right-edge badges",
+   "trigger": "none (observed)",
+   "context": "Task rows with children or attachments. B recorded: parent task with subtasks.",
+   "result": "Child-count badges and attachment badges appear at the right edge. Review says they form a metadata crust and look too alike. A small badge at the right shows the count of subtasks done as 1 / 3. Its tooltip is 1 of 3 subtasks done.",
+   "exact": [
+    {
+     "what": "badge text",
+     "value": "1/3 visually (three spans: count, '/', total; no literal spaces in source)"
+    },
+    {
+     "what": "tooltip",
+     "value": "1 of 3 subtasks done"
+    },
+    {
+     "what": "badge size",
+     "value": "No 32x18 size in code. Badges use Badge default size md (h-5, 20px high). Count badge uses class px-space-3; attachment badge uses px-space-2."
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:178",
+    "docs/main-app-design-review-2026-08-13.md:263",
+    "state:main-dark tree.txt line 69",
+    "state:main-dark shot.png",
+    "A: main/src/components/TaskRow.tsx:441-450 (count Badge with spans doneChildren, '/', children.length; title `${doneChildren} of ${children.length} subtasks done`); :451-455 (attachment Badge with attach_file icon size 13 weight 500); common-ui/src/components/content/Badge.tsx:25-27 (size md h-5).",
+    "B: main-dark/tree.txt:69 Badge className=\"px-space-3\" title=\"1 of 3 subtasks done\" @793,245 32x18. Shot shows 1 / 3. No attachment badge in either recording."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Subtask progress badge'.",
+   "id": "F18-026",
+   "check": "corrected",
+   "check_notes": "Conflict on badge size. A found no 32x18 size in code: badges use Badge default size md (h-5, 20px). B's measured box is 32x18 (tree.txt:69). Code decides: h-5. Both agree on the text (1/3 visually) and the tooltip '1 of 3 subtasks done'. B recorded no attachment badge, so that part is not checked."
+  },
+  {
+   "title": "Subtask disclosure chevron appears on hover when expanded",
+   "trigger": "Hover a task row that has subtasks and is expanded (the chevron only appears on hover then); click the chevron to toggle expand or collapse.",
+   "context": "Task row with subtasks",
+   "result": "When the row is expanded the chevron is hidden until hover (opacity-0 to opacity-100 on group hover). When collapsed it is always visible. The chevron icon is chevron_left at size 16, weight 300, rotated -90deg with a duration-100 transform transition. Clicking the chevron toggles the row's collapsed state.",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "chevron_left size 16 weight 300"
+    },
+    {
+     "what": "class",
+     "value": "transition-transform duration-100 -rotate-90 (when expanded)"
+    },
+    {
+     "what": "titles",
+     "value": "Collapse (expanded) / Expand (collapsed)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:179",
+    "main/src/components/TaskRow.tsx:413",
+    "state:main-dark tree.txt line 68",
+    "A: main/src/components/TaskRow.tsx:413-440 (chevron button only when children exist; onClick stops propagation and calls toggleCollapsed; titles Collapse/Expand; opacity-0 group-hover/row:opacity-100 when expanded); :429-437 (Icon chevron_left size 16 weight 300; -rotate-90 when expanded).",
+    "B: main-dark/tree.txt:68 Icon name=\"chevron_left\" size=16 weight=300 className=\"transition-transform duration-100 -rotate-90\" @771,246 16x16 on expanded parent row (lines 72-86). No visible chevron in shot at that row. Hover and click not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged with B's 'Expand chevron on parent rows'. A's hover-only visibility is a review claim; B's recording shows the rotated chevron but does not record hover visibility.",
+   "id": "F18-027",
+   "check": "corrected",
+   "check_notes": "A's source corrections stand. B's tree shows the expanded parent row's chevron_left at size 16, weight 300, with -rotate-90 (tree.txt:68), and the chevron is absent from the shot at that row, consistent with hover-only visibility. The hover mechanism and the click toggle are not in the tree."
+  },
+  {
+   "title": "Selected task row blue wash",
+   "trigger": "Select a row",
+   "context": "Task list",
+   "result": "Selected rows use a blue wash that the review says does not feel claimed enough.",
+   "exact": [
+    {
+     "what": "selected row class",
+     "value": "bg-selection-1l dark:bg-selection-1d (the token is named selection, not blue)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:180",
+    "A: main/src/components/TaskRow.tsx:343-347 (selected rows get bg-selection-1l dark:bg-selection-1d; unselected rows get hover:bg-wash-1l).",
+    "B: picked=false on every TaskRow2 Check (main-dark/tree.txt:45-86); no selected row, no blue wash. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-028",
+   "check": "corrected",
+   "check_notes": "A's source gives the selected-row class bg-selection-1l dark:bg-selection-1d (token named selection). B could not check: no row is selected in either recording (picked=false on every TaskRow2)."
+  },
+  {
+   "title": "Task row separator starts at the text column",
+   "trigger": "none (observed)",
+   "context": "Task list",
+   "result": "A row separator starts at the text column rather than the row edge. Review says to keep it.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:181",
+    "main/src/components/TaskRow.tsx:354",
+    "A: main/src/components/TaskRow.tsx:354-358 (inset separator: absolute span, h-px, right-0, bottom-0, left = depth * INDENT + 44 px).",
+    "B: main-dark/shot.png and main-default/shot.png show separators starting near x≈44 (top-level) and x≈68 (subtask); no separator element in the tree."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-029",
+   "check": "confirmed_by_both",
+   "check_notes": "Both agree. A's source gives left = depth * INDENT + 44 px. B measured separators starting near x≈44 for top-level rows and x≈68 for subtask rows, consistent with this formula."
+  },
+  {
+   "title": "Drag and drop task reordering",
+   "trigger": "Drag a task row to reorder",
+   "context": "Task list",
+   "result": "Reordering by drag and drop exists and is listed as part of the power-user spine.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:44",
+    "main/src/components/TaskPane.tsx:204",
+    "main/src/components/TaskRow.tsx:263",
+    "A: main/src/components/TaskRow.tsx:265-279 (row draggable; dragstart sets application/x-task and drag selection); main/src/components/TaskPane.tsx:204 (pane drop handling).",
+    "B: No drag recorded. TaskRow2 props list only taskId and depth (main-dark/tree.txt:44). Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-030",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: no drag is recorded and no drag handler is listed on TaskRow2."
+  },
+  {
+   "title": "Inspector header with title, provenance, timestamps and four stacked action icons",
+   "trigger": "Select a task so the Task Inspector shows",
+   "context": "Right rail, task selected",
+   "result": "Header shows task title, provenance, timestamps and an action rail of four small stacked icons. Review says the rail is toolbox-like and the header is crowded.",
+   "exact": [
+    {
+     "what": "action rail",
+     "value": "four stacked small icons"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:186",
+    "docs/main-app-design-review-2026-08-13.md:188",
+    "docs/main-app-design-review-2026-08-13.md:192",
+    "main/src/components/preview/TaskInspector.tsx:258",
+    "A: main/src/components/preview/TaskInspector.tsx:258-264 (header block); :263-269 (Checkbox for done, title 'Mark not done' / 'Mark done'); :342 ('Updated {relativeTime}'); :346-373 (four stacked IconButtons: last_page, edit, content_copy, delete).",
+    "B: No task selected; Task Inspector not open (main-dark/tree.txt:95-96 show EmptyState). Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-031",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: no task is selected, so the Task Inspector is not open in either recording."
+  },
+  {
+   "title": "Selected-task tick on the inspector's left edge",
+   "trigger": "Select a task",
+   "context": "Task Inspector",
+   "result": "A subtle tick on the left marks the selected task. Review says it is too subtle.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:187",
+    "main/src/components/preview/TaskInspector.tsx:261",
+    "A: main/src/components/preview/TaskInspector.tsx:261-262 (index tick: span absolute top-4.75 left-0 h-4 w-0.5, class bg-accent-500l dark:bg-accent-500d).",
+    "B: No task selected in either recording; left-edge tick not in either tree. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-032",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified from source. B could not check: no task is selected in either recording, so the left-edge tick is absent."
+  },
+  {
+   "title": "Preview panel close control uses the last_page icon",
+   "trigger": "Click the preview panel close icon",
+   "context": "Task Inspector header action rail, first of four stacked icons.",
+   "result": "Close control is the Material icon last_page. Review says it is opaque as a close affordance.",
+   "exact": [
+    {
+     "what": "icon name",
+     "value": "last_page (iconSize 16)"
+    },
+    {
+     "what": "tooltip",
+     "value": "Close panel"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:260",
+    "main/src/components/preview/TaskInspector.tsx:347",
+    "A: main/src/components/preview/TaskInspector.tsx:346-352 (IconButton icon last_page, iconSize 16, onClick setPreviewOpen(false), title 'Close panel').",
+    "B: Task Inspector not open. Only preview toggle in either tree is BarButton icon=\"right_panel_close\" title=\"Hide preview panel\" (main-dark/tree.txt:28-30). Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-033",
+   "check": "corrected",
+   "check_notes": "A's source (last_page, size 16, title Close panel) stands. B could not check: the Task Inspector is not open. The only preview toggle in either tree is right_panel_close with title Hide preview panel (main-dark/tree.txt:28-30), not last_page."
+  },
+  {
+   "title": "Notes section with note input placeholder",
+   "trigger": "Use the notes section of the Task Inspector",
+   "context": "Task selected",
+   "result": "Notes are a powerful enrichment layer. The input placeholder reads \"Write a note ...\" with a spaced ellipsis.",
+   "exact": [
+    {
+     "what": "note placeholder",
+     "value": "Write a note ... (drop an attachment to @mention it)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:189",
+    "docs/main-app-design-review-2026-08-13.md:190",
+    "main/src/components/preview/TaskInspector.tsx:417",
+    "A: main/src/components/preview/TaskInspector.tsx:417 (placeholder='Write a note ... (drop an attachment to @mention it)'); notes header shows a note count (TaskInspector.tsx:380-385).",
+    "B: Task Inspector not open. Placeholder not in either tree.txt. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-034",
+   "check": "corrected",
+   "check_notes": "A's source placeholder stands. B could not check: the Task Inspector is not open, so the placeholder is not in either tree."
+  },
+  {
+   "title": "Filter panel with Filter & Sort header and grouped controls",
+   "trigger": "Open the Filter panel in the right rail",
+   "context": "Right rail utility",
+   "result": "Header reads \"Filter & Sort\". Groups are labelled \"Show\" and \"Refine\", with options \"Any\", \"With\" and \"Without\". Active-state dots and reset affordances appear. Controls are segmented.",
+   "exact": [
+    {
+     "what": "header",
+     "value": "Filter & Sort"
+    },
+    {
+     "what": "group labels",
+     "value": "Show; Refine"
+    },
+    {
+     "what": "Show options",
+     "value": "All / Active / Done"
+    },
+    {
+     "what": "Refine tri-state options",
+     "value": "Any / With / Without"
+    },
+    {
+     "what": "reset label",
+     "value": "Reset"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:196",
+    "docs/main-app-design-review-2026-08-13.md:197",
+    "docs/main-app-design-review-2026-08-13.md:198",
+    "docs/main-app-design-review-2026-08-13.md:201",
+    "main/src/components/preview/FilterPanel.tsx:162",
+    "A: main/src/components/preview/FilterPanel.tsx:140 (header Filter & Sort); :204-206 (Section label 'Show'); :216-218 (Section label 'Refine'); :40-44 (SHOW options: All, Active, Done); :56-60 (TRI options: Any, With, Without); :312 (reset button 'Reset').",
+    "B: Filter panel not opened in either recording; 'Filter & Sort', 'Show', 'Refine', 'Any', 'With', 'Without' appear in neither tree.txt. Cannot check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-035",
+   "edge_cases": [
+    "'Any / With / Without' belong to the tri-state list (TRI, FilterPanel.tsx:56-60), not to the Show group."
+   ],
+   "check": "corrected",
+   "check_notes": "A's source (header, group labels, options, reset label) stands. B could not check: the Filter panel is not opened in either recording, and none of the labels appear in the trees."
+  },
+  {
+   "title": "Done completed-filter label",
+   "trigger": "none (observed in filter options)",
+   "context": "Filter panel",
+   "result": "The completed filter is labelled \"Done\", while the rest of the product says \"completed\".",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Done"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:218",
+    "Checker A: main/src/components/preview/FilterPanel.tsx:43 `{ id: 'completed', label: 'Done' }`; FilterPanel.tsx:315 renders the text \"Done\". Review claim at docs/main-app-design-review-2026-08-13.md:218.",
+    "Checker B: No filter panel or completed-filter label in state:main-dark tree.txt:1-101 or state:main-default tree.txt:1-101. shot.png in both states shows only the main list view. Review doc not read (out of scope)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-036",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the 'Done' label in source. Checker B could not check, since the filter panel is not in either recording."
+  },
+  {
+   "title": "Trash panel rows with hover-only restore and delete",
+   "trigger": "Hover a row in the Trash panel",
+   "context": "Trash panel",
+   "result": "Per-row Restore (title \"Restore\") and Delete permanently (title \"Delete permanently\") buttons are opacity-0 until the row is hovered (group/trash:hover). The toolbar buttons Restore all and the empty-trash button are always visible. The row has height class h-9. The claim that row height is compressed and the second line is de-emphasised is the review's opinion (doc:199-200) and was not confirmed in code.",
+   "exact": [
+    {
+     "what": "hover-revealed row action titles",
+     "value": "Restore; Delete permanently"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:199",
+    "docs/main-app-design-review-2026-08-13.md:200",
+    "main/src/components/TrashPane.tsx:107",
+    "Checker A: main/src/components/TrashPane.tsx:96 row has class `group/trash`; :112 and :121 have `opacity-0 group-hover/trash:opacity-100`; :114 title \"Restore\"; :123 title \"Delete permanently\". Toolbar buttons at :69-77 (\"Restore all\" and the empty-trash button) are not hover-only. Row height class `h-9` at :96. Review lines doc:199-200.",
+    "Checker B: No TrashPane in state:main-dark tree.txt or state:main-default tree.txt. meta.json commands show no Trash opened and no row hover. Source TrashPane.tsx not read (out of scope)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-037",
+   "edge_cases": [
+    "Restore all and the empty-trash toolbar button are not hover-only (TrashPane.tsx:69-77)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since Trash is not in the recordings."
+  },
+  {
+   "title": "Trash empty state",
+   "trigger": "Open Trash with no items, after loading has finished (while loading the same slot shows \"Loading…\")",
+   "context": "Trash panel empty",
+   "result": "Shows \"Trash is empty\" once loading finishes. The current copy does not say that deleted tasks appear here first; that wording is only a review suggestion (doc:216).",
+   "exact": [
+    {
+     "what": "empty copy",
+     "value": "Trash is empty"
+    },
+    {
+     "what": "loading copy",
+     "value": "Loading…"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:216",
+    "Checker A: main/src/components/TrashPane.tsx:89 `title={loading ? 'Loading…' : 'Trash is empty'}`. The suggestion to say deleted tasks appear here first is the review's (doc:216) and is not in code.",
+    "Checker B: No Trash panel and no 'Trash is empty' text in either tree.txt or shot.png. meta.json commands show no Trash open."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-038",
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since Trash was not opened in the recordings."
+  },
+  {
+   "title": "Command palette opens as a generic overlay list",
+   "trigger": "Open the command palette via the command_palette hotkey (useAppKeyboard.ts:96-98; id in common/src/hotkeys.rs:468). The default key is not confirmed.",
+   "context": "Overlay with a text prompt. Cited CommandPalette.tsx:64 and :70 are stale; the bolt icon is at :86 and the placeholder at :99.",
+   "result": "Shows a text prompt with a bolt icon. Review says the bolt adds little meaning and the overlay feels generic.",
+   "exact": [
+    {
+     "what": "placeholder",
+     "value": "Run a command or jump to…"
+    },
+    {
+     "what": "icon",
+     "value": "bolt"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:125",
+    "docs/main-app-design-review-2026-08-13.md:262",
+    "main/src/components/CommandPalette.tsx:64",
+    "main/src/components/CommandPalette.tsx:70",
+    "Checker A: main/src/components/CommandPalette.tsx:86 `name=\"bolt\"`; :99 `placeholder=\"Run a command or jump to…\"`. Opened by hotkey id `command_palette`: main/src/hooks/useAppKeyboard.ts:96-98 (`setPaletteOpen(true)`); hotkey defined at common/src/hotkeys.rs:468. The default accelerator was not read.",
+    "Checker B: No CommandPalette, text prompt or bolt icon in state:main-dark tree.txt:1-101 or state:main-default tree.txt:1-101. meta.json has no palette open command. Trigger key is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-039",
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since the palette was not opened in the recordings."
+  },
+  {
+   "title": "Overlay and panel entry motion",
+   "trigger": "Open the inspector or command palette",
+   "context": "Panels and overlays",
+   "result": "Surfaces use a minimal rise or sheet-in motion. Review says richer feedback is underused.",
+   "exact": [
+    {
+     "what": "inspector entry motion class",
+     "value": "animate-rise"
+    },
+    {
+     "what": "command palette entry motion class",
+     "value": "animate-sheet-in"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:141",
+    "main/src/components/preview/TaskInspector.tsx:258",
+    "main/src/components/CommandPalette.tsx:64",
+    "Checker A: main/src/components/preview/TaskInspector.tsx:259 `animate-rise`; main/src/components/CommandPalette.tsx:82 `animate-sheet-in` (cited :64). Other rise users: MultiInspector.tsx:66, DraftInspector.tsx:45, Toast.tsx:19 (animate-rise); ProjectSwitcher.tsx:139 (animate-sheet-in). Reduced-motion toggle: main/src/lib/reducedMotion.ts:22.",
+    "Checker B: Recordings are static (one tree and one shot per state). No inspector or palette open, and no motion, is recorded in meta.json commands of either state."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-040",
+   "edge_cases": [
+    "The same animate-rise class is also used by MultiInspector.tsx:66 and DraftInspector.tsx:45, and by Toast.tsx:19.",
+    "reducedMotion.ts:22 toggles the `reduced-motion` class on the root element when the user switch or Low Power Mode is on. What that does to these animations was not checked."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since motion is not captured in static recordings."
+  },
+  {
+   "title": "Settings window size and search",
+   "trigger": "Open Settings and type in its search field",
+   "context": "Settings window",
+   "result": "Window is 640x520 (WIDTH/HEIGHT). Search spans all panes with match count badges. Panes with zero matches dim to opacity-40 only while a search is active. When a pane that has matches is picked during search, the results narrow to that pane (scoped). With no matches the list shows the title \"No settings match\".",
+   "exact": [
+    {
+     "what": "window size",
+     "value": "640x520"
+    },
+    {
+     "what": "unmatched pane opacity",
+     "value": "opacity-40 (only when searching and matches === 0)"
+    },
+    {
+     "what": "no-match title",
+     "value": "No settings match"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:205",
+    "docs/main-app-design-review-2026-08-13.md:207",
+    "docs/main-app-design-review-2026-08-13.md:264",
+    "main/src/windows/SettingsWindow.tsx:32",
+    "main/src/windows/SettingsWindow.tsx:155",
+    "main/src/windows/SettingsWindow.tsx:291",
+    "Checker A: main/src/windows/SettingsWindow.tsx:32 `const WIDTH = 640;` :33 `const HEIGHT = 520;`; :254 placeholder \"Search\"; :255 aria-label \"Search settings\"; :155 comment (search spans every pane); :181-182 scoping on pane pick; :199 scopedGroups; :285-287 match count badge; :291 `cn(searching && matches === 0 && 'opacity-40')`; :338 title \"No settings match\".",
+    "Checker B: No Settings window in either recording (tree.txt only has main App tree). Title-bar Settings button exists at state:main-dark tree.txt:31-33 but the settings window size, search and opacity-40 are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-041",
+   "edge_cases": [
+    "Dimming is conditional on an active search (SettingsWindow.tsx:291)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since the Settings window is not in the recordings."
+  },
+  {
+   "title": "Settings selected left-nav state",
+   "trigger": "Select a settings section in the left nav",
+   "context": "Settings window",
+   "result": "Selected nav item is correct but not strongly affirming, per the review.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:206",
+    "Checker A: Only the review statement at docs/main-app-design-review-2026-08-13.md:206 exists. The nav is at SettingsWindow.tsx:264 (aria-label \"Settings sections\"), but the selected-item styling was not checked and the 'not affirming' judgement is an opinion.",
+    "Checker B: No Settings window or left nav in either tree.txt or shot.png. Not recorded in meta.json commands."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-042",
+   "check": "unverified",
+   "check_notes": "Neither checker could verify the selected-item styling. The 'not affirming' judgement is opinion."
+  },
+  {
+   "title": "Settings pane intro sentence only on Shortcuts",
+   "trigger": "Open the Shortcuts settings pane",
+   "context": "Settings panes",
+   "result": "The Shortcuts pane (SHORTCUTS_PANE, shortcutsPane.tsx:27) has an intro sentence. No other settings pane file defines an intro key. Rendering of the intro was not checked.",
+   "exact": [
+    {
+     "what": "Shortcuts pane intro",
+     "value": "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel."
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:208",
+    "main/src/windows/settings/shortcutsPane.tsx:27",
+    "Checker A: main/src/windows/settings/shortcutsPane.tsx:31-32 `intro:` with the sentence below. Grep for `intro:` in main/src/windows/settings returned only shortcutsPane.tsx:31.",
+    "Checker B: No Settings panes in either recording. shortcutsPane.tsx not read (out of scope)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-043",
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since no Settings panes are recorded."
+  },
+  {
+   "title": "About pane Restore defaults action",
+   "trigger": "Open About in Settings, then the Reset group (aboutPane.tsx:39-41)",
+   "context": "About pane, group 'Reset'",
+   "result": "Shows a \"Restore defaults\" action. Review says the framing is not calm enough.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Restore defaults"
+    },
+    {
+     "what": "group label",
+     "value": "Reset"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:217",
+    "main/src/windows/settings/aboutPane.tsx:5",
+    "Checker A: main/src/windows/settings/aboutPane.tsx:44 `title: 'Restore defaults',`. It is the only match for \"Restore defaults\" under main/src. The About pane's group is labelled 'Reset' at aboutPane.tsx:40 and imports ResetEverything (aboutPane.tsx:3). The cited line 5 is the import line.",
+    "Checker B: No About pane or 'Restore defaults' text in state:main-dark tree.txt or state:main-default tree.txt."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-044",
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since the About pane is not recorded."
+  },
+  {
+   "title": "Settings labels Search and Saved to",
+   "trigger": "none (observed)",
+   "context": "Settings window",
+   "result": "Two strings are terse: \"Saved to\" as a row title in the Capture settings pane, and \"Search\" as the settings search placeholder. The 'not explanatory' judgement is the review's (doc:210).",
+   "exact": [
+    {
+     "what": "labels",
+     "value": "'Saved to' (capturePane.tsx:56, row title); 'Search' (placeholder of the settings search field, SettingsWindow.tsx:254)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:210",
+    "Checker A: main/src/windows/settings/capturePane.tsx:56 `title: 'Saved to',`. \"Search\" is the placeholder of the settings search field at main/src/windows/SettingsWindow.tsx:254, with aria-label \"Search settings\" at :255. Review copy note at doc:210.",
+    "Checker B: No 'Search' or 'Saved to' Settings labels in either recording. The 'Search Errands' placeholder at tree.txt:37 is the main list search, not the Settings label."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-045",
+   "check": "corrected",
+   "check_notes": "Checker B's 'Search Errands' at tree.txt:37 is the main list search and was correctly not taken as the Settings label."
+  },
+  {
+   "title": "Section header microtype",
+   "trigger": "none (observed)",
+   "context": "Settings and panel headers",
+   "result": "Repeated 10.5px to 12px labels make text small and grey.",
+   "exact": [
+    {
+     "what": "font size range",
+     "value": "10.5px to 12px"
+    },
+    {
+     "what": "section header classes",
+     "value": "text-[10.5px] tracking-[0.12em] uppercase"
+    },
+    {
+     "what": "settings muted label class",
+     "value": "text-[12px] (tone muted)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:224",
+    "common-ui/src/components/typography/SectionHeader.tsx:41",
+    "main/src/windows/SettingsWindow.tsx:321",
+    "Checker A: common-ui/src/components/typography/SectionHeader.tsx:41 `className=\"text-[10.5px] tracking-[0.12em] uppercase\"`. main/src/windows/SettingsWindow.tsx:321 `<Label as=\"p\" tone=\"muted\" className=\"text-[12px]\">`; also :256 `text-[12px]`.",
+    "Checker B: No SectionHeader element in state:main-dark tree.txt or state:main-default tree.txt. The font-size classes present (text-[12.5px] at tree.txt:47 and 99, text-[13px] at tree.txt:14, text-[14px], text-[15px] at tree.txt:98) are on other elements. SectionHeader.tsx not read (out of scope)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "notes": "B's Typography entry records 12.5px subtitles and 13px tabs on other surfaces; this is not a conflict because the review's range is for section headers only.",
+   "id": "F18-046",
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since no SectionHeader is in the recordings."
+  },
+  {
+   "title": "Global text selection is disabled",
+   "trigger": "Try to select text in the app",
+   "context": "Whole app",
+   "result": "user-select is none globally, giving a desktop feel but less forgiving text interaction.",
+   "exact": [
+    {
+     "what": "CSS",
+     "value": "user-select: none (doubled as -webkit-user-select: none), on html, body in @layer base (index.css:47-48)"
+    },
+    {
+     "what": "opt-out selectors",
+     "value": "input, textarea, [contenteditable], .selectable-text (user-select: text, index.css:56-57)"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:232",
+    "main/src/index.css:23",
+    "Checker A: main/src/index.css:25 `@layer base {`; :39-40 `html, body`; :47-48 `-webkit-user-select: none;` and `user-select: none;`. Exceptions at :52-57 (`input, textarea, [contenteditable], .selectable-text`) set `user-select: text`. The cited index.css:23 is inside a comment. Doc note is at doc:232.",
+    "Checker B: user-select is not in either tree.txt or meta.json. No text-selection action is recorded. index.css not read (out of scope)."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-047",
+   "edge_cases": [
+    "Text selection is re-enabled inside inputs, textareas, contenteditable regions and .selectable-text (index.css:52-57)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not check, since selection is not recorded."
+  },
+  {
+   "title": "Minimum working window baseline",
+   "trigger": "Resize the main window to 800x600 with split view and side panel open",
+   "context": "Main window",
+   "result": "The review (doc:235) names 800x600 as a baseline. The window config sets minWidth 880 and minHeight 560 (tauri.conf.json:18-19; tauri.windows.conf.json:9-10), so an 800x600 window is below the configured minimum. The fragility claim with split view and the side panel open is the review's and was not checked at runtime.",
+   "exact": [
+    {
+     "what": "baseline size (review)",
+     "value": "800x600"
+    },
+    {
+     "what": "configured minimum window size",
+     "value": "880x560"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:235",
+    "Checker A: main/src-tauri/tauri.conf.json:18-19 `\"minWidth\": 880`, `\"minHeight\": 560`; tauri.windows.conf.json:9-10 same values; tauri.conf.json:16-17 width 1180, height 760. No 800 or 600 window size was found in main/src-tauri. Review baseline at doc:235.",
+    "Checker B: Only 1180x760 is recorded (state:main-dark tree.txt:1, state:main-default tree.txt:1). Split is off (tree.txt:34 isSplit=false). No 800x600 resize is recorded, and no split plus side panel combination."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-048",
+   "edge_cases": [
+    "Resizing to 800x600 is not reachable under the configured minimums."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B could not check the 800x600 baseline or the split plus side panel case. Its recorded 1180x760 agrees with checker A."
+  },
+  {
+   "title": "Accent blue used across many meanings",
+   "trigger": "none (observed)",
+   "context": "Whole app",
+   "result": "Accent blue marks navigation, selection, drag targets, filter activity, split markers, inspector tick and done-state lamps.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:225",
+    "main/src/components/TaskRow.tsx:530",
+    "Checker A: Verified in TaskRow.tsx: selection ring `ring-accent-500l` at main/src/components/TaskRow.tsx:349; drag-drop indicator `bg-accent-500l` at :364 and :369; done lamp accent at :495-496 and :557. The cited TaskRow.tsx:530 had no accent match. Navigation, filter activity, split markers and inspector tick are in other files and were not checked. Review doc:225.",
+    "Checker B: Blue progress fill in StatsBar appears in both shot.png images (ProgressBar value=0.25 at state:main-dark tree.txt:92). That blue use is not in the feature's list. The listed meanings (navigation, selection, drag targets, filter activity, split markers, inspector tick, done-state lamps) are not visible in either recording. The colour is judged visually from the shot, not from exact hex values."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-049",
+   "check": "unverified",
+   "check_notes": "Checker A cannot check the whole feature, though it found accent tokens for selection, drag-drop and done lamp in TaskRow.tsx. Checker B noted a blue StatsBar progress fill not in the feature's list. No value was corrected."
+  },
+  {
+   "title": "Dark neutral palette with quiet resting states",
+   "trigger": "none (observed)",
+   "context": "Dark mode, whole app",
+   "result": "Neutrals are dark and quiet. Inactive-but-actionable controls are too faint, per the review.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:71",
+    "docs/main-app-design-review-2026-08-13.md:226",
+    "Checker A: No exact values in the feature. Only review opinion at doc:71 and doc:226 (docs/main-app-design-review-2026-08-13.md). Resting-state contrast is not verifiable from source without rendering.",
+    "Checker B: state:main-dark shot.png shows dark neutrals across the window. Whether inactive-but-actionable controls are 'too faint' is a review judgement and is not checkable from the recordings. No hover or disabled state is recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-050",
+   "check": "unverified",
+   "check_notes": "The claim is a review judgement. Neither checker could verify it."
+  },
+  {
+   "title": "Loading mark is a rounded checkbox with a check stroke",
+   "trigger": "App boot or loading screen",
+   "context": "Boot and loading",
+   "result": "Loading mark is a rounded square frame with a check stroke. A matching native boot box exists. Review proposes this as the base brand motif.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:364",
+    "docs/main-app-design-review-2026-08-13.md:368",
+    "docs/main-app-design-review-2026-08-13.md:369",
+    "main/index.html:47",
+    "main/src-tauri/src/panels.rs:113",
+    "Checker A: main/index.html:139-141 `<svg class=\"boot-check\" width=\"28\" height=\"28\" viewBox=\"0 0 28 28\">` with `<rect class=\"boot-box\" x=\"1.5\" y=\"1.5\" width=\"25\" height=\"25\" rx=\"7\">` and a check `<path class=\"boot-tick\">`. Native matching box: main/src-tauri/src/panels.rs:113-120 (25x25 mirror of the rect, removed by boot_done).",
+    "Checker B: No loading or boot mark in either recording. meta.json (state:main-dark lines 29-30, state:main-default lines 32-33) shows boot_done then reveal_main only, with no loader captured."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the boot mark markup and native box in source. Checker B could not check, since no loader was captured."
+  },
+  {
+   "title": "Proposed: row checkbox defaults to completion",
+   "trigger": "Proposed behaviour, not current",
+   "context": "Future task row",
+   "result": "Checkbox means done by default. Row click focuses and inspects. Multi-select uses Shift and Cmd. Bulk mode is entered on purpose.",
+   "exact": [
+    {
+     "what": "multi-select modifiers",
+     "value": "Shift; Cmd"
+    }
+   ],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:335",
+    "docs/main-app-design-review-2026-08-13.md:336",
+    "docs/main-app-design-review-2026-08-13.md:337",
+    "docs/main-app-design-review-2026-08-13.md:338",
+    "Checker A: Proposed behaviour per review doc:335-338: `Shift` and `Cmd` for multi-select (doc:337). Current code still uses Option: main/src/components/TaskRow.tsx:495-496, consistent with 'not current'.",
+    "Checker B: Proposed behaviour, not current. Row checkbox in state:main-dark tree.txt:45 carries both onToggleDone and onToggleSelect handlers. Shift and Cmd modifiers are not recorded in meta.json and no multi-select is recorded."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-052",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified that the current code uses Option. Checker B could not check, since the proposal is not recorded."
+  },
+  {
+   "title": "Proposed: Preview rail as details drawer with stable meaning",
+   "trigger": "Proposed behaviour, not current",
+   "context": "Right rail",
+   "result": "Preview stays the default meaning of the rail. Filter and Trash move to utility surfaces or overlays. Drawer open and close become clearer. Empty preview is useful but non-dominant.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:288",
+    "docs/main-app-design-review-2026-08-13.md:318",
+    "docs/main-app-design-review-2026-08-13.md:322",
+    "docs/main-app-design-review-2026-08-13.md:325",
+    "docs/main-app-design-review-2026-08-13.md:326",
+    "docs/main-app-design-review-2026-08-13.md:327",
+    "Checker A: Proposal in review doc:318-327 (preview rail stays a details drawer; filter and trash move to utility surfaces). Current state is consistent with the 'not current' label: TrashPane is hosted in the preview pane (main/src/components/TrashPane.tsx:17).",
+    "Checker B: Proposed behaviour, not current. Current state: PreviewPanel open at 319x715 (state:main-dark tree.txt:95) with Hide preview panel button active (tree.txt:28-29). No drawer, utility surface or overlay is recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-053",
+   "check": "confirmed_by_one",
+   "check_notes": "Both checkers agree the proposal is not current. Checker A verified the current hosting in source. Checker B recorded the current preview panel at 319x715."
+  },
+  {
+   "title": "Proposed: quick capture as the hero",
+   "trigger": "Proposed behaviour, not current",
+   "context": "Shell, empty states, post-capture",
+   "result": "Empty states point back to capture. Freshly captured tasks should feel visibly received. The list reads as a triage surface first.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:289",
+    "docs/main-app-design-review-2026-08-13.md:309",
+    "docs/main-app-design-review-2026-08-13.md:313",
+    "docs/main-app-design-review-2026-08-13.md:315",
+    "docs/main-app-design-review-2026-08-13.md:316",
+    "Checker A: Proposal in review doc:307-316 (empty states point to capture; freshly captured tasks feel received; list reads as a triage surface first).",
+    "Checker B: Proposed behaviour, not current. Current preview empty state reads 'No task selected' and 'Select a task to inspect it' (state:main-dark tree.txt:96-99), with no capture pointer. No post-capture state is recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-054",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B recorded the current empty-state copy, which the proposal is about. Checker A confirmed the review proposal text."
+  },
+  {
+   "title": "Proposed: trust rule for destructive and undo actions",
+   "trigger": "Proposed behaviour, not current",
+   "context": "Whole app",
+   "result": "Checking, selecting, the right drawer, filtered vs empty, and undo vs permanent must be obvious on first use. Cleverness stays in shortcuts, palette, and drag/drop, not primary control meaning.",
+   "exact": [],
+   "sources": [
+    "docs/main-app-design-review-2026-08-13.md:347",
+    "docs/main-app-design-review-2026-08-13.md:354",
+    "docs/main-app-design-review-2026-08-13.md:356",
+    "docs/main-app-design-review-2026-08-13.md:360",
+    "Checker A: Proposal in review doc:344-360 (healthy cleverness; the five items that must be obvious at doc:354-360) and doc:292.",
+    "Checker B: Proposed behaviour, not current. No undo, delete, filtered or permanent-action state is recorded in either tree.txt or meta.json."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "A"
+   ],
+   "id": "F18-055",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the review proposal text. Checker B could not check, since no such state is recorded."
+  },
+  {
+   "title": "Dark appearance of the main window",
+   "trigger": "none (observed state; the app sends set_window_theme at launch)",
+   "context": "Window in dark theme, fixture standard, list Errands active",
+   "result": "Whole window renders in the dark palette: dark title bar and tab strip, near-black search well, dark list area, darker grey preview panel, light text. Compared with main-default, the same layout and text is shown with a light palette.",
+   "exact": [
+    {
+     "what": "theme value in meta.json",
+     "value": "dark"
+    },
+    {
+     "what": "command sent",
+     "value": "set_window_theme"
+    },
+    {
+     "what": "active list tab label",
+     "value": "Errands"
+    }
+   ],
+   "sources": [
+    "state:main-dark (meta.json theme=dark, commands set_window_theme)",
+    "state:main-dark shot.png",
+    "Checker A: Command set_window_theme exists: main/src-tauri/src/lib.rs:929 `fn set_window_theme(window, dark: bool)`, registered at lib.rs:1214. The dark rendering, meta.json theme value and fixture contents are in the state recordings, which were not available here.",
+    "Checker B: state:main-dark meta.json:8 \"theme\": \"dark\"; meta.json:13 \"set_window_theme\" (in commands list); meta.json:9 \"fixture\": \"standard\". Active tab: state:main-dark tree.txt:14 Errands is tone=\"primary\" and the others (tree.txt:17, 20) are tone=\"muted\"; tree.txt:34 list={\"Errands\"}. The palette description is consistent with state:main-dark shot.png (dark title bar and tab strip, near-black search well, dark list, darker grey preview panel, light text). state:main-dark tree.txt and state:main-default tree.txt are identical in layout and strings."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B verified the dark state from recordings. Checker A could only confirm that the set_window_theme command exists."
+  },
+  {
+   "title": "Light appearance of the main window",
+   "trigger": "none (observed state)",
+   "context": "Window in light theme, fixture standard",
+   "result": "Whole window renders in the light palette: white/light-grey list area, light-grey search well, light-grey preview panel, dark text. Same layout and strings as the dark state.",
+   "exact": [
+    {
+     "what": "theme value in meta.json",
+     "value": "light"
+    }
+   ],
+   "sources": [
+    "state:main-default (meta.json theme=light)",
+    "state:main-default shot.png",
+    "Checker A: Light rendering and meta.json theme=light are from recorded state:main-default, not available for checking. No source check was possible.",
+    "Checker B: state:main-default meta.json:8-11 \"theme\": \"light\" (line 11). state:main-default shot.png shows the light palette: white list area, light-grey search well, light-grey preview panel, dark text. state:main-default tree.txt is identical to state:main-dark tree.txt line for line."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B verified the light state from recordings. Checker A could not check."
+  },
+  {
+   "title": "Theme is chosen from a setting, not hard-coded per token",
+   "trigger": "Change Theme in Settings > General (generalPane.tsx:31-34). The launch-time read is state-based and was not checked against code.",
+   "context": "Launch: get_setting is called twice before set_window_theme",
+   "result": "The window theme is a user setting. The Theme row in Settings General (generalPane.tsx:31-34) has the description \"Follow the system appearance, or pin one.\" so the user can follow the system or pin a theme. The launch command order is not confirmed by code.",
+   "exact": [
+    {
+     "what": "Theme row title",
+     "value": "Theme"
+    },
+    {
+     "what": "Theme row description",
+     "value": "Follow the system appearance, or pin one."
+    }
+   ],
+   "sources": [
+    "state:main-dark meta.json commands",
+    "state:main-default meta.json commands",
+    "Checker A: main/src/windows/settings/generalPane.tsx:31-34 `id: 'theme'`, `title: 'Theme'`, `description: 'Follow the system appearance, or pin one.'`; :40-41 value and `ctx.set('theme', next)`. get_setting command: main/src-tauri/src/lib.rs:680-682. Launch order get_setting, get_setting, set_window_theme was not checked.",
+    "Checker B: state:main-dark meta.json:11-13 and state:main-default meta.json:14-16 both list get_setting, get_setting, set_window_theme in that order at launch. The dark and light states use the same fixture (fixture standard). The causal link 'set from a setting' is inferred from the order; get_setting arguments and return values are not recorded. How the user picks the theme is not recorded."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-058",
+   "check": "corrected",
+   "check_notes": "Checker B recorded the launch order get_setting, get_setting, set_window_theme in both states. Checker A did not confirm the order by code. The causal link to a setting is inferred, not recorded."
+  },
+  {
+   "title": "Semantic light/dark colour token pairs",
+   "trigger": "none (design intent visible in class names)",
+   "context": "Every themed element",
+   "result": "Colours are not raw palette values. Each role has a light and a dark token (suffix l and d), selected with a dark: variant. Examples: text-content-3l / dark:text-content-3d on the sort/unfold icon and the empty-state icon; border-edge-2l / dark:border-edge-2d and bg-surface-2l / dark:bg-surface-2d on the stats bar.",
+   "exact": [
+    {
+     "what": "token pair example",
+     "value": "text-content-3l dark:text-content-3d"
+    },
+    {
+     "what": "token pair example",
+     "value": "border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-sur… (truncated in tree)"
+    },
+    {
+     "what": "role tokens named in doc",
+     "value": "bg-surface-*, border-edge-*, text-content-*, rounded-panel, rounded-control"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt line 12",
+    "state:main-dark tree.txt line 88",
+    "state:main-dark tree.txt line 97",
+    "doc:conventions.md:17",
+    "Checker A: Token pairs exist: `text-content-3l dark:text-content-3d` at main/src/components/TaskPane.tsx:544; `border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d` at TaskPane.tsx:423 (footer strip, h-9). Role names rounded-panel and rounded-control at components/AttachmentLightbox.tsx:197 and :278. Whether :423 is the same element as the state tree's stats bar was not confirmed.",
+    "Checker B: state:main-dark tree.txt:12 Icon unfold_more className=\"text-content-3l dark:text-content-3d\"; tree.txt:97 Icon left_click className=\"text-content-3l dark:text-content-3d\"; tree.txt:88 className=\"border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-sur…\" (truncated exactly as the feature states). Role prefixes bg-surface-, border-edge-, text-content- are present. rounded-panel is not in either tree. rounded-control appears only as the radius=\"control\" prop (tree.txt:26, 29, 32), not as a class. doc:conventions.md was not read, so the doc-named role list cannot be confirmed in full."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-059",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the token pairs. Checker A found rounded-panel and rounded-control classes in AttachmentLightbox.tsx, while checker B found only a radius prop in the tree. These are not conflicting values. Whether TaskPane.tsx:423 is the stats bar element was not confirmed."
+  },
+  {
+   "title": "Opaque, small, rounded visual language",
+   "trigger": "none (stated design intent)",
+   "context": "All UI",
+   "result": "Design is small, rounded and opaque, built from semantic role tokens. No raw palette colours in components. Tailwind v4 utility classes, no component library.",
+   "exact": [
+    {
+     "what": "style words",
+     "value": "small, rounded, opaque"
+    }
+   ],
+   "sources": [
+    "doc:conventions.md:17",
+    "doc:conventions.md:15",
+    "Checker A: Tailwind v4 present: main/package.json:44 `\"tailwindcss\": \"^4.3.2\"` and :32 `\"@tailwindcss/vite\": \"^4.3.2\"`. No component-library match in main/package.json. The 'no raw palette colours' claim was not checked across components. Design intent doc is conventions.md, which was not opened.",
+    "Checker B: Visible classes in state:main-dark tree.txt use Tailwind-style utilities (text-[13px], tracking-[0.01em], max-w-40, leading-4.75, px-space-3) and semantic role tokens, with no raw palette names seen. 'Opaque' and 'no component library' are not shown in the recordings. doc:conventions.md not read (out of scope)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-060",
+   "check": "unverified",
+   "check_notes": "Neither checker verified the 'no raw palette colours' claim across components. Checker A confirmed Tailwind v4 and no component library in package.json."
+  },
+  {
+   "title": "Conventional window, no menu-bar tricks",
+   "trigger": "none (stated design intent)",
+   "context": "Main window app",
+   "result": "The main window is a normal Tauri window; no NSPanel symbols appear in main/src-tauri/src. The configured default is 1180x760 (tauri.conf.json:16-17) with minimum 880x560 (:18-19). The docs' 800×600 default was not found in the source.",
+   "exact": [
+    {
+     "what": "configured window size",
+     "value": "1180x760"
+    },
+    {
+     "what": "configured minimum size",
+     "value": "880x560"
+    },
+    {
+     "what": "doc window size",
+     "value": "800×600 (not found in source; main-app.md not checked)"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:3",
+    "doc:main-app.md:11",
+    "state:main-default tree.txt line 1",
+    "Checker A: main/src-tauri/tauri.conf.json:16-17 width 1180, height 760 (matches the recorded 1180x760); :18-19 minWidth 880, minHeight 560. No NSPanel, setLevel or nonactivating symbol in main/src-tauri/src. No 800x600 default found. main-app.md was not opened.",
+    "Checker B: state:main-dark tree.txt:1 \"App @0,0 1180x760\" and state:main-default tree.txt:1 same. The recorded window size 1180x760 matches the feature. The doc value 800×600 (doc:main-app.md) and the no-menu-bar or NSPanel claim are not checkable from the recordings; main-app.md not read."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "notes": "Not a direct conflict with A's 'Minimum working window baseline' (800x600 as a fragile minimum with split and side panel open); the doc's 800x600 is a default size and the recording shows 1180x760.",
+   "id": "F18-061",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the recorded 1180x760 window size, which agrees with checker A. Neither checker verified the no-menu-bar claim, and main-app.md was not opened."
+  },
+  {
+   "title": "Boot then reveal the main window",
+   "trigger": "app launch (none recorded)",
+   "context": "Startup of main app",
+   "result": "After loading data, the app reports boot done and then reveals the main window. The window is shown only at the end of boot.",
+   "exact": [
+    {
+     "what": "command order at end",
+     "value": "boot_done, reveal_main"
+    }
+   ],
+   "sources": [
+    "state:main-dark meta.json commands",
+    "state:main-default meta.json commands",
+    "Checker A: Commands exist: main/src-tauri/src/lib.rs:916 `fn boot_done`, :903 `fn reveal_main`, both registered at :1212-1213. The frontend call order boot_done then reveal_main was not checked. Fallback reveal path: lib.rs:1024 comment ('if the frontend never calls reveal_main') and lib.rs:76.",
+    "Checker B: state:main-dark meta.json:29 \"boot_done\" then meta.json:30 \"reveal_main\" (last two commands). state:main-default meta.json:32 \"boot_done\" then meta.json:33 \"reveal_main\". Data-load commands all come before boot_done."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-062",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B verified the call order from both recordings. Checker A confirmed the commands exist but did not check the call order in code."
+  },
+  {
+   "title": "Startup data loads",
+   "trigger": "app launch (none recorded)",
+   "context": "Startup, before the window is revealed",
+   "result": "The app loads projects, lists, all tasks, settings and hotkeys. Here the active project is Home and the first list is Errands.",
+   "exact": [
+    {
+     "what": "commands",
+     "value": "get_setting, get_setting, set_window_theme, is_low_power_mode, list_projects, list_projects, get_setting, get_setting, list_lists, all_tasks, list_lists, all_tasks, get_setting, get_setting, get_setting, list_hotkeys, get_setting, list_hotkeys, boot_done, reveal_main (full recorded sequence in state:main-dark meta.json:10-30; the data-load commands are list_projects, list_lists, all_tasks, get_setting, list_hotkeys, interleaved as shown)"
+    }
+   ],
+   "sources": [
+    "state:main-dark meta.json commands",
+    "state:main-dark tree.txt line 11",
+    "Checker A: Command functions exist in main/src-tauri/src/lib.rs: list_projects :111, list_lists :147, all_tasks :191, get_setting :680, list_hotkeys :697. The startup call sequence and the Home/Errands data were not checked.",
+    "Checker B: state:main-dark meta.json:10-30 (commands) and state:main-default meta.json:13-33 are identical sequences. The feature's listed order 'list_projects, list_lists, all_tasks, get_setting, list_hotkeys' is incomplete: it omits the leading get_setting, get_setting, set_window_theme, is_low_power_mode calls, the repeated loads, and the get_setting calls that come before list_lists and after all_tasks. The 'Home' project label is shown in state:main-dark shot.png (ProjectSwitcher text); tree.txt:11 gives position and size (45x21) but not the text itself. Errands as first list: tree.txt:14 first tab label, tree.txt:34 list={\"Errands\"}."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-063",
+   "check": "corrected",
+   "check_notes": "Checker B's recorded sequence is the source for the corrected command order. Checker A confirmed the command functions exist in source but did not check the startup sequence. The 'Home' label is visible in the shot image."
+  },
+  {
+   "title": "Low-power mode check at launch",
+   "trigger": "app launch (none recorded)",
+   "context": "Startup",
+   "result": "The app asks whether low-power mode is on at launch (reducedMotion.ts:46). If it is, motion is reduced: the root element gets the reduced-motion class (reducedMotion.ts:22). The title bar shows a motion_photos_off icon whose tooltip is 'Reduced motion active on Low Power Mode' (TitleBar.tsx:69-74). The recordings do not show this, but the code does.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "is_low_power_mode"
+    },
+    {
+     "what": "reduced-motion effect",
+     "value": "class reduced-motion on the root element"
+    },
+    {
+     "what": "tooltip",
+     "value": "Reduced motion active on Low Power Mode"
+    }
+   ],
+   "sources": [
+    "state:main-dark meta.json commands",
+    "Checker A: Command: main/src-tauri/src/lib.rs:939-940 `fn is_low_power_mode()`, registered :1215. Effect: main/src/lib/reducedMotion.ts:46 `lowPower = await api.isLowPowerMode();`, :22 toggles class `reduced-motion` when the user pref or lowPower is on, comments :6-9 (power-state-changed). Tooltip: main/src/components/TitleBar.tsx:69 'Reduced motion active on Low Power Mode'.",
+    "Checker B: state:main-dark meta.json:14 \"is_low_power_mode\" and state:main-default meta.json:17 \"is_low_power_mode\". Effect of the answer is not recorded, as the feature says."
+   ],
+   "system": true,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-064",
+   "edge_cases": [
+    "Low Power Mode changes after launch arrive via the power-state-changed event (reducedMotion.ts:8-9; emitted at power.rs:97)."
+   ],
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the is_low_power_mode call in both recordings. Checker A supplied the effect and tooltip from source, which the recordings do not show."
+  },
+  {
+   "title": "Traffic-light window controls show focus state",
+   "trigger": "none (observed)",
+   "context": "Window focused",
+   "result": "Three circular window controls at the top left, all focused=true and not inert. The close, minimize and fullscreen controls are drawn by the app (MacControls).",
+   "exact": [
+    {
+     "what": "control ids",
+     "value": "close, minimize, fullscreen"
+    },
+    {
+     "what": "control size",
+     "value": "14x14 each"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 5-8",
+    "Checker A: main/src/components/WindowControls.tsx:8 `export type WindowControl = 'close' | 'minimize' | 'fullscreen';` :10 ORDER, :134 `function MacControls`. The ids match. The 14x14 disc size was not confirmed: the only size-4 match is at :68, which is not clearly the disc.",
+    "Checker B: state:main-dark tree.txt:4 MacControls; tree.txt:6-8 Light id=\"close\", id=\"minimize\", id=\"fullscreen\", each focused=true inert=false, each 14x14 (at @18,15, @39,15, @60,15). Three circles at top left in shot.png. The app draws them (MacControls)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-065",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the 14x14 size from the recording. Checker A could not confirm the disc size in source, and the ids match in both."
+  },
+  {
+   "title": "Tab strip lists each list as a tab",
+   "trigger": "none (observed) / click a tab (inferred)",
+   "context": "Title bar; three lists exist for Home",
+   "result": "Each list is a tab. Label text is 13px (text-[13px]), tracking 0.01em, weight medium (Label weight prop), truncated at max-w-40. Tone is primary when the tab is focused (ListTabs.tsx:229), otherwise muted. Whether 'focused' equals the active tab, and the separators, were not verified.",
+   "exact": [
+    {
+     "what": "label class",
+     "value": "max-w-40 text-[13px] tracking-[0.01em] (plus Label weight=\"medium\" and truncate)"
+    },
+    {
+     "what": "tone",
+     "value": "primary when focused, else muted"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 13-22",
+    "state:main-dark shot.png",
+    "Checker A: main/src/components/ListTabs.tsx:226-233 `<Label truncate weight=\"medium\" tone={focused ? 'primary' : 'muted'} className=\"max-w-40 text-[13px] tracking-[0.01em]\">{list.name}</Label>`; rename input at :223 has `max-w-40 ... font-medium`. Tab names and separators were not checked.",
+    "Checker B: state:main-dark tree.txt:14, 17, 20 tab labels (tone primary for Errands, muted for the others), each className \"max-w-40 text-[13px] tracking-[0.01em]\" with weight=\"medium\" as a prop. shot.png shows Errands, Reading, Garden and vertical separators flanking the Errands tab. The ListTabs tree has no Divider, so the separators are visible only in the shot. tree.txt:15, 18, 21 show each tab also has a close IconButton (title \"Delete list\", variant danger, 21x21), which the feature omits."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-066",
+   "edge_cases": [
+    "Each list tab also has a close IconButton with title \"Delete list\" (variant danger, icon close, iconSize 15, iconWeight 500, 21x21) at tree.txt:15, 18, 21."
+   ],
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the label class and tone. Checker B's recording shows the close IconButton that the feature omits, which checker A did not cover."
+  },
+  {
+   "title": "New list button",
+   "trigger": "click the + at the end of the tab strip",
+   "context": "Title bar, after the last tab",
+   "result": "Creates a new list. The tooltip is New list. Button size lg with rounded-md and ml-2 spacing, plus my-auto vertical centering.",
+   "exact": [
+    {
+     "what": "className",
+     "value": "my-auto ml-2 rounded-md"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 23-24",
+    "Checker A: main/src/components/ListTabs.tsx:293-301: `icon=\"add\"`, `iconSize={18}`, `iconWeight={300}`, `size=\"lg\"`, `onClick={() => void createList()}`, `className=\"my-auto ml-2 rounded-md\"`, `title=\"New list\"`.",
+    "Checker B: state:main-dark tree.txt:23 IconButton icon=\"add\" iconSize=18 iconWeight=300 size=\"lg\" className=\"my-auto ml-2 rounded-md\" title=\"New list\"; tree.txt:24 Icon name=\"add\" size=18 weight=300. Tooltip, icon and size confirmed. The click action itself is not recorded in meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-067",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the icon, size, iconSize, iconWeight, tooltip and className. The correction adds the className value as an exact field. Checker A confirmed the click action createList in source, which the recordings do not show."
+  },
+  {
+   "title": "Split view toggle (inactive)",
+   "trigger": "click the vertical_split button in title bar",
+   "context": "Split view off (isSplit=false)",
+   "result": "Clicking the vertical_split button in the title bar toggles split view (TitleBar.tsx:90). With split off, the tooltip is \"Split view\"; with split on, the tooltip is \"Close split view\". The filled and size attributes were not confirmed.",
+   "exact": [
+    {
+     "what": "tooltip (split off)",
+     "value": "Split view"
+    },
+    {
+     "what": "tooltip (split on)",
+     "value": "Close split view"
+    },
+    {
+     "what": "icon",
+     "value": "vertical_split"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 25-27, 34",
+    "Checker A: main/src/components/TitleBar.tsx:86 `icon=\"vertical_split\"`; :89 `title={splitListId ? 'Close split view' : 'Split view'}`; :90 `onClick={toggleSplit}`. Filled/weight/size attributes for this button were not confirmed.",
+    "Checker B: state:main-dark tree.txt:25 BarButton icon=\"vertical_split\" active=false title=\"Split view\"; tree.txt:26 IconButton filled=false active=false; tree.txt:27 Icon name=\"vertical_split\" size=19 filled=false weight=300; tree.txt:34 TaskPane isSplit=false. The click trigger is not in meta.json, so only the state values are confirmed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-068",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the split-off tooltip and icon. Checker B recorded filled=false and size 19 on the icon, which checker A did not confirm."
+  },
+  {
+   "title": "Hide preview panel toggle (active)",
+   "trigger": "click the right_panel_close button in title bar",
+   "context": "Preview panel open",
+   "result": "Clicking the right_panel_close button toggles the preview panel (TitleBar.tsx:96). When the preview is open the tooltip is 'Hide preview panel' followed by a hint('toggle_preview') suffix (the suffix text was not read). The icon is right_panel_close when open.",
+   "exact": [
+    {
+     "what": "tooltip (open)",
+     "value": "Hide preview panel + hint('toggle_preview') suffix"
+    },
+    {
+     "what": "tooltip (closed)",
+     "value": "Show preview panel + hint('toggle_preview') suffix"
+    },
+    {
+     "what": "icon (open)",
+     "value": "right_panel_close"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 28-30",
+    "Checker A: main/src/components/TitleBar.tsx:93 `icon={previewOpen ? 'right_panel_close' : 'right_panel_open'}`; :95 `title={`${previewOpen ? 'Hide' : 'Show'} preview panel${hint('toggle_preview')}`}`; :96 `togglePreview()`. Filled and active attributes not confirmed.",
+    "Checker B: state:main-dark tree.txt:28 BarButton icon=\"right_panel_close\" active=true title=\"Hide preview panel\"; tree.txt:29 IconButton filled=true active=true; tree.txt:95 PreviewPanel open at 319x715. The click trigger is not in meta.json, so only the state values are confirmed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-069",
+   "check": "corrected",
+   "check_notes": "Conflict on the tooltip. Checker B's recorded title is exactly \"Hide preview panel\" with no hint suffix, while checker A's source has a hint('toggle_preview') suffix. The source decides, so the suffix stays, but the recorded title may have an empty hint. Checker B also recorded filled=true and active=true, which checker A did not confirm."
+  },
+  {
+   "title": "Settings button",
+   "trigger": "click the settings icon in title bar",
+   "context": "Title bar, far right",
+   "result": "Opens the settings window (api.openSettings, TitleBar.tsx:101). The tooltip is 'Settings' followed by a hint('open_settings') suffix (the suffix text was not read). The settings window holds the Shortcuts pane (shortcutsPane.tsx:27-28).",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Settings + hint('open_settings') suffix"
+    },
+    {
+     "what": "icon",
+     "value": "settings"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 31-33",
+    "doc:main-app.md:26",
+    "Checker A: main/src/components/TitleBar.tsx:99 `icon=\"settings\"`; :100 `title={`Settings${hint('open_settings')}`}`; :101 `onClick={() => api.openSettings()}`. Shortcuts pane: main/src/windows/settings/shortcutsPane.tsx:27-28.",
+    "Checker B: state:main-dark tree.txt:31 BarButton title=\"Settings\"; tree.txt:32 IconButton iconSize=19 iconWeight=300; tree.txt:33 Icon name=\"settings\" size=19 filled=false weight=300. The settings window contents and the click action are not recorded in either state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-070",
+   "check": "corrected",
+   "check_notes": "Conflict on the tooltip. Checker B's recorded title is exactly \"Settings\" with no hint suffix, while checker A's source has a hint('open_settings') suffix. The source decides, so the suffix stays. Checker B's recorded icon size 19 and weight 300 agree with the icon in source."
+  },
+  {
+   "title": "New task button in search well",
+   "trigger": "click the + icon at the right of the search well",
+   "context": "Task pane",
+   "result": "Creates a new task. The tooltip is New task.",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "New task"
+    },
+    {
+     "what": "icon",
+     "value": "add size 18 weight 400"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 41-43",
+    "main/src/components/TaskPane.tsx:248-252 (icon=\"add\" 248, iconSize={18} 249, iconWeight={400} 250, title=\"New task\" 252); onClick startNewTask(list.id) at 251.",
+    "main-dark/tree.txt:42 IconButton icon=\"add\" iconSize=18 iconWeight=400 onClick title=\"New task\" at @816,63, inside InputWell (tree.txt:35, @14,56 832x35) to the right of the tune button (tree.txt:39) and divider (tree.txt:41). Icon at tree.txt:43 is size=18 weight=400. Tooltip, icon and placement match. The 'Creates a new task' result is not shown: no create-task command appears in main-dark/meta.json commands, so the behaviour itself is unverified."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-071",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the add IconButton (title New task, size 18, weight 400) in the search well. A confirmed the onClick calls startNewTask(list.id) at TaskPane.tsx:251. B did not record the create-task behaviour, so that part rests on source only."
+  },
+  {
+   "title": "Search options button",
+   "trigger": "click the tune icon inside the search well (the mousedown only calls e.preventDefault(), TaskPane.tsx:397; the click at line 398 opens the options)",
+   "context": "Search well, right side",
+   "result": "Opens search options. The tooltip is Search options. The behaviour is not recorded.",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Search options"
+    },
+    {
+     "what": "icon",
+     "value": "tune size 15 weight 300, variant plain"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 38-40",
+    "main/src/components/TaskPane.tsx:393-399 (icon=\"tune\" 393, iconSize={15} 394, iconWeight={300} 395, variant=\"plain\" 396, onMouseDown preventDefault 397, onClick={open} 398, title=\"Search options\" 399).",
+    "main-dark/tree.txt:39 IconButton icon=\"tune\" iconSize=15 iconWeight=300 variant=\"plain\" onMouseDown onClick title=\"Search options\" inside ScopeFields @784,63 (tree.txt:38). Icon tree.txt:40 is size=15 weight=300. The well spans x 14 to 846 (tree.txt:35), so 784 is on the right side. Both onMouseDown and onClick handlers are present, matching 'mousedown and click'. The opening behaviour is not recorded, as the feature says."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-072",
+   "check": "corrected",
+   "check_notes": "Values agree in both checks (tune, size 15, weight 300, title Search options). B recorded both handlers but not the opening behaviour. The trigger wording comes from the source (A)."
+  },
+  {
+   "title": "Preview panel width and split resizer",
+   "trigger": "drag the 4px-wide resizer between the list and the preview",
+   "context": "Preview panel open",
+   "result": "The resizer sits at x=860 between the task list (860px) and the preview (319px). The drag handler is onResize. Bounds are not recorded.",
+   "exact": [
+    {
+     "what": "resizer size",
+     "value": "width class w-1.25 (5px at the default 4px spacing unit; the 4px figure is not found in source). Height 715 not verified."
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 94-95",
+    "main/src/App.tsx:177 (resizer class \"-mr-1.25 w-1.25 shrink-0 cursor-col-resize\"); App.tsx:161 onDoubleClick={onReset}; App.tsx:74 and 111 pass onResize; App.tsx:168-174 mousemove calls onResize(ev.clientX, rect). No --spacing override in common-ui/styles/tokens.css, so w-1.25 is 5px assuming Tailwind default 4px unit. x=860, 319 and 4x715 are not in source (state file not opened).",
+    "main-dark/tree.txt:94 Resizer onResize=ƒ @860,46 4x715 (4px wide, 715 high). tree.txt:34 TaskPane @0,46 860x715 (task list 860px). tree.txt:95 PreviewPanel @861,46 319x715 (preview 319). tree.txt:28-29 'Hide preview panel' active=true filled=true shows the preview is open. Edge note: the 4px resizer spans x 860 to 864 and the preview starts at 861, so the resizer overlaps the preview's left edge by 3px. 'Between' holds only approximately. Also 860+4+319 = 1183, which exceeds the 1180px App width (tree.txt:1). Bounds are not recorded, as the feature says."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-073",
+   "check": "corrected",
+   "edge_cases": [
+    "Double-clicking the resizer calls onReset (App.tsx:161), which resets the split."
+   ],
+   "check_notes": "Conflict on width: B measured the Resizer at 4px (4x715, tree.txt:94), but source gives w-1.25, which is 5px at the default spacing unit. Source decides, so the 5px figure stands and the 4px recording value is not supported by source. B also recorded that the 4px resizer overlaps the preview edge by 3px and that 860+4+319=1183 exceeds the 1180px app width, so 'between' holds only approximately. Positions x=860 and 319 and height 715 are from B's recording only."
+  },
+  {
+   "title": "Undone task row",
+   "trigger": "none (observed)",
+   "context": "Task list, undone task",
+   "result": "Row has a round select handle (not a completion checkbox) at the left, 18x18 (h-4.5 w-4.5). By default the control selects the row; holding Option turns it into a done control. A title in medium 14px primary text and a More button at the right. Row height 32px is recorded in the recording (860x32) but not verified in source.",
+   "exact": [
+    {
+     "what": "checkbox size",
+     "value": "18x18 (h-4.5 w-4.5), not 16x16"
+    },
+    {
+     "what": "title class",
+     "value": "text-[14px] leading-4.75 weight medium tone primary (confirmed, TaskRow.tsx:388-390)"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 56-59",
+    "main/src/components/TaskRow.tsx:527-528 (h-4.5 w-4.5, rounded-full when not doneMode); TaskRow.tsx:493-495 (default round select handle, Option makes it a done control); TaskRow.tsx:388-390 (font-medium, tone primary when not done, text-[14px] leading-4.75); TaskRow.tsx:458-462 (More button). Row height 32px not verified in source.",
+    "main-dark/tree.txt:55 TaskRow2 taskId=\"t-bike\" depth=0 @0,175 860x32 (height 32). tree.txt:56 Check done=false @20,183 16x16 (checkbox 16x16). tree.txt:57 Label as=\"div\" weight=\"medium\" tone=\"primary\" className=\"text-[14px] leading-4.75\" (title class matches). tree.txt:58 More IconButton at right @830,180. The circular empty checkbox is visible in main-dark/shot.png. Other undone rows (tree.txt:60, 65) show the same pattern."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-074",
+   "check": "corrected",
+   "check_notes": "Conflict on size: B recorded the Check node at 16x16 (tree.txt:56) and called it a circular checkbox. Source gives h-4.5 w-4.5 (18px at the default spacing unit) and a select handle rather than a completion checkbox. Source decides: 18x18. The 32px row height comes from B's recording (860x32) and is not verified by A."
+  },
+  {
+   "title": "Task row with a description",
+   "trigger": "none (observed)",
+   "context": "Task with a description",
+   "result": "Two lines: the title in primary text, and a secondary line in 12.5px below it. Row is 46px high.",
+   "exact": [
+    {
+     "what": "title",
+     "value": "Pick up prescription"
+    },
+    {
+     "what": "description",
+     "value": "Counter closes at 6"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 44-49",
+    "state:main-dark shot.png",
+    "main/src/components/TaskRow.tsx:400-402 confirms the secondary line uses text-[12.5px] leading-4.25 with tone secondary. The sample title and description text and the 46px row height are not in source (state files not opened).",
+    "main-dark/tree.txt:44 TaskRow2 taskId=\"t-pharmacy\" depth=0 @0,98 860x46 (46px high). tree.txt:46 Label weight=\"medium\" tone=\"primary\" text-[14px] (title line) @47,105. tree.txt:47 Label tone=\"secondary\" className=\"text-[12.5px] leading-4.25\" @47,122 (second line, 12.5px). The strings 'Pick up prescription' and 'Counter closes at 6' are visible in main-dark/shot.png. The tree records no text strings."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-075",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the secondary-line class (12.5px, leading-4.25, tone secondary) at TaskRow.tsx:400-402 but could not check the sample text or the 46px height. B recorded the 46px row height and the 12.5px secondary line in the tree. The sample strings are visible only in the screenshot."
+  },
+  {
+   "title": "Done task styling",
+   "trigger": "double-click the row (TaskRow.tsx:335-337 calls toggleDone)",
+   "context": "Done task, e.g. Post the parcel to Mum",
+   "result": "Done task title is in muted tone with a strikethrough. The checkbox is shown as done.",
+   "exact": [
+    {
+     "what": "done task",
+     "value": "Post the parcel to Mum"
+    },
+    {
+     "what": "done state",
+     "value": "done=true, tone muted"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 51-52",
+    "state:main-dark shot.png",
+    "main/src/components/TaskRow.tsx:389 (tone={task.done ? 'muted' : 'primary'}), :392 (className cn('strike', task.done && 'strike-on')), :335-337 (onDoubleClick calls toggleDone).",
+    "main-dark/shot.png shows the second row as 'Post the parcel to Mum' with a strikethrough, which matches the exact value. The feature's context reads 'Post the parent to Mum', which does not match. main-dark/tree.txt:50 TaskRow2 taskId=\"t-post\" @0,144 860x32. tree.txt:51 Check done=true (checkbox shown as done). tree.txt:52 Label tone=\"muted\" (muted title). The strikethrough is not in the tree className and is visible only in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-076",
+   "check": "corrected",
+   "check_notes": "A confirmed the muted tone and strike classes in source, and the double-click wiring at TaskRow.tsx:335-337. B's screenshot shows 'Post the parcel to Mum' struck through, so the context was corrected. The strikethrough appears in source as the strike-on class, not in the recording tree."
+  },
+  {
+   "title": "More button on each row",
+   "trigger": "click the more_horiz button at the right of a row",
+   "context": "Each task row",
+   "result": "Opens the row menu. The tooltip is More. The button also has an onDoubleClick handler (behaviour not recorded).",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "More"
+    },
+    {
+     "what": "icon",
+     "value": "more_horiz size 17 weight 300, variant ghostStrong, iconSize 17"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 48, 53, 58",
+    "main/src/components/TaskRow.tsx:458-462 (icon=\"more_horiz\", iconSize={17}, iconWeight={300}, variant=\"ghostStrong\", title=\"More\"), :463-469 onClick opens the menu, :470 onDoubleClick={(e) => e.stopPropagation()}.",
+    "Every task row has the More button: main-dark/tree.txt:48 (t-pharmacy), 53 (t-post), 58 (t-bike), 63 (t-keys), 70 (t-groceries), 75 (t-milk), 80 (t-bread), 85 (t-apples). Each is IconButton icon=\"more_horiz\" iconSize=17 iconWeight=300 variant=\"ghostStrong\" title=\"More\" onClick onDoubleClick. Icon at tree.txt:49 is size=17 weight=300. The feature's source list cites only lines 48, 53, 58, so it misses 63, 70, 75, 80 and 85. The 'each task row' claim includes subtask rows at depth=1. The menu contents and double-click behaviour are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-077",
+   "check": "corrected",
+   "edge_cases": [
+    "The onDoubleClick at TaskRow.tsx:470 only calls e.stopPropagation(), so a double-click on More does not reach the row's double-click toggle-done."
+   ],
+   "check_notes": "B confirmed a More button on all eight task rows, including depth-1 subtask rows. The feature's source citation lists only lines 48, 53 and 58, which misses 63, 70, 75, 80 and 85 in the recording. A's correction on the double-click edge case is from source. Menu contents are not recorded by B."
+  },
+  {
+   "title": "Subtask indentation",
+   "trigger": "none (observed)",
+   "context": "Subtasks of Buy groceries for the week",
+   "result": "Subtasks are indented one level (depth=1). Their checkbox is at x=44 (parent 20) and title at x=71 (parent 47). Subtask rows are 32px high.",
+   "exact": [
+    {
+     "what": "subtasks",
+     "value": "Oat milk (done), Sourdough loaf, Apples"
+    },
+    {
+     "what": "depth",
+     "value": "1"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 72-86",
+    "state:main-dark shot.png",
+    "main/src/components/TaskRow.tsx:352 (paddingLeft: depth * INDENT) and :478/:482 (children rendered with depth={depth + 1}) confirm the one-level nesting mechanism. The x=44 and x=71 positions, the 32px height and the subtask names are not verified in source.",
+    "main-dark/tree.txt:72 TaskRow2 taskId=\"t-milk\" depth=1 @0,270 860x32. tree.txt:73 Check done=true @44,277 16x16. tree.txt:74 Label @71,277. Parent t-groceries: tree.txt:66 Check @20,246 and tree.txt:67 Label @47,245. So the subtask checkbox is at x=44 (parent 20) and the title at x=71 (parent 47). Sibling subtask rows t-bread (tree.txt:77, 860x32) and t-apples (tree.txt:82, 860x32) are also 32px high. Titles 'Oat milk' (struck through), 'Sourdough loaf' and 'Apples' are visible in main-dark/shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-078",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the one-level nesting mechanism (paddingLeft depth * INDENT at TaskRow.tsx:352, children at depth+1 at :478 and :482). B recorded the x=44 checkbox, x=71 title and 32px subtask height in the recording. The x positions and height are not verified in source."
+  },
+  {
+   "title": "Parent row groups children",
+   "trigger": "none (observed)",
+   "context": "Parent row with three subtasks",
+   "result": "The parent row is 126px high and contains the three subtask rows.",
+   "exact": [
+    {
+     "what": "parent",
+     "value": "Buy groceries for the week"
+    },
+    {
+     "what": "row height",
+     "value": "126"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt line 65",
+    "main/src/components/TaskRow.tsx:478 and :482 render child rows inside the parent row. The 126px height and the parent title are not in source.",
+    "main-dark/tree.txt:65 TaskRow2 taskId=\"t-groceries\" depth=0 @0,238 860x126 (126px high). Its child rows are tree.txt:72 (t-milk), 77 (t-bread) and 82 (t-apples), so three subtasks. The title 'Buy groceries for the week' is visible in main-dark/shot.png. Badge at tree.txt:69 title=\"1 of 3 subtasks done\" is consistent with three subtasks."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-079",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed that child rows render inside the parent (TaskRow.tsx:478 and :482). B recorded the 126px parent row with three child rows and a '1 of 3 subtasks done' badge. The parent title and 126px height are from the recording only."
+  },
+  {
+   "title": "View control in stats footer",
+   "trigger": "click the tune icon at the bottom-left of the stats bar (TaskPane.tsx:538 onClick={toggle}, likely the same element; the recording records no click handler on ViewControl)",
+   "context": "Stats bar",
+   "result": "A view-control button with a tune icon, size 14 weight 300. Tooltip and behaviour are not recorded.",
+   "exact": [
+    {
+     "what": "icon",
+     "value": "tune size 14 weight 300"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 89-90",
+    "main/src/components/TaskPane.tsx:547 (<Icon name=\"tune\" size={14} weight={300} />) and :538 (onClick={toggle}), which is likely the same element. The bottom-left position is not verified.",
+    "main-dark/tree.txt:89 ViewControl @12,735 25x19, inside StatsBar (tree.txt:87 @0,729 860x32), so it is at bottom-left. tree.txt:90 Icon name=\"tune\" size=14 weight=300 @18,738. The icon values are exact. The ViewControl node has no onClick or title in the tree, unlike the other buttons, so the click trigger is not evidenced by the recording."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-080",
+   "check": "corrected",
+   "check_notes": "Icon values agree in both checks (tune, size 14, weight 300). B placed the control at 12,735 inside the StatsBar (0,729 860x32), so bottom-left is supported by the recording, while A could not verify the position. A found an onClick toggle at TaskPane.tsx:538 that is likely the same element, but B's tree shows no click handler on ViewControl, so the click wiring is not confirmed by the recording."
+  },
+  {
+   "title": "Typography",
+   "trigger": "none (observed)",
+   "context": "font-display is not a distinct display face: it resolves to the same system stack as --font-sans (tokens.css:123-124).",
+   "result": "Display font for the project name and empty-state title. Body text: 14px for task titles, 12.5px for descriptions and subtitles, 13px for tabs. Weight medium for titles and semibold for the project name.",
+   "exact": [
+    {
+     "what": "sizes",
+     "value": "14px (task titles, project name, TaskRow.tsx:390 and ProjectSwitcher.tsx:39), 12.5px (descriptions, TaskRow.tsx:402), 15px (empty-state title, EmptyState.tsx:42). 13px for tabs not verified in source; the recording shows 13px tabs (main-dark/tree.txt:14)."
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 11, 14, 46-47, 98-99",
+    "common-ui/styles/tokens.css:123-124 (--font-sans and --font-display both ui-sans-serif, system-ui, sans-serif); TaskRow.tsx:388 (weight medium), :390 (text-[14px]), :402 (text-[12.5px]); ProjectSwitcher.tsx:39 (font-display max-w-44 text-[14px]); common-ui/src/components/content/EmptyState.tsx:42 (font-display text-[15px]).",
+    "font-display: main-dark/tree.txt:11 project name Label weight=\"semibold\" className=\"font-display max-w-44 text-[14px]\"; tree.txt:98 empty-state title className=\"font-display text-[15px]\" weight=\"medium\". Sizes: 14px at tree.txt:11 and 46; 13px tabs at tree.txt:14; 12.5px descriptions and subtitles at tree.txt:47 and 99; 15px at tree.txt:98. Weight medium for titles at tree.txt:46; semibold for project name at tree.txt:11. main-default/tree.txt has identical lines."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-081",
+   "check": "corrected",
+   "check_notes": "Both agree on 14px, 12.5px and 15px. The 13px tab size is in B's recording only, and A did not verify it in source. A's source shows font-display is the same system stack as font-sans, so the font-display context was corrected. B noted main-default/tree.txt has identical lines."
+  },
+  {
+   "title": "Icon style",
+   "trigger": "none (observed)",
+   "context": "All icons",
+   "result": "Material Symbols. Default weight is not a fixed 300: when no weight is set, Icon uses var(--icon-wght), which is 350 in one theme and 300 in the other (tokens.css:100 and :115). Add button in search well uses weight 400 (TaskPane.tsx:250). Close icons on tabs use weight 500 (ListTabs.tsx:239). Active toggles use filled=true (TitleBar.tsx:130).",
+   "exact": [
+    {
+     "what": "weights",
+     "value": "explicit 300 on most icon buttons; unset icons use var(--icon-wght) (350 or 300 per theme); 400 (new task, TaskPane.tsx:250); 500 (tab close, ListTabs.tsx:239)"
+    }
+   ],
+   "sources": [
+    "state:main-dark tree.txt lines 12-43",
+    "common-ui/src/Icon.tsx:27 (weight unset uses var(--icon-wght, 350)) and :12 comment; common-ui/styles/tokens.css:100 (--icon-wght: 350) and :115 (--icon-wght: 300); TaskPane.tsx:250 (iconWeight={400} on add); ListTabs.tsx:239 (iconWeight={500} on delete); TitleBar.tsx:130 (filled={active}).",
+    "Default weight 300: most Icon lines, e.g. main-dark/tree.txt:12, 24, 36, 68, 90. Add in search well weight 400: tree.txt:43. Tab close icons weight 500: tree.txt:16, 19, 22. Active toggles filled=true: tree.txt:29-30 (right_panel_close, active=true, filled=true). Inactive toggles filled=false: tree.txt:26-27 and 32-33. The 'Material Symbols' font family is not recorded in tree.txt or meta.json, so that part is not checked."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-082",
+   "check": "corrected",
+   "check_notes": "Conflict on the default weight: B recorded unset icons at 300 in the main-dark recording (tree.txt:12, 24, 36, 68, 90), but source shows no fixed 300 default. Source decides: unset icons use var(--icon-wght), which is 350 or 300 depending on the theme. A did not map which theme gives which value, so the recording's 300 can only be matched to the 300 theme. Explicit weights 400, 500 and filled toggles agree. B did not check the Material Symbols font family."
+  },
+  {
+   "title": "Main window is independent of the tray mini bar",
+   "trigger": "none (stated design intent)",
+   "context": "Process split",
+   "result": "The main app is a separate process from the tray. The tray mini bar is an opaque card with no window vibrancy.",
+   "exact": [
+    {
+     "what": "port",
+     "value": "main :7420, tray :7421"
+    }
+   ],
+   "sources": [
+    "doc:architecture.md:20",
+    "doc:architecture.md:53",
+    "doc:README.md:22",
+    "common/src/lib.rs:27-28 (MAIN_PORT 7420, TRAY_PORT 7421); tray/src-tauri/src/lib.rs:193 (\"The mini bar is an opaque card now — no vibrancy\"); tray/src/index.css:15; .llm/architecture.md:31 (separate processes).",
+    "The cited sources are doc:architecture.md:20, :53 and doc:README.md:22. They are outside the folders named for this check, so I did not open them. Neither main-dark nor main-default tree.txt/meta.json shows port numbers, a tray process, or window vibrancy."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-083",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the ports (7420 and 7421), the opaque tray card with no vibrancy, and the separate processes from source. B could not check, since neither recording shows ports, a tray process or vibrancy."
+  },
+  {
+   "title": "Live refresh when the tray writes data",
+   "trigger": "tray capture writes data and POSTs /refresh",
+   "context": "Main window open",
+   "result": "The window reloads its data without user action.",
+   "exact": [
+    {
+     "what": "endpoint",
+     "value": "POST /refresh"
+    },
+    {
+     "what": "event",
+     "value": "refresh"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:32",
+    "doc:main-app.md:42",
+    "main/src-tauri/src/lib.rs:1046-1048 (POST /refresh emits \"refresh\"); tray/src-tauri/src/task.rs:44 (tray POSTs /refresh to MAIN_PORT).",
+    "The cited source is doc:main-app.md:32 and :42, which I did not open (outside the named inputs). main-dark/meta.json commands (lines 11-30) contain only boot-time calls (get_setting, list_projects, list_lists, all_tasks, list_hotkeys, boot_done, reveal_main). No POST /refresh or refresh event is recorded, and no tray write occurred."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-084",
+   "check": "corrected",
+   "edge_cases": [
+    "If the main app is not running, the change is only persisted and shows the next time main opens (.llm/architecture.md:47)."
+   ],
+   "check_notes": "A confirmed the POST /refresh emit (main lib.rs:1046-1048) and the tray POST to MAIN_PORT (task.rs:44). A's added edge case for a closed main app is from architecture.md:47. B could not check, since the recording has only boot-time commands and no refresh event."
+  },
+  {
+   "title": "Open Taskscape from the tray focuses the window",
+   "trigger": "tray menu item Open Taskscape (inferred from doc)",
+   "context": "Main window hidden, minimised or behind",
+   "result": "Window is unminimized, shown and focused.",
+   "exact": [
+    {
+     "what": "endpoint",
+     "value": "POST /focus"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:33",
+    "main/src-tauri/src/lib.rs:1052-1062 (POST /focus: unminimize, show, set_focus); tray/src-tauri/src/lib.rs:63 (tray posts /focus); tray/src-tauri/src/lib.rs:205 (menu label \"Open Taskscape\", id open_main).",
+    "The cited source is doc:main-app.md:33, which I did not open. main-dark/meta.json:30 has reveal_main at boot, which is not POST /focus. No tray menu interaction, window hidden/minimised state, or focus change is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-085",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the /focus handler (unminimize, show, set_focus), the tray post, and the 'Open Taskscape' menu label from source. B could not check. The only related recorded call is reveal_main at boot, which is not POST /focus."
+  },
+  {
+   "title": "Quit Taskscape from the tray closes the main window",
+   "trigger": "tray menu item Quit Taskscape (inferred from doc)",
+   "context": "Main app running",
+   "result": "The main app exits.",
+   "exact": [
+    {
+     "what": "endpoint",
+     "value": "POST /quit"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:34",
+    "main/src-tauri/src/lib.rs:1064-1070 (POST /quit calls app.exit(0)); tray/src-tauri/src/lib.rs:87 (quit posts /quit to MAIN_PORT); :206 (menu label \"Quit Taskscape\").",
+    "The cited source is doc:main-app.md:34, which I did not open. No POST /quit, tray menu action, or app exit appears in main-dark/meta.json or main-default/meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-086",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the /quit handler calling app.exit(0), the tray post to MAIN_PORT, and the 'Quit Taskscape' label from source. B could not check, since no quit action is recorded."
+  },
+  {
+   "title": "Shortcut editing in Settings",
+   "trigger": "Settings > Shortcuts, set or reset a hotkey (menu path from doc)",
+   "context": "Settings window",
+   "result": "Hotkeys can be set or reset, and listed. Commands are list_hotkeys, set_hotkey and reset_hotkey.",
+   "exact": [
+    {
+     "what": "menu path",
+     "value": "Settings ▸ Shortcuts"
+    },
+    {
+     "what": "commands",
+     "value": "list_hotkeys, set_hotkey, reset_hotkey"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:26",
+    "main/src-tauri/src/lib.rs:697 (list_hotkeys), :707 (set_hotkey), :714 (reset_hotkey), registered at :1207-1209; main/src/windows/settings/shortcutsPane.tsx:29 (pane label 'Shortcuts'). The \"Settings ▸ Shortcuts\" path appears only in .llm/main-app.md:26, not as a code string.",
+    "The cited source is doc:main-app.md:26, which I did not open. main-dark/meta.json:26 and :28 show list_hotkeys (sent at boot). set_hotkey and reset_hotkey do not appear in either meta.json. The Settings button is at main-dark/tree.txt:31-33 (title=\"Settings\"), but no 'Shortcuts' submenu or Settings window interaction is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-087",
+   "check": "corrected",
+   "check_notes": "A found the three hotkey commands (main lib.rs:697, 707, 714) and the 'Shortcuts' pane label (shortcutsPane.tsx:29). The 'Settings ▸ Shortcuts' path appears only in docs, not in code. B recorded list_hotkeys at boot and the Settings button, but no set or reset calls and no Settings window interaction."
+  },
+  {
+   "title": "Closing Settings applies hotkeys to both apps",
+   "trigger": "close the Settings window",
+   "context": "After editing shortcuts",
+   "result": "Main emits hotkeys-changed to its webview and POSTs /reload-hotkeys to the tray on :7421 so both apps re-apply bindings.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "hotkeys-changed"
+    },
+    {
+     "what": "endpoint",
+     "value": "POST /reload-hotkeys to :7421"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:26",
+    "main/src-tauri/src/lib.rs:1147-1149 (on settings window Destroyed, app.emit_to(\"main\", \"hotkeys-changed\", ())); :1150-1156 (POST /reload-hotkeys to TRAY_PORT 7421). Comment at :1145-1146 says this fires once per close.",
+    "The cited source is doc:main-app.md:26, which I did not open. No Settings window close, hotkeys-changed event, or POST /reload-hotkeys appears in main-dark/meta.json or main-default/meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-088",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the Destroyed handler emitting hotkeys-changed and posting /reload-hotkeys to TRAY_PORT 7421 (lib.rs:1147-1156). B could not check, since no settings close is recorded."
+  },
+  {
+   "title": "Last active list is remembered",
+   "trigger": "choose a list (set_active_list, trigger not recorded)",
+   "context": "Any list selected",
+   "result": "The last active list is written as last_active_list. The tray reads it to decide where captures go. Persists between launches.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "set_active_list"
+    },
+    {
+     "what": "setting key",
+     "value": "last_active_list"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:25",
+    "main/src-tauri/src/lib.rs:660-663 (set_active_list calls set_setting(\"last_active_list\", &id)); tray/src-tauri/src/task.rs:8 (ACTIVE_LIST_KEY = \"last_active_list\"); main/src/stores/bootstrap.ts:27 (reads it at startup).",
+    "The cited source is doc:main-app.md:25, which I did not open. main-dark/meta.json has list_lists and all_tasks, and get_setting calls, but no set_active_list command. last_active_list is not recorded. The active tab (Errands, tree.txt:13-14) is only shown in the tree, not as a write."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-089",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the set_active_list write to last_active_list (lib.rs:660-663), the tray key constant, and the startup read (bootstrap.ts:27). B could not check, since no set_active_list call is recorded. The Errands tab is shown in the tree but not as a write."
+  },
+  {
+   "title": "Attachments on tasks",
+   "trigger": "not recorded (commands only)",
+   "context": "Task preview",
+   "result": "Commands exist to list attachments, add a reference, add a copy, delete an attachment and open one. Attachments are copied into ~/.taskscape/attachments/ or referenced.",
+   "exact": [
+    {
+     "what": "commands",
+     "value": "list_attachments, add_reference, add_copy, delete_attachment, open_attachment"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:24",
+    "doc:architecture.md:36",
+    "main/src-tauri/src/lib.rs:563 (list_attachments), :572 (add_reference), :585 (add_copy), :598 (delete_attachment), :722 (open_attachment); common/src/models.rs:72 and common/src/attachments.rs:21 (copied into ~/.taskscape/attachments/); referenced otherwise per attachments.rs:41 (location \"attachments/<name>\").",
+    "The cited sources are doc:main-app.md:24 and doc:architecture.md:36, which I did not open. No attachment command (list_attachments, add_reference, add_copy, delete_attachment, open_attachment) appears in either meta.json. The preview shows only the EmptyState (tree.txt:96-99), so no attachment UI is recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-090",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed all five attachment commands and the copy and reference storage (lib.rs, models.rs, attachments.rs). B could not check, since no attachment command or attachment UI is recorded; the preview shows only the empty state."
+  },
+  {
+   "title": "Task due dates",
+   "trigger": "not recorded (command only)",
+   "context": "Task",
+   "result": "A set_task_due command exists. The UI for setting a due date is not recorded.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "set_task_due"
+    }
+   ],
+   "sources": [
+    "doc:main-app.md:23",
+    "No set_task_due symbol in the reference code. The only hit is .llm/main-app.md:23 (documentation). The command is not registered in main/src-tauri/src/lib.rs invoke handler (:1161 onward) per the grep.",
+    "The cited source is doc:main-app.md:23, which I did not open. set_task_due does not appear in either meta.json. No due-date UI appears in the tree or shot."
+   ],
+   "system": false,
+   "uncertain": true,
+   "found_by": [
+    "B"
+   ],
+   "id": "F18-091",
+   "check": "disputed",
+   "check_notes": "Checker A found no set_task_due symbol in the code and no invoke-handler registration (main lib.rs:1161 onward). The only mention is in main-app.md:23, so the documented command is not in the reference code. B could not check, and neither recording shows set_task_due or a due-date UI. The feature is disputed by source and has no recorded support."
+  }
+ ]
+}

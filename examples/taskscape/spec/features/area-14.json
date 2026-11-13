@@ -1,0 +1,2078 @@
+{
+ "area": 14,
+ "name": "Capture bar, native side",
+ "tier": "ordinary",
+ "counts": {
+  "A": 48,
+  "B": 44,
+  "critic_issues": null,
+  "merged": 60
+ },
+ "dropped": [
+  {
+   "title": "Hide command from the bar (A)",
+   "reason": "Duplicate: the hide_mini command and its park behaviour are already listed in the merged 'Dismiss hides and parks the bar' entry."
+  },
+  {
+   "title": "Blur ignored during reveal settle (B)",
+   "reason": "Duplicate: the 500 ms REVEAL_GRACE blur exemption is already listed in the merged 'Click-away dismisses the bar' entry."
+  },
+  {
+   "title": "Capture bar summons while an overlapping capture is running (B)",
+   "reason": "Duplicate: identical to the merged 'Second capture trigger is ignored while a capture is running' entry."
+  },
+  {
+   "title": "Screen capture permission failure (B)",
+   "reason": "Duplicate: same failure path as the merged 'Capture failure reports an error to the bar' entry; its example cause is kept there in exact."
+  },
+  {
+   "title": "Tray icon menu items (B)",
+   "reason": "Duplicate: its Open and Quit items are covered by the merged tray menu entries, and its left-click claim is kept as a recorded conflict in 'Tray icon left click shows a menu'."
+  },
+  {
+   "title": "Open Taskscape from the tray menu (B)",
+   "reason": "Duplicate: identical to the merged 'Tray menu item Open Taskscape' entry."
+  }
+ ],
+ "features": [
+  {
+   "title": "Global toggle hotkey summons or dismisses the capture bar",
+   "trigger": "Press the global toggle_capture_bar combo (the default combo is defined in the common crate, not in these files). Plugin handler fires on key press only.",
+   "context": "The visible check runs before the main-focus check: if the bar is visible, main focus is ignored and capture-enter is emitted (lib.rs:120-132). Main-focus routing applies only when the bar is hidden (lib.rs:133-134).",
+   "result": "If the bar is visible, a capture-enter event is emitted to the bar webview, which decides between submitting from the notes editor and dismissing from the title. If the bar is hidden and main is focused, POST /new-task goes to main (falls back to toggle_mini if main is unreachable). Otherwise the bar is toggled at the cursor: a hidden bar appears under the mouse cursor, a visible bar hides.",
+   "exact": [
+    {
+     "what": "default hotkey (docs)",
+     "value": "⌘Return = Cmd + Enter (common/src/hotkeys.rs:333, key Enter)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:109-137",
+    "tray/src-tauri/src/lib.rs:43-56",
+    "doc:tray-app.md:98",
+    "doc:tray-app.md:95-96",
+    "doc:architecture.md:44",
+    "A: lib.rs:109-112 (Pressed only), 120-137 (toggle branch), 131 (capture-enter), 134 (/new-task + toggle_mini fallback), 43-55 (route_to_main_or), 204 (toggle_capture_bar), 218-222 (tooltip); default combo from common/src/hotkeys.rs:330-334 (toggle_capture_bar = Cmd + Enter, Scope::Global); OS refusal log at hotkeys.rs:173-176.",
+    "B: tray-app.md:98 (toggle_capture_bar, default ⌘Return, toggle_mini), :92 (two Global-scope commands), :95-96 (only on Pressed), :105-106 (OS-refused combo logged, previous registration kept), :91-94 (registered at startup and on POST /reload-hotkeys, tooltip updated), architecture.md:44 (⌘Return shows mini bar at cursor). Not in docs: capture-enter event, POST /new-task, main-focus routing, and the visible/hidden decision."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "When the POST to main fails, the stale main_focused flag is cleared before the fallback runs (lib.rs:52).",
+    "On a refused OS registration the log line is \"[taskscape-tray] failed to register {label} hotkey: {e}\" with label capture-bar or screenshot (hotkeys.rs:174); the old registration is re-registered if that succeeds (hotkeys.rs:175).",
+    "The tray tooltip reads \"Taskscape — press {glyphs} to capture\", or just \"Taskscape\" when toggle_capture_bar is unbound (hotkeys.rs:218-221).",
+    "Hotkeys are (re)registered at startup and on POST /reload-hotkeys from main, and the tray tooltip is updated to match (doc:tray-app.md:91-94).",
+    "Global shortcut never reaches the focused bar webview, which is why the handler forwards the event."
+   ],
+   "notes": "Comments in lib.rs call this the Cmd+Enter combo; CLAUDE.md calls it Cmd+Return. Exact default key is not set in these files; the docs give ⌘Return as default, user-customizable in main's Settings ▸ Shortcuts (doc:tray-app.md:98). The hotkey value shown is the default only.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-001",
+   "check": "corrected",
+   "check_notes": "A corrected the visible-vs-main-focus order against lib.rs:120-134: the visible check runs first. B's docs (tray-app.md:98) have no main-focus routing or visible/hidden decision, so they add no conflicting value. B's edge cases are merged in; B's OS-refused edge case duplicates A's more exact one (hotkeys.rs:174-175), so A's wording is kept."
+  },
+  {
+   "title": "Toggle hides a visible bar and shows a hidden one",
+   "trigger": "Global toggle hotkey with no main focus, or a failed main POST (fallback) on the main-focused path. There is no tray toggle path in these files.",
+   "context": "Bar visibility decides the action.",
+   "result": "If the bar is hidden: show at the cursor. If visible, the hotkey does not reach toggle_mini: lib.rs:126-132 emits capture-enter to the webview instead, and the webview decides. toggle_mini's dismiss branch is reached only via the fallback path, which runs only when the bar is hidden (lib.rs:126, 134).",
+   "exact": [],
+   "sources": [
+    "tray/src-tauri/src/window.rs:70-80",
+    "tray/src-tauri/src/lib.rs:133-137",
+    "A: window.rs:70-80 (toggle_mini: visible → dismiss, else show_mini at cursor), window.rs:72-74 (missing main window → return); lib.rs:133-137 (toggle_mini called from hotkey path); lib.rs:205-217 (tray menu has only Open Taskscape and Quit, no toggle item).",
+    "B: tray-app.md:98 supports a toggle of the mini bar (toggle_mini). The tray menu documents only Open Taskscape and Quit Taskscape (tray-app.md:125-126) and left-click does not open the menu (tray-app.md:127), so no tray toggle path is documented. The no-main-window edge case is not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "If the main window is missing, nothing happens."
+   ],
+   "notes": "Docs (B) describe the same visible/hidden toggle under the toggle combo; kept here as the window-level branch with its missing-main edge case.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-002",
+   "check": "corrected",
+   "check_notes": "Both checkers agree there is no tray toggle path. A's code (window.rs:70-80, lib.rs:205-217) decides the result: visible bars are not dismissed by this path. B's docs-based trigger is a subset of A's trigger, so A's trigger is kept."
+  },
+  {
+   "title": "Screenshot global hotkey attaches a screenshot",
+   "trigger": "Press the global screenshot_capture combo (default defined in the common crate). Press only. Docs give the default as ⌘⇧Return, user-customizable.",
+   "context": "When main is focused the shot is routed to main; otherwise handled by the tray. Global shortcut, Pressed only.",
+   "result": "If main is focused, POST /attach-screenshot goes to main, with capture_and_show on the main thread if main is unreachable (lib.rs:139-140, 43-55). Otherwise capture_and_show runs (window.rs:301-320). In full-screen mode, a hidden bar is summoned instantly (window.rs:314-318). In region mode, a hidden bar is not revealed; it is deferred until the selection is finalized (window.rs:306-313). An already-open bar is reused (window.rs:318, spawn_capture). A background capture then starts and the shot is attached when it lands (capture.rs:95-125).",
+   "exact": [
+    {
+     "what": "main route",
+     "value": "/attach-screenshot"
+    },
+    {
+     "what": "default hotkey (docs)",
+     "value": "⌘⇧Return"
+    },
+    {
+     "what": "hotkey command id",
+     "value": "screenshot_capture"
+    },
+    {
+     "what": "handler",
+     "value": "capture_and_show"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:138-144",
+    "tray/src-tauri/src/lib.rs:118-119",
+    "doc:tray-app.md:99-103",
+    "doc:tray-app.md:71-72",
+    "A: lib.rs:110 (Pressed only), 138-143 (screenshot routing), 43-55 (fallback capture_and_show on main thread), window.rs:301-320 (capture_and_show), common/src/hotkeys.rs:335-339 (screenshot_capture = Cmd + Shift + Enter), capture.rs:95-98 (spawn_capture_with).",
+    "B: tray-app.md:99 (screenshot_capture, default ⌘⇧Return, capture_and_show), :89-90 (user-customizable), :95-96 (Pressed only), :100-103 (summons bar with spinner if hidden, reuses if open, background capture, attaches on landing), :117 and :186 (each trigger adds a shot, not a toggle), :79-80 (overlapping captures no-op). The /attach-screenshot route and main-focus routing are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Each trigger adds another shot; it is not a toggle (doc:tray-app.md:117, 186)",
+    "Overlapping captures are a no-op while one is in flight (doc:tray-app.md:79-80)"
+   ],
+   "notes": "Comment at lib.rs:118-119 describes this combo as Cmd+Shift+Enter; the window.rs comments call the same path Cmd+Shift+Return; docs say ⌘⇧Return. The exact combo is not set in these files.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-003",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:99-103), but the docs do not cover main-focus routing or the region-mode deferral. A's code evidence decides: the region-mode case does not summon a hidden bar, so B's 'summons bar with spinner if hidden' holds only for full-screen mode."
+  },
+  {
+   "title": "Cmd+Shift+Return style capture in full-screen mode reveals the bar first",
+   "trigger": "Screenshot hotkey pressed (or the path capture_and_show) while screenshot mode is full-screen and main is not focused. Press ⌘⇧Return while the bar is hidden.",
+   "context": "Full-screen capture mode (region_mode() false). Bar hidden.",
+   "result": "If the bar is hidden it is summoned instantly at the cursor (show_mini), then a full-screen capture starts. If already visible, it is just captured. Docs: the bar is shown first at the cursor, then the capture runs.",
+   "exact": [
+    {
+     "what": "handler",
+     "value": "capture_and_show"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:297-320",
+    "doc:tray-app.md:72",
+    "doc:tray-app.md:100",
+    "A: window.rs:301-320 (else branch: show_mini if !visible at 315-317, then spawn_capture at 318), window.rs:306 (region_mode() gate), window.rs:297-300 (doc comment), lib.rs:142 (no-main-focus path calls capture_and_show).",
+    "B: tray-app.md:72 and :100 (capture_and_show shows the bar first if it was hidden), :37 (bar placed at cursor). Full-screen mode check, region_mode() and show_mini are not named in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Doc comment at window.rs:297 names the combo Cmd+Shift+Return. Docs (B) do not qualify the reveal by capture mode; the full-screen qualifier is from the code.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-004",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the claim exact. B's docs (tray-app.md:72, :100) state that capture_and_show shows a hidden bar first without a mode qualifier; A's code adds the region_mode() gate, which B could not see."
+  },
+  {
+   "title": "Screenshot path in region mode defers revealing a hidden bar",
+   "trigger": "Screenshot hotkey pressed while screenshot mode is region and the bar is hidden.",
+   "context": "Region capture mode, bar closed.",
+   "result": "The bar is not shown during the selection so it does not cover the screen. The capture runs with reveal_on_success set; once a selection is finalized, the bar is revealed at the cursor. If the user cancels, the bar stays hidden.",
+   "exact": [],
+   "sources": [
+    "tray/src-tauri/src/window.rs:297-313",
+    "tray/src-tauri/src/capture.rs:126-137",
+    "A: window.rs:306-313 (region branch: reveal_on_success = !visible, dim = visible); capture.rs:124-131 (reveal only in the Ok(Some) arm, via run_on_main_thread → reveal_mini); capture.rs:133-137 (cancel: no reveal); capture.rs:138-141 (error arm: no reveal).",
+    "B: No docs line describes a deferred reveal in region mode. tray-app.md:72 and :100 state unconditionally that capture_and_show shows the bar first if hidden, with no mode qualifier, which conflicts with this feature's claim. Unresolved."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "A failed capture (screenshot-error path) also leaves the deferred bar hidden; the reveal runs only on a successful capture (capture.rs:124-131, 138-141).",
+    "A cancelled capture (screenshot-cancelled path) also leaves the deferred bar hidden (capture.rs:133-137)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-005",
+   "check": "corrected",
+   "check_notes": "A's code (window.rs:306-313, capture.rs:124-141) confirms the deferred reveal in region mode with an extra edge case. B could not check; the docs at tray-app.md:72 and :100 state unconditionally that capture_and_show shows the bar first, which conflicts with the region-mode deferral. The code decides."
+  },
+  {
+   "title": "Region mode dims an already-open bar to 25% during the selection",
+   "trigger": "Screenshot hotkey pressed while screenshot mode is region and the bar is visible; or the bar's capture button in region mode.",
+   "context": "Region capture mode.",
+   "result": "The bar fades to 25% opacity for the duration of the grab, then returns to full opacity on any exit (success, cancel, error, or panic).",
+   "exact": [
+    {
+     "what": "dim alpha",
+     "value": "0.25"
+    },
+    {
+     "what": "restored alpha",
+     "value": "1.0"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:297-313",
+    "tray/src-tauri/src/window.rs:286-295",
+    "tray/src-tauri/src/capture.rs:103-109",
+    "tray/src-tauri/src/capture.rs:162-173",
+    "tray/src-tauri/src/setup.rs:109-127",
+    "A: capture.rs:103-109 (dim to 0.25 when ui.dim_during_capture, macOS cfg at 105), capture.rs:162-173 (OpacityRestore drops to 1.0 on any exit), setup.rs:109-127 (set_window_alpha: fire-and-forget hop to main thread), window.rs:306-313 and 287-295 (dim flags).",
+    "B: tray-app.md contains no mention of dimming, opacity, or the 0.25 / 1.0 alpha values. Nothing in the docs shows this behaviour either way."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Dim and restore are applied via run_on_main_thread and are fire-and-forget, so they land asynchronously (setup.rs:109-119).",
+    "The dim is set only when dim_during_capture is true: the hotkey path when the bar is visible (window.rs:310-312), and the capture button when region_mode() is true (window.rs:292)."
+   ],
+   "notes": "Docs (B) say the bar stays in place while the grab runs; this is consistent with the dim in region mode, which only changes opacity.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-006",
+   "check": "corrected",
+   "check_notes": "A's code confirms the dim/restore behaviour with extra edge cases. B could not check; the docs do not mention dimming or the 0.25 / 1.0 alpha values."
+  },
+  {
+   "title": "Capture button in the bar takes a screenshot and attaches it",
+   "trigger": "Click the bar's screenshot button (invokes capture_and_attach). Docs: the footer screenshot ghost button, or ⌘⇧Return.",
+   "context": "Bar is visible. In full-screen mode the bar is not dimmed; in region mode it is dimmed to 25% while selecting.",
+   "result": "Starts a capture with no bar reveal. Each click adds another shot only when no capture is in flight; a click during an in-flight capture is ignored (capture.rs:96-97).",
+   "exact": [
+    {
+     "what": "dim during capture",
+     "value": "region_mode()"
+    },
+    {
+     "what": "hint",
+     "value": "⌘⇧⏎"
+    },
+    {
+     "what": "in-flight label",
+     "value": "Capturing …"
+    },
+    {
+     "what": "button role",
+     "value": "screenshot ghost button"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:281-295",
+    "doc:tray-app.md:15",
+    "doc:tray-app.md:183-186",
+    "doc:tray-app.md:71-72",
+    "A: window.rs:286-295 (capture_and_attach: reveal_on_success false, dim_during_capture region_mode()); capture.rs:96-97 (a second request while in flight returns early); capture.rs:99 (screenshot-pending). Idle label, hint text, in-flight label, and button role are frontend-side and not in these files.",
+    "B: tray-app.md:15 (footer screenshot ghost button, ⌘⇧⏎ hint), :71 (button invokes capture_and_attach), :117 (capture_and_attach, each trigger adds a shot), :74-75 (bar stays put during capture), :184 (spinner labelled Capturing …), :185 (Capture failed), :186 (one capture per trigger), :157-158. Dim-in-region-mode and no-reveal claims beyond :74-75 are not stated in the docs. Idle label not given (:183-186 consistent)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "A click while a capture is in flight is a no-op (capture.rs:96-97)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-007",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:74-75, :117, :186), which state each trigger adds a shot. A's code adds that a click during an in-flight capture is ignored (capture.rs:96-97) and that the bar is not revealed. The code decides on those points. Idle label, hint text and button role are frontend-side and not verified by A."
+  },
+  {
+   "title": "Screenshot capture mode: full-screen or interactive region",
+   "trigger": "User picks the screenshot_mode setting (outside these files).",
+   "context": "Read on each capture.",
+   "result": "Region mode uses an interactive selection; otherwise a full-screen grab is taken.",
+   "exact": [
+    {
+     "what": "region value",
+     "value": "screenshot::CaptureMode::Region"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:53-56",
+    "tray/src-tauri/src/capture.rs:79-80",
+    "A: capture.rs:53-56 (region_mode compares screenshot::CaptureMode::current() to CaptureMode::Region), capture.rs:79-80 (doc comment: full-screen or interactive region per the screenshot_mode setting). The actual dispatch between full-screen and region capture is in the common crate's screenshot::capture, not in these files.",
+    "B: tray-app.md and architecture.md do not mention the screenshot_mode setting, CaptureMode, or a Region value."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "The setting key screenshot_mode is named only in a doc comment; its storage is in the common crate.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-008",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed region_mode() at capture.rs:53-56 and the doc comment at capture.rs:79-80. The dispatch between full-screen and region capture is in the common crate and was not checked. B could not check: the docs do not mention screenshot_mode, CaptureMode or Region."
+  },
+  {
+   "title": "Second capture trigger is ignored while a capture is running",
+   "trigger": "Press the screenshot hotkey or click the capture button again while a capture is in flight.",
+   "context": "Any capture mode.",
+   "result": "The second request is a no-op. The flag clears when the capture thread ends, including after error or panic.",
+   "exact": [
+    {
+     "what": "guard",
+     "value": "capturing AtomicBool, released by CaptureFlag on drop"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:35-41",
+    "tray/src-tauri/src/capture.rs:43-51",
+    "tray/src-tauri/src/capture.rs:95-98",
+    "doc:tray-app.md:79-80",
+    "A: capture.rs:35-41 (capturing AtomicBool), capture.rs:43-51 (CaptureFlag clears on drop), capture.rs:93-98 (spawn_capture_with returns early when already capturing; doc says \"this is a no-op\"), capture.rs:36-37 (doc: \"a second trigger is ignored until the first finishes\"), capture.rs:102 (flag guard created inside the thread).",
+    "B: tray-app.md:79-80 (capturing AtomicBool released by the CaptureFlag RAII guard, even on panic; overlapping captures are a no-op). Silent ignore is consistent with the docs' no-op wording."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The silent ignore is stated in the code's own doc comments (capture.rs:36-37, 93-94), not only inferred from the docs."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-009",
+   "check": "corrected",
+   "check_notes": "B found the claim exact from the docs (tray-app.md:79-80). A confirmed it in code and added that the silent ignore is stated in the code's own doc comments."
+  },
+  {
+   "title": "Spinner state while a capture is pending",
+   "trigger": "Any capture starts.",
+   "context": "Emitted once when a capture begins.",
+   "result": "Event screenshot-pending is emitted so the button shows a spinner labelled Capturing … while the grab runs; the bar stays on screen in place.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "screenshot-pending"
+    },
+    {
+     "what": "spinner label",
+     "value": "Capturing …"
+    },
+    {
+     "what": "component",
+     "value": "Spinner (mini-bar palette)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:99",
+    "tray/src-tauri/src/capture.rs:81-84",
+    "doc:tray-app.md:141-142",
+    "doc:tray-app.md:74-75",
+    "doc:tray-app.md:184",
+    "A: capture.rs:99 (window.emit(\"screenshot-pending\", ()) before the thread spawn, once per capture), capture.rs:81-84 (doc). The spinner label \"Capturing …\" and the \"Spinner (mini-bar palette)\" component are not in these files (frontend), so they are unverified here.",
+    "B: tray-app.md:74-75 (emits screenshot-pending, background thread, bar stays put), :141-142 (screenshot-pending, button shows a spinner), :184 (spinner labelled Capturing …), :18 (Spinner.tsx, mini-bar palette). Emission-once wording is consistent with 'emits'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-010",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. A could not verify the spinner label or component, which are frontend, and B's docs cover them (tray-app.md:184, :18)."
+  },
+  {
+   "title": "Successful capture emits the PNG path",
+   "trigger": "A capture completes with a file.",
+   "context": "Full-screen or region.",
+   "result": "Event screenshot-captured is emitted with the PNG file path as payload; the frontend attaches it to the draft and the spinner is removed.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "screenshot-captured"
+    },
+    {
+     "what": "payload",
+     "value": "PNG path string"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:123-125",
+    "doc:tray-app.md:143-144",
+    "doc:tray-app.md:183",
+    "A: capture.rs:124-125 (emit \"screenshot-captured\" with path.to_string_lossy() as a String payload). The PNG type is determined by the common crate's screenshot::capture, not checked here. Frontend attach and spinner removal not in these files.",
+    "B: tray-app.md:143-144 (screenshot-captured, payload PNG path, attach it and drop the spinner), :183."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-011",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. The PNG type comes from the common crate and was not checked by A."
+  },
+  {
+   "title": "Region selection cancelled clears the spinner silently",
+   "trigger": "Esc during a region grab, or an empty selection.",
+   "context": "Region mode.",
+   "result": "Event screenshot-cancelled is emitted; no error is shown. A deferred bar stays hidden.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "screenshot-cancelled"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:133-137",
+    "A: capture.rs:133-137 (Ok(None) → emit \"screenshot-cancelled\", no error, deferred bar stays hidden since no reveal call). Esc is named only in the comment at capture.rs:84 and 135; key handling is outside these files.",
+    "B: tray-app.md:141-146 lists only screenshot-pending, screenshot-captured and screenshot-error. The screenshot-cancelled event, the Esc handling and the empty-selection case are not in the docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Esc is named in the comment; the key handling itself is in screenshot-common, not these files."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-012",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the cancel path in code (capture.rs:133-137). B could not check: the docs list only screenshot-pending, screenshot-captured and screenshot-error."
+  },
+  {
+   "title": "Capture failure reports an error to the bar",
+   "trigger": "screenshot::capture returns an error. The docs give Screen Recording permission as an example cause (e.g.), not as the only cause (tray-app.md:145-146).",
+   "context": "Any mode.",
+   "result": "A line is printed to stderr as [taskscape-tray] screenshot failed: followed by the error, and event screenshot-error is emitted with the message. The screenshot button briefly shows Capture failed, then returns to its previous state.",
+   "exact": [
+    {
+     "what": "stderr line on error",
+     "value": "[taskscape-tray] screenshot failed: {e}"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:138-141",
+    "doc:tray-app.md:145-146",
+    "doc:tray-app.md:185",
+    "A: capture.rs:138-141 (eprintln!(\"[taskscape-tray] screenshot failed: {e}\") and emit \"screenshot-error\" with e); the stderr prefix matches exactly, including the trailing space. The \"Capture failed\" button label and the Screen Recording example are not in these files.",
+    "B: tray-app.md:145-146 (screenshot-error, payload message, e.g. Screen Recording permission), :185 (button briefly surfaces 'Capture failed'). The stderr prefix is not in the docs. The docs say 'e.g. Screen Recording permission', not 'missing'."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "On error the deferred region-mode bar is not revealed (reveal runs only in the Ok(Some) arm, capture.rs:124-131)."
+   ],
+   "notes": "Duration of the 'briefly' display is not given; 'then returns' is inferred from the docs. The permission cause is only an example from the docs.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-013",
+   "check": "corrected",
+   "check_notes": "A confirmed the stderr prefix in code, including the trailing space. B found the docs give 'e.g. Screen Recording permission' as an example cause, not as a fixed trigger. A notes that the Screen Recording example is not in these files, so the docs are the only source for it."
+  },
+  {
+   "title": "Bar is excluded from the capture itself",
+   "trigger": "Any tray-initiated capture (macOS). Docs: the bar is hidden from the tray's own shot only.",
+   "context": "During the grab only. The grab runs on a background thread.",
+   "result": "The bar's sharing type is set to None before the grab, then the thread sleeps 60 ms so the window server commits the exclusion. The bar is restored to ReadOnly afterwards, even on error or panic, so OS tools and main can capture it again. The bar stays visible in OS screenshots (⌘⇧4) and in screenshots taken by the main app.",
+   "exact": [
+    {
+     "what": "sleep before grab",
+     "value": "60 ms"
+    },
+    {
+     "what": "exclusion sharing type",
+     "value": "NSWindowSharingType None (0)"
+    },
+    {
+     "what": "restored sharing type",
+     "value": "ReadOnly (1)"
+    },
+    {
+     "what": "block timeout",
+     "value": "500 ms"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:110-122",
+    "tray/src-tauri/src/capture.rs:146-160",
+    "tray/src-tauri/src/setup.rs:147-187",
+    "doc:tray-app.md:64-70",
+    "doc:tray-app.md:84-85",
+    "doc:tray-app.md:60",
+    "A: capture.rs:110-122 (set_sharing_type(false,true) → None (0); sleep 60 ms at capture.rs:120; SharingRestore to ReadOnly at capture.rs:121), capture.rs:146-160 (restore on drop, so also on error/panic), setup.rs:162-164 (None=0, ReadOnly=1), setup.rs:182-185 (block with recv_timeout 500 ms), lib.rs:182-185 (permanent exclusion deliberately not applied).",
+    "B: tray-app.md:64-67 (NSWindowSharingType flipped to None only for the grab, restored to default ReadOnly right after, even on error or panic), :68-70 (bar stays visible in ⌘⇧4 shots and main-app screenshots; hidden only from the tray's own shot), :82-85 (bar deliberately not excluded at setup), :59-60. The 60 ms sleep, the 500 ms block timeout and the numeric values 0 and 1 are not in the docs; the lib.rs:182-185 edge-case reference is code, not doc."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Permanent exclusion is deliberately not applied (lib.rs:182-185)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-014",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. The numeric values (0, 1, 60 ms, 500 ms) are code-only; B noted they are not in the docs and A verified them in code."
+  },
+  {
+   "title": "Show at cursor with anchor side chosen",
+   "trigger": "Global toggle hotkey while hidden (no main focus), or reveal after a region grab. Also the Screenshot hotkey while hidden in full-screen mode only (window.rs:315-317). There is no tray toggle path in these files.",
+   "context": "Window is parked off-screen while hidden; it moves to the cursor before being shown. The bar is hidden (parked) before summon.",
+   "result": "The bar is positioned, focused, pinned to the active Space, and the webview is told the anchor edge via mini-shown with value top or bottom. The bar is placed before being shown, so no stale frame flashes at the old position.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "mini-shown"
+    },
+    {
+     "what": "payload values",
+     "value": "top | bottom"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:30-60",
+    "doc:tray-app.md:33",
+    "doc:tray-app.md:37",
+    "doc:tray-app.md:23",
+    "A: window.rs:30-60 (show_mini: set_position, then show, set_focus, order_front_regardless, emit mini-shown with anchor.as_str()), window.rs:111-116 (\"top\"/\"bottom\"), window.rs:33-39 (cursor_anchor None → VAnchor::Top, position not set), window.rs:182-185 (cursor_anchor returns None on cursor, outer_size, or Display failures), window.rs:315-317 (screenshot-hotkey summon only in full-screen mode), window.rs:92-98 (dismiss parks the window). No tray toggle item exists (lib.rs:205-217).",
+    "B: tray-app.md:33 (hidden bar parked and moved to cursor before showing, no stale frame flash), :37 (cursor_anchor places bar at cursor), :39 (VAnchor edge picked by summon), :23 (appears instantly at cursor). The mini-shown payload values top | bottom and the unavailable-cursor fallback are not in the docs; :140 names mini-shown only as the reveal event, with no payload."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The Top fallback with no position set also applies when the window size or the display cannot be determined (window.rs:182-185)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-015",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:33, :37, :39, :23). A's code adds the trigger scope (the screenshot hotkey summons a hidden bar only in full-screen mode) and the Top fallback when size or display cannot be determined. B noted the payload values and fallback are not in the docs; A's code decides."
+  },
+  {
+   "title": "Bar placement offset from the cursor",
+   "trigger": "Bar summoned at cursor.",
+   "context": "Default placement is down and right of the cursor.",
+   "result": "Top-left of the bar sits 24 physical px LEFT of the cursor's x and 20 physical px ABOVE the cursor's y in the default placement (x = cursor.x - 24, y = cursor.y - 20). Physical pixels, not logical. The code's doc comment describes this as up-and-left of the cursor (window.rs:168-169); the docs' down-and-right wording is not supported by the code.",
+   "exact": [
+    {
+     "what": "OFF_X",
+     "value": "24.0 physical px (subtracted from cursor.x, i.e. the bar is to the left)"
+    },
+    {
+     "what": "OFF_Y",
+     "value": "20.0 physical px (subtracted from cursor.y, i.e. the bar is above)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:173-195",
+    "doc:tray-app.md:33",
+    "A: window.rs:179-180 (OFF_X = 24.0, OFF_Y = 20.0, physical offset), window.rs:191 (x = cursor.x - OFF_X), window.rs:195 (y = cursor.y - OFF_Y), window.rs:168-169 (doc: \"just up-and-left of the cursor\").",
+    "B: tray-app.md:37 says the bar sits just down-and-right of the cursor. The spec cites doc:tray-app.md:33 for this, but line 33 is about parking and the draft; the placement sentence is at :37. OFF_X 24 and OFF_Y 20 are not in the docs. The spec's result states a 20 px upward offset, which the docs do not support."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Doc comment says just up-and-left of the cursor so the title field lands under it. The code uses y = cursor.y - OFF_Y, so the title ends up under the cursor."
+   ],
+   "notes": "Docs (B) give the offset only as down-and-right with the exact pixel offset not stated; the code values are kept.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-016",
+   "check": "corrected",
+   "check_notes": "A's code (window.rs:179-195) sets the offset up-and-left of the cursor: x = cursor.x - 24, y = cursor.y - 20, in physical pixels. B's docs (tray-app.md:37) say down-and-right with no numbers. The code decides. B also noted the spec cites tray-app.md:33, but the placement sentence is at :37."
+  },
+  {
+   "title": "Bar flips to the left of the cursor near the right screen edge",
+   "trigger": "Bar summoned with the cursor so that x + width would exceed the display right edge. Docs: near the right or bottom edge of the monitor the cursor is on.",
+   "context": "Cursor on the right side of the monitor. Monitor resolved from the cursor position (monitor_from_point), so multi-display setups use the cursor's screen.",
+   "result": "The bar is placed at x = cursor.x + 24 - width when the default x would exceed display.right (the test uses the default x = cursor.x - 24 + width). The horizontal flip applies only to the right edge. The bottom edge is handled by the vertical flip in F14-018. The primary-monitor fallback applies when monitor_from_point finds no monitor (window.rs:141-146). The final display clamp still applies (window.rs:209).",
+   "exact": [
+    {
+     "what": "flip threshold",
+     "value": "x + w > display.right"
+    },
+    {
+     "what": "monitor source (docs)",
+     "value": "monitor_from_point"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:191-194",
+    "doc:tray-app.md:37",
+    "A: window.rs:191-194 (x = cursor.x - OFF_X; if x + w > display.right then x = cursor.x + OFF_X - w), window.rs:201-204 (bottom flip uses MAX_BAR_HEIGHT * scale, not the bar's own height), window.rs:141-146 (monitor_from_point, falling back to primary_monitor), window.rs:209 (final clamp).",
+    "B: tray-app.md:37 (flips to the opposite side when the frame would pass the right or bottom edge of the cursor's monitor, resolved with monitor_from_point, work-area clamp). The x = cursor.x + 24 - width formula, the x + w > display.right threshold, and the primary-monitor fallback are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Falls back to the primary monitor if the cursor point is not on any monitor."
+   ],
+   "notes": "Docs state the final clamp is the monitor work area (menu bar / dock excluded) (doc:tray-app.md:37). This conflicts with the code clamp in the frame-clamp entry; the code value is kept there.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-017",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:37), which describe a flip at the right or bottom edge. A's code narrows this: the horizontal flip covers only the right edge, and the bottom edge is handled by the vertical flip in F14-018. The code decides."
+  },
+  {
+   "title": "Bar flips above the cursor near the bottom edge and anchors to bottom",
+   "trigger": "Bar summoned with the cursor so that the expanded card would not fit below.",
+   "context": "The flip is computed against the expanded card height, not the collapsed one. Growth direction is fixed for the whole summon.",
+   "result": "The bar is placed above the cursor (y = cursor.y + 20 - height) and anchored to the bottom, so it grows upward for the whole summon. The vertical flip uses MAX_BAR_HEIGHT (card with notes expanded), so room is reserved for notes that may grow in; the flip also selects the VAnchor edge the resize holds still.",
+   "exact": [
+    {
+     "what": "max expanded height",
+     "value": "300.0 logical px"
+    },
+    {
+     "what": "flip test",
+     "value": "y + 300 * scale > display.bottom"
+    },
+    {
+     "what": "anchor value",
+     "value": "bottom"
+    },
+    {
+     "what": "reference height (docs)",
+     "value": "MAX_BAR_HEIGHT (card with notes expanded)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:22-26",
+    "tray/src-tauri/src/window.rs:196-204",
+    "doc:tray-app.md:39",
+    "A: window.rs:22-26 (MAX_BAR_HEIGHT = 300.0 logical px), window.rs:201 (y + MAX_BAR_HEIGHT * display.scale > display.bottom, with y = cursor.y - OFF_Y), window.rs:202-203 (y = cursor.y + OFF_Y - h; anchor = Bottom), window.rs:250-252 (set_bar_height holds the bottom edge), window.rs:209 (clamp after the flip).",
+    "B: tray-app.md:39 (vertical flip decided against MAX_BAR_HEIGHT, the card with notes expanded; growth direction fixed for the summon; flip picks VAnchor), :43 (bottom-anchored bar grows upward). The 300.0 px value and the flip-test formula are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The final display clamp (window.rs:209) still applies after the flip, so the bottom-anchored frame is also kept on the display."
+   ],
+   "notes": "Docs do not give the numeric value of MAX_BAR_HEIGHT; the 300.0 logical px value is from window.rs:22-26.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-018",
+   "check": "corrected",
+   "check_notes": "B found the claim exact (tray-app.md:39, :43). A confirmed the MAX_BAR_HEIGHT = 300.0 logical px test and added that the final clamp still applies after the flip. The 300 px value is not in the docs."
+  },
+  {
+   "title": "Bar frame is kept on the display, below the menu bar",
+   "trigger": "Any summon or resize.",
+   "context": "Multi-monitor or small displays.",
+   "result": "Left, right, and bottom clamp to the physical display bounds (the bar may overlap the Dock); top clamps to the work area so it stays below the menu bar.",
+   "exact": [
+    {
+     "what": "clamp top",
+     "value": "work area top"
+    },
+    {
+     "what": "clamp other edges",
+     "value": "physical monitor bounds"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:126-166",
+    "tray/src-tauri/src/window.rs:206-209",
+    "doc:tray-app.md:37",
+    "A: window.rs:126-166 (Display: top = work_area.position.y; left, right, bottom from the monitor's full bounds; clamp at 160-165), window.rs:141-146 (fallback to primary monitor), window.rs:206-209 (clamp in cursor_anchor), window.rs:126-130 (doc comment).",
+    "B: tray-app.md:37: 'a final clamp to that monitor's work area (menu bar / dock excluded) keeps the whole frame on screen'. This applies to the whole frame, not just the top edge. The spec's claim that left, right and bottom clamp to physical bounds (may overlap the Dock) conflicts with this."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Falls back to the primary monitor if the cursor point is not on any monitor."
+   ],
+   "notes": "CONFLICT: docs (doc:tray-app.md:37) say the final clamp is the monitor work area (menu bar / dock excluded); the code at window.rs:126-166 clamps left, right and bottom to the physical monitor bounds and only top to the work area. Code value kept per source.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-019",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed in code that top is the work-area top and left, right and bottom come from the monitor's full bounds (window.rs:126-166, 206-209). B's docs (tray-app.md:37) say the whole frame is clamped to the work area with menu bar and Dock excluded. That conflicts with the code. The source code decides, so A's exact verdict stands. The docs may be stale; this conflict is recorded here and not corrected."
+  },
+  {
+   "title": "Dismiss hides and parks the bar",
+   "trigger": "Any dismissal: hide_mini command, toggle off, click-away, close request, submit, open main, or Escape.",
+   "context": "Hidden bar rests off-screen so next reveal does not flash.",
+   "result": "mini-hidden is emitted so the card hides; the window is hidden and moved to (-10000, -10000). Escape hides the bar, keeping the draft.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "mini-hidden"
+    },
+    {
+     "what": "park position",
+     "value": "(-10000, -10000)"
+    },
+    {
+     "what": "command",
+     "value": "hide_mini"
+    },
+    {
+     "what": "key",
+     "value": "Escape"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:18-20",
+    "tray/src-tauri/src/window.rs:92-98",
+    "tray/src-tauri/src/window.rs:82-86",
+    "doc:tray-app.md:114",
+    "doc:tray-app.md:33",
+    "doc:tray-app.md:187",
+    "A: window.rs:92-98 (dismiss: emit mini-hidden, hide, set_position PARK), window.rs:18-20 (PARK = (-10_000, -10_000)), window.rs:82-86 (hide_mini command), window.rs:75-76 (toggle off), lib.rs:267-270 (CloseRequested), lib.rs:275-280 (click-away), window.rs:276-279 (open_main), task.rs:47 (submit_capture dismisses), window.rs:88-91 (draft kept). The Escape key is not bound in these Rust files; the frontend presumably calls hide_mini, not verified here.",
+    "B: tray-app.md:33 (hidden bar moved off-screen to PARK (-10000,-10000) rather than only hidden), :114 (hide_mini: park + hide, Escape or after submit), :49-50 (click-away), :133 (close request), :116 (open_main dismisses bar), :187 (Escape hides, draft kept). The mini-hidden event name is not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-020",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. A notes the Escape key is not bound in the Rust files; the frontend presumably calls hide_mini, which A did not verify. B's docs (tray-app.md:187) state Escape hides."
+  },
+  {
+   "title": "Draft survives dismissal",
+   "trigger": "Bar dismissed by any route except submit or explicit clear. Docs: Escape, click-away, or summon again after hiding.",
+   "context": "Next reveal. Draft has title, notes and/or screenshots.",
+   "result": "The draft held in the form is left intact and is restored on the next reveal. Only submitting a capture or an explicit clear resets the form. Hiding only hides the bar; the title, notes and screenshots remain and show again on the next reveal.",
+   "exact": [
+    {
+     "what": "explicit clear",
+     "value": "⌘⇧⌫ / the Clear button (per doc comment)"
+    },
+    {
+     "what": "draft contents",
+     "value": "title, notes, screenshots"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:88-91",
+    "doc:tray-app.md:33",
+    "doc:tray-app.md:187",
+    "doc:tray-app.md:189",
+    "A: window.rs:88-91 (draft left intact; only submitting a capture or an explicit clear (⌘⇧⌫ / the Clear button) resets the form). The draft itself lives in the webview, not in these files.",
+    "B: tray-app.md:33 (hiding keeps title, notes and screenshots; returns on next reveal), :187-189 (Escape or click-away only hide; draft emptied by submit or explicit clear: Clear button or ⌘⇧⌫)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "The draft logic lives in the frontend; this file only documents it. Rust no longer emits a reset event on dismiss (doc:tray-app.md:187).",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-021",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. The draft itself lives in the webview and was not checked by A."
+  },
+  {
+   "title": "Clear button empties the draft",
+   "trigger": "Click the Clear ghost button in the footer, or press ⌘⇧⌫ (Cmd-Shift-Delete) with the title or notes focused",
+   "context": "Shown only when the draft has content",
+   "result": "Form is emptied by clearDraft(); notes panel re-collapses",
+   "exact": [
+    {
+     "what": "button label",
+     "value": "Clear"
+    },
+    {
+     "what": "hotkey",
+     "value": "⌘⇧⌫ (Cmd-Shift-Delete)"
+    },
+    {
+     "what": "button visibility",
+     "value": "shown only when the draft has content"
+    },
+    {
+     "what": "key listener",
+     "value": "capture-phase keydown on window"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:15",
+    "doc:tray-app.md:157",
+    "doc:tray-app.md:189-193",
+    "A: No Rust source in src-tauri/src for the Clear button, ⌘⇧⌫ binding, clearDraft(), or the keydown listener. Only the doc comment at window.rs:88-91 mentions the Clear button and ⌘⇧⌫; the other sources are docs or frontend.",
+    "B: tray-app.md:15 and :157-158 (Clear ghost button, shown only when draft has content), :189-190 (⌘⇧⌫ / Cmd-Shift-Delete clears; clearDraft on explicit clear), :190-192 (capture-phase keydown on window), :180-181 (notes re-collapse when emptied on submit or clear)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Doc says the form is emptied; whether screenshots are removed by clear is inferred from 'draft (title / notes / screenshots)' and 'form emptied'.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-022",
+   "check": "confirmed_by_one",
+   "check_notes": "B confirmed the Clear button and ⌘⇧⌫ clear from the docs. A could not check: there is no Rust source for the Clear button, the binding, clearDraft() or the keydown listener, so this is docs-only confirmation."
+  },
+  {
+   "title": "Clear hotkey works regardless of which field has focus",
+   "trigger": "Press ⌘⇧⌫ while the title field or the notes editor is focused",
+   "context": "Bar is visible",
+   "result": "Draft is cleared; the capture-phase listener fires before the title field and notes editor handlers",
+   "exact": [
+    {
+     "what": "hotkey",
+     "value": "⌘⇧⌫"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:189-193",
+    "A: No Rust source in these files for the capture-phase keydown listener or ⌘⇧⌫ handling. Only the doc comment at window.rs:88-91 names ⌘⇧⌫, and the spec's doc source was not opened.",
+    "B: tray-app.md:189-193 (⌘⇧⌫ clears with either the title or notes focused; capture-phase keydown on window fires before both field handlers). The 'bar is visible' context is not stated but is harmless."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-023",
+   "check": "confirmed_by_one",
+   "check_notes": "B confirmed the capture-phase keydown and the field-focus behaviour from the docs. A could not check: no Rust source for the keydown listener or ⌘⇧⌫ handling exists in these files."
+  },
+  {
+   "title": "Click-away dismisses the bar",
+   "trigger": "Bar loses focus (window blur) outside the reveal grace window. Docs: click outside the bar so it loses focus.",
+   "context": "Bar is visible and not in its reveal grace period, not during a Space switch, and not regained focus.",
+   "result": "The bar is dismissed (hidden and parked) immediately on Focused(false), synchronously, unless it was revealed within the last 500 ms (lib.rs:275-280, window.rs:333-339). There is no ~160 ms deferred check.",
+   "exact": [
+    {
+     "what": "deferral before dismiss check",
+     "value": "none (immediate); the ~160 ms value is not in the code"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:272-280",
+    "tray/src-tauri/src/window.rs:322-339",
+    "doc:tray-app.md:49",
+    "doc:tray-app.md:54",
+    "doc:tray-app.md:134",
+    "A: lib.rs:275-280 (Focused(false): if just_revealed() return; else dismiss(&webview) immediately), window.rs:330 (REVEAL_GRACE = 500 ms), window.rs:333-339 (just_revealed), no 160 ms deferral or regained-focus check in these files.",
+    "B: tray-app.md:49-51 (click-away dismisses via Focused(false) -> dismiss; blur within REVEAL_GRACE of 500 ms of the reveal is ignored), :52 (Space-switch blur not treated as click-away), :54 (dismiss check deferred ~160 ms; skipped if during_space_switch() or focus regained), :134."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "A blur within 500 ms of a reveal is ignored entirely, with no later re-check (lib.rs:276-277).",
+    "There is no separate Space-switch check in the blur handler; the only exemption is the reveal grace window (lib.rs:276, window.rs:333-339)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-024",
+   "check": "corrected",
+   "check_notes": "B's docs (tray-app.md:49-51, :54) describe a deferred ~160 ms dismiss check that is skipped during a Space switch or when focus is regained. A's code (lib.rs:275-280, window.rs:330-339) has no deferral, no focus re-check and no Space-switch exemption in the blur handler. The code decides. The 500 ms REVEAL_GRACE is confirmed by both."
+  },
+  {
+   "title": "Close request hides instead of closing",
+   "trigger": "Window close request on the bar (for example the close shortcut or close button).",
+   "context": "Bar stays alive as the agent. Bar is visible.",
+   "result": "Close is prevented and the bar is dismissed instead; the agent keeps running.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "CloseRequested"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:267-270",
+    "doc:tray-app.md:133",
+    "A: lib.rs:267-270 (WindowEvent::CloseRequested → api.prevent_close(); dismiss), lib.rs:266-268 (comment: never destroy the window). The close shortcut and close button are not in these files.",
+    "B: tray-app.md:133 (CloseRequested -> prevent_close() + dismiss; never destroy, agent must stay alive)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Comment says never destroy the window."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-025",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact."
+  },
+  {
+   "title": "Bar re-pins onto the new Space when the active Space changes",
+   "trigger": "macOS active Space change (NSWorkspaceActiveSpaceDidChangeNotification) while the bar is visible. Docs: any desktop (Space) switch (tray-app.md:52).",
+   "context": "The re-pin runs on any active-Space change while the bar is visible, not only when the bar was summoned over a full-screen app (space.rs:18). The code's doc comment mentions the reveal-grace condition, but the code does not check it.",
+   "result": "The bar is not dismissed; it is re-allowed over full-screen, brought to front regardless of activation, and focused, so it stays key and typable on the new Space.",
+   "exact": [
+    {
+     "what": "deferral before dismiss check",
+     "value": "none; the ~160 ms value is not in the code (space_changed is immediate, space.rs:14-25)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/space.rs:1-26",
+    "tray/src-tauri/src/space.rs:51-78",
+    "doc:tray-app.md:52",
+    "doc:tray-app.md:53-54",
+    "A: space.rs:14-25 (space_changed runs immediately, no deferral), space.rs:18-24 (re-pin only if is_visible: allow_over_fullscreen, order_front_regardless, set_focus), space.rs:1-3 (doc says it re-pins a bar summoned within the reveal grace, but the code checks only is_visible), space.rs:68 (NSWorkspaceActiveSpaceDidChangeNotification), space.rs:39 (class TaskscapeSpaceObserver), lib.rs:176-179 (observer set up at launch).",
+    "B: tray-app.md:52 says only 'a desktop (Space) switch'. tray-app.md:53-54 give NSWorkspaceActiveSpaceDidChangeNotification, TaskscapeSpaceObserver, the re-pin and refocus, and the ~160 ms deferral. The docs nowhere mention a trackpad gesture or keyboard as the trigger for a Space switch."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Trigger gesture is inferred; the docs only say a desktop (Space) switch.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-026",
+   "check": "corrected",
+   "check_notes": "B's docs (tray-app.md:52-54) give the ~160 ms deferral and the during_space_switch check; A's code (space.rs:14-25) runs space_changed immediately with no deferral. The code decides. B's trigger is kept: the macOS active-Space change notification while the bar is visible. A adds that the re-pin is not limited to full-screen summons, and that the reveal-grace condition in the doc comment is not checked in code."
+  },
+  {
+   "title": "Bar appears over native full-screen apps without leaving their Space",
+   "trigger": "Summon the bar while another app is in native full-screen.",
+   "context": "macOS only. Accessory activation policy, non-activating NSPanel.",
+   "result": "The bar joins all Spaces with full-screen auxiliary behaviour and sits at level 101, so it draws in front of the full-screen app. The bar is not activated by orderFrontRegardless alone: show_mini also calls window.set_focus() (window.rs:53), and space_changed does too (space.rs:23). The code's own comment says set_focus activates the app (setup.rs:129-133). So the 'without activating' claim describes the intent, and is not guaranteed by the code path.",
+   "exact": [
+    {
+     "what": "window level",
+     "value": "101 (NSPopUpMenuWindowLevel)"
+    },
+    {
+     "what": "collection behavior",
+     "value": "CanJoinAllSpaces | FullScreenAuxiliary"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/setup.rs:69-107",
+    "tray/src-tauri/src/window.rs:47-48",
+    "tray/src-tauri/src/lib.rs:199-201",
+    "doc:tray-app.md:23-28",
+    "A: setup.rs:69-107 (allow_over_fullscreen), setup.rs:101-103 (behavior |= CAN_JOIN_ALL_SPACES | FULL_SCREEN_AUXILIARY), setup.rs:90-91 (NS_POPUP_MENU_WINDOW_LEVEL = 101), window.rs:47-48 (applied at show), space.rs:21 (applied at Space change), lib.rs:199-201 (applied at setup), window.rs:52-56 (show_mini calls window.set_focus() before order_front_regardless), setup.rs:129-133 (doc: set_focus activates the app).",
+    "B: tray-app.md:27 (allow_over_fullscreen: CanJoinAllSpaces | FullScreenAuxiliary, NSPopUpMenuWindowLevel (101), re-asserted before every show), :25 (Accessory policy), :26 (non-activating NSPanel), :28 (order_front_regardless, no app activation, stays on full-screen Space), :23 (floats over other apps' native full-screen Spaces). Application at setup and at each Space change is not explicitly stated in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-027",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:26-28), which say the window does not activate the app. A's code shows show_mini (window.rs:53) and space_changed (space.rs:23) both call set_focus(), and setup.rs:129-133 says set_focus activates the app. The code decides, so the 'without activating' claim is intent, not guaranteed by the code path."
+  },
+  {
+   "title": "Bar is a non-activating panel that can take keyboard focus",
+   "trigger": "Bar summoned.",
+   "context": "macOS startup conversion of the window.",
+   "result": "The window becomes a non-activating NSPanel that is key-capable, so the field is typable without activating the app. It does not hide when the app deactivates.",
+   "exact": [
+    {
+     "what": "style mask bit",
+     "value": "NSWindowStyleMaskNonactivatingPanel (1 << 7)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/setup.rs:14-38",
+    "tray/src-tauri/src/setup.rs:40-67",
+    "tray/src-tauri/src/lib.rs:186-191",
+    "A: setup.rs:14-38 (convert_to_panel), setup.rs:18-20 (NS_NONACTIVATING_PANEL = 1 << 7), setup.rs:36 (setHidesOnDeactivate: false), setup.rs:40-67 (panel_class: canBecomeKeyWindow YES, TaskscapeCapturePanel), lib.rs:186-191 (conversion at startup).",
+    "B: tray-app.md:26 (convert_to_panel swaps to non-activating NSPanel so it can become key without activating the app; canBecomeKeyWindow -> YES), :54 (bar stays key and typable on the new Space). The 'does not hide when app deactivates' claim and the style mask bit (1 << 7) are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-028",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. The style-mask bit (1 << 7) and the no-hide-on-deactivate behaviour are code-only; B's docs cover the non-activating panel and key-capable behaviour."
+  },
+  {
+   "title": "Bar is hidden and parked at app start",
+   "trigger": "App launch.",
+   "context": "Agent process startup.",
+   "result": "Bar is dismissed (hidden and parked) at setup so it does not show.",
+   "exact": [],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:197-202",
+    "A: lib.rs:197-202 (dismiss(&window) at setup, then allow_over_fullscreen).",
+    "B: tray-app.md:13 (tauri.conf.json: window hidden at start). The docs do not say the bar is parked at setup. Parking in general is at :33."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-029",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact. B's docs do not say the bar is parked at setup; A confirmed it in code."
+  },
+  {
+   "title": "App runs without a Dock icon",
+   "trigger": "App launch on macOS.",
+   "context": "Menu-bar agent. Its only window is the mini bar.",
+   "result": "Activation policy is Accessory, so no Dock icon appears.",
+   "exact": [
+    {
+     "what": "activation policy",
+     "value": "Accessory"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:172-174",
+    "doc:tray-app.md:3",
+    "doc:tray-app.md:25",
+    "doc:architecture.md:20",
+    "A: lib.rs:172-174 (set_activation_policy(tauri::ActivationPolicy::Accessory) on macOS).",
+    "B: tray-app.md:3 (no dock icon), :25 (set_activation_policy(Accessory), no dock icon), architecture.md:20 (macOS Accessory agent, no dock icon)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-030",
+   "check": "confirmed_by_both",
+   "check_notes": "Both found the claim exact."
+  },
+  {
+   "title": "Bar card is opaque with rounded corners on a transparent window",
+   "trigger": "Bar shown.",
+   "context": "Visual. Bar is visible.",
+   "result": "The window stays transparent so the card's rounded corners render; the webview paints the solid card surface (bg-surface-2). No vibrancy or blur behind it.",
+   "exact": [
+    {
+     "what": "card class",
+     "value": "bg-surface-2"
+    },
+    {
+     "what": "window transparency",
+     "value": "transparent: true; macOSPrivateApi: true"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:193-195",
+    "doc:tray-app.md:3",
+    "doc:tray-app.md:13",
+    "doc:tray-app.md:29",
+    "doc:tray-app.md:151-152",
+    "A: lib.rs:193-195 (comment only: the window keeps its transparent backing so the card's rounded corners render; no vibrancy). The transparent: true and macOSPrivateApi: true settings live in tauri.conf.json, which is not in the allowed read scope. The bg-surface-2 class is frontend and not in these files.",
+    "B: tray-app.md:13 (transparent: true; macOSPrivateApi: true), :29 (opaque surface, transparent NSWindow so rounded corners render, no vibrancy), :43 (transparent window is not click-through, window sized to card), :151-152 (single opaque card bg-surface-2)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Transparent window is not click-through, so the window is sized to the card."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-031",
+   "check": "confirmed_by_one",
+   "check_notes": "B confirmed the transparent window and no-vibrancy behaviour from the docs. A could not check: transparent and macOSPrivateApi live in tauri.conf.json, which was outside A's read scope, and bg-surface-2 is frontend."
+  },
+  {
+   "title": "Bar height follows the card",
+   "trigger": "Webview reports card height changes (notes opening, editor growing with text, or text wrapping). Docs: ResizeObserver on the card.",
+   "context": "Frontend calls set_bar_height with a logical height. Any time the card resizes while the bar is visible.",
+   "result": "The window is resized to the card height in physical px, keeping the summon's anchored edge still (top grows down, bottom grows up); re-clamped to the display so it cannot walk off the bottom. Non-finite values or heights below 1.0 are ignored; unchanged heights do nothing.",
+   "exact": [
+    {
+     "what": "window width",
+     "value": "not set by set_bar_height: it keeps the current inner width (window.rs:236, 267). The 480 value is from tauri.conf.json (docs: tray-app.md:13), which A did not read."
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:223-269",
+    "doc:tray-app.md:43",
+    "doc:tray-app.md:13",
+    "doc:tray-app.md:45",
+    "A: window.rs:232 (height < 1.0 or non-finite → return Ok), window.rs:235-237 (target = round(height × scale)), window.rs:243-245 (unchanged height → return), window.rs:248 (hidden: resize only, no move), window.rs:214-221 (applied_height cache), window.rs:250-258 (anchored edge and display clamp), window.rs:267 (set_size with the current inner width). The 480 width is not set here; the code keeps the existing width (window.rs:236, 267).",
+    "B: tray-app.md:43 (ResizeObserver on the card, reports height in logical px to set_bar_height, anchored edge held, re-clamped to display, Rust tracks last-requested height since macOS applies setContentSize: asynchronously, window exactly as tall as card), :45 (height in tauri.conf.json is only the starting value), :13 (480 wide). The 1.0 minimum, non-finite rule, unchanged-height no-op and hidden-only-resize are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "When hidden the window is only resized, not moved.",
+    "Applied height is cached because macOS resizes asynchronously.",
+    "Window is exactly as tall as the card so transparent unpainted areas do not swallow clicks."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-032",
+   "check": "corrected",
+   "check_notes": "B found the claim exact against the docs (tray-app.md:43, :45, :13). A's code shows set_bar_height does not set the 480 width: it keeps the current inner width (window.rs:236, 267). The 480 value is in tauri.conf.json, which A did not read, and the docs give it at tray-app.md:13. The code decides for set_bar_height behaviour."
+  },
+  {
+   "title": "Dark mode resolution for the bar",
+   "trigger": "Bar asks get_dark when it renders.",
+   "context": "Theme setting in the shared store. Bar is visible.",
+   "result": "Setting theme = dark gives dark; light gives light; any other value (unset) falls back to the window's system theme, and false if that is unknown. Resolved in Rust, not by CSS.",
+   "exact": [
+    {
+     "what": "setting key",
+     "value": "theme"
+    },
+    {
+     "what": "values",
+     "value": "dark | light"
+    },
+    {
+     "what": "CSS mechanism (docs)",
+     "value": "prefers-color-scheme with color-scheme: light dark"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:20-40",
+    "doc:tray-app.md:150",
+    "A: hotkeys.rs:25-40 (get_dark: store.get_setting(\"theme\"); Some(\"dark\") → true; Some(\"light\") → false; other or unset → window.theme() == Dark, unwrap_or(false)), hotkeys.rs:20-24 (Rust resolution because the panel does not report prefers-color-scheme reliably). The CSS mechanism is from docs.",
+    "B: tray-app.md:150-151: theme-adaptive via dark: variants, driven by prefers-color-scheme + color-scheme: light dark (CSS mechanism). The docs do not describe a Rust resolution, a theme settings key, or the dark/light value rule. The spec's result says 'Resolved in Rust, not by CSS', which contradicts the docs' stated CSS mechanism."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Resolved in Rust because the NSPanel does not report prefers-color-scheme reliably."
+   ],
+   "notes": "CONFLICT: docs (doc:tray-app.md:150) say the bar follows the system appearance via prefers-color-scheme with dark: variants and color-scheme light dark. The code (hotkeys.rs:20-40) resolves dark mode in Rust from the theme setting, falling back to the window's system theme. Code value kept per source.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-033",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the Rust resolution in code (hotkeys.rs:20-40): the stored theme setting, with a fallback to the window theme. B's docs (tray-app.md:150-151) describe only the CSS mechanism (dark: variants driven by prefers-color-scheme). The two coexist: the CSS mechanism is from the docs and the Rust resolution is from the code. B's claim that the Rust resolution contradicts the docs is not accepted, because the docs do not say Rust is absent."
+  },
+  {
+   "title": "Bar reads the effective hotkey catalog for its shortcut hints",
+   "trigger": "Bar calls list_hotkeys.",
+   "context": "Returns effective (user-overridden) combos.",
+   "result": "The bar receives the resolved hotkey bindings, including clear_draft, which it uses for its shortcut display.",
+   "exact": [
+    {
+     "what": "binding read by the bar",
+     "value": "clear_draft"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:12-18",
+    "A: hotkeys.rs:12-18 (list_hotkeys returns hotkeys::resolve), hotkeys.rs:12 (comment: the mini bar reads clear_draft). The frontend read of clear_draft is not in these files.",
+    "B: tray-app.md command table at :112-119 does not list list_hotkeys, and the docs do not say the bar reads clear_draft for shortcut hints. Only the clear hotkey ⌘⇧⌫ is documented (:15, :189-190)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Exact rendering of hints is in the frontend. Only the data source is here.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-034",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed list_hotkeys in code (hotkeys.rs:12-18, with a comment that the mini bar reads clear_draft). B could not check: the docs' command table (tray-app.md:112-119) does not list list_hotkeys, and the frontend read of clear_draft is not in the files A read."
+  },
+  {
+   "title": "Bar rebuilds its key map after hotkeys change",
+   "trigger": "Main POSTs /reload-hotkeys after settings close. Docs: a hotkey change in Settings ▸ Shortcuts.",
+   "context": "Shared settings updated. Main app running.",
+   "result": "Global hotkeys are re-registered (the two Global commands are re-resolved and re-registered) and hotkeys-changed is emitted to the main (bar) window so the bar rebuilds its key map.",
+   "exact": [
+    {
+     "what": "route",
+     "value": "/reload-hotkeys"
+    },
+    {
+     "what": "event",
+     "value": "hotkeys-changed"
+    },
+    {
+     "what": "pane",
+     "value": "Settings ▸ Shortcuts"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:222-233",
+    "doc:tray-app.md:89-93",
+    "A: lib.rs:222-224 (comment: main POSTs after settings close), lib.rs:228-233 (route /reload-hotkeys: refresh_global_shortcuts, emit_to(\"main\", \"hotkeys-changed\", ())), hotkeys.rs:183-224 (refresh and re-register the toggle and screenshot commands).",
+    "B: tray-app.md:91-92 says hotkeys are refreshed on every POST /reload-hotkeys from main. tray-app.md:89-90 says a change is made in main's Settings ▸ Shortcuts pane. The docs do not say the POST occurs 'after settings close', and hotkeys-changed is not in the event list (:136-143). The route, pane name and refresh behaviour are confirmed."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-035",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the route and the hotkeys-changed emit in code (lib.rs:222-233, hotkeys.rs:183-224), including the 'after settings close' comment at lib.rs:222-224. B confirmed the route, the Settings ▸ Shortcuts pane and the refresh-on-every-POST behaviour from the docs (tray-app.md:89-92). B noted that the docs do not say the POST occurs after settings close, and that hotkeys-changed is not in the docs' event list (:136-143). Both are compatible with the code, so no correction is applied."
+  },
+  {
+   "title": "Global hotkeys re-register with rollback on conflict",
+   "trigger": "Startup (lib.rs:220, after the tray icon is built) or a POST to /reload-hotkeys, which main sends after the settings window closes (lib.rs:222-224, 228-234).",
+   "context": "If the OS refuses the new combo (taken by another app), the previous registration is restored.",
+   "result": "Old registration is unregistered first (hotkeys.rs:167-169), then the new one is registered (171). On register failure the error is printed (174) and the old one is re-registered (175). If that re-register also fails, no shortcut is kept for that command (filter returns None). If the new combo is unbound or the key has no code, the old registration is removed and nothing is registered (168-170, 152), with no error printed.",
+   "exact": [
+    {
+     "what": "stderr format",
+     "value": "[taskscape-tray] failed to register {label} hotkey: {e}"
+    },
+    {
+     "what": "labels",
+     "value": "capture-bar | screenshot"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:155-178",
+    "tray/src-tauri/src/hotkeys.rs:183-196",
+    "doc:tray-app.md:105-106",
+    "A: hotkeys.rs:155-178 (swap_registration: old==new early return at 164-166; unregister old at 167-169; new is None -> return None at 170; register new at 171; on Err eprintln at 174 and old.filter(register ok) at 175); hotkeys.rs:183-196 (refresh_global_shortcuts); lib.rs:220 (startup call); lib.rs:228-234 (/reload-hotkeys POST route); lib.rs:222-224 comment (main POSTs after settings window closes); hotkeys.rs:208,213 labels 'capture-bar' and 'screenshot'. doc:tray-app.md not in allowed scope, not checked.",
+    "B: doc:.llm/tray-app.md:91-92 (startup and every POST /reload-hotkeys from main re-register via refresh_global_shortcuts); tray-app.md:105-106 (combo the OS refuses is logged and previous registration kept). Stderr format, labels, remove-then-register sequence and identical-combo no-op are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Identical old and new combos are a no-op (hotkeys.rs:164-166).",
+    "Unbound new combo (None) unregisters the old one silently (hotkeys.rs:167-170).",
+    "The error line is printed only when the OS refuses the new combo; if the old combo also cannot be re-registered, the command has no shortcut and nothing is logged for that second failure (hotkeys.rs:175)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-036",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the trigger (startup and POST /reload-hotkeys from main). A's source-based corrections are used. B's docs confirm the startup and reload triggers and that a refused combo keeps the previous registration (tray-app.md:91-92, 105-106). The stderr format, labels, remove-then-register sequence and identical-combo no-op are source-only and were not in B's docs. No conflict."
+  },
+  {
+   "title": "Modifier mapping for global hotkeys",
+   "trigger": "Hotkey combo registered.",
+   "context": "Maps the typed accel.",
+   "result": "cmd maps to SUPER, ctrl to CONTROL, alt to ALT, shift to SHIFT.",
+   "exact": [
+    {
+     "what": "cmd",
+     "value": "SUPER"
+    },
+    {
+     "what": "ctrl",
+     "value": "CONTROL"
+    },
+    {
+     "what": "alt",
+     "value": "ALT"
+    },
+    {
+     "what": "shift",
+     "value": "SHIFT"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:137-153",
+    "A: hotkeys.rs:137-153 (to_shortcut): cmd -> Modifiers::SUPER (140-141), ctrl -> CONTROL (143-144), alt -> ALT (146-147), shift -> SHIFT (149-150).",
+    "B: No modifier mapping (cmd/ctrl/alt/shift to SUPER/CONTROL/ALT/SHIFT) appears in tray-app.md or architecture.md. Docs only say hotkeys are user-customizable (tray-app.md:89)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-037",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the modifier mapping in code. B could not check it; the docs only say hotkeys are user-customizable (tray-app.md:89). No conflict."
+  },
+  {
+   "title": "The plus key cannot be a global hotkey",
+   "trigger": "A user binds the + key as a hotkey.",
+   "context": "Key-to-code mapping.",
+   "result": "Key::Plus has no code, so to_shortcut returns None and nothing is registered for it (hotkeys.rs:131, 152). If a previous shortcut was registered for that command, it is unregistered and the combo does nothing globally (hotkeys.rs:167-170).",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Plus (typed as Shift+Equal)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:130-131",
+    "tray/src-tauri/src/hotkeys.rs:135-137",
+    "A: hotkeys.rs:130-131 (Key::Plus => return None, comment 'typed as Shift+Equal'); hotkeys.rs:152 (key_code(accel.key)? returns None so to_shortcut yields None); hotkeys.rs:168-170 (swap_registration unregisters the old shortcut when new is None).",
+    "B: tray-app.md and architecture.md do not mention the plus key, Key::Plus, or Shift+Equal."
+   ],
+   "system": true,
+   "uncertain": true,
+   "notes": "Whether the bar itself handles Plus is outside this area.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-038",
+   "edge_cases": [
+    "If a Plus binding replaces an existing registration, the old registration is removed (hotkeys.rs:167-170)."
+   ],
+   "check": "corrected",
+   "check_notes": "Only A checked this in source. B could not check it because the docs do not mention Key::Plus. A's correction stands."
+  },
+  {
+   "title": "Tray tooltip advertises the capture combo",
+   "trigger": "Hover over the menu-bar icon. Updated whenever global shortcuts are applied: at startup (lib.rs:220) or on POST /reload-hotkeys from main (lib.rs:228-234).",
+   "context": "Refresh of global shortcuts ran.",
+   "result": "Tooltip reads 'Taskscape — press {glyphs} to capture' using the glyphs of the resolved toggle_capture_bar accel, or 'Taskscape' when there is none (hotkeys.rs:204, 218-221). The tooltip is set from the resolved binding, not from whether the OS accepted the registration (hotkeys.rs:204, 217-222), so it can advertise a combo whose registration failed.",
+   "exact": [
+    {
+     "what": "tooltip with combo",
+     "value": "Taskscape — press {glyphs} to capture"
+    },
+    {
+     "what": "tooltip without combo",
+     "value": "Taskscape"
+    },
+    {
+     "what": "reload endpoint",
+     "value": "POST /reload-hotkeys from main"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/hotkeys.rs:202-223",
+    "doc:tray-app.md:91-93",
+    "A: hotkeys.rs:202-223 (apply_global_shortcuts): tooltip formats at 218-221 ('Taskscape — press {} to capture' with a.glyphs(), else 'Taskscape'); tooltip set at 217-222 on tray id 'tray'. Refresh entry points: lib.rs:220 and lib.rs:228-234 (/reload-hotkeys).",
+    "B: tray-app.md:91-93 confirms the tooltip is updated when shortcuts are applied at startup and on POST /reload-hotkeys from main (matches the 'POST /reload-hotkeys from main' value). The tooltip strings ('Taskscape — press {glyphs} to capture' and 'Taskscape') and the 'Hover' trigger are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The /reload-hotkeys handler also emits 'hotkeys-changed' to the 'main' window (lib.rs:231)."
+   ],
+   "notes": "Docs (B) do not give the tooltip text format; that it shows the registered hotkeys is confirmed by the code.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-039",
+   "check": "corrected",
+   "check_notes": "A's source-based result and exact strings are used. B confirmed the refresh entry points (tray-app.md:91-93: startup and POST /reload-hotkeys from main), which matches A. B could not check the tooltip strings or the hover trigger. A's result says the tooltip is set from the resolved binding, not from whether the OS accepted the registration. No conflict."
+  },
+  {
+   "title": "Tray icon left click shows a menu",
+   "trigger": "Left-click the menu-bar icon. Docs: right-click or open the menu.",
+   "context": "Menu-bar agent. Agent is running.",
+   "result": "The menu opens on left click because show_menu_on_left_click is set to true (lib.rs:212). The code sets no right-click option; right-click opening is not stated in the code (uncertain).",
+   "exact": [
+    {
+     "what": "setting",
+     "value": "show_menu_on_left_click true"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:204-212",
+    "doc:tray-app.md:125-127",
+    "A: lib.rs:209-212 (TrayIconBuilder::with_id(\"tray\").menu(&menu).show_menu_on_left_click(true)). No code in the tray src-tauri/src files sets a right-click option; right-click opening is not stated explicitly in the code (uncertain). The doc value 'show_menu_on_left_click(false)' is a doc-side string and is not in the code (doc:tray-app.md not in scope, not checked).",
+    "B: tray-app.md:126-127: 'Left-click does not open the menu (show_menu_on_left_click(false)).' This contradicts the feature's claim that left click opens the menu. The docs do not describe right-click behaviour. Menu-bar agent (tray-app.md:124-127 describes the TrayIconBuilder menu). 'Agent is running' is not stated in the docs."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "CONFLICT: docs (doc:tray-app.md:125-127) say left-click does not open the menu (show_menu_on_left_click(false)); code at lib.rs:204-212 sets it true. Code value kept per source. Right-click behaviour is inferred from the docs.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-040",
+   "check": "corrected",
+   "check_notes": "Conflict: B read tray-app.md:127 as show_menu_on_left_click(false), which says left click does not open the menu. A read lib.rs:212 as show_menu_on_left_click(true). Code decides, so left click opens the menu. The docs value is doc-side and stale relative to the code. Right-click behaviour is not stated in the code or the docs and is uncertain."
+  },
+  {
+   "title": "Tray menu item Open Taskscape",
+   "trigger": "Click the menu item Open Taskscape in the tray menu.",
+   "context": "Menu item id open_main. Agent is running.",
+   "result": "Main is focused via HTTP /focus if running, otherwise launched with open -b com.taskscape.main.app. Handler is focus_or_launch_main.",
+   "exact": [
+    {
+     "what": "menu label",
+     "value": "Open Taskscape"
+    },
+    {
+     "what": "launch command",
+     "value": "open -b com.taskscape.main.app"
+    },
+    {
+     "what": "handler",
+     "value": "focus_or_launch_main"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:205",
+    "tray/src-tauri/src/lib.rs:213-216",
+    "tray/src-tauri/src/lib.rs:61-81",
+    "doc:tray-app.md:125",
+    "A: lib.rs:205 (MenuItem id 'open_main', label 'Open Taskscape'); lib.rs:215 (\"open_main\" => focus_or_launch_main()); lib.rs:79-81 (focus_or_launch_main spawns focus_or_launch_main_async); lib.rs:63 (POST /focus to MAIN_PORT); lib.rs:70-71 (open with args [\"-b\", \"com.taskscape.main.app\"]).",
+    "B: tray-app.md:125 confirms the menu item 'Open Taskscape' with handler focus_or_launch_main. The launch command 'open -b com.taskscape.main.app' and the HTTP /focus step are not in the docs. tray-app.md:116 documents open_main as focus/launch taskscape-main first, a different command."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-041",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the menu item and the focus_or_launch_main path in code. B could not verify the /focus POST or the open -b launch. B noted tray-app.md:116 describes open_main as focus/launch taskscape-main first, but that is a different command (the bar action), not this tray menu item. No conflict with the code."
+  },
+  {
+   "title": "Tray menu item Quit Taskscape",
+   "trigger": "Click the menu item Quit Taskscape in the tray menu.",
+   "context": "Quits both apps. Main may be running.",
+   "result": "POST /quit goes to main on :7420 (best effort) so the main window closes, then the tray agent exits via app.exit(0). Handler is quit_all.",
+   "exact": [
+    {
+     "what": "menu label",
+     "value": "Quit Taskscape"
+    },
+    {
+     "what": "quit endpoint",
+     "value": "POST /quit to :7420"
+    },
+    {
+     "what": "exit",
+     "value": "app.exit(0)"
+    },
+    {
+     "what": "handler",
+     "value": "quit_all"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:206",
+    "tray/src-tauri/src/lib.rs:214",
+    "tray/src-tauri/src/lib.rs:85-90",
+    "doc:tray-app.md:127-129",
+    "doc:architecture.md:31",
+    "A: lib.rs:206 (MenuItem id 'quit', label 'Quit Taskscape'); lib.rs:214 ('quit' => quit_all); lib.rs:85-90 (quit_all: block_on post_json MAIN_PORT '/quit' with result ignored at 86-88, then app.exit(0) at 89); common/src/lib.rs:27 (MAIN_PORT = 7420). Docs not checked.",
+    "B: tray-app.md:127-128 confirms the menu item 'Quit Taskscape', handler quit_all, POST /quit to main (:7420), and app.exit(0). architecture.md:31 confirms main's port 7420. The 'best effort' wording and the 'errors are ignored' edge case are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Main may not be running; errors are ignored."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-042",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the quit path in code, including that the result of the POST is ignored (lib.rs:86-88). B confirmed the menu item, the quit_all handler, POST /quit to :7420 and app.exit(0) in the docs (tray-app.md:127-128; architecture.md:31). B could not confirm the 'best effort' wording or the 'errors are ignored' edge case, which are not in the docs. No conflict."
+  },
+  {
+   "title": "Open main button in the bar",
+   "trigger": "Bar invokes open_main (button in the bar; trigger lives in the frontend). Docs: clicking the target (project / list) at the footer's left.",
+   "context": "Bar visible.",
+   "result": "Main is brought forward (or launched) first, then the bar is dismissed, so there is no gap with neither on screen.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "open_main"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/window.rs:271-279",
+    "doc:tray-app.md:116",
+    "B: tray-app.md:116: open_main 'Focus/launch taskscape-main first, then dismiss the bar — so there's no gap'. tray-app.md:157: footer target 'click to open main' on the left. tray-app.md:15: footer target 'opens main'."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Code describes a bar button; docs describe clicking the footer target. Both are kept as the trigger; the frontend element is not in these files.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-043",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:116, 157, 15). A did not return a verdict for this id. No conflict."
+  },
+  {
+   "title": "Capture footer shows target project and list",
+   "trigger": "Bar invokes capture_target. Docs: target shown in the footer, format project / list.",
+   "context": "Shown in the mini bar footer. Footer always shows the target.",
+   "result": "Returns the project name and the list name where the next capture will land. If the project is not found, project is an empty string.",
+   "exact": [
+    {
+     "what": "return shape",
+     "value": "{ project, list } (tray-app.md:115)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/capture.rs:11-33",
+    "doc:tray-app.md:14-15",
+    "B: tray-app.md:115: capture_target returns '{ project, list }' and is shown in the footer. tray-app.md:14-15 documents the format 'project / list'. The empty-string-on-failed-lookup edge case is not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Empty string when project lookup fails."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-044",
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:115, 14-15). The empty-string-on-failed-lookup edge case is not in the docs. No conflict."
+  },
+  {
+   "title": "Capture target list selection",
+   "trigger": "Any submit or capture_target call.",
+   "context": "Chooses where captures land.",
+   "result": "Uses the last active list (setting last_active_list, written by the main app) if it exists; otherwise the first list; otherwise a freshly created Inbox (tray-app.md:121). The docs do not say the new list is in the default project or has a suggested name.",
+   "exact": [
+    {
+     "what": "fallback list name (docs)",
+     "value": "Inbox (tray-app.md:121)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/task.rs:51-68",
+    "tray/src-tauri/src/task.rs:7-8",
+    "doc:tray-app.md:121",
+    "B: tray-app.md:121: 'last active list (setting last_active_list, written by the main app) → first list → a freshly created Inbox.' The docs name the created list 'Inbox' and give no default-project or suggested-name detail. The feature's 'suggested name' claim conflicts with that wording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The name for the fallback list comes from names::suggest_list_name(); the exact text is in the common crate."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-045",
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:121). The docs name the created list 'Inbox' and do not mention a default project or a suggested name, so the feature's 'suggested name' claim is not supported by the docs. Source-only items (ACTIVE_LIST_KEY, store.default_project(), names::suggest_list_name()) were not checked."
+  },
+  {
+   "title": "Submit creates a task from the bar and dismisses it",
+   "trigger": "Bar invokes submit_capture with title, optional notes, and screenshot paths. The docs describe pressing Enter in the title field (architecture.md:45); ⌘Enter from the notes editor is not documented.",
+   "context": "Bar visible.",
+   "result": "A task is created with the title in the target list, with all captured screenshots and notes. Non-blank notes are stored verbatim as the first note. Each screenshot is attached: one shot is named screenshot.png; several are named screenshot-1.png, screenshot-2.png, and so on. Main gets POST /refresh. The bar is then dismissed and the draft is emptied.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "submit_capture"
+    },
+    {
+     "what": "single screenshot name",
+     "value": "screenshot.png"
+    },
+    {
+     "what": "multiple screenshot names",
+     "value": "screenshot-{n}.png (1-based)"
+    },
+    {
+     "what": "main refresh route",
+     "value": "/refresh"
+    },
+    {
+     "what": "main refresh (docs)",
+     "value": "POST /refresh to :7420"
+    },
+    {
+     "what": "attachments",
+     "value": "all captured screenshots (screenshot_paths) plus notes"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/task.rs:10-49",
+    "doc:tray-app.md:118",
+    "doc:tray-app.md:189",
+    "doc:architecture.md:45-47",
+    "B: tray-app.md:118: submit_capture creates the task in the target list, attaches all screenshots (screenshot_paths: Vec<String>) plus notes, POST /refresh to main, dismiss. architecture.md:45: 'presses Enter' in the title field. tray-app.md:188: draft emptied after successful submit. architecture.md:47: task persisted and shown when main next opens. The ⌘Enter trigger, the screenshot naming, and the empty-notes and error edge cases are not in the docs."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Notes that are empty or whitespace-only are not stored.",
+    "Errors on task creation, note, or attachment are returned to the bar as strings without dismissing.",
+    "If main is not running the task is persisted and appears when main next opens (doc:architecture.md:47)."
+   ],
+   "notes": "The Enter key trigger is from architecture.md; tray-app.md does not name the key. Code (A) names ⌘Enter from the notes editor or title; both are kept.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F14-046",
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs. The docs describe pressing Enter in the title field (architecture.md:45); the docs do not document Cmd+Enter from the notes editor. The screenshot naming and the empty-notes and error edge cases are not in the docs."
+  },
+  {
+   "title": "Main window focus cache routes global combos to main",
+   "trigger": "Main POSTs /main-focused or /main-blurred.",
+   "context": "Main reports focus.",
+   "result": "The tray stores main focus. While focused, the toggle and screenshot combos act on main instead of the bar. If the routed POST fails, the cache clears and the local bar action runs.",
+   "exact": [
+    {
+     "what": "route focused",
+     "value": "/main-focused"
+    },
+    {
+     "what": "route blurred",
+     "value": "/main-blurred"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:28-34",
+    "tray/src-tauri/src/lib.rs:236-249",
+    "tray/src-tauri/src/lib.rs:43-56",
+    "B: tray-app.md and architecture.md do not mention /main-focused, /main-blurred, or routing of the toggle and screenshot combos to main."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A stale focused flag is cleared on failed POST so hotkeys do not wedge."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-047",
+   "check": "unverified",
+   "check_notes": "Neither checker could verify this. A returned no verdict for this id, and B found no mention of /main-focused, /main-blurred, or routing in the docs."
+  },
+  {
+   "title": "Tray HTTP server endpoint on the tray port",
+   "trigger": "Main or other apps POST to the tray server.",
+   "context": "Localhost only (port from common crate).",
+   "result": "Server is started on TRAY_PORT, which is 7421 (architecture.md:31). It serves only the shared data_router (architecture.md:28,31).",
+   "exact": [
+    {
+     "what": "tray port",
+     "value": "7421 (architecture.md:31)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:251-256",
+    "B: architecture.md:28: each app serves the shared data_router on a fixed port. architecture.md:31: tray :7421 'serves data_router only'. The feature omits the port value. The HTTP server error prefix is not in the docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-048",
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs (architecture.md:28, 31). The HTTP server error prefix is not in the docs. No conflict."
+  },
+  {
+   "title": "Startup registers hotkeys from settings",
+   "trigger": "App launch.",
+   "context": "Hotkeys are resolved asynchronously from settings (tray-app.md:91-92). Registration happens on the main thread.",
+   "result": "Global hotkeys (the two Global-scope commands) and the tray tooltip are registered and updated at startup (tray-app.md:91-92). The docs do not say this happens after the tray icon is built.",
+   "exact": [],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:220",
+    "tray/src-tauri/src/hotkeys.rs:183-196",
+    "B: tray-app.md:91-92: 'At startup … refresh_global_shortcuts resolves the two Global-scope commands from settings asynchronously and (re)registers them on the main thread via tauri-plugin-global-shortcut, updating the tray tooltip'. The docs do not say the tray icon is built first."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F14-049",
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:91-92). The docs do not say the tray icon is built first. A's code evidence under F14-036 places the startup call at lib.rs:220, after the TrayIconBuilder at lib.rs:209-212 (F14-040 evidence), which supports the ordering but is not a verdict on this id."
+  },
+  {
+   "title": "Target refreshes when the bar opens",
+   "trigger": "Summon the bar (mini-shown event fires).",
+   "context": "Bar opens.",
+   "result": "Title field is refocused and the target is refreshed.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "mini-shown"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:140",
+    "doc:tray-app.md:155",
+    "B: tray-app.md:140: 'mini-shown — bar was revealed; refocus the title field, refresh the target.' tray-app.md:155 also covers the listener behaviour."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-050",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:140, 155). No conflict."
+  },
+  {
+   "title": "Title field autofocus on open",
+   "trigger": "Summon the bar.",
+   "context": "Bar opens.",
+   "result": "Title field has focus so typing starts immediately.",
+   "exact": [
+    {
+     "what": "focus target",
+     "value": "title field"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:155",
+    "doc:tray-app.md:140",
+    "B: tray-app.md:155: 'The bar has a title field (autofocused)'. tray-app.md:140: mini-shown refocuses the title field."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:155, 140). No conflict."
+  },
+  {
+   "title": "Pointer hidden on open and while typing",
+   "trigger": "Summon the bar, or press any key while the bar is focused.",
+   "context": "Pointer may be stationary over the title field.",
+   "result": "Cursor is hidden (cursor: none everywhere) on reveal and on every keydown; it returns as soon as the mouse moves.",
+   "exact": [
+    {
+     "what": "CSS class",
+     "value": "cursor-hidden on <html>"
+    },
+    {
+     "what": "reveal grace",
+     "value": "~250 ms after each reveal ignores settling mouse events"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:159-171",
+    "B: tray-app.md:159-171: the mini-shown reveal and every keydown add cursor-hidden to <html> (cursor: none on everything); a mousemove removes it. tray-app.md:165-166: '~250 ms grace after each reveal ignores the settling mouse events'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "mousemove only shows the cursor, never hides it.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-052",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:159-171). No conflict."
+  },
+  {
+   "title": "Notes hidden until Tab",
+   "trigger": "Press Tab in the title field.",
+   "context": "Notes panel is collapsed by default.",
+   "result": "Notes panel animates open to its full height and the notes editor is focused.",
+   "exact": [
+    {
+     "what": "animation",
+     "value": "grid-template-rows from 0fr to 1fr"
+    },
+    {
+     "what": "state flag",
+     "value": "notesOpen"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:172-177",
+    "B: tray-app.md:172-177: Tab sets notesOpen, which animates grid-template-rows from 0fr to 1fr and then focuses the editor. The panel is inert while collapsed (tray-app.md:177). The docs say 'expands to the editor's natural height', not 'full height'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "While collapsed the notes panel is inert and nothing inside is tabbable"
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-053",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:172-177). B's verdict is exact, but B notes the docs say the panel expands to the editor's natural height, not full height. Any feature wording of 'full height' would not match the docs."
+  },
+  {
+   "title": "Tab order is title then notes only",
+   "trigger": "Press Tab repeatedly.",
+   "context": "Bar is open.",
+   "result": "Focus moves title -> notes only; footer buttons have tabIndex -1 and are skipped.",
+   "exact": [
+    {
+     "what": "footer button tabIndex",
+     "value": "-1"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:181-182",
+    "B: tray-app.md:181-182: footer buttons are tabIndex={-1}, so Tab only goes title → notes."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-054",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:181-182). No conflict."
+  },
+  {
+   "title": "Empty notes re-collapse on leaving the editor",
+   "trigger": "Move focus out of the notes editor while it is empty.",
+   "context": "Notes editor is empty.",
+   "result": "Notes panel collapses again; docked-toolbar clicks call preventDefault on blur so they do not collapse it.",
+   "exact": [
+    {
+     "what": "check",
+     "value": "onBlur -> isEmpty()"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:178-181",
+    "B: tray-app.md:178-181: re-collapses 'whenever focus leaves the editor while it's empty (its onBlur → isEmpty() check — docked-toolbar clicks preventDefault their blur)'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-055",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:178-181). No conflict."
+  },
+  {
+   "title": "Notes re-collapse when draft is emptied",
+   "trigger": "Submit or Clear.",
+   "context": "Draft emptied.",
+   "result": "Notes panel collapses.",
+   "exact": [
+    {
+     "what": "events",
+     "value": "submit or clear"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:178",
+    "B: tray-app.md:178-179: 'It re-collapses when the draft is emptied (submit or clear)'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:178-179). No conflict."
+  },
+  {
+   "title": "Non-empty notes stay open across dismissal",
+   "trigger": "Dismiss the bar with notes that have text.",
+   "context": "Notes non-empty.",
+   "result": "Notes stay expanded when the bar is shown again.",
+   "exact": [
+    {
+     "what": "condition",
+     "value": "non-empty notes"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:180-181",
+    "B: tray-app.md:180-181: 'non-empty notes stay open and survive dismissing the bar'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:180-181). No conflict."
+  },
+  {
+   "title": "Bar does not move during a capture",
+   "trigger": "Trigger a capture while the bar is visible.",
+   "context": "Bar is open.",
+   "result": "Bar stays in place, showing its spinner, while the grab runs; it is not parked during capture.",
+   "exact": [
+    {
+     "what": "parking during capture",
+     "value": "not used"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:33",
+    "doc:tray-app.md:58-59",
+    "doc:tray-app.md:74-75",
+    "B: tray-app.md:33: 'Parking is not used during capture — the bar is excluded from the shot instead'. tray-app.md:58-59 and 74-75: the bar stays on screen (showing its spinner) and 'stays put throughout'."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-058",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:33, 58-59, 74-75). No conflict."
+  },
+  {
+   "title": "Dividers between rows",
+   "trigger": "none",
+   "context": "Bar is visible.",
+   "result": "Title row, notes row and footer are separated by hairline dividers.",
+   "exact": [
+    {
+     "what": "divider style",
+     "value": "hairline"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:152-153",
+    "B: tray-app.md:151-153: 'hairline dividers between the title row, notes row, and footer'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-059",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:151-153). No conflict."
+  },
+  {
+   "title": "Drag the bar by its chrome",
+   "trigger": "Drag the card or its title, notes or footer rows.",
+   "context": "Bar is visible.",
+   "result": "Bar moves with the drag.",
+   "exact": [
+    {
+     "what": "attribute",
+     "value": "data-tauri-drag-region"
+    }
+   ],
+   "sources": [
+    "doc:tray-app.md:153-154",
+    "B: tray-app.md:153-154: 'Draggable via data-tauri-drag-region on the card and its chrome rows.'"
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Doc says the attribute is on the card and chrome rows; that these areas drag the window is inferred from the attribute.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F14-060",
+   "check": "confirmed_by_one",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:153-154). No conflict."
+  },
+  {
+   "title": "Tray capture target falls back to the first list, or creates a new list with a generated name when the project has no lists",
+   "trigger": "A capture is submitted from the mini bar (or its target is resolved) when the saved last_active_list no longer exists, or when there are no lists at all.",
+   "context": "target_list in the tray crate resolves the destination list. Order: stored last_active_list if it still matches an existing list; else the first list from store.list_lists(); else a list is created in the default project with a suggested adjective-noun name. The code comment says 'freshly created Inbox', but the code calls names::suggest_list_name(), so the new list is not named Inbox (comment and code conflict; code followed).",
+   "result": "A capture lands in the remembered list, else the first list, else a freshly created Inbox (tray-app.md:121).",
+   "exact": [
+    {
+     "what": "fallback created list name (docs)",
+     "value": "Inbox (tray-app.md:121)"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/task.rs:8",
+    "tray/src-tauri/src/task.rs:51-68",
+    ".llm/tray-app.md:121",
+    "B: tray-app.md:121: target_list() resolves last active list (setting last_active_list) → first list → 'a freshly created Inbox'. The docs call the created list 'Inbox', not 'a list with a generated name'. ACTIVE_LIST_KEY, store.default_project(), and names::suggest_list_name() are source-only and were not checked."
+   ],
+   "why_missed": "Index F15-039 covers remembering the last list for the main app, and F14-044/045/050 cover the capture target display and selection. Neither describes the tray's fallback chain or the auto-created list when no lists exist. F02-062 covers only the main window's no-lists empty state.",
+   "id": "F14-061",
+   "found_by": [
+    "seams"
+   ],
+   "check": "corrected",
+   "check_notes": "Only B checked this, against the docs (tray-app.md:121). The docs call the created list 'Inbox', not a list with a generated name. ACTIVE_LIST_KEY, store.default_project() and names::suggest_list_name() are source-only and B did not check them. A did not return a verdict for this id."
+  },
+  {
+   "title": "Tray hotkey routing falls back to a local mini-bar action when the main app is unreachable",
+   "trigger": "A global combo is routed to the main window (cached as frontmost) but the POST to the main port fails, for example because main was closed or crashed while frontmost.",
+   "context": "route_to_main_or POSTs to MAIN_PORT. On failure it clears the stale main_focused flag so later presses stop routing to a dead port, then runs the local fallback on the main thread because window operations must run there.",
+   "result": "The combo still works with main gone. The tray runs its own mini-bar action and future presses are no longer routed to main until it reports focus again.",
+   "exact": [
+    {
+     "what": "Stale-cache reset on failed POST",
+     "value": "main_focused().store(false, Ordering::Release) before fallback(&handle) runs via app.run_on_main_thread"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:36-56",
+    "B: tray-app.md and architecture.md do not describe route_to_main_or, a stale main_focused flag, or a local fallback after a failed POST."
+   ],
+   "why_missed": "F14-047 says the focus cache routes global combos to main, but not the failure path that clears the cache and falls back to a local action.",
+   "id": "F14-062",
+   "found_by": [
+    "seams"
+   ],
+   "check": "unverified",
+   "check_notes": "Neither checker could verify this. A returned no verdict for this id, and B found no description of route_to_main_or, a stale main_focused flag, or a local fallback in the docs."
+  },
+  {
+   "title": "Tray Open Taskscape launches the installed app by bundle id when no running instance answers",
+   "trigger": "Tray Open Taskscape, or the focus request, runs while the main app is not running and the POST to /focus on the main port fails.",
+   "context": "focus_or_launch_main_async first POSTs /focus to MAIN_PORT. If that fails it shells out to macOS open with the bundle id com.taskscape.main.app and returns false. Callers use the boolean to tell an already-running focus from a fresh launch.",
+   "result": "A focus request launches the app when it is not running. The return value is false when a launch was started, not a focus.",
+   "exact": [
+    {
+     "what": "Bundle id used for launch fallback",
+     "value": "com.taskscape.main.app (open -b)"
+    },
+    {
+     "what": "Focus endpoint path posted first",
+     "value": "/focus on MAIN_PORT"
+    }
+   ],
+   "sources": [
+    "tray/src-tauri/src/lib.rs:58-75",
+    "B: tray-app.md:125 names the Open Taskscape item with handler focus_or_launch_main. The /focus POST, the open -b com.taskscape.main.app launch, and the boolean return are not in the docs."
+   ],
+   "why_missed": "F14-041 covers only the tray menu item. F15-031 and F17-076 cover a focus request to a running main window. The launch-when-not-running fallback and its bundle id are not recorded.",
+   "id": "F14-063",
+   "found_by": [
+    "seams"
+   ],
+   "check": "unverified",
+   "check_notes": "Neither checker returned a verdict for this id. B could not check it against the docs. A's F14-041 evidence cites the related code (lib.rs:79-81 focus_or_launch_main, lib.rs:63 POST /focus, lib.rs:70-71 open -b args), which overlaps with this id's claims, but A did not verdict F14-063 itself and did not mention a boolean return. Someone may need to verify it directly against the code."
+  }
+ ]
+}

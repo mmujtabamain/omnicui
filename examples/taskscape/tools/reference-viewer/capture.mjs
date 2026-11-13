@@ -72,7 +72,9 @@ function dumpTree() {
       if (c.child) walk(c.child, d);
     }
   };
-  walk(root[key], 0);
+  // The container holds the HostRoot fiber; its stateNode.current is the committed tree
+  // (the container's own fiber can be the stale alternate).
+  walk(root[key].stateNode.current, 0);
   return lines.join('\n');
 }
 

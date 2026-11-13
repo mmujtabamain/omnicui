@@ -1,0 +1,2183 @@
+{
+ "area": 19,
+ "name": "Command surface",
+ "tier": "ordinary",
+ "counts": {
+  "A": 66,
+  "B": 11,
+  "critic_issues": null,
+  "merged": 73
+ },
+ "dropped": [
+  {
+   "title": "Attach a file by reference (Solution B)",
+   "reason": "Duplicate of \"Add a reference attachment (by location)\" from Solution A; merged into that entry, which now carries both sources and found_by [A, B]."
+  },
+  {
+   "title": "Attach a file by copy (Solution B)",
+   "reason": "Duplicate of \"Add a copied attachment\" from Solution A; merged into that entry, which now carries both sources and found_by [A, B]."
+  },
+  {
+   "title": "App preferences are not stored in the database (Solution B)",
+   "reason": "Same behaviour as Solution A's \"Key-value settings store\" entry (api.ts:150-152), which adds the settings.json location and the persistence detail; merged into one entry with found_by [A, B]."
+  },
+  {
+   "title": "Hotkey bindings are conflict-checked when set (Solution B)",
+   "reason": "Duplicate of Solution A's \"Hotkey catalog, rebinding, and reset\" entry (api.ts:154-158), which describes the same backend rejection; merged into one entry with found_by [A, B]."
+  }
+ ],
+ "features": [
+  {
+   "title": "Relative time shows \"just now\" for under 45 seconds",
+   "trigger": "none (display helper; no user action in these files)",
+   "context": "Any timestamp rendered through relativeTime(ms)",
+   "result": "A timestamp less than 45 seconds old is shown as \"just now\".",
+   "exact": [
+    {
+     "what": "label",
+     "value": "just now"
+    },
+    {
+     "what": "threshold",
+     "value": "sec < 45 (sec = Math.round(diff / 1000))"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:2-5",
+    "main/src/time.ts:2-5 (diff line 3, sec = Math.round(diff/1000) line 4, sec < 45 check line 5)",
+    "Checked .llm/common-crate.md and conventions.md in full. Neither mentions relativeTime, the \"just now\" label, or the 45-second threshold. common-crate.md:20 only covers util::now_millis() (Rust unix millis), not the frontend helper."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Uses Date.now() at call time, so the label is not live-updated by this file.",
+    "The cutoff applies to the rounded value, so a diff below 44,500 ms shows \"just now\" (time.ts:4-5).",
+    "A future timestamp gives a negative diff and sec, which is below 45, so it also shows \"just now\" (time.ts:3-5)."
+   ],
+   "notes": "Which screens call relativeTime is outside this area.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-001",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source. Checker B could not check (docs silent). Source decides."
+  },
+  {
+   "title": "Relative time shows minutes ago",
+   "trigger": "none (display helper)",
+   "context": "Timestamp at least 45 seconds old and under 60 minutes old",
+   "result": "Shown as whole minutes followed by \" ago\".",
+   "exact": [
+    {
+     "what": "format",
+     "value": "`${min}m ago`"
+    },
+    {
+     "what": "min",
+     "value": "Math.round(sec / 60)"
+    },
+    {
+     "what": "upper bound",
+     "value": "min < 60"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:6-7",
+    "main/src/time.ts:6-7 (min = Math.round(sec/60), min < 60 check)",
+    "Neither doc mentions relativeTime, the minutes format, or the 60-minute bound (common-crate.md and conventions.md searched in full)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Values are rounded, so 45 seconds rounds to 1m ago.",
+    "A diff of 44,500 ms or more passes the sec < 45 check and reaches this branch (time.ts:4-5).",
+    "A value whose rounded minutes is 60 fails min < 60 and is shown by the hours branch as \"1h ago\" (time.ts:6-9)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-002",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source. Checker B could not check (docs silent). Source decides."
+  },
+  {
+   "title": "Relative time shows hours ago",
+   "trigger": "none (display helper)",
+   "context": "Timestamp at least 60 minutes old and under 24 hours old",
+   "result": "Shown as whole hours followed by \" ago\".",
+   "exact": [
+    {
+     "what": "format",
+     "value": "`${hr}h ago`"
+    },
+    {
+     "what": "hr",
+     "value": "Math.round(min / 60)"
+    },
+    {
+     "what": "upper bound",
+     "value": "hr < 24"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:8-9",
+    "main/src/time.ts:8-9 (hr = Math.round(min/60); `${hr}h ago`; hr < 24)",
+    "Neither doc mentions the hours format or the 24-hour bound."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-003",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Relative time shows \"yesterday\"",
+   "trigger": "none (display helper)",
+   "context": "Timestamp that rounds to exactly one day old",
+   "result": "Shown as the word \"yesterday\".",
+   "exact": [
+    {
+     "what": "label",
+     "value": "yesterday"
+    },
+    {
+     "what": "condition",
+     "value": "day === 1 where day = Math.round(hr / 24)"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:10-11",
+    "main/src/time.ts:10-11 (day = Math.round(hr/24); day === 1 returns 'yesterday')",
+    "Neither doc mentions the \"yesterday\" label."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-004",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Relative time shows days ago",
+   "trigger": "none (display helper)",
+   "context": "Timestamp of 2 to 6 days (rounded)",
+   "result": "Shown as whole days followed by \" ago\".",
+   "exact": [
+    {
+     "what": "format",
+     "value": "`${day}d ago`"
+    },
+    {
+     "what": "upper bound",
+     "value": "day < 7"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:12",
+    "main/src/time.ts:12 (`${day}d ago`; day < 7)",
+    "Neither doc mentions the days format or the 7-day bound."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-005",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Relative time shows weeks ago up to 4 weeks",
+   "trigger": "none (display helper)",
+   "context": "Timestamp of 7 or more days old, with rounded weeks under 5",
+   "result": "Shown as whole weeks followed by \" ago\".",
+   "exact": [
+    {
+     "what": "format",
+     "value": "`${wk}w ago`"
+    },
+    {
+     "what": "wk",
+     "value": "Math.round(day / 7)"
+    },
+    {
+     "what": "upper bound",
+     "value": "wk < 5"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:13-14",
+    "main/src/time.ts:13-14 (wk = Math.round(day/7); `${wk}w ago`; wk < 5)",
+    "Neither doc mentions the weeks format or the 5-week bound."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-006",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Relative time switches to a short calendar date after about 5 weeks",
+   "trigger": "none (display helper)",
+   "context": "Timestamp whose rounded weeks is 5 or more",
+   "result": "Shown as a short locale date with abbreviated month and numeric day (for example \"Jul 8\"; exact rendering depends on the user's locale).",
+   "exact": [
+    {
+     "what": "options",
+     "value": "month: 'short', day: 'numeric' (locale: undefined)"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:15-18",
+    "main/src/time.ts:15-18 (toLocaleDateString(undefined, {month:'short', day:'numeric'})); the date example is in time.ts:21 (absoluteDateTime doc comment), not in relativeTime",
+    "Neither doc mentions the short calendar date or Intl options."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "The example \"Jul 8\" does not appear in time.ts for this function; the only date example in the doc comments is \"Jul 8, 2026, 3:14 PM\" on absoluteDateTime (time.ts:21).",
+    "No year option is passed, so the year is omitted even for dates from earlier years (time.ts:15-18)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-007",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; the \"Jul 8\" example is not in relativeTime. Checker B could not check."
+  },
+  {
+   "title": "Absolute date and time string",
+   "trigger": "none (display helper)",
+   "context": "Full timestamp display for a point in time",
+   "result": "Renders the date with abbreviated month, numeric day, numeric year, numeric hour, and two-digit minute (for example \"Jul 8, 2026, 3:14 PM\" per the doc comment; exact output is locale-dependent).",
+   "exact": [
+    {
+     "what": "options",
+     "value": "month 'short', day 'numeric', year 'numeric', hour 'numeric', minute '2-digit'"
+    }
+   ],
+   "sources": [
+    "main/src/time.ts:21-29",
+    "main/src/time.ts:21-29 (options month 'short', day 'numeric', year 'numeric', hour 'numeric', minute '2-digit'; example in line 21)",
+    "Neither doc mentions the absolute date/time formatting options."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Which UI shows this string is outside this area.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Note HTML is limited to a formatting whitelist",
+   "trigger": "none (applied on every note save and render)",
+   "context": "Any note content passed through sanitizeNoteHtml",
+   "result": "Only these elements survive: P, BR, B, STRONG, I, EM, U, S, STRIKE, DEL, A, UL, OL, LI, SPAN. Other elements are unwrapped (children kept, tag removed).",
+   "exact": [
+    {
+     "what": "allowed tags",
+     "value": "P, BR, B, STRONG, I, EM, U, S, STRIKE, DEL, A, UL, OL, LI, SPAN"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:7-23",
+    "common-ui/src/sanitizeHtml.ts:83-86",
+    "common-ui/src/sanitizeHtml.ts:7-23 (ALLOWED set), 83-86 (non-allowed tags unwrapped), 88-92 (SPAN without data-att unwrapped), 101-107 (unsafe A unwrapped), 1-5 (sanitizing on save and render per file header comment)",
+    "common-crate.md:77 says only that Note content is sanitized HTML. The tag whitelist (P, BR, B, STRONG, I, EM, U, S, STRIKE, DEL, A, UL, OL, LI, SPAN) is not in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Listed tags do not all survive: a SPAN without data-att is unwrapped (sanitizeHtml.ts:88-92), and an A with an unsafe href is unwrapped (sanitizeHtml.ts:101-107).",
+    "Text nodes are not touched by the tag whitelist and are kept (sanitizeHtml.ts:70-86)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-009",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check the whitelist (docs silent)."
+  },
+  {
+   "title": "Dangerous or media elements are removed with their whole subtree",
+   "trigger": "none (applied on note save and render)",
+   "context": "Note HTML containing media, scripts, or form controls",
+   "result": "Each listed element is deleted together with everything inside it (not unwrapped).",
+   "exact": [
+    {
+     "what": "dropped tags",
+     "value": "SCRIPT, STYLE, IMG, SVG, IFRAME, OBJECT, EMBED, VIDEO, AUDIO, LINK, META, PICTURE, SOURCE, CANVAS, INPUT, BUTTON, FORM"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:24-43",
+    "common-ui/src/sanitizeHtml.ts:79-82",
+    "common-ui/src/sanitizeHtml.ts:25-43 (DROP set, exact 17 names in order) and 79-82 (el.remove() for DROP tags); comment at line 24",
+    "The dropped-tag list and subtree-removal behaviour are not in common-crate.md or conventions.md. common-crate.md:77 only states that content is sanitized HTML."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Images are never kept in notes, per the comment at line 24."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "HTML comments are removed from notes",
+   "trigger": "none (applied on note save and render)",
+   "context": "Note HTML containing comment nodes",
+   "result": "Comment nodes are deleted.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:72-76",
+    "common-ui/src/sanitizeHtml.ts:160-162",
+    "common-ui/src/sanitizeHtml.ts:72-76 (comment removal in cleanElement) and 160-162 (top-level comment removal in sanitizeNoteHtml)",
+    "HTML comment removal is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-011",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Attributes are stripped from allowed formatting tags",
+   "trigger": "none (applied on note save and render)",
+   "context": "Allowed elements other than SPAN and A",
+   "result": "All attributes are removed from P, B, I, lists and similar allowed elements.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:45-49",
+    "common-ui/src/sanitizeHtml.ts:114",
+    "common-ui/src/sanitizeHtml.ts:45-49 (stripAttrs), 114 (stripAttrs(el, []) for other allowed tags)",
+    "Attribute stripping is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-012",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Links with unsafe hrefs lose the link but keep their text",
+   "trigger": "none (applied on note save and render)",
+   "context": "An A element whose href starts with javascript:, data:, or vbscript: (after trim and lowercase)",
+   "result": "The anchor tag is removed and all of its child nodes are kept in its place, including any allowed inline elements (for example B or SPAN), not only plain text (sanitizeHtml.ts:101-107, unwrap at 51-59).",
+   "exact": [
+    {
+     "what": "blocked prefixes",
+     "value": "javascript:, data:, vbscript:"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:61-68",
+    "common-ui/src/sanitizeHtml.ts:101-107",
+    "common-ui/src/sanitizeHtml.ts:61-68 (isSafeHref: trim, lowercase, prefixes), 101-107 (A handling, unwrap on unsafe), 51-59 (unwrap moves all child nodes)",
+    "The unsafe href prefixes (javascript:, data:, vbscript:) are not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A missing href is treated as empty string and is considered safe by isSafeHref, so it is kept as an A element."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-013",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Safe links open in a new window with no referrer",
+   "trigger": "none (applied on note save and render; the click itself is handled outside this area)",
+   "context": "An A element that passes the href check",
+   "result": "The anchor keeps its href and gets target=\"_blank\" and rel=\"noreferrer noopener\".",
+   "exact": [
+    {
+     "what": "target",
+     "value": "_blank"
+    },
+    {
+     "what": "rel",
+     "value": "noreferrer noopener"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:101-111",
+    "common-ui/src/sanitizeHtml.ts:108-110 (href kept, target '_blank', rel 'noreferrer noopener')",
+    "target=\"_blank\" and rel=\"noreferrer noopener\" are not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-014",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Attachment mention chips are kept as non-editable chips",
+   "trigger": "none (applied on note save and render)",
+   "context": "A SPAN with a data-att attribute",
+   "result": "The span is kept, gets class \"att-chip\" and contenteditable=\"false\", and keeps its data-att name.",
+   "exact": [
+    {
+     "what": "class",
+     "value": "att-chip"
+    },
+    {
+     "what": "contenteditable",
+     "value": "false"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:88-99",
+    "common-ui/src/sanitizeHtml.ts:88-99 (class att-chip line 96, contenteditable 'false' line 97, data-att kept line 95; empty value check at line 90 uses !att)",
+    "The att-chip class and contenteditable=\"false\" are not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A SPAN without data-att is unwrapped (text kept, tag removed).",
+    "An empty data-att value is treated as missing, so the SPAN is unwrapped (sanitizeHtml.ts:89-92)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-015",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Typed @name text becomes an attachment mention chip",
+   "trigger": "Typing @ followed by an existing attachment name in a note (typing is captured by the editor outside this area; this file runs only when mentionNames are passed)",
+   "context": "sanitizeNoteHtml called with mentionNames containing the task's real attachment names",
+   "result": "The matching text \"@name\" is replaced with a non-editable chip span (data-att=name, class att-chip) whose text is \"@name\". Text before and after the match is kept.",
+   "exact": [
+    {
+     "what": "chip text",
+     "value": "@{name}"
+    },
+    {
+     "what": "chip class",
+     "value": "att-chip"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:117-149",
+    "common-ui/src/sanitizeHtml.ts:153-156",
+    "common-ui/src/sanitizeHtml.ts:164",
+    "common-ui/src/sanitizeHtml.ts:117-149 (linkifyMentions; chip text `@${name}` line 143, class line 141, data-att line 140, first-@ check line 133-136, prefix match line 135, rest kept lines 145-146), 130 (closest('.att-chip') skip), 120 (empty names return), 153-156, 164 (call)",
+    "Mention chips, the @{name} text, and mentionNames are not mentioned in either doc. common-crate.md:18 mentions rename_attachment in attachments.rs, which is a Rust function and not the HTML chip rewrite."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Only the first @ in each text node is considered; if that @ does not start a known name, later @ characters in the same node are not linked (sanitizeHtml.ts:133-136).",
+    "Matching is a startsWith prefix check, so only the matched attachment name becomes the chip and any remaining characters stay as plain text (sanitizeHtml.ts:135, 145-146).",
+    "Text already inside a chip is not relinked (sanitizeHtml.ts:130).",
+    "Does nothing when mentionNames is empty (sanitizeHtml.ts:120)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-016",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Mention matching prefers the longest attachment name",
+   "trigger": "Typed text after @ begins with more than one attachment name (for example '@a.b.png' begins with both 'a.b.png' and 'a'). The check is the typed text starting with a name, not a name being a prefix of others.",
+   "context": "Mention linkify with several attachment names",
+   "result": "Names are tried longest first, so \"a.b.png\" wins over \"a\".",
+   "exact": [],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:118",
+    "common-ui/src/sanitizeHtml.ts:121",
+    "common-ui/src/sanitizeHtml.ts:135",
+    "common-ui/src/sanitizeHtml.ts:118, 121 (sort by length descending), 135 (value.slice(at+1).startsWith(nm)) ",
+    "Longest-first mention matching is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Matching is case-sensitive (startsWith)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-017",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Trailing line breaks and blank text are trimmed from note end",
+   "trigger": "none (applied on note save)",
+   "context": "Note whose content ends in BR elements or text that is empty, only zero-width spaces, or only whitespace (sanitizeHtml.ts:172-173).",
+   "result": "Those trailing nodes are removed, so they are not stored as content.",
+   "exact": [
+    {
+     "what": "stripped character",
+     "value": "​ (zero-width space) removed from the output"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:164-179",
+    "common-ui/src/sanitizeHtml.ts:165-179 (trailing loop lines 167-178 with BR check line 170-171 and blank-text check line 172-173; global ZWSP removal and trim at line 179)",
+    "Trailing BR and zero-width-space trimming is not mentioned in either doc. common-crate.md:68 mentions note write plus preview recompute in a transaction, which is a different behaviour."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The trailing trim is a loop: it removes consecutive trailing BR and blank text nodes and stops at the first other node (sanitizeHtml.ts:167-178).",
+    "After that, every U+200B in the whole output is removed, not only trailing ones, and the output is trimmed of leading and trailing whitespace (sanitizeHtml.ts:179)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-018",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Renaming an attachment rewrites its mention chips in notes",
+   "trigger": "none (called by the UI when an attachment is renamed; caller outside this area)",
+   "context": "renameMentionInHtml(html, oldName, newName)",
+   "result": "Every span.att-chip whose data-att equals oldName gets data-att=newName and text \"@newName\". Returns the new HTML, or null when no chip matched (no change).",
+   "exact": [
+    {
+     "what": "selector",
+     "value": "span.att-chip"
+    },
+    {
+     "what": "new chip text",
+     "value": "@{newName}"
+    }
+   ],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:182-201",
+    "common-ui/src/sanitizeHtml.ts:184-201 (selector 'span.att-chip' line 193, data-att compare line 195, textContent `@${newName}` line 197, null when unchanged line 200)",
+    "renameMentionInHtml and the span.att-chip rewrite are not mentioned in either doc. common-crate.md:18 lists rename_attachment in attachments.rs only, with no HTML rewrite."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-019",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Note character count is the plain text length",
+   "trigger": "none (helper for a character-count cap; cap value not in these files)",
+   "context": "Note HTML checked against the character cap",
+   "result": "The length of the note's textContent (HTML tags excluded) is returned.",
+   "exact": [],
+   "sources": [
+    "common-ui/src/sanitizeHtml.ts:203-208",
+    "common-ui/src/sanitizeHtml.ts:204-208 (textContent length; no ZWSP removal in this function)",
+    "The textContent character count helper is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Zero-width spaces are counted here because they are not removed by this function."
+   ],
+   "notes": "The numeric cap and its UI are not in these files.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-020",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Note writes are fire-and-forget and ordered",
+   "trigger": "Typing in a note (autosave streams edits as the user types)",
+   "context": "updateNote(id, content) called during autosave",
+   "result": "The call returns immediately; the backend enqueues the edit onto an ordered write queue.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:141-144",
+    "main/src/api.ts:141-144 (comment: fire-and-forget, ordered write queue, autosave as user types; updateNote invoke<void>('update_note', {id, content}))",
+    "common-crate.md:65 lists update_note in the Store notes group, and common-crate.md:68 says note write plus preview recompute runs in a transaction. Neither doc describes fire-and-forget calls, an ordered write queue, or the updateNote wrapper."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-021",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Create a note block for a task",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Adding a rich-text note block to a task",
+   "result": "Calls create_note with taskId and content and resolves with the created Note. This wrapper does not sanitize content; Note.content is documented as sanitized rich-text HTML (api.ts:26-27). Whether the backend sanitizes is not shown in these files.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:138-140",
+    "main/src/api.ts:23-31",
+    "main/src/api.ts:138-140 (createNote passes taskId and content unchanged to invoke<Note>('create_note')), 23-31 (Note.content documented as 'Sanitized rich-text HTML.' at line 26-27)",
+    "common-crate.md:65 lists create_note in the Store notes group, and common-crate.md:77 says Note content is sanitized HTML. conventions.md:15 confirms each command has a typed wrapper in src/api.ts. The api.ts signature and the createNote command wrapper are not described."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-022",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check the wrapper. No conflict: B's doc notes that content is sanitized HTML, and A notes the wrapper itself does not sanitize."
+  },
+  {
+   "title": "Delete a note block",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Removing a note block from a task",
+   "result": "Deletes the note with the given id.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:145",
+    "main/src/api.ts:145 (deleteNote invoke<void>('delete_note', {id}))",
+    "common-crate.md:65 lists delete_note in the Store notes group. The doc does not say the delete is keyed by note id, and the api.ts wrapper is not described."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-023",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Create a task with optional notes and a parent",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Adding a task to a list, optionally as a subtask",
+   "result": "Creates a task in listId with the given title; notes and parentId are sent as null when omitted.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:84-95",
+    "main/src/api.ts:84-95 (notes: notes ?? null line 93, parentId: parentId ?? null line 94)",
+    "common-crate.md:63 lists create_task. common-crate.md:68 says create_task plus first note runs in a transaction. The null defaults for notes and parentId, and the parentId subtask behaviour, are not in either doc. common-crate.md:74 only says parent_id is optional."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Only undefined (omitted) or null becomes null, because the wrapper uses ?? (api.ts:93-94); an explicit empty string for notes or parentId is sent as is."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-024",
+   "check": "corrected",
+   "check_notes": "Checker A verified against source; checker B could not check the defaults (docs silent)."
+  },
+  {
+   "title": "Update a task's title, notes, or done state",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Editing a task",
+   "result": "Patch may carry title, notes, or done; only the supplied fields are sent.",
+   "exact": [
+    {
+     "what": "TaskPatch fields",
+     "value": "title, notes, done"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:56-60",
+    "main/src/api.ts:96-97",
+    "main/src/api.ts:56-60 (TaskPatch: title?, notes?, done?), 96-97 (invoke('update_task', {id, ...patch}))",
+    "common-crate.md:63 lists update_task and common-crate.md:72 lists notes and done on Task. The TaskPatch type and its title, notes, and done fields are not in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-025",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Delete a task moves it to Trash (soft delete) and returns stamped ids for undo",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Deleting one task",
+   "result": "The task is soft-deleted to the Trash; the returned ids allow undo.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:98-99",
+    "main/src/api.ts:98-99 (deleteTask: soft-delete to Trash, resolves with string[] of stamped ids for undo)",
+    "common-crate.md:48-49 says deleting a task cascades to its whole subtree in the DB, which is a hard delete. The doc never mentions a Trash, soft delete, or stamped ids for undo. The soft-delete claim cannot be confirmed or refuted from these docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Conflicts with the B entry \"Subtask nesting and cascade delete\" only in the wording of what a delete does; see that entry.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-026",
+   "check": "confirmed_by_one",
+   "check_notes": "Conflict between sources: checker A (source code) says deleteTask soft-deletes to Trash and resolves with stamped ids; checker B read common-crate.md:48-49 as describing a hard DB-level cascade delete. Source code decides, so A's soft-delete claim is kept. The doc may be stale; flag for doc update."
+  },
+  {
+   "title": "Delete several tasks as one undoable action",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Deleting a selection of tasks",
+   "result": "Soft-deletes the given ids (pass the selection's forest roots; subtrees follow) and returns every stamped id so the delete can be undone.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:114-116",
+    "main/src/api.ts:114-116 (deleteTasks: forest roots, subtrees follow, returns every stamped id)",
+    "common-crate.md:48-49 supports subtree removal on delete at the DB level through the ON DELETE CASCADE rule. The bulk delete wrapper, forest-root selection, and returned stamped ids for undo are not in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Subtrees of the passed roots are deleted with them."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check the wrapper. Subtree behaviour is consistent across both."
+  },
+  {
+   "title": "Restore tasks from Trash",
+   "trigger": "none (command wrapper; undo or Restore action outside this area)",
+   "context": "Undo a delete or restore from Trash",
+   "result": "The given soft-deleted tasks are restored.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:117-118",
+    "main/src/api.ts:117-118 (restoreTasks invoke<void>('restore_tasks', {ids}))",
+    "Restore from Trash is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-028",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Permanently delete tasks from Trash",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Purging selected trashed tasks",
+   "result": "The given tasks are removed permanently.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:119-120",
+    "main/src/api.ts:119-120 (purgeTasks: permanently remove tasks from the Trash)",
+    "Permanent deletion from Trash is not mentioned in either doc. common-crate.md:63-64 lists delete_task but no Trash variant."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Trash list is most-recently-deleted first; live reads exclude trashed tasks",
+   "trigger": "none (command wrapper)",
+   "context": "Viewing the Trash",
+   "result": "listTrashed returns everything in the Trash, most recently deleted first. Live reads (list_tasks, all_tasks) never return trashed tasks.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:43-44",
+    "main/src/api.ts:121-122",
+    "main/src/api.ts:121-122 (listTrashed, most-recently-deleted first), 82-83 (list_tasks, all_tasks), 43-44 (live reads never return trashed tasks)",
+    "common-crate.md:64 lists all and list methods and common-crate.md:92 lists GET /tasks as all tasks. Neither doc mentions Trash ordering or that live reads exclude trashed tasks."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The ordering is a doc-comment statement; the backend implementation is not in this area."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-030",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Empty the Trash permanently",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Emptying the Trash",
+   "result": "Permanently removes everything in the Trash.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:123-124",
+    "main/src/api.ts:123-124 (emptyTrash: permanently empty the Trash)",
+    "Emptying the Trash is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-031",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Mark several tasks done or not done at once",
+   "trigger": "none (command wrapper; user trigger lives outside this area)",
+   "context": "Bulk done toggle on a selection",
+   "result": "Sets done to the given boolean for all listed task ids in one call.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:125-127",
+    "main/src/api.ts:125-127 (setTasksDone(ids, done) in one call)",
+    "No bulk done toggle is mentioned in either doc. common-crate.md:63 lists only update_task."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-032",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Copy selected tasks as a Markdown checklist",
+   "trigger": "none (copy action is triggered outside this area)",
+   "context": "The copy action on a set of tasks",
+   "result": "Backend renders the given tasks as a Markdown checklist string, returned to the caller.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:128-129",
+    "main/src/api.ts:128-129 (copyTasks invoke<string>('copy_tasks', {ids}), Markdown checklist per comment)",
+    "Markdown checklist copy is not mentioned in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The exact checklist syntax is produced by the backend and not shown in these files."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check."
+  },
+  {
+   "title": "Move a task to another parent or list",
+   "trigger": "none (command wrapper; drag or menu trigger outside this area)",
+   "context": "Moving a task to a different parent task or list",
+   "result": "Moves the task; parentId and listId may be null; sortOrder is optional and sent as null when omitted.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:100-111",
+    "main/src/api.ts:100-111 (moveTask: parentId and listId null allowed; sortOrder ?? null)",
+    "common-crate.md:67-68 lists move_task as a transaction with subtree relist, and common-crate.md:63-64 lists move_task. The parentId, listId, and optional sortOrder fields of the command wrapper are not described."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A exact against source; checker B could not check the wrapper fields."
+  },
+  {
+   "title": "Reorder a task",
+   "trigger": "none (command wrapper; drag outside this area)",
+   "context": "Changing a task's position",
+   "result": "Calls reorder_task with id and sortOrder and resolves with the updated Task (api.ts:112-113). The sort_order write itself happens in the backend, which is not in these files.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:112-113",
+    "main/src/api.ts:112-113 (reorderTask invoke<Task>('reorder_task', {id, sortOrder})); the sort_order write itself is in the backend, not in these files",
+    "common-crate.md:64 lists reorder_task in the Store tasks group, and common-crate.md:50 says sort_order is REAL NOT NULL. Neither doc says the command sets sort_order to the given value."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-035",
+   "check": "corrected",
+   "check_notes": "Checker A verified the wrapper against source; the backend write is not in these files. Checker B could not check."
+  },
+  {
+   "title": "Reorder a list",
+   "trigger": "none (command wrapper; drag outside this area)",
+   "context": "Changing a list's position",
+   "result": "Sets the list's sort_order to the given value.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:78-79",
+    "A (source): taskscape-tauri/main/src/api.ts:78-79 (reorderList -> 'reorder_list' {id, sortOrder}); main/src-tauri/src/lib.rs:175-181 (reorder_list takes sort_order: f64); common/src/storage.rs:144 (Store::reorder_list). Verdict: exact.",
+    "B (docs): cannot_check. common-crate.md:63 lists reorder_list; common-crate.md:50 says sort_order is REAL NOT NULL; neither says reorder sets sort_order to the given value."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-036",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified the feature against source and found it exact. B could not check the set-to-value semantics in the docs. No conflict."
+  },
+  {
+   "title": "Export a list as JSON",
+   "trigger": "none (command wrapper; menu or button outside this area)",
+   "context": "Exporting a whole list",
+   "result": "Writes the whole list (its tasks, subtasks, notes, and reference-type attachments) to the given path as pretty-printed JSON, with a top-level \"taskscape_export\": 1 schema version and the list name. Copied-file attachments are not included.",
+   "exact": [
+    {
+     "what": "format",
+     "value": "JSON (pretty-printed, serde_json::to_string_pretty)"
+    },
+    {
+     "what": "schema version key",
+     "value": "taskscape_export: 1"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:131-133",
+    "A (source): api.ts:132-133; main/src-tauri/src/lib.rs:445-470 (export_list writes serde_json::to_string_pretty of ListExport to path); lib.rs:389-391 and 411-413 (copied-file attachments left out; only reference-type attachments exported); lib.rs:464 (taskscape_export: 1). Verdict: corrected.",
+    "B (docs): cannot_check. No export command or JSON export format is described in either doc. models.rs is called 'The JSON contract' at common-crate.md:10, which does not establish an export format."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Copied-file attachments (stored under ~/.taskscape/) are omitted from the export; only reference attachments are kept (lib.rs:389-391, 411-413, 432)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-037",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check the export behaviour in docs and found nothing contradicting A."
+  },
+  {
+   "title": "Import a list from JSON",
+   "trigger": "none (command wrapper; menu or button outside this area)",
+   "context": "Importing a list into a project",
+   "result": "Creates a new list in projectId from the exported JSON file at path, then recreates each task (title, done state, notes, reference attachments, and subtasks, recursively). The optional name overrides the list name stored in the file; when omitted, null is sent and the file's own list name is used.",
+   "exact": [
+    {
+     "what": "format",
+     "value": "JSON"
+    },
+    {
+     "what": "name when omitted",
+     "value": "null (api.ts:135), falls back to the file's list name"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:131-135",
+    "A (source): api.ts:134-135 (importList -> 'import_list' with name ?? null); main/src-tauri/src/lib.rs:504-527 (import_list), lib.rs:474-502 (import_task), lib.rs:515-518 (name override). Verdict: corrected.",
+    "B (docs): cannot_check. No import command, JSON import format, or null-name default is described in either doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A blank or whitespace-only name is treated as omitted (lib.rs:516-518: filter non-blank).",
+    "Only reference attachments are recreated; copied-file attachments are not restored (lib.rs:493-497 calls attach_reference only)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-038",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check the import behaviour in docs and found nothing contradicting A."
+  },
+  {
+   "title": "Create, rename, and delete projects; get default project",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Project management",
+   "result": "Projects can be created with a name, renamed, deleted by id, and the default project can be fetched.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:64-69",
+    "A (source): api.ts:64-69 (listProjects, createProject(name), renameProject(id,name), deleteProject(id), defaultProject); main/src-tauri/src/lib.rs:117-145. Verdict: exact.",
+    "B (docs): cannot_check. common-crate.md:62 lists project methods create/list/rename/delete_project and default_project, so the operations exist. The docs do not state that delete is by id or that create takes a name."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-039",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified exact against source. B confirmed the operations exist but could not check the parameter details."
+  },
+  {
+   "title": "Create, rename, and delete lists",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "List management within a project",
+   "result": "Lists can be listed, created in a project with a name, renamed, and deleted by id.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:72-77",
+    "A (source): api.ts:72-77 (listLists, createList(projectId,name), renameList(id,name), deleteList(id)); main/src-tauri/src/lib.rs:147-172. Verdict: exact.",
+    "B (docs): corrected. common-crate.md:63 lists list methods create/list/reorder/rename/delete_list. The docs do not say lists are created in a project with a name, or that delete is by id."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-040",
+   "check": "confirmed_by_one",
+   "check_notes": "A's source check stands. B's correction is a scope note: the feature result omits reorder, which is covered by F19-036 (reorderList, api.ts:78-79; lib.rs:175-181). Not a value conflict, so no value change. Optionally mention reorder in the result."
+  },
+  {
+   "title": "Remember active list and active project",
+   "trigger": "none (command wrapper; selection in UI outside this area)",
+   "context": "User selects a list or project",
+   "result": "set_active_list and set_active_project store the selected list id under the setting key last_active_list and the project id under last_active_project, through the settings store (~/.taskscape/settings.json). The tray reads last_active_list to choose where captures land.",
+   "exact": [
+    {
+     "what": "setting keys",
+     "value": "last_active_list (list); last_active_project (project)"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:148-149",
+    "A (source): api.ts:148-149; main/src-tauri/src/lib.rs:658-676 (set_active_list stores setting 'last_active_list'; set_active_project stores 'last_active_project'); lib.rs:668 doc comment 'so we can restore it on launch'; common/src/storage.rs:42-50 (Store::set_setting writes the settings file); tray/src-tauri/src/task.rs:8 and 55 (tray reads 'last_active_list'). Verdict: corrected.",
+    "B (docs): cannot_check. No active list or active project state is described. common-crate.md:13 covers only the settings file."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Persistence across launches: the setting is written to settings.json, which persists on disk (settings.rs:1-9). The Rust doc comment at lib.rs:668 says the project is restored on launch; the restore code was not read."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-041",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check active-selection storage in docs."
+  },
+  {
+   "title": "Key-value settings store (persisted in settings.json)",
+   "trigger": "none (command wrapper; settings UI outside this area)",
+   "context": "Reading or writing an app setting by key, including hotkeys and screenshot_mode",
+   "result": "getSetting(key) returns the stored string or null; setSetting(key, value) stores a string value. Settings persist in a separate JSON file, ~/.taskscape/settings.json, not in taskscape.db. Writes are serialized within the main process and land atomically (write to a temp file, then rename); reads re-parse the file on each call. Only the main app writes settings; the tray only reads.",
+   "exact": [
+    {
+     "what": "getSetting / setSetting",
+     "value": "returns stored string or null / stores a string value"
+    },
+    {
+     "what": "Rust functions (docs)",
+     "value": "Store::get/set_setting (common-crate.md:13)"
+    },
+    {
+     "what": "settings file",
+     "value": "~/.taskscape/settings.json"
+    },
+    {
+     "what": "hotkeys key",
+     "value": "hotkeys"
+    },
+    {
+     "what": "other keys seen in code",
+     "value": "screenshot_mode, theme, last_active_list, last_active_project"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:150-152",
+    "doc:common-crate.md:11",
+    "doc:common-crate.md:13",
+    "doc:common-crate.md:52-54",
+    "A (source): api.ts:150-152; main/src-tauri/src/lib.rs:679-693 (get_setting returns Option<String>; set_setting); common/src/paths.rs:4-8 and 15-18 (root ~/.taskscape; settings.json); common/src/settings.rs:1-9 (only main writes, tray reads; atomic write-temp-then-rename; read-through re-parse), settings.rs:26-33 (missing or corrupt file reads as empty map); common/src/hotkeys.rs:32 (HOTKEYS_KEY = \"hotkeys\"); common/src/screenshot.rs:17 (screenshot_mode); tray/src-tauri/src/hotkeys.rs:31 and main lib.rs:62-67 (theme key). Verdict: corrected.",
+    "B (docs): corrected. common-crate.md:13 says settings.rs is a string-to-string map persisted as JSON at ~/.taskscape/settings.json, outside the DB, backing Store::get/set_setting with atomic writes and read-through. common-crate.md:11 names the hotkeys key. common-crate.md:52-54 says settings are outside the DB. B's exact correction: the docs do not state that get returns null when unset."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Settings writes are atomic (temp file then rename) and reads are read-through (settings.rs:5-9, 48-56).",
+    "A missing or unreadable/corrupt settings file is treated as empty, so absent keys fall back to defaults (settings.rs:26-33).",
+    "Only the main app writes settings; the tray process only reads them (settings.rs:5)."
+   ],
+   "notes": "Which keys exist (for example the Appearance setting) is outside these files, except that the tray reads an Appearance setting (tray api.ts:12-14).",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F19-042",
+   "check": "corrected",
+   "check_notes": "A decides values. A's source shows get_setting returns Option<String>, so null when unset. B's file path, key name, atomic and read-through behaviour, and DB exclusion all match A. The docs do not state the null return, which is not a conflict."
+  },
+  {
+   "title": "Hotkey catalog, rebinding, and reset; conflicting bindings are rejected",
+   "trigger": "none (command wrapper; keybinding UI outside this area)",
+   "context": "Viewing or changing keyboard shortcuts",
+   "result": "listHotkeys returns the catalog with effective (user-customized) combos (resolve). setHotkey(id, accel) validates and persists an accelerator for a command id; an empty accel unbinds it. resetHotkey(id) drops the user override and restores the default combo. The backend rejects: an unknown id, an unparseable accelerator, a bare key without ⌘, ⌃ or ⌥ (F-keys are exempt), and a combo already used by another command in the same scope, with the message already used by “<label of holder>”. Assigning the command's own default removes the override.",
+   "exact": [
+    {
+     "what": "catalog functions",
+     "value": "listHotkeys -> resolve; setHotkey -> set_binding; resetHotkey -> reset_binding"
+    },
+    {
+     "what": "accel format",
+     "value": "canonical accel format (Display of the parsed Accel; hotkeys.rs:622-625)"
+    },
+    {
+     "what": "bare-key rejection message",
+     "value": "shortcut needs ⌘, ⌃ or ⌥"
+    },
+    {
+     "what": "conflict message",
+     "value": "already used by “{label}”"
+    },
+    {
+     "what": "unbind value",
+     "value": "empty string"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:154-158",
+    "doc:common-crate.md:11",
+    "A (source): api.ts:154-158; main/src-tauri/src/lib.rs:695-717 (list_hotkeys -> hotkeys::resolve; set_hotkey -> hotkeys::set_binding; reset_hotkey -> hotkeys::reset_binding); common/src/hotkeys.rs:574 (resolve), 593-629 (set_binding), 632-638 (reset_binding), 622-625 (canonical accel via Display), 607-612 (rejections). Verdict: corrected.",
+    "B (docs): corrected. common-crate.md:11 says hotkeys.rs holds the command catalog, canonical accel format, and resolve/set_binding (conflict-checked, over the settings key hotkeys). The docs do not name listHotkeys, setHotkey, or resetHotkey, do not describe reset, and do not give the rejection message or the accel format string."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Conflict check applies only to commands in the same scope (hotkeys.rs:610-612).",
+    "The rejection message text is found: hotkeys.rs:608 and 612.",
+    "common-ui/src/hotkeys.ts was not opened, so the frontend twin is not verified here."
+   ],
+   "notes": "Solution B's entry \"Hotkey bindings are conflict-checked when set\" was merged here; no strings or key values are given in either solution.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F19-043",
+   "check": "corrected",
+   "check_notes": "A and B agree on the underlying functions (resolve, set_binding; canonical accel format). B's gaps (no docs for the command names, reset, or rejection text) are not conflicts; A's source-based values stand. The frontend twin in common-ui/src/hotkeys.ts was not checked by A."
+  },
+  {
+   "title": "Present (build) the settings or overlay window fresh",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Opening a window at a given width and height",
+   "result": "presentWindow(width, height) does not build a window. It resizes the already-built settings or overlay window to the given logical size, centers it over the main window (or centers on screen if there is no main window), shows it, and focuses it. Windows are built hidden by build_panel and are destroyed on close; sheets render in-app and are not windows.",
+   "exact": [
+    {
+     "what": "parameters",
+     "value": "width: number, height: number (logical size; Rust f64)"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:160-164",
+    "A (source): api.ts:160-164; main/src-tauri/src/lib.rs:840-871 (present_window); lib.rs:803-834 (build_panel builds the window hidden); lib.rs:874 comment; api.ts:162 (sheets render in-app). Verdict: corrected.",
+    "B (docs): cannot_check. presentWindow, its width and height parameters, the destroy-on-close behaviour, and the in-app sheets are not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The window is shown only after it has been sized and positioned, so it does not visibly resize (lib.rs:837-839)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-044",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Open Settings window",
+   "trigger": "none (command wrapper; menu or shortcut outside this area)",
+   "context": "Opening Settings",
+   "result": "Calls open_settings. If a window labelled settings already exists it is focused and no new window is made (singleton). Otherwise a frameless, hidden settings window titled \"Settings\" is built at 640 x 520, resizable, with a minimum inner size of 640 x 520; the frontend reveals it later via presentWindow.",
+   "exact": [
+    {
+     "what": "window title",
+     "value": "Settings"
+    },
+    {
+     "what": "default size",
+     "value": "640 x 520"
+    },
+    {
+     "what": "minimum size",
+     "value": "640 x 520"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:165",
+    "A (source): api.ts:165; main/src-tauri/src/lib.rs:873-893 (open_settings); lib.rs:803-834 (build_panel). Verdict: corrected.",
+    "B (docs): cannot_check. No Settings window open command is described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-045",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Main window fades in after first frame",
+   "trigger": "none (fires at app startup)",
+   "context": "Startup, while a native boot box is on screen",
+   "result": "revealMain fades the main webview in once the first frame has painted; calling it again has no further effect.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:166-168",
+    "A (source): api.ts:166-168 (fade in once first frame has painted; idempotent); main/src-tauri/src/lib.rs:895-911 (reveal_main: WEBVIEW_REVEALED.swap so the fade runs once; later calls return Ok with no effect). Verdict: exact.",
+    "B (docs): cannot_check. revealMain and the fade-in behaviour are not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Idempotent per the comment."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-046",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified exact against source. B could not check in docs."
+  },
+  {
+   "title": "Native boot box is dropped when boot overlay is dismissed",
+   "trigger": "none (fires when the boot overlay is dismissed)",
+   "context": "Boot overlay dismissed",
+   "result": "bootDone removes the native boot box.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:169-170",
+    "A (source): api.ts:169-170; main/src-tauri/src/lib.rs:913-921 (boot_done runs panels::remove_boot_box on the main thread). Verdict: exact.",
+    "B (docs): cannot_check. bootDone and the native boot box are not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-047",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified exact against source. B could not check in docs."
+  },
+  {
+   "title": "Window theme follows dark setting",
+   "trigger": "none (command wrapper; Appearance setting outside this area)",
+   "context": "Dark mode toggled or applied",
+   "result": "setWindowTheme(dark) paints the native background of the main window to the dark or light palette (it does not call a window-theme API). It acts only on the window labelled \"main\"; other windows (the transparent panels) are skipped and nothing happens for them.",
+   "exact": [
+    {
+     "what": "parameter",
+     "value": "dark: boolean"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:172",
+    "A (source): api.ts:172; main/src-tauri/src/lib.rs:923-934 (set_window_theme: only when window label is \"main\", calls paint_window_background(dark); other windows skipped); lib.rs:53 (paint_window_background). Verdict: corrected.",
+    "B (docs): cannot_check. setWindowTheme and the dark parameter are not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Called from the frontend theme apply() in every window; only the main window is painted (lib.rs:923-927)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-048",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Low Power Mode query",
+   "trigger": "none (queried by UI outside this area)",
+   "context": "Checking whether macOS Low Power Mode is on",
+   "result": "Returns true when macOS Low Power Mode is on, false otherwise and always false off macOS. The UI reads it once at frontend startup; live changes arrive as a power-state-changed event carrying the new boolean.",
+   "exact": [
+    {
+     "what": "event name",
+     "value": "power-state-changed"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:173-174",
+    "A (source): api.ts:173-174; main/src-tauri/src/lib.rs:936-941 (is_low_power_mode); main/src-tauri/src/power.rs:11-12 (event power-state-changed), 14-37 (NSProcessInfo isLowPowerModeEnabled; false off macOS), 42-45, 95-98. Verdict: corrected.",
+    "B (docs): cannot_check. Low Power Mode is not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Live updates come through the power-state-changed event, not this query (power.rs:42-45)."
+   ],
+   "notes": "What the UI does with it is outside this area.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-049",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Add a reference attachment (by location)",
+   "trigger": "none (command wrapper; UI trigger outside this area; the user-facing action is not named in the docs)",
+   "context": "Attaching a file by reference (LinkType reference); stores a URL or path only",
+   "result": "addReference(taskId, name, location) creates a reference attachment for the task with the given name and location and returns it as Attachment. The location is stored as given and may be an online URL, a file:// URL, or a network path. Nothing is copied into ~/.taskscape.",
+   "exact": [
+    {
+     "what": "LinkType value",
+     "value": "reference"
+    },
+    {
+     "what": "HTTP route",
+     "value": "add-by-reference (common-crate.md:94)"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:179-180",
+    "doc:common-crate.md:78",
+    "doc:common-crate.md:87-94",
+    "A (source): api.ts:179-180 (addReference -> 'add_reference' {taskId,name,location}); common/src/attachments.rs:8-19 (attach_reference records a pointer without copying; URL, file:// URL, or network path); common/src/models.rs:68-80 (LinkType lowercase; Reference = \"reference\"). Verdict: corrected.",
+    "B (docs): exact. common-crate.md:10 defines LinkType as Reference | Copy, written lowercase as reference (common-crate.md:77-78: reference copies nothing and stores a URL or path). common-crate.md:18 names attach_reference; common-crate.md:94 lists add-by-reference as the HTTP route."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Renaming a reference changes only the display name, not the URL or path (attachments.rs:47-50)."
+   ],
+   "notes": "Solution B's entry \"Attach a file by reference\" was merged here.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F19-050",
+   "check": "corrected",
+   "check_notes": "B's exact verdict is doc-based and only checks the LinkType value and the no-copy behaviour; it does not contradict A's source-based result. A's corrections are kept because they add the source-verified behaviour (the location may be a URL, file:// URL, or network path; nothing is copied). B's HTTP route note is added as an exact entry."
+  },
+  {
+   "title": "Add a copied attachment (copied into ~/.taskscape/attachments/)",
+   "trigger": "none (command wrapper; UI trigger outside this area; the user-facing action is not named in the docs)",
+   "context": "Attaching a file by copying it into the app (LinkType copy)",
+   "result": "addCopy copies the source file into the task's attachments folder. If name is omitted or null, the source file's own name is used, falling back to \"attachment\". The stored file is named <unique id>-<file name> inside ~/.taskscape/attachments/, and the attachment stores the relative location attachments/<stored name>.",
+   "exact": [
+    {
+     "what": "LinkType value",
+     "value": "copy"
+    },
+    {
+     "what": "folder",
+     "value": "~/.taskscape/attachments/"
+    },
+    {
+     "what": "name fallback",
+     "value": "source file name, then \"attachment\""
+    },
+    {
+     "what": "stored file name",
+     "value": "<unique id>-<file name>"
+    },
+    {
+     "what": "stored location",
+     "value": "attachments/<stored name>"
+    },
+    {
+     "what": "Rust function (docs)",
+     "value": "attach_copy (common-crate.md:18)"
+    },
+    {
+     "what": "HTTP route (docs)",
+     "value": "POST /tasks/{id}/attachments/copy (common-crate.md:95)"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:181-182",
+    "doc:common-crate.md:27",
+    "doc:common-crate.md:78",
+    "doc:common-crate.md:95",
+    "A (source): api.ts:181-182 (addCopy(taskId, sourcePath, name?) -> 'add_copy' with name ?? null); common/src/attachments.rs:21-45 (attach_copy); attachments.rs:29-33 (name fallback); attachments.rs:35-41 (stored name and location); common/src/paths.rs:21-23; models.rs:80 (\"copy\"). Verdict: corrected.",
+    "B (docs): corrected. common-crate.md:18 names attach_copy (not add_copy); HTTP route POST /tasks/{id}/attachments/copy (common-crate.md:95); common-crate.md:27 places attachments/ under ~/.taskscape/; common-crate.md:78 says copy stores a relative location. conventions.md:8 cites attach_copy for error context. The docs do not state that name is optional or sent as null."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Copy failures are wrapped with the context \"copying <source> -> <dest>\" (attachments.rs:38-39)."
+   ],
+   "notes": "Solution B's entry \"Attach a file by copy\" was merged here.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F19-051",
+   "check": "corrected",
+   "check_notes": "No value conflict. A's JS command name add_copy (api.ts:181-182) and B's Rust function name attach_copy refer to different layers and both are kept. B's optional-name and null-default point is not in the docs and is covered by A's source evidence."
+  },
+  {
+   "title": "Attach a screenshot to a task",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Attaching a screenshot",
+   "result": "attachScreenshot(taskId) captures the screen per the screenshot_mode setting and attaches the PNG to the task as a copy named \"screenshot.png\". It resolves with the Attachment, or null when a region capture is cancelled.",
+   "exact": [
+    {
+     "what": "attachment name",
+     "value": "screenshot.png"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:183-184",
+    "A (source): api.ts:183-184; main/src-tauri/src/lib.rs:633-656 (attach_screenshot: capture, then attach_copy with name \"screenshot.png\"; returns Ok(None) if cancelled). Verdict: corrected.",
+    "B (docs): cannot_check. No screenshot-attach command is described. The HTTP attachment routes at common-crate.md:94-95 cover only reference and copy."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "On macOS, the first capture may show the Screen Recording prompt (screenshot.rs:36-38)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-052",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Capture a screenshot without attaching it",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Capturing a screenshot for later use",
+   "result": "captureScreenshot() captures a region or the full screen per the screenshot_mode setting, saves it without attaching, and returns the PNG path as a string, or null when no file was written (a cancelled region capture).",
+   "exact": [
+    {
+     "what": "output",
+     "value": "PNG path or null"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:185-187",
+    "A (source): api.ts:185-187; main/src-tauri/src/lib.rs:615-627 (capture_screenshot returns Option<String> path); common/src/screenshot.rs:60-65 (returns Ok(None) whenever no file was written after the grab, in either mode). Verdict: corrected.",
+    "B (docs): corrected. common-crate.md:102-106 says capture() runs screencapture in full-screen (-x) or interactive region/window (-i) mode and returns the path; common-crate.md:106 says a cancelled region selection returns Ok(None). The docs do not describe a null return at the command boundary."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The code does not guarantee that full-screen capture never returns null: capture() returns Ok(None) whenever the PNG file is absent after the grab, regardless of mode (screenshot.rs:62-64). Only the doc comment wording (lib.rs:615-619, api.ts:185-186) says null is for cancelled region captures."
+   ],
+   "notes": "Region vs full-screen choice is made outside these files. Backend behaviour for full-screen and interactive modes is in the Solution B screenshot entries.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-053",
+   "check": "corrected",
+   "check_notes": "A's source (lib.rs:615-627) shows the null return at the command boundary, which B could not see in the docs. Not a conflict. A's note that null is not limited to cancelled region captures is kept."
+  },
+  {
+   "title": "Delete an attachment",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Removing an attachment",
+   "result": "Deletes the attachment with the given id.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:188",
+    "A (source): api.ts:188 (deleteAttachment -> 'delete_attachment' {id}); main/src-tauri/src/lib.rs:597-601; common/src/storage.rs:510 (delete_attachment). Verdict: exact.",
+    "B (docs): cannot_check. common-crate.md:65 lists delete_attachment among attachment methods; the docs do not state that deletion is by id."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-054",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified exact against source. B confirmed the operation exists but could not check the id parameter."
+  },
+  {
+   "title": "Rename an attachment",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Renaming an attachment",
+   "result": "renameAttachment(id, name) trims the new name and rejects an empty one. For a copy, the file on disk is renamed (keeping its extension, with the name sanitized for the file system) and the stored location is updated. For a reference, only the display name changes. Returns the updated Attachment.",
+   "exact": [
+    {
+     "what": "error message",
+     "value": "attachment name cannot be empty"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:189-190",
+    "A (source): api.ts:189-190 (renameAttachment -> 'rename_attachment' {id,name}); common/src/attachments.rs:47-96 (trims name; empty name rejected with \"attachment name cannot be empty\"; reference renames only display name; copy renames file on disk keeping extension; missing backing file updates name only); main/src/lib/mentions.ts:1 and 15; common-ui/src/sanitizeHtml.ts:182-201. Verdict: corrected.",
+    "B (docs): cannot_check. common-crate.md:18 names rename_attachment as async. The docs do not describe what it sets or returns. renameMentionInHtml and sanitizeHtml.ts do not appear in the docs."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Mention chips in notes are rewritten on rename by renameMentionInHtml (common-ui/src/sanitizeHtml.ts:182-201), called from main/src/lib/mentions.ts:15."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-055",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Open an attachment",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Opening an attachment",
+   "result": "openAttachment(a) opens the attachment with the OS default handler by running macOS open on its target. For a copy, the target is the file resolved under ~/.taskscape/; for a reference, the stored location is opened as given.",
+   "exact": [
+    {
+     "what": "copy resolution",
+     "value": "resolved under ~/.taskscape/"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:191-195",
+    "A (source): api.ts:191-195 (openAttachment -> 'open_attachment' {linkType, location}); main/src-tauri/src/lib.rs:719-735 (open_attachment). Verdict: corrected.",
+    "B (docs): cannot_check. Opening an attachment by link_type and location is not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The command does not check the exit status of open (lib.rs:730-734)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-056",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Reveal an attachment in Finder or Explorer",
+   "trigger": "none (command wrapper; UI trigger outside this area)",
+   "context": "Showing an attachment in its folder",
+   "result": "revealAttachment(a) reveals the attachment in Finder or Explorer. For a copy, the file is resolved under ~/.taskscape/; for a reference, a file path is revealed as given. An http:// or https:// location is refused.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:202-206",
+    "A (source): api.ts:202-206 (revealAttachment -> 'reveal_attachment'); main/src-tauri/src/lib.rs:737-752 (reveal_attachment). Verdict: corrected.",
+    "B (docs): cannot_check. Reveal in Finder or Explorer is not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Web URLs return the error \"cannot reveal a URL in the file manager\" (lib.rs:746-747)."
+   ],
+   "notes": "Finder/Explorer named in the comment at api.ts:198.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-057",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Show data locations (data folder and screenshots folder)",
+   "trigger": "none (command wrapper; Settings UI outside this area)",
+   "context": "Settings shows app data paths",
+   "result": "Returns absolute paths for data_dir and screenshots_dir.",
+   "exact": [
+    {
+     "what": "fields",
+     "value": "data_dir, screenshots_dir"
+    }
+   ],
+   "sources": [
+    "main/src/api.ts:50-54",
+    "main/src/api.ts:196-197",
+    "A (source): api.ts:50-54 (DataPaths: data_dir, screenshots_dir); api.ts:196-197 (dataPaths -> 'data_paths'); main/src-tauri/src/lib.rs:757-770 (absolute paths from root_dir and screenshots_dir); common/src/paths.rs:4-8, 26-28. Verdict: exact.",
+    "B (docs): cannot_check. common-crate.md:25 gives ~/.taskscape/ as the data root and common-crate.md:28 gives screenshots/ under it. The field names data_dir and screenshots_dir and the absolute-path claim are not in the docs."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-058",
+   "check": "confirmed_by_one",
+   "check_notes": "A verified exact against source. B's doc locations agree with A's paths.rs references; the field names are not in the docs."
+  },
+  {
+   "title": "Open a folder, falling back to nearest existing ancestor",
+   "trigger": "none (command wrapper; Settings UI outside this area)",
+   "context": "Opening a data folder such as screenshots/ before any capture has happened",
+   "result": "openPath(path) opens the folder in Finder or Explorer. If the folder does not exist yet (for example screenshots/ before the first capture), the nearest existing ancestor is opened instead. No directory is created.",
+   "exact": [],
+   "sources": [
+    "main/src/api.ts:198-200",
+    "A (source): api.ts:198-200 (openPath, comment on nearest existing ancestor); main/src-tauri/src/lib.rs:772-785 (open_path walks up with pop until an existing path is found; returns Err \"<path> does not exist\" if none). Verdict: corrected.",
+    "B (docs): cannot_check. common-crate.md:16 says paths.rs has ensure_dirs(). The docs do not say which folders it creates or that screenshots/ appears only after the first capture. The nearest-ancestor fallback is not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "If no ancestor exists, the command returns an error \"<path> does not exist\" (lib.rs:779-782)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-059",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B's ensure_dirs() mention is about the paths module and is not a conflict with A's statement that openPath creates no directory."
+  },
+  {
+   "title": "Tray: hide the mini capture bar",
+   "trigger": "none (command wrapper; trigger outside this area)",
+   "context": "Mini bar visible",
+   "result": "hideMini() hides the mini capture bar. The bar's draft is kept and restored on the next reveal; only submitting a capture or an explicit clear resets the form.",
+   "exact": [],
+   "sources": [
+    "tray/src/api.ts:10",
+    "A (source): tray/src/api.ts:10 (hideMini -> 'hide_mini'); tray/src-tauri/src/window.rs:82-93 (hide_mini calls dismiss; dismiss hides the card and parks the window; the draft is kept intact). Verdict: corrected.",
+    "B (docs): cannot_check. The tray mini-bar hide command is not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The draft survives dismissal (window.rs:88-91)."
+   ],
+   "notes": "The mini bar is summoned with the hotkey per CLAUDE.md, outside these files.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-060",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Tray: mini bar renders dark or light from Appearance setting",
+   "trigger": "none (queried at mini bar load)",
+   "context": "Mini bar displayed",
+   "result": "getDark() resolves in Rust from the app's appearance setting, stored under the key theme (values \"dark\" or \"light\"). If the setting is unset or another value, it uses the current system appearance, so the mini bar matches the main app.",
+   "exact": [
+    {
+     "what": "setting key",
+     "value": "theme"
+    },
+    {
+     "what": "setting values",
+     "value": "\"dark\" / \"light\""
+    }
+   ],
+   "sources": [
+    "tray/src/api.ts:12-14",
+    "A (source): tray/src/api.ts:12-14 (getDark -> 'get_dark'); tray/src-tauri/src/hotkeys.rs:20-39 (reads setting \"theme\": \"dark\" -> true, \"light\" -> false, otherwise window.theme()); main/src-tauri/src/lib.rs:62-67 (same key in main app). Verdict: corrected.",
+    "B (docs): cannot_check. get_dark and the Appearance fallback are not described. common-crate.md:105 covers only the CaptureMode default, a different setting."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The system fallback is window.theme() (hotkeys.rs:34-37), not the webview's prefers-color-scheme."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-061",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs; its note about the CaptureMode default concerns a different setting and is not a conflict."
+  },
+  {
+   "title": "Tray: mini bar shows the capture target project and list",
+   "trigger": "none (queried when the mini bar opens)",
+   "context": "Mini bar open, before capture",
+   "result": "captureTarget returns the names of the project and the list where a capture will land. The list is the last active list (setting last_active_list) if it still exists; otherwise the first list; otherwise a new list is created in the default project. The project name is looked up from the list's project, or an empty string if not found.",
+   "exact": [
+    {
+     "what": "fields",
+     "value": "project, list"
+    },
+    {
+     "what": "fallback order",
+     "value": "last_active_list, then first list, then new list in default project"
+    }
+   ],
+   "sources": [
+    "tray/src/api.ts:4-7",
+    "tray/src/api.ts:15",
+    "A (source): tray/src/api.ts:4-7 (CaptureTarget: project, list), tray/src/api.ts:15 (captureTarget -> 'capture_target'); tray/src-tauri/src/capture.rs:12-33 (capture_target); tray/src-tauri/src/task.rs:51-68 (target_list). Verdict: corrected.",
+    "B (docs): cannot_check. captureTarget and its project and list fields are not described."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A new list is named by names::suggest_list_name when none exists (task.rs:63-67)."
+   ],
+   "notes": "How the names are displayed is outside these files.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-062",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Tray: open the main app from the mini bar",
+   "trigger": "none (command wrapper; trigger outside this area)",
+   "context": "Mini bar open",
+   "result": "openMain() brings the main app forward if it is already running (a POST to /focus) or launches it otherwise, then hides the mini bar. The bar is hidden only after main is up, so there is no gap with neither on screen.",
+   "exact": [],
+   "sources": [
+    "tray/src/api.ts:16",
+    "A (source): tray/src/api.ts:16 (openMain -> 'open_main'); tray/src-tauri/src/window.rs:271-279 (open_main: focus_or_launch_main_async, then dismiss); tray/src-tauri/src/lib.rs:61 (focus_or_launch_main_async). Verdict: corrected.",
+    "B (docs): cannot_check. open_main is not described."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "The effect is confirmed from window.rs:271-279 (the name-only inference is resolved)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-063",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Tray: screenshot capture-and-attach runs in background with progress events",
+   "trigger": "none (command wrapper; trigger outside this area)",
+   "context": "Capture from the mini bar",
+   "result": "captureAndAttach() is fire-and-forget. The capture runs on a background thread and reports progress through screenshot-pending (emitted at once), then screenshot-captured (payload: PNG path), screenshot-cancelled (region grab aborted), or screenshot-error (payload: message). A click while a capture is already running is ignored. In region mode the bar is dimmed to 25% during the selection.",
+   "exact": [
+    {
+     "what": "events",
+     "value": "screenshot-pending, screenshot-captured, screenshot-cancelled, screenshot-error"
+    },
+    {
+     "what": "region dim opacity",
+     "value": "25%"
+    }
+   ],
+   "sources": [
+    "tray/src/api.ts:17-19",
+    "A (source): tray/src/api.ts:17-19 (captureAndAttach -> 'capture_and_attach'; comment lists three events); tray/src-tauri/src/window.rs:283-295 (capture_and_attach, region dims bar); tray/src-tauri/src/capture.rs:83-86, 95-144 (events incl. screenshot-cancelled at 136); capture.rs:35-41, 96-98 (second capture ignored while one is in flight). Verdict: corrected.",
+    "B (docs): cannot_check. captureAndAttach and the screenshot-pending, screenshot-captured, and screenshot-error events are not described. conventions.md:19 mentions only the mini-shown and refresh events."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "screenshot-cancelled is emitted but missing from the api.ts comment (tray/src/api.ts:17-18)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-064",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Tray: mini bar height fits its card",
+   "trigger": "none (called by the bar UI)",
+   "context": "Mini bar height changes",
+   "result": "setBarHeight(height) resizes the mini bar window to the given height in logical px (scaled by the display factor) so it fits the painted card; a taller window would swallow clicks in its transparent part. The top or bottom edge that is anchored to the summon stays fixed.",
+   "exact": [
+    {
+     "what": "unit",
+     "value": "logical px"
+    }
+   ],
+   "sources": [
+    "tray/src/api.ts:20-22",
+    "A (source): tray/src/api.ts:20-22 (setBarHeight -> 'set_bar_height'); tray/src-tauri/src/window.rs:226-269 (set_bar_height): 232-234 (non-finite or <1.0 ignored), 236-237 and 267 (scaled to physical pixels), 248-265 (anchor behaviour). Verdict: corrected.",
+    "B (docs): cannot_check. The mini-bar resize behaviour and the logical px unit are not described."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Values that are not finite or are below 1.0 are ignored (window.rs:232-234).",
+    "A top-anchored bar grows downward; a bottom-anchored bar grows upward (window.rs:228-229, 253-254)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-065",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Tray: submit a capture with title, optional notes, and screenshots",
+   "trigger": "Submitting the mini bar capture (trigger outside these files)",
+   "context": "Mini bar capture submitted",
+   "result": "submitCapture({title, notes?, screenshotPaths?}) creates a task with the title in the target list (the same list captureTarget reports), stores non-blank notes as the task's first note verbatim, attaches each screenshot path as a copy, tells the main app to refresh, and hides the bar. Notes default to null and screenshot paths default to an empty list.",
+   "exact": [
+    {
+     "what": "defaults",
+     "value": "notes: null, screenshotPaths: []"
+    },
+    {
+     "what": "attachment name for one screenshot",
+     "value": "screenshot.png"
+    },
+    {
+     "what": "attachment names for several",
+     "value": "screenshot-1.png, screenshot-2.png, ..."
+    }
+   ],
+   "sources": [
+    "tray/src/api.ts:23-32",
+    "A (source): tray/src/api.ts:23-32 (submitCapture; notes ?? null; screenshotPaths ?? []); tray/src-tauri/src/task.rs:11-49 (submit_capture); task.rs:19-23 (task created in target list with no parent); task.rs:27-29 (notes stored as first note when non-blank); task.rs:31-41 (screenshot names); task.rs:43-45 (POST /refresh to MAIN_PORT); task.rs:47 (dismiss). Verdict: corrected.",
+    "B (docs): cannot_check. The tray capture submit, its notes and screenshotPaths defaults, and the task placement are not described."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Placement is the target list (task.rs:19-23). The toast is not in these files (no toast code was checked)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F19-066",
+   "check": "corrected",
+   "check_notes": "A's source-based corrections applied. B could not check in docs."
+  },
+  {
+   "title": "Screenshot capture is full-screen and silent by default",
+   "trigger": "none observed (the docs do not name a UI trigger for capture)",
+   "context": "screenshot_mode setting is unset or set to full-screen (default)",
+   "result": "When screenshot_mode is unset or not \"region\", capture() runs macOS screencapture with -x, which takes the grab silently, and returns the saved PNG path. The file is saved as screenshot-<millis>.png in ~/.taskscape/screenshots/.",
+   "exact": [
+    {
+     "what": "screenshot_mode default",
+     "value": "unset or unrecognized value -> full-screen (no literal \"full-screen\" value is checked in code)"
+    },
+    {
+     "what": "screencapture flag",
+     "value": "-x (do not play the capture sound)"
+    },
+    {
+     "what": "output file",
+     "value": "~/.taskscape/screenshots/screenshot-<millis>.png"
+    },
+    {
+     "what": "non-macOS message",
+     "value": "screen capture is currently only implemented on macOS"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:31-36",
+    "doc:common-crate.md:102-106",
+    "A (source): common/src/screenshot.rs:19-27 (CaptureMode::current: only \"region\" selects Region; unset or any other value is Fullscreen); screenshot.rs:17 (key screenshot_mode); screenshot.rs:45-50 (-x, no capture sound; file screenshot-<millis>.png in screenshots dir); common/src/paths.rs:26-28; screenshot.rs:68-70 (non-macOS message). Verdict: corrected.",
+    "B (docs): exact. common-crate.md:17 says screenshot.rs runs full-screen (-x) or interactive (-i) per screenshot_mode; common-crate.md:103 gives ~/.taskscape/screenshots/screenshot-<millis>.png; common-crate.md:104 gives -x as silent; common-crate.md:105 gives the default as full-screen; common-crate.md:108 says non-macOS targets bail!. The feature cites common-crate.md:31-36, which is the database section; the screenshot content is at lines 100-108."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "Non-macOS builds return an error with the message \"screen capture is currently only implemented on macOS\" (anyhow::bail!, screenshot.rs:70).",
+    "A failed screencapture run returns the error \"screencapture exited with status <code>\" (screenshot.rs:56-58)."
+   ],
+   "notes": "Doc does not state the trigger. Silent means no shutter sound per the flag, inferred from -x. Solution A's capture wrapper (api.ts:185-187) says region vs full-screen is chosen outside its files.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-067",
+   "check": "corrected",
+   "check_notes": "A's corrections are kept. B's exact verdict is consistent with them on the default, the -x flag, the output path, and the non-macOS error. B's remark is a citation fix: the feature's doc reference should point to common-crate.md:100-108, not 31-36. No value conflict."
+  },
+  {
+   "title": "Screenshot capture as interactive region or window selection",
+   "trigger": "none observed (capture triggered elsewhere)",
+   "context": "screenshot_mode setting set to the interactive mode",
+   "result": "When screenshot_mode is \"region\", capture() runs screencapture with -i, so the user selects a region (drag) or a window (Space) on screen before the grab is taken; Esc cancels.",
+   "exact": [
+    {
+     "what": "setting value for interactive mode",
+     "value": "region (not \"interactive\")"
+    },
+    {
+     "what": "screencapture flag",
+     "value": "-i (interactive region/window selection)"
+    },
+    {
+     "what": "keys",
+     "value": "drag = region; Space = pick window; Esc = cancel"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:104-106",
+    "A (source): common/src/screenshot.rs:9-13 (Region doc: drag a region, Space to pick a window, Esc to cancel); screenshot.rs:23-24 (\"region\" value); screenshot.rs:51-53 (-i flag); screenshot.rs:60-64 (no file -> Ok(None)); main/src-tauri/src/lib.rs:644-645; tray/src-tauri/src/capture.rs:133-137. Verdict: corrected.",
+    "B (docs): exact. common-crate.md:104 gives -i as interactive region/window selection; common-crate.md:105 names the screenshot_mode setting; common-crate.md:106 says a cancelled region selection returns Ok(None). The docs do not give the interactive value string for screenshot_mode."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "A cancelled selection returns Ok(None) because no file is written (screenshot.rs:60-64), and screenshot.rs:33-34 calls it a silent no-op (\"Esc / empty selection\"). The tray emits screenshot-cancelled to clear its spinner (capture.rs:133-137), not an error."
+   ],
+   "notes": "The exact setting value string for interactive mode is not given in the doc; only that the setting selects between full-screen and interactive.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-068",
+   "check": "corrected",
+   "check_notes": "B confirmed the -i flag and the window-selection behaviour. B could not find the value string in the docs; A's source (screenshot.rs:23-24) gives \"region\". No conflict: A's value is kept."
+  },
+  {
+   "title": "Cancelled region selection does nothing",
+   "trigger": "press Escape or cancel during interactive region selection (inferred)",
+   "context": "screenshot_mode is interactive",
+   "result": "Cancelling an interactive region selection with Esc, or with an empty selection, writes no file and shows no error. capture() returns Ok(None), which callers treat as a silent no-op. The tray emits screenshot-cancelled, and the main app's capture commands return null.",
+   "exact": [
+    {
+     "what": "return value",
+     "value": "Ok(None)"
+    },
+    {
+     "what": "trigger key",
+     "value": "Esc (also an empty selection)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:106-107",
+    "main/src/api.ts:185-187",
+    "A (source): common/src/screenshot.rs:11-12 (Esc cancels); screenshot.rs:33-34 (\"Esc / empty selection\" returns Ok(None), silent no-op); screenshot.rs:60-64 (no file, Ok(None)); tray/src-tauri/src/capture.rs:133-137 (screenshot-cancelled, no error event); main/src-tauri/src/lib.rs:614-619 (null on cancel); api.ts:185-187. Verdict: corrected.",
+    "B (docs): corrected. common-crate.md:106-107 says a cancelled region selection returns Ok(None) and is a silent no-op. The docs do not name Escape or any cancel key; the Escape key is inferred, not documented."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "The cancel key is documented as Esc (screenshot.rs:11-12, 33-34), so the inferred trigger is confirmed."
+   ],
+   "notes": "",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-069",
+   "check": "corrected",
+   "check_notes": "Conflict on the trigger: B says Escape is not documented in common-crate.md. A cites the source doc comment at screenshot.rs:11-12 and :33-34, which names Esc as the cancel key. The source decides, so Esc is confirmed. B's note stands only for the docs."
+  },
+  {
+   "title": "macOS Screen Recording permission prompt on first capture",
+   "trigger": "first screenshot capture in the app",
+   "context": "first use of capture() for that app",
+   "result": "macOS shows its Screen Recording permission prompt for that app.",
+   "exact": [
+    {
+     "what": "prompt",
+     "value": "macOS Screen Recording permission prompt"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:107",
+    "A (source): common/src/screenshot.rs:36-38 (first time a given app triggers capture, macOS prompts for Screen Recording permission to that app); main/src-tauri/src/lib.rs:630-631 (same statement for attach_screenshot). Capture is macOS-only (screenshot.rs:39, 68-70). Verdict: exact.",
+    "B (docs): exact. common-crate.md:107 says the first screenshot capture triggers the macOS Screen Recording permission prompt for that app."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Prompt wording is the OS's, not stated by the doc.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-070",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree. No corrections."
+  },
+  {
+   "title": "Subtask nesting and cascade delete",
+   "trigger": "delete a task (the trigger is inferred)",
+   "context": "task has subtasks (parent_id)",
+   "result": "Subtasks nest arbitrarily deep. Deleting a task deletes its whole subtree in the DB.",
+   "exact": [
+    {
+     "what": "nesting depth",
+     "value": "arbitrary"
+    },
+    {
+     "what": "parent FK rule",
+     "value": "ON DELETE CASCADE"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:48-49",
+    "doc:common-crate.md:74-75",
+    "Reference doc taskscape-tauri/.llm/common-crate.md:35-36 (foreign_keys=ON on every connection, required for ON DELETE CASCADE), :48-49 (tasks parent_id FK, cascade, deleting a task drops its subtree), :74-75 (parent_id, subtasks nest arbitrarily deep). Code: taskscape-tauri/common/migrations/20260709090335_baseline.sql:35 (fk_tasks_parent ... ON DELETE CASCADE); taskscape-tauri/common/schema.hcl:66,122,127,169,208 (on_delete = CASCADE); taskscape-tauri/common/src/storage.rs:284 (ON DELETE CASCADE is the hard delete path), storage.rs:610-619 (foreign_keys(true) and WAL set on the connection options). Trigger 'delete a task' matches DELETE /tasks/{id} in common-crate.md:93. No depth limit found in the cited material.",
+    "doc:common-crate.md:48-49 (tasks has self-referential parent_id FK, cascade, so deleting a task drops its whole subtree in the DB); doc:common-crate.md:74-75 (optional parent_id, subtasks nest arbitrarily deep); doc:common-crate.md:35-36 (foreign_keys=ON on every connection, required for the schema's ON DELETE CASCADE rules to fire). Trigger: doc:common-crate.md:93 (PATCH/DELETE /tasks/{id}, 'Update / delete a task') and doc:common-crate.md:64 (tasks method group includes 'delete'). The UI gesture that deletes a task is not in the docs, so the trigger is only verified at the HTTP and storage level; the 'inferred' note in the feature is accurate."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Requires foreign_keys=ON, which is set on every connection (doc:common-crate.md:35-36)."
+   ],
+   "notes": "CONFLICT with Solution A's \"Delete a task moves it to Trash (soft delete)\" (api.ts:98-99) and \"Delete several tasks as one undoable action\" (api.ts:114-116). A's code shows the command soft-deletes to the Trash, and B's doc describes the DB-level cascade. Solution A's code-level value is kept for what the delete action does; the cascade is recorded as a DB-level rule and the UI trigger is not verified.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-071",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the behaviour exact. Checker A verified it against the source (baseline.sql:35, schema.hcl, storage.rs:284, storage.rs:610-619) and the reference doc. Checker B verified it at the doc level only. B notes the UI gesture that deletes a task is not documented, so the trigger is confirmed only at the HTTP (DELETE /tasks/{id}) and storage levels. The feature's 'inferred' note is accurate. No value conflict."
+  },
+  {
+   "title": "Attachments and notes are removed when their task or list is deleted",
+   "trigger": "delete a task or list (inferred)",
+   "context": "items have attachments or notes",
+   "result": "Attachments and task notes cascade with their parent task; tasks cascade with their list; lists cascade with their project.",
+   "exact": [
+    {
+     "what": "cascade chain",
+     "value": "projects → lists → tasks → attachments and task_notes"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:47-50",
+    "Reference doc taskscape-tauri/.llm/common-crate.md:47-50 (projects -> lists (FK, cascade) -> tasks (FK, cascade) -> attachments and task_notes (both FK, cascade)). Code: baseline.sql:18 (fk_lists_project ON DELETE CASCADE), :34 (fk_tasks_list ON DELETE CASCADE), :50 (fk_attachments_task ON DELETE CASCADE), :63 (fk_task_notes_task ON DELETE CASCADE); storage.rs:864 (deleting a project relies on DB ON DELETE CASCADE).",
+    "doc:common-crate.md:47-50 (projects → lists (FK, cascade) → tasks (FK, cascade) ... → attachments and task_notes (both FK, cascade)); doc:common-crate.md:35-36 (foreign_keys=ON on every connection, required for the cascade rules to fire); doc:common-crate.md:64-65 (delete_task, delete_list, delete_project, delete_attachment, delete_note methods)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Cascade only fires when foreign_keys=ON, which is set on every connection (doc:common-crate.md:35-36)."
+   ],
+   "notes": "Inferred from FK cascade description. Same soft-delete conflict as the subtask cascade entry.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-072",
+   "check": "corrected",
+   "check_notes": "Checker A marked this exact, citing the baseline.sql FK cascade lines (:18, :34, :50, :63) and storage.rs:864. Checker B marked it corrected, but only on notation: the doc writes the chain with the Unicode arrow (→), not '->'. The cascade content agrees between the two checkers, so no value conflicts. B's correction is kept as the more exact representation. B also adds the foreign_keys=ON edge case, which A's evidence supports."
+  },
+  {
+   "title": "Data locations under ~/.taskscape",
+   "trigger": "none (filesystem layout)",
+   "context": "Created when the Store opens: paths::ensure_dirs() is called from the Store open path (storage.rs:28; also attachments.rs:37 and screenshot.rs:44). The reference docs do not state when ensure_dirs() runs (doc:common-crate.md:16), and the body of ensure_dirs at common/src/paths.rs:37 was not read, so 'any launch' is supported by the code trace but not confirmed literally.",
+   "result": "SQLite database taskscape.db (WAL), attachments/ folder for copied files, screenshots/ folder for captures.",
+   "exact": [
+    {
+     "what": "database",
+     "value": "taskscape.db (SQLite, WAL)"
+    },
+    {
+     "what": "folders",
+     "value": "attachments/, screenshots/"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:24-29",
+    "Reference doc taskscape-tauri/.llm/common-crate.md:24-29 (~/.taskscape/ with taskscape.db '# SQLite (WAL)', attachments/, screenshots/); also .llm/architecture.md:35-37. Code: taskscape-tauri/common/src/storage.rs:617 (journal_mode Wal), storage.rs:28 and common/src/attachments.rs:37 and screenshot.rs:44 call paths::ensure_dirs(), defined at common/src/paths.rs:37, which supports the 'any launch' context via Store open. Uncertain: the exact literal folder creation at launch was not read in paths.rs body; the result string matches the doc.",
+    "doc:common-crate.md:24-29 (tree: taskscape.db # SQLite (WAL); attachments/ # files copied in via \"copy\" attachments; screenshots/ # PNGs from capture()); doc:common-crate.md:11 and :13 and :52-54 (app settings are a file-backed store at ~/.taskscape/settings.json, kept out of the DB); doc:common-crate.md:16 (paths.rs: locations under ~/.taskscape/ and ensure_dirs()).",
+    "The docs do not say when ensure_dirs() runs, so 'any launch' cannot be confirmed from the docs (doc:common-crate.md:16)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The same folder also holds settings.json (~/.taskscape/settings.json), the file-backed app settings store kept out of the DB (doc:common-crate.md:11, 13, 52-54). It is not in the 24-29 tree, so the result list is incomplete."
+   ],
+   "notes": "Included because the user can observe these files. Consistent with Solution A's data_dir and screenshots_dir fields (api.ts:50-54) and the screenshots/ fallback (api.ts:198-200).",
+   "found_by": [
+    "B"
+   ],
+   "id": "F19-073",
+   "check": "corrected",
+   "check_notes": "Checker A marked this exact. It traced the folder creation to paths::ensure_dirs() being called from Store open (storage.rs:28, attachments.rs:37, screenshot.rs:44), but it did not read the body of ensure_dirs at paths.rs:37, so the literal creation behaviour is unconfirmed. Checker B marked it corrected because the docs do not say when ensure_dirs() runs, so 'any launch' cannot be confirmed from the docs. B also found that settings.json lives in the same folder but is missing from the docs' tree. The sources conflict on the verdict. Per the rule that source code decides, the timing claim is kept only as the code-traced Store-open path, with the 'any launch' wording narrowed to match. The settings.json omission is a real gap and is recorded as an edge case."
+  }
+ ]
+}

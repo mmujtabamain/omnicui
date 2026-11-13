@@ -1,0 +1,3822 @@
+{
+ "area": 11,
+ "name": "Motion, theme and tokens",
+ "tier": "ordinary",
+ "counts": {
+  "A": 48,
+  "B": 59,
+  "critic_issues": null,
+  "merged": 101
+ },
+ "dropped": [
+  {
+   "title": "Theme picker in Settings > General > Appearance (solution B)",
+   "reason": "Duplicate of the A entry 'Theme preference offers three choices: system, light, dark'; merged into the single theme picker entry with both sources and found_by [A, B]."
+  },
+  {
+   "title": "Theme System option follows the OS appearance (solution B)",
+   "reason": "Duplicate of the A entry 'System theme follows macOS appearance live when preference is system'; merged into one entry with both sources and found_by [A, B]."
+  },
+  {
+   "title": "Reduced motion toggle (solution B)",
+   "reason": "Duplicate of the A entry 'Reduced-motion switch is flipped from Settings and applied app-wide'; merged into one entry with both sources and found_by [A, B]."
+  },
+  {
+   "title": "Low power mode check on window open (solution B)",
+   "reason": "Same startup Low Power Mode read as the A entry 'Reduced motion turns on automatically in macOS Low Power Mode'; merged into one entry with both sources and found_by [A, B]. Conflict on read frequency recorded in notes."
+  },
+  {
+   "title": "Chevron rotation motion (solution B)",
+   "reason": "Duplicate of the B entry 'Subtask parent row with done count badge', which already carries the same transition-transform duration-100 and -90 degree rotation; its tree line 68 sources were merged into that entry."
+  },
+  {
+   "title": "Active state uses filled icon (solution B)",
+   "reason": "Duplicate of the B entry 'Hide preview panel toggle', which already records the icon filled when active (filled=true, active=true) from the same tree lines 28-30; sources merged into that entry."
+  }
+ ],
+ "features": [
+  {
+   "title": "Reduced-motion switch is flipped from Settings and applied app-wide",
+   "trigger": "Changing the Toggle titled 'Reduced motion' in Settings > General > Appearance (generalPane.tsx:50-57; onChange at :54 calls ctx.set('reduced_motion', ...), whose write is setReducedMotion at settings.ts:35).",
+   "context": "Any time; applies to the window it runs in and then to other windows. Settings window, General tab, Appearance group (B recording, off).",
+   "result": "The document root gets the class reduced-motion, which neutralises all CSS animations and transitions (durations 0.01ms). The new value is saved and other windows are told to match. B saw the row title and description and the toggle, recorded off (checked=false, disabled=false).",
+   "exact": [
+    {
+     "what": "setting key persisted",
+     "value": "reduced_motion (stored as '1' on, '0' off)"
+    },
+    {
+     "what": "broadcast event",
+     "value": "reduced-motion-changed"
+    },
+    {
+     "what": "root class",
+     "value": "reduced-motion"
+    },
+    {
+     "what": "Row title (B)",
+     "value": "Reduced motion"
+    },
+    {
+     "what": "Row description (B)",
+     "value": "Cuts animations and transitions to the minimum."
+    },
+    {
+     "what": "Toggle title (B)",
+     "value": "Reduced motion"
+    },
+    {
+     "what": "Toggle size (B)",
+     "value": "30x18 at x=1123, y=182"
+    },
+    {
+     "what": "Default in recording (B)",
+     "value": "off (checked=false)"
+    }
+   ],
+   "sources": [
+    "main/src/lib/reducedMotion.ts:54-58",
+    "main/src/lib/reducedMotion.ts:21-24",
+    "common-ui/styles/tokens.css:335-343",
+    "state:settings-dark (tree lines 33-36)",
+    "state:settings-dark (shot.png)",
+    "reducedMotion.ts:22 (class toggle), :54-58 (setReducedMotion; setPref at :55 before await at :56; emit at :57); settings.ts:30-35 (reduced_motion fallback '0', valid ['1','0'], write setReducedMotion(value === '1')); settings.ts:105-112 (set() catches write errors); generalPane.tsx:20-21 (forcesMotion), :46-57 (Reduced motion row, description at :48, Toggle title at :55, checked/disabled at :52-53, onChange at :54). tokens.css:326-333 and :335-343 (0.01ms !important). Toggle size 30x18 and default-in-recording are not checkable from source.",
+    "spec/references/settings-dark/tree.txt:33-36 shows SettingRow title=\"Reduced motion\" description=\"Cuts animations and transitions to the minimum.\" and Toggle checked=false disabled=false onChange=ƒ title=\"Reduced motion\" @1123,182 30x18. settings-dark/elements.json has the same row text and switch (aria-checked=false, box 1123,182,30,18). tree.txt:14 shows settings-tab-general active=true. Not shown in any recording: reduced_motion key, root class, reduced-motion-changed broadcast, persistence. settings-dark/meta.json:11-29 lists only get_setting reads and no set command."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "If the setting write fails, setReducedMotion rejects after the class has already been toggled locally (setPref runs before the await). The rejection is caught in settings.ts:105-112, so the user sees no error and the switch keeps the new value; the broadcast at reducedMotion.ts:57 is skipped.",
+    "Whether the value is remembered between launches is not shown in solution B's recording; solution A's source shows it is saved (see notes).",
+    "While Low Power Mode or macOS Reduce Motion forces motion, the Toggle is disabled and shown checked (generalPane.tsx:52-53; forcesMotion at :20-21)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged from A 'Reduced-motion switch is flipped from Settings and applied app-wide' and B 'Reduced motion toggle'. Conflict on persistence: B could not show persistence between launches and marked it inferred from get_setting on open; A's source (reducedMotion.ts:54-58) saves the value. A's source value is kept. The Settings control's location is confirmed by B only.",
+   "id": "F11-001",
+   "check": "corrected",
+   "check_notes": "B's exact verdict confirms the row text, the 30x18 switch and the unchecked default in the recording; A's source does not check those. A's corrected trigger and edge cases are kept. Edge case 1 refers to 'see notes', but no separate note exists in the inputs; the persistence point rests on A's settings.ts:30-35 write path. B could not see persistence."
+  },
+  {
+   "title": "Reduced motion is kept in sync across windows",
+   "trigger": "Reduced-motion switch changed in one window",
+   "context": "Main window and other windows (for example panels) running at the same time",
+   "result": "Every window listening for reduced-motion-changed updates its own reduced-motion class to the broadcast value.",
+   "exact": [
+    {
+     "what": "event name",
+     "value": "reduced-motion-changed"
+    }
+   ],
+   "sources": [
+    "main/src/lib/reducedMotion.ts:43",
+    "main/src/lib/reducedMotion.ts:57",
+    "reducedMotion.ts:43 (listen 'reduced-motion-changed'), :33 (setPref early return when unchanged), :57 (emit). Listener registered in initReducedMotion, called from main/src/main.tsx:11 and main/src/panels.tsx:30. tray/src/main.tsx:5 and :10 import and call only initTheme. Whether the emitting window receives its own global event is Tauri runtime behaviour and is not checkable from this repo.",
+    "No recording shows a reduced-motion change or a second window receiving it. settings-dark/meta.json:11-29 has no set or broadcast command. The event name reduced-motion-changed is not visible in any of the five folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The broadcasting window also receives its own event through the listener, and the apply step returns early when the value is unchanged. (Self-delivery is Tauri runtime behaviour, not verifiable in this repo.)",
+    "The tray app never calls initReducedMotion (tray/src/main.tsx:5 and :10 import and call only initTheme), so tray windows do not follow the broadcast."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-002",
+   "check": "corrected",
+   "check_notes": "B could not check; A's source-based edge cases are applied. Self-delivery of the global event is Tauri runtime behaviour and remains unverified."
+  },
+  {
+   "title": "Reduced motion turns on automatically in macOS Low Power Mode",
+   "trigger": "Turning macOS Low Power Mode on or off (no in-app control). Rust observes NSProcessInfoPowerStateDidChangeNotification (power.rs:44-45, 69) and emits power-state-changed with the new boolean (power.rs:97).",
+   "context": "macOS only in effect. The command is registered on every platform and returns false off macOS (power.rs:33-36; lib.rs:939-940; lib.rs:1215); the change watcher is a no-op off macOS (power.rs:46-83). B recorded every window calling the low-power check during startup (no UI difference recorded).",
+   "result": "Motion is reduced while Low Power Mode is on, even if the user's own switch is off. The state follows live changes from Rust.",
+   "exact": [
+    {
+     "what": "Rust command behind api.isLowPowerMode()",
+     "value": "is_low_power_mode (api.ts:174; lib.rs:939-940)"
+    }
+   ],
+   "sources": [
+    "main/src/lib/reducedMotion.ts:8-10",
+    "main/src/lib/reducedMotion.ts:42",
+    "main/src/lib/reducedMotion.ts:46-49",
+    "main/src/lib/reducedMotion.ts:22",
+    "state:main-dark (meta.json)",
+    "state:main-default (meta.json)",
+    "state:settings-dark (meta.json)",
+    "state:row-selected-dark (meta.json)",
+    "reducedMotion.ts:42 (listen 'power-state-changed'), :46 (api.isLowPowerMode()), :22 (pref || lowPower), :47-49 (catch). api.ts:174 invoke('is_low_power_mode'). lib.rs:939-940 (fn is_low_power_mode), lib.rs:1215 (registered in handler list). power.rs:12 POWER_EVENT, :16-37 (returns false when not macOS, :33-36), :46-83 (watcher no-op off macOS), :44-45 and :69 (NSProcessInfoPowerStateDidChangeNotification observer), :97 (emit). generalPane.tsx:52-53 and :61-64 (Low Power Mode footnote).",
+    "is_low_power_mode appears in spec/references/main-dark/meta.json:14, main-default/meta.json:17, row-selected-dark/meta.json:15 and settings-dark/meta.json:14. It does not appear in capture-bar-dark/meta.json:10-20 (window \"tray\"; commands are get_dark, capture_target, list_hotkeys, set_bar_height). Live Low Power Mode state, power-state-changed and the root class are not shown."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Reduced motion stays on only while either source is on: pref || lowPower.",
+    "No UI difference is recorded between low-power and normal (solution B). The source does show one: the Settings General tab forces the Reduced motion Toggle checked and disabled, with the footnote 'Due to Low Power Mode, reduced motion is on by default on macOS.' (generalPane.tsx:52-53, 61-64).",
+    "Off macOS the command does not fail; it returns false (power.rs:33-36)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged from A 'Reduced motion turns on automatically in macOS Low Power Mode' and B 'Low power mode check on window open'. Conflict: A says Low Power Mode is read once at startup, while B recorded is_low_power_mode called by every window on open. Both can hold, since each window runs its own startup read; A's source value kept. B's effect on motion is inferred only.",
+   "id": "F11-003",
+   "check": "corrected",
+   "check_notes": "Conflict on context: B wrote that the command is unavailable off macOS, but A's source shows it is registered on every platform and returns false (lib.rs:1215; power.rs:33-36). Source decides, so A's context stands. B's recording also shows the command is not called from the tray window (capture-bar-dark)."
+  },
+  {
+   "title": "System Reduce Motion accessibility setting is honoured by CSS, not by app state",
+   "trigger": "Turning on the macOS / system 'Reduce Motion' accessibility option",
+   "context": "Any time; the app's own switch stays off",
+   "result": "All animations and transitions are neutralised to 0.01ms through the prefers-reduced-motion media query. The app's useReducedMotion state does not change.",
+   "exact": [
+    {
+     "what": "media query",
+     "value": "(prefers-reduced-motion: reduce)"
+    },
+    {
+     "what": "animation-duration and transition-duration",
+     "value": "0.01ms !important"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:326-333",
+    "main/src/lib/reducedMotion.ts:12-15",
+    "tokens.css:326 (@media (prefers-reduced-motion: reduce)), :330-331 (animation-duration and transition-duration 0.01ms !important), :341-342 (class twin). reducedMotion.ts:12-15 (comment: module state excludes the system setting). generalPane.tsx:52-53 (Toggle disabled/checked when systemPrefers), :65-68 (footnote text).",
+    "No recording changes the system Reduce Motion option. The prefers-reduced-motion media query and the 0.01ms duration are not visible in any tree.txt, meta.json or elements.json of the five folders."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Any code that reports motion status to the user must read the media query itself, because the module state excludes this source.",
+    "While macOS Reduce Motion is on, the Settings Toggle is disabled and shown checked, with the footnote 'macOS Reduce Motion is on, so motion stays reduced.' (generalPane.tsx:52-53, 65-68). The stored preference is unchanged."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-004",
+   "check": "corrected",
+   "check_notes": "B could not check. A's source-based edge cases are applied."
+  },
+  {
+   "title": "Saved reduced-motion preference is applied at launch",
+   "trigger": "App launch: main.tsx:10-11 and panels.tsx:29-30 call initTheme() and then initReducedMotion(). The tray app does not call it.",
+   "context": "Startup, before the first interaction",
+   "result": "The saved reduced_motion value is read; only the exact string '1' turns the switch on. Low Power Mode is read once, then live events follow.",
+   "exact": [
+    {
+     "what": "stored value that means on",
+     "value": "'1'"
+    },
+    {
+     "what": "any other stored value",
+     "value": "off"
+    }
+   ],
+   "sources": [
+    "main/src/lib/reducedMotion.ts:41-50",
+    "main/src/lib/reducedMotion.ts:44",
+    "reducedMotion.ts:41-50 (initReducedMotion), :44 (=== '1' check and catch), :46-49 (LPM read and catch). main/src/main.tsx:10-11 and main/src/panels.tsx:29-30 (initTheme then initReducedMotion). power.rs:33-36 (non-macOS returns false, no error).",
+    "settings-dark/meta.json:11-28 shows get_setting reads before present_window (line 29), but the keys and returned values are not recorded. settings-dark/tree.txt:36 shows the switch off, which is consistent with the default but does not show the stored value handling ('1' versus other values)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "If the setting read fails, the switch defaults to off (reducedMotion.ts:44).",
+    "If the Low Power Mode call throws, Low Power Mode stays off (reducedMotion.ts:46-49). Off macOS the command does not throw; it returns false (power.rs:33-36)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-005",
+   "check": "corrected",
+   "check_notes": "B saw get_setting reads and the switch off, consistent with the default, but not the keys or stored values. A's source-based trigger and edge cases are applied."
+  },
+  {
+   "title": "Theme picker offers three choices: system, light, dark (Settings > General > Appearance)",
+   "trigger": "Click one of the three segments of the Theme control in the Settings window (onChange on Segmented); the control is outside solution A's files and A's setTheme call is the handler",
+   "context": "Any time; Settings window, General tab. Recorded with value=\"system\" selected.",
+   "result": "The chosen preference is applied right away: system follows macOS appearance, light and dark force the palette. The selected segment shows a raised thumb (variant surfaceThumb).",
+   "exact": [
+    {
+     "what": "ThemePref values",
+     "value": "'system' | 'light' | 'dark'"
+    },
+    {
+     "what": "default preference",
+     "value": "'system'"
+    },
+    {
+     "what": "Row title (B)",
+     "value": "Theme"
+    },
+    {
+     "what": "Row description (B)",
+     "value": "Follow the system appearance, or pin one."
+    },
+    {
+     "what": "Segment 1 label and icon (B)",
+     "value": "System, icon contrast (15px)"
+    },
+    {
+     "what": "Segment 2 label and icon (B)",
+     "value": "Light, icon light_mode (15px)"
+    },
+    {
+     "what": "Segment 3 label and icon (B)",
+     "value": "Dark, icon dark_mode (15px)"
+    },
+    {
+     "what": "Segment count (B)",
+     "value": "3 (items=[3])"
+    },
+    {
+     "what": "Default value in recording (B)",
+     "value": "system"
+    },
+    {
+     "what": "Layout (B)",
+     "value": "SettingRow layout=\"stacked\", Segmented row at y=132, 26px tall"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:5",
+    "main/src/lib/theme.ts:8",
+    "main/src/lib/theme.ts:45-47",
+    "state:settings-dark (tree lines 26-32)",
+    "state:settings-dark (shot.png)",
+    "theme.ts:5 (ThemePref), :8 (default 'system'), :31 (valid saved values). settings.ts:25-26 (fallback 'system', valid list), :51-55 (coerce). generalPane.tsx:10-14 (THEMES: System/contrast, Light/light_mode, Dark/dark_mode), :32-33 (title and description), :35 (layout stacked), :38 (variant surfaceThumb), :41 (onChange, handled by settings.ts:28 setTheme). Segmented.tsx:75 (icon size 15), :32 (md h-6.5, the default size per :51, = 26px at the default 4px spacing unit), Segmented.tsx:13 (surfaceThumb).",
+    "settings-dark/tree.txt:26 SettingRow title=\"Theme\" description=\"Follow the system appearance, or pin one.\" layout=\"stacked\"; tree.txt:29 Segmented variant=\"surfaceThumb\" items=[3] value=\"system\" onChange=ƒ @181,132 972x26; tree.txt:30-32 Icon contrast, light_mode, dark_mode size=15. settings-dark/elements.json has the segment texts 'contrast System', 'light_mode Light', 'dark_mode Dark' and the selected segment with a lighter background. settings-dark/meta.json:8 theme \"dark\" with the shot.png painted dark, matching the edge case about value=\"system\" on a dark window. ThemePref storage and the ignore-unknown-value rule are not shown."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Saved values other than 'light', 'dark' or 'system' are ignored and the default 'system' is kept.",
+    "Tree shows value=\"system\" while the window is painted dark, so the recording cannot show what the window looks like under each option."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged from A 'Theme preference offers three choices: system, light, dark' and B 'Theme picker in Settings > General > Appearance'. Defaults agree ('system'). The uncertain flag is kept from B's visual details.",
+   "id": "F11-006",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. B's 972x26 segmented control is consistent with A's 26px derivation."
+  },
+  {
+   "title": "System theme follows macOS appearance live when preference is 'system'",
+   "trigger": "Switching macOS between light and dark appearance while the app runs with preference 'system'.",
+   "context": "Preference 'system' only",
+   "result": "The app flips palette immediately; the dark condition becomes media.matches. The settings-dark recording has value system and a dark window.",
+   "exact": [
+    {
+     "what": "media query",
+     "value": "(prefers-color-scheme: dark)"
+    },
+    {
+     "what": "document color-scheme when system",
+     "value": "light dark"
+    },
+    {
+     "what": "Option label (B)",
+     "value": "System"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:7",
+    "main/src/lib/theme.ts:11",
+    "main/src/lib/theme.ts:14",
+    "main/src/lib/theme.ts:33",
+    "state:settings-dark (tree line 29)",
+    "state:settings-dark (meta.json commands: get_setting, set_window_theme)",
+    "theme.ts:7 (media query), :11 (dark condition uses media.matches when system), :14 ('light dark' when system), :33 (media change listener). generalPane.tsx:11 (label 'System').",
+    "settings-dark/tree.txt:29 value=\"system\"; settings-dark/meta.json:8 theme \"dark\", commands at lines 11-29 (get_setting, set_window_theme, is_low_power_mode, etc.) contain no command that changes the theme preference; shot.png is dark. The media query and color-scheme values are source-only and not visible."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "A forced light or dark preference ignores system appearance changes.",
+    "The OS setting that produced the dark recording is not stated; this is inferred (solution B)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "notes": "Merged from A 'System theme follows macOS appearance live when preference is 'system'' and B 'Theme System option follows the OS appearance'. B's OS link is inferred only.",
+   "id": "F11-007",
+   "check": "corrected",
+   "check_notes": "A verified the mechanism as exact (theme.ts:7, :11, :14, :33). B's trigger correction is adopted because A's source does not speak to trigger wording and nothing contradicts it. B's remaining observation: the System option was already selected when the window opened, and no click on System is recorded."
+  },
+  {
+   "title": "Forced theme overrides system appearance",
+   "trigger": "Choosing 'light' or 'dark' as the theme preference",
+   "context": "Any macOS appearance",
+   "result": "A forced preference overrides macOS appearance: 'dark' turns dark mode on and 'light' keeps it off. Only 'system' reads the macOS appearance (dark when media.matches, theme.ts:11).",
+   "exact": [
+    {
+     "what": "document color-scheme",
+     "value": "'light' or 'dark' (equal to the forced preference); 'system' sets 'light dark' (theme.ts:13-14)"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:11-14",
+    "theme.ts:11 (dark = pref === 'dark' || (pref === 'system' && media.matches)), :13-14 (colorScheme is 'light dark' for system, else the pref).",
+    "The preference behind main-default (theme light) and main-dark (theme dark) is not recorded, and no color-scheme value is shown. Forced light/dark behaviour cannot be distinguished from system appearance in these recordings."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-008",
+   "check": "corrected",
+   "check_notes": "B could not check. Source-based result applied."
+  },
+  {
+   "title": "Theme preference is saved and restored between launches",
+   "trigger": "Choosing a theme, then relaunching the app",
+   "context": "Persists across launches",
+   "result": "The preference is stored in the settings database under theme and cached in localStorage so the pre-paint script in index.html can apply it before the first frame.",
+   "exact": [
+    {
+     "what": "settings key",
+     "value": "theme"
+    },
+    {
+     "what": "localStorage key",
+     "value": "theme"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:15-21",
+    "main/src/lib/theme.ts:30-31",
+    "main/src/lib/theme.ts:48",
+    "settings.ts:24-26 (SETTING_DEFS key theme); theme.ts:30 (getSetting('theme')), :48 (setSetting('theme', next)), :18 (localStorage.setItem('theme', pref)), :19-20 (catch: storage failure swallowed). main/index.html:12 (localStorage.getItem('theme'), found by grep).",
+    "meta.json files list command names only (for example settings-dark/meta.json:11-28 get_setting). The key names (theme, reduced_motion) and the localStorage cache are not recorded. No set_setting command appears in any of the five meta.json files."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Storage failures in private mode are swallowed; only the pre-paint hint is lost."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-009",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the storage keys and fallbacks in source. B could not check."
+  },
+  {
+   "title": "Theme change is broadcast to all windows",
+   "trigger": "Changing the theme in one window",
+   "context": "Multiple app windows open",
+   "result": "Every other window receives the new preference and re-applies its palette.",
+   "exact": [
+    {
+     "what": "event name",
+     "value": "theme-changed"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:34-37",
+    "main/src/lib/theme.ts:49",
+    "theme.ts:34 (listen 'theme-changed'), :35-36 (sets pref and applies), :49 (emit 'theme-changed').",
+    "No recording shows a theme change propagating to another window. The theme-changed event is not visible in any tree.txt or meta.json of the five folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-010",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the listener and emit in source. B could not check."
+  },
+  {
+   "title": "Native window background follows the resolved theme",
+   "trigger": "Any theme change or system appearance flip",
+   "context": "Main window only per solution A's source reading; the command does nothing for panels",
+   "result": "The native window background is set to dark or light so a resize never shows a stale-theme edge.",
+   "exact": [
+    {
+     "what": "recorded command name (B)",
+     "value": "set_window_theme (argument not recorded)"
+    }
+   ],
+   "sources": [
+    "main/src/lib/theme.ts:22-24",
+    "theme.ts:24 (api.setWindowTheme(dark).catch(() => {})), :22-23 (comment: main window only; command no-ops for panels). Applied from apply() at :10-25, which runs on setTheme, initTheme and system media change.",
+    "set_window_theme is recorded in settings-dark/meta.json:13, main-dark/meta.json:13, main-default/meta.json:16 and row-selected-dark/meta.json:14. It is not recorded in capture-bar-dark/meta.json:10-19. The argument (dark or light) and error handling are not recorded."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Errors from the command are ignored."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "Conflict with solution B 'Window theme applied when each window opens': B's recordings of settings-dark and capture-bar-dark list set_window_theme among the startup commands, which suggests the call is not limited to the main window. The source value (main window only, per A) is kept as the verified source reading; B's observation is recorded in the B entry.",
+   "id": "F11-011",
+   "check": "corrected",
+   "check_notes": "Conflict on context: B saw set_window_theme sent from the settings window (settings-dark) and wrote that 'Main window only' is not supported. A's source shows panels also reach apply() via initTheme and that the command no-ops for panels, so the 'main window only' wording describes the effect, not the call. Source decides, so A's context is kept and B's context correction is not adopted. B's command-name observation is added as an exact entry because it is not contradicted by A."
+  },
+  {
+   "title": "Dark mode is driven by a .dark class on the root, not by prefers-color-scheme",
+   "trigger": "none (applies whenever the theme resolves to dark)",
+   "context": "Dark mode",
+   "result": "Every dark: utility keys off the .dark class on html (custom variant, tokens.css:22). The .dark block swaps only the theme-swapping aliases (--surface-1, --edge-2, --edge-3, --content-1, --content-3, --accent-500, --selection-1, --focus-1) and --icon-wght (tokens.css:105-116); the …d token values are plain :root values (tokens.css:26-84) that dark: utilities select, so a manual override always wins.",
+   "exact": [
+    {
+     "what": "custom variant",
+     "value": "dark (&:where(.dark, .dark *))"
+    },
+    {
+     "what": "class",
+     "value": ".dark"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:18-22",
+    "common-ui/styles/tokens.css:105-116",
+    "tokens.css:22 (@custom-variant dark (&:where(.dark, .dark *))), :18-21 (comment: class on html), :105-116 (.dark block: aliases and --icon-wght), :26-84 (…l and …d token values in :root).",
+    "The .dark class on the root element is not in any tree.txt (the tree shows components only). The dark palette is visible in main-dark/shot.png and settings-dark/shot.png but the selector mechanism is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-012",
+   "check": "corrected",
+   "check_notes": "B could not check the selector mechanism. Source-based result applied."
+  },
+  {
+   "title": "Light and dark surface colours",
+   "trigger": "none (visual palette)",
+   "context": "Light mode uses the l value, dark mode uses the d value",
+   "result": "Page and raised surfaces use these colours.",
+   "exact": [
+    {
+     "what": "surface-0 light / dark",
+     "value": "oklch(0.944 0.003 255) / oklch(0.172 0.004 260)"
+    },
+    {
+     "what": "surface-1 light / dark",
+     "value": "oklch(0.968 0.002 255) / oklch(0.205 0.004 260)"
+    },
+    {
+     "what": "surface-2 light / dark",
+     "value": "oklch(0.995 0.001 255) / oklch(0.24 0.005 260)"
+    },
+    {
+     "what": "surface-3 light / dark",
+     "value": "oklch(1 0 0) / oklch(0.288 0.006 260)"
+    },
+    {
+     "what": "surface-1 alias",
+     "value": "light oklch(0.968 0.002 255), dark oklch(0.205 0.004 260)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:26-33",
+    "common-ui/styles/tokens.css:90",
+    "common-ui/styles/tokens.css:106",
+    "tokens.css:26-33 (surface-0l/0d, 1l/1d, 2l/2d, 3l/3d values all match); :90 (--surface-1 light alias); :106 (--surface-1 dark alias).",
+    "Dark values: settings-dark/elements.json tabpanel bg oklch(0.24 0.005 260) (surface-2 dark); segmented active button bg oklch(0.288 0.006 260) (surface-3 dark, also row-selected-dark/elements.json 'Add a note' bg); toggle-off bg oklch(0.172 0.004 260) (surface-0 dark). Light surface-0: main-default/elements.json 'Switch project' bg oklch(0.944 0.003 255). Mapping of element to token is inferred from the matching value. Light surface-2, surface-3 and surface-1 are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-013",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. B's element-to-token mapping is inferred from matching values, not stated in the recording."
+  },
+  {
+   "title": "Light and dark edge (hairline) colours",
+   "trigger": "none (visual palette)",
+   "context": "Borders and dividers",
+   "result": "Hairlines are translucent in both themes.",
+   "exact": [
+    {
+     "what": "edge-1 light / dark",
+     "value": "oklch(0.32 0.02 260 / 0.075) / oklch(0.98 0.01 260 / 0.06)"
+    },
+    {
+     "what": "edge-2 light / dark",
+     "value": "oklch(0.32 0.02 260 / 0.14) / oklch(0.98 0.01 260 / 0.11)"
+    },
+    {
+     "what": "edge-3 light / dark",
+     "value": "oklch(0.32 0.02 260 / 0.3) / oklch(0.98 0.01 260 / 0.24)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:36-41",
+    "common-ui/styles/tokens.css:92",
+    "common-ui/styles/tokens.css:108",
+    "tokens.css:36-41 (edge-1l/1d, 2l/2d, 3l/3d values match); :92 and :108 (edge-3 aliases), :91 and :107 (edge-2 aliases).",
+    "Border and divider colours are not recorded in any elements.json or tree.txt. tree.txt shows only divide-edge-1l/divide-edge-1d class names."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-014",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the edge values in source. B could not check."
+  },
+  {
+   "title": "Light and dark text colours",
+   "trigger": "none (visual palette)",
+   "context": "Text and foreground",
+   "result": "Primary, secondary and tertiary text colours switch by theme.",
+   "exact": [
+    {
+     "what": "content-1 light / dark",
+     "value": "oklch(0.26 0.012 262) / oklch(0.94 0.004 260)"
+    },
+    {
+     "what": "content-2 light / dark",
+     "value": "oklch(0.46 0.013 262) / oklch(0.74 0.008 260)"
+    },
+    {
+     "what": "content-3 light / dark",
+     "value": "oklch(0.62 0.013 264) / oklch(0.57 0.011 262)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:44-49",
+    "common-ui/styles/tokens.css:93",
+    "common-ui/styles/tokens.css:109-110",
+    "tokens.css:44-49 (content-1l/1d, 2l/2d, 3l/3d values match); :93 (content-1 light alias); :94 (content-3 light alias, not cited in the feature); :109-110 (dark aliases).",
+    "main-default/elements.json: primary text 'Pick up prescription' oklch(0.26 0.012 262) (content-1 light); muted 'Post the parcel to Mum' and icons oklch(0.62 0.013 264) (content-3 light); '25 %' oklch(0.46 0.013 262) (content-2 light). main-dark/elements.json: primary oklch(0.94 0.004 260) (content-1 dark); muted oklch(0.57 0.011 262) (content-3 dark); '25 %' oklch(0.74 0.008 260) (content-2 dark)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-015",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. A notes that content-3 light alias at tokens.css:94 is not cited in the feature."
+  },
+  {
+   "title": "Accent brand-blue colours and on-accent text",
+   "trigger": "none (visual palette)",
+   "context": "Accent controls, hover and active states",
+   "result": "Accent blue ramp for base, hover and active; the text colour on accent is the same in both themes.",
+   "exact": [
+    {
+     "what": "accent-500 light / dark",
+     "value": "oklch(0.6 0.2 255) / oklch(0.68 0.17 252)"
+    },
+    {
+     "what": "accent-600 light / dark",
+     "value": "oklch(0.55 0.21 255) / oklch(0.73 0.16 252)"
+    },
+    {
+     "what": "accent-700 light / dark",
+     "value": "oklch(0.5 0.21 256) / oklch(0.63 0.17 252)"
+    },
+    {
+     "what": "on-accent (both themes)",
+     "value": "oklch(0.99 0.005 255)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:51-58",
+    "common-ui/styles/tokens.css:94-95",
+    "common-ui/styles/tokens.css:111",
+    "tokens.css:51-58 (accent-500/600/700 light and dark, on-accent oklch(0.99 0.005 255) all match); :94-95 (accent aliases); :111 (accent-500 dark alias). Hover 600 and active 700 per the comment at tokens.css:5.",
+    "settings-dark/elements.json: toggle 'Show completed tasks' (state aria-checked=true) bg oklch(0.68 0.17 252), which equals accent-500 dark. accent-600, accent-700, on-accent and the light accent values are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-016",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact for accent-500 dark. Hover, active and on-accent values are source-only."
+  },
+  {
+   "title": "Selection and focus-ring colours",
+   "trigger": "Selecting text, or keyboard focus on a control",
+   "context": "Light and dark",
+   "result": "Selected text background and the keyboard focus outline use these translucent blues.",
+   "exact": [
+    {
+     "what": "selection-1 light / dark",
+     "value": "oklch(0.6 0.2 255 / 0.1) / oklch(0.68 0.17 252 / 0.16)"
+    },
+    {
+     "what": "focus-1 light / dark",
+     "value": "oklch(0.6 0.2 255 / 0.5) / oklch(0.68 0.17 252 / 0.6)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:61-64",
+    "common-ui/styles/tokens.css:96-97",
+    "common-ui/styles/tokens.css:112-113",
+    "main/src/index.css:61-63",
+    "main/src/index.css:65-67",
+    "tokens.css:61-64 and :96-97, :112-113 (selection and focus values match). index.css:61-63 (::selection), :65-67 (:focus-visible outline 2px solid var(--focus-1), offset 1px), :70-74 (input, textarea, [contenteditable]:focus-visible outline none).",
+    "settings-dark/elements.json: the active tab 'General' bg oklch(0.68 0.17 252 / 0.16) matches selection-1 dark, but it is a tab background, not selected text. No selected text, focus outline or focus-1 colour is recorded. row-selected-dark/shot.png shows a selected row with a blue tint, but no row colour is in elements.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "input, textarea and [contenteditable] get outline: none on :focus-visible (index.css:70-74), so they show no focus outline."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-017",
+   "check": "corrected",
+   "check_notes": "B could not check selected text or focus. A's edge case on input focus outline is applied."
+  },
+  {
+   "title": "Translucent wash hover wells",
+   "trigger": "Hovering rows or wells (which element uses them is outside these files)",
+   "context": "Light and dark",
+   "result": "Neutral translucent overlays used for hover fills.",
+   "exact": [
+    {
+     "what": "wash-1 light / dark",
+     "value": "oklch(0.32 0.02 262 / 0.05) / oklch(0.98 0.01 260 / 0.045)"
+    },
+    {
+     "what": "wash-2 light / dark",
+     "value": "oklch(0.32 0.02 262 / 0.09) / oklch(0.98 0.01 260 / 0.08)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:67-70",
+    "common-ui/styles/tokens.css:162-165",
+    "tokens.css:67-70 (wash-1l/1d, wash-2l/2d values match), :162-165 (dark aliases in @theme inline).",
+    "No hovered row or well is in the five folders. The selected row in row-selected-dark has no bg value in elements.json, so wash-1 and wash-2 are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-018",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the wash values in source. B could not check."
+  },
+  {
+   "title": "Danger and success colours",
+   "trigger": "none (visual palette)",
+   "context": "Destructive and success states",
+   "result": "Status red and green in both themes; soft red fill for danger.",
+   "exact": [
+    {
+     "what": "danger-500 light / dark",
+     "value": "oklch(0.55 0.2 27) / oklch(0.68 0.19 25)"
+    },
+    {
+     "what": "danger-600 light / dark",
+     "value": "oklch(0.5 0.2 27) / oklch(0.72 0.18 25)"
+    },
+    {
+     "what": "danger-100 soft fill light / dark",
+     "value": "oklch(0.55 0.2 27 / 0.1) / oklch(0.68 0.19 25 / 0.15)"
+    },
+    {
+     "what": "success-500 light / dark",
+     "value": "oklch(0.6 0.14 150) / oklch(0.72 0.13 150)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:73-80",
+    "common-ui/styles/tokens.css:167-174",
+    "tokens.css:73-80 (danger-500/600/100 light and dark, success-500 light and dark match), :167-174 (@theme inline bridge).",
+    "main-dark/tree.txt:15 and main-dark/elements.json show the danger-variant 'Delete list' buttons at color oklch(0.57 0.011 262) (muted), not a danger colour, in the non-hover state. No danger, success or soft-fill colour is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-019",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the danger and success values in source. B's observation is consistent with a non-hover muted state and does not contradict A."
+  },
+  {
+   "title": "Done-lamp colour",
+   "trigger": "none (visual palette; where it is used is outside these files)",
+   "context": "Done state indicator",
+   "result": "A blue lamp colour that differs slightly by theme.",
+   "exact": [
+    {
+     "what": "done-lamp-1 light / dark",
+     "value": "oklch(0.62 0.13 255) / oklch(0.6 0.15 252)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:82-84",
+    "common-ui/styles/tokens.css:176-177",
+    "tokens.css:82-84 (done-lamp-1l oklch(0.62 0.13 255), done-lamp-1d oklch(0.6 0.15 252)), :176-177.",
+    "No done-lamp element is recorded in any elements.json or tree.txt of the five folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-020",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the values in source. B could not check."
+  },
+  {
+   "title": "Icon optical weight changes with theme",
+   "trigger": "none (applies to Material Symbols icons)",
+   "context": "Light vs dark mode",
+   "result": "Icons are heavier in light mode and thinner in dark mode.",
+   "exact": [
+    {
+     "what": "--icon-wght light",
+     "value": "350"
+    },
+    {
+     "what": "--icon-wght dark",
+     "value": "300"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:99-100",
+    "common-ui/styles/tokens.css:115",
+    "tokens.css:99-100 (--icon-wght: 350 in :root), :115 (--icon-wght: 300 in .dark).",
+    "main-dark/tree.txt:12 and main-default/tree.txt:12 show Icon weight=300 in both themes, so the prop does not change by theme. The --icon-wght variable is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "Possible conflict with solution B: the main-default (light) recording shows icons passed with weight 300 (B 'Icon and text size tokens': 'Icon weights 300 default'). Whether the prop overrides --icon-wght was not checked; A's source value kept.",
+   "id": "F11-021",
+   "check": "confirmed_by_one",
+   "check_notes": "B's Icon weight=300 prop in both themes is consistent with A's source, where the variable (not the prop) switches. A confirmed the variable values."
+  },
+  {
+   "title": "Menu and lift shadows",
+   "trigger": "none (applied by components outside these files)",
+   "context": "Menus and raised elements",
+   "result": "Two shadow styles are defined.",
+   "exact": [
+    {
+     "what": "shadow-menu",
+     "value": "0 10px 28px oklch(0.2 0.02 262 / 0.2), 0 1px 3px oklch(0.2 0.02 262 / 0.12)"
+    },
+    {
+     "what": "shadow-lift",
+     "value": "0 2px 8px oklch(0.2 0.02 262 / 0.2)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:179-181",
+    "tokens.css:179-181 (--shadow-menu two-layer value and --shadow-lift value match, split across lines 179-180).",
+    "No box-shadow value appears in any elements.json or tree.txt of the five folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-022",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the shadow values in source. B could not check."
+  },
+  {
+   "title": "Corner radii set by one rounding value",
+   "trigger": "none (applies to all rounded controls)",
+   "context": "Every rounded element",
+   "result": "Three role radii derive from --rounding; setting it to 0 squares every corner.",
+   "exact": [
+    {
+     "what": "radius-control (buttons, tabs, menu items)",
+     "value": "var(--rounding), i.e. 0.5rem (8px) for some buttons only (capture-bar ToolbarButton measures 8px); not for tabs: settings tab buttons measure 4.375px, and xl IconButtons measure 7px (main-dark/elements.json)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:194-205",
+    "tokens.css:198 (--rounding: 0.5rem), :199-201 (radius-field calc(var(--rounding) * 0.625)), :202 (radius-control var(--rounding)), :203-205 (radius-panel calc(var(--rounding) * 1.5)), :196 (comment: set --rounding: 0 squares every corner). Pixel values are derived: 5px, 8px, 12px.",
+    "settings-dark/elements.json: tab buttons (role=tab, e.g. 'General' box 7,86,139,30) radius 4.375px, not 8px. capture-bar-dark/elements.json: ToolbarButton 'Attach a full-screen screenshot' radius 8px. main-dark/elements.json: xl IconButton 'Split view' radius 7px. The --rounding value is not recorded, and the radius-field and radius-panel values are not visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The pixel values are computed here from the rem expressions, not stated in the source."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-023",
+   "check": "corrected",
+   "check_notes": "A's token definitions stand (radius-control = var(--rounding) = 0.5rem). A's source does not show which components use radius-control, so B's measured scope (tabs at 4.375px and xl IconButtons at 7px do not match 8px) is recorded as a correction to the usage list. The 8px match is only for the ToolbarButton."
+  },
+  {
+   "title": "Spacing ramp steps",
+   "trigger": "none (layout density)",
+   "context": "Gaps and padding",
+   "result": "Eight named spacing steps for gap and padding utilities.",
+   "exact": [
+    {
+     "what": "space-1",
+     "value": "0.125rem (2px)"
+    },
+    {
+     "what": "space-2",
+     "value": "0.1875rem (3px)"
+    },
+    {
+     "what": "space-3",
+     "value": "0.25rem (4px)"
+    },
+    {
+     "what": "space-4",
+     "value": "0.375rem (6px)"
+    },
+    {
+     "what": "space-5",
+     "value": "0.5rem (8px)"
+    },
+    {
+     "what": "space-6",
+     "value": "0.625rem (10px)"
+    },
+    {
+     "what": "space-7",
+     "value": "0.875rem (14px)"
+    },
+    {
+     "what": "space-8",
+     "value": "1.25rem (20px)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:211-218",
+    "tokens.css:211-218 (space-1 through space-8 values match the rem and px comments).",
+    "Spacing values are not recorded. tree.txt shows only class names such as px-space-3 (main-dark/tree.txt:69) and positions, not computed gaps or padding."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-024",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the spacing values in source. B could not check."
+  },
+  {
+   "title": "Stacking order of overlay layers",
+   "trigger": "none (the visible stacking of menus, sheets, toasts, tooltips and similar layers)",
+   "context": "When layers overlap",
+   "result": "Layers stack in this order from bottom to top; menus sit above sheets, and mention suggestions are top-most.",
+   "exact": [
+    {
+     "what": "base",
+     "value": "0"
+    },
+    {
+     "what": "raised (in-content accents, indicators, floating close buttons)",
+     "value": "10"
+    },
+    {
+     "what": "popover (rich-text inline toolbar)",
+     "value": "20"
+    },
+    {
+     "what": "dropdown (project switcher)",
+     "value": "40"
+    },
+    {
+     "what": "overlay (loading veils, toasts, attachment lightbox, command palette)",
+     "value": "50"
+    },
+    {
+     "what": "modal (sheets)",
+     "value": "60"
+    },
+    {
+     "what": "menu (context menus)",
+     "value": "65"
+    },
+    {
+     "what": "tooltip (mention suggestions, top-most)",
+     "value": "70"
+    }
+   ],
+   "sources": [
+    "main/src/lib/zLayers.ts:10-19",
+    "common-ui/styles/tokens.css:223-230",
+    "zLayers.ts:12-18 (raised 10, popover 20, dropdown 40, overlay 50, modal 60, menu 65, tooltip 70; base 0 at :11); zLayers.ts:6-7 (raw z-<number> fails typecheck via scripts/check-z-layers.mjs); tokens.css:223-230 (--z-index-* tokens).",
+    "z-index values are not recorded in any tree.txt or elements.json of the five folders. No overlapping layers are shown in the screenshots."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The integer layers are mirrored in lib/zLayers.ts; raw z-<number> classes in src fail typecheck (scripts/check-z-layers.mjs)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-025",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the z-layer values in source. B could not check."
+  },
+  {
+   "title": "Sheet appears by fading and scaling in, not sliding",
+   "trigger": "Opening a sheet (the Sheet component is outside these files)",
+   "context": "Centered sheet card",
+   "result": "The card fades from opacity 0 and scales from 0.96 to 1 over 140 ms.",
+   "exact": [
+    {
+     "what": "duration",
+     "value": "140ms"
+    },
+    {
+     "what": "easing",
+     "value": "cubic-bezier(0.2, 0, 0, 1)"
+    },
+    {
+     "what": "from scale",
+     "value": "0.96"
+    },
+    {
+     "what": "class",
+     "value": "animate-sheet-in"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:295-306",
+    "tokens.css:298-300 (.animate-sheet-in: sheet-in 140ms var(--ease-standard) both; --ease-standard is cubic-bezier(0.2, 0, 0, 1) at :183); :301-306 (sheet-in from opacity 0, scale(0.96)). Used by main/src/components and common-ui/src/components/surfaces/Sheet.tsx:80. Reduced-motion neutralisation at tokens.css:326-333.",
+    "No sheet is open in the five folders (main-dark, main-default, row-selected-dark, settings-dark and capture-bar-dark trees contain no SheetHost content). The animate-sheet-in class and its timing are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Neutralised by reduced motion."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-026",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the class and timing in source. B could not check because no sheet was open."
+  },
+  {
+   "title": "Scrim fades in before panel",
+   "trigger": "Opening a backdrop-dimmed surface (the Backdrop component is outside these files)",
+   "context": "Any scrim",
+   "result": "The dimming layer fades in over 160 ms.",
+   "exact": [
+    {
+     "what": "duration",
+     "value": "160ms"
+    },
+    {
+     "what": "easing",
+     "value": "cubic-bezier(0.2, 0, 0, 1)"
+    },
+    {
+     "what": "class",
+     "value": "animate-scrim-in"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:308-312",
+    "tokens.css:310-312 (.animate-scrim-in: fade-in 160ms var(--ease-standard) both), :280-284 (fade-in from opacity 0). Used by common-ui/src/components/surfaces/Backdrop.tsx:52. Reduced-motion block tokens.css:326-333 applies to every element's animation-duration.",
+    "No backdrop or scrim is open in the five folders. The animate-scrim-in class and its timing are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Neutralised by reduced motion (tokens.css:326-333 applies to all elements)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-027",
+   "check": "corrected",
+   "check_notes": "B could not check. A's edge case on reduced motion is applied."
+  },
+  {
+   "title": "Rise and panel-in entrance animations",
+   "trigger": "none in these files; animate-rise is used by main/src/components/Toast.tsx:19 and main/src/components/preview/TaskInspector.tsx:259, and animate-panel-in by main/src/windows/SettingsWindow.tsx:316.",
+   "context": "Elements that use these utilities",
+   "result": "Rise moves up 3px while fading in over 110ms; panel-in moves in from 6px to the right while fading in over 120ms.",
+   "exact": [
+    {
+     "what": "animate-rise",
+     "value": "rise 110ms cubic-bezier(0.2, 0, 0, 1); from translateY(3px), opacity 0"
+    },
+    {
+     "what": "animate-panel-in",
+     "value": "panel-in 120ms cubic-bezier(0.2, 0, 0, 1) both; from translateX(6px), opacity 0"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:187-188",
+    "common-ui/styles/tokens.css:251-263",
+    "tokens.css:187 (--animate-rise: rise 110ms cubic-bezier(0.2, 0, 0, 1)), :251-256 (rise from translateY(3px), opacity 0), :188 (--animate-panel-in: panel-in 120ms cubic-bezier(0.2, 0, 0, 1) both), :258-263 (panel-in from translateX(6px), opacity 0). Usage: main/src/components/Toast.tsx:19 and main/src/components/preview/TaskInspector.tsx:259 (animate-rise); main/src/windows/SettingsWindow.tsx:316 (animate-panel-in). Reduced-motion block tokens.css:326-333.",
+    "No animate-rise or animate-panel-in class appears in the five trees (checked settings-dark, main-dark, main-default, row-selected-dark and capture-bar-dark tree.txt). The triggering use is outside these files, so the keyframe values are not shown."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The rise keyframe sets only the from state; the end state is the element's own styling.",
+    "Both utilities are neutralised by the reduced-motion block (tokens.css:326-333)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-028",
+   "check": "corrected",
+   "check_notes": "B could not check. A's usage and trigger are applied."
+  },
+  {
+   "title": "Done-task strikethrough draws left to right",
+   "trigger": "Marking a task done (the task component is outside these files)",
+   "context": "Done tasks",
+   "result": "A 1px line is drawn across the text from left to right in 150 ms when strike-on is added to strike.",
+   "exact": [
+    {
+     "what": "duration",
+     "value": "150ms"
+    },
+    {
+     "what": "easing",
+     "value": "cubic-bezier(0.2, 0, 0, 1)"
+    },
+    {
+     "what": "line thickness",
+     "value": "1px"
+    },
+    {
+     "what": "line vertical position",
+     "value": "58%"
+    },
+    {
+     "what": "classes",
+     "value": "strike, strike-on"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:314-324",
+    "tokens.css:315-324 (.strike background-position 0 58%, background-size 0% 1px, transition background-size 150ms cubic-bezier(0.2, 0, 0, 1); .strike-on background-size 100% 1px). Neutralised at tokens.css:326-333.",
+    "main-dark/shot.png and main-default/shot.png show a line through done rows ('Post the parcel to Mum', 'Oat milk'), which is the end state only. The strike or strike-on classes, 150ms duration, 1px thickness and 58% position are not shown in tree.txt or elements.json."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Neutralised by reduced motion."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-029",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the strike values in source. B saw only the end-state line in screenshots."
+  },
+  {
+   "title": "Motion CSS classes defined but not applied",
+   "trigger": "none (the source says these are not yet applied to any component)",
+   "context": "Not used by any component in these files",
+   "result": "Nothing observable from these classes in this area.",
+   "exact": [
+    {
+     "what": "animate-fade-in-up",
+     "value": "fade-in-up var(--duration-base) var(--ease-out) both; duration 0.28s; easing var(--ease-out) = cubic-bezier(0.22, 1, 0.36, 1) (not the keyword ease-out); from opacity 0, translateY(10px)"
+    },
+    {
+     "what": "animate-fade-in",
+     "value": "fade-in var(--duration-slow) var(--ease-out) both; duration 0.5s; easing var(--ease-out) = cubic-bezier(0.22, 1, 0.36, 1) (not the keyword ease-out); from opacity 0"
+    },
+    {
+     "what": "animate-scale-in",
+     "value": "scale-in var(--duration-base) var(--ease-out) both; duration 0.28s; easing var(--ease-out) = cubic-bezier(0.22, 1, 0.36, 1) (not the keyword ease-out); from opacity 0, scale(0.97)"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:265-293",
+    "tokens.css:268-270 (.animate-fade-in-up: fade-in-up var(--duration-base) var(--ease-out) both), :271-276 (keyframes from opacity 0, translateY(10px)); :277-279 (.animate-fade-in: var(--duration-slow) var(--ease-out) both), :280-284 (from opacity 0); :285-287 (.animate-scale-in: var(--duration-base) var(--ease-out) both), :288-293 (from opacity 0, scale(0.97)). Token values at tokens.css:235-238 (--ease-out cubic-bezier(0.22, 1, 0.36, 1); --duration-base 0.28s; --duration-slow 0.5s). Comment 265-267 says not yet applied and neutralised by the reduced-motion block. No component in the repo uses these classes (grep).",
+    "No animate-fade-in-up, animate-fade-in or animate-scale-in class appears in the trees of settings-dark, main-dark, main-default, row-selected-dark or capture-bar-dark. Scope is limited to these five recordings, so this supports but does not prove the source claim. Note: an earlier broad search also returned files from other reference folders; those results were not used."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Source comment says NOT yet applied to any component.",
+    "The three classes are neutralised by the reduced-motion block (tokens.css:326-333), as the comment at tokens.css:266-267 says."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-030",
+   "check": "corrected",
+   "check_notes": "Both checkers agree that the classes are absent from the recordings. B's verdict is exact but limited to five folders; A's source-based corrections on keyword easing and token values are applied."
+  },
+  {
+   "title": "Shared motion tokens: easing and durations",
+   "trigger": "none",
+   "context": "Available for components",
+   "result": "Named easing and duration values are defined in tokens.css. The comment at tokens.css:232-234 says the block at tokens.css:235-238 is not yet wired to any component. --ease-standard (tokens.css:183) is already used by .animate-sheet-in (:299), .animate-scrim-in (:311) and .strike (:320), so it is outside that comment's scope; --ease-exit (:184) is not referenced in these files.",
+   "exact": [
+    {
+     "what": "--ease-out",
+     "value": "cubic-bezier(0.22, 1, 0.36, 1)"
+    },
+    {
+     "what": "--ease-standard",
+     "value": "cubic-bezier(0.2, 0, 0, 1)"
+    },
+    {
+     "what": "--ease-exit",
+     "value": "cubic-bezier(0.3, 0, 1, 1)"
+    },
+    {
+     "what": "--duration-fast",
+     "value": "0.18s"
+    },
+    {
+     "what": "--duration-base",
+     "value": "0.28s"
+    },
+    {
+     "what": "--duration-slow",
+     "value": "0.5s"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:183-184",
+    "common-ui/styles/tokens.css:235-238",
+    "tokens.css:183 (--ease-standard), :184 (--ease-exit, not referenced elsewhere in these files), :232-234 (comment: not yet wired, scoped to the block at :235-238), :235-238 (--ease-out, --duration-fast/base/slow values match). motion.ts:7 (EASE_OUT = [0.22, 1, 0.36, 1]), motion.ts:9-13 (DURATION fast 0.18, base 0.28, slow 0.5). --ease-standard is used at tokens.css:299, :311, :320.",
+    "main-dark/tree.txt:68 and main-default/tree.txt:68 show a Tailwind 'transition-transform duration-100' class on the chevron. That is not the named --duration-fast (0.18s) or any named token. No --ease or --duration token use is visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Motion copy in src/motion/lib/motion.ts mirrors --ease-out (EASE_OUT, motion.ts:7) and the three durations (DURATION, motion.ts:9-13). It has no copy of --ease-standard or --ease-exit."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-031",
+   "check": "corrected",
+   "check_notes": "B's chevron observation uses a Tailwind utility, not a named token, so it neither confirms nor contradicts A. A's source-based result and edge cases are applied."
+  },
+  {
+   "title": "Motion short by design",
+   "trigger": "none",
+   "context": "All motion",
+   "result": "Motion is kept brief; the source says a native app snaps rather than glides.",
+   "exact": [
+    {
+     "what": "comment",
+     "value": "Motion is kept short and functional — a native app snaps, it doesn't glide."
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:186",
+    "tokens.css:186 (comment text, with the em dash, matches).",
+    "The statement is a source comment; no recording shows motion timing or style."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-032",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the comment text in source. B could not check."
+  },
+  {
+   "title": "Text selection is locked app-wide except for editable and preview text",
+   "trigger": "Click-drag or double-click on labels or other non-editable text (no selection occurs); selection works inside input, textarea, contenteditable and .selectable-text",
+   "context": "All windows of the main app",
+   "result": "Non-editable text cannot be selected and the pointer shows the default arrow; inside editable controls and selectable previews the pointer is a text I-beam and selection works.",
+   "exact": [
+    {
+     "what": "locked user-select",
+     "value": "none (with -webkit-user-select: none)"
+    },
+    {
+     "what": "unlocked user-select",
+     "value": "text (with -webkit-user-select: text)"
+    },
+    {
+     "what": "cursor on locked text",
+     "value": "default"
+    },
+    {
+     "what": "cursor on editable and selectable text",
+     "value": "text"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:26-59",
+    "index.css:39-41 (html, body overscroll-behavior none is F11-034), :47-49 (-webkit-user-select none; user-select none; cursor default), :55-58 (input, textarea, [contenteditable], .selectable-text: -webkit-user-select text; user-select text; cursor text), :26-29 and :35 (comments: -webkit- prefix needed; attachment preview is the only SelectableText use today).",
+    "user-select, -webkit-user-select and cursor are not recorded in any tree.txt, elements.json or meta.json of the five folders. No drag-select or double-click on text is in the meta.json command lists."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The -webkit- prefixed property is required for the lock to work in WKWebView.",
+    "The only read-only text meant to be selectable is wrapped in SelectableText (.selectable-text); today it is the attachment text/code preview (per source comment)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-033",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the selection rules in source. B could not check."
+  },
+  {
+   "title": "Overscroll rubber-band is disabled",
+   "trigger": "Scrolling past the top or bottom edge of the page (for example trackpad overscroll)",
+   "context": "html and body",
+   "result": "No bounce or rubber-band effect at scroll edges.",
+   "exact": [
+    {
+     "what": "overscroll-behavior",
+     "value": "none"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:39-41",
+    "index.css:39-41 (html, body overscroll-behavior: none).",
+    "No overscroll interaction or overscroll-behavior value is recorded in the five folders."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-034",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the value in source. B could not check."
+  },
+  {
+   "title": "Base text style and page background",
+   "trigger": "none",
+   "context": "Whole app",
+   "result": "Page background uses surface-1 and body text uses content-1; text is 14px system-ui with antialiasing.",
+   "exact": [
+    {
+     "what": "font-family",
+     "value": "system-ui, sans-serif"
+    },
+    {
+     "what": "font-size",
+     "value": "14px"
+    },
+    {
+     "what": "background-color",
+     "value": "var(--surface-1)"
+    },
+    {
+     "what": "color",
+     "value": "var(--content-1)"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:39-46",
+    "index.css:39-46 (html, body: font-family system-ui, sans-serif; font-size 14px; background-color var(--surface-1); color var(--content-1); -webkit-font-smoothing antialiased).",
+    "main-default/elements.json and main-dark/elements.json: task title text at font-size 14px (for example 'Pick up prescription' 500 14px/16.625px); body text colour content-1 (oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark). font-family and the page background (surface-1) are not recorded; the settings tabpanel bg is surface-2, which is a panel, so it is not evidence for or against the page background."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-035",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on the 14px size and content-1 text colour. font-family and page background are source-only."
+  },
+  {
+   "title": "Keyboard focus ring",
+   "trigger": "Any element matching the :focus-visible pseudo-class (browser decides; Tab is the usual cause). The CSS does not reference Tab.",
+   "context": "Rule is in @layer base. Excluded elements (input, textarea, [contenteditable]) get outline: none, not merely no outline; the exclusion overrides the :focus-visible rule for those elements only.",
+   "result": "A 2px solid outline in the focus colour, offset 1px from the element.",
+   "exact": [
+    {
+     "what": "focus colour resolved (light)",
+     "value": "var(--focus-1) -> oklch(0.6 0.2 255 / 0.5)"
+    },
+    {
+     "what": "focus colour resolved (dark, under .dark)",
+     "value": "var(--focus-1) -> oklch(0.68 0.17 252 / 0.6)"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:65-74",
+    "main/src/index.css:65-74 (:focus-visible outline 2px solid var(--focus-1), outline-offset 1px; input/textarea/[contenteditable]:focus-visible outline none). common-ui/styles/tokens.css:97,113 (--focus-1 resolves to --focus-1l in light and --focus-1d under .dark); tokens.css:63-64 (--focus-1l oklch(0.6 0.2 255 / 0.5), --focus-1d oklch(0.68 0.17 252 / 0.6)). Rule sits in @layer base (index.css:25).",
+    "No tree.txt, meta.json or shot.png in the five reference folders shows an outline or focus state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Editable controls get no outline; their focus is shown by their own styling (outside these files)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-036",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the trigger, context and resolved focus colours from the source. Checker B could not check because no reference folder shows an outline or focus state. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Scrollbars are thin and styled",
+   "trigger": "Any scrollable area with the scrollbar visible",
+   "context": "WebKit scrollbars",
+   "result": "11px wide and tall; transparent track; rounded thumb. On hover the thumb colour changes to var(--edge-3). In light mode this darkens the thumb; in dark mode edge-3d (oklch(0.98 0.01 260 / 0.24)) is a more opaque light tone than edge-2d (/ 0.11), so the thumb gets lighter on hover, not darker.",
+   "exact": [
+    {
+     "what": "track background",
+     "value": "transparent"
+    },
+    {
+     "what": "thumb background-clip",
+     "value": "content-box"
+    },
+    {
+     "what": "thumb colour light (edge-2l)",
+     "value": "oklch(0.32 0.02 260 / 0.14)"
+    },
+    {
+     "what": "thumb hover colour light (edge-3l)",
+     "value": "oklch(0.32 0.02 260 / 0.3)"
+    },
+    {
+     "what": "thumb colour dark (edge-2d)",
+     "value": "oklch(0.98 0.01 260 / 0.11)"
+    },
+    {
+     "what": "thumb hover colour dark (edge-3d)",
+     "value": "oklch(0.98 0.01 260 / 0.24)"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:76-93",
+    "main/src/index.css:76-93 (width/height 11px, track transparent, thumb radius 6px, border 3px solid transparent, background-clip content-box, thumb var(--edge-2), hover var(--edge-3)). common-ui/styles/tokens.css:36-41 and 91-92, 108-109 (edge-2l /0.14 vs edge-2d /0.11; edge-3l /0.3 vs edge-3d /0.24).",
+    "Scrollbar sizes, radii, border and colours are CSS (index.css, not opened). The reference folders contain no scrollbar evidence."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-037",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the hover behaviour and gave exact token values from source. Checker B could not check because the reference folders contain no scrollbar evidence. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Hide-scrollbar utility",
+   "trigger": "none (applied by classes outside these files)",
+   "context": "Rows or overlays that scroll without a visible bar",
+   "result": "Scrollbar hidden while keeping the element scrollable.",
+   "exact": [
+    {
+     "what": "utility",
+     "value": "no-scrollbar"
+    }
+   ],
+   "sources": [
+    "common-ui/styles/tokens.css:241-249",
+    "common-ui/styles/tokens.css:241-249 (@utility no-scrollbar: scrollbar-width none; &::-webkit-scrollbar display none).",
+    "no-scrollbar utility is in common-ui/styles/tokens.css (not opened). No reference folder shows it applied."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-038",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the utility from source. Checker B could not check because tokens.css was not opened and no reference folder shows the utility applied."
+  },
+  {
+   "title": "Traffic-light disc colours by theme",
+   "trigger": "none (visual; the window control discs)",
+   "context": "Inactive traffic-light discs in light vs dark",
+   "result": "Inactive discs use grey rings and fills, darker in dark mode.",
+   "exact": [
+    {
+     "what": "--tl-inactive-ring light / dark",
+     "value": "#cececf / #5a5a5c"
+    },
+    {
+     "what": "--tl-inactive-fill light / dark",
+     "value": "#c5c5c6 / #4e4e50"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:12-20",
+    "main/src/index.css:12-20 (:root --tl-inactive-ring #cececf, --tl-inactive-fill #c5c5c6; .dark --tl-inactive-ring #5a5a5c, --tl-inactive-fill #4e4e50).",
+    "Hex values for --tl-inactive-ring and --tl-inactive-fill are in index.css (not opened). tree.txt (e.g. spec/references/settings-dark/tree.txt:8-9) gives Light props only, no colours. settings-dark/shot.png shows grey minimize and fullscreen discs, which is consistent but cannot confirm hex values."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Only inactive state is defined here; the active colours are outside these files."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-039",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the hex values from index.css. Checker B could not confirm hex values from recordings; its settings-dark shot shows grey minimize and fullscreen discs, which is consistent but does not verify the values."
+  },
+  {
+   "title": "Shared stylesheet imports for main app",
+   "trigger": "none",
+   "context": "Build",
+   "result": "Tailwind is scanned over the shared common-ui sources, and the shared tokens and rich-text styles are imported.",
+   "exact": [
+    {
+     "what": "import",
+     "value": "'tailwindcss'"
+    },
+    {
+     "what": "source",
+     "value": "'../../common-ui/src'"
+    },
+    {
+     "what": "import",
+     "value": "'../../common-ui/styles/tokens.css'"
+    },
+    {
+     "what": "import",
+     "value": "'../../common-ui/styles/note-rt.css'"
+    }
+   ],
+   "sources": [
+    "main/src/index.css:1-7",
+    "main/src/index.css:1 (@import 'tailwindcss'), :5 (@source '../../common-ui/src'), :6 (@import '../../common-ui/styles/tokens.css'), :7 (@import '../../common-ui/styles/note-rt.css').",
+    "Stylesheet import lines are in main/src/index.css:1-7 (not opened). Build config is not in any reference folder."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-040",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the import lines from source. Checker B could not check because the build config is not in any reference folder."
+  },
+  {
+   "title": "Staging folder motion/ is not wired into the app (not user-observable)",
+   "trigger": "none",
+   "context": "Whole app",
+   "result": "Nothing in src/motion/ is imported by the app; the folder is excluded from the TypeScript build. The hooks and variants below are not observable to the user.",
+   "exact": [
+    {
+     "what": "excluded from build",
+     "value": "tsconfig.json exclude (per README)"
+    },
+    {
+     "what": "runtime deps",
+     "value": "motion (Framer Motion) and tailwind-merge"
+    }
+   ],
+   "sources": [
+    "main/src/motion/README.md:3-8",
+    "main/src/motion/README.md:24-28",
+    "main/src/motion/README.md:3-8 (not imported by app; tsconfig.json exclude; deps motion and tailwind-merge). Grep of taskscape-tauri (excluding node_modules) found no import of motion/lib from outside src/motion/. tsconfig.json itself was not opened.",
+    "Staging folder, tsconfig exclude and dependencies are source-level (README and tsconfig, not opened). No reference folder shows motion behaviour."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Listed for completeness so the auditor knows these are not user-facing."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-041",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from the README and a grep, but did not open tsconfig.json. Checker B could not check; no reference folder shows motion behaviour."
+  },
+  {
+   "title": "Page-switch slide transition defined but not wired",
+   "trigger": "none (would be a page change; not in use per README)",
+   "context": "Would apply on switching pages",
+   "result": "Not observable. Enter: new page starts at opacity 0 and offset by 36px (horizontal for forward/backward, vertical for up) and settles to 0. Exit: outgoing page goes to opacity 0 and is offset by 36px in the opposite direction. Direction forward: enters from +x, exits to -x; backward: enters from -x, exits to +x; up: enters from +y (below), exits to -y.",
+   "exact": [
+    {
+     "what": "exit offset",
+     "value": "36px opposite to entry (exit uses offset(dir, -1))"
+    },
+    {
+     "what": "initial opacity / exit opacity",
+     "value": "0 / 0; enter opacity 1"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/motion.ts:176-209",
+    "main/src/motion/README.md:3-8",
+    "main/src/motion/lib/motion.ts:176-209 (PAGE_SLIDE = 36 at :178; pageTransition enter uses DURATION.base at :197; exit uses DURATION.fast at :205; EASE_OUT :198/:208; offset() :181-185). README.md:3-8 says nothing wired.",
+    "PAGE_SLIDE, durations and easing are in motion.ts (not opened). meta.json of the five folders has no page-change command."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "AnimatePresence mode=\"wait\" is named in the comment at motion.ts:170-171 but no AnimatePresence call exists in these files."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-042",
+   "check": "corrected",
+   "check_notes": "Checker A found the behaviour is not observable in the app as wired, and gave the exit offset and direction rules from motion.ts. Checker B could not check because no meta.json has a page-change command. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Eyebrow cascade timing defined but not wired",
+   "trigger": "none",
+   "context": "Not in use",
+   "result": "Not observable from these files.",
+   "exact": [
+    {
+     "what": "EYEBROW_STAGGER",
+     "value": "0.36 s"
+    },
+    {
+     "what": "THRESHOLD",
+     "value": "0.15"
+    },
+    {
+     "what": "WINDOW_MS",
+     "value": "50"
+    },
+    {
+     "what": "ROW_TOLERANCE",
+     "value": "24 px"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/eyebrowCascade.ts:21-23",
+    "main/src/motion/lib/motion.ts:112",
+    "main/src/motion/README.md:21-22",
+    "main/src/motion/lib/motion.ts:112 (EYEBROW_STAGGER 0.36); eyebrowCascade.ts:21-23 (THRESHOLD 0.15, WINDOW_MS 50, ROW_TOLERANCE 24); README.md:21-22 (orphaned, kept for reference).",
+    "EYEBROW_STAGGER, THRESHOLD, WINDOW_MS and ROW_TOLERANCE are in eyebrowCascade.ts (not opened). Not observable in tree.txt or shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "README says the cascade is orphaned, kept for reference."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-043",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the constants from source. Checker B could not check; the values are not observable in tree.txt or shot.png."
+  },
+  {
+   "title": "Section header title rise defined but not wired",
+   "trigger": "none",
+   "context": "Not in use",
+   "result": "Not observable from these files.",
+   "exact": [
+    {
+     "what": "supporting text fade-rise",
+     "value": "opacity 0 -> 1 and y 10px -> 0; duration 0.5 s (DURATION.slow); delay start + i * 0.12 s (start defaults to 0)"
+    },
+    {
+     "what": "title mask-rise end state",
+     "value": "y '0%' with duration 0.72 s and delay start + i * 0.12 s"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/motion.ts:51-107",
+    "main/src/motion/lib/motion.ts:53 (HEADER_TEXT_STAGGER 0.12), :60 (HEADER_RISE 0.72), :68-83 (headerMaskVariants: hidden y '120%', visible y '0%', duration HEADER_RISE, delay start + i*step), :91-107 (headerTextVariants: hidden opacity 0 y 10, visible opacity 1 y 0, duration DURATION.slow = 0.5, delay start + i*step, start default 0).",
+    "HEADER_RISE and related values are in motion.ts (not opened). Not observable in the five folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-044",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the supporting-text and title-mask values from motion.ts. Checker B could not check because the values are not observable in the five folders. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Grow-then-dissolve reveal timing defined but not wired",
+   "trigger": "none",
+   "context": "Not in use",
+   "result": "Not observable from these files.",
+   "exact": [
+    {
+     "what": "REVEAL.grow",
+     "value": "0.45 s"
+    },
+    {
+     "what": "REVEAL.dissolve",
+     "value": "0.4 s"
+    },
+    {
+     "what": "reveal easing",
+     "value": "[0.22, 1, 0.36, 1]"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/motion.ts:15-32",
+    "main/src/motion/lib/motion.ts:15-19 (REVEAL grow 0.45, dissolve 0.4), :7 (EASE_OUT), :24-32 (revealTransition uses EASE_OUT, times split at grow/total).",
+    "REVEAL timings are in motion.ts (not opened). Not observable in the five folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-045",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the REVEAL timings from source. Checker B could not check; the timings are not observable in the five folders."
+  },
+  {
+   "title": "Scroll-in reveal triggers once when element is 15 percent visible (defined, not wired)",
+   "trigger": "none",
+   "context": "Not in use",
+   "result": "Not observable from these files.",
+   "exact": [
+    {
+     "what": "default threshold",
+     "value": "0.15"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/useInViewOnce.ts:17-48",
+    "main/src/motion/lib/useInViewOnce.ts:17-20 (threshold default 0.15), :34-48 (IntersectionObserver, setInView(true) then observer.disconnect() on first intersecting entry; comment :3-13 on whileInView).",
+    "Threshold 0.15 is in useInViewOnce.ts (not opened). Not observable in the five folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Driven by IntersectionObserver rather than motion's whileInView; latches once."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-046",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the 0.15 threshold and the one-shot observer from source. Checker B could not check; the value is not observable in the five folders."
+  },
+  {
+   "title": "Entrance replays on mount via a one-frame flip (defined, not wired)",
+   "trigger": "none",
+   "context": "Not in use",
+   "result": "Not observable from these files.",
+   "exact": [
+    {
+     "what": "flip timing",
+     "value": "next requestAnimationFrame"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/useEntrancePlay.ts:18-29",
+    "main/src/motion/lib/useEntrancePlay.ts:24 (requestAnimationFrame(() => setPlay(true))), :18-29.",
+    "One-frame flip is in useEntrancePlay.ts (not opened). Not observable in the five folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-047",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the one-frame flip from source. Checker B could not check; the flip is not observable in the five folders."
+  },
+  {
+   "title": "Viewport breakpoints defined (not wired)",
+   "trigger": "none",
+   "context": "Not in use in these files",
+   "result": "Would split the window into four width bands.",
+   "exact": [
+    {
+     "what": "mobile",
+     "value": "below 768px"
+    },
+    {
+     "what": "tablet",
+     "value": "768px to 1023px"
+    },
+    {
+     "what": "desktop",
+     "value": "1024px to 1399px"
+    },
+    {
+     "what": "wide",
+     "value": "1400px and up"
+    }
+   ],
+   "sources": [
+    "main/src/motion/lib/useMediaQuery.ts:22-54",
+    "main/src/motion/lib/useMediaQuery.ts:27-35 (MD 768, LG 1024, WIDE 1400; BANDS mobile max 767, tablet 768-1023, desktop 1024-1399, wide 1400+), :51-54 (hooks). Comment :22-24 says wide is registered as --breakpoint-wide in index.css; grep of the reference repo found no such definition (only the comment).",
+    "Breakpoints are in useMediaQuery.ts (not opened). Window sizes in the five folders are all 1180x760 (main-dark/tree.txt:1, settings-dark/tree.txt:1), which does not test the bands."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The 1400px wide band is documented as registered as --breakpoint-wide in index.css (useMediaQuery.ts:24), but no --breakpoint-wide definition exists in index.css or tokens.css; the value is only a constant in useMediaQuery.ts."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "notes": "",
+   "id": "F11-048",
+   "check": "corrected",
+   "check_notes": "Checker A confirmed the band values from useMediaQuery.ts and found no --breakpoint-wide definition in index.css or tokens.css. Checker B could not check; all five reference windows are 1180x760, which does not test the bands. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Window theme applied when each window opens",
+   "trigger": "none (observed) - opening the main, capture or settings window",
+   "context": "Every recorded state",
+   "result": "Main and settings windows each send set_window_theme, read settings (get_setting) and the low-power flag (is_low_power_mode) during startup, before they are shown (main ends with boot_done, reveal_main; settings ends with present_window). The capture bar (capture-bar-dark) does not send set_window_theme, get_setting or is_low_power_mode in its recording; its command sequence is get_dark, capture_target, list_hotkeys, capture_target, list_hotkeys, set_bar_height, capture_target, list_hotkeys, get_dark. The visible result is the theme colours in the screenshot.",
+   "exact": [
+    {
+     "what": "Commands in order (main-dark)",
+     "value": "get_setting, get_setting, set_window_theme, is_low_power_mode, list_projects, ..., boot_done, reveal_main"
+    },
+    {
+     "what": "Commands in order (settings-dark)",
+     "value": "get_setting, get_setting, set_window_theme, is_low_power_mode, ..., list_hotkeys, plugin:app|version, data_paths, present_window"
+    },
+    {
+     "what": "Commands in order (capture-bar-dark)",
+     "value": "get_dark, capture_target, list_hotkeys, capture_target, list_hotkeys, set_bar_height, capture_target, list_hotkeys, get_dark"
+    }
+   ],
+   "sources": [
+    "state:main-dark (meta.json)",
+    "state:main-default (meta.json)",
+    "state:settings-dark (meta.json)",
+    "state:capture-bar-dark (meta.json)",
+    "Symbols exist: main/src-tauri/src/lib.rs:841 present_window, :903 reveal_main, :916 boot_done, :929 set_window_theme, :939 is_low_power_mode; main/src/api.ts:164-174; tray/src/api.ts:14 and tray/src-tauri/src/hotkeys.rs:26 (get_dark). Command order and get_setting call sites come from state recordings, which were outside the allowed files.",
+    "main-dark/meta.json:10-20, main-default/meta.json:13-20, settings-dark/meta.json:10-19, capture-bar-dark/meta.json:10-19 match the three ordered command strings in the exact list (verified). But capture-bar-dark/meta.json:10-19 contains no set_window_theme, get_setting or is_low_power_mode, and has no reveal or present command. The result's claim that each window sends set_window_theme and reads get_setting and is_low_power_mode is therefore true only for the main and settings windows."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "capture-bar-dark/meta.json shows no reveal or present command; the capture window's show step is not recorded.",
+    "How the capture window was opened (trigger) is not recorded in capture-bar-dark/meta.json."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Conflict with solution A 'Native window background follows the resolved theme' (main window only per A's source reading). B's command logs show set_window_theme for settings and capture windows as well. A's source value kept; B's observation recorded here.",
+   "id": "F11-049",
+   "check": "corrected",
+   "check_notes": "Checker B verified the three ordered command strings in main-dark, main-default, settings-dark and capture-bar-dark meta.json, and found that capture-bar-dark does not send set_window_theme, get_setting or is_low_power_mode. Checker A could not check the command order or get_setting call sites, but confirmed from source that present_window, reveal_main, boot_done, set_window_theme and is_low_power_mode exist. The source symbols do not contradict B. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Dark theme main window surfaces",
+   "trigger": "Theme set to Dark, or System with a dark OS appearance",
+   "context": "Main window, dark",
+   "result": "The window, the task list, the search well, the preview panel and the stats bar use dark grey surfaces with light text. Dividers are darker than the surfaces. Colour values were not read from the image.",
+   "exact": [
+    {
+     "what": "Window size",
+     "value": "1180x760"
+    },
+    {
+     "what": "Title bar height",
+     "value": "46px"
+    }
+   ],
+   "sources": [
+    "state:main-dark (shot.png)",
+    "state:main-dark (tree line 1, line 34)",
+    "Screenshot and tree-state data (state:main-dark) are outside the allowed files; no colour values in these files are cited by the feature.",
+    "main-dark/tree.txt:1 App 1180x760 (window size correct); main-dark/tree.txt:2 TitleBar 1180x46 (title bar height correct). main-dark/meta.json:8 theme dark. main-dark/shot.png shows dark grey window, task list, stats bar and preview panel with light text; the search well is darker than the list and the preview panel is darker than the task pane. Colour values not measured (feature already says so). The trigger's 'System with dark OS appearance' branch is consistent with settings-dark/tree.txt:29 Segmented value=\"system\" alongside meta theme dark, but the recording does not show how the theme was set."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "No hex values are available; comparison with the light state is visual only."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Visual description only. Solution A's token values for these surfaces are a separate entry.",
+   "id": "F11-050",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the window size, title bar height and dark theme in main-dark and noted colour values were not measured. Checker A could not check because the screenshot and tree-state data are outside its files. The trigger branch for system theme is consistent with settings-dark but not shown by the recording."
+  },
+  {
+   "title": "Light theme main window surfaces",
+   "trigger": "Theme set to Light, or System with a light OS appearance",
+   "context": "Main window, light",
+   "result": "Window and task list are near-white. The search well and the stats bar are light grey. The preview panel is a light grey column. Text is dark. Colour values were not read from the image.",
+   "exact": [
+    {
+     "what": "Window size",
+     "value": "1180x760"
+    }
+   ],
+   "sources": [
+    "state:main-default (shot.png)",
+    "Screenshot and tree-state data (state:main-default) are outside the allowed files.",
+    "main-default/tree.txt:1 App 1180x760 (window size correct). main-default/meta.json:11 theme light. main-default/shot.png: window and task list near-white, search well light grey, preview panel light grey column, text dark (matches). Stats bar tone is close to the list background at this resolution, so the 'light grey' stats bar is only loosely confirmed. Only light recording is main-default; settings-dark and capture-bar-dark are dark (meta.json theme fields), so the edge case is correct."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Only one light state is recorded; the light capture bar, settings window and hover colours are not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-051",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the window size and light theme. It noted the stats bar tone is close to the list background, so the light grey stats bar is only loosely confirmed. Checker A could not check because the screenshot and tree-state data are outside its files."
+  },
+  {
+   "title": "Theme-paired colour token classes",
+   "trigger": "none (observed) - applies whenever the theme changes",
+   "context": "Every component that uses a colour token",
+   "result": "Most semantic colour tokens have a light variant suffix l and a dark variant suffix d, and the dark: variant selects dark mode by a .dark class on an ancestor (tokens.css:22), not by prefers-color-scheme. Exceptions: --on-accent is a single invariant value with no l/d pair (tokens.css:58), and spacing (space-*) and shadow/z/radius tokens are not theme-paired.",
+   "exact": [
+    {
+     "what": "Text token, third level",
+     "value": "text-content-3l dark:text-content-3d"
+    },
+    {
+     "what": "Border token, second level",
+     "value": "border-edge-2l dark:border-edge-2d"
+    },
+    {
+     "what": "Surface token, second level",
+     "value": "bg-surface-2l dark:bg-sur… (truncated in tree)"
+    },
+    {
+     "what": "Divider token, first level",
+     "value": "divide-edge-1l dark:divide-edge-1d"
+    },
+    {
+     "what": "Spacing token",
+     "value": "px-space-3 (Badge)"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree line 96 ProjectSwitcher icon class, line 88 StatsBar Label class)",
+    "state:settings-dark (tree line 25 Surface2 class)",
+    "state:main-default (tree line 68 Badge)",
+    "common-ui/styles/tokens.css:22 (@custom-variant dark keyed to .dark class, not prefers-color-scheme), :43-47 and :26-41 (paired l/d tokens), :58 (--on-accent single value, no l/d), :122-177 (@theme inline --color-*-l/-d bridge), :213 (--spacing-space-3: 0.25rem = 4px). main/src/components/TaskRow.tsx:356 uses 'bg-edge-1l dark:bg-edge-1d' pattern.",
+    "Class strings verified: main-default/tree.txt:12 and :97 'text-content-3l dark:text-content-3d'; main-default/tree.txt:88 StatsBar Label 'border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-sur…' (truncated); settings-dark/tree.txt:25 Surface2 'divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden'; main-default/tree.txt:69 Badge 'px-space-3'. The feature's source pointers are off: the ProjectSwitcher icon class is main-default/tree.txt:12 (not 96; line 96 is the EmptyState), and the Badge is main-default/tree.txt:69 (not 68; line 68 is the chevron_left Icon)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "px-space-3 is 0.25rem (4px) per tokens.css:213.",
+    "Source line pointers: ProjectSwitcher icon class is main-default/tree.txt:12 (not 96; line 96 is the EmptyState); Badge is main-default/tree.txt:69 (not 68; line 68 is the chevron_left Icon)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Complements solution A's '.dark' custom variant entry; the two describe the same dark mechanism from different angles and do not conflict.",
+   "id": "F11-052",
+   "check": "corrected",
+   "check_notes": "Both checkers corrected source or tree pointers. Checker A supplied the l/d token rule from tokens.css and the px-space-3 value. Checker B supplied tree-based pointer corrections. B's spacing note duplicated A's exception and was dropped. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Show completed tasks toggle",
+   "trigger": "Click the Toggle in the Show completed tasks row (onChange)",
+   "context": "Settings window, Tasks group; recorded on (checked=true)",
+   "result": "Finished tasks are kept in the list instead of hidden. The recorded list shows done tasks in place.",
+   "exact": [
+    {
+     "what": "Row title",
+     "value": "Show completed tasks"
+    },
+    {
+     "what": "Row description",
+     "value": "Keep finished tasks in the list instead of hiding them."
+    },
+    {
+     "what": "Toggle title",
+     "value": "Show completed tasks"
+    },
+    {
+     "what": "Toggle size",
+     "value": "30x18 at x=1123, y=277"
+    },
+    {
+     "what": "Default in recording",
+     "value": "on (checked=true)"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 41-44)",
+    "state:main-default (tree lines 50-52, Post the parcel to Mum is done and listed second)",
+    "Row and toggle title 'Show completed tasks' found at main/src/windows/settings/generalPane.tsx:84 and :91. Row description, toggle size and default state are from recordings outside the allowed files.",
+    "settings-dark/tree.txt:41 SettingRow title=\"Show completed tasks\" description=\"Keep finished tasks in the list instead of hiding them.\"; settings-dark/tree.txt:44 Toggle checked=true onChange=ƒ title=\"Show completed tasks\" @1123,277 30x18 (all match). settings-dark/shot.png shows the toggle on. main-default/tree.txt:50-52 t-post done=true listed second; main-default/shot.png shows 'Post the parcel to Mum' struck through second. The toggle-to-list link is inferred, not recorded in a single state."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Behaviour when the toggle is off is not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-053",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the row title, description and toggle state from settings-dark. The toggle-to-list link is inferred, not recorded in a single state. Checker A could not check because the row description, toggle size and default state come from recordings."
+  },
+  {
+   "title": "Settings section group headers",
+   "trigger": "none (observed)",
+   "context": "Settings window, General tab",
+   "result": "Groups are headed by uppercase labels. Each group is a bordered rounded surface with rows separated by dividers. The groups are Appearance and Tasks.",
+   "exact": [
+    {
+     "what": "Group label 1",
+     "value": "Appearance (rendered APPEARANCE)"
+    },
+    {
+     "what": "Group label 2",
+     "value": "Tasks (rendered TASKS)"
+    },
+    {
+     "what": "Header label style",
+     "value": "text-[10.5px] tracking-[0.12em] uppercase, weight semibold, tone muted"
+    },
+    {
+     "what": "Group surface",
+     "value": "Surface2, divide-y, overflow-hidden"
+    },
+    {
+     "what": "Group sizes",
+     "value": "Appearance 991x162 at y=58; Tasks 991x77 at y=238"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 22-25, 37-40)",
+    "state:settings-dark (shot.png)",
+    "Layout and class data come from state:settings-dark recordings, outside the allowed files.",
+    "settings-dark/tree.txt:22 SettingsGroup Appearance @172,58 991x162; :37 SettingsGroup Tasks @172,238 991x77; :24 and :39 Label className 'text-[10.5px] tracking-[0.12em] uppercase' weight semibold tone muted; :25 and :40 Surface2 'divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden'. settings-dark/shot.png shows APPEARANCE and TASKS uppercase, bordered rounded group surfaces with dividers."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-054",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the group positions, label styles and divider classes from settings-dark. Checker A could not check because the layout and class data come from recordings."
+  },
+  {
+   "title": "Settings section Discard changes control",
+   "trigger": "Click the undo icon in a Settings section header (clearIcon=\"undo\")",
+   "context": "Section headers Appearance and Tasks; the icon is not visible in settings-dark",
+   "result": "Discards the changes made since the Settings window opened. Visibility rule is not recorded.",
+   "exact": [
+    {
+     "what": "Tooltip prop name",
+     "value": "discardTitle (SettingsGroup.tsx:26 default), not clearTitle"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 23 and 38)",
+    "common-ui/src/components/settings/SettingsGroup.tsx:26 (prop discardTitle = 'Discard changes made since this window opened'). The feature names the prop clearTitle; the clearIcon=\"undo\" usage was not located by grep.",
+    "settings-dark/tree.txt:23 and :38 SectionHeader clearIcon=\"undo\" clearTitle=\"Discard changes made since this window opened\" active=false. settings-dark/shot.png shows no undo icon in either section header."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The icon is absent from the screenshot in the recorded state; it probably appears only after a change (inferred)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-055",
+   "check": "corrected",
+   "check_notes": "Checker A found the tooltip prop as discardTitle in SettingsGroup.tsx:26 and could not locate the clearIcon usage by grep. Checker B saw clearIcon=\"undo\" and clearTitle=\"Discard changes made since this window opened\" on SectionHeader in settings-dark/tree.txt:23 and :38, and no undo icon in the screenshot. The source decides the prop name, so the correction is discardTitle. The B recording shows a clearTitle attribute on SectionHeader, so the component and prop naming in the recording and source differ and remain unresolved."
+  },
+  {
+   "title": "Settings search field",
+   "trigger": "Click into the field at top left and type",
+   "context": "Settings window, top of sidebar",
+   "result": "Text field for searching settings. Filtering behaviour is not recorded.",
+   "exact": [
+    {
+     "what": "Placeholder",
+     "value": "Search"
+    },
+    {
+     "what": "Accessible label",
+     "value": "Search settings"
+    },
+    {
+     "what": "Icon",
+     "value": "search, 14px"
+    },
+    {
+     "what": "Field size",
+     "value": "139x25 at x=7, y=53"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 11-13)",
+    "state:settings-dark (shot.png)",
+    "aria-label \"Search settings\" found at main/src/windows/SettingsWindow.tsx:255. Placeholder, icon and field size come from recordings outside the allowed files.",
+    "settings-dark/tree.txt:11 InputWell @7,53 139x25; :12 Icon name=\"search\" size=14; :13 TextInput2 placeholder=\"Search\" aria-label=\"Search settings\". settings-dark/shot.png shows the 'Search' placeholder at top left of the sidebar."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Empty-result text is not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-056",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the placeholder, icon and field size from settings-dark. Checker A confirmed the aria-label in source and could not check the rest."
+  },
+  {
+   "title": "Settings sidebar tabs",
+   "trigger": "Click a tab in the Settings sidebar (onClick)",
+   "context": "Settings window; General is active in the recording",
+   "result": "Switches the settings panel. Active tab is highlighted with aria-selected=true and tabIndex 0; the others use tabIndex -1.",
+   "exact": [
+    {
+     "what": "Tab 1 label, icon",
+     "value": "General, tune (16px)"
+    },
+    {
+     "what": "Tab 2 label, icon",
+     "value": "Capture, screenshot_monitor (16px)"
+    },
+    {
+     "what": "Tab 3 label, icon",
+     "value": "Shortcuts, keyboard (16px)"
+    },
+    {
+     "what": "Tab 4 label, icon",
+     "value": "About, info (16px)"
+    },
+    {
+     "what": "Tab size",
+     "value": "139x30; y = 86, 118, 149, 181"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 14-21)",
+    "state:settings-dark (shot.png)",
+    "Tab labels and sizes come from state:settings-dark recordings, outside the allowed files.",
+    "settings-dark/tree.txt:14 MenuItem settings-tab-general aria-selected=true tabIndex=0 @7,86 139x30; :15 Icon tune size=16; :16 settings-tab-capture aria-selected=false tabIndex=-1 @7,118; :17 screenshot_monitor 16; :18 settings-tab-shortcuts tabIndex=-1 @7,149; :19 keyboard 16; :20 settings-tab-about tabIndex=-1 @7,181; :21 info 16. Labels General, Capture, Shortcuts, About confirmed in settings-dark/shot.png. onClick=ƒ present on each MenuItem."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-057",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the tab labels, sizes and selection state from settings-dark. Checker A could not check because the tab data come from recordings."
+  },
+  {
+   "title": "Settings window title and controls",
+   "trigger": "none (observed)",
+   "context": "Settings window",
+   "result": "Title bar shows the word Settings. The close light is active. The minimize and fullscreen lights are disabled (inert). Title text is draggable.",
+   "exact": [
+    {
+     "what": "Title text",
+     "value": "Settings"
+    },
+    {
+     "what": "Title size",
+     "value": "text-[13.5px], weight semibold, h1"
+    },
+    {
+     "what": "Title bar height",
+     "value": "46px"
+    },
+    {
+     "what": "Disabled lights",
+     "value": "minimize and fullscreen with inert=true"
+    },
+    {
+     "what": "Light positions",
+     "value": "close 18,15; minimize 39,15; fullscreen 60,15 (14x14 each)"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree lines 1-10)",
+    "state:settings-dark (shot.png)",
+    "Title and light positions come from state:settings-dark recordings, outside the allowed files.",
+    "settings-dark/tree.txt:2-3 SettingsTitleBar and TitleBar draggable=true title=\"Settings\" titleAs=\"h1\" @0,0 1180x46; :10 Label as=\"h1\" data-tauri-drag-region=true weight=\"semibold\" className 'font-display min-w-0 flex-1 text-[13.5px]'; :7 close inert=false @18,15 14x14; :8 minimize inert=true @39,15; :9 fullscreen inert=true @60,15. settings-dark/shot.png shows the x glyph on the close light and grey minimize and fullscreen lights."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "In the screenshot the close light shows an x glyph; the cause (hover or state) is not stated."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-058",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the title and traffic-light positions from settings-dark. Checker A could not check because the data come from recordings."
+  },
+  {
+   "title": "Settings window size and placement",
+   "trigger": "Opening Settings (present_window command)",
+   "context": "Settings window",
+   "result": "Settings window opens at 1180x760 with a left sidebar of 153px.",
+   "exact": [
+    {
+     "what": "Window size",
+     "value": "1180x760"
+    },
+    {
+     "what": "Sidebar right edge",
+     "value": "x=153 (divider visible in screenshot)"
+    },
+    {
+     "what": "Content start",
+     "value": "x=172"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (tree line 1)",
+    "state:settings-dark (meta.json: present_window)",
+    "present_window exists at main/src-tauri/src/lib.rs:841 and main/src/api.ts:164 with width,height args. The 1180x760 size and 153px sidebar come from recordings, outside the allowed files.",
+    "settings-dark/tree.txt:1 SettingsWindow @0,0 1180x760; :22 SettingsGroup @172,58 (content start x=172); sidebar items at x=7 to 146 (:14-:21, 139 wide). settings-dark/shot.png shows the sidebar divider at about x=153. Trigger: settings-dark/meta.json:29 present_window is the last command."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-059",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the 1180x760 size, the 153px sidebar boundary and present_window as the final command in settings-dark. Checker A confirmed present_window exists in source at lib.rs:841 and api.ts:164."
+  },
+  {
+   "title": "Mac window controls in main window",
+   "trigger": "Click the close, minimize or fullscreen light in the top-left corner",
+   "context": "Main window, focused",
+   "result": "Close, minimize and fullscreen window controls. All three are active when the window is focused.",
+   "exact": [
+    {
+     "what": "Lights",
+     "value": "close, minimize, fullscreen; focused=true"
+    },
+    {
+     "what": "Positions",
+     "value": "18,15; 39,15; 60,15 (14x14 each)"
+    },
+    {
+     "what": "Controls group",
+     "value": "WindowControls 84x45 at 0,0"
+    }
+   ],
+   "sources": [
+    "state:main-dark (tree lines 3-8)",
+    "state:main-default (tree lines 3-8)",
+    "state:main-dark (shot.png)",
+    "Light positions and WindowControls group come from state:main-dark recordings, outside the allowed files.",
+    "main-dark/tree.txt:3 WindowControls @0,0 84x45; :6-:8 Light close, minimize, fullscreen focused=true inert=false @18,15, @39,15, @60,15 14x14. main-default/tree.txt:6-8 identical. Click trigger: Light onClick=ƒ present. Unfocused appearance not recorded (no unfocused recording in the five folders)."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "Unfocused appearance is not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-060",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the focused traffic-light group from main-dark and main-default. The unfocused appearance is not recorded. Checker A could not check because the light positions come from recordings."
+  },
+  {
+   "title": "Title bar drag area",
+   "trigger": "Drag the title bar area (outside the buttons)",
+   "context": "Main window and settings window",
+   "result": "Dragging the settings window moves it (title label has data-tauri-drag-region=true). The drag_indicator icon in the main title bar is not interactive (pointer-events-none). Main-window drag behaviour is not shown in any recording.",
+   "exact": [
+    {
+     "what": "Main drag icon",
+     "value": "drag_indicator, 20px, at 85,12"
+    },
+    {
+     "what": "Settings drag element",
+     "value": "data-tauri-drag-region on title label"
+    },
+    {
+     "what": "Title bar height",
+     "value": "46px"
+    }
+   ],
+   "sources": [
+    "state:main-dark (tree line 9)",
+    "state:settings-dark (tree line 10)",
+    "main/src/components/TitleBar.tsx:42-44 (data-tauri-drag-region handling), :52-55 (drag_indicator size 20, pointer-events-none) match the main claim. The settings drag element and 85,12 position come from recordings, outside the allowed files.",
+    "main-dark/tree.txt:9 Icon drag_indicator size=20 className=\"pointer-events-none\" @85,12 20x20 (verified). settings-dark/tree.txt:10 Label data-tauri-drag-region=true (verified). But the main window's TitleBar in main-dark/tree.txt:2 and main-default/tree.txt:2 has no draggable prop, and no element in the main-window trees has data-tauri-drag-region; the settings TitleBar has draggable=true (settings-dark/tree.txt:3). Dragging the main window is therefore not evidenced by any recording."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "Main TitleBar in main-dark/tree.txt:2 and main-default/tree.txt:2 has no draggable prop or drag-region attribute; main-window drag is unconfirmed."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-061",
+   "check": "corrected",
+   "check_notes": "Checker B found the main TitleBar in main-dark and main-default has no draggable prop or drag-region attribute, so main-window drag is not evidenced by any recording. Checker A found the drag-region handling at TitleBar.tsx:42-44 and the drag_indicator at :52-55, which supports the claim at source level. The recording-level correction is applied, and the source-level support is noted. Settings drag is confirmed by B's settings-dark tree. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Project switcher",
+   "trigger": "Click the Home pill in the title bar (onClick, not recorded)",
+   "context": "Main window title bar",
+   "result": "Shows the current project name and an unfold_more chevron. Exact menu behaviour is not recorded.",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Home"
+    },
+    {
+     "what": "Label style",
+     "value": "font-display, weight semibold, text-[14px], truncate, max-w-44"
+    },
+    {
+     "what": "Icon",
+     "value": "unfold_more, 15px, weight 300"
+    },
+    {
+     "what": "Size",
+     "value": "85x28 at 112,8"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 10-12)",
+    "state:main-default (shot.png)",
+    "main/src/components/ProjectSwitcher.tsx:44 uses unfold_more; label, style and size come from recordings, outside the allowed files.",
+    "main-default/tree.txt:10 ProjectSwitcher @112,8 85x28; :11 Label tone=\"primary\" weight=\"semibold\" truncate=true className=\"font-display max-w-44 text-[14px]\" @124,12 45x21; :12 Icon unfold_more size=15 weight=300 @173,15. main-default/shot.png shows 'Home' with chevron. No onClick on ProjectSwitcher in tree (consistent with 'not recorded')."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Label is truncated at max-w-44 when long."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-062",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the ProjectSwitcher position, label and chevron from main-default, and noted no onClick is recorded. Checker A confirmed the unfold_more icon in source and could not check the rest."
+  },
+  {
+   "title": "List tabs",
+   "trigger": "Click a tab (onClick, not recorded); active tab is Errands",
+   "context": "Main window title bar",
+   "result": "Shows lists as tabs. Active tab has primary text colour; inactive tabs use muted text. Labels truncate at max-w-40. Tab switching is inferred.",
+   "exact": [
+    {
+     "what": "Tab labels",
+     "value": "Errands (active), Reading, Garden"
+    },
+    {
+     "what": "Label style",
+     "value": "text-[13px], weight medium, tracking-[0.01em], truncate, max-w-40"
+    },
+    {
+     "what": "Active tone",
+     "value": "primary"
+    },
+    {
+     "what": "Inactive tone",
+     "value": "muted"
+    },
+    {
+     "what": "Tab strip",
+     "value": "ListTabs 857x45 at 211,0"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 13-22)",
+    "state:main-default (shot.png)",
+    "Tab labels and styles come from state:main-default recordings, outside the allowed files.",
+    "main-default/tree.txt:13 ListTabs @211,0 857x45; :14 Label tone=\"primary\" truncate=true weight=\"medium\" className=\"max-w-40 text-[13px] tracking-[0.01em]\"; :17 and :20 tone=\"muted\", same className. main-default/shot.png shows Errands, Reading, Garden with Errands the active tab. Three list labels in tree (:14, :17, :20)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Only three lists exist in the fixture."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-063",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the three list tab labels and the active tab from main-default. Checker A could not check because the tab styles come from recordings."
+  },
+  {
+   "title": "Delete list button on each tab",
+   "trigger": "Click the x button on a tab",
+   "context": "Every list tab, active or inactive",
+   "result": "Deletes that list. The button is shown on every tab, not only the active one. Confirmation behaviour is not recorded.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Delete list"
+    },
+    {
+     "what": "Icon",
+     "value": "close, 15px, weight 500"
+    },
+    {
+     "what": "Variant",
+     "value": "danger"
+    },
+    {
+     "what": "Button size",
+     "value": "21x21"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 15, 18, 21)",
+    "state:main-default (shot.png)",
+    "main/src/components/ListTabs.tsx:245 title=\"Delete list\" matches. Icon, variant and size come from recordings, outside the allowed files.",
+    "main-default/tree.txt:15, :18, :21 IconButton icon=\"close\" iconSize=15 iconWeight=500 variant=\"danger\" title=\"Delete list\" 21x21 @280,11, @380,11, @475,11; :16 Icon close size=15 weight=500. main-default/shot.png shows a close x on all three tabs, rendered grey."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The danger variant renders grey in the screenshot; the red colour is not visible here."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-064",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the 'Delete list' title in ListTabs.tsx. Checker B confirmed the close icon and variant on all three tabs from main-default."
+  },
+  {
+   "title": "New list button",
+   "trigger": "Click the + button after the last tab",
+   "context": "Main window title bar",
+   "result": "Creates a new list. Its dialog or sheet is not in these recordings.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "New list"
+    },
+    {
+     "what": "Icon",
+     "value": "add, 18px, weight 300"
+    },
+    {
+     "what": "Size",
+     "value": "25x25 at 518,10, size lg"
+    },
+    {
+     "what": "Class",
+     "value": "my-auto ml-2 rounded-md"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 23-24)",
+    "main/src/components/ListTabs.tsx:300 title=\"New list\" matches. Icon and size come from recordings, outside the allowed files.",
+    "main-default/tree.txt:23 IconButton icon=\"add\" iconSize=18 iconWeight=300 size=\"lg\" title=\"New list\" className=\"my-auto ml-2 rounded-md\" @518,10 25x25; :24 Icon add size=18 weight=300. Dialog not in recordings (SheetHost present at :100 but empty)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-065",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the 'New list' title in ListTabs.tsx. Checker B confirmed the icon and size from main-default; the dialog is not in the recordings."
+  },
+  {
+   "title": "Split view button",
+   "trigger": "Click the vertical_split button in the title bar",
+   "context": "Main window title bar; active=false and isSplit=false in the recordings",
+   "result": "Toggles split view. Inactive (no split list) tooltip is 'Split view'. When a split is active the same button's tooltip is 'Close split view'. Only the inactive state is recorded.",
+   "exact": [
+    {
+     "what": "Tooltip (title) when split is active",
+     "value": "Close split view"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 25-27)",
+    "state:row-selected-dark (tree lines 25-27)",
+    "main/src/components/TitleBar.tsx:86 (icon vertical_split), :89 (title={splitListId ? 'Close split view' : 'Split view'}).",
+    "main-default/tree.txt:25-26 BarButton icon=\"vertical_split\" active=false title=\"Split view\" @1077,8 28x28; :26 IconButton iconSize=19 iconWeight=300 filled=false; :27 Icon size=19 filled=false weight=300. main-default/tree.txt:34 isSplit=false. row-selected-dark/tree.txt:25-27 identical. No shortcut in title \"Split view\" in main-dark, main-default or row-selected-dark. Checked only the five named folders."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "No tooltip shortcut is shown for Split view in any recording."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-066",
+   "check": "corrected",
+   "check_notes": "Checker A found the tooltip is 'Close split view' when a split is active, and recorded only the inactive state. Checker B confirmed the inactive 'Split view' tooltip and icon in three trees and found no shortcut. B checked only the five named folders. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Hide preview panel toggle",
+   "trigger": "Click the title-bar preview button (TitleBar.tsx:93). The icon name depends on the panel state: right_panel_close when the preview is open, right_panel_open when it is closed.",
+   "context": "Main window; active=true because the preview panel is visible. When active the icon is filled.",
+   "result": "Toggles the preview panel. The icon name swaps between right_panel_close (open) and right_panel_open (closed); the recording shows the open state with the filled variant.",
+   "exact": [
+    {
+     "what": "Tooltip (title) in main-default",
+     "value": "Hide preview panel"
+    },
+    {
+     "what": "Tooltip (title) in row-selected-dark",
+     "value": "Hide preview panel  ⌘\\\\"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 28-30)",
+    "state:main-dark (tree lines 28-30)",
+    "state:main-default (tree lines 28-30, filled=true, active=true)",
+    "main/src/components/TitleBar.tsx:93 (icon={previewOpen ? 'right_panel_close' : 'right_panel_open'}). The literal tooltip 'Hide preview panel' was not found in main/ by grep, so the tooltip and shortcut text are unverified.",
+    "main-default/tree.txt:28-29 title is \"Hide preview panel\" (no shortcut). main-dark/tree.txt:28-29 title is \"Hide preview panel\" (no shortcut). row-selected-dark/tree.txt:28-29 title is \"Hide preview panel  ⌘\\\\\" (the shortcut). Icon filled=true active=true at :29-30 and Position 1110,8 28x28 at :28 verified in all three."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The shortcut hint appears only in row-selected-dark, not in main-default or main-dark, which share the same window and title bar layout; the cause is not known (row-selected-dark has a task selected in the preview panel).",
+    "Behaviour of the shortcut is inferred from the tooltip text."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Absorbed the duplicate 'Active state uses filled icon' entry (same icon, same source lines, same filled=true when active).",
+   "id": "F11-067",
+   "check": "corrected",
+   "check_notes": "Checker A corrected the trigger and icon-swap behaviour from TitleBar.tsx:93, but could not find the literal tooltip in main/ source, so the tooltip and shortcut are unverified by A. Checker B supplied the tooltip values from the recordings: 'Hide preview panel' in main-default and main-dark, and 'Hide preview panel' with the shortcut in row-selected-dark. The shortcut appears only in row-selected-dark and the cause is unknown. Source does not contradict these recorded values. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Settings button in the title bar",
+   "trigger": "Click the settings icon in the title bar; the tooltip shows the shortcut in row-selected-dark (main-default and main-dark show 'Settings' alone).",
+   "context": "Main window title bar",
+   "result": "Opens the Settings window (present_window is used by the settings window on open).",
+   "exact": [
+    {
+     "what": "Tooltip (title) in main-default",
+     "value": "Settings"
+    },
+    {
+     "what": "Tooltip (title) in row-selected-dark",
+     "value": "Settings  ⌘,"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 31-33)",
+    "state:main-dark (tree lines 31-33)",
+    "state:settings-dark (meta.json)",
+    "main/src/api.ts:164 presentWindow exists; the settings icon, tooltip and position come from recordings, outside the allowed files.",
+    "main-default/tree.txt:31-32 title is \"Settings\" (no shortcut). main-dark/tree.txt:31-32 title is \"Settings\" (verified). row-selected-dark/tree.txt:31-32 title is \"Settings  ⌘,\" (two spaces, shortcut). Icon settings size=19 weight=300 and Position 1143,8 28x28 verified in main-default/tree.txt:31-32. settings-dark/meta.json:29 present_window verified."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-068",
+   "check": "corrected",
+   "check_notes": "Checker A confirmed presentWindow in api.ts and could not check the icon, tooltip or position. Checker B found the tooltip is 'Settings' with no shortcut in main-default and main-dark, and 'Settings  ⌘,' in row-selected-dark. The trigger is from B's recordings. evidence[0] is checker A, evidence[1] is checker B."
+  },
+  {
+   "title": "Search field in the task list",
+   "trigger": "Click into the field and type",
+   "context": "Main window task pane, list Errands",
+   "result": "Filters tasks in the list (inferred from the placeholder). Filter behaviour is not recorded.",
+   "exact": [
+    {
+     "what": "Field",
+     "value": "InputWell 832x35 at 14,56, class mx-4 mt-3 mb-2 h-10 shrink-0"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 35-37)",
+    "state:main-default (shot.png)",
+    "Placeholder, icon and InputWell values come from state:main-default recordings, outside the allowed files.",
+    "main-default/tree.txt:35 InputWell className=\"mx-4 mt-3 mb-2 h-10 shrink-0\" @14,56 832x35 (the class includes shrink-0); :36 Icon search size=18 weight=300; :37 TextInput2 placeholder=\"Search Errands\". main-default/shot.png shows 'Search Errands' placeholder."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-069",
+   "check": "corrected",
+   "check_notes": "Checker A could not check because the values come from recordings. Checker B corrected the field to a 832x35 InputWell with the shrink-0 class. Note: the class h-10 would normally compute to 40px in Tailwind, but the recording shows 35px height. This discrepancy is not resolved by either checker."
+  },
+  {
+   "title": "Search options button",
+   "trigger": "Click the tune icon button in the search field",
+   "context": "Main window task pane",
+   "result": "Opens search options. Only the button is recorded (onMouseDown and onClick are present).",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Search options"
+    },
+    {
+     "what": "Icon",
+     "value": "tune, 15px, weight 300"
+    },
+    {
+     "what": "Variant",
+     "value": "plain"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 38-40)",
+    "Tooltip, icon and variant come from state:main-default recordings, outside the allowed files.",
+    "main-default/tree.txt:38 ScopeFields @784,63 21x21; :39 IconButton icon=\"tune\" iconSize=15 iconWeight=300 variant=\"plain\" onMouseDown=ƒ onClick=ƒ title=\"Search options\"; :40 Icon tune size=15 weight=300. Verified in main-default; row-selected-dark/tree.txt:39-40 identical."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The options panel is not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-070",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the ScopeFields position, tune icon and title from main-default and row-selected-dark. Checker A could not check because the values come from recordings."
+  },
+  {
+   "title": "New task button",
+   "trigger": "Click the + button at the right of the search field",
+   "context": "Main window task pane",
+   "result": "Starts a new task. The resulting input is not recorded.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "New task"
+    },
+    {
+     "what": "Icon",
+     "value": "add, 18px, weight 400"
+    },
+    {
+     "what": "Position",
+     "value": "816,63, 21x21"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 42-43)",
+    "A: TaskPane.tsx:247-253 IconButton icon=\"add\", iconSize=18, iconWeight=400, onClick=startNewTask(list.id), title=\"New task\"; inside the InputWell at TaskPane.tsx:204. Position 816,63 21x21 not checkable in code.",
+    "B: state:main-default tree.txt:42-43 IconButton icon=\"add\" iconSize=18 iconWeight=400 title=\"New task\" @816,63 21x21; Icon add size=18 weight=400."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-071",
+   "check": "confirmed_by_both",
+   "check_notes": "Both confirm the values. The '+' is the Material Symbols 'add' icon, not a plus character. A confirms the click handler in code (startNewTask(list.id)). B's recordings do not show the trigger or the result (new task started), so behaviour is unverified in the recordings."
+  },
+  {
+   "title": "Task row with checkbox and title",
+   "trigger": "Alt+click on the round checkbox at the left of a row calls onToggleDone (TaskRow.tsx:535). A plain click on the checkbox calls onToggleSelect (selection, TaskRow.tsx:536). A double-click on the row also calls toggleDone (TaskRow.tsx:335-337).",
+   "context": "Any task row. The checkbox is in a 24px cell (w-6) starting at x=20 at depth 0 and x=44 at depth 1 (TaskRow.tsx:373-375, INDENT=24 at :75).",
+   "result": "Toggles the done state. Done rows show a checked checkbox, muted text and a strikethrough.",
+   "exact": [
+    {
+     "what": "Checkbox size",
+     "value": "18x18 (class h-4.5 w-4.5, TaskRow.tsx:527; Tailwind 1.125rem), not 16x16. Cell starts at x=20 (depth 0) or x=44 (depth 1)."
+    },
+    {
+     "what": "Checkbox shape",
+     "value": "rounded-full (round) normally; rounded-field (square) while Alt is held (done mode, TaskRow.tsx:528)."
+    },
+    {
+     "what": "Title style, done",
+     "value": "tone muted (TaskRow.tsx:389); strikethrough drawn with class strike-on (TaskRow.tsx:392; tokens.css:315-324, a 1px line that animates over 150ms)."
+    },
+    {
+     "what": "Row heights",
+     "value": "min-h-9 = 36px minimum (TaskRow.tsx:344). With a subtitle the computed height from classes is 52px (py-space-5 = 8px top and bottom, title leading-4.75 = 19px, subtitle leading-4.25 = 17px; TaskRow.tsx:384, 390, 402). The spec's 46px and 32px are not produced by these classes."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 44-53)",
+    "state:main-default (shot.png)",
+    "A: TaskRow.tsx:328-338 (row onClick paneRowClick, onDoubleClick toggleDone), :375-381 (Check wrapper), :384 (py-space-5), :389-392 (title tone and strike), :499-539 (Check), :527 (h-4.5 w-4.5), :528 (rounded-field in done mode), :533-537 (click handler); tokens.css:315-324 (.strike, .strike-on), :326-333; TaskRow.tsx:344 (min-h-9).",
+    "B: state:main-default tree.txt:44-53 (Check @20,113 and @44,277 at 16x16, lines 45 and 73; open title line 46 weight medium, tone primary, text-[14px] leading-4.75; done title line 52 tone muted, weight medium, text-[14px] leading-4.75; Check done=true line 51; row heights 46 at line 44 and 32 at lines 50, 55, 60, 72, 77, 82; parent row line 65 is 126 tall; onToggleDone on Check line 45). Strikethrough visible only in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Holding Alt switches the checkbox to done mode; its tooltip is Mark done / Mark not done. Otherwise the tooltip is Select / Deselect (TaskRow.tsx:514-520).",
+    "A done subtitle also gets opacity-55 (TaskRow.tsx:403).",
+    "Under reduced motion the strikethrough and other transitions are clamped to 0.01ms (tokens.css:326-333, 338-340).",
+    "The parent row 'Buy groceries for the week' is 126px tall in the recording (state:main-default tree.txt:65) because it contains child rows."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-072",
+   "check": "corrected",
+   "check_notes": "Conflict on checkbox size and row height: B measured Check at 16x16 and rows at 46 and 32px. Code (A) decides: 18x18 and min-h-9 36px minimum, 52px with subtitle. B's title text-[14px] leading-4.75 matches the code's leading-4.75 title line. Strikethrough is not in the tree, only in shot.png. Toggle result not recorded."
+  },
+  {
+   "title": "Task row subtitle",
+   "trigger": "Shown only when the task has non-empty notes (TaskRow.tsx:396, {task.notes && ...}).",
+   "context": "Task row Pick up prescription",
+   "result": "A second line under the title in secondary text.",
+   "exact": [
+    {
+     "what": "Row height",
+     "value": "Computed 52px with a subtitle from classes (8px top + 8px bottom padding, 19px title, 17px subtitle), not 46px (TaskRow.tsx:384, 390, 402). Min height is min-h-9 = 36px (TaskRow.tsx:344)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 44-47)",
+    "state:main-default (shot.png)",
+    "A: TaskRow.tsx:396-406 (subtitle rendered only when task.notes is truthy; text-[12.5px] leading-4.25; tone secondary when not done), :384 (py-space-5), :390 (title leading-4.75).",
+    "B: state:main-default tree.txt:44 (TaskRow2 taskId=\"t-pharmacy\" 860x46) and tree.txt:47 (Label tone=\"secondary\" truncate=true className=\"text-[12.5px] leading-4.25\" @47,122 774x15). Subtitle text 'Counter closes at 6' from shot.png only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-073",
+   "check": "corrected",
+   "check_notes": "Conflict on row height: B measured t-pharmacy at 860x46 in the recording. Code (A) decides: 52px computed from classes, with a 36px minimum. The 46px measurement is recorded but not produced by the code classes. The subtitle style matches B's tree (text-[12.5px] leading-4.25, secondary tone)."
+  },
+  {
+   "title": "Task row selection highlight",
+   "trigger": "Plain click on the task row, handled by paneRowClick (TaskRow.tsx:328-334). Cmd, Ctrl or Shift with the click change the selection instead.",
+   "context": "Main window, row Book bike service selected",
+   "result": "The row gets a blue-tinted full-width highlight, and the preview panel shows that task.",
+   "exact": [
+    {
+     "what": "Row",
+     "value": "Full-width row with min-h-9 = 36px minimum height (TaskRow.tsx:344), not 32px. The taskId, y and width values are not checkable in code."
+    },
+    {
+     "what": "Highlight",
+     "value": "bg-selection-1l, which is oklch(0.6 0.2 255 / 0.1) in light (tokens.css:61); dark uses bg-selection-1d = oklch(0.68 0.17 252 / 0.16) (tokens.css:62). Blue-tinted, full row width."
+    }
+   ],
+   "sources": [
+    "state:row-selected-dark (shot.png)",
+    "state:row-selected-dark (meta.json: set_active_list x2)",
+    "state:row-selected-dark (tree lines 55-59)",
+    "A: TaskRow.tsx:328-334 (paneRowClick with metaKey, ctrlKey, shiftKey), :343-349 (selected -> bg-selection-1l dark:bg-selection-1d; min-h-9); tokens.css:61-62 (--selection-1l, --selection-1d); PreviewPanel.tsx:16-19, :44-47.",
+    "B: state:row-selected-dark tree.txt:55 (TaskRow2 taskId=\"t-bike\" depth=0 @0,175 860x32), tree.txt:56 (Check picked=false), tree.txt:96 (TaskInspector task \"Book bike service\"). Blue full-width highlight visible in shot.png. meta.json has two set_active_list commands (lines 32-33), no row-click record."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The preview shows the task (PreviewPanel.tsx:16-19). With more than one selected task the preview shows MultiInspector instead (PreviewPanel.tsx:44-45).",
+    "state:row-selected-dark tree.txt:96 shows TaskInspector for 'Book bike service', matching the screenshot; it does not show the empty preview state.",
+    "t-bike Check still has picked=false (tree.txt:56).",
+    "No row-click record in the recordings; the trigger is inferred."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-074",
+   "check": "corrected",
+   "check_notes": "Conflict on row height: B measured 32px (t-bike, 860x32). Code (A) decides: min-h-9 = 36px. The highlight colour is visible in the recording. The row click itself is not recorded."
+  },
+  {
+   "title": "Row multi-select flag",
+   "trigger": "A plain click (no modifier) on the row's checkbox calls onToggleSelect (TaskRow.tsx:536). Modifier keys are read on the row click, not on the checkbox (TaskRow.tsx:328-334).",
+   "context": "Any task row",
+   "result": "Toggles the picked state. When picked and Alt is not held, a small filled dot (bg-content-1d, size-2) appears inside the checkbox (TaskRow.tsx:541-543). While Alt is held the checkbox shows done state instead.",
+   "exact": [
+    {
+     "what": "Prop",
+     "value": "picked=false on every recorded row (not checkable in code; the picked prop is passed from TaskRow.tsx:377)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 45, 51, 56, 61)",
+    "A: TaskRow.tsx:375-381 (Check gets picked and onToggleSelect), :511-512 (doneMode = alt), :533-537 (click: Alt -> onToggleDone, otherwise onToggleSelect), :541-543 (selection dot bg-content-1d size-2), :328-334 (row click modifiers).",
+    "B: state:main-default tree.txt:45, 51, 56, 61, 66, 73, 78, 83 (Check picked=false on every row, including the groceries row at 66 and children at 73, 78, 83); main-dark and row-selected-dark also show picked=false on every row. onToggleSelect present on each Check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Sources should include state:main-default tree.txt lines 66, 73, 78 and 83 (picked=false on Buy groceries for the week and its three child rows).",
+    "Trigger and visual are not recorded in the recordings."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-075",
+   "check": "corrected",
+   "check_notes": "B confirms picked=false on all recorded rows. The toggle behaviour and the selection dot are from code (A) only."
+  },
+  {
+   "title": "Subtask parent row with done count badge",
+   "trigger": "Click the chevron button. Its onClick toggles the collapsed state and stops propagation so the row is not selected (TaskRow.tsx:416-419).",
+   "context": "Row 'Buy groceries for the week', expanded. The chevron is in the trailing cluster after the title, before the attachments badge and the More button (TaskRow.tsx:411-439). The source comment at :412 says 'left of the checkbox', which the code does not do.",
+   "result": "Shows child rows indented under the parent, with a badge showing done of total subtasks.",
+   "exact": [
+    {
+     "what": "Chevron tooltip (title)",
+     "value": "Expand when collapsed, Collapse when expanded (TaskRow.tsx:427)."
+    },
+    {
+     "what": "Badge text",
+     "value": "Rendered as three spans: done count, '/', total count (TaskRow.tsx:446-447 and following). Shows '1 / 3' visually with a gap (Badge gap-space-1, common-ui/src/components/content/Badge.tsx:48)."
+    },
+    {
+     "what": "Badge tooltip (title)",
+     "value": "1 of 3 subtasks done, from `${doneChildren} of ${children.length} subtasks done` (TaskRow.tsx:444)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 65-71)",
+    "state:main-default (tree line 68)",
+    "state:main-dark (tree line 68)",
+    "state:main-default (shot.png)",
+    "state:main-dark (shot.png)",
+    "A: TaskRow.tsx:411-439 (chevron button, onClick toggleCollapsed at :416-419, title at :427, icon at :429-437), :442-447 (Badge), :443 (px-space-3); tokens.css:326-333.",
+    "B: state:main-default tree.txt:65 (TaskRow2 t-groceries 860x126), tree.txt:68 (Icon chevron_left size=16 weight=300 className=\"transition-transform duration-100 -rotate-90\" @771,246 16x16; no onClick in the tree), tree.txt:69 (Badge className=\"px-space-3\" title=\"1 of 3 subtasks done\" @793,245 32x18), tree.txt:72/77/82 (depth=1 children). state:main-dark tree.txt:68 has the same class string."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Under reduced motion transition-transform duration-100 is clamped to 0.01ms (tokens.css:326-333, 338-340).",
+    "'duration-100 = 100ms' follows the default Tailwind mapping and is not measured in the recording.",
+    "Badge text '1 / 3' is from shot.png only; spacing around the slash is uncertain at that scale."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Absorbed the duplicate 'Chevron rotation motion' entry (same class string transition-transform duration-100 -rotate-90, same 100ms, same -90 degrees when expanded, same tree line 68).",
+   "id": "F11-076",
+   "check": "corrected",
+   "check_notes": "B found no onClick on the chevron in the tree while A cites onClick toggleCollapsed at TaskRow.tsx:416-419. Code decides, so the click toggles collapse. B's chevron icon is chevron_left at size 16, weight 300, rotated -90 degrees, and the Badge title matches the code template. The trigger is inferred from code, not recorded."
+  },
+  {
+   "title": "Subtask rows",
+   "trigger": "none (observed)",
+   "context": "Children of Buy groceries for the week",
+   "result": "Three child rows with depth 1, one completed. Done child Oat milk is struck through and muted.",
+   "exact": [
+    {
+     "what": "Child row height",
+     "value": "min-h-9 = 36px minimum, the same row component as parents (TaskRow.tsx:344, 478), not 32px."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 72-86)",
+    "state:main-default (shot.png)",
+    "A: TaskRow.tsx:476-479 (children rendered as TaskRow at depth + 1), :344 (min-h-9).",
+    "B: state:main-default tree.txt:72-74 (t-milk depth=1 done=true tone=\"muted\"), tree.txt:77-79 (t-bread depth=1 done=false), tree.txt:82-84 (t-apples depth=1 done=false); each row 860x32. Names 'Oat milk', 'Sourdough loaf', 'Apples' from shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-077",
+   "check": "corrected",
+   "check_notes": "B measured child rows at 860x32 in the recording. Code (A) decides: 36px minimum. Child rows use the same component as parent rows."
+  },
+  {
+   "title": "More button on each row",
+   "trigger": "Click the More button at the right of a row. A double-click on it only stops propagation and has no other action (TaskRow.tsx:470).",
+   "context": "Any task row",
+   "result": "Opens the row menu at the button's left edge and bottom + 4px (TaskRow.tsx:463-469). The menu includes Rename (TaskRow.tsx:213) and Delete task... (TaskRow.tsx:232).",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "more_horiz, 17px, weight 300 (TaskRow.tsx:458-460)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 48-49)",
+    "A: TaskRow.tsx:458-471 (IconButton icon more_horiz, iconSize 17, iconWeight 300, variant ghostStrong, title More, onClick openMenu at r.left, r.bottom + 4), :470 (onDoubleClick only calls e.stopPropagation()), :213 (Rename), :232 (Delete task...).",
+    "B: state:main-default tree.txt:48-49 (IconButton icon=\"more_horiz\" iconSize=17 iconWeight=300 variant=\"ghostStrong\" title=\"More\" onClick=ƒ onDoubleClick=ƒ @830,110 21x21; Icon size=17 weight=300). Same button on every row (lines 53, 58, 63, 70, 75, 80, 85). Row context menu result not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The double-click handler has no action (TaskRow.tsx:470), so the 'action not recorded' note is resolved: there is none."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-078",
+   "check": "corrected",
+   "check_notes": "B confirms the icon, size and weight and the onDoubleClick handler on the More button. The menu opening is from code; the menu result is not recorded."
+  },
+  {
+   "title": "Stats bar",
+   "trigger": "none (observed)",
+   "context": "Main window bottom bar, list Errands",
+   "result": "Shows the completed count, the total, and a progress bar with percentage. When any task is selected the bulk bar replaces this footer (TaskPane.tsx:328-331).",
+   "exact": [
+    {
+     "what": "Count text",
+     "value": "Rendered as '{done}/{total} done', so the DOM text is '2/8 done' (TaskPane.tsx:513). It is displayed in capitals by the uppercase class on the footer (TaskPane.tsx:508). The spec's 'DONE (done=2 total=8)' is not the code string."
+    },
+    {
+     "what": "Bar height",
+     "value": "h-9 = 36px footer at the bottom of the pane (TaskPane.tsx:508), not 32px."
+    },
+    {
+     "what": "Progress fill",
+     "value": "ProgressBar value = done / total, i.e. 0.25 for 2/8 (TaskPane.tsx:516). Percent = Math.round(done / total * 100) (TaskPane.tsx:96)."
+    },
+    {
+     "what": "Percent label",
+     "value": "Label tone secondary with class w-8 text-right (TaskPane.tsx:517). No text-[12px] class is in code, so it takes the Label default size."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 87-93)",
+    "state:main-default (shot.png)",
+    "A: TaskPane.tsx:328-331 (StatsBar or BulkBar), :494-521 (StatsBar), :508 (h-9, text-[11px], uppercase), :513 ({done}/{total} done), :516 (ProgressBar value=done/total), :517-519 (Label w-8 text-right, {pct}%), :96 (pct = Math.round(done/total*100)).",
+    "B: state:main-default tree.txt:87 (StatsBar done=2 total=8 pct=25 @0,729 860x32), tree.txt:92 (ProgressBar value=0.25 @731,743 84x4), tree.txt:93 (Label tone=\"secondary\" className=\"w-8 text-right\" @820,737 28x17; no text-[12px]). '2/8 DONE' and '25%' from shot.png only."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-079",
+   "check": "corrected",
+   "check_notes": "Conflict on footer height: B measured StatsBar at 860x32. Code (A) decides: h-9 = 36px. B's ProgressBar value 0.25 and the label classes match the code."
+  },
+  {
+   "title": "Stats bar view control",
+   "trigger": "Click the tune icon at the left of the stats bar (ViewControl, TaskPane.tsx:510, 528-547).",
+   "context": "Main window bottom bar",
+   "result": "Toggles the Filter and Sort controls in the preview panel. Shows the text 'Filtered' next to the icon when the pane's view differs from the defaults (TaskPane.tsx:525-527, 548-551). It is not a menu.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "tune, 14px, weight 300 (TaskPane.tsx:547). Active state uses accent colour (TaskPane.tsx:543)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 89-90)",
+    "A: TaskPane.tsx:510 (ViewControl first child of StatsBar), :525-527 (doc: toggles Filter and Sort controls in the preview panel), :528-551 (ViewControl, toggle at :532, Icon tune size 14 weight 300 at :547, 'Filtered' label at :548-551).",
+    "B: state:main-default tree.txt:89 (ViewControl @12,735 25x19; no onClick in the tree), tree.txt:90 (Icon name=\"tune\" size=14 weight=300 @18,738 14x14)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-080",
+   "check": "corrected",
+   "check_notes": "B's tree shows no onClick on ViewControl, while A cites the toggle at TaskPane.tsx:532. Code decides. B confirms tune at 14px weight 300 at 18,738. The toggle result is not recorded."
+  },
+  {
+   "title": "Resizer between list and preview",
+   "trigger": "Drag the grab strip of either divider: the split between two panes (App.tsx:73-84) or the preview edge (App.tsx:110-116). Double-click on the split divider resets the split ratio to 0.5 (App.tsx:161, 84).",
+   "context": "Main window, preview visible",
+   "result": "Resizes the split between the two task panes, or the preview panel width. Limits are in code (see exact).",
+   "exact": [
+    {
+     "what": "Resizer size",
+     "value": "Grab strip is w-1.25 = 5px wide (App.tsx:177) with a 1px hairline inside (App.tsx:181), not 4px."
+    },
+    {
+     "what": "Task pane width",
+     "value": "Not a fixed value in code. The split ratio defaults to 0.5 (layoutStore.ts:72) and is clamped to 0.25 through 0.75 (App.tsx:78-80)."
+    },
+    {
+     "what": "Preview panel width",
+     "value": "Default 320 (layoutStore.ts:71), clamped to 280 through 420 (App.tsx:114). The recorded 319 is a measured value, not the code default."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree line 94-95)",
+    "A: App.tsx:73-84 (split Resizer, setSplitRatio clamp 0.25 to 0.75 at :78-80, onReset at :84), :110-116 (preview Resizer, setPreviewW clamp 280 to 420 at :114), :150-187 (Resizer; :161 onDoubleClick=onReset; :177 w-1.25; :181 w-px hairline); layoutStore.ts:71 (previewW 320), :72 (splitRatio 0.5), :172.",
+    "B: state:main-default tree.txt:34 (TaskPane 860x715), tree.txt:94 (Resizer onResize=ƒ @860,46 4x715), tree.txt:95 (PreviewPanel @861,46 319x715). Drag gesture not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Limits are now recorded: split ratio 0.25 to 0.75; preview width 280 to 420 px; split divider double-click resets to 0.5."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-081",
+   "check": "corrected",
+   "check_notes": "Conflict on resizer width: B measured the Resizer at 4px (4x715). Code (A) decides: w-1.25 = 5px. B's TaskPane 860 and PreviewPanel 319 are measured runtime values."
+  },
+  {
+   "title": "Empty preview state",
+   "trigger": "none (observed) - no task selected",
+   "context": "Preview panel with no selection (main-dark)",
+   "result": "Shows an icon and a message telling the user to select a task.",
+   "exact": [
+    {
+     "what": "Title",
+     "value": "No task selected"
+    },
+    {
+     "what": "Subtitle",
+     "value": "Select a task to inspect it"
+    },
+    {
+     "what": "Icon",
+     "value": "left_click, 28px, text-content-3l dark:text-content-3d"
+    },
+    {
+     "what": "Title style",
+     "value": "font-display text-[15px], tone secondary, weight medium"
+    },
+    {
+     "what": "Subtitle style",
+     "value": "text-[12.5px], tone muted"
+    }
+   ],
+   "sources": [
+    "state:main-dark (tree lines 95-99)",
+    "state:main-dark (shot.png)",
+    "state:row-selected-dark (tree lines 95-99)",
+    "A: PreviewPanel.tsx:51-56 (EmptyState icon left_click, iconSize 28, title 'No task selected', subtitle 'Select a task to inspect it'); EmptyState.tsx:35 (icon class text-content-3l dark:text-content-3d), :38-42 (title Label tone secondary, weight medium, font-display text-[15px]), :46-49 (subtitle text-[12.5px], tone muted).",
+    "B: state:main-dark tree.txt:96-99 and state:main-default tree.txt:96-99 are EmptyState (title 'No task selected', subtitle 'Select a task to inspect it'; Icon left_click size=28; Label font-display text-[15px] tone secondary weight medium; Label text-[12.5px] tone muted). state:row-selected-dark tree.txt:95-99 is not the empty state: line 96 is TaskInspector for 'Book bike service'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The main-default tree (state:main-default tree.txt:96-99) also shows this EmptyState, matching its screenshot.",
+    "state:row-selected-dark tree.txt:95-99 does not support this feature; its line 96 is the TaskInspector for 'Book bike service'."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-082",
+   "check": "corrected",
+   "check_notes": "All values match in both checkers. The correction is to the edge case: the main-default tree shows the EmptyState, not a task inspector."
+  },
+  {
+   "title": "Task inspector header",
+   "trigger": "Select a task (see row selection)",
+   "context": "Preview panel with Book bike service",
+   "result": "Shows a Mark done checkbox, the task title, and the list path, created and updated times.",
+   "exact": [
+    {
+     "what": "Checkbox",
+     "value": "title 'Mark done' (or 'Mark not done' when done), size md which is h-5 w-5 = 20x20 (Checkbox.tsx:14), not 18x18. 18x18 is size sm (Checkbox.tsx:13)."
+    },
+    {
+     "what": "Meta line 1 icon",
+     "value": "folder_open, 13px, weight 300; the text is '{projectName} / {listName}' (TaskInspector.tsx:309-318)."
+    },
+    {
+     "what": "Meta line 2",
+     "value": "Created {relative time} with schedule icon, 13px, weight 300 (TaskInspector.tsx:323-331)."
+    },
+    {
+     "what": "Meta line 3",
+     "value": "Updated {relative time} with update icon, 13px, weight 300. The span has title = absolute date and time of updated_at (TaskInspector.tsx:332-343)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 96-102)",
+    "state:row-selected-dark (shot.png)",
+    "A: TaskInspector.tsx:265-270 (header Checkbox size md, title), :306 (meta text-[11.5px] tabular-nums), :309-318 (folder_open 13 weight 300; '{projectName} / {listName}'), :323-331 (schedule 13 weight 300; 'Created {relativeTime(created_at)}'), :332-343 (update 13 weight 300; 'Updated ...'; title absoluteDateTime(updated_at) at :334); Checkbox.tsx:12-15 (SIZE md = h-5 w-5).",
+    "B: state:row-selected-dark tree.txt:96 (TaskInspector task \"Book bike service\"), tree.txt:97 (Checkbox checked=false size=\"md\" title=\"Mark done\" @873,60 18x18), tree.txt:98 (Label className=\"mt-2.5 flex flex-col gap-1 text-[11.5px] tabular-nums\"), tree.txt:99 (Icon folder_open size=13), tree.txt:101 (schedule size=13), tree.txt:102 (update size=13). 'Created 1w ago', 'Updated 1w ago' and 'Home / Errands' from shot.png only."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The screenshot shows Home / Errands for the list path.",
+    "Sources: the inspector is state:row-selected-dark tree.txt:96-102. state:main-default tree.txt:96-102 is the EmptyState and does not contain this inspector."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-083",
+   "check": "corrected",
+   "check_notes": "Conflict on checkbox size: B measured 18x18 at tree.txt:97. Code (A) decides: size md = h-5 w-5 = 20x20. The meta icons and text size 11.5px match B's tree."
+  },
+  {
+   "title": "Mark done checkbox in inspector",
+   "trigger": "Click the checkbox next to the task title in the inspector header. It calls actToggleDone(task) (TaskInspector.tsx:269).",
+   "context": "Inspector open",
+   "result": "Marks the task done or not done.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Mark done when the task is not done; Mark not done when it is done (TaskInspector.tsx:268)."
+    },
+    {
+     "what": "Size",
+     "value": "md = h-5 w-5 = 20x20 (Checkbox.tsx:14), not 18x18."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree line 97)",
+    "A: TaskInspector.tsx:265-270 (Checkbox size md, title, onClick actToggleDone(task)); Checkbox.tsx:12-15.",
+    "B: state:row-selected-dark tree.txt:97 (Checkbox checked=false size=\"md\" title=\"Mark done\" onClick=ƒ @873,60 18x18). state:main-default tree.txt:97 is the left_click Icon, not this checkbox."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-084",
+   "check": "corrected",
+   "check_notes": "Conflict on size: B measured 18x18 at tree.txt:97. Code (A) decides: 20x20. The result of the click is not recorded. The Mark done checkbox is in state:row-selected-dark tree.txt:97 only."
+  },
+  {
+   "title": "Close panel button in inspector",
+   "trigger": "Click the last_page button at the top right of the preview header",
+   "context": "Inspector open",
+   "result": "Closes the preview panel. Result inferred from the tooltip.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Close panel"
+    },
+    {
+     "what": "Icon",
+     "value": "last_page, 16px"
+    },
+    {
+     "what": "Size",
+     "value": "21x21 at 1150,54"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 103-104)",
+    "A: TaskInspector.tsx:346-352 (IconButton icon last_page, iconSize 16, onClick setPreviewOpen(false), title 'Close panel'). Size 21x21 at 1150,54 not checkable in code.",
+    "B: state:row-selected-dark tree.txt:103 (IconButton icon=\"last_page\" iconSize=16 onClick=ƒ title=\"Close panel\" @1150,54 21x21) and tree.txt:104 (Icon last_page size=16)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-085",
+   "check": "confirmed_by_both",
+   "check_notes": "Both confirm the values. A confirms the result from code (setPreviewOpen(false) closes the preview). B's result is inferred from the tooltip and not recorded. Source correction from B: the cited state:main-default lines 103-104 do not exist; the correct source is state:row-selected-dark tree.txt:103-104."
+  },
+  {
+   "title": "Rename button in inspector",
+   "trigger": "Click the edit button in the preview header",
+   "context": "Inspector open",
+   "result": "Starts renaming the task in place: the title textarea becomes editable, focused, with its text selected (TaskInspector.tsx:229-234, 353-359).",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Rename"
+    },
+    {
+     "what": "Icon",
+     "value": "edit, 15px, weight 300"
+    },
+    {
+     "what": "Size",
+     "value": "21x21 at 1150,77"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 105-106)",
+    "A: TaskInspector.tsx:353-359 (IconButton icon edit, iconSize 15, iconWeight 300, onClick startTitleEdit, title 'Rename'), :229-234 (focus and select on edit), :283-285 (click on title starts edit), :207-218 (row rename request).",
+    "B: state:row-selected-dark tree.txt:105 (IconButton icon=\"edit\" iconSize=15 iconWeight=300 onClick=ƒ title=\"Rename\" @1150,77 21x21) and tree.txt:106 (Icon edit size=15 weight=300)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Editing also starts when the title text is clicked (TaskInspector.tsx:283-285) and when a rename is requested from a task row (TaskInspector.tsx:207-218, per the comment about F2 or Enter)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-086",
+   "check": "corrected",
+   "check_notes": "Values match in both. Source correction from B: use state:row-selected-dark tree.txt:105-106, since state:main-default ends at line 101. The rename result is not recorded in the recordings."
+  },
+  {
+   "title": "Copy task button in inspector",
+   "trigger": "Click the content_copy button in the preview header",
+   "context": "Inspector open",
+   "result": "Copies the task to the clipboard as markdown from api.copyTasks, falling back to the task title if that is empty (TaskInspector.tsx:249-250).",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "content_copy, 15px; becomes check while copied (TaskInspector.tsx:361-362)."
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Copy task; becomes Copied for 1200 ms after a copy (TaskInspector.tsx:364, 252)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 107-108)",
+    "A: TaskInspector.tsx:245-255 (copyTasks, clipboard writeText of md or task.title, setCopied(true), setTimeout 1200 ms), :360-365 (IconButton icon copied ? 'check' : 'content_copy', iconSize 15, title copied ? 'Copied' : 'Copy task').",
+    "B: state:row-selected-dark tree.txt:107 (IconButton icon=\"content_copy\" iconSize=15 onClick=ƒ title=\"Copy task\" @1150,100 21x21) and tree.txt:108 (Icon content_copy size=15)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-087",
+   "check": "corrected",
+   "check_notes": "Values match in both. Source correction from B: use state:row-selected-dark tree.txt:107-108, since state:main-default ends at line 101. The copy result is from code; not recorded."
+  },
+  {
+   "title": "Delete task button in inspector",
+   "trigger": "Click the delete button in the preview header",
+   "context": "Inspector open",
+   "result": "Deletes the task. Confirmation is not recorded.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "Delete task"
+    },
+    {
+     "what": "Variant",
+     "value": "danger"
+    },
+    {
+     "what": "Icon",
+     "value": "delete, 15px"
+    },
+    {
+     "what": "Size",
+     "value": "21x21 at 1150,123"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 109-110)",
+    "A: TaskInspector.tsx:366-372 (IconButton icon delete, iconSize 15, variant danger, onClick requestDeleteTask(task), title 'Delete task'). Confirmation in requestDeleteTask not read.",
+    "B: state:row-selected-dark tree.txt:109 (IconButton icon=\"delete\" iconSize=15 variant=\"danger\" onClick=ƒ title=\"Delete task\" @1150,123 21x21) and tree.txt:110 (Icon delete size=15). Source correction: use lines 109-110, since state:main-default ends at line 101."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Danger colour is not visible in the recording."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-088",
+   "check": "confirmed_by_both",
+   "check_notes": "Both confirm values. The confirmation step is not verified (A did not read requestDeleteTask; B did not record it). B's screenshot shows the delete icon in neutral grey, so the danger colour is not visible in the recording."
+  },
+  {
+   "title": "Notes section in inspector",
+   "trigger": "Click the dashed Add note button (DashedButton) in the Notes section when there are no notes (TaskInspector.tsx:432-433).",
+   "context": "Inspector with no note",
+   "result": "Opens a note editor for the task. The editor is not recorded.",
+   "exact": [
+    {
+     "what": "Empty button text",
+     "value": "An add Material icon at 16px followed by the text 'Add note' (TaskInspector.tsx:436-437). There is no '+' character in the code."
+    },
+    {
+     "what": "Button size",
+     "value": "h-24 w-full (TaskInspector.tsx:434). h-24 is 96px at Tailwind's default spacing, so the spec's 84px height is not produced by this class."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 111-114)",
+    "state:row-selected-dark (shot.png)",
+    "A: TaskInspector.tsx:379-381 (SectionHeader label 'Notes'), :387-394 (ToolbarButton icon add, iconSize 14, title 'Add note', text 'Note'), :415-418 (editor placeholder, min-h-24), :432-438 (DashedButton onClick setAddingNote(true), className h-24 w-full font-semibold, Icon add size 16, text 'Add note').",
+    "B: state:row-selected-dark tree.txt:111 (SectionHeader label=\"Notes\" @873,159 295x16), tree.txt:113 (DashedButton onClick=ƒ className=\"h-24 w-full font-semibold\" @873,181 295x84), tree.txt:114 (Icon add size=16). '+ Add note' text from shot.png only."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "When notes exist, a ToolbarButton with icon add (14px), text 'Note' and title 'Add note' is shown instead (TaskInspector.tsx:387-394).",
+    "The note editor placeholder is 'Write a note ... (drop an attachment to @mention it)' with min-h-24 (TaskInspector.tsx:417-418).",
+    "Source: use state:row-selected-dark tree.txt:111-114, since state:main-default ends at line 101."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-089",
+   "check": "corrected",
+   "check_notes": "Conflict on height: B measured the DashedButton at 295x84. Code (A) gives h-24 = 96px at Tailwind default spacing. B notes the project may use a custom scale, which is uncertain. Code decides for the class value; the measured 84px is recorded. Values and text otherwise match."
+  },
+  {
+   "title": "Attachments section in inspector",
+   "trigger": "none (observed)",
+   "context": "Inspector with no attachments",
+   "result": "Section with three actions in the header and two drop areas below.",
+   "exact": [
+    {
+     "what": "Header buttons (screenshot labels)",
+     "value": "Shot (screenshot_monitor icon 14px, title 'Capture the full screen and attach it'), Link (add_link icon 14px, no title), File (note_add icon 14px, no title) (AttachmentSection.tsx:172-194)."
+    },
+    {
+     "what": "Empty drop areas (screenshot)",
+     "value": "Copy a file (note_add icon 18px, title 'Copy a file into this task', AttachmentSection.tsx:252-256) and Add a link (add_link icon 18px, title 'Link a file or URL without copying', AttachmentSection.tsx:261-265), split by a vertical Divider (AttachmentSection.tsx:258)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 115-126)",
+    "state:row-selected-dark (shot.png)",
+    "A: AttachmentSection.tsx:167-195 (SectionHeader 'Attachments'; Shot button title 'Capture the full screen and attach it' at :175-179; Link icon add_link 14 at :189; File icon note_add 14 at :192), :249-266 (drop areas: 'Copy a file into this task' at :252, note_add 18 at :255, text 'Copy a file' at :256; Divider at :258; 'Link a file or URL without copying' at :261, add_link 18 at :264, text 'Add a link' at :265).",
+    "B: state:row-selected-dark tree.txt:116 (SectionHeader 'Attachments'), tree.txt:118 (ToolbarButton title=\"Capture the full screen and attach it\" @990,278 63x25), tree.txt:120 (ToolbarButton icon=\"add_link\", no title), tree.txt:122 (ToolbarButton icon=\"note_add\", no title), tree.txt:124 (Icon note_add size=18 @939,324), tree.txt:125 (Divider vertical level=2), tree.txt:126 (Icon add_link size=18 @1084,324). Header labels and drop-area labels from shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The Link and File tooltips are in the code: 'Link a file or URL without copying' (AttachmentSection.tsx:261) for the drop area, and 'Copy a file into this task' (AttachmentSection.tsx:252). The header Link and File buttons have no title.",
+    "Only the Shot tooltip is in the recording tree; the Link and File tooltips are not recorded.",
+    "Source: use state:row-selected-dark tree.txt:115-126, since state:main-default ends at line 101."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-090",
+   "check": "corrected",
+   "check_notes": "Values match in both checkers. Source correction from B as noted in edge_cases."
+  },
+  {
+   "title": "Capture bar window",
+   "trigger": "Open the capture bar (trigger not recorded)",
+   "context": "Tray window, dark theme, notes collapsed",
+   "result": "A compact 760x116 bar with a title input, a notes row and a footer. Input is focused on open.",
+   "exact": [
+    {
+     "what": "Window size",
+     "value": "Configured as 480 wide and 116 high (tray/src-tauri/tauri.conf.json:18-19). The string 760 is not in the tray code. At runtime set_bar_height changes only the height (window.rs:267)."
+    },
+    {
+     "what": "Title input",
+     "value": "autoFocus=true (TitleRow.tsx:37), placeholder 'Capture a task ...' (TitleRow.tsx:40), className text-sm (TitleRow.tsx:41)."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree lines 1-4, meta.json)",
+    "state:capture-bar-dark (shot.png)",
+    "A: tray/src/components/TitleRow.tsx:32 (flex h-10), :37 (autoFocus), :40 (placeholder 'Capture a task ...'), :41 (text-sm); tray/src-tauri/tauri.conf.json:16-19 (label main, title 'Taskscape Capture', width 480, height 116); tray/src-tauri/src/window.rs:231-269 (set_bar_height changes only the height; set_size at :267).",
+    "B: state:capture-bar-dark tree.txt:1 (App 760x116), tree.txt:3 (TextInput2 autoFocus=true placeholder=\"Capture a task ...\" className=\"text-sm\" @13,11), tree.txt:4 (Divider @1,41 758x1), tree.txt:5 (NotesSection notesOpen=false). meta.json: window tray, theme dark."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "Only the dark recording exists."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-091",
+   "check": "corrected",
+   "check_notes": "Conflict on width: B measured App 760x116 in the recording. Code (A) decides: configured 480x116, and the string 760 is not in the tray code. The runtime width discrepancy is noted but not explained by the code. Title input values match in both."
+  },
+  {
+   "title": "Capture bar notes row",
+   "trigger": "Press Tab (without Shift) while the notes are closed (tray/src/App.tsx:48-50). Clicking the hint button also opens the notes (NotesSection.tsx:52-53).",
+   "context": "Notes collapsed",
+   "result": "Opens the notes rich-text editor. The card height changes and the window is resized through set_bar_height (useBarAutoResize.ts:9-19; api.ts:22).",
+   "exact": [
+    {
+     "what": "Notes height collapsed",
+     "value": "33px is measured in the recording (NotesSection 758x33, state:capture-bar-dark tree.txt:5); the code classes (px-3 py-2 text-xs, NotesSection.tsx:54) do not by themselves give a 33px height."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree line 5, shot.png)",
+    "state:capture-bar-dark (meta.json: set_bar_height)",
+    "A: tray/src/App.tsx:44-50 (Tab without Shift when notes closed: setNotesOpen(true)); tray/src/components/NotesSection.tsx:24-26 (open editor), :50-57 (collapsed button onClick=onOpen, text-xs, 'Press Tab to add a note' at :56); useBarAutoResize.ts:9-19; api.ts:22 (setBarHeight).",
+    "B: state:capture-bar-dark tree.txt:5 (NotesSection notesOpen=false @1,42 758x33). Hint text from shot.png. meta.json commands include set_bar_height (line 16)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Expanded size and key handling are not recorded."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-092",
+   "check": "corrected",
+   "check_notes": "B's measured 33px supports the spec value. The link between opening the notes and set_bar_height is not shown in the recording directly."
+  },
+  {
+   "title": "Capture bar target label",
+   "trigger": "Click the target label. It calls api.openMain() (Footer.tsx:43-44).",
+   "context": "Footer of the capture bar",
+   "result": "Opens the main Taskscape window. The label shows the capture target: project name, a '/' separator and the list name (Footer.tsx:51-58).",
+   "exact": [
+    {
+     "what": "Label",
+     "value": "Project name, then '/', then list name, from the capture target prop (Footer.tsx:51-58). The recorded 'Home / Errands' is consistent with this structure."
+    },
+    {
+     "what": "Icon",
+     "value": "open_in_new, 14px (Footer.tsx:49). Position 13,88 is measured in the recording (14x14)."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree lines 7-8, shot.png)",
+    "state:capture-bar-dark (meta.json: capture_target x3)",
+    "A: tray/src/components/Footer.tsx:43-58 (button onClick api.openMain(), title 'Open the main Taskscape window' at :47, Icon open_in_new size 14 at :49, label with project name, '/' separator at :56, list name), :22 (target prop).",
+    "B: state:capture-bar-dark tree.txt:7 (Footer target={…} @1,75 758x40) and tree.txt:8 (Icon open_in_new size=14 @13,88 14x14). Label 'Home / Errands' from shot.png. meta.json commands contain capture_target at positions 2, 4, 7."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Target is read from the app's capture target state."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-093",
+   "check": "corrected",
+   "check_notes": "B's measured icon position (13,88, 14x14) and footer 758x40 are consistent with the code. The label text is from shot.png."
+  },
+  {
+   "title": "Capture bar screenshot button",
+   "trigger": "Click the Screenshot button, or press Cmd+Shift+Enter (the screenshotAccel)",
+   "context": "Capture bar footer; capturing=false, count=0",
+   "result": "Attaches a full-screen screenshot to the captured task. Behaviour inferred from the tooltip and accelerator.",
+   "exact": [
+    {
+     "what": "Tooltip (title)",
+     "value": "'Attach a full-screen screenshot (⌘⇧↩)' when count is 0 (Footer.tsx:90; hintSuffix ' (⌘⇧↩)' from formatAccel at Footer.tsx:35-36)."
+    },
+    {
+     "what": "Accelerator",
+     "value": "Cmd+Shift+Enter is the default for screenshot_capture, with Global scope (common/src/hotkeys.rs:336-339)."
+    },
+    {
+     "what": "Icon",
+     "value": "screenshot_monitor, 15px (Footer.tsx:71-72). Shows 'error' icon on error and no icon while capturing (Footer.tsx:71)."
+    },
+    {
+     "what": "Variant and size",
+     "value": "well, xs (Footer.tsx:69-70)."
+    },
+    {
+     "what": "Label",
+     "value": "'Screenshot' when count is 0 (Footer.tsx:103)."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree lines 7 and 9-10)",
+    "state:capture-bar-dark (shot.png)",
+    "A: tray/src/components/Footer.tsx:35-36 (hint, hintSuffix), :67-82 (ToolbarButton size xs, variant well, iconSize 15, disabled=capturing), :71 (icon screenshot_monitor), :89-90 (tooltips), :93-103 (Capturing / Screenshot label); common/src/hotkeys.rs:336-339 (screenshot_capture, Global, Cmd+Shift+Enter); common-ui/src/hotkeys.ts:403-405.",
+    "B: state:capture-bar-dark tree.txt:7 (Footer screenshotAccel=\"Cmd+Shift+Enter\" capturing=false count=0), tree.txt:9 (ToolbarButton size=\"xs\" variant=\"well\" iconSize=15 filled=false disabled=false title=\"Attach a full-screen screenshot (⌘⇧↩)\" @601,83 146x24), tree.txt:10 (Icon screenshot_monitor size=15). Label 'Screenshot' from shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "When count > 0 the tooltip is '<n> screenshot(s) attached - add another (⌘⇧↩)' and the label is '<n> shot(s)' (Footer.tsx:89, 103).",
+    "While capturing the button is disabled and shows a Spinner size 13 and 'Capturing …' (Footer.tsx:75, 93-96)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-094",
+   "check": "corrected",
+   "check_notes": "B's recorded tooltip, size xs, variant well, icon size 15 and accelerator match the code. Attaching the screenshot is inferred from the tooltip."
+  },
+  {
+   "title": "Shortcut hint glyphs",
+   "trigger": "none (observed)",
+   "context": "Capture bar screenshot button",
+   "result": "The shortcut is drawn as three key icons after the label.",
+   "exact": [
+    {
+     "what": "Icons in order",
+     "value": "keyboard_command_key, shift, keyboard_return"
+    },
+    {
+     "what": "Icon size and weight",
+     "value": "12px, weight 300"
+    },
+    {
+     "what": "Spacing",
+     "value": "12px pitch (x=703, 715, 727)"
+    },
+    {
+     "what": "Hint size",
+     "value": "36x12 at 703,89"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree lines 11-14)",
+    "state:capture-bar-dark (shot.png)",
+    "A: common-ui/src/hotkeys.ts:294 (keyboard_command_key), :317-318 (shift), :341 (keyboard_return); common-ui/src/components/content/HotkeyHint.tsx:9-16 (sm icon 12px, weight 300), :39, :57-64.",
+    "B: state:capture-bar-dark tree.txt:11 (HotkeyHint @703,89 36x12), tree.txt:12-14 (keyboard_command_key, shift, keyboard_return; each size=12 weight=300 at x=703, 715, 727)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-095",
+   "check": "confirmed_by_both",
+   "check_notes": "Both confirm icon names, size 12 and weight 300. B measured the 36x12 hint and the 12px pitch (x=703, 715, 727). A notes the pitch and hint size are not checkable in code."
+  },
+  {
+   "title": "Clear draft shortcut in capture bar",
+   "trigger": "Press Cmd+Shift+Backspace (clear_draft, Tray scope; common/src/hotkeys.rs:528-531), handled by useClearDraftHotkey.",
+   "context": "Capture bar title row, hasDraft=false in recording",
+   "result": "Clears the draft title. The visible Clear control is shown only when hasDraft is true (TitleRow.tsx:44).",
+   "exact": [
+    {
+     "what": "Title row size",
+     "value": "h-10 = 40px high (TitleRow.tsx:32). Width is not set in code."
+    },
+    {
+     "what": "Clear control",
+     "value": "icon delete_sweep 16px, text 'Clear', class text-[11px] (TitleRow.tsx:48-52, 59)."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree line 2)",
+    "A: tray/src/components/TitleRow.tsx:32 (h-10), :44-61 (Clear ToolbarButton shown only when hasDraft; icon delete_sweep size 16 at :48-49; text-[11px] at :52; title at :53-57; text 'Clear' at :59); common/src/hotkeys.rs:528-531 (clear_draft, Tray scope, Cmd+Shift+Backspace); tray/src/hooks/useClearDraftHotkey.ts:9-23.",
+    "B: state:capture-bar-dark tree.txt:2 (TitleRow title=\"\" hasDraft=false clearAccel=\"Cmd+Shift+Backspace\" onClear=ƒ @1,1 758x40)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Tooltip is 'Clear the draft (<formatted accelerator>)' when the accelerator is set, else 'Clear the draft' (TitleRow.tsx:53-57)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-096",
+   "check": "corrected",
+   "check_notes": "B measured the TitleRow at 758x40, matching h-10. The recording has hasDraft=false, so the Clear control is not visible there and the clear action is inferred from onClear."
+  },
+  {
+   "title": "Capture bar disabled button style",
+   "trigger": "Applies only to the Screenshot button in the capture footer while it is disabled, which happens only while capturing (Footer.tsx:75).",
+   "context": "Capture bar footer, the Screenshot ToolbarButton only. It is not a generic style for all toolbar buttons.",
+   "result": "Disabled buttons keep full opacity and keep pointer events. Other disabled style is cut off in the tree.",
+   "exact": [
+    {
+     "what": "Class fragment",
+     "value": "Full class string, not truncated in code: 'shrink-0 disabled:pointer-events-auto disabled:opacity-100' followed by a text colour class (Footer.tsx:80-81). It overrides the base ToolbarButton disabled classes (ToolbarButton.tsx:60)."
+    }
+   ],
+   "sources": [
+    "state:capture-bar-dark (tree line 9)",
+    "A: tray/src/components/Footer.tsx:75 (disabled={capturing}), :77-82 (comment: disabled means busy; className 'shrink-0 disabled:pointer-events-auto disabled:opacity-100' plus shotTextColor); common-ui/src/components/buttons/ToolbarButton.tsx:60 (base disabled:pointer-events-none disabled:opacity-40).",
+    "B: state:capture-bar-dark tree.txt:9 className=\"shrink-0 disabled:pointer-events-auto disabled:opacity-100 t…\" (truncated in the tree)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The code comment says disabled here means 'busy', not 'unavailable' (Footer.tsx:77-78)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-097",
+   "check": "corrected",
+   "check_notes": "B's truncated tree class matches the start of the code class string. Full string is from code."
+  },
+  {
+   "title": "Disabled attachment button hover",
+   "trigger": "Hover over the Shot button when it is disabled (not recorded)",
+   "context": "Inspector attachment header",
+   "result": "Hover background is removed and the cursor is default when disabled.",
+   "exact": [
+    {
+     "what": "Class",
+     "value": "disabled:cursor-default disabled:hover:bg-transparent"
+    }
+   ],
+   "sources": [
+    "state:main-default (tree line 118)",
+    "A: tray-independent main/src/components/preview/AttachmentSection.tsx:172-180 (Shot ToolbarButton, disabled={capturing} at :174, className 'disabled:cursor-default disabled:hover:bg-transparent' at :180). Not disabled in the recording, as the spec says.",
+    "B: state:row-selected-dark tree.txt:118 (ToolbarButton onClick=ƒ disabled=false title=\"Capture the full screen and attach it\" className=\"disabled:cursor-default disabled:hover:bg-transparent\" @990,278 63x25)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The button was not disabled in the recording."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-098",
+   "check": "confirmed_by_both",
+   "check_notes": "Both confirm the class value and that the button is not disabled in the recording. Source correction from B: use state:row-selected-dark tree.txt:118, since state:main-default ends at line 101."
+  },
+  {
+   "title": "Icon and text size tokens",
+   "trigger": "none (observed)",
+   "context": "The inspector's 13px values are icon sizes only (folder_open, schedule, update at size 13). Inspector text is text-[11.5px] (recording: row-selected-dark tree.txt:98).",
+   "result": "Icons and text use a small fixed set of sizes and weights.",
+   "exact": [
+    {
+     "what": "Icon sizes",
+     "value": "12, 13, 14, 15, 16, 17, 18, 19, 20, 28 px in the spec, plus 26 px in code (AttachmentLightbox.tsx:354). 19 and 20 were not checked in code by A; the recording shows 19 (main-default tree.txt:26-27) and 20 (main-default tree.txt:9)."
+    },
+    {
+     "what": "Text sizes",
+     "value": "10.5px (SectionHeader.tsx:41), 11px (TaskPane.tsx:232, 427, 508; TaskInspector.tsx:384; HotkeyHint.tsx:10), 11.5px (TaskInspector meta, SettingRow.tsx:38), 12px (recording: settings-dark tree.txt:13), 12.5px (EmptyState.tsx:47; TaskRow.tsx:402), 13px (TextInput.tsx:17; recorded ListTabs labels main-default tree.txt:14 and settings titles), 13.5px (recording: settings-dark tree.txt:10), 14px (TaskRow.tsx:390), 15px (EmptyState.tsx:42), 18px (TaskInspector.tsx:298; DraftInspector.tsx:69)."
+    },
+    {
+     "what": "Icon weights",
+     "value": "400 on add in search confirmed (TaskPane.tsx:248-250). The only weight-500 icon in code is attach_file (TaskRow.tsx:453). No code weight-500 on list close icons was found."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree lines 1-100)",
+    "state:settings-dark (tree lines 1-44)",
+    "A: common-ui/src/components/typography/SectionHeader.tsx:41 (10.5px); main/src/components/TaskPane.tsx:232, :427, :508 (text-[11px]); TaskInspector.tsx:298 (text-[18px]), :384 (text-[11px]); DraftInspector.tsx:69 (text-[18px]); HotkeyHint.tsx:10 (text-[11px]); TextInput.tsx:17 (text-[13px]); AttachmentLightbox.tsx:354 (chevron_left size 26); TaskRow.tsx:453 (attach_file weight 500); PreviewPanel.tsx:53 (size 28); EmptyState.tsx:42 (15px), :47 (12.5px); SettingRow.tsx:38 (11.5px); TaskRow.tsx:390 (14px), :402 (12.5px).",
+    "B: icon sizes in the trees: 12 (capture-bar-dark tree.txt:12-14); 13 (row-selected-dark tree.txt:99, 101, 102); 14 (main-default tree.txt:89-90); 16 (main-default tree.txt:68); 17 (tree.txt:48-49); 18 (main-default tree.txt:23-24); 19 (main-default tree.txt:26-27); 20 (main-default tree.txt:9); 28 (main-default tree.txt:97). Icon weights: 400 on add (main-default tree.txt:43); 500 on close icons (tree.txt:15-16); others 300. Text sizes: 10.5 (settings tree.txt:24); 11.5 (main-dark tree.txt:98; settings tree.txt:28); 12 (settings-dark tree.txt:13); 12.5 (main-default tree.txt:47, 99); 13 (ListTabs main-default tree.txt:14; settings-dark tree.txt:27, 34, 42); 13.5 (settings-dark tree.txt:10); 14 (tree.txt:11, 46); 15 (main-default tree.txt:98). font-display confirmed (main-default tree.txt:11, 98). Filled=true only on right_panel_close (main-default tree.txt:29-30)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Active icon filled=true only on the preview toggle in recordings."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Icon weight 300 in the light recording conflicts with solution A's --icon-wght light value of 350; see the A 'Icon optical weight' entry.",
+   "id": "F11-099",
+   "check": "corrected",
+   "check_notes": "Conflict on weight 500: B saw weight 500 on close icons in the recording (main-default tree.txt:15-16). Code (A) decides: no code weight-500 close icon found, so only attach_file is at weight 500. font-display is confirmed in the recording. Filled=true appears only on right_panel_close in the recording."
+  },
+  {
+   "title": "Window sizes and layout measures",
+   "trigger": "none (observed)",
+   "context": "All windows",
+   "result": "Fixed sizes used in the recordings.",
+   "exact": [
+    {
+     "what": "Main window",
+     "value": "1180x760 (main/src-tauri/tauri.conf.json:16-17). Confirmed in code, and the recorded App is 1180x760."
+    },
+    {
+     "what": "Settings window",
+     "value": "Recorded at 1180x760 (SettingsWindow, settings-dark tree.txt:1). Not checked in code."
+    },
+    {
+     "what": "Title bar",
+     "value": "Recorded as TitleBar 1180x46 (tree.txt:2). Not found in code."
+    },
+    {
+     "what": "Capture bar",
+     "value": "Configured as 480x116 (tray/src-tauri/tauri.conf.json:18-19). The 760 width does not appear in the tray code, but the recording shows App 760x116 (capture-bar-dark tree.txt:1)."
+    },
+    {
+     "what": "Task pane",
+     "value": "No fixed 860 value in code. The split ratio defaults to 0.5 (layoutStore.ts:72), clamped 0.25 to 0.75 (App.tsx:78-80). The recording shows TaskPane 860x715."
+    },
+    {
+     "what": "Stats bar",
+     "value": "h-9 = 36px high (TaskPane.tsx:508), not 32px. The recording shows StatsBar 860x32."
+    },
+    {
+     "what": "Search well",
+     "value": "h-10 (40px) with class mx-4 mt-3 mb-2 (TaskPane.tsx:205). The recording shows the InputWell measured at 832x35 (14,56), which does not match the class value."
+    },
+    {
+     "what": "Preview panel",
+     "value": "Default width 320 (layoutStore.ts:71), clamped 280 to 420 (App.tsx:114). The recording shows 319 wide, a measured value."
+    },
+    {
+     "what": "Resizer",
+     "value": "w-1.25 = 5px grab strip with a 1px hairline (App.tsx:177, 181). The recording shows a 4px-wide Resizer (4x715)."
+    }
+   ],
+   "sources": [
+    "state:main-default (tree)",
+    "state:capture-bar-dark (tree)",
+    "state:settings-dark (tree)",
+    "A: main/src-tauri/tauri.conf.json:16-17 (width 1180, height 760); tray/src-tauri/tauri.conf.json:18-19 (480, 116); TaskPane.tsx:204-205 (InputWell mx-4 mt-3 mb-2 h-10 shrink-0), :508 (h-9); layoutStore.ts:71-72; App.tsx:78-80, :114, :177, :181. Title bar 46px and settings window size not found in code.",
+    "B: state:main-default tree.txt:1 (App 1180x760); settings-dark tree.txt:1 (SettingsWindow 1180x760); capture-bar-dark tree.txt:1 (760x116); tree.txt:2 (TitleBar 1180x46); tree.txt:34 (TaskPane 860x715 at 0,46); tree.txt:87 (StatsBar 860x32 at 0,729); tree.txt:35 (InputWell className=\"mx-4 mt-3 mb-2 h-10 shrink-0\" @14,56 832x35); tree.txt:95 (PreviewPanel 319x715); tree.txt:94 (Resizer 4x715)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "notes": "",
+   "id": "F11-100",
+   "check": "corrected",
+   "check_notes": "Conflicts on measured sizes: B measured search well 35px, stats bar 32px, resizer 4px and capture bar width 760. Code (A) decides for these values: h-10 (40px), h-9 (36px), w-1.25 (5px), configured 480x116. The measured values are recorded here. Title bar 46px and settings window 1180x760 come only from the recording."
+  },
+  {
+   "title": "Settings and theme read on window open",
+   "trigger": "none (observed)",
+   "context": "Every window",
+   "result": "Settings are read (get_setting) on open. This suggests the theme and reduced-motion choices are stored and read back at launch; the storage duration is not recorded.",
+   "exact": [
+    {
+     "what": "Command",
+     "value": "get_setting, invoked on window open with keys 'theme' (theme.ts:30), 'reduced_motion' (reducedMotion.ts:44), 'show_completed' (settingsStore.ts:20), 'last_active_list' (bootstrap.ts:27), 'last_active_project' (projectStore.ts:31). The settings window reads its own key list (settings.ts:83-86)."
+    },
+    {
+     "what": "Stored values",
+     "value": "theme is 'light', 'dark' or 'system' (theme.ts:31). reduced_motion is '1' when on (reducedMotion.ts:44)."
+    }
+   ],
+   "sources": [
+    "state:main-dark (meta.json)",
+    "state:settings-dark (meta.json)",
+    "A: main/src/api.ts:150-152 (getSetting and setSetting over get_setting and set_setting); main/src/lib/theme.ts:28-31 (key 'theme'; values 'light', 'dark' or 'system'); main/src/lib/reducedMotion.ts:42-44 (key 'reduced_motion'; '1' means on); settingsStore.ts:20 (show_completed); bootstrap.ts:27 (last_active_list); projectStore.ts:31 (last_active_project); windows/settings/settings.ts:83-86 (settings window key list).",
+    "B: state:main-dark meta.json commands (get_setting at lines 11-12, 17-18, 23-25, 27) and state:settings-dark meta.json commands (get_setting at lines 11-12, 15-18, 22-25)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Persistence is through set_setting (api.ts:151-152). The storage duration is not in the code.",
+    "Whether the stored values persist between launches is not shown in the recordings."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "notes": "Persistence is confirmed by solution A's source entries (theme and reduced_motion are saved); B's inference is kept as the observed call.",
+   "id": "F11-101",
+   "check": "corrected",
+   "check_notes": "B's meta.json shows get_setting calls on window open in main-dark and settings-dark, consistent with A. Persistence across launches is not recorded."
+  }
+ ]
+}

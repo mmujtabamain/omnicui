@@ -1,0 +1,2918 @@
+{
+ "area": 10,
+ "name": "Settings window",
+ "tier": "high",
+ "counts": {
+  "A": 66,
+  "B": 33,
+  "critic_issues": 44,
+  "merged": 77
+ },
+ "dropped": [
+  {
+   "title": "Settings window size and layout (1180x760, 46px title bar, sidebar about 153px, search field 139x25, tab rows at y 86/118/149/181)",
+   "reason": "Conflicts with the source: the window is requested at a fixed 640 x 520 (SettingsWindow.tsx:30-33, 110-117), and the sidebar uses w-44 rather than about 153px. The critique treats 1180x760 as unverified and probably from a different build or scale. The title bar name is kept in the Settings title bar entry; the sidebar and row measurements are not kept as verified values."
+  },
+  {
+   "title": "Inactive tabs are removed from the keyboard Tab order",
+   "reason": "Duplicate of the Only the selected section is a Tab stop entry (both state tabIndex 0 for the selected tab and -1 for the others). Its recording source was added to that entry."
+  },
+  {
+   "title": "Restore defaults button in the Reset group",
+   "reason": "Duplicate of the About row Restore defaults entry. Its unique values (button label, 972x28 box, ResetEverything onConfirm) were merged into that entry. Its claim that onConfirm suggests a confirmation step is wrong per the critique: the confirm is inline, with no dialog."
+  },
+  {
+   "title": "Keys typed during recording set the shortcut; Backspace removes it; Esc cancels",
+   "reason": "Duplicate of the recording, Escape-cancel and Backspace/Delete entries, which carry the source-verified behaviour. Its intro-text recording source was merged into the next-key recording entry."
+  }
+ ],
+ "features": [
+  {
+   "title": "Settings window opens at a fixed 640 x 520 size and fades in after preferences and fonts load",
+   "trigger": "none (happens on open)",
+   "context": "Window is built fresh on each open; runs once per window",
+   "result": "The content stays at opacity 0 until settings have loaded and document.fonts is ready; then the window is presented at 640 x 520 and the content plays animate-scale-in. The pane scrolls; the window does not resize.",
+   "exact": [
+    {
+     "what": "Inner width",
+     "value": "640"
+    },
+    {
+     "what": "Inner height",
+     "value": "520"
+    },
+    {
+     "what": "Hidden state class",
+     "value": "opacity-0"
+    },
+    {
+     "what": "Shown animation class",
+     "value": "animate-scale-in"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:30-33",
+    "main/src/windows/SettingsWindow.tsx:107-117",
+    "main/src/windows/SettingsWindow.tsx:204-208",
+    "A: SettingsWindow.tsx:30-33 (WIDTH 640, HEIGHT 520), :107-117 (presentWindow after settings.loaded and document.fonts.ready, presentedRef guard, setPresented(true)), :206 (presented ? 'animate-scale-in' : 'opacity-0'). Centring is in api.presentWindow, outside the read files, as the spec's edge case says.",
+    "B: spec/references/settings-general/tree.txt:1 reads 'SettingsWindow @0,0 1180x760'; the same root line appears in all eight folders, and settings-general/shot.png is 1180x760. The 640 x 520 size is not seen in any recording. Hidden class opacity-0, animate-scale-in, the fade timing and the no-resize behaviour are not in tree.txt or meta.json, so they are unverified."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Centering is done by api.presentWindow (not in these files); the comment says the window is centred."
+   ],
+   "notes": "Comment at SettingsWindow.tsx:30-31 says the size mirrors build_panel in main/src-tauri/src/lib.rs (not read). Critique: source supports 640 x 520; B's recording measured 1180x760 for the same window, which the critique treats as unverified (see dropped list).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A's source values stand because the source decides on value conflicts: WIDTH 640 and HEIGHT 520 at SettingsWindow.tsx:30-33. Checker B's recordings show an inner size of 1180x760 in all eight reference folders (tree.txt line 1 and shot.png dimensions), which contradicts the 640x520 constant. The 1180x760 observation is kept here as an unresolved conflict: the recorded size may come from a different harness or window configuration than the source constant. B's hidden-class, fade and no-resize points are unverified. Centring in api.presentWindow is outside the read files."
+  },
+  {
+   "title": "Sidebar lists four sections in a fixed order with fixed icons",
+   "trigger": "none (visible on open)",
+   "context": "Always, in the left sidebar",
+   "result": "Sections appear top to bottom as General, Capture, Shortcuts, About. Each section is a tab row that opens its own pane. General is selected on open.",
+   "exact": [
+    {
+     "what": "Section order",
+     "value": "General, Capture, Shortcuts, About"
+    },
+    {
+     "what": "General icon",
+     "value": "tune (16px)"
+    },
+    {
+     "what": "Capture icon",
+     "value": "screenshot_monitor (16px)"
+    },
+    {
+     "what": "Shortcuts icon",
+     "value": "keyboard (16px)"
+    },
+    {
+     "what": "About icon",
+     "value": "info (16px)"
+    },
+    {
+     "what": "Initial pane",
+     "value": "PANES[0] (General)"
+    },
+    {
+     "what": "Row shape",
+     "value": "rounded=true, role=tab"
+    },
+    {
+     "what": "Tab ids (recording)",
+     "value": "settings-tab-general, settings-tab-capture, settings-tab-shortcuts, settings-tab-about"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/panes.ts:7-13",
+    "main/src/windows/settings/generalPane.tsx:99-103",
+    "main/src/windows/settings/capturePane.tsx:24-27",
+    "main/src/windows/settings/shortcutsPane.tsx:27-31",
+    "main/src/windows/settings/aboutPane.tsx:6-9",
+    "main/src/windows/SettingsWindow.tsx:61",
+    "state:settings-general (tree lines 14-21)",
+    "state:settings-capture (tree lines 14-21)",
+    "state:settings-shortcuts (tree lines 14-21)",
+    "state:settings-about (tree lines 14-21)",
+    "A: panes.ts:8-13 (order GENERAL, CAPTURE, SHORTCUTS, ABOUT); icons generalPane.tsx:102 'tune', capturePane.tsx:27 'screenshot_monitor', shortcutsPane.tsx:30 'keyboard', aboutPane.tsx:9 'info'; SettingsWindow.tsx:61 (PANES[0] initial), :272-283 (role=\"tab\", rounded, Icon size={16}), :274 id settings-tab-<pane.id>.",
+    "B: settings-general/tree.txt:14-21: MenuItem order is settings-tab-general, settings-tab-capture, settings-tab-shortcuts, settings-tab-about (y 86, 118, 149, 181); Icon names tune, screenshot_monitor, keyboard, info, each size=16; each row has rounded=true role=\"tab\". General has active=true aria-selected=true on open (line 14). Tab ids match the claimed recording ids. Source: spec/references/settings-general/tree.txt:14-21"
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The 16px icon sizes and the tab ids come from B's recording tree only; the id pattern settings-tab-<pane id> matches the focus target in A (SettingsWindow.tsx:264-265).",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-002",
+   "check": "confirmed_by_both"
+  },
+  {
+   "title": "Sidebar and content layout",
+   "trigger": "none (visible on open)",
+   "context": "Always",
+   "result": "Left sidebar is a fixed-width column with a right border and a search field at its top; the section list sits below it. The content pane fills the remaining width, scrolls vertically, and its background differs from the sidebar.",
+   "exact": [
+    {
+     "what": "Sidebar classes",
+     "value": "border-edge-2l dark:border-edge-2d bg-surface-1l dark:bg-surface-1d gap-space-6 p-space-5 flex w-44 shrink-0 flex-col border-r"
+    },
+    {
+     "what": "Content classes",
+     "value": "bg-surface-2l dark:bg-surface-2d px-space-8 py-space-7 min-h-0 flex-1 overflow-y-auto"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:202",
+    "main/src/windows/SettingsWindow.tsx:230-232",
+    "main/src/windows/SettingsWindow.tsx:306",
+    "A: SettingsWindow.tsx:231 (nav classes), :306 (content classes), :202 (root bg), :233 (h-7), :232-258 (search well).",
+    "B: settings-general/tree.txt:11 InputWell className=\"h-7\" confirms the search well height class. The sidebar and content class strings are not in tree.txt (no node carries them). Sidebar width: tab rows sit at x=7 with width 139 (tree.txt:14-20), and settings-general/shot.png shows the sidebar right border at about x=153, so the column is about 153-154px wide. w-44 would be 176px at a 16px root, or about 154px at a 14px root; the root size is not recorded, so w-44 is not confirmed. Light-mode shot shows a greyer sidebar and whiter content pane; exact background classes not verifiable."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Dark mode is expressed only as the dark: utility variants on these classes; the colour values come from the design tokens (not in these files). B's recording measured the sidebar at about 153px (border at x about 153) and the content at about x 154; this does not match w-44 (11rem), so the recording likely came from another build or scale. The source classes are kept.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-003",
+   "check": "corrected",
+   "check_notes": "Checker B could not check the class strings. Its recording measurement (sidebar right border near x=153, tab rows width 139) is consistent with a w-44 column but does not confirm it, since the root font size is not recorded. B confirmed the h-7 search well height at tree.txt:11. The light-mode greyer sidebar and whiter content pane were seen visually only."
+  },
+  {
+   "title": "Selected section is highlighted",
+   "trigger": "none (state)",
+   "context": "Selected section is the active pane; not highlighted while an unscoped search is running",
+   "result": "The selected section tab is marked active. While searching with no scope, no section is active, but the selected tab keeps aria-selected true. Once scoped to a pane, that pane is active. Inactive tabs have aria-selected false.",
+   "exact": [
+    {
+     "what": "active prop",
+     "value": "selected && (!searching || scoped)"
+    },
+    {
+     "what": "aria-selected",
+     "value": "selected"
+    },
+    {
+     "what": "Active tab props (recording)",
+     "value": "active=true aria-selected=true tabIndex=0"
+    },
+    {
+     "what": "Inactive tab props (recording)",
+     "value": "active=false aria-selected=false tabIndex=-1"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:270-278",
+    "state:settings-about (tree line 20)",
+    "state:settings-capture (tree line 16)",
+    "state:settings-general (tree line 14)",
+    "state:settings-shortcuts (tree line 18)",
+    "A: SettingsWindow.tsx:270-278 (selected, active={selected && (!searching || scoped)}, aria-selected={selected}), :282 (tabIndex={selected ? 0 : -1}).",
+    "B: settings-general/tree.txt:14 active=true aria-selected=true tabIndex=0; tree.txt:16,18,20 active=false aria-selected=false tabIndex=-1. settings-search/tree.txt:16 (General, searching with query 'motion' at tree.txt:13, unscoped) shows active=false aria-selected=true tabIndex=0, which matches active = selected && (!searching || scoped). Scoped state is not recorded, so 'once scoped, that pane is active' is untested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "B's recording shows a grey highlight on the active row in About and Capture and a light-blue highlight in General and Shortcuts. The critique could not resolve the cause (one active prop, no colour difference in code; may be a focus-state effect), so no colour rule is stated here. During an unscoped search in the recording, General had aria-selected=true with active=false.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-004",
+   "check": "confirmed_by_both",
+   "check_notes": "B's recording covers the unscoped searching state (active=false, aria-selected=true, tabIndex=0 on General). The scoped state is not recorded, so the 'once scoped, that pane is active' part remains untested by B."
+  },
+  {
+   "title": "Clicking a section shows that pane and scrolls the content to the top",
+   "trigger": "left-click a section in the sidebar",
+   "context": "Outside search, or while searching (see scoped search features)",
+   "result": "The content switches to the chosen pane and the content scroll position resets to the top.",
+   "exact": [
+    {
+     "what": "Scroll target",
+     "value": "top: 0"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:179-184",
+    "main/src/windows/SettingsWindow.tsx:292",
+    "A: SettingsWindow.tsx:179-184 (selectPane: setPaneId, scoped or clearSearch, scrollRef.current?.scrollTo({ top: 0 })), :292 (onClick={() => selectPane(pane.id)}).",
+    "B: No recording shows a section click or a scroll position after a switch. meta.json command lists in all folders contain no click or scroll input. settings-shortcuts-scrolled/tree.txt:22 shows the scrolled state, but no reset is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-005",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Arrow Up / Arrow Down move between sections, wrapping at the ends",
+   "trigger": "ArrowDown or ArrowUp while focus is on a section tab (inside the sections tablist)",
+   "context": "Keyboard focus inside the sidebar section list",
+   "result": "ArrowDown selects the next section and moves focus to its tab; ArrowUp selects the previous one. From the last section ArrowDown wraps to General; from General ArrowUp wraps to About. The default key action is prevented. Other keys do nothing here.",
+   "exact": [
+    {
+     "what": "Keys",
+     "value": "ArrowDown (+1), ArrowUp (-1)"
+    },
+    {
+     "what": "Wrap",
+     "value": "modulo the section count"
+    },
+    {
+     "what": "Focus target id",
+     "value": "settings-tab-<pane id>"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:186-196",
+    "main/src/windows/SettingsWindow.tsx:264-265",
+    "A: SettingsWindow.tsx:186-196 (step ArrowDown 1 / ArrowUp -1, else return before preventDefault at :189; index modulo PANES.length at :191; focus via #settings-tab-<id> at :194), :264-265 (onKeyDown on the tablist).",
+    "B: meta.json command lists (e.g. settings-general/meta.json:9-29) contain no key input, and no recording shows ArrowDown or ArrowUp presses or focus moving between tabs. Wrap and focus-target behaviour is untested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-006",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Only the selected section is a Tab stop",
+   "trigger": "Tab key into the sidebar",
+   "context": "Keyboard navigation",
+   "result": "The selected section has tabIndex 0; the other sections have tabIndex -1, so Tab reaches only the selected one and the arrow keys move between them.",
+   "exact": [
+    {
+     "what": "Selected tabIndex",
+     "value": "0"
+    },
+    {
+     "what": "Other tabIndex",
+     "value": "-1"
+    },
+    {
+     "what": "Tablist aria-label",
+     "value": "Settings sections"
+    },
+    {
+     "what": "Tablist aria-orientation",
+     "value": "vertical"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:260-266",
+    "main/src/windows/SettingsWindow.tsx:282",
+    "state:settings-general (tree lines 14-20)",
+    "state:settings-about (tree lines 14-20)",
+    "A: SettingsWindow.tsx:260-266 (role=tablist, aria-orientation=\"vertical\", aria-label=\"Settings sections\"), :282 (tabIndex 0 selected, -1 otherwise).",
+    "B: settings-general/tree.txt:14 settings-tab-general tabIndex=0; tree.txt:16,18,20 tabIndex=-1 (the other three). The same pattern appears in settings-about/tree.txt:14-20 (about tabIndex=0, others -1) and other folders. Tablist aria-label 'Settings sections' and aria-orientation 'vertical' are not in any tree (no tablist node is printed), so those two values are unverified. Tab-key behaviour is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "B's recording tree shows the same tabIndex values (the inactive-tab entry from B was merged here).",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-007",
+   "check": "confirmed_by_both",
+   "check_notes": "B's trees show the roving tabIndex pattern. B could not print the tablist node, so its aria-label 'Settings sections' and aria-orientation 'vertical' are confirmed only by A's source reading. Tab-key behaviour is not recorded."
+  },
+  {
+   "title": "Pane content animates in on each switch",
+   "trigger": "switching section, or changing the search state",
+   "context": "Keyed by pane id, or by search state (search, scoped-<pane id>)",
+   "result": "The content block is re-mounted with animate-panel-in each time its key changes, so the new content plays its entrance animation.",
+   "exact": [
+    {
+     "what": "Animation class",
+     "value": "animate-panel-in"
+    },
+    {
+     "what": "Key when not searching",
+     "value": "pane id"
+    },
+    {
+     "what": "Key when searching unscoped",
+     "value": "search"
+    },
+    {
+     "what": "Key when scoped",
+     "value": "scoped-<pane id>"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:308-317",
+    "A: SettingsWindow.tsx:308-317 (key at :309-315: scoped-<id> / 'search' / activePane.id; class animate-panel-in at :316). Typing inside unscoped search keeps key 'search', so it does not remount.",
+    "B: No tree node shows the content key or the animate-panel-in class (tree.txt content nodes such as SettingsGroup and Surface2 carry no key or class for the pane wrapper). No pane-switch recording exists beyond a static state per pane."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Duration of the animation is defined in the stylesheet, not in these files.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-008",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Search field in the sidebar",
+   "trigger": "none (visible); click or focus it and type",
+   "context": "Always, top of the sidebar",
+   "result": "A search input shows a search icon at size 14 on the left and the placeholder Search. Its accessible name is Search settings. Text is 12px. Typing enters a query into the field.",
+   "exact": [
+    {
+     "what": "Placeholder",
+     "value": "Search"
+    },
+    {
+     "what": "aria-label",
+     "value": "Search settings"
+    },
+    {
+     "what": "Leading icon",
+     "value": "search, size 14"
+    },
+    {
+     "what": "Input class",
+     "value": "text-[12px]"
+    },
+    {
+     "what": "Well height class",
+     "value": "h-7"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:232-257",
+    "state:settings-general (tree lines 11-13)",
+    "A: SettingsWindow.tsx:232-257 (InputWell with Icon name=\"search\" size={14} at :234; placeholder=\"Search\" :254; aria-label=\"Search settings\" :255; className text-[12px] :256; h-7 :233; onChange search(e.target.value) :253).",
+    "B: settings-general/tree.txt:11 InputWell className=\"h-7\"; tree.txt:12 Icon name=\"search\" size=14; tree.txt:13 TextInput2 placeholder=\"Search\" aria-label=\"Search settings\" className=\"text-[12px]\". Typing: settings-search/tree.txt:13 value=\"motion\" shows text entry works. Click-to-focus is not recorded directly."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "B recorded the same placeholder, aria-label, icon and text class in its recording tree.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-009",
+   "check": "confirmed_by_both",
+   "check_notes": "B's click-to-focus is not recorded directly."
+  },
+  {
+   "title": "Focused search field shows a blue outline",
+   "trigger": "Click into the search field",
+   "context": "Search field has focus with a query",
+   "result": "With the query \"motion\" typed in, the field shows a light-blue outline around the box.",
+   "exact": [
+    {
+     "what": "Typed query",
+     "value": "motion"
+    },
+    {
+     "what": "Outline colour",
+     "value": "light blue (read from screenshot)"
+    }
+   ],
+   "sources": [
+    "state:settings-search (shot, tree lines 11-13)",
+    "A: No focus outline or colour appears in SettingsWindow.tsx or settings/. The InputWell focus styling is in common-ui, outside the named paths. The 'motion' query and the light-blue colour come from the screenshot state, not code.",
+    "B: settings-search/tree.txt:13 TextInput2 value=\"motion\". settings-search/shot.png shows a light-blue outline around the search box. The colour is only read visually (no pixel value), and the focus flag is not in tree.txt, so the outline colour is a visual check only."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "The outline colour is read from the screenshot only. The focus ring is drawn by common-ui, which is outside the allowed files, so it cannot be verified from source.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-010",
+   "check": "confirmed_by_one",
+   "check_notes": "B's light-blue outline is a visual check only (no pixel value and no focus flag in the tree). A found no focus outline or colour in the named source paths, so the InputWell focus styling is in common-ui and remains unconfirmed by code. The 'motion' query comes from the screenshot state."
+  },
+  {
+   "title": "Clear-search button (x) appears while the query is non-empty",
+   "trigger": "left-click the x button at the right of the search field",
+   "context": "Shown only when the query string is non-empty (any text, including spaces)",
+   "result": "The query is emptied and the scope is reset, so the normal section view returns.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "close"
+    },
+    {
+     "what": "Size",
+     "value": "sm"
+    },
+    {
+     "what": "iconSize",
+     "value": "14"
+    },
+    {
+     "what": "Variant",
+     "value": "plain"
+    },
+    {
+     "what": "title and aria-label",
+     "value": "Clear search"
+    },
+    {
+     "what": "Observed box (recording)",
+     "value": "@120,56 18x18"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:235-246",
+    "main/src/windows/SettingsWindow.tsx:167-170",
+    "state:settings-search (tree lines 11, 14-15)",
+    "A: SettingsWindow.tsx:236-246 (rendered only when query is truthy; icon=\"close\" :238, size=\"sm\" :239, iconSize={14} :240, variant=\"plain\" :241, title and aria-label \"Clear search\" :242-243, onClick clearSearch :244), :167-170 (clearSearch: setQuery(''), setScoped(false)). The observed box @120,56 18x18 is recording data and is not checkable from code.",
+    "B: settings-search/tree.txt:14 IconButton icon=\"close\" size=\"sm\" iconSize=14 variant=\"plain\" title=\"Clear search\" aria-label=\"Clear search\" @120,56 18x18; tree.txt:15 Icon name=\"close\" size=14. The button is absent when the query is empty (settings-general/tree.txt:11 trailing=\"\" and tree.txt:13 value=\"\"). The clear action result and the 'including spaces' condition are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "B's recording shows the button present with the query motion, but no recording shows the clearing action. The clearing action is confirmed from source (clearSearch sets the query to '' and scoped to false). The box measurement comes from the recording and may differ from source-derived sizing.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-011",
+   "check": "confirmed_by_both"
+  },
+  {
+   "title": "Typing in the search field filters every section live",
+   "trigger": "typing in the search field",
+   "context": "Any text; a query counts as searching only after trim() leaves at least one character",
+   "result": "Each keystroke updates the results across all four sections at once. A whitespace-only query shows the normal section view. In B's recording, typing motion with General active left a single row, Reduced motion, under one group labelled General · Appearance; Theme and Show completed tasks were hidden.",
+   "exact": [
+    {
+     "what": "Searching condition",
+     "value": "query.trim().length > 0"
+    },
+    {
+     "what": "Example query",
+     "value": "motion"
+    },
+    {
+     "what": "Example group label",
+     "value": "General · Appearance"
+    },
+    {
+     "what": "Example row shown",
+     "value": "Reduced motion"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:138",
+    "main/src/windows/SettingsWindow.tsx:157-162",
+    "main/src/windows/SettingsWindow.tsx:253",
+    "state:settings-search (tree lines 22-32)",
+    "state:settings-search (shot)",
+    "A: SettingsWindow.tsx:138 (query.trim().length > 0), :157-162 (results across all PANES), :253 (onChange), :331-341 (zero results falls to EmptyState). panes.ts:20 and generalPane.tsx:27-28, 47-49 support the General · Appearance / Reduced motion example.",
+    "B: settings-search/tree.txt:13 value=\"motion\"; tree.txt:25 SettingsGroup label=\"General · Appearance\" with only one row, SettingRow title=\"Reduced motion\" (tree.txt:29). Theme and Show completed tasks are absent. Sections with no match are dimmed (tree.txt:19,21,23). Not recorded: a whitespace-only query and a zero-match query."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Zero matches show the No settings match empty state (SettingsWindow.tsx:335-341), see F10-020. The recording did not capture this case."
+   ],
+   "notes": "The motion example matches the matching rule (title match). The recording does not show whether descriptions are searched.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-012",
+   "check": "corrected",
+   "check_notes": "B's recording of the 'motion' query matches A's haystack and section-filter behaviour. B did not record a whitespace-only or zero-match query. A's zero-match empty state is kept as an edge case, see F10-020."
+  },
+  {
+   "title": "Search matching rule (AND of whitespace-separated tokens, case-insensitive)",
+   "trigger": "typing in the search field",
+   "context": "Applied per row across group label, row title, description and keywords",
+   "result": "The query is lowercased and split on whitespace; a row matches only if every token is found as a substring in the joined haystack (group label, title, description, keywords, separated by single spaces). Groups with no matching rows are dropped.",
+   "exact": [
+    {
+     "what": "Haystack fields (in order)",
+     "value": "group.label, row.title, row.description ?? '', row.keywords ?? ''"
+    },
+    {
+     "what": "Joiner",
+     "value": "single space"
+    },
+    {
+     "what": "Token split",
+     "value": "/\\s+/"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/panes.ts:15-37",
+    "A: panes.ts:15-37 (tokens = query.toLowerCase().split(/\\s+/).filter(Boolean) at :19; haystack order group.label, row.title, row.description ?? '', row.keywords ?? '' at :25-31; join ' ' at :31; toLowerCase :32; every token includes :33; groups with no rows dropped :36).",
+    "B: Only the single token 'motion' was recorded (settings-search/tree.txt:13), and it matched the row title 'Reduced motion' (tree.txt:29). The AND-of-tokens rule, the joined haystack order, the /\\s+/ split and the case-insensitivity cannot be distinguished from this one-token example."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The group label is part of the haystack (panes.ts:16-17, :26), so a token that matches the group label, such as 'appearance', matches every row in that group.",
+    "If there are no tokens, filterGroups returns all groups unchanged (panes.ts:20). SettingsWindow never gets there, because a whitespace-only query is not searching (SettingsWindow.tsx:138)."
+   ],
+   "notes": "Because the group label is part of the haystack, searching a group name such as appearance returns all rows of that group (comment at panes.ts:16-17).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-013",
+   "check": "corrected",
+   "check_notes": "B recorded only the single token 'motion', so the AND rule, the joined haystack, the /\\s+/ split and case-insensitivity are not distinguished by B. A's source reading is the basis for the corrections."
+  },
+  {
+   "title": "Search results show group labels prefixed with the section name",
+   "trigger": "typing in the search field (unscoped)",
+   "context": "Unscoped search results, whenever any group matches. The prefix is applied even when only one section has matches, because SettingsWindow.tsx:333 always passes r.pane.label.",
+   "result": "Each result group heading reads '<Section label> · <Group label>', e.g. Shortcuts · Global.",
+   "exact": [
+    {
+     "what": "Separator format",
+     "value": "`${prefix} · ${group.label}`"
+    },
+    {
+     "what": "Separator character",
+     "value": "· (middle dot, with a space on each side)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:35-41",
+    "main/src/windows/SettingsWindow.tsx:331-334",
+    "A: SettingsWindow.tsx:35-41 (label `${prefix} · ${group.label}` at :39), :331-334 (unscoped results always pass r.pane.label as prefix). shortcutsPane.tsx:36-41 (Global scope label).",
+    "B: settings-search/tree.txt:25 SettingsGroup label=\"General · Appearance\" and tree.txt:26 SectionHeader label=\"General · Appearance\"; settings-search/shot.png shows the heading as GENERAL · APPEARANCE (uppercase via the CSS class at tree.txt:27). The separator is a middle dot with spaces. The multi-section example 'Shortcuts · Global' is not recorded; the Shortcuts pane shows the bare group label 'Global' (settings-shortcuts/tree.txt:23) because it is not searching."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Only unscoped search results get the prefix; a scoped search does not (SettingsWindow.tsx:329-330). Confirmed by critique (SettingsWindow.tsx:39).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-014",
+   "check": "corrected",
+   "check_notes": "B confirmed the 'General · Appearance' label with a middle dot and spaces in the searching state. B did not record the multi-section 'Shortcuts · Global' example. A's correction adds that the prefix is applied whenever any group matches, even when only one section has matches."
+  },
+  {
+   "title": "Match count badge on each section while searching",
+   "trigger": "typing in the search field",
+   "context": "Shown only for sections with at least one match; count is the number of matching rows, not groups",
+   "result": "A small recessed badge with the count appears on the right of the section label. In B's recording, with motion typed, the General badge reads 1; sections with no matches show no badge.",
+   "exact": [
+    {
+     "what": "Badge tone",
+     "value": "recessed"
+    },
+    {
+     "what": "Badge size",
+     "value": "sm"
+    },
+    {
+     "what": "Count",
+     "value": "countRows(matchesIn(pane.id)) (sum of matching rows)"
+    },
+    {
+     "what": "Observed badge box (recording)",
+     "value": "@121,93 16x18"
+    },
+    {
+     "what": "Observed badge text (recording)",
+     "value": "1"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:269",
+    "main/src/windows/SettingsWindow.tsx:284-290",
+    "main/src/windows/settings/panes.ts:39-40",
+    "state:settings-search (tree line 18)",
+    "state:settings-search (shot)",
+    "A: SettingsWindow.tsx:269 (countRows(matchesIn(pane.id))), :285-288 (Badge tone=\"recessed\" size=\"sm\", shown when matches > 0), :271-290 (badge in MenuItem trailing). panes.ts:39-40 (countRows sums row lengths).",
+    "B: settings-search/tree.txt:18 Badge tone=\"recessed\" size=\"sm\" @121,93 16x18 inside settings-tab-general; settings-search/shot.png shows the badge with text 1. Other tabs (tree.txt:19,21,23) have trailing=false and no badge. A single matching row in a single group means rows and groups cannot be told apart from this recording."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-015",
+   "check": "confirmed_by_both",
+   "check_notes": "B's recording has one matching row in one group, so rows and groups cannot be told apart from the recording alone. A's source reading (countRows) supplies that distinction."
+  },
+  {
+   "title": "Sections with no matches are dimmed while searching",
+   "trigger": "typing in the search field",
+   "context": "Sections with zero matching rows",
+   "result": "Their whole section row (MenuItem, including icon and label) is dimmed to 40% opacity (class opacity-40). They are still clickable. In B's recording with motion typed, Capture, Shortcuts and About were dimmed and General, which has matches, was not.",
+   "exact": [
+    {
+     "what": "Class",
+     "value": "opacity-40 (applied to the whole MenuItem row, not only the label)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:291",
+    "state:settings-search (tree lines 16-23)",
+    "A: SettingsWindow.tsx:291 (className={cn(searching && matches === 0 && 'opacity-40')}) on the MenuItem at :272-293, not on the label. onClick is kept at :292, so the row is still clickable.",
+    "B: settings-search/tree.txt:19,21,23 className=\"opacity-40\" is set on the whole MenuItem tab rows (settings-tab-capture, -shortcuts, -about), not on a label node; their leading Icon nodes sit inside those rows (tree.txt:20,22,24). settings-search/tree.txt:16 settings-tab-general className=\"\" (not dimmed). settings-search/shot.png shows the icons of Capture, Shortcuts and About greyed as well as their labels. Each dimmed row keeps onClick=ƒ, which supports 'still clickable'."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-016",
+   "check": "corrected",
+   "check_notes": "A and B agree. B's observation is that Capture, Shortcuts and About were dimmed while General was not, which matches A's source. The dim applies to the whole row, icon included, and the row still has onClick."
+  },
+  {
+   "title": "Clicking a section that has matches narrows the search to that section",
+   "trigger": "left-click a section that shows a match badge, while searching",
+   "context": "Search query is kept",
+   "result": "The results shrink to that section's matching groups only (no section-name prefix). The query stays in the field and the section shows as active.",
+   "exact": [
+    {
+     "what": "Scoped state",
+     "value": "scoped = true"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:63-65",
+    "main/src/windows/SettingsWindow.tsx:177-182",
+    "main/src/windows/SettingsWindow.tsx:199",
+    "main/src/windows/SettingsWindow.tsx:329-330",
+    "A: SettingsWindow.tsx:177-182 (selectPane: setScoped(true) when matchesIn(id).length > 0; query kept), :199 (scopedGroups), :277 (active={selected && (!searching || scoped)}), :329-330 (scoped results rendered with renderGroup(group, ctx) and no prefix), :63-65.",
+    "B: No recording shows a click on a section while searching. settings-search/tree.txt:16 shows General with active=false aria-selected=true, and no scoped state is printed anywhere in the trees."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-017",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Clicking a section with no matches clears the search",
+   "trigger": "left-click a dimmed section (zero matches) while searching",
+   "context": "Searching",
+   "result": "The query is emptied, the scope is reset, and the chosen section is shown normally.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "clearSearch() (query '' and scoped false)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:167-170",
+    "main/src/windows/SettingsWindow.tsx:179-182",
+    "A: SettingsWindow.tsx:179-182 (else clearSearch()), :167-170 (setQuery(''), setScoped(false)), :179-184 (setPaneId and scroll to top).",
+    "B: No recording shows a click on a dimmed section while searching. settings-search/tree.txt:19,21,23 show the dimmed sections, but no click is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-018",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Editing the query after a scoped search returns to all-section results",
+   "trigger": "typing or otherwise changing the search text while scoped",
+   "context": "Scoped to one section",
+   "result": "Scope is dropped and results again span all sections, with the section-name prefix on group labels.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "search() sets scoped to false"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:63-65",
+    "main/src/windows/SettingsWindow.tsx:172-175",
+    "A: SettingsWindow.tsx:172-175 (search(next): setQuery(next); setScoped(false)), :253 (onChange={(e) => search(e.target.value)}), :63-65 (scoped comment), :157-162 (results across all panes), :14 of prefix at :333.",
+    "B: No recording shows a scoped search followed by an edit. Only settings-search (unscoped, query 'motion') exists, so the scope reset and the label prefix change are untested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-019",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "No-match empty state",
+   "trigger": "typing a query that matches no row in any section",
+   "context": "Searching, unscoped, zero results",
+   "result": "A centred empty state with the search icon, the title No settings match and a subtitle quoting the trimmed query.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "search"
+    },
+    {
+     "what": "Title",
+     "value": "No settings match"
+    },
+    {
+     "what": "Subtitle",
+     "value": "Nothing here for “<trimmed query>”."
+    },
+    {
+     "what": "Quote marks",
+     "value": "curly quotes “ and ”"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:335-341",
+    "A: SettingsWindow.tsx:335-341 (EmptyState icon=\"search\", title=\"No settings match\", subtitle={`Nothing here for “${query.trim()}”.`}), :329-331 (shown only when searching, not scoped, results empty).",
+    "B: No recording shows a query with zero matches. settings-search is the only searching recording and it has a match. The zero-match case is also recorded as absent in the F10-012 edge case."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The subtitle uses query.trim(), so surrounding spaces are removed.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-020",
+   "check": "confirmed_by_one",
+   "check_notes": "B's note that no zero-match recording exists is consistent with A's source. The zero-match empty state is confirmed only by A's source reading."
+  },
+  {
+   "title": "Section intro text hidden while searching",
+   "trigger": "none (state)",
+   "context": "Shown above the groups when not searching and the active section has an intro",
+   "result": "The intro is shown only outside search. Only the Shortcuts section defines one.",
+   "exact": [
+    {
+     "what": "Intro element",
+     "value": "Label as=\"p\" tone=\"muted\" className=\"text-[12px]\""
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:318-324",
+    "main/src/windows/settings/types.ts:56-57",
+    "A: SettingsWindow.tsx:318-324 (intro rendered only inside !searching; Label as=\"p\" tone=\"muted\" className=\"text-[12px]\"); types.ts:56-57 (intro?: string); only shortcutsPane.tsx:31 sets intro. generalPane.tsx, capturePane.tsx and aboutPane.tsx define none.",
+    "B: The intro element is seen in the Shortcuts pane: settings-shortcuts/tree.txt:22 Label as=\"p\" tone=\"muted\" className=\"text-[12px]\". There is no searching recording with the Shortcuts pane active. In settings-search/tree.txt the active section is General, which has no intro (no Label as=\"p\" node), so the 'hidden while searching' result is not tested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-021",
+   "check": "confirmed_by_one",
+   "check_notes": "B found the intro element only in the Shortcuts pane while not searching. B did not record a searching state with the Shortcuts pane active, so the hidden-while-searching behaviour is confirmed only by A's source reading."
+  },
+  {
+   "title": "Shortcuts section intro text",
+   "trigger": "none (visible when Shortcuts is selected and not searching)",
+   "context": "Top of the Shortcuts section, before the Global group",
+   "result": "A muted paragraph reads: Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel. It scrolls out of view with the list.",
+   "exact": [
+    {
+     "what": "Text",
+     "value": "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel."
+    },
+    {
+     "what": "Style (recording)",
+     "value": "text-[12px], tone muted, as p"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/shortcutsPane.tsx:31-32",
+    "state:settings-shortcuts (tree line 22, shot)",
+    "state:settings-shortcuts-scrolled (tree line 22)",
+    "A: shortcutsPane.tsx:31-32 (intro text: 'Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.'), SettingsWindow.tsx:318-324 (rendered inside the scrolling tabpanel at :301-307, so it scrolls with the list).",
+    "B: settings-shortcuts/tree.txt:22 Label as=\"p\" tone=\"muted\" className=\"text-[12px]\" @172,58; settings-shortcuts/shot.png shows the text 'Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.' above the GLOBAL group. settings-shortcuts-scrolled/tree.txt:22 @172,-618 (above the viewport) and settings-shortcuts-scrolled/shot.png show it scrolled out of view with the list."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-022",
+   "check": "confirmed_by_both"
+  },
+  {
+   "title": "Escape clears the search first",
+   "trigger": "Escape key while the query is non-empty",
+   "context": "Window-level keydown, bubble phase; not while a shortcut is being recorded",
+   "result": "The search is cleared (same as the x button) and the window stays open.",
+   "exact": [
+    {
+     "what": "Key",
+     "value": "Escape"
+    },
+    {
+     "what": "Condition",
+     "value": "query is truthy (non-empty string, not trimmed)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:119-125",
+    "A: SettingsWindow.tsx:121-127 (Escape: if (query) clearSearch()), :133 (window keydown listener with no capture option, so bubble phase). Recording suppression: useHotkeyEditor.ts:76-96 (capture, stopPropagation).",
+    "B: No recording includes an Escape key press while a query is set. meta.json command lists contain no key input."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "A whitespace-only query is also cleared, because the check is on the untrimmed string.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-023",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Escape closes the Settings window when no search is active",
+   "trigger": "Escape key with an empty search field",
+   "context": "Window focused; not recording a shortcut",
+   "result": "The Settings window closes.",
+   "exact": [
+    {
+     "what": "Key",
+     "value": "Escape"
+    },
+    {
+     "what": "Action",
+     "value": "getCurrentWindow().close()"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:123-126",
+    "A: SettingsWindow.tsx:123-125 (else branch: getCurrentWindow().close()), :124 (test is truthiness of query, not trim).",
+    "B: No recording includes an Escape key press or a window close. meta.json command lists (e.g. settings-general/meta.json:9-29) contain no key input or close command."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The test is on the raw query, not the trimmed one. A whitespace-only query (for example '  ') is truthy, so Escape clears it instead of closing the window."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-024",
+   "check": "corrected",
+   "check_notes": "B did not record an Escape press or a window close. The raw-query truthiness test is from A's source reading."
+  },
+  {
+   "title": "Command-F or Ctrl-F focuses and selects the search field",
+   "trigger": "Cmd+F (macOS) or Ctrl+F, pressed anywhere in the window",
+   "context": "Any pane, any state",
+   "result": "The browser default is prevented and the search field is focused with its text selected.",
+   "exact": [
+    {
+     "what": "Keys",
+     "value": "metaKey or ctrlKey + f"
+    },
+    {
+     "what": "Action",
+     "value": "searchRef.current.select()"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:128-131",
+    "A: SettingsWindow.tsx:128-131 (metaKey || ctrlKey, e.key === 'f', preventDefault, searchRef.current?.select()), :133 (bubble-phase window listener).",
+    "B: No recording includes Cmd+F or Ctrl+F. No key input appears in any meta.json, and no tree shows focus on the search input (settings-search/tree.txt:13 shows value only)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The match is on the lowercase e.key === 'f', so Shift+Cmd+F or Shift+Ctrl+F (e.key 'F') does not trigger it.",
+    "The handler is bubble-phase on window, so it is suppressed while a shortcut is recording (see F10-026)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-025",
+   "check": "corrected",
+   "check_notes": "B did not record Cmd+F or Ctrl+F. The case-sensitivity and bubble-phase edge cases come from A's source reading."
+  },
+  {
+   "title": "Escape and Command-F are swallowed while recording a shortcut",
+   "trigger": "Escape or ⌘F pressed while a shortcut row is recording",
+   "context": "A shortcut row shows Type shortcut…",
+   "result": "The recording handler listens in the capture phase and stops propagation, so Escape does not close the window or clear search and Cmd+F does not focus search. Escape instead cancels the recording (see its own feature).",
+   "exact": [
+    {
+     "what": "Listener phase",
+     "value": "capture (capture: true)"
+    },
+    {
+     "what": "Calls",
+     "value": "preventDefault and stopPropagation on every key while recording"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:73-96",
+    "main/src/windows/SettingsWindow.tsx:119-120",
+    "A: useHotkeyEditor.ts:76-96 (listener only while recording, line 77; { capture: true } at :93; preventDefault and stopPropagation on every key at :79-80; Escape cancels at :81-83), SettingsWindow.tsx:119-120 (comment).",
+    "B: settings-shortcut-recording/shot.png shows the New task row with the text 'Type shortcut…' in a blue-outlined box. settings-shortcut-recording/tree.txt:49-50 show HotkeyControl @1051,238 101x21 with Keycap recording=false and no HotkeyHint child (the other rows have one). The Keycap prop reads recording=false, which does not match the visible Type shortcut… state. Whether Escape or Cmd+F is swallowed is not recorded (no key input in meta.json)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-026",
+   "check": "confirmed_by_one",
+   "check_notes": "A's source reading gives the capture-phase suppression. B observed a discrepancy: settings-shortcut-recording/tree.txt:49-50 shows HotkeyControl with Keycap recording=false, while the screenshot shows the 'Type shortcut…' state, and there is no HotkeyHint child. Source decides, so the capture-phase behaviour is kept, but the recording-flag discrepancy in the captured tree is noted for follow-up. Whether Escape or Cmd+F is swallowed is not recorded."
+  },
+  {
+   "title": "Discard-all (undo) button in the title bar appears after any change",
+   "trigger": "left-click the undo icon button in the title bar (visible only when something changed)",
+   "context": "Shown when a preference or a shortcut differs from its value at window open (dirtySession); placed in the title bar before the window controls",
+   "result": "Every preference and every shortcut is restored to what it was when the window opened, in this session. The button disappears again when nothing differs.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "undo"
+    },
+    {
+     "what": "Size",
+     "value": "xl"
+    },
+    {
+     "what": "Radius",
+     "value": "control"
+    },
+    {
+     "what": "iconSize",
+     "value": "19"
+    },
+    {
+     "what": "iconWeight",
+     "value": "300"
+    },
+    {
+     "what": "Variant",
+     "value": "ghostStrong"
+    },
+    {
+     "what": "title tooltip",
+     "value": "Discard every change made since this window opened"
+    },
+    {
+     "what": "aria-label",
+     "value": "Discard changes"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:198",
+    "main/src/windows/SettingsWindow.tsx:209-227",
+    "main/src/windows/settings/SettingsTitleBar.tsx:16-17",
+    "A: SettingsWindow.tsx:198 (dirtySession = settings.changed || hotkeys.changed), :209-227 (IconButton icon=\"undo\" :213, size=\"xl\" :214, radius=\"control\" :215, iconSize={19} :216, iconWeight={300} :217, variant=\"ghostStrong\" :218, title :219, aria-label \"Discard changes\" :220; onClick discardAll for both :221-224), SettingsTitleBar.tsx:14-17 (trailing: 'before the Windows buttons').",
+    "B: In all eight trees the title bar holds only the window controls and the h1 Label (e.g. settings-general/tree.txt:3-10) with TitleBar trailing=false. No undo button appears in any recording. The icon, size, radius, iconSize, iconWeight, variant, tooltip and aria-label are not visible in any recording, and no recording shows a changed state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "No confirmation step. Discard is relative to the open-time baseline, not to shipped defaults (see settings.ts:76-79 and useHotkeyEditor.ts:38-40). The section-header undo-style control recorded by B is a separate common-ui element with different title wording.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-027",
+   "check": "confirmed_by_one",
+   "check_notes": "B confirmed the title bar holds only the window controls and the h1 label, so the trailing undo button is absent in every recording. No recording shows a changed state, so the button's appearance and behaviour are from A's source reading."
+  },
+  {
+   "title": "Settings title bar",
+   "trigger": "none (visible)",
+   "context": "Always",
+   "result": "The bar reads Settings as an h1 and drags the window. The minimize and full-screen controls are shown but disabled.",
+   "exact": [
+    {
+     "what": "Title",
+     "value": "Settings"
+    },
+    {
+     "what": "Title element",
+     "value": "h1"
+    },
+    {
+     "what": "Disabled controls",
+     "value": "minimize, fullscreen"
+    },
+    {
+     "what": "TitleBar prop (recording)",
+     "value": "draggable=true"
+    },
+    {
+     "what": "Heading attribute (recording)",
+     "value": "data-tauri-drag-region=true"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/SettingsTitleBar.tsx:10-12",
+    "main/src/windows/settings/SettingsTitleBar.tsx:19-28",
+    "state:settings-general (tree lines 3, 10)",
+    "A: SettingsTitleBar.tsx:10-12 (minimizable and maximizable off, OFF = ['minimize','fullscreen']), :22-27 (draggable, title=\"Settings\" :23, titleAs=\"h1\" :24, controls={<WindowControls disabled={OFF} />} :26). The data-tauri-drag-region attribute is set in common-ui TitleBar, which is not in the read files.",
+    "B: settings-general/tree.txt:3 TitleBar draggable=true title=\"Settings\" titleAs=\"h1\"; tree.txt:10 Label as=\"h1\" data-tauri-drag-region=true; tree.txt:8-9 Light id=\"minimize\" inert=true and Light id=\"fullscreen\" inert=true. Note: tree.txt:4 WindowControls disabled=[2] lists only one index, while both minimize and fullscreen lights are inert."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Traffic lights on macOS and buttons on Windows are drawn by the shared TitleBar and WindowControls (not read here). B did not record a drag; the drag is inferred from the props only.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-028",
+   "check": "confirmed_by_both",
+   "check_notes": "B noted a discrepancy: settings-general/tree.txt:4 shows WindowControls disabled=[2] with a single index, while both minimize and fullscreen lights are inert (tree.txt:8-9). A's source passes OFF = ['minimize','fullscreen']. Source decides, so the two-control disabled list stands, and the one-index tree print is noted for follow-up."
+  },
+  {
+   "title": "Traffic lights: close enabled, minimize and fullscreen inert",
+   "trigger": "Click the red close light (inferred from onClick=ƒ)",
+   "context": "Settings window open",
+   "result": "Three macOS-style lights sit at the top left. The close light is active and clickable. Minimize and fullscreen are inert and drawn grey. In the dark and search states the close light also shows a × glyph; in the other states it is a plain red dot.",
+   "exact": [
+    {
+     "what": "close light",
+     "value": "id=\"close\" focused=true inert=false @18,15 14x14"
+    },
+    {
+     "what": "minimize light",
+     "value": "id=\"minimize\" inert=true @39,15 14x14"
+    },
+    {
+     "what": "fullscreen light",
+     "value": "id=\"fullscreen\" inert=true @60,15 14x14"
+    }
+   ],
+   "sources": [
+    "state:settings-general (tree lines 4-9)",
+    "state:settings-dark (shot)",
+    "state:settings-search (shot)",
+    "A: SettingsTitleBar.tsx:26 passes disabled={OFF} (minimize, fullscreen) to WindowControls, but WindowControls is in ../../components, outside the named paths. The close handler, the ids, the × glyph by state and the positions are not in the read files.",
+    "B: settings-general/tree.txt:7 Light id=\"close\" focused=true inert=false onClick=ƒ @18,15 14x14; tree.txt:8 Light id=\"minimize\" inert=true @39,15 14x14; tree.txt:9 Light id=\"fullscreen\" inert=true @60,15 14x14. onClick is present only on the close light. The × glyph appears on the close light in settings-dark/shot.png and settings-search/shot.png; the general, shortcuts, about and capture shots show a plain red dot. The click trigger is not recorded."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "The cause of the × glyph is not visible in the tree; it may be a hover state (the cursor position is not recorded). Positions are from the recording and may differ from the source-driven layout.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-029",
+   "check": "confirmed_by_one",
+   "check_notes": "A could not check WindowControls, which is outside the named paths. B confirmed the close light is focused, has onClick, and is the only light with onClick, with minimize and fullscreen inert. The × glyph appears on the close light in dark and search shots only. The click trigger is not recorded."
+  },
+  {
+   "title": "Settings persist as soon as they change",
+   "trigger": "any control change (toggle, segmented choice)",
+   "context": "Every preference",
+   "result": "There is no save step. The new value is written at once and is remembered in the next launch. The UI updates first (optimistically).",
+   "exact": [
+    {
+     "what": "Write",
+     "value": "api.setSetting(key, value) unless the key has a custom write"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/settings.ts:100-114",
+    "A: settings.ts:100-114 (optimistic setValues, then def.write ?? api.setSetting, then emit when def.notify), :24-38 (theme and reduced_motion have write; show_completed has notify).",
+    "B: No recording changes a setting. The meta.json command lists in all folders contain only get_setting, set_window_theme, is_low_power_mode, list_hotkeys, plugin:app|version, data_paths and present_window; no set_setting appears, so the write and persistence are not observed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "theme is written by setTheme(value) and reduced_motion by setReducedMotion(value === '1') (settings.ts:24-36, :107), not by api.setSetting.",
+    "show_completed also emits 'settings-changed' after its write (settings.ts:38, :109). screenshot_mode uses plain api.setSetting with no emit."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-030",
+   "check": "corrected",
+   "check_notes": "B recorded no setting change, so the write and persistence paths are not observed. The correction comes from A's source reading."
+  },
+  {
+   "title": "Write failures are silent",
+   "trigger": "a setting write fails",
+   "context": "Any setting",
+   "result": "No error is shown. The control keeps the new value until the window is opened again, which re-reads the stored value.",
+   "exact": [
+    {
+     "what": "Catch comment",
+     "value": "The UI stays optimistic; the next open re-reads the stored truth."
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/settings.ts:105-112",
+    "A: settings.ts:105-112 (try covers the custom write, api.setSetting and the emit; catch comment at :111 is exactly 'The UI stays optimistic; the next open re-reads the stored truth.').",
+    "B: No recording includes a failed setting write, and no error UI appears in any tree or shot."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The same silent catch covers a failed custom write (theme or reduced_motion) and a failed settings-changed emit (settings.ts:107-109)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-031",
+   "check": "corrected",
+   "check_notes": "B recorded no failed write and no error UI. The silent-catch edge case comes from A's source reading."
+  },
+  {
+   "title": "Unrecognised or unreadable stored values fall back to the default on open",
+   "trigger": "none (on open)",
+   "context": "Stored value is missing, unreadable, or not in the valid list for that setting",
+   "result": "The setting shows its fallback value.",
+   "exact": [
+    {
+     "what": "theme fallback",
+     "value": "system"
+    },
+    {
+     "what": "reduced_motion fallback",
+     "value": "0"
+    },
+    {
+     "what": "screenshot_mode fallback",
+     "value": "fullscreen"
+    },
+    {
+     "what": "show_completed fallback",
+     "value": "1"
+    },
+    {
+     "what": "Valid theme values",
+     "value": "system, light, dark"
+    },
+    {
+     "what": "Valid reduced_motion values",
+     "value": "1, 0"
+    },
+    {
+     "what": "Valid screenshot_mode values",
+     "value": "fullscreen, region"
+    },
+    {
+     "what": "Valid show_completed values",
+     "value": "1, 0"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/settings.ts:24-38",
+    "main/src/windows/settings/settings.ts:51-55",
+    "main/src/windows/settings/settings.ts:84-90",
+    "A: settings.ts:24-38 (fallbacks: theme 'system' :25, reduced_motion '0' :31, screenshot_mode 'fullscreen' :37, show_completed '1' :38; valid lists :26, :32, :37, :38), :51-55 (coerce: null or not in valid returns fallback), :84-90 (getSetting .catch(() => null) so unreadable becomes null, then coerce to fallback).",
+    "B: Stored-value fallback cannot be seen with fixture 'standard' (meta.json fixture field). Displayed values match the claimed fallbacks: theme Segmented value=\"system\" (settings-general/tree.txt:29); reduced_motion Toggle checked=false (tree.txt:36); show_completed Toggle checked=true (tree.txt:44); screenshot_mode Segmented value=\"fullscreen\" (settings-capture/tree.txt:28). That is consistent with the fallbacks but does not prove them, since the fixture may store these values."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Critique: missing or invalid values fall back via coerce, and getSetting errors read as null.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-032",
+   "check": "confirmed_by_one",
+   "check_notes": "B's displayed values (theme 'system', reduced_motion off, show_completed on, screenshot_mode 'fullscreen') are consistent with A's fallbacks. The fixture may store these values, so B does not prove the fallback path."
+  },
+  {
+   "title": "Session baseline: changes are measured from when the window opened",
+   "trigger": "none (state)",
+   "context": "Any setting changed during this window session",
+   "result": "Each setting that differs from its open-time value is flagged as changed. The baseline is taken once when the settings load.",
+   "exact": [
+    {
+     "what": "Baseline set",
+     "value": "on first load (setOpened(loadedValues))"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/settings.ts:76-79",
+    "main/src/windows/settings/settings.ts:91-93",
+    "main/src/windows/settings/settings.ts:120-123",
+    "main/src/windows/settings/settings.ts:141-142",
+    "A: settings.ts:79 (opened state), :91-93 (setOpened(loadedValues) on first load, inside the single mount effect at :81-98), :120-123 (changedSince), :141-142 (changed, discard).",
+    "B: No recording changes a setting during a window session, so no 'changed' marker or open-time baseline is shown in any tree or shot."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-033",
+   "check": "confirmed_by_one",
+   "check_notes": "B recorded no setting change during a session, so no changed marker or open-time baseline is shown in the trees."
+  },
+  {
+   "title": "Group header dot marks a group with changes and discards them when used",
+   "trigger": "click the changed dot on a group heading (shown only when that group has a changed setting or shortcut)",
+   "context": "Group has at least one row changed since the window opened",
+   "result": "The dot is shown on that group. Clicking it restores only that group's changed settings to their open-time values.",
+   "exact": [
+    {
+     "what": "Dot visibility",
+     "value": "group.changed"
+    },
+    {
+     "what": "Discard action",
+     "value": "onDiscard, passed only when changed"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:37-42",
+    "main/src/windows/settings/types.ts:47-49",
+    "main/src/windows/settings/generalPane.tsx:27-28",
+    "main/src/windows/settings/generalPane.tsx:79-80",
+    "main/src/windows/settings/capturePane.tsx:32-33",
+    "A: SettingsWindow.tsx:37-42 (onDiscard={group.changed ? group.onDiscard : undefined}, so the discard action is passed only when changed), types.ts:47-49, generalPane.tsx:27-28 (appearance changed = theme or reduced_motion; onDiscard discards those two), :79-80 (tasks: show_completed), capturePane.tsx:32-33 (screenshot_mode), shortcutsPane.tsx:42-43 (changed = any binding in scope; discard only those ids), useHotkeyEditor.ts:136-141 (restore filters to changed bindings). The dot is drawn by common-ui SettingsGroup, not read.",
+    "B: No group heading in any settings-*/shot.png shows the changed dot, and no tree prints a group.changed value. No recording has a changed setting, so the dot visibility and the discard action are untested."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "The dot itself is rendered by SettingsGroup in common-ui (not read here). Its exact look and click mechanics are not shown in these files; the source is only the comment at types.ts:47-48.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-034",
+   "check": "confirmed_by_one",
+   "check_notes": "B's recordings have no changed setting, so the dot and discard action are untested by B. A's source reading gives the per-group onDiscard rules. The dot itself is drawn by common-ui SettingsGroup, which A did not read."
+  },
+  {
+   "title": "Section headers are uppercase with a rule",
+   "trigger": "none (observed)",
+   "context": "Every settings group",
+   "result": "Each group starts with a header label shown in uppercase, semibold, muted, with letter spacing and a thin rule to its right. The header also carries an undo-style clear control. In every recording active=false, so that control is not drawn.",
+   "exact": [
+    {
+     "what": "Header label style",
+     "value": "text-[10.5px] tracking-[0.12em] uppercase, weight semibold, tone muted"
+    },
+    {
+     "what": "clearIcon",
+     "value": "undo"
+    },
+    {
+     "what": "clearTitle",
+     "value": "Discard changes made since this window opened"
+    }
+   ],
+   "sources": [
+    "state:settings-general (tree lines 23-24)",
+    "state:settings-about (tree lines 23-24)",
+    "main/src/windows/SettingsWindow.tsx:37-42",
+    "A: Grep found the discard title 'Discard changes made since this window opened' as the default discardTitle in common-ui/src/components/settings/SettingsGroup.tsx:26, and the label style 'text-[10.5px] tracking-[0.12em] uppercase' in common-ui/src/components/typography/SectionHeader.tsx:41. Neither is shown to be used by SettingsGroup. The clearIcon 'undo', the semibold weight and the muted tone were not confirmed, and the 'active=false' recording is not checkable.",
+    "B: settings-general/tree.txt:23 SectionHeader label=\"Appearance\" active=false clearIcon=\"undo\" clearTitle=\"Discard changes made since this window opened\"; tree.txt:24 Label tone=\"muted\" weight=\"semibold\" className=\"text-[10.5px] tracking-[0.12em] uppercase\". The same header props appear in every folder (active=false on each SectionHeader, e.g. settings-about/tree.txt:23,36 and settings-shortcuts/tree.txt:24,44,253). Shots show the uppercase label and a thin rule to its right."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Rendered by SettingsGroup in common-ui, outside the allowed files, so it cannot be verified from source. The control is expected to appear when a section has changes (active=true), which is inferred from the prop name and the clearTitle wording; no active=true recording exists in this area. It may be related to the group header dot feature but is not confirmed as the same control.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-035",
+   "check": "confirmed_by_one",
+   "check_notes": "A could not confirm the clearIcon 'undo', the semibold weight or the muted tone, and found only the default discardTitle and label style in common-ui. B confirmed all of these in the tree: SectionHeader clearIcon=\"undo\" with clearTitle \"Discard changes made since this window opened\", and Label tone=\"muted\" weight=\"semibold\" with the 10.5px uppercase tracking class. The active=false recording is noted by B as the same in every folder."
+  },
+  {
+   "title": "Setting row layouts: inline and stacked",
+   "trigger": "none (observed)",
+   "context": "Inline is the default layout (SettingRow.tsx:28). Rows without a layout key are inline: Reduced motion, Show completed tasks, Taskscape. Rows with layout 'stacked' are Theme, Capture mode, Data folder, Saved to, Restore defaults. In stacked rows the title/description block comes first and the control after it (SettingRow.tsx:57-61), so the description is above the control, not below it. Footnotes render under the control in both layouts (SettingRow.tsx:63). The pixel heights (53, 54, 79-88px) are recording-only values and are not checkable from code.",
+   "result": "Inline rows put the title and description on the left and the control on the right. Their height is about 53 to 54px. Stacked rows put the control below the title and description across the full width. Stacked row heights in the recordings are 79 to 88px.",
+   "exact": [
+    {
+     "what": "Row heights (recording)",
+     "value": "inline 53px (Reduced motion, Show completed tasks), 54px (Taskscape); stacked 79-88px (Theme 85, Capture mode 88, Saved to 79, Data folder 79, Restore defaults 86)"
+    },
+    {
+     "what": "Row title and description styles (code)",
+     "value": "title Label text-[13px] tone primary; description text-[11.5px] tone muted"
+    }
+   ],
+   "sources": [
+    "state:settings-general (tree lines 26-33, 41)",
+    "state:settings-capture (tree lines 26, 32)",
+    "state:settings-about (tree lines 30, 39)",
+    "Checker A: SettingRow.tsx:28 (layout default 'inline'), :34 (Label tone primary text-[13px]), :38 (Label tone muted text-[11.5px]), :52-62 (inline vs stacked markup), :63 (footnote). Row layouts: generalPane.tsx:35 (theme stacked), :51-56 (reduced_motion no layout = inline), :88-93 (show_completed inline); capturePane.tsx:39 (capture mode stacked), :59 (Saved to stacked); aboutPane.tsx:18-19 (Taskscape, no layout = inline), :33 (Data folder stacked), :48 (Restore defaults stacked).",
+    "Checker B: Inline heights: state:settings-general tree.txt:33 (Reduced motion 989x53), tree.txt:41 (Show completed tasks 989x53), state:settings-about tree.txt:26 (Taskscape 989x54). Stacked heights: general tree.txt:26 (Theme 989x85), capture tree.txt:26 (Capture mode 989x88), capture tree.txt:32 (Saved to 989x79), about tree.txt:30 (Data folder 989x79), about tree.txt:39 (Restore defaults 989x86). Row title Label className text-[13px] tone primary at general tree.txt:27; description text-[11.5px] tone muted at general tree.txt:28. Inline/stacked placement confirmed in state:settings-general shot.png."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "A footnote, when present, is rendered below the control in both layouts (SettingRow.tsx:63)."
+   ],
+   "notes": "The heights are measured from the recordings only and may come from a different build or scale (see the window-size note), so they are not confirmed against source.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-036",
+   "check": "corrected"
+  },
+  {
+   "title": "Application group: Taskscape name, description and version",
+   "trigger": "none (visible in About > Application)",
+   "context": "The version text style is the full class string 'text-content-2l dark:text-content-2d font-mono text-[11.5px]' (aboutPane.tsx:21). The version is held in SettingsWindow state as null until getVersion resolves, and the placeholder '—' is shown in both the loading and failure cases (aboutPane.tsx:22, SettingsWindow.tsx:89-95).",
+   "result": "Row title Taskscape, description A macOS task manager with a menu-bar capture bar., and the version number in monospace. The version text is selectable. Shows — until the version loads or if it fails.",
+   "exact": [
+    {
+     "what": "Version text style",
+     "value": "text-content-2l dark:text-content-2d font-mono text-[11.5px]"
+    },
+    {
+     "what": "Version value (recording)",
+     "value": "0.1.0"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/aboutPane.tsx:13-25",
+    "main/src/windows/SettingsWindow.tsx:14",
+    "main/src/windows/SettingsWindow.tsx:87-95",
+    "state:settings-about (tree lines 26-29)",
+    "state:settings-about (shot)",
+    "state:settings-about (meta commands plugin:app|version)",
+    "Checker A: aboutPane.tsx:17 (title 'Taskscape'), :18 (description), :19 (keywords 'version build number release about'), :21 (className), :22 (placeholder '—'), :23 SelectableText; SettingsWindow.tsx:14, :89-95 (getVersion; catch leaves null); aboutPane.tsx:13 group label 'Application', :8 pane label 'About'.",
+    "Checker B: state:settings-about tree.txt:26 (title Taskscape, description 'A macOS task manager with a menu-bar capture bar.'), shot.png shows the same title, description and version '0.1.0' in monospace at right. tree.txt:29 SelectableText className includes font-mono text-[11.5px]. Not verifiable from references: the Shows — placeholder (no reference captures the loading state) and the Keywords (search only) value (no About result appears in state:settings-search)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The version comes from getVersion() in @tauri-apps/api/app. B's claim that it comes from an app-version command is wrong per the critique; the plugin:app|version meta call is consistent with getVersion. The value 0.1.0 is the recording's version.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-037",
+   "check": "corrected"
+  },
+  {
+   "title": "Data folder row opens the data folder",
+   "trigger": "left-click the path under Data folder (path button shows /Users/you/.taskscape in the recording)",
+   "context": "The open action calls api.openPath on the path (PathButton.tsx:24). The code comment describes the target as Finder/Explorer (PathButton.tsx:10), not only Finder. The path button is rendered only once the data paths have loaded (PathButton.tsx:14-19 shows a dash otherwise).",
+   "result": "Opens the data folder in Finder (macOS). Shows the absolute path in monospace. The row shows the title Data folder, its description, and a path button with a folder_open icon.",
+   "exact": [
+    {
+     "what": "Data folder description",
+     "value": "Tasks, attachments, screenshots and preferences. Click to open it."
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/aboutPane.tsx:26-35",
+    "state:settings-about (tree lines 30-34)",
+    "state:settings-about (meta data_paths)",
+    "Checker A: aboutPane.tsx:28 (title 'Data folder'), :29-30 (description), :31-32 (keywords), :33 (layout stacked), :34 (PathButton path=ctx.paths?.data_dir); PathButton.tsx:10-12 (comment: 'Finder/Explorer' and nearest existing ancestor fallback), :24 (open), :29 (folder_open size 14), :30 (monospace path).",
+    "Checker B: state:settings-about tree.txt:30 (title Data folder, layout=stacked), tree.txt:33 (PathButton path=/Users/you/.taskscape), tree.txt:34 (folder_open size 14); full description 'Tasks, attachments, screenshots and preferences. Click to open it.' visible in state:settings-about shot.png (tree.txt:30 truncates it at 'Click to op…'). Not verifiable: the Finder open result, the Keywords (search only) value, and whether the path renders in monospace beyond the shot appearance."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Rust falls back to the nearest existing ancestor folder when the data folder does not exist yet (PathButton.tsx:10-12)."
+   ],
+   "notes": "The opening action is confirmed by source (PathButton, A). B's recorded path is example data from its recording.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-038",
+   "check": "corrected"
+  },
+  {
+   "title": "Path button opens its folder in the file manager",
+   "trigger": "left-click a path button (Saved to or Data folder)",
+   "context": "The button classes are longer than the spec lists. Full class list on PathButton.tsx:27: gap-space-3, rounded-field, px-space-4, hover:bg-wash-1l dark:hover:bg-wash-1d, text-content-2l dark:text-content-2d, hover:text-content-1l dark:hover:text-content-1d, flex, h-6, max-w-full, items-center, self-start. The hover text change is from content-2 to content-1. Failures are ignored via .catch(() => {}) (PathButton.tsx:24). The button only renders when a path is known (PathButton.tsx:14-19).",
+   "result": "api.openPath(path) is called on the absolute path. Hover shows a wash background and darker text. Failures are ignored.",
+   "exact": [
+    {
+     "what": "Button classes",
+     "value": "gap-space-3 rounded-field px-space-4 hover:bg-wash-1l dark:hover:bg-wash-1d text-content-2l dark:text-content-2d hover:text-content-1l dark:hover:text-content-1d flex h-6 max-w-full items-center self-start"
+    },
+    {
+     "what": "Button box height (recording)",
+     "value": "21px (state:settings-about tree.txt:33 @181,186 173x21; state:settings-capture tree.txt:35 @181,220 256x21)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/PathButton.tsx:21-32",
+    "Checker A: PathButton.tsx:24 (onClick, api.openPath(path).catch(() => {})), :25 (title `Open ${path}`), :26 (aria-label `Open ${path} in the file manager`), :27 (button classes and hover classes), :29 (folder_open size 14), :30 (span font-mono text-[11.5px] truncate).",
+    "Checker B: state:settings-about tree.txt:33 (PathButton @181,186 173x21) and state:settings-capture tree.txt:35 (PathButton @181,220 256x21); icon folder_open size 14 at tree.txt:34 and capture tree.txt:36. Title tooltip, aria-label, path font and hover wash are not in the tree (PathButton only exposes the path prop) and no reference shows hover, so those are cannot_check."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The Rust side falls back to the nearest existing ancestor folder when the target does not exist yet (comment at PathButton.tsx:10-12).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-039",
+   "check": "corrected"
+  },
+  {
+   "title": "Path shows a dash while its location is loading",
+   "trigger": "none (state)",
+   "context": "Before api.dataPaths() resolves, or if it fails",
+   "result": "A muted dash — is shown in place of the path and is not clickable.",
+   "exact": [
+    {
+     "what": "Placeholder",
+     "value": "—"
+    },
+    {
+     "what": "Style",
+     "value": "muted, text-[11.5px]"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/PathButton.tsx:13-19",
+    "main/src/windows/SettingsWindow.tsx:96-101",
+    "Checker A: PathButton.tsx:14-19 (returns Label tone=\"muted\" className=\"text-[11.5px]\" with '—', no button); SettingsWindow.tsx:96-101 (dataPaths then, catch(() => {}) leaves paths null); capturePane.tsx:61 (ctx.paths?.screenshots_dir ?? null).",
+    "Checker B: Every reference loads its paths: state:settings-about tree.txt:33 and state:settings-capture tree.txt:35 show PathButton with a path prop. No reference captures the pre-load or failed state, so the dash placeholder and its muted style are not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-040",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Shortcuts are grouped by scope with fixed labels and a hint",
+   "trigger": "none (visible in Shortcuts)",
+   "context": "The group label and hint are rendered as two separate elements (SectionHeader.tsx:38-48). No ' / ' separator appears in the code, so 'Global / work anywhere in macOS' is a visual description and not a literal string. The row height of 36px is a recording value and cannot be checked from code. Rows use the default inline layout (shortcutsPane.tsx:44, SettingRow.tsx:28), so the label is on the left and the control on the right.",
+   "result": "Groups appear in the order Global, Main window, Capture bar. Only Global has a hint, shown beside its label. Each row has a label on the left and a keycap on the right. Rows are 36px tall.",
+   "exact": [
+    {
+     "what": "Global label and hint",
+     "value": "label 'Global' and hint 'work anywhere in macOS' rendered as separate elements"
+    },
+    {
+     "what": "Group order (recording)",
+     "value": "Global, Main window, Capture bar"
+    },
+    {
+     "what": "Row height (recording)",
+     "value": "36px for most rows; 35px for Screenshot capture (state:settings-shortcuts tree.txt:35), Redo (tree.txt:243) and Clear capture draft (tree.txt:254)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/shortcutsPane.tsx:6-10",
+    "main/src/windows/settings/shortcutsPane.tsx:33-47",
+    "state:settings-shortcuts (tree lines 23-24, 43, 250-251)",
+    "state:settings-shortcuts (shot)",
+    "Checker A: shortcutsPane.tsx:6-10 (SCOPES order and labels, hint on Global only at :7), :33-47 (groups), :36 (empty scope omitted), :39 (id `scope-${scope.id}`), :34-35 ; shortcutsPane.tsx:44 and HotkeyControl/row layout via SettingRow.tsx:28 (inline default); SettingRow.tsx:34 (title text-[13px] tone primary); SectionHeader.tsx:38-48 (label and hint rendered as separate Label elements); SettingsGroup.tsx:32-34 (hint passed to SectionHeader).",
+    "Checker B: Group order and labels: state:settings-shortcuts tree.txt:23 (Global, hint 'work anywhere in macOS'), tree.txt:43 (Main window), tree.txt:250-251 (Capture bar); shot.png shows the same order. Only Global has a hint (tree.txt:23-24). Row label Label text-[13px] tone primary (tree.txt:48). Row heights: most rows are 989x36, but some are 989x35: tree.txt:35 (Screenshot capture), tree.txt:243 (Redo), tree.txt:254 (Clear capture draft). Group id pattern scope-<scope> is not in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-041",
+   "check": "corrected"
+  },
+  {
+   "title": "Shortcut keycap starts recording on click",
+   "trigger": "left-click the shortcut keycap on a row",
+   "context": "Clicking a keycap while another row is recording moves recording to the clicked row, because beginRecording only cancels when the id matches the current recording (useHotkeyEditor.ts:123). While a row is recording its revert button is hidden (HotkeyControl.tsx:17). The pill width of 101px is a recording value and cannot be checked from code.",
+   "result": "The keycap enters recording mode and shows Type shortcut…. Any error from a previous attempt is cleared. In B's recording, the New task keycap became a blue-outlined pill reading Type shortcut…, about 101px wide (a normal keycap is 49px); the other rows kept their keycaps.",
+   "exact": [
+    {
+     "what": "Recording label",
+     "value": "Type shortcut…"
+    },
+    {
+     "what": "Pill width (recording)",
+     "value": "101px, box @1051,238 101x21"
+    },
+    {
+     "what": "Keycap prop (recording)",
+     "value": "onClick=ƒ"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/HotkeyControl.tsx:28-33",
+    "main/src/windows/settings/useHotkeyEditor.ts:121-124",
+    "state:settings-shortcut-recording (tree lines 47-50, shot)",
+    "Checker A: HotkeyControl.tsx:28-31 (Keycap onClick calls editor.beginRecording(binding.id)), :33 ('Type shortcut…'); useHotkeyEditor.ts:121-124 (beginRecording clears error, toggles recording).",
+    "Checker B: state:settings-shortcut-recording shot.png shows the New task keycap as a blue-outlined pill reading 'Type shortcut…'. tree.txt:49-50 gives HotkeyControl and Keycap @1051,238 101x21 with onClick=ƒ; other rows keep 49x21 keycaps (tree.txt:53 Search @1104,274 49x21). Note: tree.txt:50 still reads recording=false on that Keycap, so the tree's recording flag does not match the rendered pill. Trigger (left-click) and clearing of previous errors are not shown in any reference."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Clicking the keycap of a different row while one is recording switches recording to that row (useHotkeyEditor.ts:123).",
+    "The revert button for the row is hidden while that row is recording (HotkeyControl.tsx:17)."
+   ],
+   "notes": "The pill measurements come from the recording only. B's tree shows the Keycap with recording=false while the pill is visible; the critique attributes this to the tree reading (the Keycap receives editor.recording), so the source is followed.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-042",
+   "check": "corrected"
+  },
+  {
+   "title": "Clicking the recording keycap again cancels recording",
+   "trigger": "left-click the same keycap while it is recording",
+   "context": "The same click also clears any error shown for a previous attempt, because setError(null) runs first (useHotkeyEditor.ts:122). Recording stops and no setHotkey call is made.",
+   "result": "Recording stops without a change.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "setRecording(cur === id ? null : id)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:121-124",
+    "Checker A: useHotkeyEditor.ts:121-124 (setError(null) then setRecording((cur) => (cur === id ? null : id))).",
+    "Checker B: No reference captures a second click on a recording keycap (state:settings-shortcut-recording tree.txt:50 and shot.png show only the recording state). The setRecording expression is source code and was not read."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Any error shown under a row is cleared by this click (useHotkeyEditor.ts:122)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-043",
+   "check": "corrected"
+  },
+  {
+   "title": "Recording: next key combination becomes the new shortcut",
+   "trigger": "press a key combination while a row is recording",
+   "context": "The intro is always shown at the top of the Shortcuts pane when not searching, not only while recording (SettingsWindow.tsx:318-324). Its exact text is 'Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.' (shortcutsPane.tsx:31-32). Every keydown during recording is prevented and stopped (useHotkeyEditor.ts:79-80). A keydown whose eventToAccel result is falsy is ignored and recording continues (useHotkeyEditor.ts:91).",
+   "result": "The combo is converted by eventToAccel and saved with api.setHotkey; recording stops and the list reloads. The row shows the new combo.",
+   "exact": [
+    {
+     "what": "Intro text",
+     "value": "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel."
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:59-71",
+    "main/src/windows/settings/useHotkeyEditor.ts:76-96",
+    "state:settings-shortcut-recording (shot)",
+    "state:settings-shortcuts (tree line 22)",
+    "Checker A: shortcutsPane.tsx:31-32 (intro text), :31 (intro property); SettingsWindow.tsx:318-324 (intro shown when not searching); useHotkeyEditor.ts:76-96 (capture listener), :79-80 (preventDefault and stopPropagation on every keydown), :90 (eventToAccel), :91 (assign only when accel is truthy), :62-65 (setError(null), setHotkey, load).",
+    "Checker B: Intro line visible in state:settings-shortcut-recording shot.png and state:settings-shortcuts shot.png. tree.txt:22 is Label as=\"p\" tone=\"muted\" className=\"text-[12px]\" but the tree does not carry its text. Shot text differs from the paraphrase in the feature. Save and reload behaviour and the 'B's recording' edge case are not visible in the references."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "A keydown for which eventToAccel returns nothing does not save anything and leaves recording active (useHotkeyEditor.ts:90-91).",
+    "The intro text is not shown while searching (SettingsWindow.tsx:318)."
+   ],
+   "notes": "eventToAccel is in @taskscape/common-ui/hotkeys (not read). Whether modifier-only presses are ignored depends on it; the code only assigns when it returns a truthy value (useHotkeyEditor.ts:90-91). B's dropped entry on the same behaviour was merged here for its source.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-044",
+   "check": "corrected"
+  },
+  {
+   "title": "Escape cancels recording without change",
+   "trigger": "Escape while a row is recording",
+   "context": "Recording state",
+   "result": "Recording stops; the shortcut is unchanged; the window stays open.",
+   "exact": [
+    {
+     "what": "Key",
+     "value": "Escape"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:81-84",
+    "Checker A: useHotkeyEditor.ts:81-84 (Escape sets recording null, no assign); :79-80 (stopPropagation keeps window handler from running); SettingsWindow.tsx:119-125 (window Escape handler is bubble phase and is what would close the window; swallowed while recording).",
+    "Checker B: The intro line mentions Esc (state:settings-shortcut-recording shot.png), but no reference captures the state after Escape, so the stopped-recording result is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-045",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Backspace or Delete removes a shortcut while recording",
+   "trigger": "press Backspace or Delete with no modifier held, while recording",
+   "context": "The clear happens only when no modifier is held (useHotkeyEditor.ts:85-88). With any of meta, ctrl, alt or shift held, Backspace or Delete go to eventToAccel instead (useHotkeyEditor.ts:90-91).",
+   "result": "The shortcut is cleared (saved as an empty accel). The row then shows the italic word None.",
+   "exact": [
+    {
+     "what": "Keys",
+     "value": "Backspace, Delete (no meta, ctrl, alt or shift)"
+    },
+    {
+     "what": "Empty label",
+     "value": "None (italic)"
+    },
+    {
+     "what": "Saved value",
+     "value": "empty string ''"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:85-89",
+    "main/src/windows/settings/HotkeyControl.tsx:34-38",
+    "Checker A: useHotkeyEditor.ts:85 (bare = no metaKey, ctrlKey, altKey, shiftKey), :86-88 (Backspace or Delete calls assign(recording, '')), :90 (other keys go to eventToAccel); HotkeyControl.tsx:34-38 (empty accel renders <span className=\"italic\">None</span>).",
+    "Checker B: No reference shows an empty binding or the italic None label (all Keycap labels in state:settings-shortcuts tree.txt:50-262 carry a HotkeyHint with glyphs). Recording Backspace/Delete is not captured."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Backspace or Delete with any modifier held is handled as a normal combo through eventToAccel, not as a clear (useHotkeyEditor.ts:85-91)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-046",
+   "check": "corrected"
+  },
+  {
+   "title": "Shortcut combo display in the keycap",
+   "trigger": "none (visible)",
+   "context": "Each keycap uses HotkeyHint with default size 'sm' (HotkeyControl.tsx:35 passes no size), so glyphs are 12px with weight 300 and text is text-[11px] (HotkeyHint.tsx:10, 15-16, 39). Modifier order is fixed as Cmd, Ctrl, Alt (Option), Shift, then the key (hotkeys.ts:289-322), not 'command, shift or option, key'. Ctrl is shown with ⌃ and keyboard_control_key, which the glyph map omits. Other key glyphs also exist: Delete ⌦, Escape ⎋, Tab ⇥, Plus +, and Space uses icon space_bar (hotkeys.ts:325-349).",
+   "result": "The combo is shown with HotkeyHint (rendering from common-ui) in inherited tone. Each keycap is a HotkeyHint of 12px icons (weight 300). Glyphs appear in the order command, then shift or option, then the key.",
+   "exact": [
+    {
+     "what": "Glyph order (recording)",
+     "value": "modifiers in fixed order Cmd, Ctrl, Alt (Option), Shift, then the key"
+    },
+    {
+     "what": "Glyph map (recording)",
+     "value": "keyboard_command_key ⌘; keyboard_control_key ⌃; keyboard_option_key ⌥; shift ⇧; Enter icon keyboard_return ↩; Backspace icon backspace ⌫; Delete ⌦; Tab keyboard_tab ⇥; Escape ⎋; ArrowUp arrow_upward ↑; ArrowDown arrow_downward ↓; ArrowLeft arrow_back ←; ArrowRight arrow_forward →; Space icon space_bar; Plus +"
+    },
+    {
+     "what": "Plain-text keys (recording)",
+     "value": "New task shows ⌘N with N as text: only one Icon keyboard_command_key (state:settings-shortcuts tree.txt:52) plus the text key in shot.png"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/HotkeyControl.tsx:32-36",
+    "state:settings-shortcuts (tree lines 31-35, 136-138, 166-169)",
+    "state:settings-shortcuts (shot)",
+    "Checker A: HotkeyControl.tsx:35 (HotkeyHint hotkey=parseAccel(binding.accel) tone=\"inherit\"), :34-38 (accel empty renders None); HotkeyHint.tsx:9-16 (SIZE sm text-[11px], ICON_PX sm 12, ICON_WEIGHT 300), :39-40 (default size 'sm', tone 'muted'), :19 (inherit = ''); hotkeys.ts:289-322 (MODIFIERS canonical order Cmd, Ctrl, Alt, Shift), :293-294 (⌘ keyboard_command_key), :301-302 (⌃ keyboard_control_key), :309-310 (⌥ keyboard_option_key), :317-318 (⇧ shift); hotkeys.ts:325-349 (KEY_GLYPHS and KEY_ICONS).",
+    "Checker B: state:settings-shortcuts tree.txt:49-52 (New task: HotkeyHint with one Icon keyboard_command_key size=12 weight=300; the N is not an icon). shot.png shows New task as ⌘N and Delete task as ⌘⌫. Tone inherit at tree.txt:51. Glyph map and glyph order were checked against tree.txt Icon lines (for example Previous list tab: keyboard_command_key, keyboard_option_key, arrow_back) and the shot."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The spec's claim that no recording shows Option is not supported by the code: the MODIFIERS table renders alt as ⌥ and keyboard_option_key whenever the accel includes it (hotkeys.ts:306-313). Whether eventToAccel can produce an alt accel was not checked."
+   ],
+   "notes": "The glyph set used for the combo is defined in common-ui and not read here. The glyph map and sizes come from the recording only.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-047",
+   "check": "corrected"
+  },
+  {
+   "title": "Shortcut conflict or save error shows in red under its row",
+   "trigger": "a setHotkey call is rejected (for example a conflict)",
+   "context": "The error is set only by setHotkey in assign (useHotkeyEditor.ts:64-67). Failures from reset and restore calls are swallowed with .catch(() => {}) (useHotkeyEditor.ts:103, 115) and never show a message. A successful assign or another reset/restore clears the error (useHotkeyEditor.ts:62, 102, 113).",
+   "result": "The backend's error text appears in a danger-tone 11px line under that row only. Recording ends. The error clears when a new recording starts or another change is made.",
+   "exact": [
+    {
+     "what": "Message",
+     "value": "String(e) from the backend"
+    },
+    {
+     "what": "Tone",
+     "value": "danger"
+    },
+    {
+     "what": "Style",
+     "value": "text-[11px]"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:59-71",
+    "main/src/windows/settings/useHotkeyEditor.ts:121-124",
+    "main/src/windows/settings/shortcutsPane.tsx:18-23",
+    "Checker A: useHotkeyEditor.ts:66-68 (catch sets error to {id, message: String(e)}), :62 (setError(null) at start of assign), :61 (recording ends); shortcutsPane.tsx:18-23 (danger Label, text-[11px], under the matching row only); useHotkeyEditor.ts:101-102, :113-114 (resetIds and applyAccels clear error); :103, :115 (per-item failures swallowed).",
+    "Checker B: No reference captures a rejected setHotkey call or the red error line (state:settings-shortcuts tree.txt and shot.png show no error row)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Reset and discard failures (resetHotkey and setHotkey from the restore path) are silently ignored and produce no red line (useHotkeyEditor.ts:103, 115).",
+    "A new recording, a setHotkey call, a reset or a restore all clear the error (useHotkeyEditor.ts:62, 102, 113, 122)."
+   ],
+   "notes": "The conflict wording itself comes from the Rust side (not read here).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-048",
+   "check": "corrected"
+  },
+  {
+   "title": "Per-row revert button for a changed shortcut",
+   "trigger": "hover over a shortcut row whose shortcut differs from its default (button fades in on group-hover)",
+   "context": "Not while that row is recording",
+   "result": "A small restart arrow button appears at the left of the keycap. Clicking it resets that single shortcut to its shipped default.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "restart_alt, size 15"
+    },
+    {
+     "what": "Variant",
+     "value": "ghostStrong"
+    },
+    {
+     "what": "title tooltip",
+     "value": "Reset to default"
+    },
+    {
+     "what": "aria-label",
+     "value": "Reset <binding label> to default"
+    },
+    {
+     "what": "Hidden state class",
+     "value": "opacity-0"
+    },
+    {
+     "what": "Hover state class",
+     "value": "group-hover:opacity-100"
+    },
+    {
+     "what": "Visible when",
+     "value": "binding.accel !== binding.default and not recording"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/HotkeyControl.tsx:17-27",
+    "main/src/windows/settings/useHotkeyEditor.ts:100-107",
+    "Checker A: HotkeyControl.tsx:17 (accel !== default and not recording), :18-26 (IconButton icon restart_alt, iconSize 15, variant ghostStrong, aria-label `Reset ${binding.label} to default`, title 'Reset to default', onClick editor.reset), :25 (className 'opacity-0 group-hover:opacity-100'); HotkeyControl.tsx:18 is placed before Keycap, so left of keycap; SettingRow.tsx:48 (root has 'group' class); useHotkeyEditor.ts:148 (reset calls resetIds([id])).",
+    "Checker B: No IconButton (restart_alt) appears inside any shortcut SettingRow in state:settings-shortcuts tree.txt:47-262 or state:settings-shortcut-recording tree.txt:47-262, so the revert button is not rendered in any reference. Hover, opacity classes and the reset action are not captured."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The row must carry the group class for group-hover to work; that class is set in common-ui, not here.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-049",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Group dot in Shortcuts discards only the rebinds made this session",
+   "trigger": "left-click the changed dot on a Shortcuts scope group",
+   "context": "The clickable control is the 'undo' IconButton in the group header (SectionHeader.tsx:51-59, icon from SettingsGroup.tsx:37), with title 'Discard changes made since this window opened' (SettingsGroup.tsx:26). It is rendered only when the group has changed (SettingsWindow.tsx:41). The accent dot beside the label (SectionHeader.tsx:35-37) is an indicator with no click handler, so 'left-click the changed dot' is not accurate. Failures are ignored (useHotkeyEditor.ts:115).",
+   "result": "Those shortcuts are set back to the accel they had when the window opened. Shortcuts not changed this session are left alone. Failures are ignored.",
+   "exact": [
+    {
+     "what": "Trigger control",
+     "value": "undo IconButton in the Shortcuts group header (icon undo, title 'Discard changes made since this window opened'), shown only when the group has changed"
+    },
+    {
+     "what": "Group control (recording)",
+     "value": "SectionHeader clearIcon=\"undo\" with clearTitle=\"Discard changes made since this window opened\" (state:settings-shortcuts tree.txt:24, 44, 251); active=false in all references, so the changed state is not recorded"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/shortcutsPane.tsx:42-43",
+    "main/src/windows/settings/useHotkeyEditor.ts:111-119",
+    "main/src/windows/settings/useHotkeyEditor.ts:136-141",
+    "Checker A: shortcutsPane.tsx:42-43 (changed and onDiscard), :43 (discard(bindings.map(...))); useHotkeyEditor.ts:136-141 (restore filters changedSince and sets opened values), :111-119 (applyAccels sequential, errors caught at :115); SettingsGroup.tsx:26 (discardTitle 'Discard changes made since this window opened'); SectionHeader.tsx:35-37 (accent dot, not interactive), :51-59 (IconButton icon undo, size sm, iconSize 13, variant plain, onClick onClear, title clearTitle); SettingsGroup.tsx:37 (clearIcon 'undo').",
+    "Checker B: Group header controls: state:settings-shortcuts tree.txt:24 (Global), tree.txt:44 (Main window), tree.txt:251 (Capture bar) all carry SectionHeader clearIcon=\"undo\" clearTitle=\"Discard changes made since this window opened\" with active=false. No changed dot appears in the tree or shot.png of any reference. The restore behaviour itself is not captured."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Relies on the common-ui group dot (see the group dot feature).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-050",
+   "check": "corrected"
+  },
+  {
+   "title": "Shortcut rows are searchable by their combo text",
+   "trigger": "typing in the search field",
+   "context": "Matching is done on a haystack made of the group label, the row title, the description and the keywords, all lowercased (panes.ts:25-32). Every whitespace-separated token of the query must appear as a substring (panes.ts:33). The raw accel string is therefore matched in lowercase.",
+   "result": "Each shortcut row's keywords are the words shortcut hotkey key binding followed by the raw accel string, so a search for a key-combo text finds the row, along with the row title (the binding label, from the backend).",
+   "exact": [
+    {
+     "what": "Keywords",
+     "value": "`shortcut hotkey key binding ${binding.accel}`"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/shortcutsPane.tsx:12-16",
+    "Checker A: shortcutsPane.tsx:15 (title binding.label), :16 (keywords `shortcut hotkey key binding ${binding.accel}`); panes.ts:18-37 (filterGroups: lowercased, whitespace tokens, every token must match), :25-31 (haystack = group label, row title, description, keywords).",
+    "Checker B: No reference types a combo string in search. state:settings-search tree.txt:13 shows only the search text 'motion' (general result). The keyword string is source code and was not read."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Searching a scope name such as 'global' matches every row in the Global group, because the group label is part of the haystack (panes.ts:26).",
+    "Multi-word searches require every word to match (panes.ts:33)."
+   ],
+   "notes": "The raw accel format is defined by the backend and common-ui (not read here).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-051",
+   "check": "corrected"
+  },
+  {
+   "title": "All shortcuts are searchable even when Shortcuts is not open",
+   "trigger": "typing in the search field while on another section",
+   "context": "Search runs across every section",
+   "result": "Results include shortcut rows from the Shortcuts section, because the shortcut list lives in the window shell, not in the pane.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "useHotkeyEditor is called in SettingsWindow"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:59",
+    "main/src/windows/settings/useHotkeyEditor.ts:28-30",
+    "main/src/windows/SettingsWindow.tsx:157-162",
+    "Checker A: SettingsWindow.tsx:59 (useHotkeyEditor() called in SettingsWindow), useHotkeyEditor.ts:28-30 (comment about window shell and search indexing), SettingsWindow.tsx:157-162 (results built from every PANES entry), shortcutsPane.tsx:33-47 (rows built from ctx.hotkeys.bindings).",
+    "Checker B: state:settings-search tree.txt:13 shows the query 'motion' and results only in General (tree.txt:25-32). No shortcut row is in the results, so the claim that shortcut rows appear while Shortcuts is closed is not tested."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-052",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Shortcut list loads when the window opens; a failed load shows no shortcuts",
+   "trigger": "none (on open)",
+   "context": "Bindings start as an empty list (useHotkeyEditor.ts:32). A failed fetch is ignored (useHotkeyEditor.ts:51). The list is empty only if the first fetch fails. If a later re-fetch fails, the list keeps the last successfully loaded bindings, it is not emptied (useHotkeyEditor.ts:47-51).",
+   "result": "The list is fetched when the window opens and re-fetched after setHotkey, resetHotkey and applyAccels calls, so the Shortcuts section reflects the stored bindings. If a fetch fails the error is ignored and the list stays empty.",
+   "exact": [
+    {
+     "what": "Failure handling",
+     "value": ".catch(() => {})"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:43-57",
+    "main/src/windows/settings/useHotkeyEditor.ts:61-65",
+    "main/src/windows/settings/useHotkeyEditor.ts:104",
+    "main/src/windows/settings/useHotkeyEditor.ts:116",
+    "Checker A: useHotkeyEditor.ts:32 (bindings initial []), :43-53 (load; success sets list; catch(() => {}) at :51), :55-57 (load on mount), :65 (reload after setHotkey), :105 (reload after resetIds), :117 (reload after applyAccels), :104 and :116 (per-item catch).",
+    "Checker B: The shortcut list is populated in every Shortcuts reference (state:settings-shortcuts shot.png). state:settings-shortcuts meta.json commands show list_hotkeys twice before present_window. No failed load is captured, so the empty-list failure path is not shown."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A failed later re-fetch leaves the previously loaded list in place (useHotkeyEditor.ts:47-51)."
+   ],
+   "notes": "Corrected per critique: A said the list is fetched once, but it is re-fetched after each change. Only the baseline is captured once (see the baseline feature).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-053",
+   "check": "corrected"
+  },
+  {
+   "title": "Shortcut baseline is captured on the first load",
+   "trigger": "none (state)",
+   "context": "The baseline is set by the first successful listHotkeys call, not by window open itself (useHotkeyEditor.ts:46-48). If the first load fails, the baseline is taken from the first successful reload.",
+   "result": "The accels present at first load are the baseline used for the undo button and group discard; later reloads do not replace it.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "setOpened(prev => prev ?? bindingsToMap(list))"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:38-41",
+    "main/src/windows/settings/useHotkeyEditor.ts:46-49",
+    "Checker A: useHotkeyEditor.ts:41 (opened state), :46-49 (setOpened(prev => prev ?? bindingsToMap(list)) on each successful load), :48 (exact expression), :38-40 (comment).",
+    "Checker B: The baseline logic is internal state. No reference shows a reload after a change, so the first-load baseline is not captured."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "If the first listHotkeys call fails, the baseline is captured from the next successful load (useHotkeyEditor.ts:46-48)."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-054",
+   "check": "corrected"
+  },
+  {
+   "title": "Values load when the settings window opens",
+   "trigger": "Open the Settings window (inferred from present_window and the state names)",
+   "context": "The window is presented once the preferences have loaded and fonts are ready (SettingsWindow.tsx:111-115). It does not wait for the hotkey list, data paths or version: those calls start on mount and their results fill in when they resolve (SettingsWindow.tsx:89-101, useHotkeyEditor.ts:55-57). Until they resolve the version shows a dash and paths show a dash (aboutPane.tsx:22, PathButton.tsx:14-19). getSetting runs once per preference key (4 keys, settings.ts:84-85). SettingsWindow.tsx does not call set_window_theme; the is_low_power_mode command is used through useLowPowerMode (SettingsWindow.tsx:75), whose implementation was not read.",
+   "result": "The window fetches its values before showing: getSetting, the hotkey list, the data paths and the app version, then presents the window. The version, data-folder path and hotkey list shown in the window come from these calls.",
+   "exact": [
+    {
+     "what": "Commands (code)",
+     "value": "get_setting (one per preference key), list_hotkeys, plugin:app|version (via getVersion), data_paths, present_window; set_window_theme and is_low_power_mode are defined in api.ts and not called directly from SettingsWindow.tsx"
+    },
+    {
+     "what": "Commands (recording meta)",
+     "value": "get_setting, get_setting, set_window_theme, is_low_power_mode, get_setting, get_setting, get_setting, get_setting, list_hotkeys, plugin:app|version, data_paths, get_setting, get_setting, get_setting, get_setting, list_hotkeys, plugin:app|version, data_paths, present_window (19 calls; list_hotkeys, plugin:app|version and data_paths each run twice before present_window)"
+    }
+   ],
+   "sources": [
+    "state:settings-about (meta.json commands)",
+    "state:settings-general (meta.json commands)",
+    "state:settings-shortcuts (meta.json commands)",
+    "main/src/windows/settings/settings.ts:84-85",
+    "main/src/windows/settings/useHotkeyEditor.ts:46",
+    "main/src/windows/SettingsWindow.tsx:23",
+    "main/src/windows/SettingsWindow.tsx:89-114",
+    "Checker A: settings.ts:84-85 (getSetting for each key in KEYS), SETTING_DEFS keys at settings.ts:24-38 (theme, reduced_motion, screenshot_mode, show_completed); useHotkeyEditor.ts:46 (listHotkeys); SettingsWindow.tsx:89 (getVersion from @tauri-apps/api/app, line 14); SettingsWindow.tsx:96-101 (dataPaths); SettingsWindow.tsx:110-117 (presentWindow gated on settings.loaded and document.fonts.ready); api.ts:150 (get_setting), :155 (list_hotkeys), :164 (present_window), :197 (data_paths), :172 (set_window_theme), :174 (is_low_power_mode).",
+    "Checker B: state:settings-general meta.json:9-28 (and the same in state:settings-about, settings-capture, settings-dark, settings-search, settings-shortcut-recording, settings-shortcuts, settings-shortcuts-scrolled). The command list is 19 calls in this order: get_setting, get_setting, set_window_theme, is_low_power_mode, get_setting x4, list_hotkeys, plugin:app|version, data_paths, get_setting x4, list_hotkeys, plugin:app|version, data_paths, present_window. The three hotkey/version/paths calls occur twice before present_window. All seven named commands appear."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Partly verified by the critique: getSetting, listHotkeys, dataPaths, getVersion, presentWindow and useLowPowerMode are in the source. set_window_theme does not appear in the allowed files. The effect of is_low_power_mode is not visible in any recording. The commands are backend calls and are listed for completeness.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-055",
+   "check": "corrected"
+  },
+  {
+   "title": "Theme segmented control applies the theme immediately",
+   "trigger": "left-click System, Light or Dark in the Theme control",
+   "context": "The broadcast event for theme is theme-changed, emitted by setTheme (settings.ts:27 comment). The UI state changes first, before the write (settings.ts:100-103), and a failed write is silently ignored (settings.ts:110-112). The default is 'system' via fallback (settings.ts:25) and an unknown stored value is coerced to 'system' (generalPane.tsx:16-17). Segment icon size 15 is a recording value and is not verifiable here.",
+   "result": "The chosen theme is applied to the window, saved, and broadcast to other windows (done by setTheme). The selected segment is shown with a thumb. The default selection is System.",
+   "exact": [
+    {
+     "what": "Segments (label, icon)",
+     "value": "System (contrast), Light (light_mode), Dark (dark_mode)"
+    },
+    {
+     "what": "Segment icon size (recording)",
+     "value": "15"
+    },
+    {
+     "what": "Variant",
+     "value": "surfaceThumb"
+    },
+    {
+     "what": "Default",
+     "value": "system"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:10-14",
+    "main/src/windows/settings/generalPane.tsx:36-43",
+    "main/src/windows/settings/settings.ts:24-29",
+    "state:settings-general (tree lines 26-32)",
+    "state:settings-general (shot)",
+    "state:settings-dark (tree lines 26-32)",
+    "Checker A: generalPane.tsx:10-14 (THEMES: System/contrast, Light/light_mode, Dark/dark_mode), :37-42 (Segmented variant surfaceThumb, onChange ctx.set('theme', next)), :40 (value asTheme), :16-17 (asTheme coerces to 'system'); settings.ts:24-29 (theme fallback 'system', write setTheme), :27 (comment: setTheme applies, persists, emits theme-changed), :100-114 (set updates state optimistically and writes), :110-112 (write errors swallowed).",
+    "Checker B: state:settings-general tree.txt:29 Segmented variant=\"surfaceThumb\" items=[3] value=\"system\"; tree.txt:30-32 icons contrast, light_mode, dark_mode at size 15; segment labels System, Light, Dark and the thumb on System in state:settings-general shot.png. The apply, save and broadcast on click are not captured in any reference (set_window_theme appears only in the open sequence)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A failed setTheme call leaves the optimistic UI state in place until the next open (settings.ts:110-112)."
+   ],
+   "notes": "setTheme is in lib/theme (not read); the comment at settings.ts:27 says it applies, persists, and emits theme-changed. B's recording meta includes set_window_theme on open, which is consistent with the window theme following this setting.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-056",
+   "check": "corrected"
+  },
+  {
+   "title": "Theme row text",
+   "trigger": "none (visible in General)",
+   "context": "Keywords are used only for search matching (panes.ts:25-31) and are never rendered. The description is part of the text block above the control in a stacked row (SettingRow.tsx:57-61), so the claim that B's recording shows it under the control conflicts with the code. The recording claim could not be verified.",
+   "result": "Title Theme, description Follow the system appearance, or pin one., stacked layout. The description sits between the title and the segmented control, above it. Search keywords are hidden in the UI.",
+   "exact": [
+    {
+     "what": "Description placement",
+     "value": "above the control (stacked row: text block, then control)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:30-35",
+    "state:settings-general (tree lines 26-32)",
+    "Checker A: generalPane.tsx:32 (title 'Theme'), :33 (description), :34 (keywords), :35 (layout 'stacked'); panes.ts:25-31 (keywords only used in search haystack); SettingRow.tsx:57-61 (stacked: text block then control).",
+    "Checker B: state:settings-general tree.txt:26-29 (Label title, Label description, then Segmented control) and state:settings-general shot.png and state:settings-dark shot.png: the description sits between the title and the control, above it, not under it. Keywords are not visible in any reference."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-057",
+   "check": "corrected"
+  },
+  {
+   "title": "Dark appearance of the settings window",
+   "trigger": "none (state is settings-dark, meta theme dark)",
+   "context": "Window theme dark",
+   "result": "The whole window is dark: the title bar and sidebar are the darkest areas and the content is dark grey with light text. The sidebar active row is a dark blue-grey highlight. The segmented track is dark, with the selected System segment drawn as a lighter thumb. Toggles use a dark track when off and a blue track when on. The Theme control still shows System while the window is dark.",
+   "exact": [
+    {
+     "what": "Window theme",
+     "value": "dark"
+    },
+    {
+     "what": "Theme value",
+     "value": "system"
+    },
+    {
+     "what": "Toggle on",
+     "value": "blue track, knob right"
+    },
+    {
+     "what": "Toggle off",
+     "value": "dark track, knob left"
+    }
+   ],
+   "sources": [
+    "state:settings-dark (meta theme dark)",
+    "state:settings-dark (shot)",
+    "state:settings-dark (tree lines 26-44)",
+    "Checker A: generalPane.tsx:40 (Segmented value is the stored preference via asTheme, so 'system' is displayed as the selected segment), SettingsWindow.tsx:59 and lib/theme (window theme application not read); api.ts:172 (set_window_theme exists).",
+    "Checker B: state:settings-dark meta.json:8 \"theme\": \"dark\"; state:settings-dark tree.txt:29 Segmented value=\"system\"; tree.txt:36 and tree.txt:44 Toggle checked values. state:settings-dark shot.png shows the dark window, dark sidebar and title bar, dark blue-grey active tab, dark segmented track with a lighter System thumb, a blue on-toggle and a dark off-toggle. Exact colour values are not measured."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Colours are read qualitatively from the screenshot. The window theme is applied in lib/theme and is not verifiable from the allowed files. The System value with a dark window suggests the system appearance was dark, but this is inferred.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-058",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Reduced motion toggle",
+   "trigger": "left-click the Reduced motion switch",
+   "context": "The toggle writes through setReducedMotion (settings.ts:35), which persists the value and emits reduced-motion-changed (settings.ts:33-34 comment). The value is coerced to '0' when the stored value is not '1' or '0' (settings.ts:31-32, 54). The row is also matched in search by its keywords.",
+   "result": "The switch flips and is saved as 1 (on) or 0 (off). Default is off. Off shows a grey track with the knob at the left; on shows a blue track with the knob at the right. The effect of turning it on is not recorded.",
+   "exact": [
+    {
+     "what": "Keywords (search only)",
+     "value": "animation animations transitions battery low power motion"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:45-57",
+    "main/src/windows/settings/settings.ts:30-35",
+    "state:settings-general (tree lines 33-36)",
+    "state:settings-search (tree lines 29-32)",
+    "Checker A: generalPane.tsx:47 (title), :48 (description 'Cuts animations and transitions to the minimum.'), :49 (keywords), :51-56 (Toggle checked forcesMotion || value === '1', disabled forcesMotion, onChange ? '1' : '0', title 'Reduced motion'), :54; settings.ts:30-36 (fallback '0', valid ['1','0'], write setReducedMotion), :33-34 (comment reduced-motion-changed).",
+    "Checker B: state:settings-general tree.txt:33 (title Reduced motion, description 'Cuts animations and transitions to the minimum.', layout inline 989x53), tree.txt:36 (Toggle checked=false disabled=false title=\"Reduced motion\" @1123,182 30x18). Same in state:settings-search tree.txt:29-32 and its shot.png. Off track grey with knob left in state:settings-general shot.png. Stored values 1/0 and the effect of turning it on are not visible."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "When forced by Low Power or Reduce Motion the toggle is disabled, so clicks do nothing, but the stored preference is kept and reappears when the force ends (generalPane.tsx:52-53)."
+   ],
+   "notes": "Keywords (search only): animation animations transitions battery low power motion.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-059",
+   "check": "corrected"
+  },
+  {
+   "title": "Reduced motion shows on and locked when macOS forces it",
+   "trigger": "none (state), when Low Power Mode is on or macOS Reduce Motion is on",
+   "context": "General > Appearance",
+   "result": "The switch shows on and is disabled (cannot be clicked), whatever the saved preference is.",
+   "exact": [
+    {
+     "what": "Checked",
+     "value": "forcesMotion(ctx) || value === '1'"
+    },
+    {
+     "what": "Disabled",
+     "value": "forcesMotion(ctx)"
+    },
+    {
+     "what": "forcesMotion",
+     "value": "lowPower || systemPrefers"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:19-21",
+    "main/src/windows/settings/generalPane.tsx:50-56",
+    "main/src/windows/settings/types.ts:25-27",
+    "Checker A: generalPane.tsx:52 (checked: forcesMotion(ctx) || ctx.values.reduced_motion === '1'), :53 (disabled: forcesMotion(ctx)), :19-21 (forcesMotion = ctx.motion.lowPower || ctx.motion.systemPrefers); types.ts:25-27 (motion documentation); SettingsWindow.tsx:75-78 (lowPower and systemPrefers initial state).",
+    "Checker B: All references show Reduced motion with checked=false disabled=false (state:settings-general tree.txt:36). No reference has Low Power Mode or macOS Reduce Motion on, so the forced state is not captured. forcesMotion is source code and was not read."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-060",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Reduced motion footnote explains the forced state",
+   "trigger": "none (state), shown under the Reduced motion row",
+   "context": "Only when Low Power Mode or macOS Reduce Motion is on; Low Power text takes precedence",
+   "result": "With Low Power Mode on: Due to Low Power Mode, reduced motion is on by default on macOS. With Reduce Motion on (and Low Power off): macOS Reduce Motion is on, so motion stays reduced. Otherwise no footnote.",
+   "exact": [
+    {
+     "what": "Low Power text",
+     "value": "Due to Low Power Mode, reduced motion is on by default on macOS."
+    },
+    {
+     "what": "Reduce Motion text",
+     "value": "macOS Reduce Motion is on, so motion stays reduced."
+    },
+    {
+     "what": "Footnote size and tone",
+     "value": "text-[11px], muted"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:58-69",
+    "Checker A: generalPane.tsx:60-69 (footnote: lowPower branch first at :61-63, systemPrefers branch at :65-68, else null at :69), :62 and :66 (Label tone muted className text-[11px]); exact strings at :63 and :67.",
+    "Checker B: No reference shows a footnote under Reduced motion. state:settings-general tree.txt:33-36 has no footnote, which is consistent with the unforced state, but the forced footnote texts are not captured."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-061",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "macOS Reduce Motion and Low Power state update live",
+   "trigger": "change of the system prefers-reduced-motion setting while the window is open",
+   "context": "Settings window open",
+   "result": "The system Reduce Motion state is re-read on change, so the locked switch and footnote update without reopening the window. Low Power state comes from useLowPowerMode.",
+   "exact": [
+    {
+     "what": "Media query",
+     "value": "(prefers-reduced-motion: reduce)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/SettingsWindow.tsx:75-85",
+    "main/src/windows/SettingsWindow.tsx:23",
+    "Checker A: SettingsWindow.tsx:76-78 (initial matchMedia '(prefers-reduced-motion: reduce)'), :80-85 (change listener sets systemPrefers and removes it on cleanup), :75 (useLowPowerMode).",
+    "Checker B: No reference captures a change to the system reduce-motion setting while the window is open."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "useLowPowerMode is defined in lib/reducedMotion (not read here); its update behaviour is not confirmed.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-062",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Show completed tasks toggle",
+   "trigger": "left-click the Show completed tasks switch",
+   "context": "General > Tasks",
+   "result": "The switch flips and saves 1 (on) or 0 (off). Turning it off hides completed tasks in the main window, which is told by a settings-changed broadcast.",
+   "exact": [
+    {
+     "what": "Title",
+     "value": "Show completed tasks"
+    },
+    {
+     "what": "Description",
+     "value": "Keep finished tasks in the list instead of hiding them."
+    },
+    {
+     "what": "Keywords (search only)",
+     "value": "done finished hide completed checked"
+    },
+    {
+     "what": "Checked",
+     "value": "value !== '0'"
+    },
+    {
+     "what": "Default",
+     "value": "1 (on)"
+    },
+    {
+     "what": "Default state (recording)",
+     "value": "checked=true"
+    },
+    {
+     "what": "Switch title attribute",
+     "value": "Show completed tasks"
+    },
+    {
+     "what": "Toggle box (recording)",
+     "value": "30x18"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/generalPane.tsx:75-98",
+    "main/src/windows/settings/settings.ts:38",
+    "main/src/windows/settings/settings.ts:16-20",
+    "main/src/windows/settings/settings.ts:105-109",
+    "state:settings-general (tree lines 41-44)",
+    "state:settings-dark (shot)",
+    "Checker A: generalPane.tsx:84 (title), :85 (description 'Keep finished tasks in the list instead of hiding them.'), :86 (keywords 'done finished hide completed checked'), :89 (checked value !== '0'), :90 (set to '1' or '0'), :91 (title attribute); settings.ts:38 (fallback '1', notify true), :107-109 (write then emit settings-changed only if write succeeded); settings.ts:16-20 (comment: main window filters task list on show_completed).",
+    "Checker B: state:settings-general tree.txt:41 (title Show completed tasks, description 'Keep finished tasks in the list instead of hiding them.', 989x53), tree.txt:44 (Toggle checked=true title=\"Show completed tasks\" @1123,277 30x18). state:settings-dark shot.png shows the on toggle. Keywords, the save and the main-window effect are not captured."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "The main window's filtering is not in these files; the broadcast comment at settings.ts:16-19 says the main window filters on show_completed.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-063",
+   "check": "confirmed_by_both"
+  },
+  {
+   "title": "Only show_completed broadcasts a change to other windows",
+   "trigger": "any preference change",
+   "context": "Settings write path",
+   "result": "Only Show completed tasks emits settings-changed. Capture mode does not (Rust reads it per capture); theme and reduced motion broadcast through their own write functions.",
+   "exact": [
+    {
+     "what": "Broadcasting key",
+     "value": "show_completed"
+    },
+    {
+     "what": "Event name",
+     "value": "settings-changed"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/settings.ts:16-20",
+    "main/src/windows/settings/settings.ts:38",
+    "main/src/windows/settings/settings.ts:109",
+    "Checker A: settings.ts:38 (only show_completed has notify: true), :109 (emit('settings-changed', { key, value })), :16-20 (comment), :33-34 (theme and reduced motion broadcast via their own write functions), :37 (screenshot_mode has no notify, so no broadcast; Rust re-reads it per capture per the comment at :17-19).",
+    "Checker B: The settings-changed broadcast is an event; no reference records events or a preference change."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-064",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Capture mode segmented control",
+   "trigger": "left-click Full screen or Region",
+   "context": "The row has keywords for search that the spec omits. The default is 'fullscreen' via asMode and the settings fallback. The change is saved with a plain setSetting write and not broadcast (settings.ts:108, :37). Segment icon size 15 is a recording value and is not verifiable here.",
+   "result": "The chosen mode is saved and the segment is shown selected. Default is Full screen.",
+   "exact": [
+    {
+     "what": "Keywords (search only)",
+     "value": "screenshot capture region area window full screen"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/capturePane.tsx:11-14",
+    "main/src/windows/settings/capturePane.tsx:36-47",
+    "main/src/windows/settings/settings.ts:37",
+    "state:settings-capture (tree lines 26-31)",
+    "state:settings-capture (shot)",
+    "Checker A: capturePane.tsx:11-14 (MODES: 'Full screen' icon 'fullscreen', 'Region' icon 'crop_free'), :37 (title 'Capture mode'), :38 (keywords 'screenshot capture region area window full screen'), :39 (layout stacked), :41-47 (Segmented variant surfaceThumb), :21-22 (asMode, default fullscreen); settings.ts:37 (fallback 'fullscreen'), :108 (plain setSetting write, no broadcast).",
+    "Checker B: state:settings-capture tree.txt:26 (SettingRow title=\"Capture mode\" layout=\"stacked\"), tree.txt:28 (Segmented variant=\"surfaceThumb\" items=[2] value=\"fullscreen\"), tree.txt:29-30 (Icon fullscreen size 15, crop_free size 15). state:settings-capture shot.png shows the labels Full screen and Region with Full screen selected."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Search keywords: screenshot capture region area window full screen. The row has no description.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-065",
+   "check": "corrected"
+  },
+  {
+   "title": "Capture mode footnote explains the chosen mode",
+   "trigger": "none (state), updates when the mode changes",
+   "context": "Capture > Screenshots",
+   "result": "Under the control: Capture the entire screen instantly. for Full screen; Drag to select an area, or press Space to grab a window. Esc cancels. for Region.",
+   "exact": [
+    {
+     "what": "Full screen hint",
+     "value": "Capture the entire screen instantly."
+    },
+    {
+     "what": "Region hint",
+     "value": "Drag to select an area, or press Space to grab a window. Esc cancels."
+    },
+    {
+     "what": "Footnote style",
+     "value": "muted, text-[11px]"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/capturePane.tsx:16-19",
+    "main/src/windows/settings/capturePane.tsx:48-52",
+    "state:settings-capture (tree and shot, Full screen footnote)",
+    "Checker A: capturePane.tsx:16-19 (HINT: fullscreen 'Capture the entire screen instantly.', region 'Drag to select an area, or press Space to grab a window. Esc cancels.'), :48-52 (footnote Label text-[11px] tone muted, value from asMode(ctx.values.screenshot_mode)).",
+    "Checker B: state:settings-capture shot.png shows the footnote 'Capture the entire screen instantly.' under the control. tree.txt:31 Label as=\"p\" tone=\"muted\" className=\"text-[11px]\" matches the footnote style. The Region hint 'Drag to select an area, or press Space to grab a window. Esc cancels.' is not shown in any reference (only the Full screen state is captured)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "B's recording shows the Full screen footnote text only; the Region footnote was not recorded and is taken from source.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-066",
+   "check": "confirmed_by_both"
+  },
+  {
+   "title": "Saved to row shows the screenshots folder and opens it on click",
+   "trigger": "left-click the path under Saved to (path shows /Users/you/.taskscape/screenshots in the recording)",
+   "context": "Clicking opens the path via PathButton (PathButton.tsx:24). The button only renders when the path is known (PathButton.tsx:14-19).",
+   "result": "Opens the screenshots folder in the file manager. Shows the absolute path in monospace.",
+   "exact": [
+    {
+     "what": "Title",
+     "value": "Saved to"
+    },
+    {
+     "what": "Description",
+     "value": "Click to open the folder."
+    },
+    {
+     "what": "Keywords (search only)",
+     "value": "folder path directory location disk screenshots finder"
+    },
+    {
+     "what": "Layout",
+     "value": "stacked"
+    },
+    {
+     "what": "Path button (recording)",
+     "value": "/Users/you/.taskscape/screenshots"
+    },
+    {
+     "what": "Icon (recording)",
+     "value": "folder_open, size 14"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/capturePane.tsx:54-63",
+    "state:settings-capture (tree lines 32-36)",
+    "state:settings-capture (shot)",
+    "Checker A: capturePane.tsx:56 (title 'Saved to'), :57 (description 'Click to open the folder.'), :58 (keywords 'folder path directory location disk screenshots finder'), :59 (layout stacked), :61 (path ctx.paths?.screenshots_dir); PathButton.tsx:10-12 (nearest existing ancestor fallback), :29 (folder_open size 14), :30 (monospace path).",
+    "Checker B: state:settings-capture tree.txt:32 (title Saved to, description Click to open the folder., layout stacked), tree.txt:35 (PathButton path=/Users/you/.taskscape/screenshots @181,220 256x21), tree.txt:36 (Icon folder_open size 14). state:settings-capture shot.png shows the same. The click result (opens in file manager), keywords and the monospace path are not captured."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "If the screenshots folder does not exist yet, Rust opens the nearest existing ancestor instead (PathButton.tsx:10-12)."
+   ],
+   "notes": "The path value is recording example data.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-067",
+   "check": "corrected"
+  },
+  {
+   "title": "About row: Restore defaults text and reset control",
+   "trigger": "none (visible in About > Reset)",
+   "context": "The row has search keywords the spec omits. The button label and wiring match the code. The 972x28 box is a recording value and is not verifiable from code.",
+   "result": "Group label Reset. Row title Restore defaults, description Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched., stacked layout. The button sits across the full row width (972x28 in the recording) and is wired to ResetEverything onConfirm.",
+   "exact": [
+    {
+     "what": "Keywords (search only)",
+     "value": "reset clear defaults factory revert erase preferences"
+    },
+    {
+     "what": "Reset button box (recording)",
+     "value": "972x28 (state:settings-about tree.txt:43 @181,307)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/aboutPane.tsx:38-51",
+    "state:settings-about (tree lines 39-43)",
+    "state:settings-about (shot)",
+    "Checker A: aboutPane.tsx:39-40 (group id 'reset', label 'Reset'), :44 (title 'Restore defaults'), :45-46 (description), :47 (keywords 'reset clear defaults factory revert erase preferences'), :48 (layout stacked), :49 (ResetEverything onConfirm={ctx.resetAll}); ResetEverything.tsx:15 (label 'Reset all settings…').",
+    "Checker B: state:settings-about tree.txt:35 (SettingsGroup label=\"Reset\"), tree.txt:39 (SettingRow title=\"Restore defaults\" layout=\"stacked\" 989x86), tree.txt:42 (ResetEverything onConfirm=ƒ), tree.txt:43 (Button @181,307 972x28). Full description and button label 'Reset all settings…' shown in state:settings-about shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Critique: B's suggestion of a confirmation dialog is not supported; the source shows an inline confirm (see the Reset all settings feature). No confirm state is recorded in B's recording.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F10-068",
+   "check": "corrected"
+  },
+  {
+   "title": "Reset all settings button first asks for confirmation in place",
+   "trigger": "left-click the Reset all settings… button in About > Reset",
+   "context": "Not yet confirming",
+   "result": "The button is replaced by two inline buttons, Reset everything (danger style) and Cancel. No dialog opens.",
+   "exact": [
+    {
+     "what": "Initial label",
+     "value": "Reset all settings…"
+    },
+    {
+     "what": "Confirm label",
+     "value": "Reset everything"
+    },
+    {
+     "what": "Confirm variant",
+     "value": "danger"
+    },
+    {
+     "what": "Cancel label",
+     "value": "Cancel"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/ResetEverything.tsx:8-16",
+    "main/src/windows/settings/ResetEverything.tsx:18-30",
+    "Checker A: ResetEverything.tsx:13-16 (not confirming: Button 'Reset all settings…'), :18-30 (confirming: Button variant danger 'Reset everything', Button 'Cancel'), :8-9 (comment: confirms in place, no dialog), :11 (confirming state), :15 (button label).",
+    "Checker B: No reference shows the confirming state. The Reset everything and Cancel buttons do not appear in any tree or shot (state:settings-about tree.txt:42-43 shows only the initial button)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-069",
+   "check": "confirmed_by_one"
+  },
+  {
+   "title": "Reset everything confirmation runs the reset",
+   "trigger": "left-click Reset everything",
+   "context": "Preferences go through the normal set path, so each one is written, theme and reduced motion use their side-effect writers, and show_completed is broadcast as settings-changed (settings.ts:116-118, 107-109). Shortcut resets run one at a time and per-item failures are ignored (useHotkeyEditor.ts:103). The reset also clears any shortcut error (useHotkeyEditor.ts:102). The 'Tasks are not affected' statement is consistent with the settings code, which does not touch tasks.",
+   "result": "The confirm state is cleared and every preference and every keyboard shortcut is set back to its shipped default. Tasks are not affected.",
+   "exact": [
+    {
+     "what": "Preferences reset to",
+     "value": "fallback value of each setting"
+    },
+    {
+     "what": "Shortcuts reset to",
+     "value": "shipped default of each binding"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/ResetEverything.tsx:20-27",
+    "main/src/windows/SettingsWindow.tsx:145-148",
+    "main/src/windows/settings/settings.ts:116-118",
+    "main/src/windows/settings/useHotkeyEditor.ts:149",
+    "Checker A: ResetEverything.tsx:22-25 (setConfirming(false) then onConfirm()); SettingsWindow.tsx:145-148 (resetAll calls settings.resetAll and hotkeys.resetAll); settings.ts:116-118 (set each key to SETTING_DEFS[key].fallback); useHotkeyEditor.ts:149 (resetAll = resetIds of all binding ids), :100-107 (sequential resetHotkey, errors swallowed at :103, then load); useHotkeyEditor.ts:101-102 (setError(null)); no task calls appear in the settings files read.",
+    "Checker B: No reference captures the reset action or its results."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Resetting show_completed also broadcasts settings-changed, because the reset goes through set() with notify enabled (settings.ts:38, 107-109).",
+    "Failed individual shortcut resets are ignored and the reset continues with the next binding (useHotkeyEditor.ts:103)."
+   ],
+   "notes": "Panel text says Your tasks are untouched. (aboutPane.tsx:46).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-070",
+   "check": "corrected"
+  },
+  {
+   "title": "Cancel leaves the reset unrun",
+   "trigger": "left-click Cancel next to Reset everything",
+   "context": "Confirming state",
+   "result": "The inline buttons go back to the single Reset all settings… button. Nothing is reset.",
+   "exact": [
+    {
+     "what": "Behaviour",
+     "value": "setConfirming(false)"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/ResetEverything.tsx:29",
+    "Checker A (exact): ResetEverything.tsx:11 (confirming state), :29 <Button onClick={() => setConfirming(false)}>Cancel</Button>; :15 'Reset all settings…' single button when not confirming; :27 'Reset everything' is the confirm button. Cancel only sets confirming false and does not call onConfirm, so nothing is reset.",
+    "Checker B (cannot_check): spec/references/settings-about/tree.txt:42-43 shows ResetEverything with a single Button (onClick=ƒ, 972x28); spec/references/settings-about/shot.png shows the single 'Reset all settings…' button in the default (non-confirming) state. No reference captures the confirming state, so the Cancel click, the inline buttons and setConfirming(false) cannot be seen. settings-about/meta.json has no click commands. Behaviour in the source ResetEverything.tsx:29 was not read per task instructions."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-071",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the Cancel behaviour from source. Checker B could only confirm the non-confirming single-button state from recordings and did not check the confirming state. No conflict."
+  },
+  {
+   "title": "Reset of shortcuts runs one at a time and ignores individual failures",
+   "trigger": "Reset everything (also the per-row revert)",
+   "context": "Applied to all bindings, or one",
+   "result": "Each shortcut is reset to its default in sequence; a failure on one does not stop the others. The list is reloaded at the end.",
+   "exact": [
+    {
+     "what": "Sequencing",
+     "value": "for ... await, one at a time"
+    },
+    {
+     "what": "Failure handling",
+     "value": ".catch(() => {})"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/useHotkeyEditor.ts:98-107",
+    "Checker A (exact): useHotkeyEditor.ts:100-107 resetIds: 'for (const id of ids) await api.resetHotkey(id).catch(() => {});' then 'await load();' (sequencing comment at :98-99). Reset everything: SettingsWindow.tsx:145-148 resetAll calls hotkeys.resetAll(), which is useHotkeyEditor.ts:149 resetIds(bindings.map(b => b.id)). Per-row revert: HotkeyControl.tsx:24 onClick={() => editor.reset(binding.id)}, and useHotkeyEditor.ts:148 reset: (id) => void resetIds([id]).",
+    "Checker B (cannot_check): No reference folder records a Reset everything run or a per-row revert. settings-about/meta.json, settings-shortcuts/meta.json and settings-shortcut-recording/meta.json contain only get_setting, set_window_theme, is_low_power_mode, list_hotkeys, plugin:app|version, data_paths and present_window. Sequencing and .catch(() => {}) exist only in the source useHotkeyEditor.ts:98-107, which was not read per task instructions."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F10-072",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the reset paths and sequencing from source. Checker B found no recording of either reset action. No conflict."
+  },
+  {
+   "title": "Restore defaults row is searchable by reset, clear, defaults, factory, revert, erase and preferences",
+   "trigger": "typing one of reset, clear, defaults, factory, revert, erase or preferences in the search field",
+   "context": "Search active; the About row Restore defaults (Reset group)",
+   "result": "The Restore defaults row matches a search for these words, and in search results it is shown under the group heading 'About · Reset' (pane label, middle dot, group label), not 'Reset' alone.",
+   "exact": [
+    {
+     "what": "Keywords",
+     "value": "reset clear defaults factory revert erase preferences"
+    }
+   ],
+   "sources": [
+    "main/src/windows/settings/aboutPane.tsx:47",
+    "Checker A (corrected): aboutPane.tsx:47 keywords: 'reset clear defaults factory revert erase preferences' (exact match). aboutPane.tsx:39-40 group id 'reset', label 'Reset'; :44 title 'Restore defaults'. Search matching in panes.ts:18-36 (filterGroups) builds the haystack from group.label, row.title, row.description and row.keywords, lowercases it, and requires every whitespace-separated token to be included. SettingsWindow.tsx:333 renders search results with renderGroup(group, ctx, r.pane.label), and SettingsWindow.tsx:39 sets the label to `${prefix} · ${group.label}`.",
+    "Checker B (cannot_check): The Restore defaults row is confirmed at spec/references/settings-about/tree.txt:39 inside SettingsGroup label=\"Reset\" (tree.txt:35), and shot.png shows 'Restore defaults' under RESET. The keyword list (reset clear defaults factory revert erase preferences) is not in any reference; the search-field value is empty in settings-about and settings-shortcuts, and the only search recording (settings-search/tree.txt:13, value=\"motion\") does not test these words. Source aboutPane.tsx:47 not read."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Matching is not keyword-only: the haystack also includes the group label (Reset), the title 'Restore defaults' and the description, so any token found in those also matches (e.g. 'restore' or 'Your tasks' or 'reset' via the group label).",
+    "Multiple search words are ANDed: every whitespace-separated token must appear in the row's haystack (panes.ts:33)."
+   ],
+   "notes": "Proposed by the critique as a gap in both solutions (neither recorded the search keywords for this row). Searching factory or revert finds nothing without them.",
+   "found_by": [
+    "critic"
+   ],
+   "id": "F10-073",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Restore defaults row and its 'Reset' group in the recordings. It could not check the keyword list or the search matching, and no recorded search tests these words. Checker A's source reading is the authority here. The keyword list is exact in source. The search result label and matching behaviour come from the corrected result below."
+  },
+  {
+   "title": "Pane content per tab",
+   "trigger": "select the tab (General, Capture, Shortcuts or About)",
+   "context": "Each tab",
+   "result": "General shows the Appearance and Tasks groups. Capture shows the Screenshots group. Shortcuts shows an intro line and the Global, Main window and Capture bar groups. About shows the Application and Reset groups. The selected tab carries aria-controls linking it to its panel; inactive tabs carry none.",
+   "exact": [
+    {
+     "what": "General groups",
+     "value": "Appearance, Tasks"
+    },
+    {
+     "what": "Capture group",
+     "value": "Screenshots"
+    },
+    {
+     "what": "Shortcuts groups",
+     "value": "Global, Main window, Capture bar"
+    },
+    {
+     "what": "About groups",
+     "value": "Application, Reset"
+    }
+   ],
+   "sources": [
+    "state:settings-general (tree lines 22, 37)",
+    "state:settings-capture (tree line 22)",
+    "state:settings-shortcuts (tree lines 22-23, 43, 250)",
+    "state:settings-about (tree lines 22, 35)",
+    "main/src/windows/SettingsWindow.tsx:279-281",
+    "Checker A (exact): panes.ts:8-13 PANES order General, Capture, Shortcuts, About. generalPane.tsx:103 groups [appearance, tasks] with labels 'Appearance' (:26) and 'Tasks' (:78). capturePane.tsx:31 label 'Screenshots'. shortcutsPane.tsx:7-9 scope labels 'Global', 'Main window', 'Capture bar' and :31-32 intro line. aboutPane.tsx:13 'Application' and :40 'Reset'. SettingsWindow.tsx:279-281 aria-controls set only when selected (`settings-panel-${pane.id}`), otherwise undefined; :303-305 tabpanel id and aria-labelledby. The state-tree line references could not be checked from source.",
+    "Checker B (exact): General groups Appearance (settings-general/tree.txt:22) and Tasks (settings-general/tree.txt:37). Capture group Screenshots (settings-capture/tree.txt:22). Shortcuts groups Global (shortcuts tree.txt:23), Main window (tree.txt:43) and Capture bar (tree.txt:252), plus intro Label as=\"p\" (tree.txt:22). About groups Application (settings-about/tree.txt:22) and Reset (tree.txt:35). aria-controls is present only on the active tab in each tree: settings-general/tree.txt:14, settings-capture/tree.txt:16, settings-shortcuts/tree.txt:18, settings-about/tree.txt:20; inactive tabs (e.g. tree.txt:16, 18, 20 in settings-general) carry none. Source citation note: the Capture bar group is at settings-shortcuts/tree.txt:252, and line 250 is the Redo row, so the cited line range 22-23, 43, 250 is slightly off."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Corrected per critique: B said each panel is linked to its tab with aria-controls (settings-panel-<tab>); the source sets aria-controls only on the selected tab and undefined otherwise. The settings-panel-<tab> id pattern itself is not in the allowed files.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-074",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the pane order, group labels and aria-controls behaviour exact. Checker B's recordings confirm the state-tree aria-controls references that checker A could not read from source. Checker B's only note is that the Capture bar group is at settings-shortcuts/tree.txt:252, not line 250 (250 is the Redo row). This is a citation issue in the feature's line references, not a value error."
+  },
+  {
+   "title": "Default shortcut bindings",
+   "trigger": "none (observed)",
+   "context": "Shortcuts tab, default values from the shipped build",
+   "result": "Each row shows its keys as a keycap. The values below are the default bindings as shown in the recording.",
+   "exact": [
+    {
+     "what": "Capture bar",
+     "value": "⌘↩"
+    },
+    {
+     "what": "Screenshot capture",
+     "value": "⌘⇧↩"
+    },
+    {
+     "what": "New task",
+     "value": "⌘N"
+    },
+    {
+     "what": "Search",
+     "value": "⌘F"
+    },
+    {
+     "what": "Toggle preview",
+     "value": "⌘\\"
+    },
+    {
+     "what": "Open settings",
+     "value": "⌘,"
+    },
+    {
+     "what": "Delete task",
+     "value": "⌘⌫"
+    },
+    {
+     "what": "Switch to list 1 to 9",
+     "value": "⌘1 to ⌘9"
+    },
+    {
+     "what": "Previous list tab",
+     "value": "⌘⌥←"
+    },
+    {
+     "what": "Next list tab",
+     "value": "⌘⌥→"
+    },
+    {
+     "what": "Previous project",
+     "value": "⌘⇧["
+    },
+    {
+     "what": "Next project",
+     "value": "⌘⇧]"
+    },
+    {
+     "what": "Move task up",
+     "value": "⌘⌥↑"
+    },
+    {
+     "what": "Move task down",
+     "value": "⌘⌥↓"
+    },
+    {
+     "what": "Select all tasks",
+     "value": "⌘A"
+    },
+    {
+     "what": "Command palette",
+     "value": "⌘K"
+    },
+    {
+     "what": "Toggle split view",
+     "value": "⌘⌥S"
+    },
+    {
+     "what": "Focus other pane",
+     "value": "⌘⌥O"
+    },
+    {
+     "what": "New list",
+     "value": "⌘⇧N"
+    },
+    {
+     "what": "New project",
+     "value": "⌘⇧P"
+    },
+    {
+     "what": "Show/hide completed",
+     "value": "⌘⇧H"
+    },
+    {
+     "what": "Collapse all",
+     "value": "⌘⌥-"
+    },
+    {
+     "what": "Expand all",
+     "value": "⌘⌥="
+    },
+    {
+     "what": "Undo",
+     "value": "⌘Z"
+    },
+    {
+     "what": "Redo",
+     "value": "⌘⇧Z"
+    },
+    {
+     "what": "Clear capture draft",
+     "value": "⌘⇧⌫"
+    }
+   ],
+   "sources": [
+    "state:settings-shortcuts (tree lines 26-263, icon names)",
+    "state:settings-shortcuts (shot)",
+    "state:settings-shortcuts-scrolled (shot)",
+    "Checker A (exact): common/src/hotkeys.rs default_accel values: Capture bar Cmd+Enter (:331-333); Screenshot capture Cmd+Shift+Enter (:337-339); New task Cmd+N (:343-345); Search Cmd+F (:349-351); Toggle preview Cmd+Backslash (:355-357); Open settings Cmd+Comma (:361-363); Delete task Cmd+Backspace (:367-369); Switch to list 1-9 Cmd+Digit1-9 (:373-423); Previous list tab Cmd+Alt+ArrowLeft (:427-429); Next list tab Cmd+Alt+ArrowRight (:433-435); Previous project Cmd+Shift+BracketLeft (:439-441); Next project Cmd+Shift+BracketRight (:445-447); Move task up Cmd+Alt+ArrowUp (:451-453); Move task down Cmd+Alt+ArrowDown (:457-459); Select all tasks Cmd+A (:463-465); Command palette Cmd+K (:469-471); Toggle split view Cmd+Alt+S (:475-477); Focus other pane Cmd+Alt+O (:481-483); New list Cmd+Shift+N (:487-489); New project Cmd+Shift+P (:493-495); Show/hide completed Cmd+Shift+H (:499-501); Collapse all Cmd+Alt+Minus (:505-507); Expand all Cmd+Alt+Equal (:511-513); Undo Cmd+Z (:517-519); Redo Cmd+Shift+Z (:523-525); Clear capture draft Cmd+Shift+Backspace (:529-531). All 26 values match the symbols shown in the feature. The 'Capture bar' row is scope Global (:332), so it sits under the Global group.",
+    "Checker B (exact): Keycap modifier/key icons per row in settings-shortcuts/tree.txt:28-263 (e.g. keyboard_command_key, keyboard_return, shift, backspace, keyboard_option_key, arrow_back/forward/upward/downward). Glyphs read from spec/references/settings-shortcuts/shot.png and settings-shortcuts-scrolled/shot.png: Capture bar ⌘↩, Screenshot capture ⌘⇧↩, New task ⌘N, Search ⌘F, Toggle preview ⌘\\, Open settings ⌘,, Delete task ⌘⌫, Switch to list 1-9 ⌘1-⌘9, Previous list tab ⌘⌥←, Next list tab ⌘⌥→, Previous project ⌘⇧[, Next project ⌘⇧], Move task up ⌘⌥↑, Move task down ⌘⌥↓, Select all ⌘A, Command palette ⌘K, Toggle split view ⌘⌥S, Focus other pane ⌘⌥O, New list ⌘⇧N, New project ⌘⇧P, Show/hide completed ⌘⇧H, Collapse all ⌘⌥-, Expand all ⌘⌥=, Undo ⌘Z, Redo ⌘⇧Z, Clear capture draft ⌘⇧⌫. All match. The screenshots are small, so the individual key characters are read from a rendered image, not from text in the tree."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Low confidence. The critique could not settle these from the allowed files: the defaults are set on the backend and the glyph map is in common-ui. Icon names give the modifiers and arrows; letters, the backslash, comma, brackets and minus/equals are read from the image, and the Backspace glyph is small in the image.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-075",
+   "check": "confirmed_by_both",
+   "check_notes": "Checker A matched all 26 default accelerators to the source catalog. Checker B matched the same glyphs from the recorded keycap icons and screenshots. The two sources agree and no value conflicts. Checker B's glyph reading is from small images, so its evidence is weaker than the source for individual key characters."
+  },
+  {
+   "title": "Main window row order",
+   "trigger": "none (observed)",
+   "context": "Shortcuts tab, Main window group",
+   "result": "Rows appear in this order: New task, Search, Toggle preview, Open settings, Delete task, Switch to list 1 through Switch to list 9, Previous list tab, Next list tab, Previous project, Next project, Move task up, Move task down, Select all tasks, Command palette, Toggle split view, Focus other pane, New list, New project, Show/hide completed, Collapse all, Expand all, Undo, Redo. The Main window group has 31 rows.",
+   "exact": [
+    {
+     "what": "Row count",
+     "value": "31"
+    },
+    {
+     "what": "First row",
+     "value": "New task"
+    },
+    {
+     "what": "Last row",
+     "value": "Redo"
+    }
+   ],
+   "sources": [
+    "state:settings-shortcuts (tree lines 47-251)",
+    "Checker A (exact): hotkeys.rs:343-525 catalog entries with scope Scope::Main, in catalog order: New task, Search, Toggle preview, Open settings, Delete task, Switch to list 1-9, Previous list tab, Next list tab, Previous project, Next project, Move task up, Move task down, Select all tasks, Command palette, Toggle split view, Focus other pane, New list, New project, Show/hide completed, Collapse all, Expand all, Undo, Redo. Count = 31. shortcutsPane.tsx:33-47 keeps catalog order via filter on scope 'main' (label 'Main window', :8). Feature's order and count match.",
+    "Checker B (exact): spec/references/settings-shortcuts/tree.txt:47-251 lists 31 SettingRow titles inside the Main window group (SettingsGroup at tree.txt:43), in the order New task (47), Search (53), Toggle preview (59), Open settings (65), Delete task (71), Switch to list 1-9 (78-126), Previous list tab (132), Next list tab (140), Previous project (148), Next project (155), Move task up (162), Move task down (170), Select all tasks (178), Command palette (184), Toggle split view (190), Focus other pane (197), New list (204), New project (211), Show/hide completed (218), Collapse all (225), Expand all (232), Undo (239), Redo (245). Count is 31; first is New task and last is Redo. Same order in shot.png."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-076",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found 31 Main-window rows in catalog order, from New task to Redo. No conflict."
+  },
+  {
+   "title": "Shortcut list scrolls under the title bar",
+   "trigger": "scroll the Shortcuts content (inferred from the scrolled state name)",
+   "context": "Shortcuts tab scrolled down",
+   "result": "The list scrolls within the content panel, which sits below the title bar and beside the sidebar. In the code the title bar is a separate row above the scroll region, so the list is clipped at the top of the content area and does not run under the title bar. The title bar and sidebar stay fixed because they are outside the scrolling element. The scrolled recording's pixel positions could not be verified from source.",
+   "exact": [
+    {
+     "what": "Scroll offset (recording)",
+     "value": "676px (intro line y 58 to -618)"
+    },
+    {
+     "what": "Previous list tab row (recording)",
+     "value": "y 735 to 59"
+    },
+    {
+     "what": "Clip edge (recording)",
+     "value": "content begins at y=46 under the title bar"
+    }
+   ],
+   "sources": [
+    "state:settings-shortcuts-scrolled (tree lines 22-23, 132, 252; shot)",
+    "Checker A (corrected): SettingsWindow.tsx:209-228 SettingsTitleBar is a flex-column sibling placed above the body row (:230 'flex min-h-0 flex-1'). The nav sidebar is at :231 and the scroll container is the tabpanel div at :301-306 (overflow-y-auto), which is inside that body row. SettingsTitleBar.tsx:19-29 renders TitleBar titled 'Settings'. The scroll container is generic for every pane, not Shortcuts-specific (SettingsWindow.tsx:301-306). The pixel values (676px, y 58 to -618, y 735 to 59, y=46) come from state names and recordings that are not in source and could not be checked.",
+    "Checker B (exact): Offsets from settings-shortcuts/tree.txt and settings-shortcuts-scrolled/tree.txt: intro Label at y=58 (tree.txt:22 in default) and y=-618 (scrolled tree.txt:22), a difference of 676. Global group at y=93 default and -583 scrolled (tree.txt:23). Previous list tab row at y=735 default (settings-shortcuts/tree.txt:132) and y=59 scrolled (settings-shortcuts-scrolled/tree.txt:132). Capture bar group at y=1365 default and 689 scrolled (tree.txt:252 vs tree.txt:250). Title bar 0,0 1180x46 and sidebar tabs at the same y in both (tree.txt:2, 14-20). settings-shortcuts-scrolled/shot.png shows the list continuing under the title bar and the Capture bar group at the bottom, consistent with the 46px clip edge. Trigger not verified: settings-shortcuts-scrolled/meta.json has no scroll command, so 'scroll the Shortcuts content' remains inferred as the feature states."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The scrolling applies to any pane's content (the tabpanel), not only the Shortcuts tab; selecting a tab resets scroll to top (SettingsWindow.tsx:183)."
+   ],
+   "notes": "The scroll offset is computed from tree positions in the recording. The trigger is inferred. The 46px title bar height is a recording measurement, not verified against source.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F10-077",
+   "check": "corrected",
+   "check_notes": "Conflict: checker B says settings-shortcuts-scrolled/shot.png shows the list continuing under the title bar. Checker A's source reading says the title bar is a separate row above the scroll region, so the list is clipped at the content top. Following the source-verified answer, the list does not run under the title bar. B's own offsets support this: the scrolled rows sit at y=59 and later, just below the 46px title bar edge. B's pixel offsets (676px difference, y=58 and -618, y=735 and 59, y=93 and -583, y=1365 and 689, title bar 0,0 1180x46) are measured from the recorded trees and are consistent with the feature, but checker A could not check them from source. The trigger 'scroll the Shortcuts content' is not in the scrolled recording's meta.json (no scroll command), so it stays inferred. Checker B also noted the Capture bar group is at tree.txt:252, not line 250 (Redo row), which is the same citation issue as F10-074."
+  }
+ ]
+}

@@ -1,0 +1,1790 @@
+{
+ "area": 16,
+ "name": "Data and storage",
+ "tier": "high",
+ "counts": {
+  "A": 42,
+  "B": 24,
+  "critic_issues": 30,
+  "merged": 56
+ },
+ "dropped": [
+  {
+   "title": "Default project exists (B)",
+   "reason": "Duplicate of A's default project entry; B's doc source (doc:common-crate.md:62) and uncertainty were merged into that entry."
+  },
+  {
+   "title": "Deleting a list or project removes its contents (B)",
+   "reason": "Duplicate of A's project and list deletion entries; B's sources and confirmation edge case were merged into both."
+  },
+  {
+   "title": "Deleting a task deletes its whole subtree (B)",
+   "reason": "Wrong for the UI path: the UI delete is soft (soft_delete_tasks stamps deleted_at), and the hard removal described is only delete_task (HTTP API and purge). The same error appears at doc:common-crate.md:48-49. Trash behaviour is covered by A's soft delete entries."
+  },
+  {
+   "title": "Moving a task moves its subtree atomically (B)",
+   "reason": "Partly wrong: the move and relist share one transaction that commits at storage.rs:432, but the reload runs after the commit at storage.rs:433. The accurate transaction detail was added to A's move entry; the subtree relist is covered by A's move-to-another-list entry."
+  },
+  {
+   "title": "Rich-text notes stored as sanitized HTML (B)",
+   "reason": "Wrong: the store does not sanitize. create_note and update_note write the caller's content (storage.rs:527-561, doc comment says sanitizing is the caller's job). The preview recompute is covered by A's note entries."
+  },
+  {
+   "title": "Manual ordering of lists and tasks persists (B)",
+   "reason": "Duplicate of A's reorder_list and reorder_task entries; B's doc sources were merged into both."
+  },
+  {
+   "title": "Creating a task with its first note is atomic (B)",
+   "reason": "Duplicate of A's capture-note entry; the same behaviour and B's doc sources (doc:common-crate.md:67-68) were merged into it."
+  },
+  {
+   "title": "Task note preview used for list rows and search (B)",
+   "reason": "Duplicate of A's note preview separator entry; B's doc sources and the list-row and search usage were merged into it."
+  },
+  {
+   "title": "Rename an attachment (B)",
+   "reason": "Duplicate of A's Editing an attachment entry; B's doc source (doc:common-crate.md:18) and uncertainty were merged into it."
+  },
+  {
+   "title": "Attach a reference (link or path) (B)",
+   "reason": "Duplicate of A's attachments added as reference or copy; B's doc sources and UI-control uncertainty were merged into that entry."
+  },
+  {
+   "title": "Attach a copy of a file (B)",
+   "reason": "Duplicate of A's attachments added as reference or copy; B's doc sources and copy destination were merged into that entry."
+  },
+  {
+   "title": "Subtasks nest to any depth (B)",
+   "reason": "Duplicate of A's Trash and nesting fields on tasks entry; B's doc sources were merged into it."
+  },
+  {
+   "title": "Data survives launches and upgrades (B)",
+   "reason": "Duplicate of A's migrations-applied-at-startup entry; B's doc sources and claim were merged into it."
+  },
+  {
+   "title": "Settings kept in a separate file, not the database (B)",
+   "reason": "Duplicate of A's Settings stored outside the database as JSON entry; B's doc sources and copy-behaviour edge case were merged into it."
+  }
+ ],
+ "features": [
+  {
+   "title": "Default project created on demand with a random celestial name",
+   "trigger": "none",
+   "context": "Called when no project exists yet (default_project lookup)",
+   "result": "Returns the oldest project by created_at. If the database has no projects, creates one named by suggest_project_name(), a random entry from PROJECT_NAMES (e.g. \"Callisto\").",
+   "exact": [
+    {
+     "what": "Default project lookup order",
+     "value": "order_by_asc(created_at), first row"
+    },
+    {
+     "what": "Name pool",
+     "value": "PROJECT_NAMES: 61 celestial names from \"Acheron\" to \"Vesta\""
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:99-111",
+    "common/src/names.rs:9-71",
+    "common/src/names.rs:89-94",
+    "doc:common-crate.md:62",
+    "storage.rs:101-111 (order_by_asc(CreatedAt).one(), else create_project(suggest_project_name())); names.rs:9-71 (PROJECT_NAMES, 61 entries, first \"Acheron\" line 10, last \"Vesta\" line 70); names.rs:91-94 (suggest_project_name uses RandomState::hash_one(\"project\")). Edge case also checked: RandomState::new() is created per call (names.rs:92), so it is OS-seeded per call rather than fixed; the claim is consistent with that. doc: sources not verified (outside allowed files).",
+    ".llm/common-crate.md:62 names only the default_project method. The oldest-by-created_at lookup, the PROJECT_NAMES pool (61 names) and the RandomState seeding are not stated in the doc. Source files were not read."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Random name uses RandomState hash of the string \"project\", so it is not seeded by anything the user controls"
+   ],
+   "notes": "Comment says it mirrors the frontend nameSuggest lists so the tray Inbox default matches the app dice. Pool count corrected to 61 per critique (A had 60; names.rs:10-70 inclusive is 61 entries). B's doc entry (doc:common-crate.md:62) only says a default project can be obtained as the default and does not state how it appears; merged here as the same behaviour.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-001",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified against source; checker B could not check (doc names only default_project)."
+  },
+  {
+   "title": "Random Adjective Noun name suggestion for lists",
+   "trigger": "none",
+   "context": "Defined in names.rs; no caller inside the files of this area",
+   "result": "suggest_list_name() returns \"<ADJECTIVE> <NOUN>\", e.g. \"Amber Valley\", each word picked from its own random hash.",
+   "exact": [
+    {
+     "what": "Format",
+     "value": "\"{adjective} {noun}\" separated by one space"
+    },
+    {
+     "what": "ADJECTIVES pool",
+     "value": "50 words from \"Amber\" to \"Wild\""
+    },
+    {
+     "what": "NOUNS pool",
+     "value": "48 words from \"Atlas\" to \"Valley\""
+    }
+   ],
+   "sources": [
+    "common/src/names.rs:73-79",
+    "common/src/names.rs:81-87",
+    "common/src/names.rs:96-105",
+    "names.rs:97-105 (format \"{} {}\", one space; a and n each from their own RandomState::new().hash_one, lines 98-99); ADJECTIVES names.rs:73-79 (50 entries, \"Amber\" to \"Wild\"); NOUNS names.rs:81-87 (48 entries, \"Atlas\" to \"Valley\"). Nothing in storage.rs calls suggest_list_name (grep-consistent with edge case).",
+    ".llm/common-crate.md:62-65 lists method groups only; suggest_list_name, the ADJECTIVES/NOUNS pools and the \"{adjective} {noun}\" format are not mentioned."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Not called by any function in storage.rs; whether the UI shows it as a default list name is outside this area"
+   ],
+   "notes": "Doc comment says it mirrors the frontend nameSuggest lists. NOUNS count corrected to 48 per critique (A had 49; names.rs:82-86 is 48 entries). ADJECTIVES count of 50 confirmed.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-002",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified against source; checker B could not check."
+  },
+  {
+   "title": "Projects listed oldest first",
+   "trigger": "none",
+   "context": "Any project list read",
+   "result": "All projects returned ordered by created_at ascending.",
+   "exact": [
+    {
+     "what": "Sort key",
+     "value": "created_at ascending"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:69-77",
+    "storage.rs:69-77 list_projects, order_by_asc(projects::Column::CreatedAt).",
+    ".llm/common-crate.md:62 names the project list method but not its ordering."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-003",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified ordering in source; checker B could not check."
+  },
+  {
+   "title": "Renaming a project",
+   "trigger": "none",
+   "context": "Data operation rename_project(id, name); the UI trigger is defined elsewhere",
+   "result": "Sets the project name and refreshes updated_at to the current millisecond timestamp.",
+   "exact": [
+    {
+     "what": "Fields written",
+     "value": "name, updated_at"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:79-87",
+    "storage.rs:79-87 rename_project: col_expr Name and UpdatedAt = now_millis(), no rows_affected check, so unknown id returns Ok.",
+    ".llm/common-crate.md:62 names rename_project. Fields written (name, updated_at) and the no-existence-check edge are not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "No existence check: renaming an unknown id is not reported as an error (per critique, storage.rs:79-87)"
+   ],
+   "notes": "Critique confirmed this entry as correct.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-004",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; checker B could not check."
+  },
+  {
+   "title": "Deleting a project removes everything under it (hard delete)",
+   "trigger": "none (data operation delete_project(id)); the doc describes deleting a project, with the UI control not stated",
+   "context": "delete_project(id); applies whenever a project is deleted",
+   "result": "The project row is deleted and the database cascades to its lists, their tasks (including all subtasks), task attachments and task notes. Nothing is kept in Trash.",
+   "exact": [
+    {
+     "what": "Cascade chain",
+     "value": "projects -> lists -> tasks -> attachments and task_notes, each ON DELETE CASCADE"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:89-97",
+    "common/src/storage.rs:609-610",
+    "common/src/entities/lists.rs:21-28",
+    "common/schema.hcl:63-67",
+    "common/schema.hcl:119-123",
+    "common/schema.hcl:166-170",
+    "common/schema.hcl:205-209",
+    "doc:common-crate.md:35",
+    "doc:common-crate.md:48",
+    "doc:common-crate.md:50",
+    "storage.rs:89-97 delete_project (hard delete, comment 89-91 cites ON DELETE CASCADE); storage.rs:609-610 and 619 (foreign_keys(true)); schema.hcl:63-67 (fk_lists_project CASCADE), 119-123 (fk_tasks_list), 124-128 (fk_tasks_parent self-ref, covers subtasks), 166-170 (fk_attachments_task), 205-209 (fk_task_notes_task). Result's 'nothing kept in Trash' is consistent: no soft-delete in delete_project.",
+    ".llm/common-crate.md:47-50 gives projects -> lists (FK, cascade) -> tasks (FK, cascade, plus parent_id self-FK cascade so a task deletion drops its subtree) -> attachments and task_notes (both FK, cascade). .llm/common-crate.md:35 gives foreign_keys=ON on every connection as required for ON DELETE CASCADE. .llm/common-crate.md:62 names delete_project. Not in doc: the 'Nothing is kept in Trash' clause and the confirmation edge (both cannot_check)."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Cascade only fires because foreign_keys(true) is set on every pooled connection",
+    "The doc does not say whether a confirmation is shown first"
+   ],
+   "notes": "Covered by test deleting_a_project_cascades_to_lists_tasks_notes_attachments. Merged with B's deleting-a-list-or-project entry, which the critique treats as a duplicate; A is more exact. Uncertainty comes from B's unstated confirmation behaviour.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-005",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on cascade behaviour. The Trash clause and confirmation edge are not in the doc; A found no soft delete in delete_project source."
+  },
+  {
+   "title": "Deleting a list permanently removes its tasks",
+   "trigger": "none (data operation delete_list(id)); the doc describes deleting a list, with the UI control not stated",
+   "context": "delete_list(id); hard delete, no Trash",
+   "result": "The list row is deleted; the database cascades to all its tasks and their subtrees, attachments and notes.",
+   "exact": [
+    {
+     "what": "Cascade",
+     "value": "ON DELETE CASCADE on tasks.list_id"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:167-172",
+    "common/schema.hcl:119-123",
+    "common/src/entities/tasks.rs:29-37",
+    "doc:common-crate.md:35",
+    "doc:common-crate.md:48",
+    "doc:common-crate.md:50",
+    "storage.rs:167-172 delete_list (delete_by_id, no soft delete); schema.hcl:119-123 (fk_tasks_list on_delete CASCADE); schema.hcl:124-128 covers subtree via parent_id; entities/tasks.rs:29-36 (Lists belongs_to with on_delete Cascade).",
+    ".llm/common-crate.md:63 names delete_list. .llm/common-crate.md:48 gives lists -> tasks cascade and :49-50 give subtree, attachment and note cascade. Not in doc: the 'no Trash' clause and the confirmation edge."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The doc does not say whether a confirmation is shown first"
+   ],
+   "notes": "Unlike task deletion, list deletion is not soft and cannot be undone from Trash. Merged with B's deleting-a-list-or-project entry.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-006",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on cascade. The no-Trash clause and confirmation edge are not in the doc."
+  },
+  {
+   "title": "New list appended after existing tabs",
+   "trigger": "none",
+   "context": "create_list(project_id, name) call",
+   "result": "The new list gets sort_order equal to the current millisecond timestamp, so it sorts after existing tabs seeded the same way.",
+   "exact": [
+    {
+     "what": "sort_order value",
+     "value": "now_millis() as f64"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:115-130",
+    "storage.rs:115-130 create_list; storage.rs:123 sort_order: Set(now as f64) and comment lines 117-118. Edge case cites models.rs for the pre-migration default: models.rs:17-20 is only a doc comment saying 'defaults to created_at', and models.rs:19-20 is #[serde(default)] on sort_order, which yields 0.0 (f64 default) for a missing JSON field, not created_at. The DB backfill is in migration SQL under common/migrations/, which was not in my allowed files, so I cannot verify it.",
+    ".llm/common-crate.md:50 gives sort_order as REAL NOT NULL, which is consistent but does not state the now_millis value or the created_at migration default."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Doc comment at models.rs:17-18 says lists created before the sort_order migration default to created_at; the serde attribute at models.rs:19-20 (#[serde(default)]) yields 0.0 when the field is absent, so the created_at default is documented in the comment only and the backfill is not verified in the files checked (common/migrations/ not read)"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-007",
+   "check": "corrected",
+   "check_notes": "Checker A's verdict was corrected only on the edge case wording; the created_at backfill is documented in models.rs comment only and was not verified. Checker B could not check the create_list value."
+  },
+  {
+   "title": "Lists ordered by manual position then creation time",
+   "trigger": "none",
+   "context": "Any list read",
+   "result": "Lists are returned by sort_order ascending, with created_at ascending as tie-break.",
+   "exact": [
+    {
+     "what": "Sort keys",
+     "value": "sort_order asc, then created_at asc"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:132-141",
+    "storage.rs:132-141 list_lists: order_by_asc(SortOrder) then order_by_asc(CreatedAt).",
+    ".llm/common-crate.md:63 names the list method only; sort keys are not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-008",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified sort keys in source; checker B could not check."
+  },
+  {
+   "title": "Reordering a list tab",
+   "trigger": "none",
+   "context": "reorder_list(id, sort_order); the drag gesture is defined elsewhere",
+   "result": "Sets sort_order and updated_at on the list. Fails with an error when no list matches.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "list not found: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:143-155",
+    "doc:common-crate.md:50",
+    "doc:common-crate.md:60",
+    "doc:common-crate.md:63-64",
+    "storage.rs:143-155 reorder_list: update sort_order and updated_at; rows_affected == 0 -> bail!(\"list not found: {id}\") at line 152. schema.hcl:48-51 sort_order type real (f64 accepted).",
+    ".llm/common-crate.md:63 names reorder_list. .llm/common-crate.md:50 gives sort_order REAL NOT NULL and :60 gives f64 ordering keys. The error text 'list not found: {id}' and the not-found failure are not in the doc. Nothing states whether NaN or infinity are accepted."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "sort_order is a real (float), so any f64 value is accepted"
+   ],
+   "notes": "B was uncertain whether a move updates one or several rows. Source shows reorder_list writes exactly one row (storage.rs:143-155), so the entry stands. Merged with B's manual-ordering entry.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-009",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B could not check the error path. NaN/infinity handling is not addressed by either checker."
+  },
+  {
+   "title": "Renaming a list",
+   "trigger": "none",
+   "context": "rename_list(id, name)",
+   "result": "Sets name and updated_at. Unknown id succeeds silently.",
+   "exact": [
+    {
+     "what": "Fields written",
+     "value": "name, updated_at"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:157-165",
+    "storage.rs:157-165 rename_list: writes name and updated_at; no rows_affected check, so unknown id succeeds.",
+    ".llm/common-crate.md:63 names rename_list. Fields written and silent success for an unknown id are not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; checker B could not check."
+  },
+  {
+   "title": "New task appended to the bottom of its level",
+   "trigger": "none",
+   "context": "create_task(list_id, title, notes, parent_id)",
+   "result": "Task is created with done = 0, sort_order = current millisecond timestamp, deleted_at = none, and an optional parent_id for a subtask.",
+   "exact": [
+    {
+     "what": "Initial done",
+     "value": "0"
+    },
+    {
+     "what": "sort_order",
+     "value": "now_millis() as f64"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:176-199",
+    "storage.rs:176-199 create_task: done: Set(0) line 192, sort_order: Set(now as f64) line 193, deleted_at: Set(None) line 196, parent_id optional line 189; transaction begin line 185 and commit line 214 (note insert inside same txn lines 202-213).",
+    ".llm/common-crate.md:64 names create_task. .llm/common-crate.md:67-68 supports the one-transaction edge (create_task + first note). Initial done = 0, sort_order = now_millis and deleted_at = none are not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Task and optional first note are written in one transaction"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-011",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified defaults and transaction in source; B confirmed the transaction only via doc."
+  },
+  {
+   "title": "Capture note text becomes the task's first rich note",
+   "trigger": "create_task called with notes text that is not blank after trimming (e.g. from the tray capture); B: creating a task that includes a first note",
+   "context": "create_task called with notes text that is not blank after trimming",
+   "result": "A non-blank note text is stored as one task_notes row whose content is escape_html(text) wrapped as <p>...</p>, with newlines replaced by <br>. The task's plain notes column is set to the raw given string at insert (storage.rs:191), not from the note HTML; no recompute runs in create_task.",
+   "exact": [
+    {
+     "what": "Escaped characters",
+     "value": "& becomes &, < becomes <, > becomes >, \" becomes \", ' becomes ' (in that order: & first, storage.rs:754-758)"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:182-215",
+    "common/src/storage.rs:753-764",
+    "doc:common-crate.md:67-68",
+    "storage.rs:200-213 (note created when notes.filter(|s| !s.trim().is_empty()), line 202); storage.rs:762-764 plaintext_to_html -> format!(\"<p>{}</p>\", escape_html(s).replace('\\n', \"<br>\")); storage.rs:753-759 escape_html; storage.rs:191 notes: Set(notes.map(str::to_string)) (raw text stored at insert, no strip/recompute in create_task).",
+    ".llm/common-crate.md:67-68 supports that create_task + first note run in a transaction. .llm/common-crate.md:76 says Note content is sanitized HTML, consistent with HTML storage. The <p> wrapper, newline-to-<br> rule, escape set, blank check, the raw plain-notes column and the tray-capture trigger are not in the doc. The entity strings in the chunk JSON appear decoded, so the exact escape forms could not be confirmed from the chunk text."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Whitespace-only notes produce no task_notes row but the task's notes column still stores the given string"
+   ],
+   "notes": "The notes column is not recomputed from the HTML on this path, unlike create_note. Per critique, the task row and its first note are written in one transaction (storage.rs:185-214), so both appear or neither does. Merged with B's atomic-first-note entry.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-012",
+   "check": "corrected",
+   "check_notes": "Checker A verified the wrapper, escape set and blank check in source. Checker B noted the entity strings in the chunk JSON appear already decoded, so the exact escape forms were confirmed only from source (A). B also flagged the tray-capture trigger as not in the doc; not verified by either checker."
+  },
+  {
+   "title": "Live task list order",
+   "trigger": "none",
+   "context": "list_tasks(list_id) or all_tasks()",
+   "result": "Only live tasks (deleted_at is null) are returned, ordered by sort_order ascending then created_at ascending. list_tasks also filters to one list.",
+   "exact": [
+    {
+     "what": "Sort keys",
+     "value": "sort_order asc, created_at asc"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:218-239",
+    "storage.rs:218-227 list_tasks (ListId eq, DeletedAt is_null, sort_order asc, created_at asc); storage.rs:231-239 all_tasks (same, no list filter); storage.rs:274-280 get_task has no deleted_at filter.",
+    ".llm/common-crate.md:64 names task list and all methods. .llm/common-crate.md:91-92 gives GET /lists/{id}/tasks and GET /tasks. The deleted_at filter and sort_order/created_at ordering are not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "get_task does not filter deleted_at, so a trashed task can still be fetched by id"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-013",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified filters and ordering in source; B could only confirm the endpoints."
+  },
+  {
+   "title": "Updating a task changes only the supplied fields",
+   "trigger": "none",
+   "context": "update_task(id, title, notes, done); each argument is optional",
+   "result": "Any provided title, notes or done is written; updated_at is refreshed only when at least one field was supplied. Missing task id is not an error; the current task is returned via get_task, which fails with task not found if absent.",
+   "exact": [
+    {
+     "what": "done storage",
+     "value": "bool stored as 1 or 0 (done as i32)"
+    },
+    {
+     "what": "Error text",
+     "value": "task not found: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:241-278",
+    "common/src/storage.rs:659",
+    "storage.rs:241-272 update_task: title line 254-257, notes 258-261 (Some(notes.to_string())), done 262-265 (done as i32), updated_at refreshed only if dirty 266-268; get_task fallback line 271; error text storage.rs:278 \"task not found: {id}\"; storage.rs:659 done: m.done != 0 in to_task.",
+    ".llm/common-crate.md:64 names update_task and :93 gives PATCH /tasks/{id} as 'Update'. .llm/common-crate.md:72-73 says notes is a derived preview of note_items, which is consistent with the divergence edge but does not state it. Partial-field rules, updated_at rule, done as 1/0 and the 'task not found: {id}' error are not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Setting notes directly does not update task_notes rows, so the rich note blocks and the plain notes column can diverge"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-014",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B could only confirm the endpoint and the derived notes preview."
+  },
+  {
+   "title": "Soft delete moves a task and its whole subtree to Trash",
+   "trigger": "none",
+   "context": "soft_delete_tasks(ids); the UI delete path per the comment (trigger in other area)",
+   "result": "Stamps deleted_at and updated_at on each given task and every descendant, walking children via parent_id. Only rows that were not already trashed are stamped and returned; the returned ids are what undo/restore must clear.",
+   "exact": [
+    {
+     "what": "Fields written",
+     "value": "deleted_at = now_millis(), updated_at = now_millis()"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:293-327",
+    "storage.rs:297-327 soft_delete_tasks: queue walks children via ParentId (310-316); deleted_at Some(now) and updated_at now (319-320) only when deleted_at.is_none() (317); affected returned (322, 326); missing ids continue (307-309); siblings not in queue so untouched.",
+    "The doc contains no soft-delete or Trash concept. .llm/common-crate.md:64 lists delete but not soft_delete_tasks. deleted_at is not mentioned anywhere in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Already-trashed rows are skipped and not returned, so restoring the returned set does not untrash them",
+    "Missing ids are skipped silently",
+    "Sibling tasks outside the subtree are untouched"
+   ],
+   "notes": "Covered by test soft_delete_moves_the_subtree_to_trash_and_restores_it (storage.rs:896-936). Per critique, this soft path is the UI delete; the hard path is delete_task.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-015",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source. Checker B found no soft-delete concept in the doc, which is a doc gap, not a contradiction."
+  },
+  {
+   "title": "Restore tasks from Trash",
+   "trigger": "none",
+   "context": "restore_tasks(ids) with the exact ids returned by soft delete",
+   "result": "Clears deleted_at and sets updated_at on each listed task. Only the listed rows are restored; descendants are not walked here.",
+   "exact": [
+    {
+     "what": "Fields written",
+     "value": "deleted_at = null, updated_at = now_millis()"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:329-344",
+    "storage.rs:331-344 restore_tasks: deleted_at Set(None), updated_at now; only listed ids (334-340, no child walk); missing ids skipped via if let (335).",
+    "The doc has no restore_tasks or Trash concept (.llm/common-crate.md:62-65 method groups do not list it)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Unknown ids are skipped silently"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-016",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Trash view ordering",
+   "trigger": "none",
+   "context": "list_trashed() call (the Trash view per the comment)",
+   "result": "Returns every soft-deleted task, most recently trashed first. Descendants trashed together appear with the same timestamp.",
+   "exact": [
+    {
+     "what": "Sort key",
+     "value": "deleted_at descending"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:356-364",
+    "storage.rs:357-364 list_trashed: filter DeletedAt is_not_null, order_by_desc(DeletedAt); descendants stamped with the same now value (299, 319).",
+    "The doc has no list_trashed or Trash view (.llm/common-crate.md:62-65 method groups do not list it)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Trash contents are not limited to top-level tasks; subtasks appear as their own rows"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-017",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Emptying the Trash",
+   "trigger": "none",
+   "context": "empty_trash() call",
+   "result": "Permanently deletes every task with deleted_at set; cascades remove their attachments and notes.",
+   "exact": [
+    {
+     "what": "Filter",
+     "value": "deleted_at is not null"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:366-373",
+    "storage.rs:367-373 empty_trash: delete_many filter DeletedAt is_not_null; cascades per schema.hcl:166-170 and 205-209.",
+    "The doc has no empty_trash (.llm/common-crate.md:62-65 method groups do not list it)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Live tasks are unaffected"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-018",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Permanent delete of selected tasks (purge)",
+   "trigger": "none",
+   "context": "purge_tasks(ids)",
+   "result": "Each id is hard-deleted; its subtree is removed by cascade.",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:346-354",
+    "storage.rs:347-354 purge_tasks: loop delete_by_id per id (hard delete, cascade via parent_id schema.hcl:124-128); a missing id causes no error.",
+    "The doc has no purge_tasks (.llm/common-crate.md:62-65 method groups do not list it)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Missing ids are a no-op"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-019",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Hard delete of a single task and its subtree",
+   "trigger": "HTTP DELETE /tasks/{id} (doc:common-crate.md:93, 'Update / delete a task'). The UI path is not stated in the doc.",
+   "context": "delete_task(id); per the comment this is the HTTP API path, not the UI path",
+   "result": "Task row is removed and its subtasks are removed by the parent_id self-referencing ON DELETE CASCADE (supported by doc:common-crate.md:49).",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:282-291",
+    "common/schema.hcl:124-128",
+    "storage.rs:282-291 delete_task (hard delete); comment storage.rs:282-285 says this is the hard path (HTTP API, purge) and the UI deletes softly; schema.hcl:124-128 fk_tasks_parent CASCADE.",
+    ".llm/common-crate.md:93 documents HTTP 'PATCH/DELETE /tasks/{id}' as 'Update / delete a task'. .llm/common-crate.md:49 says deleting a task drops its whole subtree in the DB through the parent_id cascade. The chunk trigger 'none' omits the HTTP route. Whether the UI path differs is not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Covered by test deleting_a_task_cascades_to_its_subtree.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-020",
+   "check": "corrected",
+   "check_notes": "Checker A confirmed the hard delete and subtree cascade in source; its comment says the UI deletes softly, so the UI trigger is not the hard path. Checker B's trigger correction (HTTP route) is taken as it is sourced from the doc and does not conflict with A's behaviour claim. The feature's UI path remains unresolved."
+  },
+  {
+   "title": "Moving a task (re-parenting and re-listing)",
+   "trigger": "none",
+   "context": "move_task(id, parent_id, list_id, sort_order)",
+   "result": "The task takes the given parent_id (None = top level) and sort_order (default now_millis). Its list becomes the parent's list when a parent is given, otherwise list_id if provided, otherwise its current list.",
+   "exact": [
+    {
+     "what": "Default sort_order",
+     "value": "now_millis() as f64"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:375-434",
+    "storage.rs:375-434 move_task: target_list = parent's list when parent given (392-415, parent_list at 414), else list_id or current_list (416-418); sort_order.unwrap_or(now as f64) line 425; txn commit line 432; get_task line 433.",
+    ".llm/common-crate.md:64 names move_task. .llm/common-crate.md:67-68 supports 'move_task + subtree relist' running in a transaction. Default sort_order (now_millis), parent/list resolution rules and the reload order are not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The move and the relist run in one transaction that commits at storage.rs:432; the reload of the moved task (get_task) runs after the commit at storage.rs:433 (per critique)"
+   ],
+   "notes": "Transaction detail taken from the critique's verification of storage.rs:378-434. B's claim that the reload is inside the same transaction was wrong.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-021",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B only confirmed the transaction."
+  },
+  {
+   "title": "Moving a task under itself is rejected",
+   "trigger": "none",
+   "context": "move_task with parent_id equal to the task's own id",
+   "result": "Operation fails and nothing is written.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "cannot move a task under itself"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:392-396",
+    "storage.rs:393-396 if parent == id -> bail!(\"cannot move a task under itself\").",
+    "The doc has no move-under-itself rule or error text (.llm/common-crate.md:64 names move_task only)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-022",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Moving a task under its own subtask is rejected",
+   "trigger": "none",
+   "context": "move_task where the target parent lies inside the task's subtree (walks ancestors of the target parent)",
+   "result": "Operation fails and nothing is written.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "cannot move a task under its own subtask"
+    },
+    {
+     "what": "Missing parent error",
+     "value": "parent task not found: {parent}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:397-413",
+    "storage.rs:397-413: missing parent -> \"parent task not found: {parent}\" (line 400); ancestor walk from parent_model.parent_id (404-412) -> bail!(\"cannot move a task under its own subtask\") (line 407).",
+    "The doc has no move-under-subtask rule, error texts or missing-parent behaviour (.llm/common-crate.md:64 names move_task only)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A target parent that does not exist fails with parent task not found"
+   ],
+   "notes": "Covered by test moving_a_task_under_its_own_descendant_is_rejected.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-023",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B found no mention in the doc."
+  },
+  {
+   "title": "Moving a task to another list carries its whole subtree",
+   "trigger": "none",
+   "context": "move_task where the resolved target list differs from the current list",
+   "result": "Every descendant is re-listed into the new list, walking the subtree.",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:429-431",
+    "common/src/storage.rs:729-751",
+    "storage.rs:429-431 if target_list != current_list -> relist_task_tree; storage.rs:729-751 walks descendants via ParentId and sets list_id; storage.rs:176-199 create_task uses given list_id with no parent check (line 188).",
+    ".llm/common-crate.md:67-68 says the move_task + subtree relist writes run in a transaction, which matches 'every descendant is re-listed'. The create_task list_id edge (no check against the parent) is not in the doc and remains unverified."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Applies to move_task only: children follow their parent when moved, but create_task stores the list_id it is given with no check against the parent, so a subtask can be created in a different list from its parent"
+   ],
+   "notes": "Covered by test moving_a_task_across_lists_relists_its_subtree. The earlier claim that subtasks never sit in a different list than their parent was wrong for create_task and has been corrected per critique (storage.rs:186-189, 378-434).",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-024",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on subtree relist. The create_task list_id edge is verified only by A in source."
+  },
+  {
+   "title": "Reordering a task",
+   "trigger": "none",
+   "context": "reorder_task(id, sort_order)",
+   "result": "Sets sort_order and updated_at on the task and returns it. Fails when no row matches.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "task not found: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:436-447",
+    "doc:common-crate.md:50",
+    "doc:common-crate.md:60",
+    "doc:common-crate.md:63-64",
+    "storage.rs:436-447 reorder_task: update sort_order and updated_at, no deleted_at filter; rows_affected == 0 -> bail!(\"task not found: {id}\") line 444; returns get_task line 446.",
+    ".llm/common-crate.md:64 names reorder_task and :60 gives f64 ordering keys. The error text 'task not found: {id}', the returned value and the trashed-task edge are not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Reorder does not filter deleted_at, so a trashed task can be reordered"
+   ],
+   "notes": "Critique confirmed reorder_task updates exactly one row. Merged with B's manual-ordering entry.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-025",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B could only confirm the method name and f64 keys."
+  },
+  {
+   "title": "Attachments added as reference or copy",
+   "trigger": "HTTP: POST /tasks/{id}/attachments (add-by-reference, doc:common-crate.md:94) and POST /tasks/{id}/attachments/copy (add-by-copy, doc:common-crate.md:95). Data operation: add_attachment(task_id, name, link_type, location) (doc:common-crate.md:65). The UI control is not stated.",
+   "context": "add_attachment stores the row only; no copying happens in storage.rs. The copy destination folder ~/.taskscape/attachments/ comes from the doc comment at models.rs:72 and is not enforced in the files checked.",
+   "result": "Stores an attachment row with a new id, name, link_type stored as text (as_str), and location stored exactly as given (storage.rs:463). Reference stores the URL or path as given; no file is copied. The doc's statement that copy stores a relative location (doc:common-crate.md:78) is not implemented in storage.rs and is not confirmed by the source.",
+   "exact": [
+    {
+     "what": "link_type strings",
+     "value": "\"reference\" and \"copy\" (serde lowercase)"
+    },
+    {
+     "what": "Unknown link_type text read from DB",
+     "value": "treated as Reference"
+    },
+    {
+     "what": "Copy destination folder",
+     "value": "~/.taskscape/attachments/"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:451-469",
+    "common/src/models.rs:66-90",
+    "common/src/models.rs:97-100",
+    "doc:common-crate.md:27",
+    "doc:common-crate.md:78",
+    "doc:common-crate.md:94",
+    "doc:common-crate.md:95",
+    "storage.rs:451-469 add_attachment: new id (459), link_type.as_str() (462), location stored as given (463); no file copy in this code. models.rs:66-75 LinkType enum with serde rename_all lowercase (line 68), as_str lines 77-82 (\"reference\", \"copy\"); models.rs:84-89 from_db maps anything other than \"copy\" to Reference (line 87); models.rs:72 is the only place '~/.taskscape/attachments/' appears in the files checked, as a doc comment.",
+    ".llm/common-crate.md:65 names add_attachment. .llm/common-crate.md:94 gives 'GET/POST /tasks/{id}/attachments' (list / add-by-reference) and :95 gives 'POST /tasks/{id}/attachments/copy' (add-by-copy). .llm/common-crate.md:27 and :78 give the attachments/ folder and that copy stores a relative location. .llm/common-crate.md:77 says reference 'copies nothing and stores a URL/path'. The doc does not mention an 'online URL, file:// URL or network path' list, nor a 'root dir'."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Reference: nothing is copied; models.rs:70 doc says it may be an online URL, file:// URL or network path (source doc comment); the .llm doc says only that reference 'copies nothing and stores a URL/path' (doc:common-crate.md:77)",
+    "Copy: models.rs:72 doc says the file is copied into ~/.taskscape/attachments/; the copy step is not in storage.rs (add_attachment only stores the location); the .llm doc gives the same folder at doc:common-crate.md:27 and :78"
+   ],
+   "notes": "Merged with B's two attachment entries (reference and copy), which the critique treats as duplicates. B marked system true for these; this entry is set to false because the data behaviour does not depend on the OS, and any file-picker control is not stated. The UI control is unknown, hence uncertain.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-026",
+   "check": "corrected",
+   "check_notes": "Both checkers corrected different parts. A's source shows storage.rs stores location as given and performs no copy; the copy folder is a models.rs doc comment only. B's doc says copy stores a relative location (doc:78), which storage.rs does not implement, so the source decides and the 'relative location' wording is not confirmed by code. The 'online URL, file:// URL or network path' wording comes from models.rs:70, not from the .llm doc, so it is not a conflict. The 'root dir' wording is in neither check's sources."
+  },
+  {
+   "title": "Attachments listed oldest first",
+   "trigger": "none",
+   "context": "list_attachments(task_id)",
+   "result": "Attachments for the task returned by created_at ascending.",
+   "exact": [
+    {
+     "what": "Sort key",
+     "value": "created_at asc"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:471-480",
+    "storage.rs:471-480 list_attachments: filter TaskId, order_by_asc(CreatedAt).",
+    ".llm/common-crate.md:65 names list_attachments only; the created_at ascending order is not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-027",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B only confirmed the method name."
+  },
+  {
+   "title": "Editing an attachment name and location",
+   "trigger": "data operation update_attachment(id, name, location) (doc:common-crate.md:65). attachments.rs rename_attachment (doc:common-crate.md:18) is the module's rename entry point. The doc does not say how the two relate or which UI path calls them.",
+   "context": "update_attachment(id, name, location); location changes only when a copy file is renamed on disk",
+   "result": "Sets name and location; returns the updated attachment.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "attachment not found: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:490-508",
+    "doc:common-crate.md:18",
+    "storage.rs:490-508 update_attachment: writes Name and Location (499-500); comment 490-491 says location changes only when a copy's on-disk file is renamed; rows_affected == 0 -> bail!(\"attachment not found: {id}\") line 505; returns get_attachment line 507.",
+    ".llm/common-crate.md:65 names update_attachment. .llm/common-crate.md:18 names rename_attachment in attachments.rs, which the chunk does not mention. The doc does not say which of the two is the UI rename path. The 'location changes only when a copy is renamed on disk' rule and the error text are not in the doc."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "B saw only that the name changes and the stored file is not described as moving; the source shows location changes only when a copy's file is renamed on disk"
+   ],
+   "notes": "Merged with B's rename-an-attachment entry, which the critique treats as vague and superseded by this exact entry. Uncertainty kept because the UI path is not stated in the doc.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-028",
+   "check": "corrected",
+   "check_notes": "A verified update_attachment in storage.rs including the error text and the location rule. B added the rename_attachment entry point in attachments.rs (doc:common-crate.md:18), which A did not read; no conflict in values, but which UI path calls which entry point is unresolved."
+  },
+  {
+   "title": "Deleting an attachment",
+   "trigger": "none",
+   "context": "delete_attachment(id)",
+   "result": "Removes the attachment row only; no error if missing.",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:510-515",
+    "storage.rs:510-515 delete_attachment: delete_by_id, no existence check; schema.hcl:166-170 cascade from tasks.",
+    ".llm/common-crate.md:65 names delete_attachment. The row-only removal and no-error-if-missing behaviour are not stated. .llm/common-crate.md:50 supports the attachments FK cascade on task deletion."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Attachments are also removed when their task is deleted (schema.hcl:166-170)"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-029",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified in source; B confirmed only the FK cascade."
+  },
+  {
+   "title": "Task notes ordered as note blocks",
+   "trigger": "none",
+   "context": "list_notes(task_id) and task hydration",
+   "result": "Note blocks returned by sort_order ascending, then created_at ascending.",
+   "exact": [
+    {
+     "what": "Sort keys",
+     "value": "sort_order asc, created_at asc"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:519-525",
+    "common/src/storage.rs:589-596",
+    "common/src/storage.rs:693-700",
+    "storage.rs:519-525 list_notes -> notes_of; storage.rs:693-700 notes_of order_by_asc(SortOrder) then order_by_asc(CreatedAt); storage.rs:589-596 hydrate uses the same ordering.",
+    ".llm/common-crate.md:65 names list_notes only; the sort_order/created_at ordering is not stated."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-030",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified ordering in source; B could not check."
+  },
+  {
+   "title": "Adding a rich-text note block to a task",
+   "trigger": "none",
+   "context": "create_note(task_id, content); content is sanitized HTML supplied by the caller",
+   "result": "Inserts a note with sort_order = now_millis and then rebuilds the task's plain notes preview from all its blocks.",
+   "exact": [
+    {
+     "what": "sort_order",
+     "value": "now_millis() as f64"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:527-545",
+    "storage.rs:529-545 create_note: sort_order now as f64 (536), inserted in txn, recompute_task_notes (542); content not sanitized here (comment 527-528 says sanitized HTML from caller).",
+    ".llm/common-crate.md:67-68 says 'note write + preview recompute' run in a transaction, which the chunk omits. .llm/common-crate.md:65 names create_note. .llm/common-crate.md:76 says Note content is sanitized HTML. The doc does not say the sanitizing is the caller's job. The sort_order value is not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Stored content is not sanitized here, per the chunk's source reference (storage.rs comment 527-528 says sanitized HTML comes from the caller); the doc states only that Note content is sanitized HTML (doc:common-crate.md:76)",
+    "The note write and preview recompute run in one transaction (storage.rs:529-545 inserts in txn and calls recompute_task_notes at line 542; doc:common-crate.md:67-68, 'note write + preview recompute')"
+   ],
+   "notes": "Covered by test notes_recompute_the_task_plaintext_preview. Critique confirms the store does not sanitize (storage.rs:527-561), so B's sanitized-HTML claim was dropped.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-031",
+   "check": "corrected",
+   "check_notes": "A verified the insert, transaction and recompute in source and that content is not sanitized in create_note (caller's job per comment 527-528). B's two edge cases are consistent with A and are kept."
+  },
+  {
+   "title": "Editing a note block",
+   "trigger": "none",
+   "context": "update_note(id, content)",
+   "result": "Replaces content, refreshes the note's updated_at and rebuilds the task's plain notes preview.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "note not found: {id}"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:547-561",
+    "storage.rs:547-561 update_note: content replaced (555), updated_at refreshed (556), recompute (558); error \"note not found: {id}\" line 552.",
+    ".llm/common-crate.md:65 names update_note. .llm/common-crate.md:67-68 says 'note write + preview recompute' run in a transaction, which is missing from the chunk. The 'note not found: {id}' error and updated_at refresh are not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The note write and preview recompute run in one transaction (doc:common-crate.md:67-68, 'note write + preview recompute'). The doc does not name update_note explicitly in that phrase. Source shows the content replacement, updated_at refresh and recompute at storage.rs:555-558, with the error 'note not found: {id}' at line 552."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-032",
+   "check": "corrected",
+   "check_notes": "A verified content replacement, updated_at refresh, recompute and error text in source. A did not cite a transaction line for update_note; B's transaction edge rests on the doc only (doc:common-crate.md:67-68)."
+  },
+  {
+   "title": "Deleting a note block",
+   "trigger": "none",
+   "context": "delete_note(id)",
+   "result": "Removes the block and rebuilds the task's plain notes preview; if no block matches, nothing else happens.",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:563-577",
+    "storage.rs:563-577 delete_note: task_id looked up first (565-568); delete (569); recompute only if task_id is Some (572-574). recompute_task_notes with empty result stores None (712-716).",
+    ".llm/common-crate.md:65 names delete_note. .llm/common-crate.md:67-68 says 'note write + preview recompute' run in a transaction. The doc does not name delete explicitly in that phrase. The 'null' result for an empty preview is not in the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Deleting the last block leaves the task notes preview empty, stored as null (Option None, storage.rs:712-716); the .llm doc does not state this (see F16-034)",
+    "The note write and preview recompute run in one transaction (doc:common-crate.md:67-68). The doc does not name delete_note explicitly in that phrase."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-033",
+   "check": "corrected",
+   "check_notes": "A verified the recompute-on-delete and the None storage for an empty preview in source (storage.rs:712-716). B's null result is consistent with A's None; B's transaction edge rests on the doc only."
+  },
+  {
+   "title": "Task notes preview joins blocks with a separator",
+   "trigger": "Any note add, edit or delete (recompute_task_notes); B: the list-row preview and search, per the doc",
+   "context": "Any note add, edit or delete (recompute_task_notes)",
+   "result": "The task's plain notes column becomes each block's stripped text, empty blocks dropped, joined with a separator. If the joined result is blank, the column is set to null. The column is shown as the list-row preview and matched by search.",
+   "exact": [
+    {
+     "what": "Separator",
+     "value": "\"  ·  \" (two spaces, middle dot U+00B7, two spaces)"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:704-724",
+    "common/src/storage.rs:702-711",
+    "doc:common-crate.md:72-73",
+    "storage.rs:704-724 recompute_task_notes: strip_html per block (708), empty filtered (709), joined with \"  ·  \" (711, the separator as displayed in the source); blank -> None (712-716); written to tasks.notes (717-722). Doc: sources not verified (outside allowed files).",
+    ".llm/common-crate.md:72-73 says notes is a derived plaintext preview 'kept for the list-row preview and search', which supports the role. The separator '  ·  ', the join rule, the trigger list and the null storage are not in the doc."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Blank or whitespace-only results are stored as null"
+   ],
+   "notes": "Merged with B's list-row and search entry. The list-row and search use comes from the doc comment and the doc only (not verified in source for this area), hence uncertain. B's rule was vague; A's separator and null rule are exact and verified by the critique.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A verified the separator, join and null storage in source; B confirmed only the role of the preview."
+  },
+  {
+   "title": "HTML to plaintext conversion for previews and export",
+   "trigger": "none",
+   "context": "strip_html applied to note content (preview and copy-tasks markdown export)",
+   "result": "Tags are removed and each tag boundary becomes a space; the entities   & < > \" ' are decoded; all whitespace runs collapse to single spaces; output is trimmed.",
+   "exact": [
+    {
+     "what": "Decoded entities",
+     "value": "  becomes a space; & becomes &; < becomes <; > becomes >; \" becomes \"; ' becomes ' (storage.rs:786-791, applied in this order)"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:766-793",
+    "storage.rs:766-793 strip_html: tag strip with each '>' pushing a space (774-783); decoding chain at storage.rs:785-791 in this order:   -> space, & -> &, < -> <, > -> >, \" -> \", ' -> '; then split_whitespace().join(\" \") (792), which also trims.",
+    "The doc has no strip_html or copy-tasks markdown export (.llm/common-crate.md is silent). The decoded entity list and decoding order could not be verified; the chunk JSON appears to show the entity forms already decoded, so the exact strings are unconfirmed."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "< and > are decoded after the tag strip (storage.rs:776-778 strip, 788-789 decode), so escaped text such as <b> comes out as literal <b> text",
+    "Decoding order is   first, then & (storage.rs:786-787), so the text &nbsp; becomes the literal string   after the step"
+   ],
+   "notes": "Comment at storage.rs:766-770 mentions the copy-tasks markdown export; that export code is outside this area.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-035",
+   "check": "corrected",
+   "check_notes": "A verified the decoding chain and order in source. B could not check; B noted the chunk JSON shows entity forms already decoded, so the exact strings are confirmed only from source (A)."
+  },
+  {
+   "title": "Each task carries its attachments and note blocks",
+   "trigger": "none",
+   "context": "Any task read (hydrate)",
+   "result": "Tasks are returned with attachments (ordered by created_at ascending) and note_items (ordered by sort_order ascending, then created_at ascending) filled in, using two batched queries.",
+   "exact": [],
+   "sources": [
+    "common/src/storage.rs:582-605",
+    "common/src/models.rs:46-51",
+    "A: storage.rs:582-605 (hydrate: attachments ordered by created_at; note_items ordered by sort_order then created_at; two batched load_many calls); models.rs:46-51 (attachments, note_items with #[serde(default)]); storage.rs:218-238 and 274-280, 357-364 (list_tasks, all_tasks, get_task, list_trashed all call hydrate)",
+    "B: common-crate.md:65-67 (hydrate() batch-loads attachments and notes with SeaORM load_many, two queries total, not N+1); common-crate.md:74-75 (#[serde(default)] attachments and note_items). The doc gives no created_at ordering for attachments, no sort_order ordering for note_items, and does not say which reads (get_task, list rows) call hydrate(). Source not opened (doc-only scope)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The fill-in runs for every read that goes through hydrate: get_task, list_tasks, all_tasks and list_trashed (storage.rs:218-238, 274-280, 357-364). The doc's phrase \"list rows\" should be read as these list methods.",
+    "list_attachments and list_notes (storage.rs:471-480, 519-525) are separate per-task queries and do not hydrate."
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-036",
+   "check": "corrected",
+   "check_notes": "A verified both orderings and the calling reads from source. B's doc-only gaps (no ordering stated, unknown hydrate callers) are filled by A's source check. No value conflict. Both checkers agree on two batched queries, not N+1."
+  },
+  {
+   "title": "Pre-migration ordering defaults",
+   "trigger": "none",
+   "context": "Deserialising older list and task data without sort_order",
+   "result": "A missing sort_order defaults to 0 in serde, but the doc comments say it is meant to fall back to created_at so older rows keep chronological order.",
+   "exact": [
+    {
+     "what": "serde default",
+     "value": "#[serde(default)] sort_order: f64 (default 0.0)"
+    }
+   ],
+   "sources": [
+    "common/src/models.rs:17-20",
+    "common/src/models.rs:32-35",
+    "A: models.rs:17-20 (List.sort_order, #[serde(default)], doc comment says defaults to created_at); models.rs:32-35 (Task.sort_order, #[serde(default)], doc comment says defaults to created_at); serde f64 default is 0.0; no code sets created_at as the fallback.",
+    "B: common-crate.md:74-75 only says attachments and note_items are #[serde(default)]. Nothing in the doc covers a sort_order serde default, its value 0.0, or a created_at fallback. common-crate.md:50 and :60 mention sort_order only as REAL NOT NULL and f64 ordering keys."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The created_at fallback is described only in the doc comment; the serde default is 0, not created_at, in this code"
+   ],
+   "notes": "Critique confirms A correctly flags the doc/code mismatch.",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-037",
+   "check": "confirmed_by_one",
+   "check_notes": "Confirmed from source by A. B could not check (doc does not cover it). No conflict."
+  },
+  {
+   "title": "Trash and nesting fields on tasks",
+   "trigger": "none; B: creating a subtask under an existing task, with the UI path not stated in the doc",
+   "context": "Task model fields; a task may have a parent",
+   "result": "deleted_at is None for live tasks and set when trashed. parent_id is None for a top-level task; subtasks may nest arbitrarily deep.",
+   "exact": [
+    {
+     "what": "Field",
+     "value": "parent_id"
+    }
+   ],
+   "sources": [
+    "common/src/models.rs:38-45",
+    "doc:common-crate.md:49",
+    "doc:common-crate.md:74",
+    "A: models.rs:38-41 (deleted_at: Option<i64>, None for live task, set when soft-deleted, only list_trashed surfaces it); models.rs:42-45 (parent_id: None for top-level; subtasks may nest arbitrarily deep); storage.rs:181 and 189 (create_task takes parent_id).",
+    "B: common-crate.md:74-75: parent_id is an optional field and subtasks nest arbitrarily deep (None for a top-level task is implied by 'optional'). common-crate.md:48-49: parent_id is a self-referential FK with ON DELETE CASCADE, so deleting a task drops its whole subtree in the DB. The field list at :72-75 has no deleted_at, and the doc says nothing about trash or soft-delete state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Deleting a task cascades to its whole subtree in the database via the self-referential parent_id foreign key (common-crate.md:48-49; ON DELETE CASCADE per the doc, not re-checked against schema.hcl)."
+   ],
+   "notes": "Merged with B's subtasks-nest-to-any-depth entry, which the critique treats as a duplicate.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-038",
+   "check": "corrected",
+   "check_notes": "A verified deleted_at and parent_id from source, so B's 'deleted_at unverified' is a doc-scope gap, not a contradiction. The feature's exact values stand. B's cascade behaviour is a valid addition not in A's evidence (A did not check the ON DELETE clause in schema.hcl), so it is added as an edge case, attributed to the doc."
+  },
+  {
+   "title": "Shared database location and connection settings",
+   "trigger": "none",
+   "context": "App start (Store::open) and every connection from the pool",
+   "result": "Data lives in the shared ~/.taskscape/taskscape.db. Every connection uses WAL journaling, a 5 second busy timeout, and foreign keys on, with a pool of at most 4 connections.",
+   "exact": [
+    {
+     "what": "Database path",
+     "value": "~/.taskscape/taskscape.db"
+    },
+    {
+     "what": "Busy timeout",
+     "value": "5s"
+    },
+    {
+     "what": "Max connections",
+     "value": "4"
+    },
+    {
+     "what": "Journal mode",
+     "value": "WAL"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:16-20",
+    "common/src/storage.rs:26-30",
+    "common/src/storage.rs:608-625",
+    "A: paths.rs:3-7 (root ~/.taskscape), paths.rs:10-12 (taskscape.db); storage.rs:16-20 (each process keeps its own pool to shared file, WAL plus busy timeout); storage.rs:26-30 and 608-625 (connect: journal_mode Wal at 617, busy_timeout 5s at 618, foreign_keys(true) at 619, max_connections(4) at 621; connect runs in open_at, storage.rs:34-38).",
+    "B: common-crate.md:25-26 (~/.taskscape/ contains taskscape.db, SQLite WAL); :33-36 (max_connections = 4; journal_mode=WAL, busy_timeout=5s, foreign_keys=ON on every connection; Store::open() is async, :36-37). Edge case 'main and tray each keep their own pool' is not stated in common-crate.md (:3 and :83 only say both apps link and serve the crate); CLAUDE.md line 3 says the two apps are separate processes. Edge is unverified from the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The main app and tray app each keep their own pool to the same file"
+   ],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-039",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on the feature. The 'each process keeps its own pool' edge case is unverified in the doc but confirmed by A at storage.rs:16-20."
+  },
+  {
+   "title": "Migrations applied at startup",
+   "trigger": "none; B: launching the app, including after an update with new schema changes",
+   "context": "Store::open; runs once per launch",
+   "result": "Creates schema_migrations if needed, then applies each embedded .sql migration not yet recorded, in filename order, each in its own transaction that also records the version. Existing projects, lists, tasks, attachments and notes are kept across relaunches and schema upgrades.",
+   "exact": [
+    {
+     "what": "Tracking table",
+     "value": "schema_migrations (version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)"
+    }
+   ],
+   "sources": [
+    "common/src/migrations.rs:1-78",
+    "doc:common-crate.md:39-43",
+    "doc:common-crate.md:14-15",
+    "A: migrations.rs:26-33 (CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)); migrations.rs:20 (include_dir! embed); migrations.rs:45-49 (only *.sql, sorted by path); migrations.rs:58-75 (skip applied, each migration in its own txn with INSERT of version); storage.rs:27-38 (open_at calls apply).",
+    "B: common-crate.md:14-15 (embeds common/migrations/*.sql; applies unrecorded versions at startup). common-crate.md:41-43 (Atlas autogenerates versioned SQL; migrations.rs records applied versions in a schema_migrations table and replays new ones in a transaction). Not stated in the doc: table column definitions, filename order, a per-migration transaction that also records the version, create-if-needed, include_dir, or data being kept across relaunches."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Migration files are embedded at compile time with include_dir"
+   ],
+   "notes": "Merged with B's data-survives-launches-and-upgrades entry, which the critique treats as a duplicate. The data-kept-across-upgrades claim comes from the doc.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-040",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the feature from source, including the table columns, sorted filename order, per-migration transaction and create-if-needed behaviour that B could not state. B's 'corrected' came from doc-scope gaps only; no value conflicts."
+  },
+  {
+   "title": "Settings stored outside the database as JSON",
+   "trigger": "none; B: app preferences saved apart from the database, always",
+   "context": "get_setting / set_setting (e.g. last active list); always",
+   "result": "Settings are read and written through crate::settings at ~/.taskscape/settings.json, not in the database. Settings are a string-to-string map saved as JSON.",
+   "exact": [
+    {
+     "what": "File",
+     "value": "~/.taskscape/settings.json"
+    },
+    {
+     "what": "Settings type",
+     "value": "string→string map"
+    }
+   ],
+   "sources": [
+    "common/src/storage.rs:40-52",
+    "doc:common-crate.md:13",
+    "doc:common-crate.md:52-54",
+    "A: paths.rs:15-18 (settings.json at ~/.taskscape/settings.json; comment says kept out of the DB so copying taskscape.db carries no preferences); storage.rs:46-52 (get_setting/set_setting take and return string key/value through crate::settings); entities/settings.rs:5-12 (table_name \"settings\", key and value); schema.hcl has no settings table (tables at lines 11, 34, 73, 137, 176 only); storage.rs:12 imports no settings entity.",
+    "B: common-crate.md:13 (settings.rs: string-to-string map persisted as JSON at ~/.taskscape/settings.json, kept out of the DB); :52-54 (settings not in the DB; copying taskscape.db carries data without preferences); :62 (get/set_setting are file-backed). The edge case about entities/settings.rs and the table named 'settings' is not in common-crate.md and is unverified from the doc."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A settings entity with table name \"settings\" (key, value) exists in entities/settings.rs but is not defined in schema.hcl and is not used by Store",
+    "Copying taskscape.db carries data but not preferences"
+   ],
+   "notes": "Merged with B's settings-kept-in-a-separate-file entry, which the critique treats as a duplicate.",
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F16-041",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact on the feature. A's entities/settings.rs finding is a source-level detail that B could not see; it does not conflict with B's file-backed description."
+  },
+  {
+   "title": "Schema column defaults and constraints",
+   "trigger": "none",
+   "context": "Table definitions in schema.hcl",
+   "result": "tasks.done defaults to 0 and is NOT NULL; ordering keys sort_order are NOT NULL real; tasks.notes, tasks.parent_id and tasks.deleted_at are nullable; lists and tasks have indexes on their parent keys.",
+   "exact": [
+    {
+     "what": "tasks.done default",
+     "value": "0"
+    }
+   ],
+   "sources": [
+    "common/schema.hcl:73-135",
+    "A: schema.hcl:95-99 (done integer NOT NULL default 0); schema.hcl:100-103 (tasks.sort_order real NOT NULL); schema.hcl:83-86, 91-94, 112-115 (parent_id, notes, deleted_at nullable); schema.hcl:68-70 (idx_lists_project), 129-134 (idx_tasks_list, idx_tasks_parent). attachments and task_notes also have parent-key indexes (schema.hcl:171-173, 210-212) and task_notes.sort_order is NOT NULL real (schema.hcl:190-193).",
+    "B: common-crate.md:50 (sort_order is REAL NOT NULL everywhere); :51 (indexes on every FK column); :72 (notes is Option<String>); :74 (parent_id is optional). The doc does not state tasks.done default 0, NOT NULL on done, or deleted_at nullability. schema.hcl was not opened because the doc is the only permitted source for this check."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "",
+   "found_by": [
+    "A"
+   ],
+   "id": "F16-042",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the done default and NOT NULL, deleted_at nullability, and index coverage from schema.hcl. B's corrections were doc-scope gaps (done default, deleted_at nullability), not contradictions. B's claim that every FK column is indexed is consistent with A's listed indexes. No value conflict."
+  },
+  {
+   "title": "Local data folder layout under ~/.taskscape/",
+   "trigger": "none",
+   "context": "Always; the folder is created by ensure_dirs() in paths.rs.",
+   "result": "App data lives in ~/.taskscape/ with a SQLite database file, an attachments folder for copied files, and a screenshots folder for PNGs.",
+   "exact": [
+    {
+     "what": "Root folder",
+     "value": "~/.taskscape/"
+    },
+    {
+     "what": "Database file",
+     "value": "taskscape.db (SQLite, WAL)"
+    },
+    {
+     "what": "Copied attachments folder",
+     "value": "attachments/"
+    },
+    {
+     "what": "Screenshots folder",
+     "value": "screenshots/"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:24-29",
+    "doc:common-crate.md:16",
+    "A: paths.rs:3-7 (root ~/.taskscape), paths.rs:10-12 (taskscape.db, SQLite with WAL per storage.rs:617), paths.rs:22-23 (attachments/), paths.rs:26-28 (screenshots/), paths.rs:37-39 (ensure_dirs creates screenshots dir); storage.rs:28 calls ensure_dirs in Store::open.",
+    "B: common-crate.md:24-29 (tree: taskscape.db SQLite WAL; attachments/ holds files copied in via copy attachments; screenshots/ holds PNGs from capture()); :16 (paths.rs: locations under ~/.taskscape/ and ensure_dirs())."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Only in B. Critique confirms it is valid and in-area; paths.rs was not a permitted file, so this rests on the doc.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-043",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. No conflict."
+  },
+  {
+   "title": "Hotkey bindings persisted in settings under key hotkeys",
+   "trigger": "Changing a hotkey binding (the UI path is not stated in the doc)",
+   "context": "Stored in the settings file (through crate::settings, see F16-041); set_binding rejects a combo already used by another command in the same scope (hotkeys.rs:611). A binding equal to the command's default removes the stored override (hotkeys.rs:619-620).",
+   "result": "Bindings are saved under the settings key hotkeys and survive relaunch. A binding that conflicts with another is rejected.",
+   "exact": [
+    {
+     "what": "Settings key",
+     "value": "hotkeys"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:11",
+    "A: hotkeys.rs:32 (HOTKEYS_KEY = \"hotkeys\"); hotkeys.rs:593-629 (set_binding); hotkeys.rs:610-614 (conflict check); hotkeys.rs:612 (bail message); hotkeys.rs:619-620 (binding equal to default removes the override); hotkeys.rs:628 (save_overrides); main/src-tauri/src/lib.rs:704-709 (Tauri command set path).",
+    "B: common-crate.md:11 (hotkeys.rs: resolve/set_binding are conflict-checked over the settings store, ~/.taskscape/settings.json, key hotkeys); :13 (settings persisted as a JSON file, so bindings survive relaunch). 'Rejected' is the implied meaning of conflict-checked. The exact conflict message is not in the doc, which matches the feature's edge case."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The conflict message is exactly: already used by “{label}” where {label} is the other command's label (hotkeys.rs:612). Other rejections: \"shortcut needs ⌘, ⌃ or ⌥\" (hotkeys.rs:608) for bare keys other than F-keys, and \"invalid shortcut: {accel}\" (hotkeys.rs:604)."
+   ],
+   "notes": "Only in B. Critique says this comes from hotkeys.rs, outside the storage area, and is supported only by the doc. It is not marked wrong, so it is kept here and may belong to another area.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-044",
+   "check": "corrected",
+   "check_notes": "A's source check adds the context and exact edge cases. B's doc-level description is consistent with A (conflict-checked, settings file, key hotkeys). B did not contradict any value."
+  },
+  {
+   "title": "Full-screen screenshot capture (default mode)",
+   "trigger": "Taking a screenshot with screenshot_mode set to full-screen (the default); trigger key not stated in the doc",
+   "context": "screenshot_mode setting; default is full-screen.",
+   "result": "The whole screen is captured silently, with no shutter sound, and the PNG is saved and its path returned.",
+   "exact": [
+    {
+     "what": "Default mode",
+     "value": "Fullscreen when screenshot_mode is unset or any value other than \"region\" (no code path stores or checks the string \"full-screen\")"
+    },
+    {
+     "what": "Setting key",
+     "value": "screenshot_mode"
+    },
+    {
+     "what": "screencapture flag",
+     "value": "-x (silent)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:104-105",
+    "A: screenshot.rs:16-28 (SCREENSHOT_MODE_KEY = \"screenshot_mode\"; current() returns Region only for \"region\", otherwise Fullscreen, including when unset); screenshot.rs:9 and 48-50 (-x flag, silent); screenshot.rs:54-65 (saves file, returns path).",
+    "B: common-crate.md:17 (full-screen -x or interactive -i per screenshot_mode); :104-105 (grab is full-screen, -x, silent, or interactive, -i, per screenshot_mode; CaptureMode::current() default full-screen); :102-103 (PNG path returned). Trigger key not stated, which matches the feature."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Trigger key is not in the code reviewed; the capture function takes no key input (screenshot.rs:40)."
+   ],
+   "notes": "Only in B. Critique says this comes from screenshot.rs, outside the storage area, and is supported only by the doc. Not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-045",
+   "check": "corrected",
+   "check_notes": "A's source check gives the exact default (Fullscreen when unset or any other value) and the setting key. B's 'default full-screen' agrees. No conflict."
+  },
+  {
+   "title": "Interactive region or window screenshot capture",
+   "trigger": "Taking a screenshot with screenshot_mode set to the interactive mode; trigger not stated in the doc",
+   "context": "screenshot_mode setting set to the value \"region\" (screenshot.rs:24).",
+   "result": "The user drags a region, or presses Space to pick a window, via macOS interactive selection (screencapture -i), and the capture is saved as a PNG. Esc cancels.",
+   "exact": [
+    {
+     "what": "Setting value for interactive mode",
+     "value": "\"region\""
+    },
+    {
+     "what": "screencapture flag",
+     "value": "-i (interactive region/window)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:17",
+    "doc:common-crate.md:104-105",
+    "A: screenshot.rs:5-14 (Region mode: screencapture -i, drag a region, press Space to pick a window, Esc to cancel); screenshot.rs:17, 22-27 (setting value \"region\"); screenshot.rs:51-53 (-i added only in Region mode).",
+    "B: common-crate.md:104-105 (interactive region/window selection with -i); :17. The doc does not state the trigger, which matches the feature."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Esc cancels the selection, which returns Ok(None) (see F16-048)."
+   ],
+   "notes": "Only in B. Outside the storage area per critique; not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-046",
+   "check": "corrected",
+   "check_notes": "A's source check gives the exact setting value, flag, and Space/Esc behaviour. B's doc description agrees. No conflict."
+  },
+  {
+   "title": "Screenshot file naming and location",
+   "trigger": "Any successful capture",
+   "context": "Always.",
+   "result": "Each capture is written to a file named with the capture time, and the path is returned to the caller.",
+   "exact": [
+    {
+     "what": "Filename pattern",
+     "value": "screenshot-<millis>.png"
+    },
+    {
+     "what": "Folder",
+     "value": "~/.taskscape/screenshots/"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:28",
+    "doc:common-crate.md:102-103",
+    "A: screenshot.rs:45-46 (format!(\"screenshot-{}.png\", now_millis()) under screenshots_dir()); paths.rs:27-28 (screenshots_dir = root_dir/screenshots, i.e. ~/.taskscape/screenshots/); screenshot.rs:65 (path returned).",
+    "B: common-crate.md:28 (screenshots/ holds PNGs from capture()); :102-103 (writes ~/.taskscape/screenshots/screenshot-<millis>.png and returns the path)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Only in B. Outside the storage area per critique; not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-047",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. No conflict."
+  },
+  {
+   "title": "Cancelled region selection is a silent no-op",
+   "trigger": "Cancelling the interactive region/window selection with Esc (screenshot.rs:12, 34), or leaving no file behind after the selection.",
+   "context": "Interactive (Region) mode in practice; the no-file check at screenshot.rs:62-63 runs in both modes.",
+   "result": "No screenshot is saved and no error or message is shown; the capture returns no result and callers do nothing.",
+   "exact": [
+    {
+     "what": "Return value",
+     "value": "Ok(None)"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:106-107",
+    "A: screenshot.rs:33-34 (Ok(None) on cancelled region capture, Esc / empty selection); screenshot.rs:60-64 (if the file does not exist after screencapture, return Ok(None); this check is not gated on mode).",
+    "B: common-crate.md:106 (a cancelled region selection returns Ok(None); callers treat it as a silent no-op). Interactive-only scope is implied by region selection in the same sentence; no error or message is stated, consistent with silent no-op."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Any capture that exits successfully but writes no file returns Ok(None), not only interactive cancels."
+   ],
+   "notes": "Only in B. Outside the storage area per critique; not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-048",
+   "check": "corrected",
+   "check_notes": "B's exact result agrees with A. A's source check shows Ok(None) also returns for any successful exit with no file, in both modes, so the trigger and edge cases are broadened."
+  },
+  {
+   "title": "macOS Screen Recording permission prompt on first capture",
+   "trigger": "First screenshot taken by each app",
+   "context": "First use only, per app.",
+   "result": "macOS shows its Screen Recording permission prompt for that app before capture works.",
+   "exact": [
+    {
+     "what": "Scope",
+     "value": "Per app, first use"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:107",
+    "A: screenshot.rs:36-38 (doc: on macOS the first time a given app triggers capture, macOS prompts for Screen Recording permission for that app).",
+    "B: common-crate.md:107 (first use triggers the macOS Screen Recording permission prompt for that app)."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Only in B. Outside the storage area per critique; not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-049",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. No conflict."
+  },
+  {
+   "title": "Screenshots are unavailable on non-macOS platforms",
+   "trigger": "Attempting a screenshot on a non-macOS build",
+   "context": "Non-macOS targets only.",
+   "result": "capture() returns an error and writes no file. The error text is: screen capture is currently only implemented on macOS",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "screen capture is currently only implemented on macOS"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:102",
+    "doc:common-crate.md:108",
+    "A: screenshot.rs:68-70 (#[cfg(not(target_os = \"macos\"))] capture() returns Err via anyhow::bail!).",
+    "B: common-crate.md:102 (macOS only); :108 (non-macOS targets bail!). The doc gives no error text, which matches the feature."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Only in B. Outside the storage area per critique; not marked wrong, so kept.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-050",
+   "check": "corrected",
+   "check_notes": "A supplies the exact error text from source. B's bail! description agrees. No conflict."
+  },
+  {
+   "title": "Task completion and timestamps stored",
+   "trigger": "Marking a task done or undone, or creating or updating a task",
+   "context": "Always.",
+   "result": "Each task stores a done flag and created and updated times in unix milliseconds.",
+   "exact": [
+    {
+     "what": "Timestamp unit",
+     "value": "unix millis"
+    },
+    {
+     "what": "Fields",
+     "value": "done, created_at, updated_at"
+    }
+   ],
+   "sources": [
+    "doc:common-crate.md:73-74",
+    "doc:common-crate.md:79",
+    "A: models.rs:31 (done: bool), models.rs:36-37 (created_at, updated_at: i64); storage.rs:192 and 263 (done stored as 0 or 1 integer), storage.rs:659 (done = value != 0); storage.rs:193-195 and 264-268 (timestamps set on create and update). Unit is millis per util.rs:4 now_millis() -> i64; the function body was not read, so the epoch base is not confirmed.",
+    "B: common-crate.md:73-74 (Task carries done, created_at and updated_at in unix millis); :79 (timestamps via util::now_millis()). The doc does not say which operations set done or updated_at, so the trigger list is not stated in common-crate.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Only in B. Not contradicted by the critique; it complements A's done and timestamp entries.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-051",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the fields, types, and create/update timestamp writes from source. B confirmed the millisecond unit and the field set from the doc; B's 'corrected' verdict was only a doc gap on triggers. The epoch base is attested by B's 'unix millis' but not confirmed by A's source read."
+  },
+  {
+   "title": "Shared data between the two apps",
+   "trigger": "Changing data in one app (for example in the tray bar) while the other app is open",
+   "context": "Both apps read the same shared database and data API.",
+   "result": "Changes written by one app are visible to the other app through the shared store. Whether the open window refreshes live is not stated in the doc.",
+   "exact": [],
+   "sources": [
+    "doc:common-crate.md:3",
+    "doc:common-crate.md:83",
+    "A: storage.rs:18-20 (main app and tray app read and write the same DB concurrently); storage.rs:12-14 (shared Store). No live-refresh mechanism is in the Store itself.",
+    "B: common-crate.md:3 (both apps share persistence); :83 (each app serves the shared data API on its port). Visibility of one app's writes to the other goes through the shared store. The doc says nothing about live refresh, which matches the feature's 'not stated' note."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Only in B. The refresh question is answered by the critic's proposed entry below.",
+   "found_by": [
+    "B"
+   ],
+   "id": "F16-052",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. No conflict."
+  },
+  {
+   "title": "Insert with a missing parent fails",
+   "trigger": "create_list with an unknown project_id, or create_task with an unknown list_id or parent_id",
+   "context": "Any time; foreign keys are enforced on every pooled connection",
+   "result": "The insert fails with a database foreign-key error and nothing is written. Exact message text was not checked.",
+   "exact": [
+    {
+     "what": "FK enforcement",
+     "value": "foreign_keys(true) on every connection"
+    }
+   ],
+   "sources": [
+    "storage.rs:619",
+    "schema.hcl:63-67",
+    "schema.hcl:119-128",
+    "A: storage.rs:619 (foreign_keys(true) on every pooled connection); storage.rs:616-623 (pool built with those options); schema.hcl:63-67 (fk_lists_project), schema.hcl:119-128 (fk_tasks_list, fk_tasks_parent); storage.rs:176-216 (create_task inserts inside a transaction, error propagates before commit).",
+    "B: common-crate.md:36 (foreign_keys=ON on every connection); :47-49 (full referential integrity: lists to projects, tasks to lists, parent_id self-FK); :62-64 (create_list and create_task method names). The doc does not give the error type or state that nothing is written."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Proposed by the critic; neither solver covered it.",
+   "found_by": [
+    "critic"
+   ],
+   "id": "F16-053",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed foreign-key enforcement on every pooled connection and that create_task only commits after success, which supports the 'nothing is written' outcome that B could not state. B's 'corrected' verdict reflects doc-scope gaps only; no value conflict."
+  },
+  {
+   "title": "Other app's window is not refreshed by a database write alone",
+   "trigger": "Changing data in one app (for example the tray capture) while the other app is open",
+   "context": "Both apps running, sharing ~/.taskscape/taskscape.db",
+   "result": "Changes written to SQLite are visible to the other app's next read. The other window does not update by itself. The tray's capture submit posts POST /refresh to the main app's port (MAIN_PORT 7420) (tray task.rs:44). POST /focus is used by the tray to bring up an already-running main window (tray lib.rs:63), not as a documented refresh alternative.",
+   "exact": [
+    {
+     "what": "Refresh route",
+     "value": "POST /refresh"
+    },
+    {
+     "what": "Focus route",
+     "value": "POST /focus"
+    },
+    {
+     "what": "Ports",
+     "value": "main 7420, tray 7421"
+    }
+   ],
+   "sources": [
+    "CLAUDE.md (Gotchas)",
+    "doc:common-crate.md:83",
+    "A: main/src-tauri/src/lib.rs:1046 (\"/refresh\" route), lib.rs:1053 (\"/focus\" route); common/src/lib.rs:27-28 (MAIN_PORT 7420, TRAY_PORT 7421); tray/src-tauri/src/task.rs:44 (tray posts /refresh to MAIN_PORT after a capture write); tray/src-tauri/src/lib.rs:63 (tray posts /focus to MAIN_PORT when main is already running).",
+    "B: CLAUDE.md Gotchas: data changes propagate by writing SQLite and POSTing /refresh (or /focus) to the other app's HTTP port. CLAUDE.md line 3: main :7420, tray :7421 (common-crate.md:9 names only the MAIN_PORT/TRAY_PORT constants, not the numbers). common-crate.md:83-84: each app serves the data API on its port; only main adds /refresh, /focus and /quit. The doc does not state the HTTP method for these routes outside CLAUDE.md."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "notes": "Proposed by the critic; closes the open question in the shared-data entry above.",
+   "found_by": [
+    "critic"
+   ],
+   "id": "F16-054",
+   "check": "corrected",
+   "check_notes": "B's claim that the writing app may POST either /refresh or /focus as a general refresh mechanism is not supported by source: A shows the tray posts /refresh to the main port after a capture write, and posts /focus only to bring up an already-running main window. B's point that only main serves /refresh, /focus and /quit agrees with A. Source decides."
+  },
+  {
+   "title": "Fetch one attachment by id",
+   "trigger": "none",
+   "context": "Any caller that has an attachment id",
+   "result": "Returns that attachment, or fails with 'attachment not found: {id}'.",
+   "exact": [
+    {
+     "what": "Error text",
+     "value": "attachment not found: {id}"
+    }
+   ],
+   "sources": [
+    "storage.rs:482-488",
+    "A: storage.rs:482-488 (get_attachment: anyhow!(\"attachment not found: {id}\")).",
+    "B: common-crate.md:65 (attachments method group includes get_attachment). The error text 'attachment not found: {id}' is not stated in common-crate.md."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Proposed by the critic; neither solver covered get_attachment.",
+   "found_by": [
+    "critic"
+   ],
+   "id": "F16-055",
+   "check": "confirmed_by_one",
+   "check_notes": "A confirmed the exact error text from source. B could only confirm that get_attachment exists. No conflict."
+  },
+  {
+   "title": "Migrations are authored outside the app and only replayed at startup",
+   "trigger": "none",
+   "context": "Developer schema change",
+   "result": "Atlas generates versioned SQL; the app embeds it at compile time and applies unrecorded versions on launch. The Atlas binary is not shipped.",
+   "exact": [],
+   "sources": [
+    "migrations.rs:1-8",
+    "migrations.rs:18-20",
+    "A: migrations.rs:3-6 (Atlas, a dev-time tool, authors the versioned SQL in common/migrations/; the app embeds and replays it; the Atlas binary is never shipped); migrations.rs:18-20 (compile-time embed); migrations.rs:1-8 header.",
+    "B: common-crate.md:15 (Atlas authors the SQL; embedded and applied at startup; Atlas not shipped); :40-41 (Atlas autogenerates versioned SQL into common/migrations/); :43 (schema-change dev loop)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "notes": "Proposed by the critic; neither solver mentioned that Atlas authors the migration SQL.",
+   "found_by": [
+    "critic"
+   ],
+   "id": "F16-056",
+   "check": "confirmed_by_both",
+   "check_notes": "Both exact. No conflict."
+  }
+ ]
+}

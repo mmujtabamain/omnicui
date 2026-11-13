@@ -1,0 +1,2178 @@
+{
+ "area": 13,
+ "name": "Capture bar UI",
+ "tier": "ordinary",
+ "counts": {
+  "A": 42,
+  "B": 38,
+  "critic_issues": null,
+  "merged": 63
+ },
+ "dropped": [],
+ "features": [
+  {
+   "title": "Title field is autofocused and shows a placeholder",
+   "trigger": "none (observed on open)",
+   "context": "Focus on reveal is set by focusDraft on the next animation frame (useCaptureDraft.ts:57-63, called from useCaptureBarEvents.ts:27 on mini-shown). It lands in the title only when notes are closed or empty; autoFocus on TitleRow covers the first mount.",
+   "result": "Empty title field with the placeholder text \"Capture a task ...\" and text-sm styling; caret lands in it on mount. The single-line title input shows only the placeholder and no Clear button is shown.",
+   "exact": [
+    {
+     "what": "Input box",
+     "value": "734x20 at 13,11 inside a 758x40 title row is not defined in tray/src; it can only come from the recorded state, not from source"
+    }
+   ],
+   "sources": [
+    "tray/src/components/TitleRow.tsx:29-42",
+    "tray/src/App.tsx:18-22",
+    "state:capture-bar (tree lines 2-3)",
+    "state:capture-bar (shot.png)",
+    "tray/src/components/TitleRow.tsx:29-42 (autoFocus, placeholder \"Capture a task ...\", className text-sm, h-10 px-3 py-2 at line 32); tray/src/components/TitleRow.tsx:44 (Clear button only when hasDraft); tray/src/hooks/useCaptureDraft.ts:57-63 (focusDraft on reveal); tray/src/hooks/useCaptureBarEvents.ts:27. The 734x20 at 13,11 geometry is not in tray/src (only the state tree/screenshot).",
+    "spec/references/capture-bar/tree.txt:2-3 (TitleRow hasDraft=false, 758x40; TextInput2 autoFocus=true value=\"\" placeholder=\"Capture a task ...\" className=\"text-sm\" @13,11 734x20); capture-bar/shot.png shows the placeholder; capture-bar/meta.json theme=light. Not checkable: the h-10 px-3 py-2 classes (TitleRow has no className in the tree), caret position on mount, and how the bar was opened."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The recording does not say how the bar was opened."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-001",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the 734x20 at 13,11 geometry from the recorded tree. Checker A's source check decides the context and notes that this geometry exists only in recorded state."
+  },
+  {
+   "title": "Empty capture bar window size and row layout",
+   "trigger": "none (observed state)",
+   "context": "The card is w-screen (App.tsx:61), so its width equals the window width. The window width is set outside tray/src; tray-app.md:13 documents 480 as the configured starting width, and set_bar_height only sets height (api.ts:22).",
+   "result": "The bar is 760 wide and 116 tall. It stacks three rows: title row, collapsed notes row, and footer.",
+   "exact": [
+    {
+     "what": "App size",
+     "value": "760x116"
+    },
+    {
+     "what": "Title row",
+     "value": "758x40"
+    },
+    {
+     "what": "Notes section collapsed",
+     "value": "758x33"
+    },
+    {
+     "what": "Footer",
+     "value": "758x40"
+    },
+    {
+     "what": "Dividers",
+     "value": "1px, below the title row and below the notes row"
+    }
+   ],
+   "sources": [
+    "state:capture-bar (tree lines 1-7)",
+    "Row order: tray/src/App.tsx:64-90 (TitleRow, Divider, NotesSection, Footer inside a flex-col card, App.tsx:61). Title row h-10 = 40 px: TitleRow.tsx:32. Dividers: App.tsx:73, NotesSection.tsx:46 and :58. Card width: App.tsx:61 w-screen (fills the window). The 760x116 window size and the 1px divider thickness are not defined in tray/src; .llm/tray-app.md:13 gives a 480-wide starting window and says the height is only a starting value, fitted by useBarAutoResize/set_bar_height (tray-app.md:43-45).",
+    "capture-bar/tree.txt:1 (App 760x116), :2 (TitleRow 758x40), :4 and :6 (Divider 758x1 at y=41 and y=74), :5 (NotesSection notesOpen=false 758x33), :7 (Footer 758x40)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-002",
+   "check": "corrected",
+   "check_notes": "Checker A could not check the 760x116 window size from source. Checker B's tree records it. Checker A's correction to the context stands: the card width equals the window width, and the window width is configured outside tray/src."
+  },
+  {
+   "title": "Enter in the title field submits the capture",
+   "trigger": "Press Enter with no Shift while any element inside the card has focus and the key reaches the card's onKeyDown (title field, or a footer button since the footer is inside the card). Ctrl+Enter, Alt+Enter and Cmd+Enter also match, because only !shiftKey is checked (App.tsx:42).",
+   "context": "Title field focused; key handled by the card's onKeyDown (bubbling from the title)",
+   "result": "Default prevented and draft.save() runs: the trimmed title, notes HTML (or null when notes are empty), and all screenshot paths are sent via submit_capture; on success the draft is cleared. If the trimmed title is empty, nothing is sent and the bar stays as is.",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Enter"
+    },
+    {
+     "what": "modifier excluded",
+     "value": "Shift"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:41-44",
+    "tray/src/hooks/useCaptureDraft.ts:78-90",
+    "tray/src/App.tsx:41-44 (Enter && !shiftKey: preventDefault, draft.save()); tray/src/hooks/useCaptureDraft.ts:78-90 (trim, return if empty, notesHtml null when editor empty, submitCapture with title/notes/screenshotPaths, clearDraft after await).",
+    "No Enter key press appears in any meta.json (capture-bar, capture-bar-notes, capture-bar-typed, capture-bar-dark, settings-capture), and no submit_capture call appears in any command list. The tree does not show onKeyDown handlers. Trigger and result are unverifiable from these references."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Only Shift is excluded. Cmd+Enter, Ctrl+Enter and Alt+Enter in the title also submit (App.tsx:42).",
+    "The handler is on the card root (App.tsx:58-62), so Enter on a focused footer button also submits, even though footer buttons are tabIndex -1 (Footer.tsx:45, 76).",
+    "The title sent is the trimmed value (useCaptureDraft.ts:79, 84-85), not the raw input."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-003",
+   "check": "corrected",
+   "check_notes": "Checker B could not check because no Enter press is recorded. Checker A's source-side correction to the trigger and edge cases applies."
+  },
+  {
+   "title": "Shift+Enter in the title field does nothing special",
+   "trigger": "Press Shift+Enter while the title field has focus",
+   "context": "Title field focused",
+   "result": "No handler matches (the Enter branch requires !shiftKey), so no submit and no preventDefault; the key falls through to the browser default.",
+   "exact": [
+    {
+     "what": "key combo",
+     "value": "Shift+Enter"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:42",
+    "tray/src/App.tsx:42 (the Enter branch requires !e.shiftKey); the branches at App.tsx:45 and :48 do not match Enter, so there is no preventDefault and no submit.",
+    "No Shift+Enter in any meta.json and no post-keypress state recorded. Nothing shows the behaviour either way."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-004",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no Shift+Enter press."
+  },
+  {
+   "title": "Escape hides the bar, keeping the draft",
+   "trigger": "Press Escape while any element inside the card has focus (title field, notes editor, or footer button). The title and footer are covered by App.tsx:45-47; the notes editor by NotesSection.tsx:39.",
+   "context": "Bar open; the card's onKeyDown handles title Escape, the RichTextEditor onEscape handles notes Escape",
+   "result": "Calls hide_mini (the bar is parked and hidden). The draft (title, notes, screenshots) is NOT cleared and returns on the next reveal.",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Escape"
+    },
+    {
+     "what": "Notes editor handler",
+     "value": "onEscape"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:45-47",
+    "tray/src/components/NotesSection.tsx:39",
+    "tray/src/api.ts:10",
+    "state:capture-bar-notes (tree line 12)",
+    "tray/src/App.tsx:45-47 (Escape: preventDefault, api.hideMini()); tray/src/components/NotesSection.tsx:39 (onEscape={() => api.hideMini()}); tray/src/api.ts:10 (hide_mini); tray/src/hooks/useCaptureBarEvents.ts:30 (mini-hidden only calls hideCard, no draft reset); useCaptureDraft.ts:65-67 (clearDraft is not run on dismiss).",
+    "capture-bar-notes/tree.txt:12 shows onEscape=ƒ on RichTextEditor2, so the prop exists. No Escape key and no hide_mini call appear in capture-bar-notes/meta.json. The effect (hide, draft kept) is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The notes editor's onEscape is wired to api.hideMini() (NotesSection.tsx:39), so Escape in notes hides the bar the same way as Escape in the title. The earlier 'effect not recorded' gap is resolved by the code."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-005",
+   "check": "corrected",
+   "check_notes": "Checker B saw the onEscape prop in the recorded tree but no Escape press. Checker A's source check gives the trigger and result."
+  },
+  {
+   "title": "Tab from the title field opens the notes editor",
+   "trigger": "Press Tab (no Shift) in the title field while notes are closed",
+   "context": "notesOpen is false (the notes hint is showing)",
+   "result": "Default prevented; setNotesOpen(true) mounts the RichTextEditor, which autofocuses (autoFocus). Once notes are open, the Tab branch no longer matches (App.tsx:48 requires !notesOpen), so Tab is not prevented and the browser default moves focus. The bar expands in place to 185 px tall and the notes section measures 758x102 (these numbers are not in tray/src).",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Tab"
+    },
+    {
+     "what": "excluded modifier",
+     "value": "Shift"
+    },
+    {
+     "what": "Expanded bar height",
+     "value": "185"
+    },
+    {
+     "what": "Notes section height when open",
+     "value": "758x102"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:48-50",
+    "tray/src/components/NotesSection.tsx:27-32",
+    "state:capture-bar-notes (tree lines 1, 11-12)",
+    "state:capture-bar-notes (meta commands include set_bar_height)",
+    "tray/src/App.tsx:48-50 (Tab && !shiftKey && !notesOpen: preventDefault, setNotesOpen(true)); tray/src/components/NotesSection.tsx:27-32 (autoFocus on RichTextEditor, mounted only when notesOpen); NotesSection.tsx:24-49 (plain conditional, no grid-template-rows). The 185 px and 758x102 values are not defined in tray/src; tray-app.md:39 refers to MAX_BAR_HEIGHT in Rust, which is outside this area.",
+    "capture-bar-notes/tree.txt:1 (App 760x185), :11 (NotesSection notesOpen=true 758x102), :12 (RichTextEditor2 autoFocus=true). The Tab keypress itself is not in capture-bar-notes/meta.json; the trigger remains inferred, as the feature's own edge case states."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The 185 px and 758x102 values cannot be verified from tray/src.",
+    ".llm/tray-app.md:174-176 describes an animated grid-template-rows 0fr to 1fr transition, but NotesSection.tsx:24-49 has no such animation; it swaps between two plain divs. Trust the code.",
+    "The Tab trigger was inferred from the hint text in the recording; the code confirms Tab (App.tsx:48)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-006",
+   "check": "corrected",
+   "check_notes": "Checker B's tree gives 760x185 and 758x102. Checker A could not find these values in tray/src, so they come from recorded state only. Checker A's code check confirms the Tab trigger."
+  },
+  {
+   "title": "Collapsed notes show a Tab hint that also opens notes on click",
+   "trigger": "Click the \"Press Tab to add a note\" text (a button)",
+   "context": "Notes closed (notesOpen false)",
+   "result": "Opens the notes editor (onOpen -> setNotesOpen(true)). The hint is a button and is in the tab order (no tabIndex set), so it is focusable but Tab from the title already opens notes first. The collapsed notes row reads the hint.",
+   "exact": [
+    {
+     "what": "hint text",
+     "value": "Press Tab to add a note"
+    },
+    {
+     "what": "hint classes",
+     "value": "text-content-3l dark:text-content-3d px-3 py-2 text-xs"
+    },
+    {
+     "what": "Collapsed notes row",
+     "value": "758x33"
+    }
+   ],
+   "sources": [
+    "tray/src/components/NotesSection.tsx:50-58",
+    "state:capture-bar (shot.png)",
+    "state:capture-bar (tree line 5, NotesSection notesOpen=false onOpen=ƒ)",
+    "tray/src/components/NotesSection.tsx:52-57 (button, onClick={onOpen}, className \"text-content-3l dark:text-content-3d px-3 py-2 text-xs\", no tabIndex); NotesSection.tsx:56 (text \"Press Tab to add a note\"); App.tsx:78 (onOpen -> draft.setNotesOpen(true)). A grep for 'inert' in tray/src found no matches, so the collapsed panel is not inert in code (tray-app.md:176-177 says it is). The 758x33 size is not in source.",
+    "capture-bar/shot.png and capture-bar-dark/shot.png both show the text \"Press Tab to add a note\" (dark theme in capture-bar-dark/meta.json). capture-bar/tree.txt:5 shows NotesSection notesOpen=false onOpen=ƒ @1,42 758x33, and the string is absent from tree.txt as the feature says. The click that opens notes is not recorded; the hint classes are not in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The hint text is visible only in the screenshot; the tree does not contain the string."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-007",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B confirmed the visible hint text and the collapsed size, but did not record the opening click. Note that the code shows no 'inert' attribute, which conflicts with tray-app.md:176-177."
+  },
+  {
+   "title": "Notes editor settings: placeholder, height limits, toolbar, submit and escape",
+   "trigger": "none (observed while notes are open)",
+   "context": "notesOpen true. Recorded with notes open and a draft present.",
+   "result": "Rich text editor with placeholder \"Notes ...\", minimum height min-h-16 and maximum height max-h-40 (the notes grow up to that cap, then scroll inside the editor per common-ui), no floating toolbar, a docked toolbar with a top border, no attachments. The editor autofocuses. A rich-text editor with a placeholder appears below the title row, followed by a formatting toolbar (Bold, Italic, Underline, Strikethrough, bulleted list, numbered list) and a counter that reads 0/2000 when empty.",
+   "exact": [
+    {
+     "what": "Editor flags",
+     "value": "autoFocus=true, submitOnModEnter=true, floatingToolbar=false, attachments=[] (an empty array; the length is 0, not a value of [0]). Also passed: wrapperClassName=\"\", onSubmit=onSave, onEscape=api.hideMini(), onBlur collapses when empty."
+    },
+    {
+     "what": "Editor content box and toolbar row",
+     "value": "758x64, y=113 and 24px buttons are not defined in tray/src (recorded state only)"
+    },
+    {
+     "what": "counter (observed, not in tree)",
+     "value": "0/2000"
+    },
+    {
+     "what": "toolbar buttons (observed titles, capture-bar-notes/tree.txt:15-26)",
+     "value": "Bold  ⌘B; Italic  ⌘I; Underline  ⌘U; Strikethrough; Bulleted list; Numbered list"
+    }
+   ],
+   "sources": [
+    "tray/src/components/NotesSection.tsx:27-38",
+    "state:capture-bar-notes (tree lines 11-13)",
+    "state:capture-bar-notes (shot.png)",
+    "tray/src/components/NotesSection.tsx:27-45 (ref, autoFocus, attachments={[]}, placeholder \"Notes ...\" line 31, minHeightClass \"min-h-16\" line 32, maxHeightClass \"max-h-40\" line 33, floatingToolbar={false} line 34, wrapperClassName=\"\" line 35, toolbarClassName line 36, submitOnModEnter line 37, onSubmit={onSave} line 38, onEscape line 39, onBlur line 42-44); NotesSection.tsx:26 (min-h-0 overflow-hidden wrapper).",
+    "capture-bar-notes/tree.txt:11-13 (NotesSection; RichTextEditor2 autoFocus=true attachments=[0] placeholder=\"Notes ...\" minHeightClass=\"min-h-16\" maxHeightClass=\"max-h-40\" floatingToolbar=false submitOnModEnter=true; PureEditorContent 758x64), :12 toolbarClassName, :15-26 ToolButtons at y=113 24x24; capture-bar-notes/shot.png shows the counter. The tree truncates toolbarClassName to \"py-1.…\", so the final 5 of py-1.5 cannot be verified."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The scroll behaviour past max-h-40 is handled by RichTextEditor in common-ui, which was not read. The cap values match NotesSection.tsx:32-33.",
+    "The 'counter' and 'no floating toolbar' description come from the recording and RichTextEditor, not from NotesSection.tsx.",
+    "The toolbarClassName is truncated in the tree (capture-bar-notes/tree.txt:12 ends \"py-1.…\"), so the trailing 5 of py-1.5 is not verifiable from the recording."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-008",
+   "check": "corrected",
+   "check_notes": "Conflict on attachments: checker B's tree shows attachments=[0], while checker A's source at NotesSection.tsx passes attachments={[]}. Source decides: an empty array, length 0. Both checkers agree on the other editor flags. Checker B's counter and toolbar-button observations are added as exact values."
+  },
+  {
+   "title": "Cmd/Ctrl+Enter in the notes editor submits the capture",
+   "trigger": "Press Mod+Enter (submitOnModEnter), recorded as Cmd+Enter, while the notes editor has focus",
+   "context": "notesOpen true and editor focused",
+   "result": "Calls onSubmit = draft.save(): same submit as title Enter (title must be non-empty after trim, or nothing happens).",
+   "exact": [
+    {
+     "what": "key",
+     "value": "Mod+Enter (submitOnModEnter)"
+    },
+    {
+     "what": "recorded key",
+     "value": "Cmd+Enter"
+    }
+   ],
+   "sources": [
+    "tray/src/components/NotesSection.tsx:37-38",
+    "tray/src/hooks/useCaptureDraft.ts:78-90",
+    "state:capture-bar-notes (tree line 12)",
+    "Route verified: tray/src/components/NotesSection.tsx:37-38 (submitOnModEnter, onSubmit={onSave}); tray/src/App.tsx:79 (onSave={draft.save}); useCaptureDraft.ts:78-90. The Mod-to-Cmd mapping is in the common-ui RichTextEditor; a grep for submitOnModEnter under common-ui/src found no definition, so the modifier mapping could not be verified.",
+    "capture-bar-notes/tree.txt:12 shows submitOnModEnter=true and onSubmit=ƒ. No Cmd or Enter key press in any meta.json, and no post-submit state. The key mapping and effect are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The grep under common-ui/src did not find where submitOnModEnter is defined, so the Mod to Cmd+Enter mapping remains unverified.",
+    "The submit route (onSubmit = draft.save, same as title Enter) is verified at NotesSection.tsx:38 and App.tsx:79."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-009",
+   "check": "corrected",
+   "check_notes": "Neither checker verified the Mod to Cmd+Enter mapping. Checker A verified the submit route in source (NotesSection.tsx:38, App.tsx:79)."
+  },
+  {
+   "title": "Notes editor collapses back to the hint when left empty",
+   "trigger": "Move focus out of the notes editor (blur) while it is empty",
+   "context": "Notes open and editor empty; toolbar clicks preventDefault their blur so they do not trigger this",
+   "result": "onCollapse sets notesOpen false, and the Tab hint returns. Non-empty notes stay open. Expected to collapse the notes back to the 33 px row and the bar back to 116 px tall.",
+   "exact": [
+    {
+     "what": "condition",
+     "value": "editorRef.current?.isEmpty()"
+    },
+    {
+     "what": "Collapsed bar height",
+     "value": "116"
+    },
+    {
+     "what": "Collapsed notes row",
+     "value": "33 px"
+    }
+   ],
+   "sources": [
+    "tray/src/components/NotesSection.tsx:40-44",
+    "tray/src/App.tsx:79-80",
+    "state:capture-bar-notes (tree line 5)",
+    "state:capture-bar (tree line 5)",
+    "tray/src/components/NotesSection.tsx:42-44 (onBlur: if editorRef.current?.isEmpty() then onCollapse()); App.tsx:80 (onCollapse -> setNotesOpen(false)); NotesSection.tsx:40-41 (toolbar blur preventDefault comment); NotesSection.tsx:50-58 (Tab hint returns). The 116 px and 33 px heights are not defined in tray/src.",
+    "capture-bar-notes/tree.txt:12 shows onBlur=ƒ. The collapsed sizes (NotesSection 758x33 at capture-bar/tree.txt:5; App 760x116 at capture-bar/tree.txt:1) match the expected collapsed state, but no blur or collapse transition is recorded in any meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The onBlur prop exists on the notes editor (tree line 12); its effect was not recorded.",
+    "The collapse trigger and the resulting height change are not directly recorded; the 116 px and 33 px values are expected from the recorded collapsed state."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-010",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the collapse logic in source. Checker B saw the collapsed sizes in the recording but no blur transition."
+  },
+  {
+   "title": "Clear button appears only when the draft has content",
+   "trigger": "none (appears when the draft becomes non-empty, recorded as typing text into the title field)",
+   "context": "hasDraft is true when the trimmed title is non-empty, OR at least one screenshot is attached, OR notes are open",
+   "result": "A Clear button appears at the right of the title row, with the icon delete_sweep (size 16), the text Clear, and the clear hotkey hint (HotkeyHint with parseAccel(clearAccel)). It is a 'well' variant (not ghost), tabIndex -1, and shrink-0. The input narrows to make room for it. It disappears when the draft is empty again.",
+   "exact": [
+    {
+     "what": "button size/variant",
+     "value": "size xs, variant well (TitleRow.tsx:46-47; not ghost)"
+    },
+    {
+     "what": "tabIndex",
+     "value": "-1 (TitleRow.tsx:51)"
+    }
+   ],
+   "sources": [
+    "tray/src/components/TitleRow.tsx:44-62",
+    "tray/src/hooks/useCaptureDraft.ts:128-129",
+    "state:capture-bar-typed (tree lines 2-4)",
+    "state:capture-bar-typed (shot.png)",
+    "tray/src/components/TitleRow.tsx:44-62 (hasDraft conditional, ToolbarButton size=\"xs\" variant=\"well\" icon=\"delete_sweep\" iconSize={16}, tabIndex={-1}, className \"... shrink-0 gap-0 text-[11px]\", label <p className=\"px-1\">Clear</p>, HotkeyHint parseAccel(clearAccel)); tray/src/hooks/useCaptureDraft.ts:128-129 (hasDraft = title.trim().length > 0 || count > 0 || notesOpen). The position 642,9 105x25 and input width 629 / 734 are not defined in source.",
+    "capture-bar-typed/tree.txt:2-4 (TitleRow hasDraft=true; TextInput2 629x20; ToolbarButton size=\"xs\" variant=\"well\" icon=\"delete_sweep\" iconSize=16 title=\"Clear the draft (⌘⇧⌫)\" @642,9 105x25; Icon delete_sweep size=16 @650,13); capture-bar-typed/shot.png shows the Clear button with the text Clear. capture-bar/tree.txt:2 shows hasDraft=false and no Clear button, which matches the rule. The result text says \"ghost\" but the tree and the exact list both say variant=\"well\", so the result is corrected to match. The tree's className is truncated, so text-[11px] and gap-0 are not verifiable. Also, the title value in capture-bar-typed/tree.txt:2-3 reads \"Call the plumbe\" while capture-bar-typed/shot.png reads \"Call the plumber\"."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The Clear button is absent in state:capture-bar, where hasDraft=false and the title is empty.",
+    "The className on the Clear ToolbarButton is truncated in the tree (capture-bar-typed/tree.txt:4 ends \"d…\"), so text-[11px] and gap-0 cannot be verified.",
+    "Reference data discrepancy: capture-bar-typed/tree.txt:2-3 reads title/value \"Call the plumbe\" but capture-bar-typed/shot.png shows \"Call the plumber\" (capture-bar-notes/tree.txt:2 reads \"Call the plumber\")."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-011",
+   "check": "corrected",
+   "check_notes": "Checker B's tree shows variant=\"well\", which matches source (TitleRow.tsx:46-47). The 'ghost' wording was wrong and is corrected to 'well'. Checker B also found a reference-data discrepancy: the typed title reads 'Call the plumbe' in the tree but 'Call the plumber' in the screenshot."
+  },
+  {
+   "title": "Clear button tooltip shows the clear shortcut",
+   "trigger": "Hover the Clear button",
+   "context": "Clear button visible",
+   "result": "Native title tooltip reads \"Clear the draft (<formatted clear accelerator>)\" when a clear accelerator is known, else \"Clear the draft\".",
+   "exact": [
+    {
+     "what": "default clear accelerator",
+     "value": "Cmd+Shift+Backspace (common/src/hotkeys.rs:531), rendered as ⌘⇧⌫. The docs at .llm/tray-app.md:190 say Cmd-Shift-Delete, which does not match the code."
+    }
+   ],
+   "sources": [
+    "tray/src/components/TitleRow.tsx:50-60",
+    "tray/src/components/TitleRow.tsx:53-57 (title = clearAccel ? `Clear the draft (${formatAccel(clearAccel)})` : 'Clear the draft'); TitleRow.tsx:60 (HotkeyHint hotkey={parseAccel(clearAccel)}); App.tsx:35 (clearAccel = hotkeyMap['clear_draft'] ?? ''); common/src/hotkeys.rs:527-532 (clear_draft default_accel Cmd + Shift + Backspace); common-ui/src/hotkeys.ts:293, 317, 327 (Cmd -> ⌘, Shift -> ⇧, Backspace -> ⌫).",
+    "capture-bar-typed/tree.txt:4 title=\"Clear the draft (⌘⇧⌫)\"; :6-9 HotkeyHint with keyboard_command_key, shift, backspace (size=12 weight=300). capture-bar-typed/tree.txt:2 clearAccel=\"Cmd+Shift+Backspace\", which renders as ⌘⇧⌫. Hover itself and the no-shortcut branch are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Until hotkeyMap loads, clearAccel is '' (App.tsx:35), so the title falls back to 'Clear the draft' with no shortcut.",
+    "The default clear accelerator is now resolved from code (hotkeys.rs:531), so the earlier 'documented only' caveat no longer applies."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-012",
+   "check": "corrected",
+   "check_notes": "Both checkers agree the default is Cmd+Shift+Backspace (rendered ⌘⇧⌫). The documented Cmd-Shift-Delete in tray-app.md:190 is out of date and was not in checker B's scope."
+  },
+  {
+   "title": "Clear button and Cmd+Shift+Delete clear the whole draft",
+   "trigger": "Click the Clear button, or press the clear_draft accelerator (default Cmd+Shift+Backspace, rendered ⌘⇧⌫, from common/src/hotkeys.rs:531; user-customizable) with the title or notes focused or with neither focused.",
+   "context": "Bar open; the key listener is a capture-phase keydown on window, so it fires before the title and editor handlers",
+   "result": "The draft is wiped: title becomes empty, notes close (notesOpen false), the editor is cleared, screenshots are removed, the pending capture count is reset to 0, the error is cleared, and the title field is focused on the next animation frame. The clear key calls preventDefault and stopPropagation.",
+   "exact": [
+    {
+     "what": "clear key",
+     "value": "clear_draft accelerator, default Cmd+Shift+Backspace (common/src/hotkeys.rs:531). Not Cmd-Shift-Delete."
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useClearDraftHotkey.ts:8-23",
+    "tray/src/hooks/useCaptureDraft.ts:68-76",
+    "tray/src/components/TitleRow.tsx:44-51",
+    ".llm/tray-app.md:189-190",
+    "state:capture-bar-typed (tree line 2)",
+    "tray/src/hooks/useClearDraftHotkey.ts:8-23 (matchesEvent(clearAccel), preventDefault, stopPropagation, clearDraft; window keydown capture: true at line 20); tray/src/hooks/useCaptureDraft.ts:68-76 (clearDraft: setTitle(''), setNotesOpen(false), editorRef.clear(), setScreenshots([]), setPending(0), setError(null), rAF focus title); tray/src/App.tsx:35-37, 70; common/src/hotkeys.rs:527-532 (clear_draft, Scope::Tray, default Cmd + Shift + Backspace).",
+    "capture-bar-typed/tree.txt:2 and capture-bar/tree.txt:2 show clearAccel=\"Cmd+Shift+Backspace\". No clear click or Cmd+Shift+Backspace key appears in any meta.json, and no post-clear state is recorded. The documented default (Cmd-Shift-Delete) is not checked here because the source/docs are out of scope for this check."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The default accelerator is Cmd+Shift+Backspace in code (hotkeys.rs:531); the Cmd-Shift-Delete in tray-app.md:190 is out of date. The conflict between the doc and recording is resolved in favour of the code.",
+    "Clear is only the explicit clear: hide does not clear (useCaptureBarEvents.ts:30 only hides the card).",
+    "The clear hotkey is a capture-phase listener, so it fires before the title and notes handlers."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-013",
+   "check": "corrected",
+   "check_notes": "Checker B recorded clearAccel=Cmd+Shift+Backspace in the tree, which matches the source. No clear press was recorded, so the behaviour is from source only."
+  },
+  {
+   "title": "Pending capture count resets to 0 on clear",
+   "trigger": "Clear button or clear accelerator while a capture is in flight",
+   "context": "Capture in flight (spinner showing)",
+   "result": "Pending count goes to 0 so the footer returns from spinner state; a later screenshot-captured/cancelled/error event is clamped at 0 and does not go negative.",
+   "exact": [
+    {
+     "what": "pending floor",
+     "value": "Math.max(0, n - 1)"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:73,111,116,120",
+    "tray/src/hooks/useCaptureDraft.ts:73 (setPending(0) in clearDraft), :111, :116, :120 (Math.max(0, n - 1)), :112 (captured still appends the path).",
+    "Every Footer shows capturing=false count=0 (capture-bar/tree.txt:7, capture-bar-notes/tree.txt:28, capture-bar-typed/tree.txt:13, capture-bar-dark/tree.txt:7). No in-flight capture state is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "A capture still in flight when the draft is cleared is not cancelled: when its screenshot-captured event lands, the path is still appended to screenshots (useCaptureDraft.ts:112), so a shot reappears after the clear. Late cancelled or error events are clamped at 0 (:116, :120)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-014",
+   "check": "corrected",
+   "check_notes": "Checker B recorded no in-flight capture state. Checker A's source check gives the in-flight clear behaviour."
+  },
+  {
+   "title": "Submitting clears the draft on success",
+   "trigger": "Enter in title, Mod+Enter in notes, or global capture-enter while the notes editor is focused",
+   "context": "Title trimmed non-empty",
+   "result": "After submit_capture resolves, clearDraft runs: title, notes, screenshots and error are emptied. If submit_capture rejects, clearDraft is not reached and the draft remains; no error is displayed by this code.",
+   "exact": [
+    {
+     "what": "submit payload",
+     "value": "{ title, notes, screenshotPaths }, where title is the trimmed title (useCaptureDraft.ts:79, 84-85)"
+    },
+    {
+     "what": "notes value",
+     "value": "null when editor is empty, or when getHtml() returns null/undefined (useCaptureDraft.ts:81-83, '?? null'), else getHtml()"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:78-90",
+    "tray/src/api.ts:23-32",
+    "tray/src/hooks/useCaptureDraft.ts:78-90 (save: t = title.trim(); notesHtml null when editor empty, else getHtml() ?? null; await api.submitCapture({ title: t, notes, screenshotPaths: screenshots }); clearDraft()); tray/src/api.ts:23-32 (submit_capture with title, notes, screenshotPaths); tray/src/hooks/useCaptureBarEvents.ts:33-35 (capture-enter with contentEditable calls save()).",
+    "No submit_capture call and no post-submit state appear in any meta.json or tree. Payload shape and notes null/getHtml behaviour are not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "save() is called without a catch in App.tsx onKeyDown and useCaptureBarEvents, so a rejection surfaces as an unhandled promise rejection; the bar keeps the draft in that case. Inferred from the code."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-015",
+   "check": "corrected",
+   "check_notes": "Checker B recorded no submit. Checker A's source check gives the payload shape and notes value."
+  },
+  {
+   "title": "Global Cmd+Enter (capture-enter) submits from notes or dismisses from title",
+   "trigger": "Press the toggle_capture_bar hotkey (default Cmd+Return) while the bar is open; Rust forwards it as capture-enter",
+   "context": "Bar visible; webview cannot receive the global key directly so Rust emits capture-enter",
+   "result": "If the focused element is contentEditable (the notes editor), save() runs (submit). Otherwise (title focused or nothing editable) hide_mini runs, dismissing the bar.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "capture-enter"
+    },
+    {
+     "what": "check",
+     "value": "document.activeElement.isContentEditable"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureBarEvents.ts:33-37",
+    "tray/src/hooks/useCaptureBarEvents.ts:32-37 (comment, listen('capture-enter'), document.activeElement?.isContentEditable -> save(), else api.hideMini()). The default toggle_capture_bar is Cmd+Enter (common/src/hotkeys.rs:330-333), shown as 'Cmd+Return' in the feature label; .llm/tray-app.md:98 documents the same default.",
+    "No capture-enter event, no Cmd+Return key, and no toggle_capture_bar in any meta.json. The tree does not contain these."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The Cmd+Return key and the forwarding are registered in Rust (outside this area); this file only handles the event."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-016",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no capture-enter event."
+  },
+  {
+   "title": "Footer target button shows project / list and opens the main window",
+   "trigger": "Click the target button at the bottom left of the footer",
+   "context": "Footer rendered; tabIndex -1 so not in tab order",
+   "result": "Calls open_main (main app is focused or launched, then the bar is dismissed by Rust). Label shows the project name, then a / separator, then the list name. Before the target loads or if it fails, the label is Taskscape. The recording shows the breadcrumb Home / Errands with the open_in_new icon.",
+   "exact": [
+    {
+     "what": "label without target",
+     "value": "Taskscape"
+    },
+    {
+     "what": "separator",
+     "value": "/ with px-1 opacity-60"
+    },
+    {
+     "what": "icon",
+     "value": "open_in_new (size 14)"
+    },
+    {
+     "what": "tooltip",
+     "value": "Open the main Taskscape window"
+    },
+    {
+     "what": "label overflow",
+     "value": "truncate, min-w-0"
+    },
+    {
+     "what": "Recorded breadcrumb",
+     "value": "Home / Errands"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:43-65",
+    "tray/src/api.ts:16",
+    "state:capture-bar (tree line 8, Footer target={…})",
+    "state:capture-bar (shot.png)",
+    "tray/src/components/Footer.tsx:43-65 (the whole button wraps the Icon open_in_new (size 14, line 49) and the label span (lines 50-64); onClick openMain line 44; tabIndex -1 line 45; title line 47; 'Taskscape' fallback line 62; project span with '/' separator px-1 opacity-60 lines 53-58; truncate line 50, min-w-0 line 46); tray/src/hooks/useCaptureTarget.ts:15-16 (failures keep the previous value).",
+    "capture-bar/tree.txt:7 (Footer target={…}), :8 (Icon name=\"open_in_new\" size=14 @13,88 14x14); capture-bar/shot.png shows \"Home / Errands\" with the open_in_new icon; the same breadcrumb is in capture-bar-notes/shot.png and capture-bar-typed/shot.png. Not checkable: the Taskscape fallback label, the separator classes, the tooltip (the target button has no title in the tree), tabIndex, and the open_main click."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The whole button is the click target: the icon and the label both call api.openMain() (Footer.tsx:43-45). The earlier 'not recorded' question is answered by code."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-017",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the icon and breadcrumb from the recording but could not check the click. Checker A's source check shows the whole button is the click target."
+  },
+  {
+   "title": "Footer target shows no project separator when project is empty",
+   "trigger": "none (observed when target.project is empty)",
+   "context": "Target loaded with an empty project string",
+   "result": "Only the list name is shown; no project span or / separator.",
+   "exact": [
+    {
+     "what": "condition",
+     "value": "target.project truthy"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:52-59",
+    "tray/src/components/Footer.tsx:51-59 ({target.project && (...)} with the '/' separator inside it, then {target.list})."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-018",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded only footers with a project, so the empty-project state was not checked."
+  },
+  {
+   "title": "Target is refreshed on every reveal and on mount",
+   "trigger": "none (on mount and on each mini-shown reveal)",
+   "context": "Bar mounts, or is summoned",
+   "result": "capture_target is requested and the footer label updates. Errors are silently ignored and the previous value is kept.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "capture_target"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureTarget.ts:12-21",
+    "tray/src/App.tsx:26-29",
+    "tray/src/hooks/useCaptureTarget.ts:11-21 (refresh via api.captureTarget(), effect on mount, .catch(() => {}) keeps previous value); tray/src/App.tsx:26-29 (onReveal -> refreshTarget); tray/src/hooks/useCaptureBarEvents.ts:25 (onReveal in mini-shown); tray/src/api.ts:15 (capture_target).",
+    "capture-bar/meta.json:9-17 lists capture_target three times (lines 11, 13, 16) interleaved with list_hotkeys. The same pattern appears in capture-bar-notes/meta.json, capture-bar-typed/meta.json and capture-bar-dark/meta.json. The reveal and mount triggers and the silent-error behaviour are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-019",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree. Checker B saw capture_target calls in the recordings."
+  },
+  {
+   "title": "Screenshot button attaches a capture on each click",
+   "trigger": "Click the Screenshot button in the footer (right side). Cmd+Shift+Enter (default screenshot_capture, hotkeys.rs:339) is handled in Rust, not by the webview's addScreenshot; it calls capture_and_show, which shows the bar first if it was hidden (tray-app.md:99-101).",
+   "context": "Footer, always rendered; not capturing (button enabled); count=0 in every recorded state",
+   "result": "Calls capture_and_attach fire-and-forget (recorded as onAddScreenshot); progress comes from screenshot-* events. Each click adds another shot; it is not a toggle. Errors from invoke are swallowed here.",
+   "exact": [
+    {
+     "what": "button icon idle",
+     "value": "screenshot_monitor (size 15)"
+    },
+    {
+     "what": "button size/variant",
+     "value": "size xs, variant well, tabIndex -1"
+    },
+    {
+     "what": "label",
+     "value": "Screenshot"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Attach a full-screen screenshot (⌘⇧↩)"
+    },
+    {
+     "what": "Shortcut",
+     "value": "Cmd+Shift+Enter"
+    },
+    {
+     "what": "Button position and size",
+     "value": "146x24 at 601,83"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:94-96",
+    "tray/src/components/Footer.tsx:67-76",
+    "tray/src/api.ts:19",
+    "state:capture-bar (tree lines 7, 9)",
+    "state:capture-bar (shot.png)",
+    "tray/src/components/Footer.tsx:67-82 (button, icon screenshot_monitor size 15, size xs, variant well, tabIndex -1, onClick onAddScreenshot, disabled={capturing}); Footer.tsx:89-90 (tooltip with hintSuffix); tray/src/hooks/useCaptureDraft.ts:92-96 (addScreenshot: captureAndAttach().catch(() => {})); common/src/hotkeys.rs:335-339 (screenshot_capture default Cmd + Shift + Enter); .llm/tray-app.md:99-101 (screenshot_capture hotkey calls capture_and_show, which shows the bar first if hidden). The 146x24 at 601,83 geometry is not in source.",
+    "capture-bar/tree.txt:9 ToolbarButton size=\"xs\" variant=\"well\" icon=\"screenshot_monitor\" iconSize=15 filled=false onClick=ƒ disabled=false tabIndex=-1 title=\"Attach a full-screen screenshot (⌘⇧↩)\" @601,83 146x24; :10 Icon screenshot_monitor size=15; :7 screenshotAccel=\"Cmd+Shift+Enter\" onAddScreenshot=ƒ; capture-bar/shot.png shows the label Screenshot. The click and capture_and_attach call are not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The hotkey path does not go through addScreenshot or capture_and_attach; the webview only sees screenshot-pending and the later events.",
+    "Tab index -1 means keyboard Tab focus skips this button (Footer.tsx:76, from the prop)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-020",
+   "check": "corrected",
+   "check_notes": "Both checkers agree on the variant, icon, tabIndex and tooltip from recorded state. Checker A's source check adds the hotkey path, which bypasses addScreenshot."
+  },
+  {
+   "title": "Screenshot button label: Screenshot, then N shot / N shots with hotkey hint",
+   "trigger": "none (observed in idle state)",
+   "context": "Idle, not capturing, no error",
+   "result": "Shows \"Screenshot\" when no shots are attached, \"1 shot\" for one, \"N shots\" for more, followed by the screenshot_capture shortcut hint.",
+   "exact": [
+    {
+     "what": "zero label",
+     "value": "Screenshot"
+    },
+    {
+     "what": "one label",
+     "value": "1 shot"
+    },
+    {
+     "what": "many label",
+     "value": "N shots"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:101-106",
+    "tray/src/components/Footer.tsx:101-106 ({count ? `${count} shot${count > 1 ? 's' : ''}` : 'Screenshot'} followed by HotkeyHint parseAccel(screenshotAccel) at line 105; the label block is shown only in the idle branch, lines 98-107).",
+    "capture-bar/shot.png and capture-bar/tree.txt:9 show the zero label \"Screenshot\" with the ⌘⇧↩ hint, count=0 (tree:7). The labels \"1 shot\" and \"N shots\" are not recorded in any state."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-021",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree on the zero label. The plural labels are only from source."
+  },
+  {
+   "title": "Screenshot button in capture state: spinner and Capturing label, disabled",
+   "trigger": "none (observed after the screenshot button is clicked or Cmd+Shift+Return fires, until the capture lands)",
+   "context": "pending count greater than 0 (screenshot-pending received)",
+   "result": "Icon replaced by a 13 px spinner plus the text \"Capturing …\". The button is disabled (busy, not unavailable), with pointer-events-auto and opacity-100 so it keeps its contrast; clicks do nothing.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Capturing …"
+    },
+    {
+     "what": "spinner size",
+     "value": "13"
+    },
+    {
+     "what": "disabled classes",
+     "value": "disabled:pointer-events-auto disabled:opacity-100"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:75-96",
+    "tray/src/hooks/useCaptureDraft.ts:105-109",
+    "tray/src/components/Footer.tsx:75 (disabled={capturing}), :79-82 (disabled:pointer-events-auto disabled:opacity-100), :71 (icon undefined when capturing), :93-96 (Spinner size={13} and <span>Capturing …</span>); tray/src/hooks/useCaptureDraft.ts:105-109 (pending: setError(null), setPending(n + 1)).",
+    "Every recorded Footer has capturing=false and count=0 (see F13-014 evidence). No spinner or Capturing label state is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-022",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no capturing=true state."
+  },
+  {
+   "title": "Screenshot button tooltip while capturing",
+   "trigger": "Hover the screenshot button while capturing",
+   "context": "capturing true",
+   "result": "Native tooltip \"Capturing screenshot …\".",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Capturing screenshot …"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:83-86",
+    "tray/src/components/Footer.tsx:83-86 (capturing ? 'Capturing screenshot …').",
+    "No capturing=true state is recorded (all footers capturing=false). No hover on the screenshot button is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-023",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the tooltip string from source. Checker B recorded no capturing state."
+  },
+  {
+   "title": "Screenshot failure shows Capture failed for 4 seconds, with error tooltip",
+   "trigger": "screenshot-error event from Rust (e.g. Screen Recording permission missing)",
+   "context": "Capture failed; error state set",
+   "result": "While a capture is in flight, the in-flight state wins over the error: the label, icon and tooltip show the capturing state (Footer.tsx:71, 83-86, 93-96). When not capturing, the icon becomes the 'error' glyph, the label becomes 'Capture failed' (no shortcut hint, since HotkeyHint is only in the idle branch, Footer.tsx:98-99), the text is red (text-red-500 / dark text-red-400), and the native tooltip shows the error message. The error clears automatically after 4000 ms, and is also cleared by clearDraft.",
+   "exact": [
+    {
+     "what": "label",
+     "value": "Capture failed"
+    },
+    {
+     "what": "icon",
+     "value": "error"
+    },
+    {
+     "what": "fallback message",
+     "value": "Screenshot failed"
+    },
+    {
+     "what": "auto-clear delay",
+     "value": "4000 ms"
+    },
+    {
+     "what": "error colour",
+     "value": "text-red-500 dark:text-red-400"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:29-33,71,98-99,83-90",
+    "tray/src/hooks/useCaptureDraft.ts:99-103,119-123",
+    "tray/src/components/Footer.tsx:29-33 (error colour text-red-500 dark:text-red-400), :71 (icon 'error' only when not capturing), :83-91 (tooltip: capturing, then error, then count), :98-99 (label 'Capture failed'); tray/src/hooks/useCaptureDraft.ts:99-103 (4000 ms auto-clear), :119-122 (msg || 'Screenshot failed'), :74 (clearDraft sets error null).",
+    "No screenshot-error event or error state appears in any recording (all footers show count=0, capturing=false, and no error text in any shot)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Error tooltip shows the raw error string when set. Precedence in the tooltip: capturing first, then error, then the count tooltip (Footer.tsx:83-91)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-024",
+   "check": "corrected",
+   "check_notes": "Checker B recorded no error state. Checker A's source check gives the full error behaviour."
+  },
+  {
+   "title": "Starting a new capture clears a previous error",
+   "trigger": "screenshot-pending event",
+   "context": "An error was showing",
+   "result": "Error is set to null immediately when the new capture begins.",
+   "exact": [
+    {
+     "what": "action",
+     "value": "setError(null) then pending + 1"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:105-109",
+    "tray/src/hooks/useCaptureDraft.ts:105-109 (pending: setError(null); setPending(n => n + 1)).",
+    "No screenshot-pending or error state is recorded in any reference."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-025",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no pending state."
+  },
+  {
+   "title": "Screenshot button with shots attached: filled, accent-coloured, count tooltip",
+   "trigger": "none (observed after a capture lands)",
+   "context": "count greater than 0 and not capturing and no error",
+   "result": "Button is filled and uses accent colour text-accent-500 (dark text-accent-400). Native tooltip reads \"N screenshot(s) attached — add another (<shortcut>)\" (singular for 1).",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "${count} screenshot${count > 1 ? 's' : ''} attached — add another${hintSuffix}"
+    },
+    {
+     "what": "colour",
+     "value": "text-accent-500 dark:text-accent-400"
+    },
+    {
+     "what": "filled",
+     "value": "!capturing && !error && count > 0"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:29-33,73,87-89",
+    "tray/src/components/Footer.tsx:73 (filled={!capturing && !error && count > 0}), :31-32 (accent colour text-accent-500 dark:text-accent-400 when count && !capturing), :89 (tooltip template with ' attached — add another' and the em dash).",
+    "count=0 in every recorded Footer (capture-bar/tree.txt:7, capture-bar-typed/tree.txt:13). No attached-shot state is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-026",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no attached-shot state."
+  },
+  {
+   "title": "Screenshot button idle tooltip with shortcut hint",
+   "trigger": "Hover the screenshot button with no shots attached and no error",
+   "context": "Idle, count 0",
+   "result": "Native tooltip \"Attach a full-screen screenshot (<shortcut>)\"; if no screenshot accelerator is known the parenthesised hint is omitted.",
+   "exact": [
+    {
+     "what": "tooltip",
+     "value": "Attach a full-screen screenshot${hintSuffix}"
+    },
+    {
+     "what": "hintSuffix",
+     "value": " (${formatAccel(screenshotAccel)}) when accelerator known, else empty"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:35-36,89-90",
+    "tray/src/components/Footer.tsx:35-36 (hintSuffix = hint ? ` (${hint})` : ''), :90 ('Attach a full-screen screenshot${hintSuffix}'), :35 (formatAccel(screenshotAccel)); App.tsx:36 (screenshotAccel from hotkeyMap).",
+    "capture-bar/tree.txt:9 title=\"Attach a full-screen screenshot (⌘⇧↩)\" with screenshotAccel=\"Cmd+Shift+Enter\" (capture-bar/tree.txt:7). The suffix (⌘⇧↩) is consistent with formatAccel of that value. The hover is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-027",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree on the tooltip text."
+  },
+  {
+   "title": "Screenshot hotkey hint shown on the screenshot button",
+   "trigger": "none (visible on the button)",
+   "context": "Idle state (label not capturing or error)",
+   "result": "A HotkeyHint renders the screenshot_capture accelerator next to the Screenshot / N shots label. The shortcut is drawn as three small glyph icons, not as text. Mapping comes from the hotkey list reloaded on mount, reveal and hotkeys-changed.",
+   "exact": [
+    {
+     "what": "hotkey source",
+     "value": "hotkeyMap['screenshot_capture']"
+    },
+    {
+     "what": "Glyphs in order",
+     "value": "keyboard_command_key, shift, keyboard_return"
+    },
+    {
+     "what": "Glyph size",
+     "value": "12, weight 300"
+    },
+    {
+     "what": "Hint box",
+     "value": "36x12 at 703,89"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:36",
+    "tray/src/components/Footer.tsx:105",
+    "tray/src/hooks/useHotkeyMap.ts:15-28",
+    "state:capture-bar (tree lines 11-14)",
+    "tray/src/App.tsx:36 (hotkeyMap['screenshot_capture']); Footer.tsx:105 (HotkeyHint parseAccel(screenshotAccel)); common-ui/src/hotkeys.ts:293-294 (Cmd -> icon keyboard_command_key), :317-318 (Shift -> icon shift), :341 (Enter -> keyboard_return); useHotkeyMap.ts:15-28 (reload on mount and on hotkeys-changed); App.tsx:26-29 (reload on reveal). The 36x12 hint box at 703,89 is not in source.",
+    "capture-bar/tree.txt:11 HotkeyHint @703,89 36x12; :12 Icon keyboard_command_key size=12 weight=300 @703,89; :13 Icon shift size=12 weight=300 @715,89; :14 Icon keyboard_return size=12 weight=300 @727,89. The hotkeyMap source is not visible in the tree."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-028",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree on the glyphs and the hint box geometry from the recording."
+  },
+  {
+   "title": "Clear hotkey hint is also taken from the live hotkey map",
+   "trigger": "none",
+   "context": "Clear button visible",
+   "result": "HotkeyHint shows the clear_draft accelerator; the value is refreshed like the screenshot one. The shortcut is drawn as three glyph icons.",
+   "exact": [
+    {
+     "what": "hotkey source",
+     "value": "hotkeyMap['clear_draft']"
+    },
+    {
+     "what": "Glyphs in order",
+     "value": "keyboard_command_key, shift, backspace"
+    },
+    {
+     "what": "Glyph size",
+     "value": "12, weight 300"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:35",
+    "tray/src/components/TitleRow.tsx:60",
+    "state:capture-bar-typed (tree lines 6-9)",
+    "tray/src/App.tsx:35 (hotkeyMap['clear_draft']); TitleRow.tsx:60 (HotkeyHint parseAccel(clearAccel)); common-ui/src/hotkeys.ts:294 (Cmd -> keyboard_command_key), :318 (Shift -> shift), :342 (Backspace -> icon 'backspace'); common/src/hotkeys.rs:531 (default Cmd + Shift + Backspace).",
+    "capture-bar-typed/tree.txt:6 HotkeyHint @703,15 36x12; :7 keyboard_command_key, :8 shift, :9 backspace, each size=12 weight=300. This matches the recorded glyphs. The feature's own edge case already notes the conflict with the documented default."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The glyphs (keyboard_command_key, shift, backspace) match the code default Cmd+Shift+Backspace (hotkeys.rs:531). The earlier conflict with Cmd-Shift-Delete is a doc error in .llm/tray-app.md:190, not a conflict in the code."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-029",
+   "check": "corrected",
+   "check_notes": "Both checkers agree the glyphs match Cmd+Shift+Backspace. The documented Cmd-Shift-Delete conflict is a doc error in tray-app.md:190, not a code conflict."
+  },
+  {
+   "title": "Hotkey map reloads on mount, on every reveal, and on hotkeys-changed",
+   "trigger": "none (the settings window emits hotkeys-changed; or the bar is summoned)",
+   "context": "Bar mounted, revealed, or hotkeys changed in main settings",
+   "result": "list_hotkeys is requested and the displayed hints update; failures are ignored.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "hotkeys-changed"
+    },
+    {
+     "what": "command",
+     "value": "list_hotkeys"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useHotkeyMap.ts:15-28",
+    "tray/src/App.tsx:26-29",
+    "tray/src/hooks/useHotkeyMap.ts:15-28 (reload via api.listHotkeys(); listen('hotkeys-changed'); .catch(() => {})); tray/src/api.ts:11 (list_hotkeys); App.tsx:26-29 (reload on reveal).",
+    "list_hotkeys appears in capture-bar/meta.json:12, :14, :17 (and in the other reference meta.json files). The displayed hints are present as HotkeyHint elements (capture-bar/tree.txt:11; capture-bar-typed/tree.txt:6). The hotkeys-changed event is not recorded in any meta.json."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-030",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers agree. The hotkeys-changed event is only from source."
+  },
+  {
+   "title": "Summon (mini-shown) reveals the bar at its anchored edge and refocuses",
+   "trigger": "Bar summoned by the global toggle hotkey or screenshot hotkey (Rust emits mini-shown with payload top or bottom)",
+   "context": "Bar was hidden; mini-shown event",
+   "result": "The card is pinned to the window edge Rust chose: a payload of exactly bottom sets the anchor-bottom class (card grows upward, justify-content flex-end). Any other payload means top (grows downward). The card becomes visible (bar-ready class, opacity 1). Target and hotkeys refresh, theme re-reads, and focus lands on the draft.",
+   "exact": [
+    {
+     "what": "payload for bottom anchor",
+     "value": "bottom"
+    },
+    {
+     "what": "class on html",
+     "value": "anchor-bottom, bar-ready"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureBarEvents.ts:23-28",
+    "tray/src/lib/anchor.ts:13-17",
+    "tray/src/index.css:34-49",
+    "tray/src/hooks/useCaptureBarEvents.ts:23-28 (mini-shown: applyAnchor(e.payload), onReveal(), refreshTheme(), focusDraft()); tray/src/lib/anchor.ts:13-17 (root.classList.toggle('anchor-bottom', anchor === 'bottom'); classList.add('bar-ready')); tray/src/index.css:44-49 (:root.anchor-bottom #root justify-content: flex-end; :root.bar-ready #root opacity: 1).",
+    "No mini-shown event, anchor payload, or html class (anchor-bottom, bar-ready) appears in any tree.txt or meta.json."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-031",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no mini-shown event or classes."
+  },
+  {
+   "title": "Card is invisible between dismiss and the next reveal",
+   "trigger": "Bar dismissed (mini-hidden event) or not yet summoned",
+   "context": "Hidden state",
+   "result": "bar-ready is removed, so #root has opacity 0 and nothing paints. The next reveal re-applies the anchor before showing, so no flash at the old position.",
+   "exact": [
+    {
+     "what": "class removed",
+     "value": "bar-ready"
+    },
+    {
+     "what": "hidden opacity",
+     "value": "0"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureBarEvents.ts:30",
+    "tray/src/lib/anchor.ts:19-22",
+    "tray/src/index.css:39-49",
+    "tray/src/hooks/useCaptureBarEvents.ts:30 (listen('mini-hidden', () => hideCard())); tray/src/lib/anchor.ts:19-22 (classList.remove('bar-ready')); tray/src/index.css:34-42 (#root opacity: 0 by default).",
+    "No dismiss or hidden state is recorded; every reference is a visible bar. Opacity and the bar-ready class are not in the tree."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-032",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no hidden state."
+  },
+  {
+   "title": "On reveal, focus lands in notes if they hold content, otherwise the title",
+   "trigger": "Bar summoned (mini-shown)",
+   "context": "Focus target chosen on the next animation frame",
+   "result": "If notesOpen is true and the editor is not empty, the notes editor is focused; otherwise the title field is focused.",
+   "exact": [
+    {
+     "what": "timing",
+     "value": "requestAnimationFrame"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:57-63",
+    "tray/src/hooks/useCaptureBarEvents.ts:27",
+    "tray/src/hooks/useCaptureDraft.ts:57-63 (focusDraft: requestAnimationFrame; if notesOpen && !editorRef.current?.isEmpty() focus editor, else titleRef focus); tray/src/hooks/useCaptureBarEvents.ts:27 (focusDraft() on mini-shown).",
+    "autoFocus=true is set on the title (capture-bar/tree.txt:3) and on the editor (capture-bar-notes/tree.txt:12), but focus timing (requestAnimationFrame) and which element holds focus are not recorded."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-033",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the focus logic from source. Checker B saw autoFocus flags but not focus timing."
+  },
+  {
+   "title": "Focus returns to the title after a screenshot event",
+   "trigger": "screenshot-captured, screenshot-cancelled, or screenshot-error event",
+   "context": "Any capture ends",
+   "result": "Title field is focused on the next animation frame. For captured, the PNG path is appended to the screenshots list (the count increases).",
+   "exact": [
+    {
+     "what": "events",
+     "value": "screenshot-captured, screenshot-cancelled, screenshot-error"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:110-123",
+    "tray/src/hooks/useCaptureBarEvents.ts:39-42",
+    "tray/src/hooks/useCaptureBarEvents.ts:39-42 (screenshot-pending, screenshot-captured, screenshot-cancelled, screenshot-error); useCaptureDraft.ts:52-54 (focusTitle via requestAnimationFrame); :110-123 (captured appends path and focusTitle; cancelled and error call focusTitle).",
+    "No screenshot-captured, screenshot-cancelled, or screenshot-error event appears in any meta.json, and no focus state is recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-034",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no screenshot events."
+  },
+  {
+   "title": "Cancelled capture: silent, no error shown",
+   "trigger": "screenshot-cancelled event from Rust",
+   "context": "Capture stopped without an error",
+   "result": "Pending count decrements and the title is focused; no error text, no shot added.",
+   "exact": [
+    {
+     "what": "event",
+     "value": "screenshot-cancelled"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCaptureDraft.ts:115-118",
+    "tray/src/hooks/useCaptureBarEvents.ts:41",
+    "tray/src/hooks/useCaptureBarEvents.ts:41 (listen('screenshot-cancelled', () => cancelled())); tray/src/hooks/useCaptureDraft.ts:115-118 (setPending(n => Math.max(0, n - 1)); focusTitle(); no setError, no setScreenshots).",
+    "No screenshot-cancelled event appears in any meta.json or tree. The silent behaviour is not recorded."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-035",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed from source. Checker B recorded no cancelled event."
+  },
+  {
+   "title": "Cursor hides on reveal and while typing, returns on mouse move",
+   "trigger": "Summon the bar (mini-shown), any keydown in the bar window, then move the mouse",
+   "context": "Bar open; reveal grace of 250 ms after each reveal",
+   "result": "Adds cursor-hidden to html (cursor none on every element). Any keydown hides it. A mousemove shows it again, but mousemove events within 250 ms after the reveal are ignored so the settling pointer does not unhide it. Mousemove only ever shows; it never hides.",
+   "exact": [
+    {
+     "what": "source range",
+     "value": "tray/src/hooks/useCursorAutohide.ts:9-47"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useCursorAutohide.ts:14-47",
+    "tray/src/index.css:56-58",
+    "tray/src/hooks/useCursorAutohide.ts:9-47 (hook body; 250 ms grace at line 29, keydown hide line 36, mousemove line 37, mini-shown listen line 39, cleanup line 44); tray/src/index.css:56-58 (:root.cursor-hidden * { cursor: none }); .llm/tray-app.md:159-171",
+    "No recording shows the html class, cursor style, or any keydown/mousemove/mini-shown event. tree.txt files list React components only (e.g. capture-bar/tree.txt:1-14) and meta.json command lists contain no input events (capture-bar/meta.json:9-19, capture-bar-typed/meta.json:9-19). The 250 ms grace and cursor-hidden class are unverified."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The grace is re-armed on every mini-shown event (revealAt set at useCursorAutohide.ts:32-35), so each reveal gets its own 250 ms window.",
+    "The keydown hide has no grace; only mousemove is filtered (useCursorAutohide.ts:29, 36).",
+    "The keydown listener is on window, so any keydown in the webview hides the pointer (useCursorAutohide.ts:36).",
+    "On unmount the hook removes the listeners and the cursor-hidden class (useCursorAutohide.ts:40-45)."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-036",
+   "check": "corrected",
+   "check_notes": "Checker B could not check (no recording shows html class, cursor style, or input events). The corrections are from checker A's source reading, which is authoritative. The grace and cursor-hidden class remain unverified by recording."
+  },
+  {
+   "title": "Theme follows the app Appearance setting, or the system",
+   "trigger": "App start, each reveal, or the OS appearance changes",
+   "context": "Dark mode (recorded with the theme set to dark; how it was set was not recorded)",
+   "result": "Bar applies the dark class from the Rust-resolved value (get_dark). On error it falls back to light (false). Light/dark colours come from dark: variants on surfaces, text, borders and the footer/clear/shot colours. The dark bar has the same layout and text as light mode, with a dark charcoal background and light text.",
+   "exact": [
+    {
+     "what": "command",
+     "value": "get_dark"
+    },
+    {
+     "what": "fallback",
+     "value": "false (light)"
+    },
+    {
+     "what": "Theme",
+     "value": "dark"
+    },
+    {
+     "what": "Placeholder",
+     "value": "Capture a task ..."
+    },
+    {
+     "what": "Hint",
+     "value": "Press Tab to add a note"
+    },
+    {
+     "what": "Footer",
+     "value": "Home / Errands and Screenshot ⌘⇧↩ unchanged"
+    }
+   ],
+   "sources": [
+    "tray/src/lib/theme.ts:10-20",
+    "tray/src/api.ts:12-14",
+    "tray/src/main.tsx:8-10",
+    "tray/src/App.tsx:61",
+    "state:capture-bar-dark (meta.json theme=dark)",
+    "state:capture-bar-dark (shot.png)",
+    "state:capture-bar-dark (tree lines 1-14, identical to capture-bar)",
+    "tray/src/lib/theme.ts:12-20 (refreshTheme, initTheme, onThemeChanged at line 19); tray/src/api.ts:14 (getDark invoke 'get_dark'); theme.ts:13 (.catch(() => false)); tray/src/hooks/useCaptureBarEvents.ts:26 (refreshTheme on mini-shown); tray/src/main.tsx:10; tray/src/components/TitleRow.tsx:40 (placeholder 'Capture a task ...'); tray/src/components/NotesSection.tsx:56 (hint 'Press Tab to add a note'); tray/src/components/Footer.tsx:53-59 (project / list rendering) and :103 ('Screenshot'); common-ui/styles/tokens.css:31 (--surface-2d: oklch(0.24 0.005 260), a dark near-neutral charcoal); common-ui/src/hotkeys.ts:326,394 (Enter glyph and ⌘⇧↩ display form). Footer target and recorded theme values are state-only.",
+    "get_dark is in capture-bar-dark/meta.json:11 and 19; theme=dark at capture-bar-dark/meta.json:8. Placeholder 'Capture a task ...' at capture-bar-dark/tree.txt:3. Hint 'Press Tab to add a note' and footer 'Home / Errands' and 'Screenshot' with the ⌘⇧↩ glyphs are visible in capture-bar-dark/shot.png, and screenshotAccel=\"Cmd+Shift+Enter\" at tree.txt:7. Tree lines 1-14 match capture-bar/tree.txt. Dark charcoal background and light text visible in shot.png. Not verifiable: the fallback value false (no recording of a failing get_dark), and the Rust-side resolution. Colour values were not measured, as the edge case states."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "Exact colours were not measured; described from the screenshot only."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-037",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers found the behaviour exact. Checker B noted the fallback value false and the Rust-side resolution were not verifiable from recordings, and colour values were not measured. Footer target and recorded theme values are state-only."
+  },
+  {
+   "title": "Card styling: opaque surface with rounded corners, border, and dark variants",
+   "trigger": "none (visible)",
+   "context": "Bar visible, light or dark",
+   "result": "Card uses rounded-panel, a 1px border, bg-surface-2l (dark bg-surface-2d), text-content-1l (dark text-content-1d), flex column, overflow hidden, width screen, shrink-0. Hairline dividers separate title row, notes row and footer.",
+   "exact": [
+    {
+     "what": "card classes",
+     "value": "rounded-panel border-edge-2l bg-surface-2l text-content-1l dark:border-edge-2d dark:bg-surface-2d dark:text-content-1d flex w-screen shrink-0 flex-col overflow-hidden border"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:58-63",
+    "tray/src/App.tsx:73-81",
+    "tray/src/App.tsx:58-63 (card div, ref line 59, data-tauri-drag-region line 60); App.tsx:61 className string matches the recorded card classes exactly; App.tsx:73 Divider after title row; tray/src/components/NotesSection.tsx:46 and :58 Divider before footer; common-ui/styles/tokens.css:30-31 (surface-2l/2d)",
+    "The className string on the card is not in any tree (App line at capture-bar/tree.txt:1 has no className). Visible in capture-bar/shot.png and capture-bar-dark/shot.png: rounded corners, 1px outer border, opaque surface, 760 px width, and hairline dividers at y=41 and y=74 (Divider at tree.txt:4 and :6). Dark variant visible in capture-bar-dark/shot.png. The exact class list is unverified."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-038",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker A confirmed the card className string matches App.tsx:61 exactly, and the Divider placement. Checker B could not check the class list (not in any tree) but saw the rounded corners, border, 760 px width and dividers in the screenshots. No conflict in values."
+  },
+  {
+   "title": "Window height tracks the card height",
+   "trigger": "none (card grows or shrinks when the notes open, fill, or empty)",
+   "context": "Any change in card height. Recorded with notes collapsed and a typed title (capture-bar-typed), the bar stays at 116 px; the same recording's meta.json lists one set_bar_height command.",
+   "result": "The card's border-box height is rounded up with Math.ceil and sent through api.setBarHeight (invoke 'set_bar_height' with { height }) from a ResizeObserver callback, only when the value changes and is at least 1 px. Rust holds the summon's anchored edge still while resizing.",
+   "exact": [
+    {
+     "what": "rounding",
+     "value": "Math.ceil(getBoundingClientRect().height)"
+    },
+    {
+     "what": "minimum",
+     "value": "1 px"
+    },
+    {
+     "what": "App size (typed, notes collapsed)",
+     "value": "760x116"
+    }
+   ],
+   "sources": [
+    "tray/src/hooks/useBarAutoResize.ts:9-23",
+    "tray/src/api.ts:20-22",
+    "state:capture-bar-typed (tree line 1)",
+    "state:capture-bar-typed (meta.json commands)",
+    "tray/src/hooks/useBarAutoResize.ts:9-23 (ResizeObserver line 14, Math.ceil(getBoundingClientRect().height) line 16, height<1 return and height===last return line 17, invoke line 19); tray/src/api.ts:20-22 (setBarHeight sends { height }); .llm/tray-app.md:13 (tauri.conf.json width 480, height only a starting value), :43-44 (Rust holds the anchored edge); 760x116 and meta commands are state-only and were not checked.",
+    "capture-bar-typed/tree.txt:1 'App @0,0 760x116' confirms the 116 px height. capture-bar-typed/meta.json:15 lists set_bar_height (6th of 9 commands). So the claim that the meta shows no set_bar_height call for the typed, notes-closed state is contradicted by the recording. capture-bar/meta.json:15 and capture-bar-dark/meta.json:16 also list set_bar_height. capture-bar-notes/tree.txt:1 shows 760x185 and capture-bar-notes/meta.json:19 has a trailing set_bar_height. Rounding and minimum (Math.ceil, 1 px) are source-only and cannot be checked from recordings."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The recorded 760 px width is not set by set_bar_height, which takes height only (api.ts:22). .llm/tray-app.md:13 documents a 480-wide starting window, so the 760 width is unconfirmed by source and conflicts with that doc.",
+    "The 116 px height and the absence of set_bar_height calls in meta.json are state-only and were not checked."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-039",
+   "check": "corrected",
+   "check_notes": "Conflict on set_bar_height in meta: the recorded claim that no set_bar_height call appears for the typed, notes-closed state is contradicted by capture-bar-typed/meta.json:15 (6th of 9 commands), which lists one call. Checker B also found set_bar_height in capture-bar/meta.json:15 and capture-bar-dark/meta.json:16. Checker B saw 760x116 in capture-bar-typed/tree.txt:1, which matches the recorded size, while checker A says the 760 width conflicts with the 480 starting width in .llm/tray-app.md:13. Source decides: set_bar_height takes height only, so width is not set by this call. Rounding and minimum are source-only."
+  },
+  {
+   "title": "Card is draggable from title row and footer",
+   "trigger": "Press and drag on the card, the title row, or the footer (not the inputs or buttons)",
+   "context": "Bar visible",
+   "result": "data-tauri-drag-region on the card and the title and footer rows lets the user drag the bar window. The notes area carries no drag region.",
+   "exact": [
+    {
+     "what": "attribute",
+     "value": "data-tauri-drag-region"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:60",
+    "tray/src/components/TitleRow.tsx:31",
+    "tray/src/components/Footer.tsx:40",
+    "tray/src/App.tsx:60; tray/src/components/TitleRow.tsx:31; tray/src/components/Footer.tsx:40; NotesSection.tsx has no data-tauri-drag-region (whole file read, lines 1-61)",
+    "No data-tauri-drag-region on the App card, TitleRow, or Footer in any tree (capture-bar/tree.txt:1-14). The only drag region in the recordings is on the settings Label at settings-capture/tree.txt:10. Dragging was not recorded."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The exclusion of inputs and buttons is Tauri runtime behaviour and is not coded in these files. Elements without the attribute (the Footer target button at Footer.tsx:43-47, the screenshot button, TitleRow Clear at TitleRow.tsx:45-51) are not marked as drag regions."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-040",
+   "check": "corrected",
+   "check_notes": "Checker B could not check: no data-tauri-drag-region on the card, TitleRow or Footer in any tree, and dragging was not recorded. Checker A's source reading (App.tsx:60, TitleRow.tsx:31, Footer.tsx:40) is the basis for the correction."
+  },
+  {
+   "title": "Footer buttons are not in the tab order",
+   "trigger": "Press Tab in the title field",
+   "context": "Notes closed",
+   "result": "Tab from the title opens notes (not a footer button). The target, Clear and screenshot buttons all have tabIndex -1.",
+   "exact": [
+    {
+     "what": "tabIndex",
+     "value": "-1"
+    },
+    {
+     "what": "Clear button tabIndex",
+     "value": "-1 (state:capture-bar-typed tree line 4)"
+    }
+   ],
+   "sources": [
+    "tray/src/components/Footer.tsx:45,76",
+    "tray/src/components/TitleRow.tsx:51",
+    "state:capture-bar-typed (tree line 4)",
+    "tray/src/App.tsx:48-50 (Tab handler only when !draft.notesOpen); tray/src/components/Footer.tsx:45 (tabIndex -1 on the target button) and :76 (tabIndex -1 on screenshot ToolbarButton); tray/src/components/TitleRow.tsx:51 (Clear tabIndex -1)",
+    "Clear button tabIndex=-1 at capture-bar-typed/tree.txt:4; screenshot button tabIndex=-1 at capture-bar/tree.txt:9. Notes closed in the typed state (capture-bar-typed/tree.txt:11, notesOpen=false). Not verifiable: the target button's tabIndex (Footer shows only target={…} at tree.txt:7, no button element), and the Tab-opens-notes behaviour, which no recording shows."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "When notes are already open, App.tsx:48 does not intercept Tab from the title, so Tab uses the browser default and does not open notes again.",
+    "Keyboard Tab skipping the Clear button is inferred from tabIndex=-1 (kept)."
+   ],
+   "found_by": [
+    "A",
+    "B"
+   ],
+   "id": "F13-041",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Clear button tabIndex=-1 (capture-bar-typed/tree.txt:4) and the screenshot button tabIndex=-1 (capture-bar/tree.txt:9). B could not see the target button tabIndex or the Tab-opens-notes behaviour. Source decides on the target button's tabIndex (Footer.tsx:45 sets -1), which B could not confirm."
+  },
+  {
+   "title": "Notes close and reopen state, with no animation",
+   "trigger": "Tab (open), blur-while-empty (close), or a successful submit or explicit clear (close)",
+   "context": "Notes rendering switches between editor and hint",
+   "result": "The notes row is conditionally rendered: the editor when open, the hint when closed. There is no height transition and no inert attribute in this code.",
+   "exact": [
+    {
+     "what": "structure",
+     "value": "conditional render, no animation"
+    }
+   ],
+   "sources": [
+    "tray/src/components/NotesSection.tsx:24-60",
+    "tray/src/components/NotesSection.tsx:24-60 (conditional render; onBlur collapse at lines 42-44); tray/src/App.tsx:48-50, 80; tray/src/hooks/useCaptureDraft.ts:70 and :89 (clearDraft sets notesOpen false, called after submit); grep for 'inert' and 'grid-template-rows' in tray/src returned no matches; .llm/tray-app.md:174-178 (documents the grid animation and inert, which the code does not implement)",
+    "Notes closed: capture-bar/tree.txt:5 notesOpen=false with no editor child. Notes open: capture-bar-notes/tree.txt:11-13 shows notesOpen=true with RichTextEditor2 and PureEditorContent children. This is consistent with conditional rendering. Absence of a height transition or inert attribute cannot be seen in single static frames."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "Notes also collapse when the draft is cleared or submitted, because clearDraft sets notesOpen to false (useCaptureDraft.ts:70, called from save at line 89).",
+    "Discrepancy as recorded: .llm/tray-app.md lines 174-178 describe a grid-template-rows 0fr to 1fr animation and an inert collapsed panel. Neither is in the source; the source behaviour is recorded here."
+   ],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-042",
+   "check": "corrected",
+   "check_notes": "Checker B saw notes closed (capture-bar/tree.txt:5, notesOpen=false, no editor) and open (capture-bar-notes/tree.txt:11-13) and found conditional rendering consistent. Checker A found no inert attribute or grid-template-rows animation in source, contrary to .llm/tray-app.md:174-178. Source decides: the collapse is conditional rendering with no animation or inert."
+  },
+  {
+   "title": "Escape-to-dismiss, Clear and hotkey wiring: only title and editor keys are handled by the card",
+   "trigger": "Any key other than the card's Enter (no Shift), Escape, Tab (no Shift, notes closed), or the clear accelerator, typed in the title field",
+   "context": "Focus in title or notes",
+   "result": "The card handles plain Enter (save), Escape (hide the bar) and Tab (open notes when closed). Shift+Enter and Shift+Tab fall through. The clear accelerator is handled earlier in a window-level capture listener, not by the card. Other keys fall through to the field and type normally. In the notes editor, the wrapper stops keydown propagation so the card never sees keys; Escape there calls onEscape (hide the bar), and Cmd/Ctrl+Enter submits (submitOnModEnter).",
+   "exact": [
+    {
+     "what": "card key handling",
+     "value": "Enter (no Shift) = save; Escape = hideMini; Tab (no Shift, notes closed) = open notes"
+    },
+    {
+     "what": "clear accelerator (named in trigger)",
+     "value": "Cmd+Shift+Backspace"
+    }
+   ],
+   "sources": [
+    "tray/src/App.tsx:41-52",
+    "tray/src/App.tsx:41-52 (card onKeyDown: Enter without Shift to draft.save, Escape to api.hideMini, Tab without Shift when notes closed to setNotesOpen(true)); tray/src/hooks/useClearDraftHotkey.ts:12-20 (clear accelerator on window capture phase, stopPropagation); common-ui/src/RichTextEditor.tsx:565 (wrapper onKeyDown stopPropagation); RichTextEditor.tsx:262-297 (ProseMirror handleKeyDown: Escape to onEscape, submit rule); tray/src/components/NotesSection.tsx:37-39 (submitOnModEnter, onSubmit save, onEscape hideMini)",
+    "clearAccel=\"Cmd+Shift+Backspace\" at capture-bar-typed/tree.txt:2 and capture-bar-notes/tree.txt:2; the Clear title 'Clear the draft (⌘⇧⌫)' at capture-bar-typed/tree.txt:4. The card's key handling (Enter, Escape, Tab) and fall-through behaviour are not shown in any recording (editor onEscape/onSubmit props appear at capture-bar-notes/tree.txt:12 but their handling is not visible)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "A"
+   ],
+   "id": "F13-043",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the clear accelerator as Cmd+Shift+Backspace from capture-bar-typed/tree.txt:2 and capture-bar-notes/tree.txt:2, and the Clear title 'Clear the draft (⌘⇧⌫)'. Checker A's source reading shows the clear accelerator is handled in a window-level capture listener, not the card. Checker B could not see the card's key handling. The two do not conflict."
+  },
+  {
+   "title": "Clear button hover colour change",
+   "trigger": "Hover over the Clear button (inferred from the class name)",
+   "context": "Draft present means hasDraft: the title is non-empty, or at least one screenshot is attached, or the notes are open (useCaptureDraft.ts:129). The Clear button shows only then (TitleRow.tsx:44).",
+   "result": "Label colour changes to the stronger text colour on hover.",
+   "exact": [
+    {
+     "what": "Class string (full)",
+     "value": "text-content-2l hover:text-content-1l dark:text-content-2d dark:hover:text-content-1d shrink-0 gap-0 text-[11px]"
+    },
+    {
+     "what": "Clear tooltip (title)",
+     "value": "Clear the draft (<formatted clear accelerator>) when clear_draft is set, else Clear the draft"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-typed (tree line 4)",
+    "tray/src/components/TitleRow.tsx:44 (Clear shown when hasDraft), :51-52 (tabIndex -1 and full className), :53-57 (title tooltip); tray/src/hooks/useCaptureDraft.ts:129",
+    "capture-bar-typed/tree.txt:4 className=\"text-content-2l hover:text-content-1l dark:text-content-2d d…\" matches the feature value exactly, including the truncation. Draft present: hasDraft=true at capture-bar-typed/tree.txt:2. Hover state itself is not captured."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The class string in the recording is truncated; the full value is given above from TitleRow.tsx:52."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-044",
+   "check": "corrected",
+   "check_notes": "Checker B said the recorded className matches exactly including the truncation. Checker A notes the recorded string is truncated in the recording and gives the full value from TitleRow.tsx:52. Source decides, so the full value is recorded. The Clear tooltip is consistent with B's recorded title 'Clear the draft (⌘⇧⌫)'."
+  },
+  {
+   "title": "Title text entry with a draft",
+   "trigger": "Typing in the title field",
+   "context": "Draft present",
+   "result": "The typed text shows in the title field at 13px left inset and the Clear button appears.",
+   "exact": [
+    {
+     "what": "Left inset",
+     "value": "12 px from TitleRow px-3 (the bare input adds no padding); the recorded 13 px is not confirmed by source"
+    },
+    {
+     "what": "Font size",
+     "value": "text-sm from TitleRow.tsx:41 overrides the 13px base (text-[13px]) through cn last-wins, so the rendered title font is text-sm (Tailwind default 14px), not 13px"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-typed (shot.png)",
+    "state:capture-bar-typed (tree line 2-3)",
+    "state:capture-bar-notes (tree line 2-3)",
+    "tray/src/components/TitleRow.tsx:32 (px-3 container), :40 (placeholder), :41 (className text-sm); common-ui/src/components/inputs/TextInput.tsx:17-19 (text-[13px]; bare = min-w-0 flex-1 bg-transparent, no padding); common-ui/src/cn.ts:12-57 (tailwind-merge, last wins); useCaptureDraft.ts:129; state:capture-bar-typed and capture-bar-notes tree values were not checked",
+    "capture-bar-typed/tree.txt:2-3 title=\"Call the plumbe\" and value=\"Call the plumbe\". capture-bar-typed/shot.png shows 'Call the plumber'. capture-bar-notes/tree.txt:2 title=\"Call the plumber\". Title text at x=13 in the shot (TextInput2 @13,11 at tree line 3). Clear button present in the typed tree at line 4."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Discrepancy as recorded: the typed-state tree and screenshot values differ ('Call the plumbe' vs 'Call the plumber'); tree values are state-only and were not checked.",
+    "The Clear button also appears when notes are open with an empty title (useCaptureDraft.ts:129)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-045",
+   "check": "corrected",
+   "check_notes": "Checker B measured the title text at x=13 (TextInput2 @13,11) and saw the screenshot title 'Call the plumber' against the tree value 'Call the plumbe'. Source decides: the left inset is 12 px from px-3 with no bare-input padding, so the 13 px measurement is not confirmed. Font size is text-sm from cn last-wins, not 13px."
+  },
+  {
+   "title": "Notes character counter",
+   "trigger": "none (observed state)",
+   "context": "Notes open (the toolbar renders only inside the open NotesSection editor).",
+   "result": "A counter at the right end of the docked notes toolbar reads {chars}/2000 (0/2000 when empty). The counter is rendered in RichTextEditor, not in the tray.",
+   "exact": [
+    {
+     "what": "Counter text",
+     "value": "0/2000"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (shot.png)",
+    "common-ui/src/RichTextEditor.tsx:142 (maxLength default 2000), :545 (ml-auto separator when docked), :548-556 (counter {st.chars}/{maxLength}, danger colour above 90%); tray/src/components/NotesSection.tsx:27-45 (no maxLength passed, so the default applies)",
+    "'0/2000' visible at the right end of the notes toolbar in capture-bar-notes/shot.png. No counter element in capture-bar-notes/tree.txt:11-27, consistent with the edge case."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Source: the counter is rendered by RichTextEditor.tsx:548-556, so it is not only in the screenshot. Its colour switches to the danger tone once chars exceeds 90% of maxLength (RichTextEditor.tsx:550).",
+    "The tree element is not named for it (state-only observation)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-046",
+   "check": "corrected",
+   "check_notes": "Checker B saw '0/2000' at the right end of the notes toolbar in the screenshot. Checker B found no counter element in the tree, which is consistent with the rendering living in RichTextEditor. Source (RichTextEditor.tsx:548-556) decides that the counter is rendered there, with the danger tone above 90%."
+  },
+  {
+   "title": "Bold button in notes toolbar",
+   "trigger": "Click the bold button (runs on mousedown, focus stays in the editor). Cmd+B is not bound in these sources; the shortcut text is the tooltip only.",
+   "context": "Notes open; active=false",
+   "result": "Applies bold formatting via onRun.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "format_bold, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Bold  ⌘B"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 15)",
+    "common-ui/src/RichTextEditor.tsx:493-498 (icon format_bold, title 'Bold  ⌘B', onRun toggleBold), :636-664 (ToolButton: onMouseDown preventDefault then onRun; Icon size 16 at line 661); grep for a Cmd+B or Mod-b binding in common-ui/src and tray/src found none",
+    "capture-bar-notes/tree.txt:15 ToolButton icon=\"format_bold\" title=\"Bold  ⌘B\" active=false onRun; line 16 Icon size=16. Trigger shortcut Cmd+B is not shown by any recording."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The tooltip has two spaces between Bold and the shortcut (kept).",
+    "Keyboard shortcut behaviour is not coded here (no binding found), so the recorded Cmd+B trigger from the title is not supported by source."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-047",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Bold tooltip and icon in the tree (capture-bar-notes/tree.txt:15-16) and saw no recording of Cmd+B. Checker A found no Cmd+B binding in common-ui/src or tray/src, so the Cmd+B trigger is not supported by source. Source decides."
+  },
+  {
+   "title": "Italic button in notes toolbar",
+   "trigger": "Click the italic button (runs on mousedown). Cmd+I is not bound in these sources; the shortcut text is the tooltip only.",
+   "context": "Notes open; active=false",
+   "result": "Applies italic formatting via onRun.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "format_italic, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Italic  ⌘I"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 17)",
+    "common-ui/src/RichTextEditor.tsx:499-504 (format_italic, title 'Italic  ⌘I', toggleItalic), :661 (size 16); grep for Cmd+I binding in common-ui/src and tray/src found none",
+    "capture-bar-notes/tree.txt:17 icon=\"format_italic\" title=\"Italic  ⌘I\" active=false; line 18 Icon size=16."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Keyboard shortcut behaviour is not coded here (no binding found), so the Cmd+I trigger is inferred from the tooltip only.",
+    "The tooltip has two spaces between Italic and the shortcut (kept)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-048",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Italic tooltip and icon in the tree (capture-bar-notes/tree.txt:17-18). Checker A found no Cmd+I binding in source, so the trigger rests on the tooltip only. Source decides."
+  },
+  {
+   "title": "Underline button in notes toolbar",
+   "trigger": "Click the underline button (runs on mousedown). Cmd+U is not bound in these sources; the shortcut text is the tooltip only.",
+   "context": "Notes open; active=false",
+   "result": "Applies underline formatting via onRun.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "format_underlined, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Underline  ⌘U"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 19)",
+    "common-ui/src/RichTextEditor.tsx:505-510 (format_underlined, title 'Underline  ⌘U', toggleUnderline), :661; grep for Cmd+U binding found none",
+    "capture-bar-notes/tree.txt:19 icon=\"format_underlined\" title=\"Underline  ⌘U\" active=false; line 20 Icon size=16."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Keyboard shortcut behaviour is not coded here (no binding found).",
+    "The tooltip has two spaces between Underline and the shortcut (kept)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-049",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Underline tooltip and icon in the tree (capture-bar-notes/tree.txt:19-20). Checker A found no Cmd+U binding in source, so the trigger rests on the tooltip only. Source decides."
+  },
+  {
+   "title": "Strikethrough button in notes toolbar",
+   "trigger": "Click the strikethrough button",
+   "context": "Notes open; active=false",
+   "result": "Applies strikethrough formatting via onRun. No keyboard shortcut is shown.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "strikethrough_s, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Strikethrough"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 21)",
+    "common-ui/src/RichTextEditor.tsx:511-516 (icon strikethrough_s, title 'Strikethrough', no shortcut, toggleStrike), :661 (size 16)",
+    "capture-bar-notes/tree.txt:21 icon=\"strikethrough_s\" title=\"Strikethrough\" active=false; line 22 Icon size=16."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-050",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the Strikethrough button: source at RichTextEditor.tsx:511-516, and the tree at capture-bar-notes/tree.txt:21-22."
+  },
+  {
+   "title": "Bulleted list button in notes toolbar",
+   "trigger": "Click the bulleted list button",
+   "context": "Notes open; active=false",
+   "result": "Toggles a bulleted list via onRun.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "format_list_bulleted, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Bulleted list"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 23)",
+    "common-ui/src/RichTextEditor.tsx:518-523 (icon format_list_bulleted, title 'Bulleted list', toggleBulletList), :661",
+    "capture-bar-notes/tree.txt:23 icon=\"format_list_bulleted\" title=\"Bulleted list\" active=false; line 24 Icon size=16."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-051",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the Bulleted list button: source at RichTextEditor.tsx:518-523, and the tree at capture-bar-notes/tree.txt:23-24."
+  },
+  {
+   "title": "Numbered list button in notes toolbar",
+   "trigger": "Click the numbered list button",
+   "context": "Notes open; active=false",
+   "result": "Toggles a numbered list via onRun.",
+   "exact": [
+    {
+     "what": "Icon",
+     "value": "format_list_numbered, 16px"
+    },
+    {
+     "what": "Tooltip (title)",
+     "value": "Numbered list"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree line 25)",
+    "common-ui/src/RichTextEditor.tsx:524-529 (icon format_list_numbered, title 'Numbered list', toggleOrderedList), :661",
+    "capture-bar-notes/tree.txt:25 icon=\"format_list_numbered\" title=\"Numbered list\" active=false; line 26 Icon size=16."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-052",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the Numbered list button: source at RichTextEditor.tsx:524-529, and the tree at capture-bar-notes/tree.txt:25-26."
+  },
+  {
+   "title": "Notes toolbar separator and button positions",
+   "trigger": "none (observed state)",
+   "context": "Notes open",
+   "result": "A divider sits between the text-style group (B, I, U, S) and the list group. Buttons are 24x24 each.",
+   "exact": [
+    {
+     "what": "Button x positions",
+     "value": "9, 37, 65, 93 (style group); 134, 162 (list group)"
+    },
+    {
+     "what": "Toolbar y",
+     "value": "113"
+    }
+   ],
+   "sources": [
+    "state:capture-bar-notes (tree lines 15-26)",
+    "state:capture-bar-notes (shot.png)",
+    "common-ui/src/RichTextEditor.tsx:517 (separator between the text-style group and the list group, confirmed); :655 (h-6 w-6 = 24x24 buttons, confirmed); :590-594 (docked toolbar wrapper flex-wrap gap-0.5); the x positions 9, 37, 65, 93, 134, 162 and toolbar y 113 are measured layout values from state:capture-bar-notes and were not verifiable from source",
+    "Button positions @9,113; @37,113; @65,113; @93,113; @134,113; @162,113 at capture-bar-notes/tree.txt:15,17,19,21,23,25, each 24x24. Vertical divider visible at about x=125 in capture-bar-notes/shot.png (no Divider element in the toolbar lines)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-053",
+   "check": "confirmed_by_one",
+   "check_notes": "Checker B confirmed the six button positions (9, 37, 65, 93, 134, 162 at y=113, each 24x24) from capture-bar-notes/tree.txt:15-25 and a vertical divider near x=125 in the screenshot. Checker A could not check the measured layout values from source, but confirmed the separator at RichTextEditor.tsx:517, the h-6 w-6 (24x24) button size at :655, and the docked toolbar wrapper at :590-594."
+  },
+  {
+   "title": "Footer capture status props",
+   "trigger": "none recorded",
+   "context": "Footer props capturing=false and count=0 in every state",
+   "result": "The footer receives capturing (true while a capture is in flight, pending > 0) and count (number of attached screenshots). When capturing, the button shows a spinner and Capturing ... (Footer.tsx:93-96). When count > 0 and not capturing, the button shows 'N shot(s)' with the accent colour and filled state (Footer.tsx:31-32, 73, 103). The values false and 0 are the state-only observation.",
+   "exact": [
+    {
+     "what": "capturing",
+     "value": "false"
+    },
+    {
+     "what": "count",
+     "value": "0"
+    }
+   ],
+   "sources": [
+    "state:capture-bar (tree line 7)",
+    "state:capture-bar-notes (tree line 28)",
+    "tray/src/App.tsx:83-90 (Footer gets capturing, error, count); tray/src/hooks/useCaptureDraft.ts:112 (count grows on captured), :126 (count = screenshots.length), :127 (capturing = pending > 0); tray/src/components/Footer.tsx:31-33, :73, :93-96, :103",
+    "capturing=false count=0 at capture-bar/tree.txt:7, capture-bar-notes/tree.txt:28, capture-bar-typed/tree.txt:13 and capture-bar-dark/tree.txt:7. Attached screenshot or capture in progress not in any state."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "No recorded state shows an attached screenshot or a capture in progress (state-only; the code paths for both are present)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-054",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed capturing=false and count=0 across the recordings (capture-bar/tree.txt:7, capture-bar-notes/tree.txt:28, capture-bar-typed/tree.txt:13, capture-bar-dark/tree.txt:7). Checker A supplied the full source behaviour for both values and the in-flight and attached-screenshot states, which no recording shows."
+  },
+  {
+   "title": "Settings window opens on the Capture tab",
+   "trigger": "none recorded (state reached through present_window)",
+   "context": "Settings window, light theme",
+   "result": "The Settings window (1180x760) opens with the Capture tab selected. The title bar reads Settings.",
+   "exact": [
+    {
+     "what": "Window size",
+     "value": "640x520 (SettingsWindow.tsx:32-33, presented at :114; lib.rs:887-888). 1180x760 is the main app window in tauri.conf.json:16-17, not the Settings window."
+    },
+    {
+     "what": "Active tab on open",
+     "value": "General (paneId initialised to PANES[0].id, SettingsWindow.tsx:61; panes.ts:9). Capture is selected only after the user picks it."
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 1-3, 16)",
+    "state:settings-capture (meta.json commands include present_window)",
+    "main/src/windows/SettingsWindow.tsx:32-33 (WIDTH 640, HEIGHT 520), :61 (paneId starts at PANES[0].id), :111-116 (presentWindow after settings.loaded and fonts ready); main/src-tauri/src/lib.rs:876-891 (open_settings builds 'Settings' panel at 640 x 520); main/src-tauri/tauri.conf.json:16-17 (1180 x 760 is the main window); main/src/windows/settings/SettingsTitleBar.tsx:23 (title 'Settings'); SettingsWindow.tsx:278 (aria-selected)",
+    "settings-capture/tree.txt:1 'SettingsWindow @0,0 1180x760'; tree.txt:3 TitleBar title=\"Settings\"; tree.txt:16 settings-tab-capture active=true aria-selected=true. present_window is the last command in settings-capture/meta.json:29. theme=light at settings-capture/meta.json:8."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "Recorded 'Capture' as the initial tab conflicts with the source default (General). The recorded state may follow a user click, which the source does not show."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-055",
+   "check": "corrected",
+   "check_notes": "Conflict: checker B recorded SettingsWindow @0,0 1180x760 in settings-capture/tree.txt:1 and capture as the active tab (tree.txt:16). Source decides: SettingsWindow.tsx:32-33 and lib.rs:887-888 give 640x520, and 1180x760 is the main window in tauri.conf.json:16-17. The default active tab is General (SettingsWindow.tsx:61, panes.ts:9), so the recorded Capture tab likely followed a user click. Checker B's title 'Settings' (tree.txt:3) and the present_window call (meta.json:29) match."
+  },
+  {
+   "title": "Settings sidebar tabs",
+   "trigger": "Click a tab in the sidebar (inferred from onClick)",
+   "context": "Settings window",
+   "result": "Four sidebar tabs appear in order General, Capture, Shortcuts, About. The initial selected tab is General (PANES[0]); Capture is active only after it is selected. Selected tab has aria-selected=true; the others are not selected.",
+   "exact": [
+    {
+     "what": "Tab labels in order",
+     "value": "General, Capture, Shortcuts, About"
+    },
+    {
+     "what": "Tab icons",
+     "value": "tune, screenshot_monitor, keyboard, info (16px)"
+    },
+    {
+     "what": "Tab size",
+     "value": "139x30"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 14-21)",
+    "state:settings-capture (shot.png)",
+    "main/src/windows/settings/panes.ts:8-13 (order GENERAL, CAPTURE, SHORTCUTS, ABOUT); generalPane.tsx:102 (icon tune); capturePane.tsx:27 (icon screenshot_monitor); shortcutsPane.tsx:30 (icon keyboard); aboutPane.tsx:9 (icon info); SettingsWindow.tsx:268-298 (MenuItem per pane, aria-selected, onClick selectPane), :283 (Icon size 16)",
+    "Tabs in order at settings-capture/tree.txt:14,16,18,20 (general, capture, shortcuts, about). Labels visible in settings-capture/shot.png. Icons tune, screenshot_monitor, keyboard, info at tree.txt:15,17,19,21, each size=16. Each tab 139x30 (tree.txt:14,16,18,20). Only capture has aria-selected=true (tree.txt:16)."
+   ],
+   "system": false,
+   "uncertain": false,
+   "edge_cases": [
+    "The 139x30 tab size is a measured value and is not in source (not checked)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-056",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed four tabs in order (settings-capture/tree.txt:14-21), icons, and size 139x30, with only capture aria-selected=true (tree.txt:16). Source decides that the initial selected tab is General (PANES[0]), so the recorded Capture selection follows a user action. The 139x30 size is measured and not in source."
+  },
+  {
+   "title": "Settings search field",
+   "trigger": "Click the field and type (inferred)",
+   "context": "Settings window, top of sidebar",
+   "result": "A search field with an icon filters settings (filtering not recorded). It is empty.",
+   "exact": [
+    {
+     "what": "Placeholder",
+     "value": "Search"
+    },
+    {
+     "what": "aria-label",
+     "value": "Search settings"
+    },
+    {
+     "what": "Icon",
+     "value": "search, 14px"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 11-13)",
+    "main/src/windows/SettingsWindow.tsx:232-258 (InputWell with Icon search size 14 at line 234; TextInput placeholder 'Search' line 254; aria-label 'Search settings' line 255; onChange search(...) line 253)",
+    "settings-capture/tree.txt:12 Icon name=\"search\" size=14; tree.txt:13 TextInput2 placeholder=\"Search\" aria-label=\"Search settings\" value=\"\"."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-057",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the search field: source at SettingsWindow.tsx:232-258 and the tree at settings-capture/tree.txt:12-13."
+  },
+  {
+   "title": "Capture mode segmented control",
+   "trigger": "Click Full screen or Region (inferred from onChange)",
+   "context": "Capture tab; value fullscreen",
+   "result": "Two segments. The selected one (Full screen) has a white thumb. Changing the value calls onChange; the saved effect is not recorded.",
+   "exact": [
+    {
+     "what": "Row title",
+     "value": "Capture mode"
+    },
+    {
+     "what": "Segment labels",
+     "value": "Full screen (icon fullscreen 15px); Region (icon crop_free 15px)"
+    },
+    {
+     "what": "Selected value",
+     "value": "fullscreen"
+    },
+    {
+     "what": "Variant",
+     "value": "surfaceThumb"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 26-30)",
+    "state:settings-capture (shot.png)",
+    "main/src/windows/settings/capturePane.tsx:11-14 (MODES labels and icons), :18 (region hint), :21-22 (asMode default fullscreen), :37 (row title 'Capture mode'), :41-46 (Segmented variant surfaceThumb, onChange ctx.set); common-ui/src/components/menus/Segmented.tsx:75 (icon size 15); main/src/windows/settings/settings.ts:37 (screenshot_mode fallback 'fullscreen')",
+    "settings-capture/tree.txt:26 SettingRow title=\"Capture mode\"; tree.txt:28 Segmented variant=\"surfaceThumb\" value=\"fullscreen\"; tree.txt:29-30 Icon fullscreen size=15 and crop_free size=15. settings-capture/shot.png shows the white thumb on Full screen and labels 'Full screen' and 'Region'."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The Region footnote is: 'Drag to select an area, or press Space to grab a window. Esc cancels.' (capturePane.tsx:18), shown when the mode is region.",
+    "The white thumb colour of the selected segment is not verified from source."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-058",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Capture mode row, the surfaceThumb Segmented control, icons at size 15, and the Full screen selection (settings-capture/tree.txt:26-30) and a white thumb in the screenshot. Checker A could not verify the thumb colour from source and added the Region footnote text."
+  },
+  {
+   "title": "Capture mode footnote",
+   "trigger": "none (observed state)",
+   "context": "Capture mode = Full screen",
+   "result": "Shows a line of help text under the segmented control.",
+   "exact": [
+    {
+     "what": "Footnote text",
+     "value": "Capture the entire screen instantly."
+    }
+   ],
+   "sources": [
+    "state:settings-capture (shot.png)",
+    "state:settings-capture (tree line 26, footnote=<el>)",
+    "main/src/windows/settings/capturePane.tsx:16-17 (fullscreen: 'Capture the entire screen instantly.'), :48-52 (footnote rendered under the control for the current mode)",
+    "Footnote text 'Capture the entire screen instantly.' visible in settings-capture/shot.png; footnote=<el> at settings-capture/tree.txt:26 and a muted Label at tree.txt:31."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "Visible only in the screenshot; the footnote element's text is not in the tree."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-059",
+   "check": "confirmed_by_both",
+   "check_notes": "Both checkers confirmed the Full screen footnote 'Capture the entire screen instantly.': source at capturePane.tsx:16-17 and :48-52, and the recording at settings-capture/tree.txt:26 and :31 and shot.png."
+  },
+  {
+   "title": "Saved to folder row opens the screenshots folder",
+   "trigger": "Click the path button itself (the path text or its icon). The row title and description are not clickable in code.",
+   "context": "Capture tab",
+   "result": "Opens the screenshots folder in the file manager via api.openPath(path). Path is the screenshots_dir from data paths. Before the paths load, the value shows an em dash (—).",
+   "exact": [
+    {
+     "what": "Row title",
+     "value": "Saved to"
+    },
+    {
+     "what": "Description",
+     "value": "Click to open the folder."
+    },
+    {
+     "what": "Path",
+     "value": "/Users/you/.taskscape/screenshots"
+    },
+    {
+     "what": "Icon",
+     "value": "folder_open, 14px"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 32-36)",
+    "state:settings-capture (shot.png)",
+    "main/src/windows/settings/capturePane.tsx:55-63 (row title 'Saved to', description 'Click to open the folder.', PathButton with paths.screenshots_dir); main/src/windows/settings/PathButton.tsx:10-12 (fallback to nearest existing ancestor), :14-19 (shows an em dash while loading), :22-26 (only the path button is clickable; title 'Open {path}'; aria-label 'Open {path} in the file manager'), :24 (api.openPath), :29 (folder_open size 14)",
+    "settings-capture/tree.txt:32 SettingRow title=\"Saved to\" description=\"Click to open the folder.\"; tree.txt:35 PathButton path=\"/Users/you/.taskscape/screenshots\"; tree.txt:36 Icon folder_open size=14. data_paths in settings-capture/meta.json:21 and :28. Path visible in shot.png. Effect of click not recorded."
+   ],
+   "system": true,
+   "uncertain": true,
+   "edge_cases": [
+    "If the screenshots folder does not exist yet, Rust falls back to the nearest existing ancestor (PathButton.tsx:10-12 comment).",
+    "The path /Users/you/.taskscape/screenshots is a state value and was not checked."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-060",
+   "check": "corrected",
+   "check_notes": "Checker B confirmed the Saved to row, its description, the PathButton path and folder_open icon (settings-capture/tree.txt:32-36), and the data_paths calls. Checker A found that only the path button is clickable in code, not the row title or description. Source decides on the trigger. B did not record the effect of a click."
+  },
+  {
+   "title": "Settings window discard controls (window-level undo and group-level discard)",
+   "trigger": "Click the undo icon. Window-level: shown in the title bar when any setting or hotkey has changed since the window opened. Group-level: shown on a group when that group has changed.",
+   "context": "SectionHeader active=false in the recorded state, so the control is not visible in shot.png",
+   "result": "Window-level control discards every setting and hotkey change made since the window opened. The group-level discard restores only that group's keys (for Screenshots, screenshot_mode).",
+   "exact": [
+    {
+     "what": "Window-level tooltip (title)",
+     "value": "Discard every change made since this window opened"
+    },
+    {
+     "what": "Window-level aria-label",
+     "value": "Discard changes"
+    },
+    {
+     "what": "Icon",
+     "value": "undo (IconButton, iconSize 19)"
+    },
+    {
+     "what": "Section label",
+     "value": "Screenshots (group label; uppercase and 0.12em tracking not verified in source)"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree line 23)",
+    "state:settings-capture (shot.png)",
+    "main/src/windows/SettingsWindow.tsx:198, 211 (dirtySession = settings.changed || hotkeys.changed; shown only when true), :212-224 (IconButton icon 'undo', title 'Discard every change made since this window opened', aria-label 'Discard changes', onClick discardAll for settings and hotkeys), :41 (group onDiscard shown when group.changed); main/src/windows/settings/capturePane.tsx:31-33 (group label 'Screenshots'; onDiscard discards only screenshot_mode); main/src/windows/settings/settings.ts:61-69 (discard semantics); grep for clearIcon/clearTitle in the Settings window found none",
+    "SectionHeader label=\"Screenshots\" active=false clearIcon=\"undo\" clearTitle=\"Discard changes made since this window opened\" at settings-capture/tree.txt:23; className \"text-[10.5px] tracking-[0.12em] uppercase\" at tree.txt:24; shot.png shows SCREENSHOTS. Control not visible since active=false. The discard behaviour itself is not recorded."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The recorded names clearIcon and clearTitle are not in the Settings code; the control is an IconButton with icon and title props (SettingsWindow.tsx:212-220).",
+    "The recorded tooltip 'Discard changes made since this window opened' differs from the source string (SettingsWindow.tsx:219)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-061",
+   "check": "corrected",
+   "check_notes": "Conflict on names and tooltip: checker B recorded SectionHeader label=\"Screenshots\" with clearIcon=\"undo\" and clearTitle=\"Discard changes made since this window opened\" (settings-capture/tree.txt:23). Checker A found no clearIcon or clearTitle in the Settings code, and the window-level control is an IconButton with title 'Discard every change made since this window opened' and aria-label 'Discard changes' (SettingsWindow.tsx:212-224). Source decides. Checker B saw the group control only as active=false, so it is not visible in the recording."
+  },
+  {
+   "title": "Settings window reads saved settings on open",
+   "trigger": "Window opens (inferred from meta commands)",
+   "context": "Settings window",
+   "result": "On open the window reads every setting key in SETTING_DEFS (get_setting each), the app version, the data paths, and the hotkey list. It calls present_window only after the settings have loaded and fonts are ready. Values are then rendered as the capture mode and the save path.",
+   "exact": [
+    {
+     "what": "Commands",
+     "value": "get_setting (10 calls), set_window_theme, is_low_power_mode, list_hotkeys (twice), plugin:app|version (twice), data_paths (twice), present_window"
+    }
+   ],
+   "sources": [
+    "state:settings-capture (meta.json commands)",
+    "main/src/windows/settings/settings.ts:84-86 (getSetting for every key in SETTING_DEFS), :37 (screenshot_mode fallback); main/src/windows/SettingsWindow.tsx:89 (getVersion), :96-97 (dataPaths), :111-116 (presentWindow after settings.loaded and document.fonts.ready); main/src/windows/settings/useHotkeyEditor.ts:46 (listHotkeys); main/src/api.ts:150, 155, 164, 197",
+    "settings-capture/meta.json:10-29 lists get_setting ten times (positions 1, 2, 11, 12, 13, 14, 15, 16, 17, 18 of 19 counting from 1 — ten in total), set_window_theme (:13), is_low_power_mode (:14), list_hotkeys (:19, :26), plugin:app|version (:20, :27), data_paths (:21, :28), and present_window (:29). The sequence of reads appears twice, with one present_window."
+   ],
+   "system": false,
+   "uncertain": true,
+   "edge_cases": [
+    "The source calls present_window(WIDTH, HEIGHT) = (640, 520), not 1180x760 (SettingsWindow.tsx:32-33, 114).",
+    "Which setting keys are stored is not fully recorded; the SETTING_DEFS keys are the full set read on open (settings.ts:24-38)."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-062",
+   "check": "corrected",
+   "check_notes": "Checker B's recorded command list (settings-capture/meta.json:10-29) adds set_window_theme, is_low_power_mode and a second sequence of reads, which checker A's source trace does not mention. Both are kept as recorded. Source decides on present_window: it is called with WIDTH, HEIGHT = 640x520, not 1180x760, and only after settings load and fonts are ready."
+  },
+  {
+   "title": "Settings window close and disabled traffic lights",
+   "trigger": "Click the red close light (inferred from onClick)",
+   "context": "Settings window focused",
+   "result": "Close is active. Minimize and fullscreen lights are inert (disabled).",
+   "exact": [
+    {
+     "what": "Light size",
+     "value": "Source class is 'block size-4' (WindowControls.tsx:68), i.e. 16 px nominal at default root size. The recorded 14x14 at 18,15 is a measured value and is not confirmed by source."
+    }
+   ],
+   "sources": [
+    "state:settings-capture (tree lines 6-9)",
+    "state:settings-capture (shot.png)",
+    "main/src/windows/settings/SettingsTitleBar.tsx:12, 26 (OFF = minimize, fullscreen passed as disabled); main/src/components/WindowControls.tsx:10 (order close, minimize, fullscreen), :27 (Close label), :41 (Full Screen label), :66 (disabled={inert}), :68 ('block size-4'), :111 (inert = !act[id]), :139 (close: win.close())",
+    "settings-capture/tree.txt:7 Light id=\"close\" focused=true inert=false @18,15 14x14; tree.txt:8 id=\"minimize\" inert=true; tree.txt:9 id=\"fullscreen\" inert=true. Window focused: focused=true at tree.txt:6. Close light onClick at tree.txt:7 only. Visible in settings-capture/shot.png."
+   ],
+   "system": true,
+   "uncertain": false,
+   "edge_cases": [
+    "The recorded 14x14 size conflicts with the size-4 class in source; measured position and size were not verified."
+   ],
+   "found_by": [
+    "B"
+   ],
+   "id": "F13-063",
+   "check": "corrected",
+   "check_notes": "Checker B recorded the close light at 18,15 measured 14x14 (settings-capture/tree.txt:7), with minimize and fullscreen inert=true (tree.txt:8-9) and the window focused (tree.txt:6). Source decides on size: WindowControls.tsx:68 uses 'block size-4', i.e. 16 px nominal, so the 14x14 measurement is not confirmed. Position was not verified from source."
+  }
+ ]
+}
