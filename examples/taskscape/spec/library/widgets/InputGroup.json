@@ -1,0 +1,120 @@
+{
+ "name": "InputGroup",
+ "purpose": "Frame around a single input with a leading icon slot: the search well in the task list. Also (text): The one chrome for text entry (shadcn InputGroup): a bordered or filled well that holds one Input plus addons. Draws the border, fill and focus ring; a press anywhere in the well focuses the Input. Two tones: field (bordered sheet well) and search (filled grey pill with no border). Merged from A's InputWell and B's InputGroup. Kept the search tone (catalogue lines 16 and 60 describe the grey pill), because the missing border is felt. Heights at 1rem=14px: md h-10 = 35px (matches the measured 345x35 sheet well); sm h-7 = 24.5px (measured 25px). The trailing slot holds the clear button and the dice roll button. Covers the sheet field well and the sheet name with a fixed suffix. Sources: A (InputWell, sheet well h-10) and B (InputGroup).",
+ "base": "shadcn InputGroup (input-group addon pattern)",
+ "variants": [
+  {
+   "axis": "shape",
+   "values": [
+    {
+     "value": "well",
+     "when": "Rounded, light grey bordered bar with a leading search icon. Task-list search (approx x 14 to 846, y 56 to 91; visual estimate, not measured)."
+    },
+    {
+     "value": "bar",
+     "when": "Full width, border-b edge-1, short fixed height, leading glyph. The frame CommandInput uses for the palette input row."
+    }
+   ],
+   "default": "well"
+  },
+  {
+   "axis": "tone",
+   "default": "field",
+   "values": [
+    {
+     "value": "field",
+     "when": "Bordered: border-edge-2 in light and dark, bg-surface-1 fill. Focus-within uses the focus ring token (see open; the sheet's accent-500 border is folded). Sheet name field and sheet well."
+    },
+    {
+     "value": "search",
+     "when": "Filled grey rounded pill with no border. Fill and radius are not recorded in elements.json (grey in the screenshot). List search well and settings search pill."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "default": "md",
+   "values": [
+    {
+     "value": "sm",
+     "when": "h-7 = 1.75rem = 24.5px at 1rem=14px (measured 25px). 12px text inside. Settings sidebar search."
+    },
+    {
+     "value": "md",
+     "when": "h-10 = 2.5rem = 35px at 1rem=14px. 14px text inside. List search well, task-list match search, sheet well and sheet name."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "shape",
+   "type": "'well' | 'bar'",
+   "description": "Set by variant."
+  },
+  {
+   "name": "leading",
+   "type": "ReactNode",
+   "description": "Icon in the leading slot (A's addon leading-icon)."
+  },
+  {
+   "name": "trailing",
+   "type": "ReactNode",
+   "description": "Optional trailing slot."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "The input (from the forms family)."
+  },
+  {
+   "name": "tone",
+   "type": "'field' | 'search'",
+   "description": "Chrome tone. Default field."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md'",
+   "description": "Height and text size of the well. Owning widget (SearchField, sheet) sets it and the Input inherits it."
+  },
+  {
+   "name": "suffix",
+   "type": "string",
+   "description": "Locked, greyed, non-editable tail at the end of the well. The caller appends it to the trimmed value on accept (sheet name with fixed suffix). A's TextField carried this prop; moved here because it is well chrome."
+  },
+  {
+   "name": "focusInputOnPress",
+   "type": "boolean",
+   "description": "Default true. A press anywhere in the well focuses the inner Input."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Disabled chrome."
+  }
+ ],
+ "states": [
+  "default",
+  "focus-within (proposed; not recorded)",
+  "disabled",
+  "rest (fill and border per tone)",
+  "focus-within (focus ring token)",
+  "filled",
+  "trailing action shown",
+  "suffix locked (suffix set)"
+ ],
+ "role": "none on the wrapper; the inner input supplies the role (textbox, searchbox or combobox)",
+ "keyboard": "None on the frame; focus goes to the inner field. / None on the well. Tab reaches the inner Input; trailing buttons are separate tab stops after it. A press anywhere in the well focuses the Input (focusInputOnPress).",
+ "replaces": [
+  "search input well",
+  "Sheet field well, h-10 class",
+  "Sheet name input with fixed suffix"
+ ],
+ "platform": "Same. / Same look on both. Desktop: the sheet well sits in a separate window with no backdrop dimming. Web: sheet presentation is not decided by this rule. Dice roll exists only on sheets (windows on desktop, dialogs on web).",
+ "open": "Well fill and radius not recorded. Bar height conflicts with the rem decision (see TitleBar). The command palette input row replace is kept on CommandInput, which uses this frame. / 1) Focus-within: the sheet well's accent-500 border is folded into the standard focus ring here (accent reserved for selection and primary action). Decision needed (see Input open 1). 2) Search tone fill and radius are not recorded (grey only). 3) Search tone has no border, per catalogue lines 16 and 60; B's fold to sheet chrome for the search wells is rejected. Confirm. 4) The measured 35px matches h-10 at 1rem=14px; confirm the spacing scale before fixing tokens. 5) Dice roll button: which IconButton variant it uses is not in this family. 6) Suffix behaviour when the trimmed value is empty is not recorded.",
+ "family": "structure",
+ "families": [
+  "structure",
+  "text"
+ ]
+}

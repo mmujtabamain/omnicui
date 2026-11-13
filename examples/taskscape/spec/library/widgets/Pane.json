@@ -1,0 +1,138 @@
+{
+ "name": "Pane",
+ "purpose": "One region of a PaneGroup: the primary or split task pane, the right aside host for Preview, Trash or Filter, or a side column such as the Settings sidebar. Width comes from the group ratio (task panes) or a pixel clamp (aside).",
+ "base": "shadcn Resizable panel (ResizablePanel)",
+ "variants": [
+  {
+   "axis": "slot",
+   "values": [
+    {
+     "value": "primary",
+     "when": "Left task pane. min-w-0 flex; 100% of the group unsplit (860 of 860), ratio times 100% when split (430 of 860)."
+    },
+    {
+     "value": "split",
+     "when": "Second task pane. border-l edge-2, flex-1, min-w-0. 429x715 at 431,46."
+    },
+    {
+     "value": "aside",
+     "when": "Right aside host, shrink-0, width from previewWidth clamped 280 to 420 (319 in recorded states). Hidden when previewOpen, trashOpen and filterOpen are all false (App.tsx:108). A merged the aside host and the side pane surface into one slot."
+    }
+   ],
+   "default": "primary"
+  },
+  {
+   "axis": "edge",
+   "values": [
+    {
+     "value": "none",
+     "when": "No hairline. Primary task pane and task area."
+    },
+    {
+     "value": "leading",
+     "when": "1px border-l edge-2. Split pane and right aside."
+    },
+    {
+     "value": "trailing",
+     "when": "1px border-r edge-2. Settings sidebar."
+    }
+   ],
+   "default": "none"
+  },
+  {
+   "axis": "fill",
+   "values": [
+    {
+     "value": "none",
+     "when": "Transparent; takes the window colour. Task panes."
+    },
+    {
+     "value": "surface",
+     "when": "bg-surface-1, flex column, h-full, overflow hidden. Side pane surface (inspector, trash, filter), the aside, and the Settings sidebar."
+    }
+   ],
+   "default": "none"
+  }
+ ],
+ "props": [
+  {
+   "name": "slot",
+   "type": "'primary' | 'split' | 'aside'",
+   "description": "Position and default look."
+  },
+  {
+   "name": "edge",
+   "type": "'none' | 'leading' | 'trailing'",
+   "description": "Hairline side."
+  },
+  {
+   "name": "fill",
+   "type": "'none' | 'surface'",
+   "description": "Background fill."
+  },
+  {
+   "name": "as",
+   "type": "'div' | 'aside' | 'nav'",
+   "description": "aside gives complementary role; nav gives navigation role (Settings sidebar); div is generic."
+  },
+  {
+   "name": "ratio",
+   "type": "number (0.25 to 0.75)",
+   "description": "Primary and split: share of the task area when split."
+  },
+  {
+   "name": "previewWidth",
+   "type": "number (280 to 420, px)",
+   "description": "Aside width."
+  },
+  {
+   "name": "defaultSize",
+   "type": "number",
+   "description": "Percent of the group: 100 when unsplit, ratio times 100 when split."
+  },
+  {
+   "name": "minSize",
+   "type": "number",
+   "description": "Lower clamp. Split pane 25 percent; aside 280 px."
+  },
+  {
+   "name": "maxSize",
+   "type": "number",
+   "description": "Upper clamp. Split pane 75 percent; aside 420 px."
+  },
+  {
+   "name": "shrink",
+   "type": "boolean",
+   "description": "Aside is shrink-0."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Task list, PreviewPanel, TrashPane or FilterPanel, or the Settings search field and TabList."
+  }
+ ],
+ "states": [
+  "unsplit (100 percent, 860 of 860)",
+  "split (430 of 860)",
+  "preview-hidden (aside not rendered)",
+  "narrow-window",
+  "no-lists",
+  "settings sidebar"
+ ],
+ "role": "primary and split: none; aside: complementary; nav: navigation; div: none",
+ "keyboard": "None. The pane content owns its keys.",
+ "replaces": [
+  "left pane slot, ratio width",
+  "split pane slot, left hairline",
+  "right aside panel host",
+  "side pane surface",
+  "task pane, list column",
+  "settings sidebar column"
+ ],
+ "platform": "Same layout on both. Width is set by pointer drag through Resizer; the reference has no keyboard resize.",
+ "open": "Merged: A's Sidebar (leading, w-44, shrink-0, border-r, bg surface-1) is this widget with edge trailing, fill surface and as nav; the Sidebar widget is dropped as a duplicate. The fixed w-44 width (154px at 14px rem) needs a prop or a defaultSize mapping; unresolved. Settings-shortcuts sidebar fill is an estimate (not in elements.json), folded to surface; box approx [0,46,153,714]. Aside surface colour was not measured (A: side pane look bg-surface-1). Clamps: ratio 0.25 to 0.75 (App.tsx:78-82); previewWidth 280 to 420 px (App.tsx:110-115), which is 20rem to 30rem at 14px. Unit mismatch with percent sizes: see PaneGroup.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

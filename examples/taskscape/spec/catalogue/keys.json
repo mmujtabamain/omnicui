@@ -1,0 +1,118 @@
+{
+ "kind": "keys",
+ "title": "Keys and shortcuts",
+ "kinds": [
+  "keycap",
+  "hotkey-hint"
+ ],
+ "description": "Keyboard shortcut widgets: keycap buttons that show and record a key combo, and hotkey hints that draw the modifier and key glyphs for a shortcut. They appear in the command palette, the settings shortcuts screen and the capture bar.",
+ "variants": [
+  {
+   "name": "keycap, idle",
+   "kind": "keycap",
+   "component": "Keycap",
+   "description": "The default keycap on the settings shortcuts screen. It shows the current combo as glyphs and starts recording when clicked. Each row is one keycap, and the width varies with the combo (49px or 52px for three-glyph combos). Shows None when the binding is unbound or reset control when customised.",
+   "look": "Box 21px tall; 49px or 52px wide; fill oklch(0.944 0.003 255); text oklch(0.46 0.013 262); font 400 11px/16.5px; radius 4.375px; right edge x 1153. Hover and focus states are not in the captured tree.",
+   "states": [
+    "idle",
+    "custom (reset control shown)",
+    "unbound (shows None)"
+   ],
+   "behaviour": "Click starts recording for this row. Clicking the same row again while it is recording cancels (useHotkeyEditor.ts:121-124).",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "keyboard_command_key keyboard_return (Capture bar)",
+    "keyboard_command_key shift keyboard_return (Screenshot capture)",
+    "keyboard_command_key backspace (Delete task)",
+    "keyboard_command_key keyboard_option_key arrow_back (Previous list tab)",
+    "keyboard_command_key shift backspace (Clear capture draft)",
+    "None (unbound)"
+   ]
+  },
+  {
+   "name": "keycap, recording",
+   "kind": "keycap",
+   "component": "Keycap",
+   "description": "The keycap while it is capturing the next keypress. It replaces the glyphs with a prompt, drops the HotkeyHint child, and is widened to 101px. Only one row is recording at a time (captured on the New task row).",
+   "look": "Box [1051,238,101,21]; text colour oklch(0.6 0.2 255) (blue); fill oklch(0.944 0.003 255); font 400 11px/16.5px; radius 4.375px; thin blue outline visible in the screenshot, width not measured.",
+   "states": [
+    "recording"
+   ],
+   "behaviour": "Next keydown is captured. Escape cancels the recording. Bare Backspace or Delete unbinds the row (sets accel to empty). Any other combo is assigned. Clicking this keycap again cancels (useHotkeyEditor.ts:73-96, 121-124).",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "Type shortcut…"
+   ]
+  },
+  {
+   "name": "hotkey hint inside settings keycap",
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "description": "The glyph sequence drawn inside each idle settings keycap. It is display only and uses the keycap text colour, so it reads as part of the keycap.",
+   "look": "Glyphs 12x12, weight 300, same colour as the keycap text (oklch(0.46 0.013 262)); placed edge to edge with the command glyph first, then the key glyph.",
+   "states": [
+    "idle",
+    "tone inherit"
+   ],
+   "behaviour": "None. Display only.",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "keyboard_command_key keyboard_option_key (Toggle split view, Focus other pane, Collapse all, Expand all)",
+    "keyboard_command_key keyboard_return (Capture bar)",
+    "keyboard_command_key arrow_upward (Move task up)"
+   ]
+  },
+  {
+   "name": "hotkey hint, command palette row",
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "description": "The shortcut shown at the right edge of a command row in the command palette. Rendered only when the command has an accelerator. It is a larger size (md) than the other hints and takes the row colour, so it changes with the active row.",
+   "look": "Modifier icon spans 13x13, font 400 13px/13px; key letters font 400 12px/18px; colour inherits the row colour (oklch(0.62 0.013 264) in default rows, from the screenshot). No keycap border captured.",
+   "states": [
+    "tone inherit, follows active row"
+   ],
+   "behaviour": "Display only; not clickable.",
+   "usedIn": [
+    "command-palette"
+   ],
+   "examples": [
+    "keyboard_command_key \\\\ (Toggle preview)",
+    "keyboard_command_key keyboard_option_key S (Toggle split view)",
+    "keyboard_command_key shift H (Show / hide completed)",
+    "keyboard_command_key keyboard_option_key - (Collapse all)",
+    "keyboard_command_key N (New task)",
+    "keyboard_command_key F (Search this list)",
+    "keyboard_command_key Z (Undo)",
+    "keyboard_command_key shift Z (Redo)",
+    "keyboard_command_key shift N (New list)",
+    "keyboard_command_key shift P (New project)",
+    "keyboard_command_key , (Settings)"
+   ]
+  },
+  {
+   "name": "hotkey hint, capture bar button",
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "description": "The shortcut shown inside the Clear button and the screenshot button in the capture bar. Both are display only. The screenshot hint shows only in the idle state. A dark-mode colour is recorded for the screenshot hint only, so the two may differ slightly in dark mode (uncertain).",
+   "look": "Glyphs 12x12 at 12px icon size, weight 300; font 400 12px/12px; colour oklch(0.62 0.013 264) light (dark value oklch(0.57 0.011 262) recorded for the screenshot hint only). Clear glyphs at x703, x715, x727 y15; screenshot glyphs at x703, x715, x727 y89.",
+   "states": [
+    "shown with Clear button only",
+    "idle only (not shown while capturing or on error)"
+   ],
+   "behaviour": "Display only.",
+   "usedIn": [
+    "capture-bar"
+   ],
+   "examples": [
+    "keyboard_command_key shift backspace (Clear)",
+    "keyboard_command_key shift keyboard_return (screenshot button)"
+   ]
+  }
+ ]
+}

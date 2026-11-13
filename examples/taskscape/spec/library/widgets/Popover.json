@@ -1,0 +1,49 @@
+{
+ "name": "Popover",
+ "purpose": "Anchored floating list for the mention autocomplete at the caret. Holds ComboboxItem mention rows, shown only when the @ query has matches, at most 6 (maxItems). Focus stays in the editor throughout; the list is linked by aria-activedescendant. The formatting floating toolbar that the source groups with floating surfaces is not here (see notWidgets). Presentation is single, so no variant axis.",
+ "base": "Radix Popover (Content with a virtual point anchor at the caret).",
+ "variants": [],
+ "props": [
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Shown when there are matches for the @ query."
+  },
+  {
+   "name": "anchor",
+   "type": "{x: number; y: number}",
+   "description": "Caret point; repositioned on scroll and resize."
+  },
+  {
+   "name": "maxItems",
+   "type": "number",
+   "description": "Maximum matches shown. Default 6."
+  },
+  {
+   "name": "onEscape",
+   "type": "() => void",
+   "description": "Closes the list; typed text stays in the editor."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "ComboboxItem rows with context mention."
+  }
+ ],
+ "states": [
+  "closed (default; no matches)",
+  "open (matches for the @ query; listbox shown)",
+  "scrolled (rows exceed the 196px height cap)"
+ ],
+ "role": "listbox, owned by the editor. The editor is the combobox and points at the active option with aria-activedescendant.",
+ "keyboard": "ArrowUp and ArrowDown move the highlight. Enter or Tab picks the highlighted row. Escape closes the list and leaves the typed text; typing continues in the editor. Focus stays in the editor. Mousedown on a row picks it with preventDefault so focus stays in the editor.",
+ "replaces": [
+  "mention autocomplete popover"
+ ],
+ "platform": "Same on both. Neither opens a window on desktop, and neither uses a backdrop. Web: the mousedown pick must not take focus from the editor (preventDefault).",
+ "open": "1) Layer: the reference uses z-tooltip (RichTextEditor.tsx:598-630); B's fold to z-dropdown is proposed here; a popover over the editor should not share the tooltip layer. Decision needed. 2) Width w-60 = 210px and max-h-56 = 196px are derived from 1rem=14px, not measured; confirm. 3) The look is not measured; values come from component code. 4) The toolbar's focus and keyboard model moved with it to the Toolbar family (see notWidgets).",
+ "family": "menus",
+ "families": [
+  "menus"
+ ]
+}

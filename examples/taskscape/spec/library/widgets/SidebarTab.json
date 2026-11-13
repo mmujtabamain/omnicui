@@ -1,0 +1,63 @@
+{
+ "name": "SidebarTab",
+ "purpose": "Settings sidebar tab: a rounded tab with a leading icon and label for one settings pane. The selected tab carries a fill; the plain tab has none. Dims when a search has no matches on that pane and shows a match badge when a search has matches. Kept separate from ListTab and ListTabLabel because it is a vertical tablist with icons, dimming and a count badge, all visible to the user. Merge record: from A SidebarTab (kept; selected added as a prop; scoped and badge kept). From B: the sidebar look of the merged Tab is folded here. B's Tab merge is dropped (see ListTab). Both share the MenuItem role=tab rounded look (139x30, radius 4.375px).",
+ "base": "Radix Tabs (TabsTrigger) with orientation vertical.",
+ "variants": [],
+ "props": [
+  {
+   "name": "icon",
+   "type": "string",
+   "description": "Icon name, for example tune (General), screenshot_monitor (Capture), keyboard (Shortcuts), info (About). 16x16."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Pane name."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Current pane: aria-selected=true, tabIndex=0. Must match the Tabs root value; passed explicitly for the look. Added per the critique (A listed selected as an axis but not a prop)."
+  },
+  {
+   "name": "scoped",
+   "type": "boolean",
+   "description": "False when this pane is selected during a search that is not scoped to it (General on settings-search). Styling of that state is open. Added per the critique."
+  },
+  {
+   "name": "dimmed",
+   "type": "boolean",
+   "description": "Search with no matches on this pane; opacity-40."
+  },
+  {
+   "name": "badge",
+   "type": "number | null",
+   "description": "Trailing match count shown when a search has matches (General). Added per the critique (B's review; A has it)."
+  },
+  {
+   "name": "onSelect",
+   "type": "() => void",
+   "description": "Click selects the pane; re-selecting the current pane is a no-op. On General, scrolls content to top and keeps the query only if this pane has matches."
+  }
+ ],
+ "states": [
+  "selected (aria-selected=true, tabIndex=0; selected fill, unresolved, see open)",
+  "selected while searching but not scoped (General on settings-search; scoped=false)",
+  "plain (aria-selected=false, tabIndex=-1; icon 16x16 oklch(0.62 0.013 264); label 400 13px/19.5px oklch(0.26 0.012 262))",
+  "dimmed (search with no matches; opacity-40)",
+  "badge trailing (search with matches)",
+  "hover and focus not recorded"
+ ],
+ "role": "tab (aria-selected) inside a vertical tablist; the content is tabpanel.",
+ "keyboard": "Up and Down arrows move focus with roving tabindex (proposed; the catalogue's tabIndex 0 and -1 supports it). Enter or Space selects (proposed). Activation mode not recorded.",
+ "replaces": [
+  "settings sidebar tab, selected",
+  "settings sidebar tab, plain"
+ ],
+ "platform": "Settings is a pane set in both. Desktop: the Settings window (SettingsWindow.tsx), which is already a separate window. Web: the same sidebar in a page. Capture is screen capture and is dropped on web. Shortcuts is dropped on web if its content is global hotkeys (inferred; the catalogue does not say what the pane holds).",
+ "open": "1) Selected fill unresolved. Candidates: oklch(0.32 0.02 262 / 0.09), recorded on two rows (31 default and 36); oklch(0.6 0.2 255 / 0.1), recorded on two states (row 31 scrolled and recording); a grey pill with no colour value (row 38, About). No frequency is implied. The decision says accent blue means only the primary action and selection; choose one. Lean: the accent tint, if a selected pane counts as selection (uncertain). Do not name it bg-selection-1, which is the title-bar drop target token. 2) General on settings-search: aria-selected=true and tabIndex=0 in one row, active=false in another. Treat as selected with scoped=false styling until resolved. 3) The plain tab's dimmed colour: the screenshot shows the dim, and the recorded JSON colour conflicts (row 25). 4) Badge styling not recorded. 5) Activation mode (automatic or manual) not recorded. 6) Hover and focus not recorded. 7) Whether the Shortcuts pane holds global hotkeys is not recorded.",
+ "family": "choice",
+ "families": [
+  "choice"
+ ]
+}

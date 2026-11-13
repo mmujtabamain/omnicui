@@ -1,0 +1,137 @@
+{
+ "name": "MenuButton",
+ "purpose": "A button that opens a dropdown menu of actions or choices, for triggers that are not form fields: the project switcher pill, footer move-to-list and bulk move. Replaces A's MenuTrigger pill look, with B's MenuButton as the owner of menu-of-actions triggers. Also (menus): Trigger button that opens a Menu anchored to itself and shows the current value with a trailing chevron. Covers the project switcher pill in the title bar, the filter Sort and Date triggers (named in the catalogue under the filter sort and date option menu, without their own rows), and the icon-only More button on task rows (named in the catalogue, without its own row). Merges A's MenuTrigger and B's MenuButton into one trigger widget with a look axis.",
+ "base": "shadcn Button composed with Radix DropdownMenu.Trigger",
+ "variants": [
+  {
+   "axis": "variant",
+   "values": [
+    {
+     "value": "neutral",
+     "when": "Recessed neutral pill. Project switcher pill (lg, with unfold_more chevron)."
+    },
+    {
+     "value": "ghost",
+     "when": "No fill. Footer move-to-list (sm, arrow_forward) and bulk move (lg, arrow_forward)."
+    },
+    {
+     "value": "pill",
+     "when": "Filled pill (the catalogue calls this look filled pill on the trash screen, menus.json line 17), used by the project switcher in the title bar. Box 85x28 at x 112, y 8 (measured). Radius 7px kept as measured (menus.json line 18). Background oklch(0.944 0.003 255) light; oklch(0.172 0.004 260) dark (recorded on main-window only). Label 600 14px/21px oklch(0.26 0.012 262). Trailing unfold_more 15px weight 300 in oklch(0.62 0.013 264) light; oklch(0.57 0.011 262) dark (main-window only). Dark values are theme tokens, not a separate variant."
+    }
+   ],
+   "default": "ghost"
+  },
+  {
+   "axis": "size",
+   "values": [
+    {
+     "value": "sm",
+     "when": "h-6 = 21px. Footer move-to-list."
+    },
+    {
+     "value": "lg",
+     "when": "h-8 = 28px. Bulk move, and the project pill. The pill label is 14px/21px weight 600 (measured, A MenuTrigger pill); bulk move uses 12px/18px."
+    },
+    {
+     "value": "default",
+     "when": "28px high, label 14px/21px (pill size). The 28px height is measured on the pill."
+    },
+    {
+     "value": "icon",
+     "when": "Square 28px, icon only, for the task row More button. The 28px square is a design assignment, not measured."
+    }
+   ],
+   "default": "sm"
+  }
+ ],
+ "props": [
+  {
+   "name": "variant",
+   "type": "'neutral' | 'ghost'",
+   "description": "Trigger look. Renamed from B's 'secondary' to match Button."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'lg'",
+   "description": "Trigger height."
+  },
+  {
+   "name": "icon",
+   "type": "IconName | undefined",
+   "description": "Leading glyph (arrow_forward on the move triggers)."
+  },
+  {
+   "name": "trailingIcon",
+   "type": "IconName | undefined",
+   "description": "Trailing chevron (unfold_more on the project switcher)."
+  },
+  {
+   "name": "label",
+   "type": "string | null",
+   "description": "Current value (for example the project name). null shows placeholder."
+  },
+  {
+   "name": "placeholder",
+   "type": "string | undefined",
+   "description": "Shown when label is null (Taskscape when no project is selected)."
+  },
+  {
+   "name": "menu",
+   "type": "ReactNode",
+   "description": "DropdownMenu content: one MenuItem per list or project, plus the New project action row on the project switcher."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Disabled when there are no other lists (move-to-list) or no move targets (bulk move)."
+  },
+  {
+   "name": "ariaLabel",
+   "type": "string | undefined",
+   "description": "Required when the visible label is only an icon or is not descriptive."
+  },
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Controlled open state; drives aria-expanded and the open look."
+  },
+  {
+   "name": "onOpenChange",
+   "type": "(open: boolean) => void",
+   "description": "Fired on press to toggle the menu, and on Escape or outside press."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Accessible name that includes the current value, for example 'Switch project, Home', so screen readers hear both."
+  }
+ ],
+ "states": [
+  "closed",
+  "open (menu shown, aria-expanded true)",
+  "hover (wash fill)",
+  "focus-visible (ring)",
+  "disabled",
+  "placeholder (label null)",
+  "default",
+  "hover",
+  "open (aria-expanded true; the open look was never captured, so the library must pick one treatment: reuse the shared Button aria-expanded style, or capture it)",
+  "focus-visible",
+  "disabled (look not captured)"
+ ],
+ "role": "button with aria-haspopup=\"menu\" and aria-expanded (Radix DropdownMenu trigger)",
+ "keyboard": "Enter, Space or ArrowDown opens the menu and moves focus to the first item. Arrow keys move through items, Enter selects, Escape closes and returns focus to the trigger. A second click on the trigger closes the menu. / Enter, Space or ArrowDown opens the Menu and moves focus to its first enabled item. Enter or Space again closes it. A pointer press on the trigger while open closes it. Escape closes the Menu and returns focus to the trigger.",
+ "replaces": [
+  "Project switcher pill",
+  "Footer move-to-list button, small",
+  "Bulk move button, large",
+  "project switcher pill"
+ ],
+ "platform": "Same on both. Web is multi-user, so the switcher lists the signed-in account's projects (assumption). Desktop lists local projects. / Same on web and desktop. The label is the active project: from the server on web (multi-user), local on desktop (offline). On web, the project list and rename or delete rights may differ per user, but the trigger itself does not change. Dark-mode colours are theme tokens; the dark values are recorded on main-window only, so dark tokens must cover the trigger on every screen.",
+ "open": "(1) Bulk move is disabled when there are no targets; its disabled state is not recorded. Kept as disabled. (2) The project switcher menu placement is not recorded. Use sideOffset 4 and start alignment, as bulk move (assumption). (3) The project switcher's open state has no separate style in the code or reference; the library gives it the hover look. Confirm. (4) The pill label size conflicts: 14px/21px measured (A) against the 12.5px fold (B). Measured value kept. (5) The New project row's handler conflict and menu semantics are recorded on MenuItem. / 1) Open-state look not captured; the library must pick a treatment. 2) The Sort, Date and More triggers use ghost and icon; their looks are unmeasured design assignments. The catalogue names Sort and Date (menus.json line 147) and More (lines 97-98), so they are in scope. 3) Whether More opens the task row menu at the cursor or anchored to the button: both entry points are recorded and the decision is not; decide once (see Menu). 4) Radius 7px is kept as measured; mapping it to a standard token needs the token file, which was not read, and would be a flagged fold. 5) The 0.5rem radius assumes 1rem=14px, a derived value not stated in the catalogue.",
+ "family": "buttons",
+ "families": [
+  "buttons",
+  "menus"
+ ]
+}

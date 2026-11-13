@@ -1,0 +1,509 @@
+{
+ "name": "Button",
+ "purpose": "The one general action button for chrome, footers, bulk grid, section headers, trash strip, toasts, filter panel, reset, lightbox, capture-bar wells and the rich-text link button. Merges A's ToolbarButton and IconButton action uses with B's Button (B's consolidation, with A's exact sizes, radii and tones kept where they are visible). Folds in IconButton: Icon-only form becomes Button size=icon (the icon and shape form). Surface, shape, tone and reveal axes become Button variant or props (B). Do not move pressed or pressedIcon, since aria-pressed belongs to Toggle, nor haspopup or expanded, since aria-haspopup belongs to MenuButton and aria-expanded to DisclosureButton (A). Button's purpose (index.txt line 4) already says it merges IconButton, but IconButton is still listed at index.txt line 26 and in widgets.json, so remove the separate entry. Folds in DashedButton: variant=dashed (shadcn ships dashed as a variant). Its size and width axes become Button size and width props. The measured 35px and 84px heights are kept as exact size values, not folded to 63px or 28px (A, medium confidence). Index line 15 keeps it apart only for its own job, which is a variant, not a component. Job (add-something action in an empty slot) and role (button) match. Folds in TextButton: variant=link with no fill at rest (B, index line 75), with tone, size and hover variants. Truncate, mono, block and done become Button props. Conflict: A names this variant=text. B's variant=link is kept because it cites index line 75 precisely; the team should confirm the name. Both are role=button and trigger an action or open something inline. Folds in TileButton: layout=stacked (icon above label in an equal-size tile). Both proposals agree on the value. Confidence is medium (A) and lower (B), since the index says a stacked layout is not a size of Button, so the team should confirm. As a layout variant the job (entry action) and role (button) are unchanged.",
+ "base": "shadcn/ui Button (cva), Radix Slot for asChild",
+ "variants": [
+  {
+   "axis": "variant",
+   "values": [
+    {
+     "value": "primary",
+     "when": "Accent-500 solid fill with on-accent text. The single blue action on a surface: Filter panel Done, Lightbox Open externally. (B called this 'default'; renamed to primary per critique.)"
+    },
+    {
+     "value": "neutral",
+     "when": "Neutral fill oklch 0.968 0.002 255 with oklch 0.26 text. Sheet Cancel and secondary (through DialogButton), and the Attach screenshot button when shots are attached. (B's 'secondary'; same look as A's neutral.)"
+    },
+    {
+     "value": "outline",
+     "when": "White fill with a border and bold centred label. Reset all settings, Reset cancel (A's mapping, from the code default), and the capture-bar well buttons Clear draft and Attach screenshot (md, 8px radius, bordered well look kept)."
+    },
+    {
+     "value": "ghost",
+     "when": "No fill at rest, grey text, wash on hover. Every toolbar, footer, bulk grid, section header, trash strip, title-bar icon, rich-text link button. The default."
+    },
+    {
+     "value": "danger",
+     "when": "Solid danger fill oklch 0.55 0.2 27 with light text. Destructive confirm only: Reset confirm. Text-level danger is the tone axis, not this variant."
+    },
+    {
+     "value": "strong",
+     "when": "ghostStrong: stronger emphasis than ghost. Used by Row more menu, Restore, Open task alone, Roll another name, Reset hotkey and Discard changes. Its fill, glyph and hover values are not recorded (see open)."
+    },
+    {
+     "value": "filled",
+     "when": "Surface fill (bg-surface-0) behind the glyph. Used by the day steppers and the note delete circle. On media (lightbox pagers, size step) it is a white 10 percent fill that becomes white 20 percent on hover."
+    }
+   ],
+   "default": "ghost"
+  },
+  {
+   "axis": "size",
+   "values": [
+    {
+     "value": "sm",
+     "when": "h-6 = 21px. Label 12px/18px weight 600, glyph 15px, radius 4.375px. Icon shape is a 21px square (rich-text add link). Footer bulk action, footer delete, footer clear selection."
+    },
+    {
+     "value": "md",
+     "when": "h-7 = 24.5px (measured 24 to 25). Label 12px/18px weight 600, glyph 14px, radius 4.375px (5px on the icon shape, 8px for the outline well). Section header actions (Note, Shot, Link, File), trash strip, toast Undo, capture-bar wells Clear draft (16px glyph, catalogue exception) and Attach screenshot."
+    },
+    {
+     "value": "lg",
+     "when": "h-8 = 28px. Label 12px/18px weight 600 (catalogue measured value), glyph 15px for text; 19px glyph on the icon shape (title bar). Radius 7px. Bulk verb grid, bulk delete, filter panel reset and Done, Reset all settings, Reset confirm, Reset cancel, title-bar icons (swap panes, settings)."
+    },
+    {
+     "value": "default",
+     "when": "21px box (1.5rem). Default icon 16px. Radius 4.375px. The standard size for most row, header and search controls (Delete list tab, Search options, Clear search, Close split view, Row more menu, Close preview panel, Discard draft, Rename task title, Copy task, Delete task, Delete note, Rename project, Delete project, Clear selection, Open task alone, Reset hotkey, Clear section, Discard group changes)."
+    },
+    {
+     "value": "footer",
+     "when": "25x19 box in the footer strip. Icon 14px. Radius 4.375px. Used by Sort and filter (ViewControl)."
+    },
+    {
+     "value": "xl",
+     "when": "28px box (2rem). Radius 7px (0.5rem, the xl control radius). Icon 19px in the toolbar (Settings, Swap panes, the split and preview toggles, Discard changes); 17px in the lightbox top bar."
+    },
+    {
+     "value": "step",
+     "when": "39px circle (2.786rem). Icon 26px. Used by the lightbox previous and next pagers only; on media, filled, shape round."
+    }
+   ],
+   "default": "md"
+  },
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "default",
+     "when": "Resting grey, content-3 oklch 0.62 0.013 264. Normal ghost and outline colour."
+    },
+    {
+     "value": "strong",
+     "when": "Primary text oklch 0.26 0.012 262. Active and hover emphasis."
+    },
+    {
+     "value": "accent",
+     "when": "Blue text, used only for the toast Undo, the toast's single primary action. Accent fill is the primary variant, not this tone."
+    },
+    {
+     "value": "danger",
+     "when": "Red text for inline destructive actions: footer Delete (sm), bulk Delete (lg), Trash Empty, and the error state of Attach screenshot. Ignored by filled variants (primary, neutral, danger)."
+    },
+    {
+     "value": "done",
+     "when": "The done-lamp colour for the Done verb (footer and bulk grid). Added from the done-colour decision (A), absent from B."
+    },
+    {
+     "value": "neutral",
+     "when": "Default. Destructive colour is not shown at rest."
+    },
+    {
+     "value": "muted",
+     "when": "Muted text oklch 0.62 0.013 264 or 0.46 0.013 262. Path, capture-bar footer target, notes hint."
+    }
+   ],
+   "default": "default"
+  },
+  {
+   "axis": "shape",
+   "values": [
+    {
+     "value": "text",
+     "when": "Label with optional leading icon; width follows content."
+    },
+    {
+     "value": "icon",
+     "when": "Square at the size height (21, 24.5 or 28px), aria label required. Title-bar icons (lg, glyph 19px) and rich-text add link (sm, glyph 15px)."
+    },
+    {
+     "value": "square",
+     "when": "Corner radius from size."
+    },
+    {
+     "value": "round",
+     "when": "Fully rounded disc. Used by the note delete circle (filled) and the lightbox pagers (step)."
+    }
+   ],
+   "default": "text"
+  },
+  {
+   "axis": "surface",
+   "default": "default",
+   "values": [
+    {
+     "value": "default",
+     "when": "Glyph in the muted token on the app surface (oklch 0.62 0.013 264 light; oklch 0.57 0.011 262 dark)."
+    },
+    {
+     "value": "media",
+     "when": "Over photos and the lightbox. Glyph white 70 percent; the step size uses white 80 percent (catalogue lines 917 and 936). Hover: ghost gets its wash, filled gets white 20 percent, and danger tone gets a solid fill with a white glyph."
+    }
+   ]
+  },
+  {
+   "axis": "reveal",
+   "default": "always",
+   "values": [
+    {
+     "value": "always",
+     "when": "Visible at rest."
+    },
+    {
+     "value": "row",
+     "when": "Opacity 0 until the row or card is hovered, has keyboard focus within it, or is selected (data-selected). Mapped: Rename project, Delete project, Open task alone, Restore (also on the selected row), Delete permanently (also on the selected row), Delete note (hover-only circle), Reset hotkey to default."
+    }
+   ]
+  },
+  {
+   "axis": "width",
+   "values": [
+    {
+     "value": "half",
+     "when": "Half of a two-column row: Note and Screenshot in the draft start row."
+    },
+    {
+     "value": "full",
+     "when": "Fills the row: the empty-state note area."
+    }
+   ],
+   "default": "full"
+  },
+  {
+   "axis": "hover",
+   "values": [
+    {
+     "value": "text",
+     "when": "Colour step only: footer target content-2 to content-1; task title hover not defined."
+    },
+    {
+     "value": "wash",
+     "when": "wash-1 background on hover (path button)."
+    }
+   ],
+   "default": "text"
+  }
+ ],
+ "props": [
+  {
+   "name": "variant",
+   "type": "'primary' | 'neutral' | 'outline' | 'ghost' | 'danger'",
+   "description": "Fill and border look. Filled variants own the fill; tone owns text colour."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md' | 'lg'",
+   "description": "Height and label scale. See size axis."
+  },
+  {
+   "name": "tone",
+   "type": "'default' | 'strong' | 'accent' | 'danger' | 'done'",
+   "description": "Text and icon colour for ghost and outline. Ignored by filled variants."
+  },
+  {
+   "name": "shape",
+   "type": "'text' | 'icon'",
+   "description": "Icon-only square or label with icon."
+  },
+  {
+   "name": "icon",
+   "type": "IconName | undefined",
+   "description": "Typed Material Symbols name. Glyph size follows size and shape (see size axis)."
+  },
+  {
+   "name": "trailingIcon",
+   "type": "IconName | undefined",
+   "description": "Trailing glyph, for example the chevron on MenuButton."
+  },
+  {
+   "name": "label",
+   "type": "string | undefined",
+   "description": "Visible text. Required when shape is text."
+  },
+  {
+   "name": "ariaLabel",
+   "type": "string | undefined",
+   "description": "Accessible name. Required when shape is icon or the label is not descriptive."
+  },
+  {
+   "name": "shortcut",
+   "type": "Accelerator | undefined",
+   "description": "Accelerator shown in the tooltip only, mapped per platform (Command on macOS, Control on Windows and web). Display only; the binding lives elsewhere. Used by Clear draft and Attach screenshot."
+  },
+  {
+   "name": "busy",
+   "type": "boolean",
+   "description": "Replaces the icon with a 12px spinner and disables the button. Shot and Attach screenshot while capturing."
+  },
+  {
+   "name": "feedback",
+   "type": "{ label: string; icon: IconName } | undefined",
+   "description": "Shown for 1200 ms after activation, then reverts. The caller owns the timer. Bulk verb Copy shows Copied with check."
+  },
+  {
+   "name": "error",
+   "type": "string | null",
+   "description": "When set: red text and error glyph, and the string as the tooltip. Attach screenshot error."
+  },
+  {
+   "name": "active",
+   "type": "boolean",
+   "description": "Wash fill while a mark is on (for example the link mark in the rich-text editor). Not a toggle: no aria-pressed. Use Toggle when the control itself switches state."
+  },
+  {
+   "name": "tabbable",
+   "type": "boolean",
+   "description": "Default true. false removes the button from the Tab order (capture-bar Clear draft and Attach screenshot)."
+  },
+  {
+   "name": "fullWidth",
+   "type": "boolean",
+   "description": "Stretches to the container width (Reset all settings)."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Muted, no pointer events, not focusable. Filter panel reset while no filter is active; move with no other lists goes to MenuButton."
+  },
+  {
+   "name": "type",
+   "type": "'button' | 'submit' | 'reset'",
+   "description": "Defaults to 'button'."
+  },
+  {
+   "name": "asChild",
+   "type": "boolean",
+   "description": "Renders the child as the button (Radix Slot). Used to compose DropdownMenu and Select triggers."
+  },
+  {
+   "name": "onClick",
+   "type": "(event) => void",
+   "description": "Activation handler."
+  },
+  {
+   "name": "surface",
+   "type": "'default' | 'media'",
+   "description": "Use media over photos and the lightbox."
+  },
+  {
+   "name": "reveal",
+   "type": "'always' | 'row'",
+   "description": "Default always. row: opacity 0 until the parent row is hovered, has keyboard focus within it, or is selected."
+  },
+  {
+   "name": "iconSize",
+   "type": "number (px, per use)",
+   "description": "Per-use icon size, not folded into a size token. Defaults by size: sm 14, default 16, lg 16, footer 14, xl 19 (17 on media), step 26. Catalogue per-use values: Delete list tab 15; New list 18; New task 18; Search options 15; Clear search (search field) 15; Clear search (settings sidebar) 14; Close split view 16; Split view and Preview panel toggles 19; Row more menu 17; Sort and filter 14; Close preview panel 16; Discard draft 16; Rename task title 15; Copy task 15; Delete task 15; Delete note 14; Settings 19; Swap panes 19; Rename project 16; Delete project 16; Clear selection 16; Open task alone 13; Close filter panel 16; Clear section unrecorded (16 assumed); day steppers 14; Dismiss toast 14; Restore 16; Delete permanently 16; Roll another name 16; lightbox bar 17 (open externally, reveal in Finder, rename attachment, remove attachment, close); lightbox steps 26; Discard changes 19; Reset hotkey to default 15; Discard group changes unrecorded (16 assumed)."
+  },
+  {
+   "name": "iconWeight",
+   "type": "300 | 400 | 500",
+   "description": "Stroke weight per use. Default 300. New task 400; Delete list tab 500 (catalogue)."
+  },
+  {
+   "name": "radius",
+   "type": "number (px, optional)",
+   "description": "Corner radius override. Default from size (4.375px for sm, default, lg, footer; 7px for xl). New list passes 5.25px (catalogue className override rounded-md, line 197)."
+  },
+  {
+   "name": "pressed",
+   "type": "boolean (optional)",
+   "description": "Toggle state. Sets aria-pressed and the filled look. Used by the Split view toggle (vertical_split when off; label Split view, becoming Close split view when on) and the Preview panel toggle (right_panel_open when off; label Show preview panel, becoming Hide preview panel when on)."
+  },
+  {
+   "name": "pressedIcon",
+   "type": "string (optional)",
+   "description": "Glyph when pressed. The Preview panel toggle swaps to right_panel_close."
+  },
+  {
+   "name": "haspopup",
+   "type": "'menu' | 'dialog' (optional)",
+   "description": "Sets aria-haspopup for buttons that open a menu or panel (Row more menu, Search options, depending on its target)."
+  },
+  {
+   "name": "keepFocusOnPress",
+   "type": "boolean (optional)",
+   "description": "Pointer only: prevents the mousedown default so a focused text field keeps focus. Used by Search options, Discard draft and Roll another name."
+  },
+  {
+   "name": "focusable",
+   "type": "boolean (default true)",
+   "description": "False sets tabIndex -1. Roll another name is false in the reference; this design keeps the recorded value until confirmed (see open)."
+  },
+  {
+   "name": "retainFocus",
+   "type": "boolean",
+   "description": "Prevents mousedown from taking focus so the draft title textarea does not blur (draft start row)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Label text."
+  },
+  {
+   "name": "truncate",
+   "type": "boolean",
+   "description": "Default true. Ellipsis when the label is wider than the box."
+  },
+  {
+   "name": "mono",
+   "type": "boolean",
+   "description": "Monospace 11.5px/17.25px for paths."
+  },
+  {
+   "name": "block",
+   "type": "boolean",
+   "description": "Full-row hint style: left aligned, padded (px 3, py 2)."
+  },
+  {
+   "name": "emptyLabel",
+   "type": "string | undefined",
+   "description": "Shown as a muted dash when the value is null (path)."
+  },
+  {
+   "name": "description",
+   "type": "string | undefined",
+   "description": "Tooltip text (the reference title, for example Copy a file into this task)."
+  }
+ ],
+ "states": [
+  "default",
+  "hover (ghost and text: wash-2 fill or text to strong; filled variants: darker fill)",
+  "pressed (no aria-pressed; use Toggle for pressed state)",
+  "focus-visible (ring; not captured in reference)",
+  "disabled (muted, no activation)",
+  "busy (spinner replaces the icon, disabled)",
+  "feedback (label and icon swapped for 1200 ms)",
+  "error (red text and glyph)",
+  "active (wash fill, mark on)",
+  "rest",
+  "hover (ghost: wash; filled on media: white 20 percent fill; tone danger: danger text, or solid danger fill with white glyph on media)",
+  "focus-visible (ring; tooltip opens)",
+  "active (pressed down by the pointer)",
+  "disabled",
+  "pressed (aria-pressed true, filled look; toggles only)",
+  "open (aria-expanded true while the menu or panel it opens is shown)",
+  "hidden (reveal row: opacity 0)",
+  "revealed (row hover, keyboard focus within the row, or row selected)",
+  "swapped icon (caller-driven: Copy task shows check for 1200 ms)",
+  "default (white fill oklch 1 0 0 light; oklch 0.288 0.006 260 dark for lg)",
+  "hover (from DashedButton)",
+  "pressed (not in code for md)",
+  "disabled (muted)",
+  "focus-visible",
+  "hover (per hover axis)",
+  "empty (muted dash)",
+  "done (tone)",
+  "focus-visible (not captured)",
+  "default (text content-3)",
+  "hover (wash-1 background, text content-2)",
+  "disabled (not captured)",
+  "dark theme colours"
+ ],
+ "role": "button (native button element)",
+ "keyboard": "Enter and Space activate. Tab reaches it in DOM order unless tabbable is false. Escape is not handled here (a dialog's Escape cancels). No arrow-key behaviour.",
+ "replaces": [
+  "Title bar icon button, swap panes",
+  "Title bar icon button, settings",
+  "Rich-text add link button, 21px",
+  "Footer bulk action, small",
+  "Footer delete button, small, danger",
+  "Footer clear selection button, right-aligned",
+  "Bulk verb button, large",
+  "Bulk delete button, large, danger",
+  "Section header action, Note, text and icon",
+  "Section attachment action, Shot, Link and File",
+  "Filter panel reset button",
+  "Filter panel done button, primary",
+  "Lightbox open externally button",
+  "Reset all settings button",
+  "Reset confirm button, danger",
+  "Reset cancel button",
+  "Toast undo action",
+  "Trash action, default",
+  "Trash action, danger",
+  "Clear draft button, extra small well",
+  "Attach screenshot button, extra small well",
+  "Delete list tab button",
+  "New list button, large",
+  "New task button, small",
+  "Search options, tune icon (target unverified)",
+  "Clear search, search field",
+  "Clear search, settings sidebar, small, not measured",
+  "Close split view, search bar",
+  "Row more menu button",
+  "Sort and filter button, footer",
+  "Close preview panel, inspector header",
+  "Discard draft, draft header",
+  "Rename task title, inspector header",
+  "Copy task, inspector header",
+  "Delete task, inspector header, danger",
+  "Delete note, hover-only circle",
+  "Split view toggle, toolbar",
+  "Preview panel toggle, toolbar",
+  "Settings button, toolbar",
+  "Swap panes, toolbar, code-derived",
+  "Rename project, revealed on hover",
+  "Delete project, revealed on hover, danger on hover",
+  "Clear selection, summary header",
+  "Open task alone, row hover",
+  "Close filter panel, header",
+  "Clear section, restart icon, code-derived",
+  "Fewer days stepper button, code-derived",
+  "More days stepper button, code-derived",
+  "Dismiss toast",
+  "Restore item, row hover",
+  "Delete permanently, row hover, danger",
+  "Roll another name, sheet field",
+  "Lightbox, open externally",
+  "Lightbox, reveal in Finder",
+  "Lightbox, rename attachment",
+  "Lightbox, remove attachment (danger on hover)",
+  "Lightbox, close",
+  "Lightbox step, previous",
+  "Lightbox step, next",
+  "Discard changes, settings title bar, code-derived",
+  "Reset hotkey to default, row, code-derived",
+  "Discard group changes, section header, code-derived",
+  "Empty-state dashed button, full width",
+  "Draft start button, dashed, half width",
+  "Task title link button",
+  "Path button, open folder",
+  "Notes hint button, collapsed",
+  "Capture target link, footer",
+  "Quick action tile, stacked icon and label"
+ ],
+ "platform": "Same widget and look on both. Title bar exists on both. Desktop-only rows (no web equivalent): Shot, Attach screenshot, Clear draft. Settings: desktop opens a new Settings window; web navigates to a settings page or in-app dialog (assumption, not in source). Lightbox open externally: desktop leaves the app for the default external app; web opens a new tab or downloads (assumption); the label should change on web. Copy a file and File: desktop copies in; web uploads (assumption). Link: A says a URL or file on both; B says URL only on web (conflict, see open). Restore all and Empty apply to the signed-in user's own trash on web (assumption; multi-user not in source).",
+ "open": "(1) Toast Dismiss, about 7px from Undo, is not catalogued. Add a row, or assign it to a ghost Button default. (2) Lightbox Open externally: look and hover were not measured; primary is a guess (B). (3) Reset cancel: look not captured; outline (A, from the code default) used, B used neutral. Confirm. (4) Attach screenshot attached state: A says accent fill, B says neutral; neutral used because attached is not selection. Confirm. (5) Footer Delete, bulk Delete and Trash Empty are grey in the reference; the library renders danger tone red (bulk Delete colour not recorded). Confirm. (6) No confirmation recorded for footer or bulk delete; Trash Empty asks 'Empty Trash?'. Product must decide. (7) Clear draft and Attach screenshot are removed from the Tab order (A tabbable false, B tabIndex -1). The shortcuts become the only keyboard route; state this and record the accessibility impact. (8) Shared action specs: Note header, empty-state Add note (DashedButton) and draft Note share setAddingNote; Link header, Add a link tile (TileButton) and rich-text Add link share addLink; File header and Copy a file tile share addFile. One action spec should back each group. (9) Small sizes below 24px: sm (21px) and the folded footer sort and filter (19px, 11px label, now Toggle sm 21px and 12px) are under the WCAG 2.2 24px target minimum; spacing or a larger hit area is needed. (10) Radius: B folded 5px and 8px to the size rule; kept the catalogue's exact 5px (icon md) and 8px (outline well). Clear draft label 11px vs Attach 12px is unresolved (merged to 12px). (11) Glyph sizes: catalogue 16px (sm icon, md, Clear draft) snaps to the standard 15px (sm) and 14px (md); Clear draft keeps its 16px exception. Confirm. (12) Label scale at lg: 12px/18px (catalogue ToolbarButton lg) vs 12.5px/18.75px (B for sheet, reset and filter buttons); 12px kept as measured. (13) Link platform conflict: A says a URL or file on both; B says URL only on web. Unresolved. (14) Catalogue row count is 95 against a source count of 96; one row may be missing between rows 37 and 52, so the footer and grid may be incomplete. (15) Footer Sort and filter is a Toggle, not a Button (see Toggle).",
+ "family": "buttons",
+ "families": [
+  "buttons",
+  "icon-buttons"
+ ],
+ "folded": [
+  {
+   "name": "IconButton",
+   "how": "Icon-only form becomes Button size=icon (the icon and shape form). Surface, shape, tone and reveal axes become Button variant or props (B). Do not move pressed or pressedIcon, since aria-pressed belongs to Toggle, nor haspopup or expanded, since aria-haspopup belongs to MenuButton and aria-expanded to DisclosureButton (A). Button's purpose (index.txt line 4) already says it merges IconButton, but IconButton is still listed at index.txt line 26 and in widgets.json, so remove the separate entry.",
+   "role": "button (native button element); accessible name from label; aria-pressed on toggles; aria-haspopup and aria-expanded on menu or panel triggers",
+   "keyboard": "Tab and Shift+Tab move focus. focusable false removes the button from the Tab order. Enter and Space activate. The tooltip opens on focus; Escape closes an open tooltip, otherwise Escape is left to the containing menu or dialog. As a DropdownMenu trigger (asChild), Enter, Space and ArrowDown open the menu (Radix behaviour). keepFocusOnPress affects the pointer only. Reveal-hidden buttons also show on keyboard focus within their row (added by this design; the catalogue records hover only). Row-level stopPropagation stays with the caller."
+  },
+  {
+   "name": "DashedButton",
+   "how": "variant=dashed (shadcn ships dashed as a variant). Its size and width axes become Button size and width props. The measured 35px and 84px heights are kept as exact size values, not folded to 63px or 28px (A, medium confidence). Index line 15 keeps it apart only for its own job, which is a variant, not a component. Job (add-something action in an empty slot) and role (button) match.",
+   "role": "button",
+   "keyboard": "Enter and Space activate. Normal Tab order."
+  },
+  {
+   "name": "TextButton",
+   "how": "variant=link with no fill at rest (B, index line 75), with tone, size and hover variants. Truncate, mono, block and done become Button props. Conflict: A names this variant=text. B's variant=link is kept because it cites index line 75 precisely; the team should confirm the name. Both are role=button and trigger an action or open something inline.",
+   "role": "button (kind link is not used: each row opens or selects, none navigates in place)",
+   "keyboard": "Enter and Space activate. Normal Tab order. No arrow-key behaviour."
+  },
+  {
+   "name": "TileButton",
+   "how": "layout=stacked (icon above label in an equal-size tile). Both proposals agree on the value. Confidence is medium (A) and lower (B), since the index says a stacked layout is not a size of Button, so the team should confirm. As a layout variant the job (entry action) and role (button) are unchanged.",
+   "role": "button",
+   "keyboard": "Enter and Space activate. Both tiles sit in the Tab order."
+  }
+ ]
+}

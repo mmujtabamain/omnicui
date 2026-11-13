@@ -1,0 +1,51 @@
+{
+ "name": "Switch",
+ "purpose": "On/off setting that applies at once, with no visible label; the row title names it. Used for Reduced motion and Show completed tasks on settings-general. Named Switch, not Toggle, because shadcn's Toggle is a pressed button with a different role. Merge record: A and B both describe Switch with the same single recorded look, so they are merged. From A: forcedOn prop dropped (critique: it duplicates disabled plus checked); the forced state is checked plus disabled, with a reason prop added. From B: the single-value size axis is dropped (critique: pointless, and the catalogue says no size axis is invented).",
+ "base": "Radix Switch",
+ "variants": [],
+ "props": [
+  {
+   "name": "checked",
+   "type": "boolean",
+   "description": "On (aria-checked true) or off."
+  },
+  {
+   "name": "onCheckedChange",
+   "type": "(checked: boolean) => void",
+   "description": "Writes reduced_motion or show_completed as '1' or '0'."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "No effect on click. Forced on = checked plus disabled (Reduced motion only, under Low Power Mode or macOS Reduce Motion on desktop)."
+  },
+  {
+   "name": "reason",
+   "type": "string | null",
+   "description": "Visible or announced reason shown when the switch is forced on (for example Low Power Mode). Proposed per the critique; the catalogue does not specify the reason copy."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required. 'Reduced motion' or 'Show completed tasks'."
+  }
+ ],
+ "states": [
+  "off (aria-checked=false)",
+  "on (aria-checked=true)",
+  "disabled (no effect)",
+  "disabled and forced on (checked plus disabled; Reduced motion only)",
+  "focus-visible (not recorded)"
+ ],
+ "role": "switch (aria-checked)",
+ "keyboard": "Tab focuses. Space toggles (ARIA switch pattern; proposed in A, not recorded in the catalogue). Enter also activates through the native button (B). Conflict between A and B on Enter; both kept, to confirm.",
+ "replaces": [
+  "toggle switch"
+ ],
+ "platform": "Forced-on source differs. Desktop: Low Power Mode and macOS Reduce Motion. Web: the catalogue gives no equivalent; a browser prefers-reduced-motion setting is a candidate but unconfirmed. Storage differs: desktop writes the local SQLite settings; web needs a per-account setting (proposed). Show completed tasks is the same on both.",
+ "open": "1) Look not measured (look null in both rows), so there are no size or colour values; the widget uses the shared tokens. 2) Show completed tasks defaults to on; its effect on the task list is not recorded. 3) Whether web forces reduced motion from the OS preference is unconfirmed. 4) Whether a disabled switch stays focusable (aria-disabled) or leaves the Tab order is not recorded. 5) Reason copy for the forced-on state is not specified (see reason prop).",
+ "family": "choice",
+ "families": [
+  "choice"
+ ]
+}

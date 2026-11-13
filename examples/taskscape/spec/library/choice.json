@@ -1,0 +1,481 @@
+{
+ "widgets": [
+  {
+   "name": "ListTab",
+   "purpose": "Full interactive list tab in the desktop title bar: a list-selecting tab with hover, drop-target and drag feedback, inline rename, and a delete button on its right. Kept separate from ListTabLabel and SidebarTab because only this look has rename, drag, drop and delete, which the catalogue says behaves differently from the label-only variants. Merge record: from A ListTab (kept; selected axis removed and replaced by the selected prop; paneDot renamed paneMarker; rename split into start, commit and cancel). From B: the titlebar look of the merged Tab is folded in here. B's Tab merge is dropped because it put this draggable, deletable tab in the same widget as the vertical settings sidebar tab, overriding the catalogue rationale. Reorder and task drop are both always on for this look, with no boolean toggle, per the critique.",
+   "base": "Radix Tabs (TabsTrigger) for role, selection and roving focus. Rename, reorder, drop target and delete are custom.",
+   "variants": [],
+   "props": [
+    {
+     "name": "name",
+     "type": "string",
+     "description": "List name shown as text; replaced by the text input while editing."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Active list. Gives the bg-surface-2 fill with hairline edges (catalogue state 'focused (selected)'). Replaces A's selected variant axis, which duplicated this prop."
+    },
+    {
+     "name": "editing",
+     "type": "boolean",
+     "description": "Inline rename mode. The input is rendered beside the tab element, not inside it (ARIA: no interactive children of role=tab)."
+    },
+    {
+     "name": "dropTarget",
+     "type": "boolean",
+     "description": "A dragged task row or tab is over this tab; background bg-selection-1."
+    },
+    {
+     "name": "dragging",
+     "type": "boolean",
+     "description": "This tab is being dragged; opacity-40."
+    },
+    {
+     "name": "paneMarker",
+     "type": "boolean",
+     "description": "Split-view pane marker. Renamed from A's paneDot to match ListTabLabel. Conflict: A records it as possible only, in no recorded screen; the critique cites catalogue state 'split (pane dot shown)' on the full list tab. Followed the critique; see open."
+    },
+    {
+     "name": "onSelect",
+     "type": "() => void",
+     "description": "Click selects the list (calls selectList)."
+    },
+    {
+     "name": "onRenameStart",
+     "type": "() => void",
+     "description": "Double-click starts inline rename. Split from A's onRename per the critique."
+    },
+    {
+     "name": "onRenameCommit",
+     "type": "(name: string) => void",
+     "description": "Commits the typed name (Enter, or blur with a changed name). Added per the critique."
+    },
+    {
+     "name": "onRenameCancel",
+     "type": "() => void",
+     "description": "Cancels rename and restores the name (Escape). Added per the critique."
+    },
+    {
+     "name": "onDelete",
+     "type": "() => void",
+     "description": "Delete button on the right, and middle-click (aux button 1) on desktop. Kept as a separate prop from any close action."
+    },
+    {
+     "name": "onContextMenu",
+     "type": "(event) => void",
+     "description": "Right-click opens the list context menu (library menu on web)."
+    },
+    {
+     "name": "onDropTask",
+     "type": "(taskId: string) => void",
+     "description": "Dropping a task row on the tab moves that task to this list."
+    },
+    {
+     "name": "onReorder",
+     "type": "(fromIndex: number, toIndex: number) => void",
+     "description": "Dragging the tab reorders the tab strip."
+    }
+   ],
+   "states": [
+    "focused (selected): bg-surface-2 fill, hairline edges (Errands, Garden in the recorded states)",
+    "unfocused (not selected): no fill recorded",
+    "hover: bg-wash-1",
+    "drop target: bg-selection-1",
+    "dragging: opacity-40",
+    "editing: inline rename input",
+    "pane marker: split view (catalogue state 'split (pane dot shown)'; see open)"
+   ],
+   "role": "tab on the element that selects the list (proposed; the catalogue records no ARIA role for list tabs). The wrapper is a plain div. The delete button and rename input are siblings of the tab element, not children.",
+   "keyboard": "Enter or Space selects (proposed). Left and Right move between tabs with roving tabindex (proposed). The reference has no keyboard route to rename or delete (double-click, middle-click and the delete button are pointer-only). Proposed additions: F2 starts rename; the context-menu key or Shift+F10 opens the list menu with Rename and Delete items.",
+   "replaces": [
+    "list tab, full (title bar, with rename and delete)"
+   ],
+   "platform": "Desktop: title bar of the main window, the only recorded place. Web: no title bar, so a header mount point is needed if the web app keeps this strip. Middle-click delete must not be the only delete route on web: on Windows and Linux browsers the middle button starts autoscroll, so the delete button is the web route. Right-click uses the library context menu on web, not the browser menu.",
+   "open": "1) Keyboard routes for rename (F2 proposed) and delete (context menu proposed) are not in the catalogue. 2) Whether the delete button is always visible or appears on hover is not recorded. 3) ARIA role is proposed (tab); the catalogue records none. 4) Whether the web app keeps a tab strip at all. 5) Whether delete removes the list or only closes it is not recorded. 6) Destructive delete: hover and focus colour should use the danger token; the catalogue records no colour for it. 7) Activation mode (automatic or manual) is not recorded. 8) Pane marker conflict: A says paneDot is in no recorded screen; the critique cites catalogue state 'split (pane dot shown)'. Kept as paneMarker per the critique. 9) The catalogue gives '?' components on multi-inspector, filter-panel and trash for the list tab variants, so those rows are not mapped with certainty (see ListTabLabel).",
+   "family": "choice"
+  },
+  {
+   "name": "ListTabLabel",
+   "purpose": "Text name of an open list shown beside the active one on the inspectors, filter panel and trash. Click selects the list; on multi-inspector it keeps that list open. Optional close x on the active tab. Covers the label-only looks, which have no drag, rename or delete. Merge record: from A ListTabLabel (kept; tone axis converted to the selected prop; surface axis kept; closable limited to selected tabs; close x sits outside the tab element; paneDot unified as paneMarker). From B: the text look of the merged Tab is folded here. B's Tab merge is dropped because the label, titlebar and sidebar looks differ in behaviour the user feels.",
+   "base": "Radix Tabs (TabsTrigger) inside a tablist. The close control is a plain button.",
+   "variants": [
+    {
+     "axis": "surface",
+     "default": "flat",
+     "values": [
+      {
+       "value": "flat",
+       "when": "No surface. Default for every recorded label except the active tab on draft-inspector. Only meaningful for selected=false, or for selected=true on screens other than draft-inspector."
+      },
+      {
+       "value": "raised",
+       "when": "White raised surface with divider rules. Used only by the active tab on draft-inspector (catalogue state 'selected (draft-inspector, white/raised with divider rules)'). Only valid with selected=true."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "name",
+     "type": "string",
+     "description": "List name. Truncates at max-w-40."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Active tab (primary text oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark, 500 13px/19.5px). False is the inactive tab (muted oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark, same font). Replaces the tone axis of A."
+    },
+    {
+     "name": "surface",
+     "type": "'flat' | 'raised'",
+     "description": "Variant prop: see variants. Raised applies only when selected is true."
+    },
+    {
+     "name": "paneMarker",
+     "type": "boolean",
+     "description": "Split view: blue pane marker before the name; the active label text moves to x 249 (main-window). The inactive tab in the right pane also carries the marker (Reading)."
+    },
+    {
+     "name": "closable",
+     "type": "boolean",
+     "description": "Shows the close x. Applies only when selected is true (recorded on multi-inspector and filter-panel active tabs; x 280 on filter-panel)."
+    },
+    {
+     "name": "onSelect",
+     "type": "() => void",
+     "description": "Click selects the list; on multi-inspector it keeps this list open."
+    },
+    {
+     "name": "onClose",
+     "type": "() => void",
+     "description": "Close x button; rendered only when closable and selected. It is a sibling of the tab element, not a child."
+    }
+   ],
+   "states": [
+    "active (selected=true)",
+    "inactive (selected=false, default)",
+    "split-view pane marker (main-window; Reading in the right pane)",
+    "raised active surface (draft-inspector)",
+    "close x shown (multi-inspector, filter-panel)",
+    "hairline frame around the active label (rows 4 and 19; styling, see open)",
+    "hover and focus not recorded"
+   ],
+   "role": "tab on the label (proposed; the catalogue records no ARIA role for labels). The close button is a separate button.",
+   "keyboard": "Enter or Space selects (proposed). Left and Right move focus with roving tabindex when inside a tablist (proposed). The close x is reached by Tab and activated by Enter or Space (proposed).",
+   "replaces": [
+    "list tab, active (label)",
+    "list tab, inactive (label)"
+   ],
+   "platform": "Same on both. The catalogue records these only on the inspector, filter and trash screens, with no platform split.",
+   "open": "1) Letter spacing tracking-[0.01em] is recorded on main-window (rows 1 and 2) but not on draft-inspector (rows 8 and 9): token or drop. 2) Presence of the close x on main-window, draft-inspector and trash is not recorded; its size and colour are not recorded. 3) Frame position differs by 1px (211-308 in rows 4 and 19 versus 212-309 in row 1); unresolved. 4) Row 12 refers to a 'see close entry' that does not exist in rows-choice.json, so the close button is specified only from the look field. 5) Hairline frame around the active label (rows 4 and 19): not a prop; proposed as styling of selected=true; confirm. 6) Thin vertical separators between tabs on several screens: a styling rule of the tab group container, not a prop. 7) Whether the close x removes the list or only closes the inspector tab is not recorded. 8) The catalogue gives '?' components on multi-inspector, filter-panel and trash for the list tab variants; those rows are not mapped with certainty. 9) ARIA role not recorded (tab proposed). 10) Hover and focus not recorded.",
+   "family": "choice"
+  },
+  {
+   "name": "SidebarTab",
+   "purpose": "Settings sidebar tab: a rounded tab with a leading icon and label for one settings pane. The selected tab carries a fill; the plain tab has none. Dims when a search has no matches on that pane and shows a match badge when a search has matches. Kept separate from ListTab and ListTabLabel because it is a vertical tablist with icons, dimming and a count badge, all visible to the user. Merge record: from A SidebarTab (kept; selected added as a prop; scoped and badge kept). From B: the sidebar look of the merged Tab is folded here. B's Tab merge is dropped (see ListTab). Both share the MenuItem role=tab rounded look (139x30, radius 4.375px).",
+   "base": "Radix Tabs (TabsTrigger) with orientation vertical.",
+   "variants": [],
+   "props": [
+    {
+     "name": "icon",
+     "type": "string",
+     "description": "Icon name, for example tune (General), screenshot_monitor (Capture), keyboard (Shortcuts), info (About). 16x16."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Pane name."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Current pane: aria-selected=true, tabIndex=0. Must match the Tabs root value; passed explicitly for the look. Added per the critique (A listed selected as an axis but not a prop)."
+    },
+    {
+     "name": "scoped",
+     "type": "boolean",
+     "description": "False when this pane is selected during a search that is not scoped to it (General on settings-search). Styling of that state is open. Added per the critique."
+    },
+    {
+     "name": "dimmed",
+     "type": "boolean",
+     "description": "Search with no matches on this pane; opacity-40."
+    },
+    {
+     "name": "badge",
+     "type": "number | null",
+     "description": "Trailing match count shown when a search has matches (General). Added per the critique (B's review; A has it)."
+    },
+    {
+     "name": "onSelect",
+     "type": "() => void",
+     "description": "Click selects the pane; re-selecting the current pane is a no-op. On General, scrolls content to top and keeps the query only if this pane has matches."
+    }
+   ],
+   "states": [
+    "selected (aria-selected=true, tabIndex=0; selected fill, unresolved, see open)",
+    "selected while searching but not scoped (General on settings-search; scoped=false)",
+    "plain (aria-selected=false, tabIndex=-1; icon 16x16 oklch(0.62 0.013 264); label 400 13px/19.5px oklch(0.26 0.012 262))",
+    "dimmed (search with no matches; opacity-40)",
+    "badge trailing (search with matches)",
+    "hover and focus not recorded"
+   ],
+   "role": "tab (aria-selected) inside a vertical tablist; the content is tabpanel.",
+   "keyboard": "Up and Down arrows move focus with roving tabindex (proposed; the catalogue's tabIndex 0 and -1 supports it). Enter or Space selects (proposed). Activation mode not recorded.",
+   "replaces": [
+    "settings sidebar tab, selected",
+    "settings sidebar tab, plain"
+   ],
+   "platform": "Settings is a pane set in both. Desktop: the Settings window (SettingsWindow.tsx), which is already a separate window. Web: the same sidebar in a page. Capture is screen capture and is dropped on web. Shortcuts is dropped on web if its content is global hotkeys (inferred; the catalogue does not say what the pane holds).",
+   "open": "1) Selected fill unresolved. Candidates: oklch(0.32 0.02 262 / 0.09), recorded on two rows (31 default and 36); oklch(0.6 0.2 255 / 0.1), recorded on two states (row 31 scrolled and recording); a grey pill with no colour value (row 38, About). No frequency is implied. The decision says accent blue means only the primary action and selection; choose one. Lean: the accent tint, if a selected pane counts as selection (uncertain). Do not name it bg-selection-1, which is the title-bar drop target token. 2) General on settings-search: aria-selected=true and tabIndex=0 in one row, active=false in another. Treat as selected with scoped=false styling until resolved. 3) The plain tab's dimmed colour: the screenshot shows the dim, and the recorded JSON colour conflicts (row 25). 4) Badge styling not recorded. 5) Activation mode (automatic or manual) not recorded. 6) Hover and focus not recorded. 7) Whether the Shortcuts pane holds global hotkeys is not recorded.",
+   "family": "choice"
+  },
+  {
+   "name": "Checkbox",
+   "purpose": "Binary mark on a task: done state, or row multi-select membership. One widget covers the inspector header done toggle (md), subtask and multi-inspector squares (sm), and the round check on task rows in two intents. Intent sets the colour, so done never looks like selection. Merge record: from A Checkbox and RoundCheck (both kept as this widget; RoundCheck is dropped as a separate component, with its round shape as shape=round and its Option-held lamp as a caller-passed shape=square, size=sm, intent=done). The widget does not read the modifier; the caller reads Option or Alt and passes intent (critique). The round select's white centre dot is kept as recorded (B's standard glyph is not adopted). From B Checkbox: sizes, shape and intent axes adopted. Default size is sm (critique: A's md default was backwards). Sources: A Checkbox, A RoundCheck, B Checkbox. Catalogue sizes are px; they convert to rem at 1rem = 14px in the token layer.",
+   "base": "Radix Checkbox. The select intent is an open role question (see role and open).",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "sm",
+     "values": [
+      {
+       "value": "sm",
+       "when": "16x16 box, radius 4.375px, check icon 12px. Used for subtasks, the multi-inspector selected list, the task rows (done and select) and the Option-held done lamp. Covers 'checkbox, small square', 'task done checkbox, round, labelled Select' and 'task row select toggle, round'."
+      },
+      {
+       "value": "md",
+       "when": "18x18 box, check icon 14px, weight 700. Used only for the whole-task header control in the task inspector. Covers 'checkbox, medium (inspector header)'. Radius not recorded; md shape is square by assumption (open)."
+      }
+     ]
+    },
+    {
+     "axis": "shape",
+     "default": "square",
+     "values": [
+      {
+       "value": "square",
+       "when": "Radius rounded-field (4.375px). Inspector header, subtasks, multi-inspector list, and the Option-held done lamp."
+      },
+      {
+       "value": "round",
+       "when": "Radius 50%. Task rows: the done check and the row-select toggle."
+      }
+     ]
+    },
+    {
+     "axis": "intent",
+     "default": "done",
+     "values": [
+      {
+       "value": "done",
+       "when": "Checked fill is the done-lamp token, not accent blue. Used wherever a task is marked done. Round done checks and the square inspector and subtask checks use this intent."
+      },
+      {
+       "value": "select",
+       "when": "Checked fill is the selection accent (oklch(0.62 0.13 255)) with an inner white dot. Used for row multi-select membership on task rows (plain click; Option switches the caller to done)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "checked",
+     "type": "boolean",
+     "description": "Done state (intent=done) or picked state (intent=select)."
+    },
+    {
+     "name": "onCheckedChange",
+     "type": "(checked: boolean) => void",
+     "description": "The caller routes it: intent=done calls actToggleDone on the task or subtask; intent=select calls the membership toggle. Replaces A's onToggle(next, intent), which made the widget report the modifier."
+    },
+    {
+     "name": "size",
+     "type": "'sm' | 'md'",
+     "description": "Variant prop (cva). See variants."
+    },
+    {
+     "name": "shape",
+     "type": "'square' | 'round'",
+     "description": "Variant prop (cva). See variants."
+    },
+    {
+     "name": "intent",
+     "type": "'done' | 'select'",
+     "description": "Variant prop (cva). The caller sets intent=done, shape=square and size=sm while Option (Alt on Windows and web) is held on a round select check. The widget does not read keys."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required accessible name: 'Mark done' or 'Mark not done' for done; 'Select' or 'Deselect' for select (the catalogue's example names). The reference's round done check is labelled 'Select', which is wrong for done and is corrected here."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Not recorded in the catalogue; included for the standard Radix prop."
+    }
+   ],
+   "states": [
+    "unchecked, select intent (empty grey ring)",
+    "checked, select intent (accent fill with inner white dot)",
+    "unchecked, done intent (outline oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark)",
+    "checked, done intent (done-lamp fill with check glyph; the token value is not recorded)",
+    "hover (round select: border shifts to content-3 on the row group)",
+    "focus-visible (Radix default ring; not recorded)",
+    "option-held (transient; caller passes intent=done, shape=square, size=sm)",
+    "disabled (not recorded)",
+    "dark theme (same states on the dark tokens)"
+   ],
+   "role": "checkbox with aria-checked for both intents (B). Not aria-pressed for done: the reference's round done check reports aria-pressed=false with label 'Select', which exposes selection as if it were completion. Select intent: checkbox is the default here; A proposed a button with aria-pressed, and the catalogue records 'Check (button)' on rows 14 and 15 (unverified). Open.",
+   "keyboard": "Tab focuses; Space toggles (Radix Checkbox). Option (macOS) or Alt (Windows and web) with Space, on a select-intent round check, acts as the done switch (proposed; the catalogue records only the pointer modifier). Plain double-click does not toggle done (catalogue, task-list). The keyboard done switch is proposed, not recorded.",
+   "replaces": [
+    "task done checkbox, round, labelled Select",
+    "task row select toggle, round",
+    "checkbox, medium (inspector header)",
+    "checkbox, small square"
+   ],
+   "platform": "Same visual on both. Done-switch modifier: Option on macOS; Alt on Windows and web (decision; the caller reads it). Web: Alt+Space may be taken by the browser or the OS window menu, and browser shortcuts take precedence, so web needs an alternative keyboard route. Row-body multi-select uses Control-click on Windows and Command-click on macOS (decision; handled by the list, not this widget).",
+   "open": "1) Default intent per screen: the catalogue records the done checkbox (rows 3, 10, 21, 23) with a plain click that toggles done and the accessible name 'Select'; the decision says plain click on the round handle selects and Option switches to done. The caller passes intent explicitly; confirm the default on each screen. 2) Done colour: the catalogue records accent-blue fill oklch(0.62 0.13 255) on checked done checks (rows 6, 7, 11), which conflicts with the decision (done uses its own done-lamp colour). Change to the done-lamp token. The done-lamp value is not recorded; the catalogue's done-row colour oklch(0.62 0.013 264) is unverified. 3) Two accent blues: oklch(0.62 0.13 255) (checkboxes, round handle) and oklch(0.6 0.2 255) (segmented control, settings tab). Choose one token and name it selection (shadcn's accent is a neutral hover fill). 4) Select intent role: checkbox (aria-checked) here versus a toggle button (aria-pressed, A's proposal). The catalogue records 'Check (button)' on rows 14 and 15, and that component is '?' and unverified. 5) Multi-inspector square checkbox intent conflict: A records onCheckedChange calling actToggleDone (done); B records intent=select. Confirm which. 6) Round select's picked inner white dot (catalogue) is kept; B's standard check glyph is not adopted; confirm. 7) Whether the round done check (row 3) and the row-select toggle (row 5) are one control switched by Option, or two. The widget supports both. 8) Kind conflict: the catalogue records kind round-check for rows 21 and 23 but kind checkbox for rows 3 and 10. Reconcile before choosing a kind. 9) The round done check in row 3 looks empty in the screenshot although recorded as checked; unresolved. 10) Draft-inspector row count: the recorded row says 8 tasks but its state list has 9 (the catalogue flags this). Do not rely on the row-10 count until rows-choice.json is reconciled. 11) md radius not recorded; md shape=square is assumed. 12) Option-held square lamp: radius 4.375px is the same as the small square; it could reuse size sm (to confirm). 13) Unchecked outline: the open round rows use an oklch(0.26) glyph colour, the select ring is grey. Folded to one unchecked border token; confirm. 14) Border colour on multi-inspector sm not recorded. 15) No component is recorded on filter-panel and trash for 'task done checkbox, round'; those rows are unmapped. 16) Multi-inspector rows 14 and 15 have component '?'. 17) Disabled and focus-visible not recorded. 18) Row mapping is taken from the catalogue as written.",
+   "family": "choice"
+  },
+  {
+   "name": "Switch",
+   "purpose": "On/off setting that applies at once, with no visible label; the row title names it. Used for Reduced motion and Show completed tasks on settings-general. Named Switch, not Toggle, because shadcn's Toggle is a pressed button with a different role. Merge record: A and B both describe Switch with the same single recorded look, so they are merged. From A: forcedOn prop dropped (critique: it duplicates disabled plus checked); the forced state is checked plus disabled, with a reason prop added. From B: the single-value size axis is dropped (critique: pointless, and the catalogue says no size axis is invented).",
+   "base": "Radix Switch",
+   "variants": [],
+   "props": [
+    {
+     "name": "checked",
+     "type": "boolean",
+     "description": "On (aria-checked true) or off."
+    },
+    {
+     "name": "onCheckedChange",
+     "type": "(checked: boolean) => void",
+     "description": "Writes reduced_motion or show_completed as '1' or '0'."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "No effect on click. Forced on = checked plus disabled (Reduced motion only, under Low Power Mode or macOS Reduce Motion on desktop)."
+    },
+    {
+     "name": "reason",
+     "type": "string | null",
+     "description": "Visible or announced reason shown when the switch is forced on (for example Low Power Mode). Proposed per the critique; the catalogue does not specify the reason copy."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required. 'Reduced motion' or 'Show completed tasks'."
+    }
+   ],
+   "states": [
+    "off (aria-checked=false)",
+    "on (aria-checked=true)",
+    "disabled (no effect)",
+    "disabled and forced on (checked plus disabled; Reduced motion only)",
+    "focus-visible (not recorded)"
+   ],
+   "role": "switch (aria-checked)",
+   "keyboard": "Tab focuses. Space toggles (ARIA switch pattern; proposed in A, not recorded in the catalogue). Enter also activates through the native button (B). Conflict between A and B on Enter; both kept, to confirm.",
+   "replaces": [
+    "toggle switch"
+   ],
+   "platform": "Forced-on source differs. Desktop: Low Power Mode and macOS Reduce Motion. Web: the catalogue gives no equivalent; a browser prefers-reduced-motion setting is a candidate but unconfirmed. Storage differs: desktop writes the local SQLite settings; web needs a per-account setting (proposed). Show completed tasks is the same on both.",
+   "open": "1) Look not measured (look null in both rows), so there are no size or colour values; the widget uses the shared tokens. 2) Show completed tasks defaults to on; its effect on the task list is not recorded. 3) Whether web forces reduced motion from the OS preference is unconfirmed. 4) Whether a disabled switch stays focusable (aria-disabled) or leaves the Tab order is not recorded. 5) Reason copy for the forced-on state is not specified (see reason prop).",
+   "family": "choice"
+  },
+  {
+   "name": "SegmentedControl",
+   "purpose": "Single-choice group of segments with one value always selected. Recorded uses: filter Show (All, Active, Done), Date field (Created, Updated), tri-state refine (Any, With, Without), theme (System, Light, Dark) and Screenshots mode (Full screen, Region). Merge record: from A SegmentedControl (kept with the variant axis; the surfaceThumb look is kept as a distinct look until its thumb colour is measured, because the catalogue records it as its own look; required aria-label added per the critique). From B Segmented (name and size axis adopted; B's fold of surfaceThumb into the accent thumb is not adopted, per the critique). Sources: A SegmentedControl, B Segmented.",
+   "base": "Radix RadioGroup (radiogroup and radio items) styled as a segmented track.",
+   "variants": [
+    {
+     "axis": "variant",
+     "default": "text",
+     "values": [
+      {
+       "value": "text",
+       "when": "Text-only segments. Selected background oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262); radius 4.375px. Covers 'segmented control, text-only, default size' and 'segmented control, small tri-state'."
+      },
+      {
+       "value": "surfaceThumb",
+       "when": "Each segment has a leading icon and a label (icon 15px on the theme row). Used for theme (row 28) and Screenshots mode (row 37). Selected and track colour not recorded for the theme row; the thumb may collapse to accent if measured as accent."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "default",
+     "values": [
+      {
+       "value": "default",
+       "when": "Segments 23px high, font 600 12px/18px (Show 96x23, Date field 145x23)."
+      },
+      {
+       "value": "sm",
+       "when": "Segments 19px high, font 600 11px/16.5px, inside a w-40 shrink-0 container (tri-state refine rows, 44x19 segments). The caller wraps it."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Selected option value (one is always selected). The tri-state uses the TriState type."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Calls update({filter}) or update({dateField}) on filter-panel; the tri-state onChange on refine rows; set('theme', value) on settings-general; the screenshot mode write on settings-capture (desktop only)."
+    },
+    {
+     "name": "options",
+     "type": "{ value: string; label: string; icon?: ReactNode }[]",
+     "description": "Segments in order. icon is used by the surfaceThumb variant (A's icon per segment; B's optional icon)."
+    },
+    {
+     "name": "variant",
+     "type": "'text' | 'surfaceThumb'",
+     "description": "Variant prop (cva). See variants."
+    },
+    {
+     "name": "size",
+     "type": "'default' | 'sm'",
+     "description": "Variant prop (cva). See variants."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required group name: 'Show', 'Date field', 'Theme', 'Screenshots mode'; the tri-state group name is open."
+    }
+   ],
+   "states": [
+    "selected segment (accent background on the text variant, on-accent text)",
+    "unselected segment (muted text oklch(0.46 0.013 262))",
+    "first, middle or last segment selected (catalogue records them separately; no visual difference recorded, so one state)",
+    "surfaceThumb first segment selected (System; Full screen); other segments' look not recorded",
+    "hover, focus-visible and disabled not recorded"
+   ],
+   "role": "radiogroup with radio items (aria-checked).",
+   "keyboard": "Tab enters the group on the selected item. Left and Right arrows move focus and select (Radix RadioGroup; proposed; not recorded in the catalogue). Space selects the focused item.",
+   "replaces": [
+    "segmented control, text-only, default size",
+    "segmented control, small tri-state",
+    "segmented control, surface thumb with icons"
+   ],
+   "platform": "Desktop: all five recorded uses, including Screenshots mode on settings-capture. Web: Screenshots mode is dropped (screen capture; the catalogue records no web equivalent). Theme stays. Whether web offers the same System, Light and Dark options is not recorded.",
+   "open": "1) surfaceThumb selected and track colour not recorded (theme row not measured; screenshot-mode track is an estimate, x 181 to 1153, y 113 to 140). If product wants a neutral thumb, it is a thumb axis (accent or surface). 2) The sm tri-state 'Without' label looks clipped at the right edge of the panel in the screenshot (observed, uncertain). 3) The hint text under Screenshots mode belongs to the caller, not the widget. 4) Rows 28 and 37 differ in hint text and ctx.set; the widget looks the same, so the split is left to the caller. 5) Accent token: see Checkbox open item 3. 6) The tri-state group name for aria-label is not recorded.",
+   "family": "choice"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "kind: nav-item (listed in the catalogue 'kinds' array; no variant uses it)",
+   "reason": "Both designs record this, so the entries are merged. No row uses the nav-item kind. The settings sidebar rows are recorded as kind tab and are covered by SidebarTab, so there is no variant to cover. Drop nav-item from kinds or alias it to SidebarTab."
+  }
+ ]
+}

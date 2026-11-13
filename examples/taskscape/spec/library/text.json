@@ -1,0 +1,768 @@
+{
+ "widgets": [
+  {
+   "name": "Input",
+   "purpose": "Single-line text entry with no chrome of its own (shadcn Input). The host supplies the surface: InputGroup when wrapped, or the tab bar for inline rename. Covers the three catalogue rows that use a bare input: inline list rename (tab bar), capture title, and sheet name (bare). The palette filter is CommandInput, the day count is NumberField, and the sheet name with fixed suffix is InputGroup with a suffix. Merged from A's TextField and B's Input. Kept A's inline size (font-medium, 140px cap, ring-1) because the weight and cap are visible. Folded the capture title's 14px/20px line into md's 21px line (1px, not felt; listed in open). Sources: A (TextField rows, text.json lines 109-116 for rename, 120-130 for commit and spellCheck, 234 for capture Tab, 311-317 for sheet) and B (Input).",
+   "base": "shadcn Input (native input type=text); no Radix primitive.",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "inline",
+       "when": "Inline list rename in the tab bar. h-6 (1.5rem = 21px at 1rem=14px), px-space-4, py-0, max width 10rem (140px), font-medium (kept; B folded it to regular, see open), ring-1 on focus."
+      },
+      {
+       "value": "md",
+       "when": "14px text on a 21px (1.5rem) line, full width of its host. Capture title, sheet name (bare). Also the md search and well fields when inside InputGroup or SearchField. The capture title's 14px/20px is folded here (see open)."
+      },
+      {
+       "value": "sm",
+       "when": "12px text on an 18px line. Used inside an sm InputGroup (settings sidebar search). Inside InputGroup or SearchField the size is inherited from the owning widget; standalone the Input sets its own."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Controlled value."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Fires on every change (draft.setTitle in capture)."
+    },
+    {
+     "name": "size",
+     "type": "'inline' | 'md' | 'sm'",
+     "description": "Text size and line box. Inherited when wrapped by InputGroup or SearchField."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "Shown while empty. Inline rename has none."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Focus on mount (capture title, sheet name)."
+    },
+    {
+     "name": "selectOnFocus",
+     "type": "boolean",
+     "description": "Select the whole value on open or focus when the initial text is non-empty (sheet name, rename of a selected value). B named this selectAllOnFocus."
+    },
+    {
+     "name": "stopKeyPropagation",
+     "type": "boolean",
+     "description": "Default false. True for inline rename, which stops all key events, Escape included (catalogue line 109). Not set for capture title or sheet name, so Tab, Enter and Escape bubble to app and window handlers."
+    },
+    {
+     "name": "spellCheck",
+     "type": "boolean",
+     "description": "Default true. Sheet name fields pass false."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Disabled look and no input."
+    },
+    {
+     "name": "onSubmit",
+     "type": "(value: string) => void",
+     "description": "Enter without Shift. The caller decides the outcome (rename commits, capture saves, sheet accepts)."
+    },
+    {
+     "name": "onCancel",
+     "type": "() => void",
+     "description": "Escape. The caller decides (rename reverts, capture hides the bar)."
+    },
+    {
+     "name": "onBlur",
+     "type": "(value: string) => void",
+     "description": "Blur. Rename commits the same way as Enter."
+    },
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Layout only (width, flex). Visual variation goes through size."
+    },
+    {
+     "name": "inputRef",
+     "type": "Ref<HTMLInputElement>",
+     "description": "Lets the host focus or select the field."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required. Sheet name fields use the headline (aria-label values per catalogue lines 316-317, not reproduced here)."
+    }
+   ],
+   "states": [
+    "empty: placeholder shown",
+    "focused: focus ring token (not an accent border; see open)",
+    "filled",
+    "text selected on focus (accent allowed for selection; sheet name with a non-empty value, rename)",
+    "disabled"
+   ],
+   "role": "textbox (native input type=text; inferred from the element, not recorded in the catalogue).",
+   "keyboard": "Native text editing. Enter (no Shift): onSubmit. Escape: onCancel. Blur: onBlur. Tab is not handled and bubbles (capture Tab opens notes at App.tsx:48-50). With stopKeyPropagation, every key stops at the input (inline rename). Without it, keys bubble, so a sheet's window-level Enter still accepts (catalogue line 311). Shift+Enter is not recorded for Input.",
+   "replaces": [
+    "Inline list rename, tab bar",
+    "Capture title input",
+    "Sheet name input, bare"
+   ],
+   "platform": "Same widget on both. Capture title exists only on desktop (quick-capture window opened by global hotkey); the web has no capture window. Sheet name fields are separate windows on desktop (no backdrop dimming) and in-page dialogs on web; autoFocus and select-on-open apply in both.",
+   "open": "1) Focus indicator: use the focus ring token, not an accent border (accent reserved for primary action and selection). Decision needed; the rename uses ring-focus-1l and ring-focus-1d, the sheet uses accent-500. 2) Rename font weight: font-medium kept here, B folded it to regular. Confirm. 3) Capture title line: 14px/20px folded to md 21px (1px change, visible in principle). Confirm. 4) Keydown isolation: stopKeyPropagation default false, true only for inline rename. Confirm that capture and sheet paths bubble. 5) Select-all on open for the inline rename is inferred (catalogue rows 101-116 record no selection). 6) Sheet placeholders 'Name this list' and 'Name this project' and their aria-labels (catalogue lines 316-317) are the sheet name examples; the aria-label values were not reproduced in the critique. 7) Shift+Enter in rename, capture and sheet is not recorded.",
+   "family": "text"
+  },
+  {
+   "name": "InputGroup",
+   "purpose": "The one chrome for text entry (shadcn InputGroup): a bordered or filled well that holds one Input plus addons. Draws the border, fill and focus ring; a press anywhere in the well focuses the Input. Two tones: field (bordered sheet well) and search (filled grey pill with no border). Merged from A's InputWell and B's InputGroup. Kept the search tone (catalogue lines 16 and 60 describe the grey pill), because the missing border is felt. Heights at 1rem=14px: md h-10 = 35px (matches the measured 345x35 sheet well); sm h-7 = 24.5px (measured 25px). The trailing slot holds the clear button and the dice roll button. Covers the sheet field well and the sheet name with a fixed suffix. Sources: A (InputWell, sheet well h-10) and B (InputGroup).",
+   "base": "shadcn InputGroup (container). Its focus pattern matches the shadcn Input.",
+   "variants": [
+    {
+     "axis": "tone",
+     "default": "field",
+     "values": [
+      {
+       "value": "field",
+       "when": "Bordered: border-edge-2 in light and dark, bg-surface-1 fill. Focus-within uses the focus ring token (see open; the sheet's accent-500 border is folded). Sheet name field and sheet well."
+      },
+      {
+       "value": "search",
+       "when": "Filled grey rounded pill with no border. Fill and radius are not recorded in elements.json (grey in the screenshot). List search well and settings search pill."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "sm",
+       "when": "h-7 = 1.75rem = 24.5px at 1rem=14px (measured 25px). 12px text inside. Settings sidebar search."
+      },
+      {
+       "value": "md",
+       "when": "h-10 = 2.5rem = 35px at 1rem=14px. 14px text inside. List search well, task-list match search, sheet well and sheet name."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "tone",
+     "type": "'field' | 'search'",
+     "description": "Chrome tone. Default field."
+    },
+    {
+     "name": "size",
+     "type": "'sm' | 'md'",
+     "description": "Height and text size of the well. Owning widget (SearchField, sheet) sets it and the Input inherits it."
+    },
+    {
+     "name": "suffix",
+     "type": "string",
+     "description": "Locked, greyed, non-editable tail at the end of the well. The caller appends it to the trimmed value on accept (sheet name with fixed suffix). A's TextField carried this prop; moved here because it is well chrome."
+    },
+    {
+     "name": "leading",
+     "type": "ReactNode",
+     "description": "Leading addon, for example the 18px magnifier in md SearchField."
+    },
+    {
+     "name": "trailing",
+     "type": "ReactNode",
+     "description": "Trailing addon: the clear IconButton when SearchField is clearable and non-empty, or the dice roll IconButton when ask.dice is set (sheets only)."
+    },
+    {
+     "name": "focusInputOnPress",
+     "type": "boolean",
+     "description": "Default true. A press anywhere in the well focuses the inner Input."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Disabled chrome."
+    },
+    {
+     "name": "children",
+     "type": "Input",
+     "description": "The inner text input."
+    }
+   ],
+   "states": [
+    "rest (fill and border per tone)",
+    "focus-within (focus ring token)",
+    "filled",
+    "trailing action shown",
+    "suffix locked (suffix set)",
+    "disabled"
+   ],
+   "role": "none (presentational wrapper). The Input carries textbox or searchbox; trailing buttons carry button.",
+   "keyboard": "None on the well. Tab reaches the inner Input; trailing buttons are separate tab stops after it. A press anywhere in the well focuses the Input (focusInputOnPress).",
+   "replaces": [
+    "Sheet field well, h-10 class",
+    "Sheet name input with fixed suffix"
+   ],
+   "platform": "Same look on both. Desktop: the sheet well sits in a separate window with no backdrop dimming. Web: sheet presentation is not decided by this rule. Dice roll exists only on sheets (windows on desktop, dialogs on web).",
+   "open": "1) Focus-within: the sheet well's accent-500 border is folded into the standard focus ring here (accent reserved for selection and primary action). Decision needed (see Input open 1). 2) Search tone fill and radius are not recorded (grey only). 3) Search tone has no border, per catalogue lines 16 and 60; B's fold to sheet chrome for the search wells is rejected. Confirm. 4) The measured 35px matches h-10 at 1rem=14px; confirm the spacing scale before fixing tokens. 5) Dice roll button: which IconButton variant it uses is not in this family. 6) Suffix behaviour when the trimmed value is empty is not recorded.",
+   "family": "text"
+  },
+  {
+   "name": "SearchField",
+   "purpose": "The one search input for the four search rows: a magnifier, a native search input, and an optional clear button, in an InputGroup search well. Covers the list search bar (filter), the task-list search (match stepping and flattening), and the settings sidebar search in plain (no clear) and with-clear forms. They share one field, placeholder and text entry, so they merge. Kept the distinctions a user feels: navigation (filter or match stepping), the clear button (clearable) and the sidebar size. Width follows its pane (layout, not a variant). Merged from A's SearchField and B's SearchField. Source: spec/catalogue/text.json. The list search bar and task-list match search are merged on identical field geometry (catalogue 14,56 832x35 well; input 46,63 733x21, as B records). This widget does not claim the trash, multi-inspector, draft-inspector or filter-panel rows (see open).",
+   "base": "none (composed): InputGroup (tone search) around an Input type=search, with a leading magnifier and an optional clear IconButton from the library. No Radix primitive.",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "md",
+       "when": "List panes: main window, multi-inspector, trash, draft-inspector, filter-panel, task-list (attribution per open). 14px/21px text, h-10 well (35px), full pane width, 18px leading icon (inferred from geometry; see open)."
+      },
+      {
+       "value": "sm",
+       "when": "Settings sidebar. 12px/18px text in an h-7 well (24.5px, measured 25px). About 139px wide as measured; width follows the pane, so it is layout, not a variant. Light grey pill (tone search)."
+      }
+     ]
+    },
+    {
+     "axis": "navigation",
+     "default": "filter",
+     "values": [
+      {
+       "value": "filter",
+       "when": "Typing filters the rows of the open list. Enter and Shift+Enter are not handled (inferred; see open)."
+      },
+      {
+       "value": "match",
+       "when": "Task list: typing filters to matching titles and flattens them. Enter steps to the next match, Shift+Enter to the previous, each focused and scrolled into view. Escape clears and blurs."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Controlled query."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Fires on every change (onChange in the reference)."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "Settings uses 'Search'. Pane placeholders are the caller's."
+    },
+    {
+     "name": "size",
+     "type": "'sm' | 'md'",
+     "description": "Owns the well height and text size; passed down to InputGroup and Input."
+    },
+    {
+     "name": "navigation",
+     "type": "'filter' | 'match'",
+     "description": "Explicit navigation axis. Default filter. Match turns on Enter and Shift+Enter stepping and flattened rows."
+    },
+    {
+     "name": "clearable",
+     "type": "boolean",
+     "description": "Default false. Shows a trailing clear IconButton while the value is non-empty. True for settings-general; false for settings-plain and the pane fields. The button is an IconButton from the library, not part of this family."
+    },
+    {
+     "name": "onStepMatch",
+     "type": "(direction: 'next' | 'previous') => void",
+     "description": "Used with navigation=match. Enter gives next, Shift+Enter gives previous. B named this onStep with 'prev'."
+    },
+    {
+     "name": "onClear",
+     "type": "() => void",
+     "description": "Called when Escape or the clear button empties the query."
+    },
+    {
+     "name": "inputRef",
+     "type": "Ref<HTMLInputElement>",
+     "description": "Lets the host focus the field and select its text (registerSearchFocus, Cmd/Ctrl+F on desktop)."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Focus on mount."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Disabled look and no input."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required. For example 'Search settings' or 'Search Errands'."
+    }
+   ],
+   "states": [
+    "empty: placeholder shown, no clear button",
+    "focused: focus ring token (colour is an open decision)",
+    "filled: query present; clear button shown when clearable",
+    "stepping: navigation=match with a current match focused and scrolled into view",
+    "flattened: navigation=match; the host renders matches without subtasks",
+    "disabled"
+   ],
+   "role": "searchbox (native input type=search; inferred from the element, not recorded in the catalogue). Clear button: button with aria-label 'Clear search' (proposal; not in the reference). Leading icon is aria-hidden.",
+   "keyboard": "Printable keys edit the query. filter: Enter and Shift+Enter are not handled (inferred; see open). match: Enter next, Shift+Enter previous; key events stop propagation (task list); Escape clears the query and blurs. filter with clearable (settings-general): Escape clears a non-empty query; an empty query lets Escape bubble so the host can close its window. filter with clearable false (settings-plain): Escape is not recorded (not derived from clearable; see open). Cmd/Ctrl+F: desktop focuses the field and selects its text; the web must not bind it. A typed letter from anywhere focuses the task-list field (reference behaviour; call sites partly unverified). Clear button returning focus to the input is a proposal.",
+   "replaces": [
+    "List search bar, with leading search icon",
+    "Task list search, with match cycling",
+    "Settings search field, sidebar, plain",
+    "Settings search field, sidebar, with clear button"
+   ],
+   "platform": "Web: browser shortcuts take precedence, so Cmd/Ctrl+F stays browser find; the settings select-on-find is desktop only. The typed-letter focus on web is undecided (see open). Escape closing the settings window applies to the separate settings window on desktop; on web the settings view's Escape behaviour is not recorded (see open). Desktop: Cmd/Ctrl+F binds to the field; a global hotkey pressed while the main window is focused is handled by the main window.",
+   "open": "1) Focus indicator colour: the reference is a blue 1px border or outline. Accent blue is reserved for primary action and selection, so focus needs its own token unless focus counts as selection (decision needed). 2) Filter-mode Escape for the list bar and the plain settings field is not recorded. 3) Whether the task-list match search and the list search bar are the same on-screen control on the same pane is unconfirmed; merged on identical field geometry. 4) The settings search filter effect (what it filters) is unverified (catalogue lines 60 and 68). 5) Leading icon size: sm not recorded; md 18px inferred from geometry (catalogue line 17). 6) Clear button: shown only on settings-general (clearable true). B's default that added a clear button to every field is rejected; confirm. 7) Clear button aria-label 'Clear search' is a proposal. 8) Typed-letter focus from anywhere on web is undecided and may steal typing from other inputs. B's restriction (only when no editable field has focus) is a proposal, not the reference. 9) Title versus notes: row 2 description (catalogue line 40) says the task-list search filters by title and/or notes; its behaviour (line 47) says matching titles. Decide which the reference does. 10) Enter in filter mode is inferred as unhandled; the main-window onKeyDown was wired but its handler was not read. 11) Trash and multi-inspector components are recorded as '?' (catalogue line 15); draft-inspector and filter-panel attribution is unverified (lines 16 and 25-28). Assigning them to SearchField is not confirmed. 12) Settings Escape on web is a conflict between the two designs and is not recorded in the catalogue (text.json line 90, SettingsWindow.tsx:119-135). 13) Roles are inferred from the native elements, not recorded.",
+   "family": "text"
+  },
+  {
+   "name": "CommandInput",
+   "purpose": "The filter field at the top of the command palette. It drives the palette listbox as a combobox, and its role and keys differ from a plain Input, so it is its own widget (moved out of A's TextField combobox mode). The catalogue names it a bare TextInput (text.json line 246); it is based on that. Matching is a case-insensitive substring match on the label (catalogue). Ranking by match index (earlier first, stable) is inferred from B. cmdk is an implementation option only; its default fuzzy filter must not be used unless the palette passes a substring filter.",
+   "base": "Bare TextInput per the catalogue (text.json line 246) with combobox ARIA. cmdk is one implementation option, not the base.",
+   "variants": [],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Controlled query. Typing resets the active row to the first."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Fires on every change."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "Shown when empty."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Focused on open (useEffect focus in the reference)."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required."
+    },
+    {
+     "name": "aria-expanded",
+     "type": "boolean",
+     "description": "Supplied by the palette root."
+    },
+    {
+     "name": "aria-controls",
+     "type": "string",
+     "description": "Listbox id, supplied by the palette root."
+    },
+    {
+     "name": "activeDescendantId",
+     "type": "string",
+     "description": "Id of the active option, supplied by the host (aria-activedescendant)."
+    },
+    {
+     "name": "onMoveActive",
+     "type": "(direction: 'up' | 'down') => void",
+     "description": "ArrowDown moves the active row down, capped at the last result; with zero results it sets -1 (no active row). ArrowUp moves up, floored at 0. The host owns the active row."
+    },
+    {
+     "name": "onSubmit",
+     "type": "() => void",
+     "description": "Enter (default prevented). The host runs the active row. With no results the host does nothing."
+    }
+   ],
+   "states": [
+    "empty (placeholder)",
+    "typed (filters)",
+    "no results (no active row; Enter does nothing)",
+    "focus on open"
+   ],
+   "role": "combobox (aria-expanded, aria-controls the listbox, aria-activedescendant the active option). Inferred from the ARIA pattern; the catalogue records no role.",
+   "keyboard": "ArrowDown and ArrowUp are forwarded to the host through onMoveActive. Enter runs the active row through onSubmit and prevents default. Typing resets the active row to the first. The catalogue does not specify Escape for the palette.",
+   "replaces": [
+    "Command palette filter"
+   ],
+   "platform": "Same on both. Desktop shows the palette as a window (not decided, see open); the web shows it as an in-page surface.",
+   "open": "1) Escape in the palette is not specified in the catalogue. 2) Whether the palette may open as a separate window on desktop is not decided. 3) Combobox role is inferred, not recorded. 4) Ranking by match index is inferred (B), not recorded. 5) Only if cmdk is used: its default fuzzy filter must be replaced by a substring filter.",
+   "family": "text"
+  },
+  {
+   "name": "TitleField",
+   "purpose": "The multi-line title textarea. It grows with its content (one line 21px, two lines 42px), in a 600 18px/21px display font. Covers the task inspector title (inline) and the new-task draft title (draft). Merged from A's TitleField and B's Textarea; B's Textarea is folded in, since the same textarea and title type cover both rows and its body variant has no row. The mode axis keeps what the user feels: inline reads as text until clicked, while the draft is always editable with its own resting fill and commit or cancel rules. Radius: 4.375px (0.3125rem) recorded (catalogue lines 122 and 147), folded to the standard field radius token (open). Sources: text.json lines 109-153 (title rows) and 120-130 and 147-153 for spellCheck, commit and draft rules.",
+   "base": "shadcn Textarea (native textarea, rows 1, resize none, overflow hidden, grows with content); no Radix primitive.",
+   "variants": [
+    {
+     "axis": "mode",
+     "default": "inline",
+     "values": [
+      {
+       "value": "inline",
+       "when": "Task inspector title. Readonly at rest, reads as text, no fill. Click, or an editRequest from a row or F2/Enter through uiStore titleEditReq, enters editing: bg-surface-0 fill, ring-2 ring-surface-0, whole text selected on open. Enter or blur commits; Escape reverts."
+      },
+      {
+       "value": "draft",
+       "when": "New task draft title. Always editable, resting fill (about oklch(0.944 0.003 255)), ring-2 ring-surface-0, autofocus on open. Enter or blur commits the draft (runDraftAction commit); Escape cancels it (runDraftAction cancel). B folded the fill into bg-surface-0; kept here because the fill is visible (see open)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Controlled title (the draft in draft mode)."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Fires on every change."
+    },
+    {
+     "name": "mode",
+     "type": "'inline' | 'draft'",
+     "description": "Added from A's mode axis, which had no prop. Default inline."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "Default 'Untitled' for both modes."
+    },
+    {
+     "name": "editRequest",
+     "type": "number | string",
+     "description": "Changing value asks an inline title to enter editing (uiStore titleEditReq)."
+    },
+    {
+     "name": "onCommit",
+     "type": "(title: string) => void",
+     "description": "Trimmed title on Enter or blur. Inline: host calls updateTask only if non-empty and changed, else the title reverts. Draft: host runs runDraftAction(title, 'commit'). Replaces B's onSubmit and onBlur, which carried no value."
+    },
+    {
+     "name": "onCancel",
+     "type": "() => void",
+     "description": "Escape. Inline reverts and exits editing. Draft: host runs runDraftAction('', 'cancel')."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Draft mode focuses on open."
+    },
+    {
+     "name": "selectOnOpen",
+     "type": "boolean",
+     "description": "Added (critic). Default true for inline: the whole text is selected when editing opens (catalogue line 125)."
+    },
+    {
+     "name": "spellCheck",
+     "type": "boolean",
+     "description": "Added (critic). Default false for both modes (catalogue line 120)."
+    },
+    {
+     "name": "inputRef",
+     "type": "Ref<HTMLTextAreaElement>",
+     "description": "Focus control for F2 and rename requests (B's ref)."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required."
+    }
+   ],
+   "states": [
+    "readonly: inline at rest, no fill (aria-readonly)",
+    "editing: inline, fill and ring shown, text selected on open",
+    "draft: resting fill, always editable",
+    "empty: placeholder 'Untitled' shown",
+    "wrapped: two lines, height 42px",
+    "disabled",
+    "dark theme: text oklch(0.94 0.004 260)"
+   ],
+   "role": "textbox with aria-multiline=true (native textarea; inferred from the element). readOnly sets aria-readonly.",
+   "keyboard": "Enter: onCommit with the trimmed value, default prevented, so Enter never inserts a line break. Escape: onCancel, default prevented (inline reverts and exits editing; draft cancels). Blur: onCommit (trimmed). Click on a readOnly title starts editing with the text selected. F2 or Enter from a focused list row requests rename through editRequest (host). Shift+Enter is not recorded; proposal: behave as Enter with no newline.",
+   "replaces": [
+    "Task title, inspector, display or edit",
+    "New task title, draft inspector"
+   ],
+   "platform": "Same widget on both. The commit on blur persists differently: web calls updateTask on the cloud API and needs a connection; desktop writes the local SQLite store. Web: commit can clash with other users' edits (multi-user; the reference is single-user). On web the draft title is the main add-task path, because there is no capture window.",
+   "open": "1) Escape on a draft with typed text: the reference cancels with an empty title; the product rule discards an untitled draft only while nothing has been added. Decide whether Escape keeps or commits typed text. 2) Blur on an empty draft runs commit with an empty title in the reference; decide whether it discards under the same rule. 3) Escape then blur ordering: Escape cancels a draft or reverts a rename (text.json lines 130 and 153) and blur commits. Proposal: a cancel suppresses the blur commit that follows. Confirm. 4) Shift+Enter in a title is not recorded (proposal above). 5) Focus ring: ring-2 ring-surface-0 is kept as recorded; decide the focus token against the accent rule (ring-focus-1l and ring-focus-1d are used by inline rename). 6) Draft resting fill kept as about oklch(0.944 0.003 255); B folded it into bg-surface-0. Decide whether the draft fill is its own token. 7) Radius 4.375px is folded to the standard field radius token; the token name is not in the catalogue. Confirm. 8) Multi-user conflict behaviour for inline commits on web is not defined by the reference. 9) Select-all on open is recorded for the task title (line 125); the draft has no selection rule.",
+   "family": "text"
+  },
+  {
+   "name": "RichTextEditor",
+   "purpose": "The one rich-text body: bold, italic, underline, strikethrough, lists, links and @mention attachments, plus drop-to-attach. Covers three rows: saved note body, add-note draft and capture notes editor. The toolbar (floating or docked) and size (sm, md, capped) keep the visible differences: toolbar placement, minimum height and capture max height. Merged from A's RichTextEditor and B's. Kept A's three sizes: the add-note draft's min-h-24 (84px) against the saved note's min-h-14 (49px) is visible, so B's fold to one md size is rejected. Font sizes are recorded as the catalogue gives them (13.5px); B's fold to 14px is listed in open. Base: common-ui/RichTextEditor.tsx:135 (catalogue lines 165, 186, 205).",
+   "base": "common-ui/RichTextEditor.tsx:135 (library editor core; catalogue lines 165, 186, 205). shadcn and Radix ship no rich-text editor.",
+   "variants": [
+    {
+     "axis": "toolbar",
+     "default": "floating",
+     "values": [
+      {
+       "value": "floating",
+       "when": "Toolbar appears on focus (opacity 100, scale 100, pointer-events auto) and hides on blur. Saved note body. The add-note draft is inferred to match (not recorded)."
+      },
+      {
+       "value": "docked",
+       "when": "Toolbar always shown above the text with a top border (border-edge-1l, dark:border-edge-1d; gap-1, px-2 py-1.5). Capture notes editor. B called this 'fixed'; renamed to the catalogue's word."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "sm",
+     "values": [
+      {
+       "value": "sm",
+       "when": "Saved note body. min-h-14 = 3.5rem (49px at 1rem=14px). 13.5px text on a 17.5px (1.25rem) line."
+      },
+      {
+       "value": "md",
+       "when": "Add-note draft. min-h-24 = 6rem (84px at 1rem=14px). Font size and line height are not recorded; the saved note's 13.5px/17.5px is an inference to confirm."
+      },
+      {
+       "value": "capped",
+       "when": "Capture notes editor. min-h-16 = 4rem (56px), max-h-40 = 10rem (140px), growing with content. 13.5px text on a 20px line."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "rich document",
+     "description": "Controlled rich content; defaultValue for uncontrolled use."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value) => void",
+     "description": "Fires on every change (onChange in the reference). The host debounces autosave (saved note and add-note: api.createNote then api.updateNote)."
+    },
+    {
+     "name": "toolbar",
+     "type": "'floating' | 'docked'",
+     "description": "Toolbar placement. Default floating."
+    },
+    {
+     "name": "size",
+     "type": "'sm' | 'md' | 'capped'",
+     "description": "Minimum and maximum height and line box. Default sm."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "None for saved note; capture shows 'Notes ...'; add-note shows 'Write a note ... (drop an attachment to @mention it)'."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Add-note draft focuses on open."
+    },
+    {
+     "name": "maxLength",
+     "type": "number",
+     "description": "Default 2000."
+    },
+    {
+     "name": "onSubmit",
+     "type": "() => void",
+     "description": "Mod+Enter. Set only for capture; its presence is the reference's submitOnModEnter flag (A listed both, merged)."
+    },
+    {
+     "name": "onCancel",
+     "type": "() => void",
+     "description": "Escape. Set only for capture (hides the bar). Unset: Escape does nothing. A's onEscape, renamed to match the rest of the family."
+    },
+    {
+     "name": "collapseWhenEmpty",
+     "type": "boolean",
+     "description": "Capture: on blur while empty the host collapses to the Tab hint."
+    },
+    {
+     "name": "onBlur",
+     "type": "(content) => void",
+     "description": "Blur. Capture collapses here when empty; the add-note draft promotes to a saved NoteCard here only if document.hasFocus()."
+    },
+    {
+     "name": "onRequestLink",
+     "type": "() => void",
+     "description": "Link toolbar button; the host opens the link dialog."
+    },
+    {
+     "name": "onDropAttachment",
+     "type": "(file) => void",
+     "description": "Dropping an attachment tile inserts a mention chip."
+    },
+    {
+     "name": "onOpenMention",
+     "type": "(id: string) => void",
+     "description": "Clicking an @mention chip opens its attachment. B's onOpenAttachment is merged here."
+    },
+    {
+     "name": "mentions",
+     "type": "attachment list",
+     "description": "Added (critic). Source for the @ autocomplete: the attachments the @ list offers. Shape not recorded."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required."
+    }
+   ],
+   "states": [
+    "idle",
+    "focused (toolbar shown per the toolbar axis)",
+    "empty: placeholder shown",
+    "filled",
+    "mention-open: autocomplete while typing @query",
+    "at maxLength (2000 by default)",
+    "collapsed: capture only, not rendered (the host shows the Tab hint)",
+    "disabled (B; not recorded in the catalogue)"
+   ],
+   "role": "textbox with aria-multiline=true (inferred). The formatting bar is role toolbar with an aria-label. The mention list role is not recorded; B's listbox is a guess and is not confirmed.",
+   "keyboard": "Enter: new paragraph. Shift+Enter: line break. Mod+Enter: onSubmit when set. Escape: onCancel when set; otherwise nothing. Mod+B, Mod+I, Mod+U: bold, italic, underline (recorded for capture; assumed in all editors). Toolbar buttons preventDefault their blur so focus stays in the editor (capture). @ opens the mention list. Blur: onBlur(content).",
+   "replaces": [
+    "Note body editor, saved note",
+    "New note editor, add-note draft",
+    "Capture notes editor, open"
+   ],
+   "platform": "Web: Mod+B, Mod+I and Mod+U are browser shortcuts (bookmarks, view source) and browser shortcuts take precedence, so the toolbar buttons are the full path and the shortcuts a bonus (decision needed). Attachments: web uploads the dropped file to the server; desktop keeps it in local storage. Autosave: web to the cloud API, desktop to local SQLite. Capture editor is desktop-only (quick-capture window; Mod+Enter saves; Escape hides). The link dialog is a separate window on desktop. Keep the document.hasFocus() check on blur promotion on both platforms, since desktop windows can lose focus separately.",
+   "open": "1) Add-note draft toolbar mode (floating inferred) and Escape behaviour are not recorded; no Escape is inferred. 2) Font size fold: B folded 13.5px in the note and capture editors to 14px. Not applied here (recorded 13.5px); confirm. 3) Add-note min-h-24 folded to min-h-14 by B; rejected here (84px against 49px is visible). Confirm. 4) document.hasFocus() promotion on desktop: focus moving to another separate window makes the draft lose focus; decide whether that promotes the draft or keeps it open. 5) Token scale: the reference heights are 56, 96 and 64px at 16px rem; at 1rem=14px the classes resolve to 49, 84 and 56px, and max-h-40 to 140px. Confirm. 6) Focus border: the focused note body has a 2px blue border (catalogue line 167). Accent is reserved for selection and primary action, so the focus token needs a decision. 7) The mention list role and keys are not recorded. Whether Escape closes the mention list first is unknown. 8) The capture character counter is inferred. 9) The shape of the mentions source is not recorded. 10) Disabled state is not recorded in the catalogue.",
+   "family": "text"
+  },
+  {
+   "name": "NumberField",
+   "purpose": "Narrow numeric input for the day count: centred, tabular figures, spin buttons hidden, clamped to min..max on every change. Covers the one day-count row (filter panel, shown only when the date range is custom). Kept as its own widget, not an Input type, because the clamp and centring change what the user sees and types (A's reasoning; B folded it into Input type=number, rejected here). The size axis is removed: only one size was recorded, so the compact look is fixed inside the widget (critic).",
+   "base": "shadcn Input with type=number (native input, spin buttons hidden).",
+   "variants": [],
+   "props": [
+    {
+     "name": "value",
+     "type": "number",
+     "description": "Controlled day count."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: number) => void",
+     "description": "Receives the clamped value on every change."
+    },
+    {
+     "name": "min",
+     "type": "number",
+     "description": "Default 1."
+    },
+    {
+     "name": "max",
+     "type": "number",
+     "description": "Default 365."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required. The day count has none in code (B flagged it)."
+    }
+   ],
+   "states": [
+    "resting",
+    "focused (ring-1)",
+    "clamped: value pinned to min or max on change",
+    "absent unless the host shows it (only when the date range is custom)"
+   ],
+   "role": "spinbutton (native input type=number), with aria-valuemin 1 and aria-valuemax 365 from min and max.",
+   "keyboard": "Digits edit the value. ArrowUp and ArrowDown step natively by 1 (spin buttons are hidden; assumed to still work). Each change is clamped to 1-365. Enter and Escape are not recorded.",
+   "replaces": [
+    "Day count number input, filter panel"
+   ],
+   "platform": "Same on both. The filter panel uses the same field.",
+   "open": "1) Empty input: the reference clamps clamp(Number(value)) on every change, and Number('') is 0, so clearing the field may immediately pin it to 1. Confirm, and decide whether to commit on blur instead. 2) Whether arrow keys step natively with hidden spin buttons. 3) The default customDays value was not read. 4) Dimensions: at 1rem=14px, h-6.5 = 22.75px and w-12 = 42px; the catalogue's 26px and 48px assumed 16px. Confirm the token scale. 5) Enter and Escape not recorded. 6) Focus ring-1 token: decide against the accent rule (see Input open 1).",
+   "family": "text"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "select (kind, text.json line 8)",
+   "reason": "The inventory has no select rows (text.json line 10), so there is no text-entry widget for it. Both designs omitted it; now recorded here."
+  },
+  {
+   "variant": "Textarea (B widget)",
+   "reason": "Folded into TitleField. It is the same textarea and title type. Its body variant had no catalogue row and is dropped. readOnly is expressed as TitleField mode inline. Its onSubmit and onBlur take no value, so they become onCommit(title)."
+  },
+  {
+   "variant": "TextField (A widget)",
+   "reason": "Renamed to Input (the shadcn name). Its combobox mode moved to CommandInput and its locked tail moved to InputGroup suffix. Not a separate widget."
+  },
+  {
+   "variant": "InputWell (A widget)",
+   "reason": "Renamed to InputGroup. The tone axis, leading and trailing slots, and focusInputOnPress are kept on InputGroup. Not a separate widget."
+  },
+  {
+   "variant": "Input type=number (B option)",
+   "reason": "Dropped. The day count is a NumberField because the clamp and centring are visible to the user."
+  },
+  {
+   "variant": "TextField combobox mode (A prop)",
+   "reason": "Dropped from Input. It is CommandInput, since the role and the arrow-key ownership differ."
+  },
+  {
+   "variant": "Textarea body variant (B)",
+   "reason": "Dropped. No catalogue row uses it."
+  },
+  {
+   "variant": "Textarea autoGrow and rows props (B)",
+   "reason": "Dropped. Titles always grow with their content, so the flag and the rows prop add nothing."
+  },
+  {
+   "variant": "Input stop-all keydown default (B)",
+   "reason": "Dropped. It contradicts the reference (rename stops all keys including Escape) and would block the capture Tab and the sheet Enter. Replaced by an explicit stopKeyPropagation prop, default false."
+  },
+  {
+   "variant": "Input selectAllOnFocus (B name)",
+   "reason": "Merged into selectOnFocus (A name). Same behaviour."
+  },
+  {
+   "variant": "NumberField size axis (A)",
+   "reason": "Dropped. It had one value (compact), which is recorded as the only size, so the look is fixed inside the widget."
+  },
+  {
+   "variant": "SearchField clearable default true (B)",
+   "reason": "Dropped. The default is false, and clearable is true only for settings-general, because the reference records no clear button on the list search or the plain settings field."
+  },
+  {
+   "variant": "SearchField onStep (B name) with prev",
+   "reason": "Renamed onStepMatch with direction 'next' | 'previous', as A wrote it."
+  },
+  {
+   "variant": "CommandInput cmdk base and fuzzy default (B)",
+   "reason": "Dropped as the base. The catalogue names a bare TextInput with a substring match (text.json line 246). cmdk is kept only as an implementation option, with its fuzzy filter replaced."
+  },
+  {
+   "variant": "RichTextEditor two-size fold (B: md and capture)",
+   "reason": "Rejected. The add-note draft min-h-24 (84px) against the saved note min-h-14 (49px) is visible, so sizes sm, md and capped are kept. The 14px font fold is listed in open."
+  },
+  {
+   "variant": "RichTextEditor submitOnModEnter (A prop)",
+   "reason": "Dropped as a separate prop. Its presence is onSubmit (B), so a second flag adds nothing."
+  },
+  {
+   "variant": "RichTextEditor onOpenAttachment and onAttachFiles (B names)",
+   "reason": "Merged into onOpenMention and onDropAttachment (A names), which match the catalogue wording of mention chips and dropped attachment tiles."
+  },
+  {
+   "variant": "RichTextEditor fixed toolbar (B name)",
+   "reason": "Renamed docked, the catalogue word for the always-shown bar."
+  }
+ ]
+}

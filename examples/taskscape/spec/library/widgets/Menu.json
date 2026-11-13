@@ -1,0 +1,157 @@
+{
+ "name": "Menu",
+ "purpose": "Floating role=menu panel holding MenuItem and MenuSeparator rows. One panel family for every menu, with three placements and four widths. Which rows appear is the caller's choice, not the widget's: for example the single-row or multi-row set in the task row context menu, and the conditional Promote to top level row (shown only when the task has a parent_id, menus.json lines 99, 113). Used by: project menu panel (control, project width, offset 7px); task row context menu (cursor, task width); search scope and fields menu (control, content); filter sort and date option menu (control, content); attachment context menu (cursor, content); list tab context menu, which the catalogue calls menu panel, top-level (cursor, tab width); Move to list, which the catalogue calls menu panel, nested submenu (submenu, content). Panel style: Surface elevation menu, surface 3, radius panel, py-space-3, z-dropdown, animate-sheet-in. This style is measured for the project panel only (menus.json line 41); the other menus assume it. Folds in ContextMenu: ContextMenu becomes Menu placement=cursor (A calls the same axis pointer; B's value is kept because it cites the Menu entry at widgets.json ~line 3532, so confirm the value name against that entry). Radix ContextMenu serves cursor placement and Radix DropdownMenu serves control placement, as a detail inside Menu. Callers: task row right-click, list tab menu, attachment menu. Both are role=menu. Picking an item closes the menu, which is existing Menu behaviour.",
+ "base": "Radix ContextMenu (Content and Sub parts) for cursor placement and for any submenu under a cursor menu; Radix DropdownMenu (Content and Sub parts) for control placement and for any submenu under a control menu. The submenu's Radix root must match its parent's root. shadcn ContextMenuContent and DropdownMenuContent.",
+ "variants": [
+  {
+   "axis": "placement",
+   "default": "cursor",
+   "values": [
+    {
+     "value": "cursor",
+     "when": "Opens at the pointer. Clamped to the viewport with a 4px inset (ContextMenu.tsx:79-88). Used by the task row context menu (right-click), the list tab context menu and the attachment context menu."
+    },
+    {
+     "value": "control",
+     "when": "Anchored below its trigger: x = trigger left, y = trigger bottom + offset. Offset default 4px (the filter Sort and Date menus record this). The project panel passes offset 7px, measured (pill bottom 36, panel top 43; menus.json lines 18, 40). Used by the project menu panel, the search scope and fields menu, the filter sort and date option menu, and the task row menu if More is the entry point (open item)."
+    },
+    {
+     "value": "submenu",
+     "when": "Opens beside the hovered parent row. Not clamped to the viewport; flips left when it would overflow the window (ContextMenu.tsx:142-165). Used by Move to list."
+    },
+    {
+     "value": "anchored",
+     "when": "At the pointer position (anchor x and y); the only recorded placement. Dimmed by Scrim none."
+    }
+   ]
+  },
+  {
+   "axis": "width",
+   "default": "content",
+   "values": [
+    {
+     "value": "content",
+     "when": "Sized by its rows, no fixed width. Used where the look was not measured: attachment, search scope and fields, filter sort and date, and Move to list."
+    },
+    {
+     "value": "task",
+     "when": "152px measured (task menu box B). Task row context menu."
+    },
+    {
+     "value": "tab",
+     "when": "156px measured (list tab menu box A). List tab context menu. Kept apart from task because the reference distinguishes the two widths; not folded to 152 without a designer's confirmation."
+    },
+    {
+     "value": "project",
+     "when": "min-width 210px (min-w-60 = 15rem at 1rem=14px, derived; measured box 210x112 at x 112, y 43). Project menu panel."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Controlled open state."
+  },
+  {
+   "name": "onOpenChange",
+   "type": "(open: boolean) => void",
+   "description": "Fired on Escape, outside press, Tab, or activation of a row when closeOnSelect applies. Replaces B's separate onDismiss."
+  },
+  {
+   "name": "placement",
+   "type": "'cursor' | 'control' | 'submenu'",
+   "description": "Positioning rule and Radix root; see variants."
+  },
+  {
+   "name": "width",
+   "type": "'content' | 'task' | 'tab' | 'project'",
+   "description": "Panel width; see variants."
+  },
+  {
+   "name": "anchorRef",
+   "type": "RefObject<HTMLElement>",
+   "description": "Trigger element for control placement."
+  },
+  {
+   "name": "point",
+   "type": "{x: number; y: number}",
+   "description": "Pointer position for cursor placement; clamped with a 4px inset."
+  },
+  {
+   "name": "offset",
+   "type": "number",
+   "description": "Gap below the trigger for control placement. Default 4; the project panel passes 7 (measured)."
+  },
+  {
+   "name": "closeOnSelect",
+   "type": "boolean",
+   "description": "Whether activating a row closes the menu. Default true is this design's assumption; the catalogue does not record close-on-pick for the scope, fields, sort and date menus (see open)."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Accessible name of the menu. Required; the catalogue records no menu name."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "MenuItem and MenuSeparator rows."
+  },
+  {
+   "name": "items",
+   "type": "MenuItem[]",
+   "description": "Rows and dividers (Separator inset menu between groups)."
+  },
+  {
+   "name": "anchor",
+   "type": "{ x: number; y: number }",
+   "description": "Pointer position."
+  },
+  {
+   "name": "onPick",
+   "type": "(id: string) => void",
+   "description": "Called after the menu closes."
+  },
+  {
+   "name": "onDismiss",
+   "type": "() => void",
+   "description": "Outside mousedown, Escape, window blur or resize."
+  }
+ ],
+ "states": [
+  "open",
+  "closed (not rendered; covers dismissed by Escape, outside press, Tab, or item activation, one state)",
+  "measuring (hidden until the first layout sets its position, so it does not flash at 0,0)",
+  "closed (not rendered)"
+ ],
+ "role": "menu. A submenu row (MenuItem) carries aria-haspopup=menu and aria-expanded.",
+ "keyboard": "Opens focused on the first enabled item when opened from the keyboard. ArrowDown and ArrowUp move focus, skipping disabled rows and separators. Home and End jump to the ends. Letters do typeahead. Enter or Space activates. ArrowRight opens a submenu row (reference); Enter also opens it (added by this design, not in the reference). ArrowLeft or Escape closes a submenu and returns focus to its row. Escape closes a root menu and returns focus to the trigger, or for a cursor-opened menu, to the element focused before the cursor open. Tab closes the menu. Shift+F10 or the ContextMenu key opens a cursor menu from the keyboard. Hovering a submenu row opens it for pointer users only.",
+ "replaces": [
+  "project menu panel",
+  "task row context menu",
+  "search scope and fields menu",
+  "filter sort and date option menu",
+  "attachment context menu",
+  "menu panel, top-level",
+  "menu panel, nested submenu",
+  "menu layer overlay (anchored)",
+  "context menu card"
+ ],
+ "platform": "Web: the cursor placement must call preventDefault on the contextmenu event to replace the browser menu; browser shortcuts take precedence over menu accelerators; the menu clamps to the browser viewport. Desktop: menus are in-window popups, not separate windows, and never dim or cover the main window with a backdrop (decision: menus never dim; the no-backdrop rule for dialogs and sheets is a decision, not in menus.json). The clamp uses the app window bounds. Multi-row task selection uses the platform modifier: Control on Windows, Command on macOS. The web and Linux modifier is not defined.",
+ "open": "1) Task row menu: right-click (cursor) or More (anchored) both exist in the catalogue (menus.json lines 97-98), but which one is the menu's placement is not recorded. This also decides whether Move to list uses ContextMenu or DropdownMenu sub parts. 2) The 152px and 156px widths are off the 14px rem grid (10.86rem and 11.14rem). Both kept as measured; a token or content width needs a decision. 3) Surface: only the project panel is measured. The tree shows Surface2 while the source prop is surface=3; surface=3 is kept, and the conflict is open. The other menus assume the same surface. 4) Desktop: whether cursor menus are native OS menus; the reference renders them in-app and this design assumes in-app. 5) Web and Linux multi-row modifier is not stated. 6) closeOnSelect for the search scope, search fields, sort and date menus is not recorded (menus.json lines 125-130, 147-153); decide per menu, including project radio rows. 7) Project panel offset 7px (measured) versus the 4px rule of the filter menus; confirm. 8) The pill appears on four screens, but the project panel usedIn lists only title-bar and context-menus (menus.json lines 24-29, 47-50); confirm whether the panel exists on other screens. 9) Panel layer z-dropdown and the animate-sheet-in class are measured only for the project panel (menus.json line 41). 10) Every rem-based value (min-w-60 at 210px, the widths) assumes 1rem=14px, which is derived, not stated.",
+ "family": "menus",
+ "families": [
+  "menus",
+  "structure"
+ ],
+ "folded": [
+  {
+   "name": "ContextMenu",
+   "how": "ContextMenu becomes Menu placement=cursor (A calls the same axis pointer; B's value is kept because it cites the Menu entry at widgets.json ~line 3532, so confirm the value name against that entry). Radix ContextMenu serves cursor placement and Radix DropdownMenu serves control placement, as a detail inside Menu. Callers: task row right-click, list tab menu, attachment menu. Both are role=menu. Picking an item closes the menu, which is existing Menu behaviour.",
+   "role": "menu with menuitem rows (Radix; proposed)",
+   "keyboard": "Escape closes. Outside mousedown closes. Window blur or resize closes. Right-click prevents the native menu and closes. Picking an item closes first, then calls onPick. Arrow keys move and Enter picks (Radix). Context-menu key or Shift+F10 is proposed."
+  }
+ ]
+}

@@ -1,0 +1,148 @@
+{
+ "name": "SegmentedControl",
+ "purpose": "Mutually exclusive choice shown as joined segments, icon-only or icon-and-text. Replaces the sort direction pair and the capture mode segment. B's ToggleGroup (single type) is merged here. Also (choice): Single-choice group of segments with one value always selected. Recorded uses: filter Show (All, Active, Done), Date field (Created, Updated), tri-state refine (Any, With, Without), theme (System, Light, Dark) and Screenshots mode (Full screen, Region). Merge record: from A SegmentedControl (kept with the variant axis; the surfaceThumb look is kept as a distinct look until its thumb colour is measured, because the catalogue records it as its own look; required aria-label added per the critique). From B Segmented (name and size axis adopted; B's fold of surfaceThumb into the accent thumb is not adopted, per the critique). Sources: A SegmentedControl, B Segmented.",
+ "base": "Radix RadioGroup styled as shadcn ToggleGroup segments",
+ "variants": [
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "accent",
+     "when": "Selected segment accent-500 fill with on-accent text and a lift shadow. Sort direction (Ascending and Descending)."
+    },
+    {
+     "value": "surface",
+     "when": "Selected segment white (oklch 1 0 0) pill with oklch 0.26 text. Capture mode (Full screen and Region). Kept as a separate tone because the look is visible; B folded it into accent."
+    }
+   ],
+   "default": "accent"
+  },
+  {
+   "axis": "shape",
+   "values": [
+    {
+     "value": "icon",
+     "when": "Square icon-only segments, 25 wide by 23 high (measured). Sort direction arrow_upward and arrow_downward."
+    },
+    {
+     "value": "text",
+     "when": "Labelled segments, 23px high. Capture mode Full screen and Region."
+    }
+   ],
+   "default": "icon"
+  },
+  {
+   "axis": "variant",
+   "default": "text",
+   "values": [
+    {
+     "value": "text",
+     "when": "Text-only segments. Selected background oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262); radius 4.375px. Covers 'segmented control, text-only, default size' and 'segmented control, small tri-state'."
+    },
+    {
+     "value": "surfaceThumb",
+     "when": "Each segment has a leading icon and a label (icon 15px on the theme row). Used for theme (row 28) and Screenshots mode (row 37). Selected and track colour not recorded for the theme row; the thumb may collapse to accent if measured as accent."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "default": "default",
+   "values": [
+    {
+     "value": "default",
+     "when": "Segments 23px high, font 600 12px/18px (Show 96x23, Date field 145x23)."
+    },
+    {
+     "value": "sm",
+     "when": "Segments 19px high, font 600 11px/16.5px, inside a w-40 shrink-0 container (tri-state refine rows, 44x19 segments). The caller wraps it."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "items",
+   "type": "{ value: string; icon?: IconName; label?: string; ariaLabel: string; disabled?: boolean }[]",
+   "description": "Segments. Without label the group is icon-only. Sort items use aria-label Ascending and Descending."
+  },
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Selected value (controlled)."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: string) => void",
+   "description": "Fires on selection."
+  },
+  {
+   "name": "tone",
+   "type": "'accent' | 'surface'",
+   "description": "Selected look. See tone axis."
+  },
+  {
+   "name": "shape",
+   "type": "'icon' | 'text'",
+   "description": "Icon-only or labelled segments."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Disables the whole group (sort direction while sort is manual: opacity 40%, no pointer events)."
+  },
+  {
+   "name": "ariaLabel",
+   "type": "string",
+   "description": "Group label."
+  },
+  {
+   "name": "options",
+   "type": "{ value: string; label: string; icon?: ReactNode }[]",
+   "description": "Segments in order. icon is used by the surfaceThumb variant (A's icon per segment; B's optional icon)."
+  },
+  {
+   "name": "variant",
+   "type": "'text' | 'surfaceThumb'",
+   "description": "Variant prop (cva). See variants."
+  },
+  {
+   "name": "size",
+   "type": "'default' | 'sm'",
+   "description": "Variant prop (cva). See variants."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required group name: 'Show', 'Date field', 'Theme', 'Screenshots mode'; the tri-state group name is open."
+  }
+ ],
+ "states": [
+  "selected",
+  "unselected (text content-2)",
+  "hover (wash-1)",
+  "disabled (opacity 40%, no pointer events)",
+  "focus-visible",
+  "selected segment (accent background on the text variant, on-accent text)",
+  "unselected segment (muted text oklch(0.46 0.013 262))",
+  "first, middle or last segment selected (catalogue records them separately; no visual difference recorded, so one state)",
+  "surfaceThumb first segment selected (System; Full screen); other segments' look not recorded",
+  "hover, focus-visible and disabled not recorded"
+ ],
+ "role": "radiogroup with radio items (aria-checked). B's ToggleGroup type single gives role radio; the group role is a change from the reference's plain button pairs.",
+ "keyboard": "Tab enters the group on the selected segment. ArrowLeft and ArrowRight move and select (ArrowUp and ArrowDown if vertical). Space selects. / Tab enters the group on the selected item. Left and Right arrows move focus and select (Radix RadioGroup; proposed; not recorded in the catalogue). Space selects the focused item.",
+ "replaces": [
+  "Sort direction toggle, icon only",
+  "Capture mode segment (Full screen / Region)",
+  "segmented control, text-only, default size",
+  "segmented control, small tri-state",
+  "segmented control, surface thumb with icons"
+ ],
+ "platform": "Sort direction same on both. Capture mode is desktop only: web has no screen capture, so the Full screen and Region choice does not exist there. Its hint changes to the region description when Region is selected. / Desktop: all five recorded uses, including Screenshots mode on settings-capture. Web: Screenshots mode is dropped (screen capture; the catalogue records no web equivalent). Theme stays. Whether web offers the same System, Light and Dark options is not recorded.",
+ "open": "(1) Capture mode white pill vs accent selection: kept as the surface tone; the decision allows accent for selection. Confirm whether capture mode should take accent. (2) Role change: the reference records plain button pairs; this uses radiogroup. Confirm. (3) Sort direction while manual: buttons stay visible but disabled; whether the stored direction shows is not recorded. (4) Sort direction measured at 25 wide by 23 high against code h-6.5 w-7; the measured value is used. (5) The Region flow is not recorded. / 1) surfaceThumb selected and track colour not recorded (theme row not measured; screenshot-mode track is an estimate, x 181 to 1153, y 113 to 140). If product wants a neutral thumb, it is a thumb axis (accent or surface). 2) The sm tri-state 'Without' label looks clipped at the right edge of the panel in the screenshot (observed, uncertain). 3) The hint text under Screenshots mode belongs to the caller, not the widget. 4) Rows 28 and 37 differ in hint text and ctx.set; the widget looks the same, so the split is left to the caller. 5) Accent token: see Checkbox open item 3. 6) The tri-state group name for aria-label is not recorded.",
+ "family": "buttons",
+ "families": [
+  "buttons",
+  "choice"
+ ]
+}

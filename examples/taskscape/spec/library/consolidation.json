@@ -1,0 +1,405 @@
+{
+ "merges": [
+  {
+   "into": "Menu",
+   "from": [
+    "ContextMenu"
+   ],
+   "how": "ContextMenu becomes Menu placement=cursor (A calls the same axis pointer; B's value is kept because it cites the Menu entry at widgets.json ~line 3532, so confirm the value name against that entry). Radix ContextMenu serves cursor placement and Radix DropdownMenu serves control placement, as a detail inside Menu. Callers: task row right-click, list tab menu, attachment menu. Both are role=menu. Picking an item closes the menu, which is existing Menu behaviour."
+  },
+  {
+   "into": "Separator",
+   "from": [
+    "MenuSeparator"
+   ],
+   "how": "Same Separator. It gains role=separator when it sits inside a Menu (both proposals agree on role=separator). The Radix root (DropdownMenu.Separator vs ContextMenu.Separator) is supplied by Menu. MenuSeparator's base is the shadcn DropdownMenuSeparator (widgets.json ~line 3977)."
+  },
+  {
+   "into": "Button",
+   "from": [
+    "IconButton"
+   ],
+   "how": "Icon-only form becomes Button size=icon (the icon and shape form). Surface, shape, tone and reveal axes become Button variant or props (B). Do not move pressed or pressedIcon, since aria-pressed belongs to Toggle, nor haspopup or expanded, since aria-haspopup belongs to MenuButton and aria-expanded to DisclosureButton (A). Button's purpose (index.txt line 4) already says it merges IconButton, but IconButton is still listed at index.txt line 26 and in widgets.json, so remove the separate entry."
+  },
+  {
+   "into": "Button",
+   "from": [
+    "DashedButton"
+   ],
+   "how": "variant=dashed (shadcn ships dashed as a variant). Its size and width axes become Button size and width props. The measured 35px and 84px heights are kept as exact size values, not folded to 63px or 28px (A, medium confidence). Index line 15 keeps it apart only for its own job, which is a variant, not a component. Job (add-something action in an empty slot) and role (button) match."
+  },
+  {
+   "into": "Button",
+   "from": [
+    "TextButton"
+   ],
+   "how": "variant=link with no fill at rest (B, index line 75), with tone, size and hover variants. Truncate, mono, block and done become Button props. Conflict: A names this variant=text. B's variant=link is kept because it cites index line 75 precisely; the team should confirm the name. Both are role=button and trigger an action or open something inline."
+  },
+  {
+   "into": "Button",
+   "from": [
+    "TileButton"
+   ],
+   "how": "layout=stacked (icon above label in an equal-size tile). Both proposals agree on the value. Confidence is medium (A) and lower (B), since the index says a stacked layout is not a size of Button, so the team should confirm. As a layout variant the job (entry action) and role (button) are unchanged."
+  },
+  {
+   "into": "Keycap",
+   "from": [
+    "HotkeyControl",
+    "ShortcutRecorder"
+   ],
+   "how": "Keycap's mode axis (idle, recording) covers HotkeyControl's recording state. ShortcutRecorder's reserved list and scope become props. Its reset button becomes Keycap's optional reset prop, rendered beside the keycap, since Keycap's wrapper group already holds an optional reset control. Keycap's base (widgets.json ~line 2992) already composes HotkeyHint in idle. All three are role=button and record a new key combo on activation."
+  },
+  {
+   "into": "Card",
+   "from": [
+    "SettingsGroup"
+   ],
+   "how": "Card's purpose already names settings groups. Add a label prop so the container takes role=group labelled by it (Card's role entry already reads group when labelled). Add a header slot or discard-pending-change action prop for SettingsGroup's discard button. SettingsGroup's state and context axes become Card props, and the result stays a container only. Both are shadcn Card containers."
+  },
+  {
+   "into": "TrafficLight",
+   "from": [
+    "CaptionButton"
+   ],
+   "how": "Add a chrome axis: macOS disc vs Windows or Linux caption button (46px full title-bar height). CaptionButton's kind (minimise, maximise or restore, close) folds into TrafficLight's kind. Both are role=button window controls, and CaptionButton's note calls it the non-macOS counterpart of TrafficLight. WindowControls stays a separate group widget. The survivor name is macOS-branded, so a neutral name such as WindowControlButton is advisable (A). CaptionButton is code-derived with no recorded instance (B), so its look and states are uncertain. B's alternative of folding both into WindowControls is rejected (see keepApart)."
+  },
+  {
+   "into": "Input",
+   "from": [
+    "TitleField"
+   ],
+   "how": "Add a multiline variant: a textarea that grows from one line (21px) to two (42px) with aria-multiline. The 600 18px display typography becomes a size or font variant. Both are role=textbox, and both commit a trimmed value on Enter or blur. Medium confidence (A): Input is defined as single-line, so growth is a new axis on Input."
+  },
+  {
+   "into": "SettingRow",
+   "from": [
+    "RefineRow"
+   ],
+   "how": "RefineRow becomes a SettingRow whose control slot holds a size-sm Segmented, which SettingRow's entry already lists in its slot. Add a leading icon slot and an inline layout. Both are role=group labelled by their label. Medium confidence (A): filter predicates and settings are different domains, but the job (a label plus a control in a panel) is the same."
+  },
+  {
+   "into": "Text",
+   "from": [
+    "RelativeTime"
+   ],
+   "how": "Text with as=time, a dateTime prop (the machine-readable value is kept) and the existing tooltip prop. The folded widget's role stays time, since RelativeTime is already a time element with implicit role time, so the role is not changed. A rejected this on the assumption that Text would become role none, which this variant does not do. Index line 50 says B folds it to Text with tooltip. The claim that Text already wraps itself in a Tooltip when the tooltip prop is set is B's and is unverified."
+  },
+  {
+   "into": "Badge",
+   "from": [
+    "Indicator"
+   ],
+   "how": "Badge shape=dot or bar with no text. Both are non-interactive marks with shape and tone axes (index lines 3 and 27), and both are role none. Lower confidence (B): Indicator's bar marks the active draft or inspector and is not a count pill, so the team should decide whether the bar stays a decorative mark. Its separation from DropIndicator still holds."
+  }
+ ],
+ "keepApart": [
+  {
+   "names": [
+    "TaskRow",
+    "TaskTreeRow"
+   ],
+   "why": "Both proposals agree. TaskRow is option in a listbox. TaskTreeRow is treeitem in a tree (aria-level, aria-expanded). Behaviour differs: tree rows use the Option or Alt round-check switch to done, Shift and platform-modifier multi-select, drag to nest, double-click to toggle done, and right-click ContextMenu."
+  },
+  {
+   "names": [
+    "TaskTreeRow",
+    "SubtaskRow"
+   ],
+   "why": "B only, consistent with A. SubtaskRow is listitem with a nested list, a square checkbox that toggles done, a separate title button, a compact 28px row, and recursion per indent level. TaskTreeRow is treeitem with a round check, and the whole row selects."
+  },
+  {
+   "names": [
+    "SubtaskRow",
+    "TaskRow"
+   ],
+   "why": "A only. SubtaskRow is role=listitem with a square checkbox and a separate title button in a compact 28px row. TaskRow is role=option with a round check. Role and behaviour both differ."
+  },
+  {
+   "names": [
+    "ListRow",
+    "TaskRow"
+   ],
+   "why": "A and B both keep these apart. ListRow is listitem (menuitemradio when hosted in a menu) with a selection check and hover-revealed trailing IconButtons. TaskRow is option in a listbox. Rejected B merge of Row and TaskRow into ListRow: it changes TaskRow's role from option to listitem and drops its listbox and round-check behaviour."
+  },
+  {
+   "names": [
+    "Row",
+    "ListRow",
+    "TaskRow",
+    "SubtaskRow"
+   ],
+   "why": "Row is a layout band (selected, hover and multi-select background) with role none, because the parent list owns the role. It is a shell that rows sit inside. Rejected B merge of Row into ListRow: it would give the shell the listitem role and break containment."
+  },
+  {
+   "names": [
+    "Text",
+    "Heading"
+   ],
+   "why": "Heading carries role=heading (level from as) and the accessible name for sheet and dialog headlines. Text is role none, and its own entry says headings use Heading or SectionHeader. Giving Text an as=h1 to h3 would change its role, so the fold is not made. A and B agree. B's later option (Text as=h1 to h3) is excluded by the same role rule."
+  },
+  {
+   "names": [
+    "Heading",
+    "SectionHeader"
+   ],
+   "why": "Both are role=heading, but the jobs differ. Heading is the display-family window, sheet and filter-panel title. SectionHeader is an 11px uppercase eyebrow with optional rule, trailing count or add buttons, and a restore control with a changed dot. B's lower-confidence size=eyebrow fold is not adopted, because the rule and restore parts are structure."
+  },
+  {
+   "names": [
+    "Text",
+    "CharacterCounter"
+   ],
+   "why": "Rejected B merge of CharacterCounter into Text. CharacterCounter is role none and becomes role=status (a live region) when its threshold is crossed, with an automatic danger tone at nearRatio. A Text tone prop would not carry the status role or the automatic switch, so the fold changes ARIA behaviour."
+  },
+  {
+   "names": [
+    "Badge",
+    "Text"
+   ],
+   "why": "Close call, kept apart by both. Badge is a pill container with tone, shape, size and icon axes, role none. Text is the typography primitive. The pill is a chip container with its own tone semantics."
+  },
+  {
+   "names": [
+    "Text",
+    "MatchHighlight"
+   ],
+   "why": "B only. MatchHighlight wraps search-query matches inside a text run, and Text excludes search highlights. It is a separate job. B notes a highlight prop is possible, but that is not adopted."
+  },
+  {
+   "names": [
+    "Button",
+    "ConfirmButton"
+   ],
+   "why": "Both agree. ConfirmButton requires a second press before it acts. That is a behaviour difference, not a Button variant."
+  },
+  {
+   "names": [
+    "Button",
+    "DialogButton"
+   ],
+   "why": "Both agree. DialogButton carries dialog keyboard roles (accept on Enter, cancel on Escape) and maps to AlertDialog Action and Cancel. Behaviour differs."
+  },
+  {
+   "names": [
+    "Button",
+    "DisclosureButton"
+   ],
+   "why": "Both agree. DisclosureButton is a button with aria-expanded that rotates to expand or collapse a parent row. It is a disclosure with its own ARIA state."
+  },
+  {
+   "names": [
+    "Button",
+    "MenuButton"
+   ],
+   "why": "Both agree. MenuButton opens a dropdown menu (aria-haspopup, Radix DropdownMenu.Trigger). Plain Button has no popup role."
+  },
+  {
+   "names": [
+    "Toggle",
+    "Button",
+    "Switch",
+    "Checkbox"
+   ],
+   "why": "Both agree. Toggle owns aria-pressed. Switch is role=switch for on/off settings applied at once. Checkbox is role=checkbox with aria-checked and done or select intents. Button has no pressed state."
+  },
+  {
+   "names": [
+    "SegmentedControl",
+    "Toggle",
+    "Select"
+   ],
+   "why": "B only, consistent with A. SegmentedControl is a radiogroup styled as ToggleGroup segments. Toggle is aria-pressed. Select is a listbox trigger. Three different ARIA roles."
+  },
+  {
+   "names": [
+    "ListTab",
+    "ListTabLabel",
+    "SidebarTab"
+   ],
+   "why": "All are role=tab, but the behaviour differs. ListTab has hover, drop-target and drag feedback, inline rename and a delete button. ListTabLabel is a label with an optional close x that keeps the list open on multi-inspector. SidebarTab is a vertical tablist tab with icon, dimming when a search has no matches, and a match badge. Rejected B merge of ListTabLabel and SidebarTab into ListTab: the fold does not carry ListTabLabel's keep-open close behaviour, and vertical SidebarTab would change aria-orientation and the search dimming. ListTab's purpose names this split."
+  },
+  {
+   "names": [
+    "Dialog",
+    "Overlay",
+    "Lightbox"
+   ],
+   "why": "Layering, not duplicates. Overlay is the single Radix Dialog root and layer shell (portal, scrim, focus trap, Escape). Dialog is the modal card. Lightbox is a modal media viewer with a stage. All are role=dialog, but the jobs differ. Rejected B merge of Lightbox into Dialog: a stage is not card anatomy, so the badge, headline and action-row slots would have to become optional, and viewer behaviour is not carried."
+  },
+  {
+   "names": [
+    "Scrim",
+    "Overlay"
+   ],
+   "why": "Rejected B merge of Scrim into Overlay. Scrim is presentational (role none) and is also used without a modal, as the click-catcher under a context menu. Overlay is role=dialog with aria-modal and a focus trap, so folding would give the catcher the dialog role and trap. Scrim stays a primitive that Overlay, Menu and Lightbox consume."
+  },
+  {
+   "names": [
+    "Popover",
+    "CommandPalette",
+    "Menu"
+   ],
+   "why": "Both agree. Popover is a listbox at the caret where focus stays in the editor. CommandPalette is a listbox with its own search input that keeps focus. Menu is role=menu with the menu focus model. Roles and focus behaviour differ."
+  },
+  {
+   "names": [
+    "CommandList",
+    "CommandPalette",
+    "CommandInput"
+   ],
+   "why": "CommandList is the scrolling listbox body with group headings that keeps the active row in view. CommandPalette is the panel holding the input and the list. CommandInput is a combobox that drives the palette listbox. Parent and child, not duplicates. Rejected B merge of CommandInput and CommandList into CommandPalette: it would drop the combobox role of CommandInput."
+  },
+  {
+   "names": [
+    "ComboboxItem",
+    "MenuItem"
+   ],
+   "why": "Both agree. ComboboxItem is role=option while focus stays in a text field. MenuItem is role=menuitem under the menu focus model. Roles and focus behaviour differ."
+  },
+  {
+   "names": [
+    "Input",
+    "SearchField",
+    "CommandInput",
+    "NumberField",
+    "RichTextEditor"
+   ],
+   "why": "Different roles. SearchField is searchbox with match stepping and clear. CommandInput is combobox that drives the palette listbox. NumberField is spinbutton with min and max clamping on every change. RichTextEditor is a multiline textbox with toolbar and mention and attachment behaviour. Input stays the bare textbox atom. TitleField is folded into Input by A's multiline variant, but RichTextEditor stays apart."
+  },
+  {
+   "names": [
+    "InputGroup",
+    "Input"
+   ],
+   "why": "A only. InputGroup is the chrome (wrapper role none), and Input is the bare atom that the host wraps. They are composed, not duplicated."
+  },
+  {
+   "names": [
+    "InputGroup",
+    "SearchField"
+   ],
+   "why": "Rejected B merge of SearchField into an InputGroup search variant. SearchField is searchbox (the role sits on the inner input) with match stepping and clear. InputGroup is role-none chrome. Folding would move searchbox behaviour onto a role-none wrapper. InputGroup stays the search well."
+  },
+  {
+   "names": [
+    "Resizer",
+    "Separator"
+   ],
+   "why": "Both agree. Resizer is a focusable separator with aria-valuenow that drags to set a ratio or width. Separator is a static hairline (role none, or separator when it divides regions). Index line 51 says the 1px rules in the draft and multi-inspector shots are Resizer with reset none. B argues those rules should be Separator. Designers should confirm, and Resizer stays drag-only until then."
+  },
+  {
+   "names": [
+    "DropIndicator",
+    "Badge"
+   ],
+   "why": "Indicator's active-state dot or bar is folded into Badge (see merges). DropIndicator is a transient drag-over insertion marker shown only during a valid drop, so it does not join Badge. Both proposals keep it apart from Indicator, and that separation holds."
+  },
+  {
+   "names": [
+    "DropIndicator",
+    "Separator"
+   ],
+   "why": "B only. DropIndicator is a transient drag-over insertion line with a dot, shown only while a drop target is valid. Separator is a static hairline."
+  },
+  {
+   "names": [
+    "StatusIndicator",
+    "Icon"
+   ],
+   "why": "Rejected B merge of StatusIndicator into Icon. StatusIndicator is a 32px cell with a conditional render (shown only while a status is active, reduced motion) and a tooltip around a 20px glyph. Icon's reveal axis and tooltip prop do not carry the conditional-render and cell behaviour exactly, and B rates its own confidence as lower. Note: A's claim that B folds only the glyph is inaccurate, since B's how covers the cell and tooltip too."
+  },
+  {
+   "names": [
+    "Footer",
+    "PaneFooter"
+   ],
+   "why": "Rejected B merge of PaneFooter into Footer as variant=pane. Footer is the dialog action row (Cancel and accept). PaneFooter is the pane status row with sort, filter, done count and percentage. B says Footer's exclusion list (stats footer, bulk bar, trash strip, capture footer) does not name PaneFooter, but the stats footer is PaneFooter, so the exclusion applies. The jobs differ."
+  },
+  {
+   "names": [
+    "AttachmentTile",
+    "TileButton"
+   ],
+   "why": "Both are role=button, but AttachmentTile opens an existing attachment and is draggable into a note. TileButton is an entry action in an empty attachments box. The jobs differ. Keeping them apart does not conflict with folding TileButton into Button."
+  },
+  {
+   "names": [
+    "WindowControls",
+    "TrafficLight"
+   ],
+   "why": "WindowControls is a role=group cluster that reveals glyphs on group hover. TrafficLight is one role=button control. Rejected B merge of TrafficLight and CaptionButton into WindowControls: it would change single button controls into a group role, and it conflicts with A's merge of CaptionButton into TrafficLight. Only CaptionButton folds into TrafficLight."
+  },
+  {
+   "names": [
+    "Keycap",
+    "HotkeyHint"
+   ],
+   "why": "Both agree. Keycap is role=button and interactive. HotkeyHint is display-only (role none, aria-hidden glyphs with visually hidden text). Keycap composes HotkeyHint inside it."
+  },
+  {
+   "names": [
+    "Toast",
+    "Dialog"
+   ],
+   "why": "B only. Toast is a non-blocking notice with an optional Undo action and is a live status region, not a modal dialog."
+  },
+  {
+   "names": [
+    "Icon",
+    "Spinner"
+   ],
+   "why": "B only. Icon is a Material Symbols glyph. Spinner is an indeterminate loading indicator. Different jobs."
+  },
+  {
+   "names": [
+    "ProgressBar",
+    "Spinner"
+   ],
+   "why": "B only. ProgressBar is determinate, showing a done ratio. Spinner is indeterminate. Different semantics."
+  },
+  {
+   "names": [
+    "AttachmentPreview",
+    "AttachmentTile"
+   ],
+   "why": "B only. AttachmentPreview is a media view inside the lightbox. AttachmentTile is a click and drag grid tile. Different interaction and layout."
+  },
+  {
+   "names": [
+    "MentionChip",
+    "Badge"
+   ],
+   "why": "B only. MentionChip is an atom inside the editor body that cannot be typed into and deletes as one unit. Badge is a read-only label."
+  },
+  {
+   "names": [
+    "Toolbar",
+    "Stack"
+   ],
+   "why": "B only. Toolbar is a role=toolbar action group. Stack is a plain flex wrapper with no role. Different roles."
+  },
+  {
+   "names": [
+    "TabList",
+    "TabPanel"
+   ],
+   "why": "B only. TabList is the tablist. TabPanel is the tab panel region. Different ARIA roles."
+  },
+  {
+   "names": [
+    "PaneGroup",
+    "Pane",
+    "Resizer"
+   ],
+   "why": "B only. Group, region and splitter are parts of the shadcn Resizable family. They can ship as compound parts of one export, but they are not variants of one component."
+  },
+  {
+   "names": [
+    "SettingRow",
+    "ListRow"
+   ],
+   "why": "B only. SettingRow is a settings line (title, description, control slot, footnote, read-only value) with no list selection. ListRow is a listitem. SettingRow keeps RefineRow's fold from A."
+  }
+ ]
+}

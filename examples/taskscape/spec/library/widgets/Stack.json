@@ -1,0 +1,122 @@
+{
+ "name": "Stack",
+ "purpose": "Plain flex wrapper with no fill of its own. Groups the inspector body, capture bar rows and drag strips.",
+ "base": "none (div with flex)",
+ "variants": [
+  {
+   "axis": "direction",
+   "values": [
+    {
+     "value": "row",
+     "when": "Horizontal flex: capture title row and footer row."
+    },
+    {
+     "value": "column",
+     "when": "Vertical flex: inspector body root and the lightbox stage."
+    }
+   ],
+   "default": "row"
+  },
+  {
+   "axis": "justify",
+   "values": [
+    {
+     "value": "start",
+     "when": "Default start alignment."
+    },
+    {
+     "value": "center",
+     "when": "Centred main axis (B)."
+    },
+    {
+     "value": "end",
+     "when": "End alignment (B)."
+    },
+    {
+     "value": "between",
+     "when": "Capture bar footer row (justify-between, gap-2, px-3, py-2)."
+    }
+   ],
+   "default": "start"
+  },
+  {
+   "axis": "grow",
+   "values": [
+    {
+     "value": "none",
+     "when": "Fixed size."
+    },
+    {
+     "value": "fill",
+     "when": "flex-1 min-w-0 for the task area; min-h-0 added for column bodies. Replaces B's grow boolean."
+    }
+   ],
+   "default": "none"
+  }
+ ],
+ "props": [
+  {
+   "name": "direction",
+   "type": "'row' | 'column'",
+   "description": "Flex direction."
+  },
+  {
+   "name": "justify",
+   "type": "'start' | 'center' | 'end' | 'between'",
+   "description": "Main-axis distribution."
+  },
+  {
+   "name": "align",
+   "type": "'start' | 'center' | 'end' | 'stretch'",
+   "description": "Cross-axis alignment (B)."
+  },
+  {
+   "name": "grow",
+   "type": "'none' | 'fill'",
+   "description": "flex-1 behaviour."
+  },
+  {
+   "name": "gap",
+   "type": "'none' | 'space-3' | 'space-4' | 'space-5' | 'space-6'",
+   "description": "Token gap between children."
+  },
+  {
+   "name": "dragRegion",
+   "type": "boolean",
+   "description": "Desktop only: marks the element as a window drag region (data-tauri-drag-region). A treats this as a prop because it is behaviour, not a look; B's drag axis is folded here."
+  },
+  {
+   "name": "motion",
+   "type": "'none' | 'rise'",
+   "description": "Entrance animation (animate-rise) for the inspector body."
+  },
+  {
+   "name": "asChild",
+   "type": "boolean",
+   "description": "Render onto the child element (B)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Rows, controls or body content."
+  }
+ ],
+ "states": [
+  "default",
+  "capture title row (dragRegion, desktop)"
+ ],
+ "role": "none",
+ "keyboard": "None.",
+ "replaces": [
+  "layout wrapper, no fill",
+  "inspector body root",
+  "capture bar title row",
+  "capture bar footer row"
+ ],
+ "platform": "Same. dragRegion is desktop only; on web the same element is a spacer. The capture rows are desktop only.",
+ "open": "animate-rise (motion) needs a motion token not defined in the catalogue. Gap and padding values are token names with no px in the source; resolve when mapping tokens. Not Stack (listed as notWidgets or other widgets): tab strip drag filler, search options wrapper, toolbar group wrapper (Toolbar), lightbox stage and lightbox media wrapper (Lightbox). Capture footer keeps its px-3 py-2 padding here rather than Footer row, because its padding differs (B folded it into Footer). Capture footer drag: B's Footer drag claim conflicts with A (only the title row drags); unverified, so dragRegion stays on the title row.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

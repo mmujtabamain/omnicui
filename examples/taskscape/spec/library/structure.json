@@ -1,0 +1,2814 @@
+{
+ "widgets": [
+  {
+   "name": "WindowFrame",
+   "purpose": "Root element of one window. Titled is the full app window (main and settings) with a TitleBar under it. Frameless is the borderless quick-add capture card, desktop only. Fills its window and holds the title bar, body and overlays.",
+   "base": "none",
+   "variants": [
+    {
+     "axis": "chrome",
+     "values": [
+      {
+       "value": "titled",
+       "when": "h-screen w-screen, flex column, bg-surface-1, text-content-1, overflow hidden. Used by the main and settings windows. Window size (1180x760 default, 820x640 narrow, Settings 1180x760 at 0,0) is window configuration, not a variant."
+      },
+      {
+       "value": "frameless",
+       "when": "rounded-panel, 1px border, w-screen, no TitleBar, light surface (dark grey in dark theme). Used only by the capture bar (desktop only)."
+      }
+     ],
+     "default": "titled"
+    }
+   ],
+   "props": [
+    {
+     "name": "chrome",
+     "type": "'titled' | 'frameless'",
+     "description": "Selects window chrome."
+    },
+    {
+     "name": "onKeyDown",
+     "type": "KeyboardEventHandler<HTMLDivElement>",
+     "description": "Frameless only. Handles Enter, Escape and Tab for the whole capture bar."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Titled: TitleBar and body row (PaneGroup) with overlays. Frameless: the capture bar rows."
+    }
+   ],
+   "states": [
+    "default",
+    "narrow-window (820x640, main)",
+    "light theme",
+    "dark theme"
+   ],
+   "role": "none (document root; each desktop window is its own document)",
+   "keyboard": "Frameless: root onKeyDown handles Enter, Escape and Tab for the whole bar. Titled: none.",
+   "replaces": [
+    "main window root",
+    "settings window frame",
+    "capture bar card"
+   ],
+   "platform": "Desktop: each window is a real OS window; main and settings are native windows; capture is a separate frameless window. Web: no window chrome from the app; main is the app root page; Settings is a route, not a window; no capture bar.",
+   "open": "Web presentation of Settings (route or dialog) is undecided. Capture bar is desktop-only and drops out of the web build. Merge: A's kind main and kind settings collapse into titled (B): both render the same frame (surface-1, full window); Settings identity sits in its content. A's name Window is dropped for WindowFrame. A's settings frame has no recorded fill, so surface-1 is assumed for it (confirm).",
+   "family": "structure"
+  },
+  {
+   "name": "TitleBar",
+   "purpose": "Header strip at the top of a window or of a pane. Window scope is the draggable window chrome on desktop and can hold WindowControls and the list tabs or project switcher. Pane scope is an in-pane header that does not drag.",
+   "base": "none (custom; composes TabList and WindowControls)",
+   "variants": [
+    {
+     "axis": "scope",
+     "values": [
+      {
+       "value": "window",
+       "when": "h-13 (catalogue), items-stretch, border-b edge-2, bg surface-1. Measured 1180x46 (820x46 narrow). Drag region on desktop. Main and settings windows. The settings-about bottom hairline is this standard border (folded)."
+      },
+      {
+       "value": "pane",
+       "when": "In-pane header (Trash). Not draggable. Border edge-1 per A (measured: 46px in the tree, 44px band in the shot). B folded this to edge-2; A kept, see open."
+      }
+     ],
+     "default": "window"
+    },
+    {
+     "axis": "controls",
+     "values": [
+      {
+       "value": "leading",
+       "when": "WindowControls at the leading edge (macOS style): main, settings and trash on desktop."
+      },
+      {
+       "value": "none",
+       "when": "No window or pane controls. Web build, where the browser provides the chrome."
+      }
+     ],
+     "default": "none"
+    }
+   ],
+   "props": [
+    {
+     "name": "scope",
+     "type": "'window' | 'pane'",
+     "description": "Sets border token, height and drag region."
+    },
+    {
+     "name": "controls",
+     "type": "'leading' | 'none'",
+     "description": "Places controlsSlot at the leading edge."
+    },
+    {
+     "name": "controlsSlot",
+     "type": "ReactNode",
+     "description": "WindowControls, or a close TrafficLight for the trash pane."
+    },
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Title text (for example Settings, Trash)."
+    },
+    {
+     "name": "titleAs",
+     "type": "'div' | 'h1' | 'h2'",
+     "description": "Settings uses h1."
+    },
+    {
+     "name": "trailing",
+     "type": "ReactNode",
+     "description": "Optional trailing slot (settings-general discard button). Not recorded as present in A, so a prop and not an axis."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "ListTabs and Toolbar (window scope), project switcher, or the pane title content. Interactive children carry data-no-drag."
+    }
+   ],
+   "states": [
+    "default",
+    "window-focused (controls lit)",
+    "window-blurred (controls grey)",
+    "project-menu-open",
+    "narrow (820 wide)",
+    "scrolled",
+    "recording"
+   ],
+   "role": "banner when scope is window and top-level; none when scope is pane",
+   "keyboard": "The bar is not focusable. Window scope: the drag region is pointer only; double-click on a data-tauri-drag-region target calls getCurrentWindow().toggleMaximize() (TitleBar.tsx:43-46). Children keep their own keys.",
+   "replaces": [
+    "main window title bar",
+    "settings window title bar",
+    "trash pane title bar"
+   ],
+   "platform": "Desktop: drag region, double-click maximise and leading window controls on macOS; Windows caption placement is open. Web: no drag region and no window controls; the same bar is the app header with the project switcher and list tabs.",
+   "open": "Height: catalogue h-13 is measured 46px. At 1rem = 14px, h-13 is 45.5px (rounds to 46), but h-11 (command input, 44px) and h-10 (capture title row, 40px) match 16px rem, so the rem base must be resolved before tokens are written (same conflict for CommandInput and InputGroup bar). Windows caption-control placement is open (no trailing rule in the catalogue). Pane border conflict: A edge-1, B edge-2; kept A's edge-1 because it is measured and visible; designer to confirm. Default controls: A none, B leading; kept none.",
+   "family": "structure"
+  },
+  {
+   "name": "WindowControls",
+   "purpose": "Cluster of three TrafficLight discs in a macOS-style group, with glyphs shown on group hover. Used in the window title bar, the settings windows and the trash pane close light.",
+   "base": "none (custom)",
+   "variants": [
+    {
+     "axis": "live",
+     "values": [
+      {
+       "value": "all",
+       "when": "Close, minimise and full screen all act. Main title bar, multi-inspector, filter panel, draft inspector."
+      },
+      {
+       "value": "close",
+       "when": "Only close acts; minimise and full screen are inert. Settings windows and the trash pane close light (Close Trash)."
+      }
+     ],
+     "default": "all"
+    }
+   ],
+   "props": [
+    {
+     "name": "live",
+     "type": "'all' | 'close'",
+     "description": "Which discs are live."
+    },
+    {
+     "name": "focused",
+     "type": "boolean",
+     "description": "Window focus (useWindowFocused); lit when true, grey when false. Passed to each disc."
+    },
+    {
+     "name": "onClose",
+     "type": "() => void",
+     "description": "Closes the window, or the pane for Trash (setTrashOpen(false)). The caller sets the target."
+    },
+    {
+     "name": "onMinimize",
+     "type": "() => void",
+     "description": "Minimise action; inert when live is close."
+    },
+    {
+     "name": "onFullScreen",
+     "type": "() => void",
+     "description": "Full-screen action; inert when live is close. B's spelling onFullscreen is the same prop."
+    }
+   ],
+   "states": [
+    "focused (discs lit)",
+    "blurred (discs grey)",
+    "hover (glyphs shown on all discs)",
+    "idle"
+   ],
+   "role": "group, aria-label 'Window controls' (proposed)",
+   "keyboard": "Not in the reference. Proposed: each live disc is a focusable button with its own label (Close, Minimize, Full Screen). Tab moves between live discs; Enter or Space activates; inert discs are skipped. No arrow navigation.",
+   "replaces": [
+    "traffic-light cluster, all lights live",
+    "pane close light, Close Trash",
+    "traffic-light cluster, settings (close live, others inert)"
+   ],
+   "platform": "Desktop only, macOS look. Web has no native window to close. Windows and Linux need their own caption controls; the catalogue has none.",
+   "open": "Pane close: the Trash close light closes the pane, not the window. Same look; the caller sets onClose. B asks whether pane close should be WindowControls on desktop and an IconButton on web; decide one widget for both. Trash appears in both the all-live and the close-only rows in the catalogue (B); A records close-only. Settings cluster: source records disabled=[2] for the group, but the Light rows mark minimize and fullscreen inert (uncertain). Draft Light onClick handlers and settings-general and settings-shortcuts Light onClick targets were not read.",
+   "family": "structure"
+  },
+  {
+   "name": "TrafficLight",
+   "purpose": "One disc of a WindowControls group: close, minimise or full screen, live or inert.",
+   "base": "none (custom)",
+   "variants": [
+    {
+     "axis": "action",
+     "values": [
+      {
+       "value": "close",
+       "when": "Close disc. The only live disc in the settings windows. Red fill in the shot."
+      },
+      {
+       "value": "minimize",
+       "when": "Minimise disc. Inert in the settings windows. Colour not recorded."
+      },
+      {
+       "value": "fullscreen",
+       "when": "Full-screen disc. Inert in the settings windows. Colour not recorded."
+      }
+     ],
+     "default": "close"
+    },
+    {
+     "axis": "live",
+     "values": [
+      {
+       "value": "live",
+       "when": "Clickable; lit or grey with window focus."
+      },
+      {
+       "value": "inert",
+       "when": "Always grey, not focusable, no effect (built with minimizable(false) and maximizable(false) in settings-general)."
+      }
+     ],
+     "default": "live"
+    }
+   ],
+   "props": [
+    {
+     "name": "action",
+     "type": "'close' | 'minimize' | 'fullscreen'",
+     "description": "Which window or pane action it carries."
+    },
+    {
+     "name": "inert",
+     "type": "boolean",
+     "description": "Shows the disc grey and disables it (B's disabled folded here)."
+    },
+    {
+     "name": "focused",
+     "type": "boolean",
+     "description": "Lit or grey with window focus."
+    },
+    {
+     "name": "showGlyph",
+     "type": "boolean",
+     "description": "Glyph shown on group hover (set by WindowControls)."
+    },
+    {
+     "name": "onPress",
+     "type": "() => void",
+     "description": "Runs the action when live."
+    }
+   ],
+   "states": [
+    "lit (window focused)",
+    "grey (window blurred)",
+    "glyph shown (group hover)",
+    "inert (always grey, disabled)",
+    "focus-visible"
+   ],
+   "role": "button (proposed) with aria-label Close, Minimize or Full Screen; inert uses aria-disabled and is not focusable",
+   "keyboard": "Proposed: Enter or Space activates a live disc. Inert discs are skipped by Tab. A tab stop for close is recommended (native macOS lights are not tab stops; the catalogue does not specify).",
+   "replaces": [
+    "traffic-light disc, close, live (settings)",
+    "traffic-light disc, inert (settings)"
+   ],
+   "platform": "Desktop only. Web has no traffic lights (browser chrome). Windows caption buttons are an open choice and not this disc style.",
+   "open": "The red close fill is a fixed traffic-light colour, not a token. The danger token is reserved for destructive actions, so close must not use it; no traffic-light token is recorded (uncertain). A's live/inert axis and B's disabled prop are one inert flag; B's focus axis is A's focused prop. The settings disabled=[2] conflict is recorded under WindowControls.",
+   "family": "structure"
+  },
+  {
+   "name": "PaneGroup",
+   "purpose": "Resizable row that lays out the window body: the primary task pane, an optional split pane and an optional right aside, separated by Resizers. Fills the height below the TitleBar (min-h-0 flex-1).",
+   "base": "shadcn Resizable group (react-resizable-panels; not Radix)",
+   "variants": [
+    {
+     "axis": "direction",
+     "values": [
+      {
+       "value": "row",
+       "when": "Body row. Used by the main window."
+      },
+      {
+       "value": "column",
+       "when": "Stacked panes. Not used in the catalogue; kept for shadcn parity."
+      }
+     ],
+     "default": "row"
+    }
+   ],
+   "props": [
+    {
+     "name": "direction",
+     "type": "'row' | 'column'",
+     "description": "Set by variant."
+    },
+    {
+     "name": "autoSaveId",
+     "type": "string",
+     "description": "Optional key to persist the split ratio per window (undecided)."
+    },
+    {
+     "name": "onLayout",
+     "type": "(sizes: number[]) => void",
+     "description": "Reports pane sizes after drag or reset."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Pane and Resizer elements."
+    }
+   ],
+   "states": [
+    "default",
+    "split",
+    "aside hidden (preview-hidden)",
+    "no-lists",
+    "narrow-window"
+   ],
+   "role": "none",
+   "keyboard": "None on the group; panes and handles own their keys.",
+   "replaces": [],
+   "platform": "Same on both.",
+   "open": "Replaces the body-row use of A's Stack (grow fill). B's 'layout wrapper, no fill' replace is a duplicate of A's Stack replace and is kept on Stack, so this widget replaces none. Persistence of the split ratio is undecided. Unit mismatch: task panes size in percent of the group, the aside clamps in px (280 to 420). One rule is needed for both.",
+   "family": "structure"
+  },
+  {
+   "name": "Pane",
+   "purpose": "One region of a PaneGroup: the primary or split task pane, the right aside host for Preview, Trash or Filter, or a side column such as the Settings sidebar. Width comes from the group ratio (task panes) or a pixel clamp (aside).",
+   "base": "shadcn Resizable panel (ResizablePanel)",
+   "variants": [
+    {
+     "axis": "slot",
+     "values": [
+      {
+       "value": "primary",
+       "when": "Left task pane. min-w-0 flex; 100% of the group unsplit (860 of 860), ratio times 100% when split (430 of 860)."
+      },
+      {
+       "value": "split",
+       "when": "Second task pane. border-l edge-2, flex-1, min-w-0. 429x715 at 431,46."
+      },
+      {
+       "value": "aside",
+       "when": "Right aside host, shrink-0, width from previewWidth clamped 280 to 420 (319 in recorded states). Hidden when previewOpen, trashOpen and filterOpen are all false (App.tsx:108). A merged the aside host and the side pane surface into one slot."
+      }
+     ],
+     "default": "primary"
+    },
+    {
+     "axis": "edge",
+     "values": [
+      {
+       "value": "none",
+       "when": "No hairline. Primary task pane and task area."
+      },
+      {
+       "value": "leading",
+       "when": "1px border-l edge-2. Split pane and right aside."
+      },
+      {
+       "value": "trailing",
+       "when": "1px border-r edge-2. Settings sidebar."
+      }
+     ],
+     "default": "none"
+    },
+    {
+     "axis": "fill",
+     "values": [
+      {
+       "value": "none",
+       "when": "Transparent; takes the window colour. Task panes."
+      },
+      {
+       "value": "surface",
+       "when": "bg-surface-1, flex column, h-full, overflow hidden. Side pane surface (inspector, trash, filter), the aside, and the Settings sidebar."
+      }
+     ],
+     "default": "none"
+    }
+   ],
+   "props": [
+    {
+     "name": "slot",
+     "type": "'primary' | 'split' | 'aside'",
+     "description": "Position and default look."
+    },
+    {
+     "name": "edge",
+     "type": "'none' | 'leading' | 'trailing'",
+     "description": "Hairline side."
+    },
+    {
+     "name": "fill",
+     "type": "'none' | 'surface'",
+     "description": "Background fill."
+    },
+    {
+     "name": "as",
+     "type": "'div' | 'aside' | 'nav'",
+     "description": "aside gives complementary role; nav gives navigation role (Settings sidebar); div is generic."
+    },
+    {
+     "name": "ratio",
+     "type": "number (0.25 to 0.75)",
+     "description": "Primary and split: share of the task area when split."
+    },
+    {
+     "name": "previewWidth",
+     "type": "number (280 to 420, px)",
+     "description": "Aside width."
+    },
+    {
+     "name": "defaultSize",
+     "type": "number",
+     "description": "Percent of the group: 100 when unsplit, ratio times 100 when split."
+    },
+    {
+     "name": "minSize",
+     "type": "number",
+     "description": "Lower clamp. Split pane 25 percent; aside 280 px."
+    },
+    {
+     "name": "maxSize",
+     "type": "number",
+     "description": "Upper clamp. Split pane 75 percent; aside 420 px."
+    },
+    {
+     "name": "shrink",
+     "type": "boolean",
+     "description": "Aside is shrink-0."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Task list, PreviewPanel, TrashPane or FilterPanel, or the Settings search field and TabList."
+    }
+   ],
+   "states": [
+    "unsplit (100 percent, 860 of 860)",
+    "split (430 of 860)",
+    "preview-hidden (aside not rendered)",
+    "narrow-window",
+    "no-lists",
+    "settings sidebar"
+   ],
+   "role": "primary and split: none; aside: complementary; nav: navigation; div: none",
+   "keyboard": "None. The pane content owns its keys.",
+   "replaces": [
+    "left pane slot, ratio width",
+    "split pane slot, left hairline",
+    "right aside panel host",
+    "side pane surface",
+    "task pane, list column",
+    "settings sidebar column"
+   ],
+   "platform": "Same layout on both. Width is set by pointer drag through Resizer; the reference has no keyboard resize.",
+   "open": "Merged: A's Sidebar (leading, w-44, shrink-0, border-r, bg surface-1) is this widget with edge trailing, fill surface and as nav; the Sidebar widget is dropped as a duplicate. The fixed w-44 width (154px at 14px rem) needs a prop or a defaultSize mapping; unresolved. Settings-shortcuts sidebar fill is an estimate (not in elements.json), folded to surface; box approx [0,46,153,714]. Aside surface colour was not measured (A: side pane look bg-surface-1). Clamps: ratio 0.25 to 0.75 (App.tsx:78-82); previewWidth 280 to 420 px (App.tsx:110-115), which is 20rem to 30rem at 14px. Unit mismatch with percent sizes: see PaneGroup.",
+   "family": "structure"
+  },
+  {
+   "name": "Stack",
+   "purpose": "Plain flex wrapper with no fill of its own. Groups the inspector body, capture bar rows and drag strips.",
+   "base": "none (div with flex)",
+   "variants": [
+    {
+     "axis": "direction",
+     "values": [
+      {
+       "value": "row",
+       "when": "Horizontal flex: capture title row and footer row."
+      },
+      {
+       "value": "column",
+       "when": "Vertical flex: inspector body root and the lightbox stage."
+      }
+     ],
+     "default": "row"
+    },
+    {
+     "axis": "justify",
+     "values": [
+      {
+       "value": "start",
+       "when": "Default start alignment."
+      },
+      {
+       "value": "center",
+       "when": "Centred main axis (B)."
+      },
+      {
+       "value": "end",
+       "when": "End alignment (B)."
+      },
+      {
+       "value": "between",
+       "when": "Capture bar footer row (justify-between, gap-2, px-3, py-2)."
+      }
+     ],
+     "default": "start"
+    },
+    {
+     "axis": "grow",
+     "values": [
+      {
+       "value": "none",
+       "when": "Fixed size."
+      },
+      {
+       "value": "fill",
+       "when": "flex-1 min-w-0 for the task area; min-h-0 added for column bodies. Replaces B's grow boolean."
+      }
+     ],
+     "default": "none"
+    }
+   ],
+   "props": [
+    {
+     "name": "direction",
+     "type": "'row' | 'column'",
+     "description": "Flex direction."
+    },
+    {
+     "name": "justify",
+     "type": "'start' | 'center' | 'end' | 'between'",
+     "description": "Main-axis distribution."
+    },
+    {
+     "name": "align",
+     "type": "'start' | 'center' | 'end' | 'stretch'",
+     "description": "Cross-axis alignment (B)."
+    },
+    {
+     "name": "grow",
+     "type": "'none' | 'fill'",
+     "description": "flex-1 behaviour."
+    },
+    {
+     "name": "gap",
+     "type": "'none' | 'space-3' | 'space-4' | 'space-5' | 'space-6'",
+     "description": "Token gap between children."
+    },
+    {
+     "name": "dragRegion",
+     "type": "boolean",
+     "description": "Desktop only: marks the element as a window drag region (data-tauri-drag-region). A treats this as a prop because it is behaviour, not a look; B's drag axis is folded here."
+    },
+    {
+     "name": "motion",
+     "type": "'none' | 'rise'",
+     "description": "Entrance animation (animate-rise) for the inspector body."
+    },
+    {
+     "name": "asChild",
+     "type": "boolean",
+     "description": "Render onto the child element (B)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Rows, controls or body content."
+    }
+   ],
+   "states": [
+    "default",
+    "capture title row (dragRegion, desktop)"
+   ],
+   "role": "none",
+   "keyboard": "None.",
+   "replaces": [
+    "layout wrapper, no fill",
+    "inspector body root",
+    "capture bar title row",
+    "capture bar footer row"
+   ],
+   "platform": "Same. dragRegion is desktop only; on web the same element is a spacer. The capture rows are desktop only.",
+   "open": "animate-rise (motion) needs a motion token not defined in the catalogue. Gap and padding values are token names with no px in the source; resolve when mapping tokens. Not Stack (listed as notWidgets or other widgets): tab strip drag filler, search options wrapper, toolbar group wrapper (Toolbar), lightbox stage and lightbox media wrapper (Lightbox). Capture footer keeps its px-3 py-2 padding here rather than Footer row, because its padding differs (B folded it into Footer). Capture footer drag: B's Footer drag claim conflicts with A (only the title row drags); unverified, so dragRegion stays on the title row.",
+   "family": "structure"
+  },
+  {
+   "name": "Separator",
+   "purpose": "A 1px hairline that separates content: horizontal rules and vertical separators in toolbars, footers, menus, cards, rows and tab strips, plus the rule that runs from a section label to the pane edge.",
+   "base": "Radix Separator (shadcn Separator)",
+   "variants": [
+    {
+     "axis": "orientation",
+     "values": [
+      {
+       "value": "horizontal",
+       "when": "Full-width rule (menu, footer, card, pane hairlines, capture rule). h-px."
+      },
+      {
+       "value": "vertical",
+       "when": "Separator between buttons or tabs or inline controls. w-px; length from the length axis."
+      }
+     ],
+     "default": "horizontal"
+    },
+    {
+     "axis": "length",
+     "values": [
+      {
+       "value": "xs",
+       "when": "Vertical h-3, 11px. Footer dividers."
+      },
+      {
+       "value": "sm",
+       "when": "Vertical h-4, 14px. Search bar, tab hairline, rich-text and formatting toolbar separators."
+      },
+      {
+       "value": "full",
+       "when": "Vertical h-full, stretches to the parent height (adjacent to the focused tab)."
+      },
+      {
+       "value": "fill",
+       "when": "Vertical my-2 inside the parent (level-2 divider in the empty attachments box)."
+      }
+     ],
+     "default": "sm"
+    },
+    {
+     "axis": "inset",
+     "values": [
+      {
+       "value": "none",
+       "when": "Edge to edge."
+      },
+      {
+       "value": "menu",
+       "when": "mx-5 my-3 inside a menu."
+      },
+      {
+       "value": "row",
+       "when": "Absolute at the row bottom, h-px, left = depth times 24 plus 44 px (task row hairline)."
+      },
+      {
+       "value": "label",
+       "when": "Runs from the end of a section label to the pane edge (section label rule)."
+      }
+     ],
+     "default": "none"
+    },
+    {
+     "axis": "emphasis",
+     "values": [
+      {
+       "value": "default",
+       "when": "edge-1 hairline."
+      },
+      {
+       "value": "adjacent",
+       "when": "edge-2 colour, beside the focused list tab (A's tone strong); length full or fill applies."
+      }
+     ],
+     "default": "default"
+    }
+   ],
+   "props": [
+    {
+     "name": "orientation",
+     "type": "'horizontal' | 'vertical'",
+     "description": "Direction of the rule."
+    },
+    {
+     "name": "length",
+     "type": "'xs' | 'sm' | 'full' | 'fill'",
+     "description": "Vertical length."
+    },
+    {
+     "name": "inset",
+     "type": "'none' | 'menu' | 'row' | 'label'",
+     "description": "Start offset."
+    },
+    {
+     "name": "emphasis",
+     "type": "'default' | 'adjacent'",
+     "description": "Colour token (A's tone)."
+    },
+    {
+     "name": "depth",
+     "type": "number",
+     "description": "Row indent depth for inset row. The pixel form (B's indent) is depth times 24 plus 44."
+    },
+    {
+     "name": "decorative",
+     "type": "boolean",
+     "description": "true (default) gives role none; false gives role separator."
+    }
+   ],
+   "states": [
+    "default",
+    "adjacent (focused neighbour)",
+    "static"
+   ],
+   "role": "none when decorative (default); separator when it divides regions a reader needs (proposed)",
+   "keyboard": "None.",
+   "replaces": [
+    "list tab divider, hairline",
+    "trailing tab divider, end drop zone",
+    "menu divider, inset",
+    "search bar vertical divider, 14px",
+    "task row hairline",
+    "footer vertical divider, 11px",
+    "footer vertical divider, height not measured",
+    "rich-text toolbar separator",
+    "card row hairline",
+    "footer top hairline",
+    "vertical divider, level 2",
+    "capture bar horizontal rule",
+    "formatting toolbar separator",
+    "pane hairline, trash"
+   ],
+   "platform": "Same.",
+   "open": "Merged: A's Divider and B's Separator are one widget; the name Separator is kept (shadcn). Both length full and fill are kept because the stretch and the inset my-2 look different. A's tone and B's emphasis are the same axis. Colour is not recorded for most rows, so they take the default tone. Footer vertical divider height not measured: assumed xs (uncertain). Formatting toolbar separator height not measured: assumed sm (uncertain). The mx-1 on the rich-text separator is set by the toolbar. The drop state of the list tab and trailing tab dividers is DropIndicator target tab. The section label rule (B) is drawn by inset label and is named by SectionHeader.",
+   "family": "structure"
+  },
+  {
+   "name": "DropIndicator",
+   "purpose": "Insertion marker shown while a drag is over a valid drop target: a line with a dot before or after a task row, a line at the list root, or a bar on a tab divider and at the end drop zone.",
+   "base": "none (custom; shadcn has no drag-and-drop indicator)",
+   "variants": [
+    {
+     "axis": "target",
+     "values": [
+      {
+       "value": "row",
+       "when": "Horizontal h-0.5 line with a dot at the left end, placed before (top) or after (bottom) a task row."
+      },
+      {
+       "value": "root",
+       "when": "Same line, shown at the list root while the pointer is over blank space (rootDropOver)."
+      },
+      {
+       "value": "tab",
+       "when": "Vertical bar h-6 w-1 rounded-full, shown in the tab strip on a tab divider or at the trailing end drop zone (B's placement end)."
+      }
+     ],
+     "default": "row"
+    }
+   ],
+   "props": [
+    {
+     "name": "target",
+     "type": "'row' | 'root' | 'tab'",
+     "description": "Where it lands."
+    },
+    {
+     "name": "edge",
+     "type": "'before' | 'after'",
+     "description": "row only."
+    },
+    {
+     "name": "visible",
+     "type": "boolean",
+     "description": "Shown while a drag is over the target."
+    }
+   ],
+   "states": [
+    "hidden",
+    "visible while dragging over target"
+   ],
+   "role": "none (presentational, aria-hidden); the drop result is announced by the target",
+   "keyboard": "None. Drag is pointer only; a keyboard move needs a separate path (open).",
+   "replaces": [
+    "root drop line",
+    "row drop line (before or after)"
+   ],
+   "platform": "Same on web and desktop; drag and drop works in both.",
+   "open": "Colour conflict: both designs use accent for every drop cue (accent-500 and bg-accent-500). The decisions reserve accent blue for primary action and selection, so a drop cue needs its own non-accent token, which the decisions do not define. Root and row lines are count 0 in any recorded tree. The tab target covers the drop state of the list tab divider, hairline and trailing tab divider, end drop zone. B's orientation and placement axes are folded into target and edge (same looks; A's target axis keeps the visible row and tab difference).",
+   "family": "structure"
+  },
+  {
+   "name": "Resizer",
+   "purpose": "Drag handle between two columns. Sets the split ratio or the aside width. A 4px grab strip with a 1px hairline in its centre. The 1px rules in the draft and multi-inspector shots are this widget with reset none.",
+   "base": "shadcn Resizable handle (ResizableHandle; react-resizable-panels; not Radix)",
+   "variants": [
+    {
+     "axis": "reset",
+     "values": [
+      {
+       "value": "double-click",
+       "when": "Split divider. Double-click restores the default split (resetSplitRatio, App.tsx:84)."
+      },
+      {
+       "value": "none",
+       "when": "Drag only: preview edge, draft-inspector and multi-inspector resizers."
+      }
+     ],
+     "default": "none"
+    }
+   ],
+   "props": [
+    {
+     "name": "orientation",
+     "type": "'vertical'",
+     "description": "Column splitter; cursor col-resize."
+    },
+    {
+     "name": "value",
+     "type": "number",
+     "description": "splitRatio (0.25 to 0.75) or previewWidth (280 to 420 px)."
+    },
+    {
+     "name": "min",
+     "type": "number",
+     "description": "Lower clamp."
+    },
+    {
+     "name": "max",
+     "type": "number",
+     "description": "Upper clamp."
+    },
+    {
+     "name": "onResize",
+     "type": "(value: number) => void",
+     "description": "Drag handler."
+    },
+    {
+     "name": "onReset",
+     "type": "() => void",
+     "description": "Required when reset is double-click."
+    }
+   ],
+   "states": [
+    "idle (hairline transparent)",
+    "hover (bg edge-2)",
+    "dragging (bg edge-3)",
+    "focus-visible",
+    "hidden when aside closed"
+   ],
+   "role": "separator, focusable, aria-orientation vertical, aria-valuenow, aria-valuemin, aria-valuemax (proposed; the reference records no role)",
+   "keyboard": "Reference: pointer only. Proposed: Left and Right step the value; Home (and Enter, per A) restores the default on the double-click variant.",
+   "replaces": [
+    "split divider, double-click reset",
+    "preview edge resizer, drag only"
+   ],
+   "platform": "Same pointer behaviour and col-resize cursor on both. Touch drag is not recorded in the reference.",
+   "open": "Name: A's Resizer is kept; B's ResizeHandle is the same job and is dropped as a duplicate name. Clamps: split ratio 0.25 to 0.75 (App.tsx:78-82); preview width 280 to 420 px (App.tsx:110-115). Drag-only resizers in draft-inspector and multi-inspector carry onResize only. No keyboard path in the catalogue (a gap for both designs).",
+   "family": "structure"
+  },
+  {
+   "name": "ScrollArea",
+   "purpose": "Scroll container for the task list and the trash list. The task list is also a drop target. Scroll is native; the widget sets the axis and whether the scrollbar shows.",
+   "base": "Radix ScrollArea (shadcn ScrollArea) when the bar is visible; plain overflow when hidden",
+   "variants": [
+    {
+     "axis": "orientation",
+     "values": [
+      {
+       "value": "vertical",
+       "when": "Task list and trash list body. Every recorded use."
+      },
+      {
+       "value": "horizontal",
+       "when": "Horizontal scroll. Not used by any widget here: the list tab strip is TabList with overflow scroll, which is the same look as A's ScrollArea horizontal hidden."
+      }
+     ],
+     "default": "vertical"
+    },
+    {
+     "axis": "scrollbar",
+     "values": [
+      {
+       "value": "native",
+       "when": "Visible scrollbar."
+      },
+      {
+       "value": "hidden",
+       "when": "Scrollbar hidden; scrolls with wheel and trackpad. Not used by ScrollArea in the catalogue (TabList covers the tab strip); kept for parity."
+      }
+     ],
+     "default": "native"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "base",
+       "when": "No fill. Task list and trash list."
+      },
+      {
+       "value": "raised",
+       "when": "bg-surface-2 with text-content-2. Scroll region on a raised surface, such as the lightbox text preview (AttachmentPreview text kind)."
+      }
+     ],
+     "default": "base"
+    }
+   ],
+   "props": [
+    {
+     "name": "orientation",
+     "type": "'vertical' | 'horizontal'",
+     "description": "Scroll axis."
+    },
+    {
+     "name": "scrollbar",
+     "type": "'native' | 'hidden'",
+     "description": "Scrollbar visibility."
+    },
+    {
+     "name": "tone",
+     "type": "'base' | 'raised'",
+     "description": "Fill token."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Accessible name; makes the region labelled."
+    },
+    {
+     "name": "overscroll",
+     "type": "'contain'",
+     "description": "overscroll-contain, the default."
+    },
+    {
+     "name": "dropTarget",
+     "type": "boolean",
+     "description": "Task list: drop onto blank space moves the task to the list root."
+    },
+    {
+     "name": "onPressBlank",
+     "type": "() => void",
+     "description": "Task list: a press on blank space (not a data-task-id row) clears selection and focus."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Scrolled content."
+    }
+   ],
+   "states": [
+    "default",
+    "scrolling",
+    "scrolls when content overflows",
+    "drop-over (rootDropOver, task list)",
+    "scrolled to bottom (settings shortcuts)"
+   ],
+   "role": "region when labelled; none otherwise. Scrollable regions get tabIndex 0 when they overflow (proposed).",
+   "keyboard": "Native scroll keys when focused: arrows, PageUp, PageDown, Home, End; mouse wheel and trackpad. Drop target: pointer drag only in the catalogue, with edge auto-scroll.",
+   "replaces": [
+    "task list scroll area",
+    "trash list body"
+   ],
+   "platform": "Same on both.",
+   "open": "Dropped duplicates: A's 'list tab strip' is TabList; B's 'settings content pane' is TabPanel; B's 'command palette results list' is CommandList; B's 'lightbox text preview' is AttachmentPreview. Task list scrollbar visibility is not recorded; assumed native. Edge auto-scroll while dragging is the task list's behaviour. Keyboard reorder to the list root has no path in the catalogue.",
+   "family": "structure"
+  },
+  {
+   "name": "Card",
+   "purpose": "Rounded container for grouped content: settings groups, the note card and the attachments empty box.",
+   "base": "shadcn Card",
+   "variants": [
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "base",
+       "when": "No fill (window or pane colour). B's value; the note card if its fill is not confirmed."
+      },
+      {
+       "value": "surface-2",
+       "when": "bg-surface-2. Default fill: settings group card; note card assumed (A). B's raised folded here."
+      },
+      {
+       "value": "surface-3",
+       "when": "Sunken fill: attachments empty box. Kept distinct because the sunken box is visibly different."
+      }
+     ],
+     "default": "surface-2"
+    },
+    {
+     "axis": "border",
+     "values": [
+      {
+       "value": "none",
+       "when": "No border."
+      },
+      {
+       "value": "solid",
+       "when": "1px border-edge-2 (B's edge). Settings group card, note card."
+      },
+      {
+       "value": "dashed",
+       "when": "Dashed border: attachments empty box. Kept (visible; B folded it to solid)."
+      }
+     ],
+     "default": "solid"
+    },
+    {
+     "axis": "radius",
+     "values": [
+      {
+       "value": "panel",
+       "when": "rounded-panel."
+      },
+      {
+       "value": "control",
+       "when": "rounded-control."
+      }
+     ],
+     "default": "panel"
+    }
+   ],
+   "props": [
+    {
+     "name": "tone",
+     "type": "'base' | 'surface-2' | 'surface-3'",
+     "description": "Fill token."
+    },
+    {
+     "name": "border",
+     "type": "'none' | 'solid' | 'dashed'",
+     "description": "Border style."
+    },
+    {
+     "name": "radius",
+     "type": "'panel' | 'control'",
+     "description": "Corner token."
+    },
+    {
+     "name": "divided",
+     "type": "boolean",
+     "description": "Hairline between child rows (divide-y edge-1), used by settings groups."
+    },
+    {
+     "name": "asChild",
+     "type": "boolean",
+     "description": "Render onto the child element (B)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Rows, editor or buttons."
+    }
+   ],
+   "states": [
+    "idle",
+    "focus-within (note card: editor toolbar appears)",
+    "emptied and blurred (note discard, owned by NoteCard)"
+   ],
+   "role": "none (group when labelled)",
+   "keyboard": "None on the container; children own keys.",
+   "replaces": [
+    "note card",
+    "settings group card",
+    "attachments empty box"
+   ],
+   "platform": "Same.",
+   "open": "Note card fill conflict: A assumes surface-2; B says base (colour not in elements.json). Designer to confirm. Note and settings card radius not measured (panel assumed). Attachments empty box is h-20 and holds two buttons split by a level-2 Separator (length fill). The lightbox fallback card is an EmptyState surface card (A), not Card; B listed it here, so the replaces string is kept on EmptyState. The discard-on-empty-blur rule is NoteCard behaviour, not Card.",
+   "family": "structure"
+  },
+  {
+   "name": "InputGroup",
+   "purpose": "Frame around a single input with a leading icon slot: the search well in the task list.",
+   "base": "shadcn InputGroup (input-group addon pattern)",
+   "variants": [
+    {
+     "axis": "shape",
+     "values": [
+      {
+       "value": "well",
+       "when": "Rounded, light grey bordered bar with a leading search icon. Task-list search (approx x 14 to 846, y 56 to 91; visual estimate, not measured)."
+      },
+      {
+       "value": "bar",
+       "when": "Full width, border-b edge-1, short fixed height, leading glyph. The frame CommandInput uses for the palette input row."
+      }
+     ],
+     "default": "well"
+    }
+   ],
+   "props": [
+    {
+     "name": "shape",
+     "type": "'well' | 'bar'",
+     "description": "Set by variant."
+    },
+    {
+     "name": "leading",
+     "type": "ReactNode",
+     "description": "Icon in the leading slot (A's addon leading-icon)."
+    },
+    {
+     "name": "trailing",
+     "type": "ReactNode",
+     "description": "Optional trailing slot."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "The input (from the forms family)."
+    }
+   ],
+   "states": [
+    "default",
+    "focus-within (proposed; not recorded)",
+    "disabled"
+   ],
+   "role": "none on the wrapper; the inner input supplies the role (textbox, searchbox or combobox)",
+   "keyboard": "None on the frame; focus goes to the inner field.",
+   "replaces": [
+    "search input well"
+   ],
+   "platform": "Same.",
+   "open": "Well fill and radius not recorded. Bar height conflicts with the rem decision (see TitleBar). The command palette input row replace is kept on CommandInput, which uses this frame.",
+   "family": "structure"
+  },
+  {
+   "name": "Row",
+   "purpose": "Background and layout of a list row: the selected band across the task list, the hover wash, the multi-select row and the trash row. Row content comes in as children; the subtask composer and the refine row are their own widgets.",
+   "base": "none (custom; shadcn Item-style row)",
+   "variants": [
+    {
+     "axis": "shape",
+     "values": [
+      {
+       "value": "inset",
+       "when": "rounded-field, px-4, gap-5 (multi-select row, trash row)."
+      },
+      {
+       "value": "full-bleed",
+       "when": "No radius, edge to edge across the list (x 0 to 860). Task-list selection band."
+      }
+     ],
+     "default": "inset"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "selection",
+       "when": "bg-selection-1 (selection-1 token); the row is selected."
+      },
+      {
+       "value": "wash",
+       "when": "wash-1 token; the row is hovered. Reveals child controls (Open in multi-select rows)."
+      }
+     ],
+     "default": "selection"
+    },
+    {
+     "axis": "density",
+     "values": [
+      {
+       "value": "md",
+       "when": "h-9 (multi-select rows; measured at a 32px pitch, which fits 14px rem at 31.5px)."
+      },
+      {
+       "value": "sm",
+       "when": "h-8 (refine rows)."
+      }
+     ],
+     "default": "md"
+    }
+   ],
+   "props": [
+    {
+     "name": "shape",
+     "type": "'inset' | 'full-bleed'",
+     "description": "Geometry."
+    },
+    {
+     "name": "tone",
+     "type": "'selection' | 'wash'",
+     "description": "Token."
+    },
+    {
+     "name": "density",
+     "type": "'sm' | 'md'",
+     "description": "Row height."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Selected fill."
+    },
+    {
+     "name": "indent",
+     "type": "number",
+     "description": "Pixels: depth times 24 for task rows."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Row content. Multi-select rows put the Open button here, shown on hover."
+    }
+   ],
+   "states": [
+    "idle (no fill)",
+    "hover (wash; reveals child controls)",
+    "selected (selection)",
+    "highlighted (last multi row; reason unverified)"
+   ],
+   "role": "none (the parent list owns the role; B's listitem or option proposal is not adopted)",
+   "keyboard": "None on the surface. Selection is made by the platform modifier: Control-click on Windows, Command-click on macOS (decision). The list owns that, not Row. Row children carry their own keys.",
+   "replaces": [
+    "multi-select row",
+    "task list selection highlight",
+    "trash row hover highlight"
+   ],
+   "platform": "Same. The selection gesture differs by OS modifier, not by look.",
+   "open": "Merged: A's RowSurface and B's Row are one widget named Row; B's bleed axis is A's shape (contained = inset). B's editing prop belongs to InlineComposer and B's refine-row job to RefineRow, so both are dropped here. Multi-select row density is h-9 in source but 32px measured; pick one px value. Trash row selected tone is uncertain (catalogue shows it on row 2 in trash-selected, per B only). Task list selection colour not measured (light blue in the shot). Last multi row highlight is unverified. The subtask composer's parent row is not in these files.",
+   "family": "structure"
+  },
+  {
+   "name": "Toolbar",
+   "purpose": "Horizontal group of action buttons: the title bar tools, the trash bulk strip, and the bulk action footer shown while rows are selected.",
+   "base": "Radix Toolbar",
+   "variants": [
+    {
+     "axis": "placement",
+     "values": [
+      {
+       "value": "inline",
+       "when": "Title bar tools. gap-4, px-6, items-center, no rule."
+      },
+      {
+       "value": "strip",
+       "when": "Trash action strip. gap-3, px-6, py-5, bottom border (edge-2), shrink-0. Rendered only when at least one root exists."
+      },
+      {
+       "value": "footer",
+       "when": "Bulk action bar. h-9, top border, px-6; replaces PaneFooter while one or more rows are selected. No surface fill."
+      }
+     ],
+     "default": "inline"
+    }
+   ],
+   "props": [
+    {
+     "name": "placement",
+     "type": "'inline' | 'strip' | 'footer'",
+     "description": "Spacing and rule."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Names the group."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Buttons from the button family."
+    }
+   ],
+   "states": [
+    "default",
+    "hidden when empty (strip, when there are no roots)",
+    "shown while one or more rows are selected (footer)"
+   ],
+   "role": "toolbar (proposed; the reference records no role)",
+   "keyboard": "Proposed: roving focus (Radix Toolbar). Left and Right move between buttons; Tab leaves the toolbar. The reference records no keyboard handling on these groups.",
+   "replaces": [
+    "toolbar group wrapper",
+    "trash action strip",
+    "bulk action bar"
+   ],
+   "platform": "Same.",
+   "open": "The footer and PaneFooter share one slot, so they are separate widgets. Trash strip: B listed it under Footer row; kept here as Toolbar strip (roving focus, A). Bulk bar: B listed it under Footer; kept here as Toolbar footer. Toolbar footer is h-9, the stats footer is 32px (see PaneFooter).",
+   "family": "structure"
+  },
+  {
+   "name": "PaneFooter",
+   "purpose": "Footer of a task pane: sort control, filter button, done count and percentage.",
+   "base": "none (composes Footer, tone raised)",
+   "variants": [
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "surface-2",
+       "when": "bg-surface-2 with a top edge-2 border, 32px tall (measured box 860x32 at 0,729)."
+      }
+     ],
+     "default": "surface-2"
+    }
+   ],
+   "props": [
+    {
+     "name": "done",
+     "type": "number",
+     "description": "Done count."
+    },
+    {
+     "name": "total",
+     "type": "number",
+     "description": "Total count."
+    },
+    {
+     "name": "percent",
+     "type": "number",
+     "description": "Done percentage (derived)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Sort control, filter button and a Separator xs."
+    }
+   ],
+   "states": [
+    "stats (default)",
+    "split-view left (done 2, total 8, pct 25) and right (done 1, total 3, pct 33)",
+    "narrow-window"
+   ],
+   "role": "none",
+   "keyboard": "None; children own keys.",
+   "replaces": [
+    "pane stats footer"
+   ],
+   "platform": "Same.",
+   "open": "B's Footer 'pane stats footer' replace is a duplicate and is kept here. Bar height: B folded stats h-8 and bulk h-9 into one bar height; A measures 32px for the stats footer, so 32px is kept pending the rem decision. The filter activity dot inside the footer is Indicator.",
+   "family": "structure"
+  },
+  {
+   "name": "Footer",
+   "purpose": "Padded row at the foot of a sheet or dialog: the action row with Cancel and the accept button. A generic footer bar; the stats footer, bulk bar, trash strip and capture footer are separate widgets.",
+   "base": "none (layout; shadcn CardFooter pattern)",
+   "variants": [
+    {
+     "axis": "density",
+     "values": [
+      {
+       "value": "bar",
+       "when": "Single line, px-6, one bar height (B's default)."
+      },
+      {
+       "value": "row",
+       "when": "Padded row: py-5, px-6, gap-3. Sheet action row (Dialog footer, name sheets and confirm)."
+      }
+     ],
+     "default": "bar"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "base",
+       "when": "Window colour, no fill."
+      },
+      {
+       "value": "raised",
+       "when": "bg-surface-2."
+      }
+     ],
+     "default": "base"
+    },
+    {
+     "axis": "edge",
+     "values": [
+      {
+       "value": "top",
+       "when": "border-t edge-2 (sheet action row)."
+      },
+      {
+       "value": "bottom",
+       "when": "border-b edge-2. No catalogue use after the trash strip moved to Toolbar; kept for shape parity."
+      },
+      {
+       "value": "none",
+       "when": "No border."
+      }
+     ],
+     "default": "top"
+    },
+    {
+     "axis": "drag",
+     "values": [
+      {
+       "value": "none",
+       "when": "Default."
+      },
+      {
+       "value": "window",
+       "when": "Drag the bar. Desktop only. Unverified for the capture footer (A records drag on the capture title row only)."
+      }
+     ],
+     "default": "none"
+    }
+   ],
+   "props": [
+    {
+     "name": "density",
+     "type": "'bar' | 'row'",
+     "description": "Padding and height."
+    },
+    {
+     "name": "tone",
+     "type": "'base' | 'raised'",
+     "description": "Fill token."
+    },
+    {
+     "name": "edge",
+     "type": "'top' | 'bottom' | 'none'",
+     "description": "Hairline side."
+    },
+    {
+     "name": "drag",
+     "type": "'none' | 'window'",
+     "description": "Drag region on desktop."
+    },
+    {
+     "name": "asChild",
+     "type": "boolean",
+     "description": "Render onto the child element."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Button actions (sheet action row)."
+    }
+   ],
+   "states": [
+    "default"
+   ],
+   "role": "none (contentinfo only at page level)",
+   "keyboard": "None. Buttons inside are Tab-reachable.",
+   "replaces": [
+    "sheet action row"
+   ],
+   "platform": "Same; the drag region is desktop only.",
+   "open": "Dropped duplicates for this widget: B's pane stats footer (PaneFooter), bulk action bar (Toolbar), trash action strip (Toolbar) and capture bar footer row (Stack). The capture footer keeps px-3 py-2 (differs from the py-5 px-6 row), so it stays on Stack, per A. Bar height is one value after folding h-8 and h-9 (see PaneFooter).",
+   "family": "structure"
+  },
+  {
+   "name": "Text",
+   "purpose": "Single-line text in a task row: the title and the secondary subtitle. Both truncate.",
+   "base": "none",
+   "variants": [
+    {
+     "axis": "size",
+     "values": [
+      {
+       "value": "title",
+       "when": "14px, weight medium (500), line 16.625px (task row title)."
+      },
+      {
+       "value": "caption",
+       "when": "12.5px, line leading-4.25 (task row subtitle)."
+      }
+     ],
+     "default": "title"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "primary",
+       "when": "Open task text."
+      },
+      {
+       "value": "secondary",
+       "when": "Subtitle text."
+      },
+      {
+       "value": "muted",
+       "when": "Done task text."
+      }
+     ],
+     "default": "primary"
+    }
+   ],
+   "props": [
+    {
+     "name": "size",
+     "type": "'title' | 'caption'",
+     "description": "Type scale."
+    },
+    {
+     "name": "tone",
+     "type": "'primary' | 'secondary' | 'muted'",
+     "description": "Colour token."
+    },
+    {
+     "name": "truncate",
+     "type": "boolean",
+     "description": "Default true."
+    },
+    {
+     "name": "as",
+     "type": "'div'",
+     "description": "Element."
+    }
+   ],
+   "states": [
+    "open (primary tone)",
+    "done (muted tone)",
+    "all rows"
+   ],
+   "role": "none",
+   "keyboard": "None.",
+   "replaces": [
+    "task row title label",
+    "task row subtitle"
+   ],
+   "platform": "Same.",
+   "open": "B lists the task row title and subtitle as notWidgets owned by a task-row text widget in another family. Kept here per A's measured type scale; the owner can move it. Subtitle is recorded only on the t-pharmacy row. No due-date text (dropped by decision). No full-title tooltip is recorded for truncated text.",
+   "family": "structure"
+  },
+  {
+   "name": "EmptyState",
+   "purpose": "Centred message for a view with nothing to show, with an optional action: the aside when no task is selected, and the lightbox fallback card when a preview fails.",
+   "base": "none (shadcn Empty pattern)",
+   "variants": [
+    {
+     "axis": "surface",
+     "values": [
+      {
+       "value": "plain",
+       "when": "No fill. Aside empty state: 28px icon box, title 15px medium secondary, subtitle 12.5px muted, centred. Also B's only look for EmptyState."
+      },
+      {
+       "value": "card",
+       "when": "bg-surface-2, rounded-panel, px-10 py-12, text-center. Lightbox fallback card with an action button."
+      }
+     ],
+     "default": "plain"
+    }
+   ],
+   "props": [
+    {
+     "name": "icon",
+     "type": "ReactNode",
+     "description": "28px glyph."
+    },
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Message title."
+    },
+    {
+     "name": "description",
+     "type": "string",
+     "description": "Secondary line."
+    },
+    {
+     "name": "action",
+     "type": "ReactNode",
+     "description": "Optional button, for example Open externally (A)."
+    },
+    {
+     "name": "surface",
+     "type": "'plain' | 'card'",
+     "description": "Fill."
+    }
+   ],
+   "states": [
+    "default (nothing selected)",
+    "no-lists",
+    "no-preview",
+    "unreadable (fallback card)"
+   ],
+   "role": "none (status when it reports a load failure; proposed)",
+   "keyboard": "None on the message; the action button is an ordinary button.",
+   "replaces": [
+    "empty state, no task selected",
+    "lightbox fallback card"
+   ],
+   "platform": "Same.",
+   "open": "Icon colour oklch(0.62 0.013 264) light and oklch(0.57 0.011 262) dark, and the title and subtitle colours, are literals; map them to the secondary and muted tokens. Fallback card sizes beyond its strings are not recorded. B's MediaPreview fallback names Card; A's EmptyState card is kept because it carries the action.",
+   "family": "structure"
+  },
+  {
+   "name": "Dialog",
+   "purpose": "Modal card for a prompt (rename, new list), a delete confirmation, and the palette and fullscreen sizes that CommandPalette and Lightbox render. On web it sits over a Scrim; on desktop each one is its own window.",
+   "base": "Radix Dialog (prompt); Radix AlertDialog (confirm)",
+   "variants": [
+    {
+     "axis": "kind",
+     "values": [
+      {
+       "value": "prompt",
+       "when": "Name sheets (new list, rename). Role dialog. Footer buttons at y 413 in the recorded name sheets. Accept in the default tone."
+      },
+      {
+       "value": "confirm",
+       "when": "Delete confirmations. Role alertdialog. Footer buttons at y 403. Accept in the danger tone."
+      }
+     ],
+     "default": "prompt"
+    },
+    {
+     "axis": "presentation",
+     "values": [
+      {
+       "value": "overlay",
+       "when": "Web: centred over the window with a Scrim."
+      },
+      {
+       "value": "window",
+       "when": "Desktop: its own window; no scrim; the main window is not dimmed (decision)."
+      }
+     ],
+     "default": "overlay"
+    },
+    {
+     "axis": "size",
+     "values": [
+      {
+       "value": "sheet",
+       "when": "Centred card. Width not recorded."
+      },
+      {
+       "value": "palette",
+       "when": "490px wide, top at y 91, max height 60vh, surface-2 with menu elevation. Anchored at the top (CommandPalette)."
+      },
+      {
+       "value": "fullscreen",
+       "when": "Fills the 1180x760 window (Lightbox)."
+      }
+     ],
+     "default": "sheet"
+    }
+   ],
+   "props": [
+    {
+     "name": "kind",
+     "type": "'prompt' | 'confirm'",
+     "description": "Role and accept tone. B's kind sheet is the same as prompt."
+    },
+    {
+     "name": "presentation",
+     "type": "'overlay' | 'window'",
+     "description": "Overlay on web, separate window on desktop."
+    },
+    {
+     "name": "size",
+     "type": "'sheet' | 'palette' | 'fullscreen'",
+     "description": "Card size and anchor."
+    },
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Title."
+    },
+    {
+     "name": "description",
+     "type": "string",
+     "description": "Body text."
+    },
+    {
+     "name": "instead",
+     "type": "ReactNode",
+     "description": "Left slot of the footer."
+    },
+    {
+     "name": "footer",
+     "type": "ReactNode",
+     "description": "A Footer row with the actions (Cancel and accept)."
+    },
+    {
+     "name": "cancelLabel",
+     "type": "string",
+     "description": "Cancel label."
+    },
+    {
+     "name": "acceptLabel",
+     "type": "string",
+     "description": "Accept label."
+    },
+    {
+     "name": "acceptTone",
+     "type": "'default' | 'danger'",
+     "description": "Accept button tone."
+    },
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Open state."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Open state handler."
+    }
+   ],
+   "states": [
+    "open (animate-sheet-in)",
+    "closed (renders nothing; SheetHost idle)",
+    "entering"
+   ],
+   "role": "dialog (prompt) or alertdialog (confirm); aria-modal on web",
+   "keyboard": "Escape closes (captureEscape). Tab and Shift+Tab are trapped inside (trapFocus). Initial focus on the first field is proposed. Enter activates accept only if set as the default (not in catalogue). Focus return to the opener is not recorded.",
+   "replaces": [
+    "modal overlay wrapper"
+   ],
+   "platform": "Desktop: presentation window; each sheet is its own window with no Scrim; close by Escape or the close control; no outside-press dismissal for a window. Web: overlay with a Scrim; outside press dismisses; focus trapped.",
+   "open": "The reference runs one destructive confirm in place (reset all settings button, ConfirmButton). The decision makes confirmations windows on desktop, so ConfirmButton may be replaced by Dialog kind confirm (undecided). B's kind sheet is named prompt here. Dropped duplicates: B's command palette panel is CommandPalette; A's sheet action row is Footer. The outside-press path and focus return are not confirmed (Overlay source not read). Palette and lightbox desktop presentation are undecided.",
+   "family": "structure"
+  },
+  {
+   "name": "Scrim",
+   "purpose": "Full-window layer behind a modal, a menu or the lightbox. Dims the window, and a press on it outside the panel dismisses. Also the invisible click-catcher under a context menu.",
+   "base": "Radix Dialog Overlay (soft and strong-blur); a plain layer for none",
+   "variants": [
+    {
+     "axis": "dim",
+     "values": [
+      {
+       "value": "soft",
+       "when": "bg-black/30 (oklab 0 0 0 / 0.3), no blur. Sheets and the command palette."
+      },
+      {
+       "value": "strong-blur",
+       "when": "Strong dim plus backdrop blur, flex column, full window. Attachment lightbox. B's separate blur axis is folded here."
+      },
+      {
+       "value": "none",
+       "when": "Invisible full-window hit area under a menu; catches clicks and right-clicks outside the menu."
+      }
+     ],
+     "default": "soft"
+    }
+   ],
+   "props": [
+    {
+     "name": "dim",
+     "type": "'soft' | 'strong-blur' | 'none'",
+     "description": "Dimming look."
+    },
+    {
+     "name": "onDismiss",
+     "type": "() => void",
+     "description": "Mousedown outside the panel dismisses the owning layer (B's onPress)."
+    },
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Rendered only while open."
+    }
+   ],
+   "states": [
+    "open",
+    "closed (not rendered)"
+   ],
+   "role": "none; aria-hidden",
+   "keyboard": "None; Escape belongs to the owning modal or menu.",
+   "replaces": [
+    "modal scrim, soft dim",
+    "lightbox scrim",
+    "menu click-catcher, invisible"
+   ],
+   "platform": "Web: under Dialog overlay, CommandPalette overlay and Lightbox overlay. Desktop: no scrim for dialogs or sheets (decision). The invisible click-catcher for menus is still needed on desktop unless native menus are used (undecided).",
+   "open": "Lightbox: whether a bare click on the scrim closes it is not confirmed (Overlay source not read). The scrim colour is a literal (bg-black/30), not a token. Palette and lightbox presentation on desktop open.",
+   "family": "structure"
+  },
+  {
+   "name": "Lightbox",
+   "purpose": "Full-window viewer for one attachment: a stage that holds the preview and closes on empty space.",
+   "base": "Radix Dialog (modal), size fullscreen",
+   "variants": [
+    {
+     "axis": "presentation",
+     "values": [
+      {
+       "value": "overlay",
+       "when": "Web, or desktop if the lightbox stays in-window. Sits over Scrim strong-blur."
+      },
+      {
+       "value": "window",
+       "when": "Desktop, if the lightbox is treated as a dialog window (undecided)."
+      }
+     ],
+     "default": "overlay"
+    }
+   ],
+   "props": [
+    {
+     "name": "presentation",
+     "type": "'overlay' | 'window'",
+     "description": "Where it appears."
+    },
+    {
+     "name": "onClose",
+     "type": "() => void",
+     "description": "Click on empty stage."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "AttachmentPreview or EmptyState."
+    }
+   ],
+   "states": [
+    "open",
+    "closed"
+   ],
+   "role": "dialog (modal)",
+   "keyboard": "Not recorded. Escape is not confirmed. The reference stage also holds prev and next chevrons, which are not in this catalogue.",
+   "replaces": [
+    "lightbox stage",
+    "lightbox media wrapper"
+   ],
+   "platform": "Desktop presentation is open. Web: overlay.",
+   "open": "Treating the lightbox as a dialog for the desktop rule needs confirmation. Stage is px-16 pb-8 (a column Stack); the media wrapper stops the stage click from closing. Empty-stage click closes (onClose).",
+   "family": "structure"
+  },
+  {
+   "name": "AttachmentPreview",
+   "purpose": "Inline preview of one attachment inside the lightbox, chosen by its type. A failure switches to the EmptyState card.",
+   "base": "none (native img, video, audio, embed and pre)",
+   "variants": [
+    {
+     "axis": "kind",
+     "values": [
+      {
+       "value": "image",
+       "when": "img with alt set to the attachment name, fitted to the stage, rounded-control, object-contain, shadow-2xl, draggable false. About 480x300 (16:10)."
+      },
+      {
+       "value": "video",
+       "when": "Native video with controls and autoPlay, rounded-control, shadow-2xl."
+      },
+      {
+       "value": "audio",
+       "when": "Panel in the Card look (surface-2, rounded-panel, px-8 py-10) with a 40px glyph (weight 200) and native audio controls with autoPlay."
+      },
+      {
+       "value": "pdf",
+       "when": "Embedded viewer (type application/pdf), rounded-control, h-full w-full max-w-4xl."
+      },
+      {
+       "value": "text",
+       "when": "Selectable pre in surface-2, 12.5px, leading-5, max-w-3xl, overflow-auto, p-5. Capped at 262144 characters."
+      }
+     ],
+     "default": "image"
+    }
+   ],
+   "props": [
+    {
+     "name": "kind",
+     "type": "'image' | 'video' | 'audio' | 'pdf' | 'text'",
+     "description": "Preview type."
+    },
+    {
+     "name": "src",
+     "type": "string",
+     "description": "Attachment URL or path."
+    },
+    {
+     "name": "name",
+     "type": "string",
+     "description": "Alt text and label."
+    },
+    {
+     "name": "autoPlay",
+     "type": "boolean",
+     "description": "Default true for video and audio."
+    },
+    {
+     "name": "text",
+     "type": "string",
+     "description": "Text content (text kind)."
+    },
+    {
+     "name": "onError",
+     "type": "() => void",
+     "description": "Switches to the EmptyState card."
+    }
+   ],
+   "states": [
+    "loading (text shows Loading...)",
+    "loaded",
+    "playing (autoPlay)",
+    "error (fallback EmptyState card)"
+   ],
+   "role": "image: img; video and audio: native controls; pdf: embedded viewer; text: pre",
+   "keyboard": "Native media controls for video and audio (play, pause, seek). Text is selectable. PDF uses the browser or webview viewer's keys. Image has no action.",
+   "replaces": [
+    "lightbox image preview",
+    "lightbox video preview",
+    "lightbox audio panel",
+    "lightbox PDF preview",
+    "lightbox text preview"
+   ],
+   "platform": "PDF depends on a built-in PDF viewer in the browser or the desktop webview; desktop WebView support must be checked (open). Web media is served from the server; desktop media is read from disk.",
+   "open": "Merged: B's MediaPreview is this widget (B's text kind omission is corrected from A). B's error fallback names Card; A's EmptyState card is kept. The PDF embed has no onError in either design, so a failed PDF never reaches the fallback. Zoom and pan are not evidenced. Image radius not measured.",
+   "family": "structure"
+  },
+  {
+   "name": "AttachmentTile",
+   "purpose": "Grid tile for one attachment: a thumbnail for images or a glyph for a remote link. Click opens it; drag carries it into a note.",
+   "base": "none (a button)",
+   "variants": [
+    {
+     "axis": "kind",
+     "values": [
+      {
+       "value": "link",
+       "when": "Remote link: link glyph 22px, colour oklch(0.62 0.013 264). Click opens the link externally (api.openAttachment). Three-item context menu."
+      },
+      {
+       "value": "image",
+       "when": "Local image: img alt empty, object-cover thumbnail when loaded. Click opens the lightbox at its index. Four-item context menu."
+      }
+     ],
+     "default": "image"
+    }
+   ],
+   "props": [
+    {
+     "name": "kind",
+     "type": "'link' | 'image'",
+     "description": "Content type (B's source)."
+    },
+    {
+     "name": "name",
+     "type": "string",
+     "description": "Attachment name; accessible name."
+    },
+    {
+     "name": "thumbnailSrc",
+     "type": "string",
+     "description": "Image kind only."
+    },
+    {
+     "name": "onOpen",
+     "type": "() => void",
+     "description": "Click action: opens the lightbox or the link."
+    },
+    {
+     "name": "menuItems",
+     "type": "MenuItem[]",
+     "description": "Supplied by the caller: three for link, four for image."
+    },
+    {
+     "name": "draggable",
+     "type": "boolean",
+     "description": "Carries ATTACHMENT_MIME; a drop onto a note inserts a mention chip."
+    }
+   ],
+   "states": [
+    "default (border-edge-2)",
+    "hover (border-edge-3; open_in_full overlay appears)",
+    "dragging (ATTACHMENT_MIME, copy effect)",
+    "focus-visible"
+   ],
+   "role": "button; accessible name from name",
+   "keyboard": "Enter or Space opens (native button). Right-click opens the menu; the context-menu key or Shift+F10 is proposed. Dragging onto a note has no keyboard path in the reference (open).",
+   "replaces": [
+    "attachment tile, remote link",
+    "attachment tile, local image"
+   ],
+   "platform": "Web: files are uploaded to the server, so thumbnails and the lightbox load from the server; the link opens in a new tab. Desktop: local files open from disk. How api.openAttachment opens a remote link on web is not read.",
+   "open": "Tile is 94x94, radius 7px (B folds to rounded-control; radius to confirm), background oklch(1 0 0) is a literal, not a token. Menu item counts: link three, image four; the fourth image item is not named in either design. Keep one item set across platforms, dropping only items that need local disk (B).",
+   "family": "structure"
+  },
+  {
+   "name": "MentionChip",
+   "purpose": "Inline @mention chip for an attachment inside a note body. It is an atom: it cannot be typed into and deletes as one unit.",
+   "base": "none (inline atom, contenteditable false)",
+   "variants": [
+    {
+     "axis": "source",
+     "values": [
+      {
+       "value": "local",
+       "when": "Click opens the attachment in the lightbox."
+      },
+      {
+       "value": "remote",
+       "when": "Click calls api.openAttachment."
+      }
+     ],
+     "default": "local"
+    }
+   ],
+   "props": [
+    {
+     "name": "source",
+     "type": "'local' | 'remote'",
+     "description": "Where the click goes."
+    },
+    {
+     "name": "name",
+     "type": "string",
+     "description": "Shown as @name."
+    },
+    {
+     "name": "onOpen",
+     "type": "() => void",
+     "description": "Click action."
+    }
+   ],
+   "states": [
+    "present (in note HTML)"
+   ],
+   "role": "none (inline atom); button if it becomes focusable (proposed)",
+   "keyboard": "Click opens. Delete or Backspace removes it as one unit (the reference says it deletes as a single unit; the key is not recorded).",
+   "replaces": [
+    "attachment mention chip"
+   ],
+   "platform": "Same.",
+   "open": "Conflict: B lists this under notWidgets as owned by the rich-text editor family; A keeps it as a widget with its only recorded axis (source). Kept here with A's measured source until the family decision. Look is not measured. Present in note HTML only (count 0 in trees).",
+   "family": "structure"
+  },
+  {
+   "name": "Toast",
+   "purpose": "Brief notice pill at the bottom centre of the window, with an optional action. One toast at a time from the store. The wrapper passes clicks through everywhere except the pill.",
+   "base": "shadcn Toast (Radix Toast primitive)",
+   "variants": [
+    {
+     "axis": "position",
+     "values": [
+      {
+       "value": "bottom-centre",
+       "when": "Fixed bottom-5, full width, flex justify-center; viewport pointer-events none; the pill is pointer-events auto. Tree bounds 1180x41 at 0,702; pill 225x41 at 477,702."
+      }
+     ],
+     "default": "bottom-centre"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "neutral",
+       "when": "Floating popover tone with lift shadow and radius control; animate-rise on entry. The only look in the catalogue (B's tone)."
+      }
+     ],
+     "default": "neutral"
+    }
+   ],
+   "props": [
+    {
+     "name": "message",
+     "type": "ReactNode",
+     "description": "Notice text."
+    },
+    {
+     "name": "actions",
+     "type": "ReactNode",
+     "description": "Optional action buttons (B's single action)."
+    },
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Store toast is set."
+    },
+    {
+     "name": "onDismiss",
+     "type": "() => void",
+     "description": "Dismiss handler."
+    }
+   ],
+   "states": [
+    "hidden (store toast is null; renders nothing)",
+    "entering (animate-rise)",
+    "shown (single toast in store)"
+   ],
+   "role": "status (polite live region)",
+   "keyboard": "Action buttons are focusable once focus moves into the viewport. Radix Toast has a default hotkey (F8, moves focus to the viewport); set it explicitly. On web browser shortcuts take precedence; on desktop it must not act as a global hotkey. Escape to dismiss is recommended (B), not in the catalogue.",
+   "replaces": [
+    "toast layout wrapper",
+    "toast pill"
+   ],
+   "platform": "Same position on both. Desktop: a toast raised from a separate sheet window must appear in that window, not the main one.",
+   "open": "Dismiss rules (timeout, swipe) are not recorded. The store holds one toast; a second replaces the first (confirm). Pill radius is an estimate (about 6-8px); shadow and border are literals. The floating surface folds surface-2 and surface-3 into one popover tone (B), which also applies to the palette and menus; designer to confirm.",
+   "family": "structure"
+  },
+  {
+   "name": "ContextMenu",
+   "purpose": "Floating menu opened at the pointer for a task or a list tab. Picking an item closes it first.",
+   "base": "Radix ContextMenu (shadcn ContextMenu)",
+   "variants": [
+    {
+     "axis": "placement",
+     "values": [
+      {
+       "value": "anchored",
+       "when": "At the pointer position (anchor x and y); the only recorded placement. Dimmed by Scrim none."
+      }
+     ],
+     "default": "anchored"
+    }
+   ],
+   "props": [
+    {
+     "name": "items",
+     "type": "MenuItem[]",
+     "description": "Rows and dividers (Separator inset menu between groups)."
+    },
+    {
+     "name": "anchor",
+     "type": "{ x: number; y: number }",
+     "description": "Pointer position."
+    },
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Shown while a menu is set (B)."
+    },
+    {
+     "name": "onPick",
+     "type": "(id: string) => void",
+     "description": "Called after the menu closes."
+    },
+    {
+     "name": "onDismiss",
+     "type": "() => void",
+     "description": "Outside mousedown, Escape, window blur or resize."
+    }
+   ],
+   "states": [
+    "closed (not rendered)",
+    "open"
+   ],
+   "role": "menu with menuitem rows (Radix; proposed)",
+   "keyboard": "Escape closes. Outside mousedown closes. Window blur or resize closes. Right-click prevents the native menu and closes. Picking an item closes first, then calls onPick. Arrow keys move and Enter picks (Radix). Context-menu key or Shift+F10 is proposed.",
+   "replaces": [
+    "menu layer overlay (anchored)",
+    "context menu card"
+   ],
+   "platform": "Desktop: window blur and resize close it; native OS menus are an option (undecided). Web: window blur means browser window or tab blur; preventing the browser's own menu on right-click is a choice to confirm; the native menu must remain in text inputs and the rich-text editor.",
+   "open": "Width is content-driven: task menu 154x175, tab menu 158x145 (min-w-44, auto height; B folded the two). Panel radius not recorded. Triggers on task rows and list tabs are unverified; A keeps them in notWidgets, B lists them here (kept as notWidgets until a trigger is confirmed). Dropped duplicates: B's onSelect (onPick) and onOpenChange (onDismiss). B's pointer placement is A's anchored, since A records anchor x and y; conflict: B reads anchored as trigger-box positioning.",
+   "family": "structure"
+  },
+  {
+   "name": "CommandPalette",
+   "purpose": "Command palette: a 490px card near the top of the window with a search input and a list of commands.",
+   "base": "shadcn Command (cmdk) inside a Dialog (CommandDialog, size palette)",
+   "variants": [
+    {
+     "axis": "presentation",
+     "values": [
+      {
+       "value": "overlay",
+       "when": "Centred near the top, over Scrim soft. The recorded case."
+      },
+      {
+       "value": "window",
+       "when": "Desktop option if the palette is treated as a dialog window (undecided)."
+      }
+     ],
+     "default": "overlay"
+    }
+   ],
+   "props": [
+    {
+     "name": "commands",
+     "type": "Command[]",
+     "description": "From getCommands (buildCommands)."
+    },
+    {
+     "name": "onClose",
+     "type": "() => void",
+     "description": "Sets paletteOpen false."
+    },
+    {
+     "name": "presentation",
+     "type": "'overlay' | 'window'",
+     "description": "Where it appears."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "CommandInput and CommandList."
+    }
+   ],
+   "states": [
+    "palette (all commands, 490x456)",
+    "palette-search (filtered, 490x184)",
+    "palette-no-match (490x109)",
+    "open"
+   ],
+   "role": "dialog (modal) containing a combobox and a listbox (cmdk; proposed)",
+   "keyboard": "Escape closes via onClose. Arrow keys move the active row (cmdk; proposed). The opening shortcut is not confirmed (useAppKeyboard not read). The active row is scrolled into view. Web browser shortcuts take precedence; on desktop a global hotkey pressed while the main window is focused is handled by the main window.",
+   "replaces": [
+    "command palette panel"
+   ],
+   "platform": "Desktop: presentation open. Web: overlay; the opening shortcut must not clash with a browser shortcut.",
+   "open": "Presentation on desktop is undecided. Width is min(35rem, 100%): 490px at 14px rem (560px at 16px); top edge at y 91; max-h 60vh. Opening shortcut not confirmed.",
+   "family": "structure"
+  },
+  {
+   "name": "CommandInput",
+   "purpose": "Input row at the top of the command palette: a leading glyph, the search input and a bottom rule.",
+   "base": "shadcn CommandInput (cmdk), framed by InputGroup shape bar",
+   "variants": [
+    {
+     "axis": "leading",
+     "values": [
+      {
+       "value": "icon",
+       "when": "Bolt glyph in the reference (at 355,102)."
+      }
+     ],
+     "default": "icon"
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Query."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Query change."
+    },
+    {
+     "name": "placeholder",
+     "type": "string",
+     "description": "Placeholder text."
+    },
+    {
+     "name": "leading",
+     "type": "ReactNode",
+     "description": "Leading glyph."
+    }
+   ],
+   "states": [
+    "always shown",
+    "focused on open (proposed)"
+   ],
+   "role": "combobox on the input (proposed); the row is none",
+   "keyboard": "Typing filters. Arrow keys move the active row in the list (cmdk; proposed).",
+   "replaces": [
+    "command palette input row"
+   ],
+   "platform": "Same.",
+   "open": "Row is h-11 with a 1px bottom border, measured 44px; h-11 at 14px rem is 38.5px, so this conflicts with the rem decision (see TitleBar).",
+   "family": "structure"
+  },
+  {
+   "name": "CommandList",
+   "purpose": "Scrolling list of command groups and rows. Keeps the active row in view.",
+   "base": "shadcn CommandList (cmdk) over ScrollArea vertical",
+   "variants": [
+    {
+     "axis": "content",
+     "values": [
+      {
+       "value": "rows",
+       "when": "Populated list of groups and rows."
+      },
+      {
+       "value": "empty",
+       "when": "Shows the empty message (palette-no-match)."
+      }
+     ],
+     "default": "rows"
+    }
+   ],
+   "props": [
+    {
+     "name": "groups",
+     "type": "CommandGroup[]",
+     "description": "Group headings and rows."
+    },
+    {
+     "name": "activeId",
+     "type": "string",
+     "description": "Active row; scrolled into view (block nearest)."
+    },
+    {
+     "name": "emptyMessage",
+     "type": "string",
+     "description": "Shown when content is empty."
+    },
+    {
+     "name": "onPick",
+     "type": "(id: string) => void",
+     "description": "Runs a command."
+    }
+   ],
+   "states": [
+    "populated (palette, palette-search)",
+    "empty (palette-no-match)",
+    "scrolls when content exceeds 60vh"
+   ],
+   "role": "listbox with group headings (proposed)",
+   "keyboard": "Active row scrolled into view. The keys that change the active row are on CommandPalette.",
+   "replaces": [
+    "command palette results list"
+   ],
+   "platform": "Same.",
+   "open": "Group heading style is not recorded. py-3, min-h-0, flex-1, overflow-y-auto. The palette results list is B's ScrollArea use; kept here.",
+   "family": "structure"
+  },
+  {
+   "name": "TabList",
+   "purpose": "Tab strip: the active project's list tabs in the title bar (horizontal), or the Settings section navigation (vertical). The New list button sits outside the tablist, because it is an action, not a tab.",
+   "base": "shadcn Tabs (Radix Tabs list)",
+   "variants": [
+    {
+     "axis": "orientation",
+     "values": [
+      {
+       "value": "horizontal",
+       "when": "Title-bar strip: flex h-full, items-stretch, min-w-0 flex-1, no-drag on desktop."
+      },
+      {
+       "value": "vertical",
+       "when": "Settings sidebar list: flex column, gap-1."
+      }
+     ],
+     "default": "horizontal"
+    },
+    {
+     "axis": "overflow",
+     "values": [
+      {
+       "value": "scroll",
+       "when": "Horizontal scroll when tabs overflow, scrollbar hidden (overflow-x-auto). Covers the list tab strip (A's ScrollArea horizontal hidden)."
+      },
+      {
+       "value": "fit",
+       "when": "Tabs fit, no scroll. Used by the vertical settings list (its overflow is not recorded; fit assumed)."
+      }
+     ],
+     "default": "scroll"
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Selected tab id."
+    },
+    {
+     "name": "onValueChange",
+     "type": "(value: string) => void",
+     "description": "Selection handler."
+    },
+    {
+     "name": "loop",
+     "type": "boolean",
+     "description": "Wrap-around focus. Default true."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "aria-label, for example Settings sections."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Tab items from the tabs family."
+    }
+   ],
+   "states": [
+    "default",
+    "overflowing (scrolls)",
+    "empty (no tabs)"
+   ],
+   "role": "tablist; aria-orientation follows orientation",
+   "keyboard": "Horizontal: ArrowLeft and ArrowRight move between tabs. Vertical: ArrowUp and ArrowDown move to the next or previous section with wrap-around, selecting it and focusing its tab (SettingsWindow.tsx:186-196; onKeyDown at :265). Home and End are proposed.",
+   "replaces": [
+    "list tab strip",
+    "settings section tab list"
+   ],
+   "platform": "Same on web and desktop. On desktop the strip is no-drag inside the title bar. Tab drag-reorder is the tab family's job.",
+   "open": "ListTabs keyboard handling for the horizontal strip is not in the catalogue (no onKeyDown read). Tab stop behaviour and Home and End keys are not recorded for Settings. Web Settings as a route is open.",
+   "family": "structure"
+  },
+  {
+   "name": "TabPanel",
+   "purpose": "Scrolling content of the active Settings section.",
+   "base": "Radix Tabs (TabsContent)",
+   "variants": [
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "surface-2",
+       "when": "surface-2 token: the settings-general pane. Overflow-y auto, px-8 py-7."
+      }
+     ],
+     "default": "surface-2"
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Section id."
+    },
+    {
+     "name": "scroll",
+     "type": "boolean",
+     "description": "Vertical scroll when content overflows."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Section rows and group cards."
+    }
+   ],
+   "states": [
+    "default",
+    "scrolled to bottom (settings-shortcuts)"
+   ],
+   "role": "tabpanel",
+   "keyboard": "Scrolls with keys when focused. Proposed: tabIndex 0 on the scroll region when it overflows.",
+   "replaces": [
+    "settings content pane"
+   ],
+   "platform": "Desktop Settings window. Web: open (Settings as a route).",
+   "open": "Conflict: settings-general uses the surface-2 token; settings-shortcuts, settings-capture and settings-about record a literal oklch(0.995 0.001 255). Both designs keep one token; the literal is not a variant until someone confirms it is intended. B's ScrollArea raised tone for this pane is the same token.",
+   "family": "structure"
+  },
+  {
+   "name": "ConfirmButton",
+   "purpose": "Button that asks for a second press before it acts, inline, because the Settings window has no dialog layer.",
+   "base": "none (a Button with a two-step state)",
+   "variants": [
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "default",
+       "when": "Ordinary action."
+      },
+      {
+       "value": "danger",
+       "when": "Destructive action (reset all settings); tone assumed from the decision."
+      }
+     ],
+     "default": "default"
+    }
+   ],
+   "props": [
+    {
+     "name": "tone",
+     "type": "'default' | 'danger'",
+     "description": "Colour token."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Idle label, for example Reset all settings…"
+    },
+    {
+     "name": "confirmLabel",
+     "type": "string",
+     "description": "Confirming label."
+    },
+    {
+     "name": "onConfirm",
+     "type": "() => void",
+     "description": "Runs on the second press."
+    }
+   ],
+   "states": [
+    "idle (confirming=false), 972x28 at 181,307",
+    "confirming (after first click; from source only)"
+   ],
+   "role": "button",
+   "keyboard": "Enter or Space: the first press shows confirming; the second press runs onConfirm. Cancel key not recorded.",
+   "replaces": [
+    "reset all settings button"
+   ],
+   "platform": "Desktop Settings. Web and desktop should share Dialog kind confirm for destructive confirmations (open).",
+   "open": "B lists the reset button under notWidgets as a shared Button with a danger tone and a two-step confirm. Kept here as ConfirmButton because the inline two-step is a behaviour users feel (A). Decision: confirmations are windows on desktop, so ConfirmButton may be replaced by Dialog kind confirm (undecided). Confirming state is from source only. The 28px height is from the catalogue.",
+   "family": "structure"
+  },
+  {
+   "name": "InlineComposer",
+   "purpose": "Single-line input inserted under a parent task row to add a subtask.",
+   "base": "none (wraps a text input)",
+   "variants": [
+    {
+     "axis": "kind",
+     "values": [
+      {
+       "value": "child",
+       "when": "Subtask under a parent row; the only recorded use. Row height 36px; indent depth times 24 plus 6; icon subdirectory_arrow_right, size 15, weight 300."
+      }
+     ],
+     "default": "child"
+    }
+   ],
+   "props": [
+    {
+     "name": "depth",
+     "type": "number",
+     "description": "Indent level."
+    },
+    {
+     "name": "onSubmit",
+     "type": "(title: string) => void",
+     "description": "Enter with a title."
+    },
+    {
+     "name": "onDismiss",
+     "type": "() => void",
+     "description": "Empty Enter, Escape or blur."
+    },
+    {
+     "name": "autoFocus",
+     "type": "boolean",
+     "description": "Focus on mount (true)."
+    }
+   ],
+   "states": [
+    "shown (after Add subtask)",
+    "focused on mount",
+    "dismissed (empty Enter, Escape or blur)"
+   ],
+   "role": "textbox (the input); wrapper none",
+   "keyboard": "Enter with a title creates the subtask and clears the field. Enter with empty input dismisses. Escape dismisses. Blur dismisses.",
+   "replaces": [
+    "subtask composer"
+   ],
+   "platform": "Same.",
+   "open": "Not in any recorded tree (count 0). Example: Subtask title, Enter to add. B's Row editing prop is this widget's job and is dropped from Row. The parent row is not in these files.",
+   "family": "structure"
+  },
+  {
+   "name": "SectionHeader",
+   "purpose": "Label that starts a group of settings or inspector fields. It can carry a trailing rule and an accent dot that marks a non-default section.",
+   "base": "none (common-ui SectionHeader)",
+   "variants": [
+    {
+     "axis": "rule",
+     "values": [
+      {
+       "value": "trailing",
+       "when": "Hairline from the end of the label to the pane edge, drawn with Separator inset label (estimated positions)."
+      },
+      {
+       "value": "none",
+       "when": "No rule (settings-about header look not recorded)."
+      }
+     ],
+     "default": "trailing"
+    }
+   ],
+   "props": [
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Section label."
+    },
+    {
+     "name": "active",
+     "type": "boolean",
+     "description": "Shows the Indicator dot when true (filter panel)."
+    },
+    {
+     "name": "rule",
+     "type": "'trailing' | 'none'",
+     "description": "Trailing hairline."
+    }
+   ],
+   "states": [
+    "default",
+    "active (dot visible)",
+    "with notes or empty (task inspector)"
+   ],
+   "role": "heading for the label (proposed); rule and dot are decorative",
+   "keyboard": "None.",
+   "replaces": [
+    "section label rule"
+   ],
+   "platform": "Same.",
+   "open": "Rule positions are shot estimates (task inspector about x 927-1086; settings shortcuts to about x 1163). Settings-about rule look is not recorded. The dot is Indicator and its accent colour conflicts with the accent rule (see DropIndicator). B has no SectionHeader; its section accent dot is in Indicator.",
+   "family": "structure"
+  },
+  {
+   "name": "RefineRow",
+   "purpose": "One refine predicate row in the filter panel: an icon, a label and a size-sm Segmented control (Notes, Attachments, Subtasks).",
+   "base": "none (uses Segmented from another family)",
+   "variants": [
+    {
+     "axis": "size",
+     "values": [
+      {
+       "value": "sm",
+       "when": "h-8 row (295x28 at 873,252 / 284 / 315); label 500 13px/19.5px; icon 15px weight 300."
+      }
+     ],
+     "default": "sm"
+    }
+   ],
+   "props": [
+    {
+     "name": "icon",
+     "type": "ReactNode",
+     "description": "Predicate icon."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Notes, Attachments or Subtasks."
+    },
+    {
+     "name": "value",
+     "type": "'any' | 'with' | 'none'",
+     "description": "Segment value."
+    },
+    {
+     "name": "onChange",
+     "type": "(value) => void",
+     "description": "Calls update({notes | attachments | subtasks})."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "The Segmented control."
+    }
+   ],
+   "states": [
+    "any (label tone secondary)",
+    "with or none (label tone primary)"
+   ],
+   "role": "group, labelled by the label (proposed)",
+   "keyboard": "The Segmented control's keys.",
+   "replaces": [
+    "refine row, tri-state"
+   ],
+   "platform": "Same.",
+   "open": "Row height h-8 (28px) is A's; B's Row density sm is the same value and is not kept as the Row base.",
+   "family": "structure"
+  },
+  {
+   "name": "Indicator",
+   "purpose": "Small decorative mark: a dot that shows a filter, section or status is active, or a bar that marks the draft or the task inspector as the active item. Folds A's StatusDot, AccentMarker and SectionHeader's dot.",
+   "base": "none",
+   "variants": [
+    {
+     "axis": "shape",
+     "values": [
+      {
+       "value": "dot",
+       "when": "6px rounded-full (h-1.5 w-1.5). Section accent dot and filter activity dot (StatusDot)."
+      },
+      {
+       "value": "bar",
+       "when": "2px by 16px (h-4 w-0.5). Draft accent caret in the title row; task inspector accent tick at the header edge (size not measured, folded here)."
+      }
+     ],
+     "default": "dot"
+    },
+    {
+     "axis": "tone",
+     "values": [
+      {
+       "value": "accent",
+       "when": "bg-accent-500. Active or selection marker."
+      },
+      {
+       "value": "neutral",
+       "when": "bg-edge-3. Filter dot when no filter is active (B); StatusDot idle grey (A)."
+      }
+     ],
+     "default": "accent"
+    }
+   ],
+   "props": [
+    {
+     "name": "shape",
+     "type": "'dot' | 'bar'",
+     "description": "Set by variant."
+    },
+    {
+     "name": "tone",
+     "type": "'accent' | 'neutral'",
+     "description": "Colour token."
+    },
+    {
+     "name": "visible",
+     "type": "boolean",
+     "description": "Section dot hidden when the section is inactive."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Text alternative supplied by the owning control (for example, filters active). Proposed."
+    }
+   ],
+   "states": [
+    "visible",
+    "hidden",
+    "active (accent)",
+    "idle (neutral)"
+   ],
+   "role": "none; aria-hidden. The meaning comes from the owning control's label.",
+   "keyboard": "None.",
+   "replaces": [
+    "section accent dot",
+    "filter activity dot",
+    "draft accent caret bar",
+    "task inspector accent tick"
+   ],
+   "platform": "Same.",
+   "open": "Dropped duplicates: A's StatusDot and AccentMarker are this widget (same look: dot or bar); their replaces strings are kept here. Accent is reserved for primary action and selection: the active filter dot and the caret and tick are conflicts or uncertain; a status token may be needed, or neutral for the filter dot. Accent-as-selection for the caret and tick is uncertain. Tick size is not measured; caret width is 2 to 3px (estimate).",
+   "family": "structure"
+  },
+  {
+   "name": "Spinner",
+   "purpose": "Busy indicator beside a status text, shown while a screen capture runs.",
+   "base": "none",
+   "variants": [
+    {
+     "axis": "size",
+     "values": [
+      {
+       "value": "sm",
+       "when": "13px diameter, next to the capture text (Capturing ...). Size not measured (catalogue)."
+      }
+     ],
+     "default": "sm"
+    }
+   ],
+   "props": [
+    {
+     "name": "size",
+     "type": "'sm'",
+     "description": "Diameter 13px."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Status text, for example Capturing ..."
+    }
+   ],
+   "states": [
+    "spinning (busy)"
+   ],
+   "role": "status (proposed), with the label",
+   "keyboard": "None.",
+   "replaces": [
+    "busy spinner, capturing"
+   ],
+   "platform": "Desktop only in the reference (screen capture; web has no screen capture). Other web busy states are not in this catalogue.",
+   "open": "B lists this under notWidgets as a loading indicator from the shared feedback family. Kept here with A's measured source (13px beside the capture text); owner to decide. Size 13 is not measured.",
+   "family": "structure"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "multi inspector slot (not in tree)",
+   "reason": "Routed placeholder in PreviewPanel, chosen when selectionTasks.length is above 1. No look of its own; content is Stack (inspector body root) inside a Pane aside, built from Row, Footer, Card and Pane (B). Same in both designs."
+  },
+  {
+   "variant": "task inspector slot (not in tree)",
+   "reason": "Routed placeholder in PreviewPanel for one selected task. No look of its own; content is Stack and a Pane aside. Same in both designs."
+  },
+  {
+   "variant": "draft inspector slot (not in tree)",
+   "reason": "Routed placeholder in PreviewPanel when draftListId is set and no task is selected. No look of its own; content is Stack and a Pane aside. Same in both designs."
+  },
+  {
+   "variant": "trash pane slot (not in tree)",
+   "reason": "Routed placeholder that replaces PreviewPanel in the aside when trashOpen is set. No look of its own; content is built from Pane aside, TitleBar scope pane, Toolbar strip, ScrollArea, Row and Separator (A; B cites Footer and Row)."
+  },
+  {
+   "variant": "filter and sort panel slot (not in tree)",
+   "reason": "Routed placeholder for filterOpen when trash is not open. No look of its own; content uses RefineRow, Indicator, Separator and a Pane aside."
+  },
+  {
+   "variant": "command palette slot (not in tree)",
+   "reason": "Routed overlay placeholder with onClose, shown only when paletteOpen. Its visible panel is CommandPalette (Dialog size palette over Scrim soft); the slot has no look."
+  },
+  {
+   "variant": "sheet host, mounted, no box",
+   "reason": "Always-mounted, non-visual provider for in-app sheets; renders no box while idle. It mounts Dialog instances (the Dialog portal does this job)."
+  },
+  {
+   "variant": "context menu provider, no visual",
+   "reason": "Non-visual provider that supplies context-menu state to the window; the ContextMenu root does this per window and has no visual node."
+  },
+  {
+   "variant": "tab strip drag filler",
+   "reason": "Invisible spacer whose only job is to be a window drag region (data-tauri-drag-region). Desktop only. Covered by the TitleBar window-scope drag region; a Stack with dragRegion and no look to build (listed under Stack.replaces in B)."
+  },
+  {
+   "variant": "search options wrapper",
+   "reason": "Positioning wrapper with no look of its own around one 21x21 Search options icon button, which belongs to the button family. Stack can render it (B lists it under Stack.replaces)."
+  },
+  {
+   "variant": "draft completion ring placeholder",
+   "reason": "Disabled placeholder for the task completion check on a draft. It is the same control as the task-row round check and should be rendered disabled, not as a second copy. Whether the task-row family defines the round check is uncertain (B)."
+  },
+  {
+   "variant": "task row context menu opener (unverified)",
+   "reason": "Unverified trigger: no code, tree or capture confirms it (count 0); TaskRow2 has no onContextMenu. Nothing to build until verified. B lists it under ContextMenu.replaces; kept here until verified."
+  },
+  {
+   "variant": "list tab context menu opener (unverified)",
+   "reason": "Unverified trigger: the ListTabs labels have no context handler (count 0). Nothing to build until verified. B lists it under ContextMenu.replaces; kept here until verified."
+  },
+  {
+   "variant": "dimmed background window",
+   "reason": "Not a component: it is the main WindowFrame rendered under an open Scrim (web only). Desktop has no dimming because dialogs and sheets are separate windows (decision)."
+  }
+ ]
+}

@@ -1,0 +1,163 @@
+{
+ "name": "WindowControlButton",
+ "purpose": "(Renamed from TrafficLight.) macOS window traffic light: a 14px disc (1rem) inside a 16px (size-4) button around an svg with viewBox 85.4. Used for close, minimise and full-screen in the title bar and main window, the Settings windows and the Trash pane. It is window chrome, so it is desktop-only. Kept apart from IconButton because it is window chrome, not an in-app control. Also (structure): One disc of a WindowControls group: close, minimise or full screen, live or inert. Folds in CaptionButton: Add a chrome axis: macOS disc vs Windows or Linux caption button (46px full title-bar height). CaptionButton's kind (minimise, maximise or restore, close) folds into TrafficLight's kind. Both are role=button window controls, and CaptionButton's note calls it the non-macOS counterpart of TrafficLight. WindowControls stays a separate group widget. The survivor name is macOS-branded, so a neutral name such as WindowControlButton is advisable (A). CaptionButton is code-derived with no recorded instance (B), so its look and states are uncertain. B's alternative of folding both into WindowControls is rejected (see keepApart).",
+ "base": "none (custom component styled with cva; no shadcn or Radix primitive applies to macOS window chrome)",
+ "variants": [
+  {
+   "axis": "kind",
+   "default": "close",
+   "values": [
+    {
+     "value": "close",
+     "when": "Red light. Lit ring #e24b41, fill #ed6a5f, glyph #460804. X glyph fades in on hover (lit only). Closes the window, or the pane when the caller binds a pane close (Trash)."
+    },
+    {
+     "value": "minimize",
+     "when": "Yellow light. Lit ring #e1a73e, fill #f6be50, glyph #90591d. Minus glyph fades in on hover. Calls the window minimise."
+    },
+    {
+     "value": "fullscreen",
+     "when": "Green light. Lit ring #2dac2f, fill #61c555, glyph #2a6218. Diagonal arrows glyph fades in on hover. Toggles full screen."
+    },
+    {
+     "value": "maximize",
+     "when": "Icon crop_square 14px, or filter_none 14px when maximized. Hover background bg-wash-2."
+    }
+   ]
+  },
+  {
+   "axis": "action",
+   "values": [
+    {
+     "value": "close",
+     "when": "Close disc. The only live disc in the settings windows. Red fill in the shot."
+    },
+    {
+     "value": "minimize",
+     "when": "Minimise disc. Inert in the settings windows. Colour not recorded."
+    },
+    {
+     "value": "fullscreen",
+     "when": "Full-screen disc. Inert in the settings windows. Colour not recorded."
+    }
+   ],
+   "default": "close"
+  },
+  {
+   "axis": "live",
+   "values": [
+    {
+     "value": "live",
+     "when": "Clickable; lit or grey with window focus."
+    },
+    {
+     "value": "inert",
+     "when": "Always grey, not focusable, no effect (built with minimizable(false) and maximizable(false) in settings-general)."
+    }
+   ],
+   "default": "live"
+  }
+ ],
+ "props": [
+  {
+   "name": "kind",
+   "type": "'close' | 'minimize' | 'fullscreen'",
+   "description": "Variant prop: which light, glyph and lit colours."
+  },
+  {
+   "name": "active",
+   "type": "boolean (default true)",
+   "description": "Window focused. True gives the lit colours and the hover glyph; false gives the unlit grey disc with no glyph. The caller sets it from window focus."
+  },
+  {
+   "name": "inert",
+   "type": "boolean (optional; minimize and fullscreen only)",
+   "description": "No action: grey disc, no glyph, removed from the tab order and hidden from assistive tech. Used by the Trash and Settings minimise and full-screen lights. Not valid for close."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Set only when the close action is missing (catalogue: disabled only if the action is missing)."
+  },
+  {
+   "name": "onClick",
+   "type": "() => void",
+   "description": "Caller action. Title bar close calls win.close(); Trash close calls the pane close; minimise and full-screen call the window actions."
+  },
+  {
+   "name": "label",
+   "type": "string (required)",
+   "description": "Accessible name and tooltip: 'Close', 'Minimize', 'Full Screen', or a pane name such as 'Close Trash'."
+  },
+  {
+   "name": "action",
+   "type": "'close' | 'minimize' | 'fullscreen'",
+   "description": "Which window or pane action it carries."
+  },
+  {
+   "name": "focused",
+   "type": "boolean",
+   "description": "Lit or grey with window focus."
+  },
+  {
+   "name": "showGlyph",
+   "type": "boolean",
+   "description": "Glyph shown on group hover (set by WindowControls)."
+  },
+  {
+   "name": "onPress",
+   "type": "() => void",
+   "description": "Runs the action when live."
+  },
+  {
+   "name": "maximized",
+   "type": "boolean (optional; kind maximize only)",
+   "description": "Swaps crop_square for filter_none and the label to Restore."
+  }
+ ],
+ "states": [
+  "lit (active true)",
+  "unlit (active false; grey inactive colours, no glyph)",
+  "inert (grey disc, no glyph, no action, not focusable; minimize and fullscreen only)",
+  "hover (glyph fades in; lit only; unlit hover is unverified)",
+  "focus-visible",
+  "disabled (close with action missing)",
+  "lit (window focused)",
+  "grey (window blurred)",
+  "glyph shown (group hover)",
+  "inert (always grey, disabled)",
+  "default",
+  "hover (minimize and maximize: bg-wash-2; close: #e81123 with white glyph)",
+  "maximize (not maximized)",
+  "restore (maximized; filter_none glyph)"
+ ],
+ "role": "button",
+ "keyboard": "Tab and Shift+Tab focus the light unless it is inert; inert lights are skipped in the tab order. Enter and Space activate. No arrow-key movement between lights (none recorded, none added). / Proposed: Enter or Space activates a live disc. Inert discs are skipped by Tab. A tab stop for close is recommended (native macOS lights are not tab stops; the catalogue does not specify).",
+ "replaces": [
+  "Traffic light, close, enabled",
+  "Traffic light, minimise, enabled",
+  "Traffic light, full screen, enabled",
+  "Traffic light, close Trash pane, enabled",
+  "Traffic light, inert",
+  "traffic-light disc, close, live (settings)",
+  "traffic-light disc, inert (settings)",
+  "Windows minimise button, code-derived",
+  "Windows maximise and restore button, code-derived",
+  "Windows close button, red hover, code-derived"
+ ],
+ "platform": "Desktop on macOS only. Web does not render it, because the browser owns window chrome. Desktop on Windows and Linux uses CaptionButton. The Trash close light targets the Trash pane through onClick and label, not through a variant. Inert lights exist only on desktop. / Desktop only. Web has no traffic lights (browser chrome). Windows caption buttons are an open choice and not this disc style.",
+ "open": "1) Trash close light: its look and target are unverified. A window-style light is kept here. If Trash is a pane on desktop, use IconButton close instead. 2) Inert hiding: the catalogue records the inert attribute, and the Settings-about inert lights carry aria labels Minimize and Full Screen (line 109), so hiding from assistive tech is unverified. Decide between aria-hidden and a labelled control. 3) Inert is a prop on TrafficLight, not a separate widget. Catalogue line 7 keeps widgets that act differently apart; this design relaxes that because the inert light shares the disc and grey colours and differs only by having no action. Confirm, or split it out. 4) Unlit and inert grey hex values are not recorded (only gray inactive colours, line 40). 5) Whether an unlit light shows a glyph on hover is not recorded. 6) The glyph colour oklch(0.26 0.012 262) is unverified and may be the text colour; this design takes the glyph colour from its own token. 7) Close colours are hard-coded reds. Decide whether they are window-chrome tokens (recommended, since closing a window is not destructive) or the danger token. 8) Whether lit lights should be keyboard focusable is not recorded; this design makes them focusable. / The red close fill is a fixed traffic-light colour, not a token. The danger token is reserved for destructive actions, so close must not use it; no traffic-light token is recorded (uncertain). A's live/inert axis and B's disabled prop are one inert flag; B's focus axis is A's focused prop. The settings disabled=[2] conflict is recorded under WindowControls.",
+ "family": "icon-buttons",
+ "families": [
+  "icon-buttons",
+  "structure"
+ ],
+ "folded": [
+  {
+   "name": "CaptionButton",
+   "how": "Add a chrome axis: macOS disc vs Windows or Linux caption button (46px full title-bar height). CaptionButton's kind (minimise, maximise or restore, close) folds into TrafficLight's kind. Both are role=button window controls, and CaptionButton's note calls it the non-macOS counterpart of TrafficLight. WindowControls stays a separate group widget. The survivor name is macOS-branded, so a neutral name such as WindowControlButton is advisable (A). CaptionButton is code-derived with no recorded instance (B), so its look and states are uncertain. B's alternative of folding both into WindowControls is rejected (see keepApart).",
+   "role": "button",
+   "keyboard": "Tab focuses it. Enter and Space activate. No shortcut is bound to these controls."
+  }
+ ]
+}

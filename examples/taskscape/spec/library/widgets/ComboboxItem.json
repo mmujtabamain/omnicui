@@ -1,0 +1,95 @@
+{
+ "name": "ComboboxItem",
+ "purpose": "A selectable option row in a listbox where focus stays in a text field. Two contexts: palette rows inside CommandPalette (run a command, or jump to a list or project, with an optional trailing shortcut); and mention rows inside Popover (an attachment candidate). Merges A's ComboboxItem and B's CommandItem; the measured values of A are kept.",
+ "base": "Palette: shadcn CommandItem (cmdk Command.Item) row inside CommandPalette. Mention: no Radix primitive; the same listbox option pattern as the palette.",
+ "variants": [
+  {
+   "axis": "context",
+   "default": "palette",
+   "values": [
+    {
+     "value": "palette",
+     "when": "Command palette. Row 488px wide (x 346 to 834); label 400 13px/19.5px; leading icon 16px at x 355, label at x 378 (measured). Active background oklch(0.6 0.2 255 / 0.1) (measured; see open). Click or Enter runs the command or jump and closes the palette."
+    },
+    {
+     "value": "mention",
+     "when": "Mention autocomplete. Icon fileKindFor(...).icon at 15px, weight 300; attachment name truncated; highlighted row background selection-1; other rows text-content-2. Values from component code (RichTextEditor.tsx:603-628), not measured. Mousedown picks it and inserts an att-chip plus a trailing space (preventDefault keeps editor focus); Enter or Tab also picks."
+    }
+   ]
+  },
+  {
+   "axis": "shortcut",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No trailing element. Row height 30. Used by commands and jump targets (Errands, Reading, Garden, Home, Spring launch) and mention rows."
+    },
+    {
+     "value": "hotkey",
+     "when": "Trailing HotkeyHint glyph. Row height 32 (measured; not folded to 30). Palette context only."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "icon",
+   "type": "string",
+   "description": "Leading icon name; 16px in palette context, 15px in mention context."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Row text; runtime data for jump rows; truncates."
+  },
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Text the palette filter matches against."
+  },
+  {
+   "name": "id",
+   "type": "string",
+   "description": "Option id, referenced by aria-activedescendant."
+  },
+  {
+   "name": "shortcut",
+   "type": "string",
+   "description": "Rendered as HotkeyHint; only with shortcut hotkey."
+  },
+  {
+   "name": "active",
+   "type": "boolean",
+   "description": "Highlighted row, from arrow keys or pointer."
+  },
+  {
+   "name": "context",
+   "type": "'palette' | 'mention'",
+   "description": "Sets geometry, highlight token and commit behaviour."
+  },
+  {
+   "name": "onSelect",
+   "type": "() => void",
+   "description": "Palette: runs the command or jump, then closes. Mention: inserts the attachment chip and trailing space."
+  }
+ ],
+ "states": [
+  "inactive",
+  "active (highlighted; index 0 on palette open; any row reached by pointer or arrow keys)",
+  "hover (mouse move sets active)"
+ ],
+ "role": "option, with aria-selected true on the active row. The catalogue kind is menu-item; it changes to option because focus stays in a text field (the palette search input or the editor), and the menu focus model does not apply there.",
+ "keyboard": "ArrowUp and ArrowDown move the active row (handled by the parent list). Enter picks the active row: palette runs and closes; mention inserts. Tab picks in mention context only. Escape closes the list (handled by the parent). Mouse move sets active.",
+ "replaces": [
+  "mention autocomplete row",
+  "command palette row, with shortcut",
+  "command palette row, no shortcut (commands and jump targets)"
+ ],
+ "platform": "Shortcut glyphs are platform-specific: Control on Windows, Command on macOS (decision). Web: palette shortcuts must not use a combination the browser reserves, because browser shortcuts take precedence; the catalogue gives no key values, so this check cannot be done from it. Desktop: a global hotkey pressed while the main window is focused is handled by the main window. Jump-row labels come from runtime data on both platforms.",
+ "open": "1) The palette active row is an accent blue wash oklch(0.6 0.2 255 / 0.1) (measured). Accent blue is reserved for primary action and selection, and a keyboard highlight is neither. Decide: neutral wash-2l (as the menu hover) or accept it as selection. Kept as measured until decided. 2) The palette accent wash and the mention selection-1 token should resolve to one selection token, or be separate by decision. 3) The palette list must scroll; the reference clips rows (see CommandPalette). 4) Shortcut row height 32 kept as measured. 5) Role option instead of the catalogue's menu-item is a change; confirm. 6) Mention values are from component code and not measured. 7) The web shortcut check is blocked: no key values in the catalogue.",
+ "family": "menus",
+ "families": [
+  "menus"
+ ]
+}

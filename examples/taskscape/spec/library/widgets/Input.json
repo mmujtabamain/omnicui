@@ -1,0 +1,172 @@
+{
+ "name": "Input",
+ "purpose": "Single-line text entry with no chrome of its own (shadcn Input). The host supplies the surface: InputGroup when wrapped, or the tab bar for inline rename. Covers the three catalogue rows that use a bare input: inline list rename (tab bar), capture title, and sheet name (bare). The palette filter is CommandInput, the day count is NumberField, and the sheet name with fixed suffix is InputGroup with a suffix. Merged from A's TextField and B's Input. Kept A's inline size (font-medium, 140px cap, ring-1) because the weight and cap are visible. Folded the capture title's 14px/20px line into md's 21px line (1px, not felt; listed in open). Sources: A (TextField rows, text.json lines 109-116 for rename, 120-130 for commit and spellCheck, 234 for capture Tab, 311-317 for sheet) and B (Input). Folds in TitleField: Add a multiline variant: a textarea that grows from one line (21px) to two (42px) with aria-multiline. The 600 18px display typography becomes a size or font variant. Both are role=textbox, and both commit a trimmed value on Enter or blur. Medium confidence (A): Input is defined as single-line, so growth is a new axis on Input.",
+ "base": "shadcn Input (native input type=text); no Radix primitive.",
+ "variants": [
+  {
+   "axis": "size",
+   "default": "md",
+   "values": [
+    {
+     "value": "inline",
+     "when": "Inline list rename in the tab bar. h-6 (1.5rem = 21px at 1rem=14px), px-space-4, py-0, max width 10rem (140px), font-medium (kept; B folded it to regular, see open), ring-1 on focus."
+    },
+    {
+     "value": "md",
+     "when": "14px text on a 21px (1.5rem) line, full width of its host. Capture title, sheet name (bare). Also the md search and well fields when inside InputGroup or SearchField. The capture title's 14px/20px is folded here (see open)."
+    },
+    {
+     "value": "sm",
+     "when": "12px text on an 18px line. Used inside an sm InputGroup (settings sidebar search). Inside InputGroup or SearchField the size is inherited from the owning widget; standalone the Input sets its own."
+    }
+   ]
+  },
+  {
+   "axis": "mode",
+   "default": "inline",
+   "values": [
+    {
+     "value": "inline",
+     "when": "Task inspector title. Readonly at rest, reads as text, no fill. Click, or an editRequest from a row or F2/Enter through uiStore titleEditReq, enters editing: bg-surface-0 fill, ring-2 ring-surface-0, whole text selected on open. Enter or blur commits; Escape reverts."
+    },
+    {
+     "value": "draft",
+     "when": "New task draft title. Always editable, resting fill (about oklch(0.944 0.003 255)), ring-2 ring-surface-0, autofocus on open. Enter or blur commits the draft (runDraftAction commit); Escape cancels it (runDraftAction cancel). B folded the fill into bg-surface-0; kept here because the fill is visible (see open)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Controlled value."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: string) => void",
+   "description": "Fires on every change (draft.setTitle in capture)."
+  },
+  {
+   "name": "size",
+   "type": "'inline' | 'md' | 'sm'",
+   "description": "Text size and line box. Inherited when wrapped by InputGroup or SearchField."
+  },
+  {
+   "name": "placeholder",
+   "type": "string",
+   "description": "Shown while empty. Inline rename has none."
+  },
+  {
+   "name": "autoFocus",
+   "type": "boolean",
+   "description": "Focus on mount (capture title, sheet name)."
+  },
+  {
+   "name": "selectOnFocus",
+   "type": "boolean",
+   "description": "Select the whole value on open or focus when the initial text is non-empty (sheet name, rename of a selected value). B named this selectAllOnFocus."
+  },
+  {
+   "name": "stopKeyPropagation",
+   "type": "boolean",
+   "description": "Default false. True for inline rename, which stops all key events, Escape included (catalogue line 109). Not set for capture title or sheet name, so Tab, Enter and Escape bubble to app and window handlers."
+  },
+  {
+   "name": "spellCheck",
+   "type": "boolean",
+   "description": "Default true. Sheet name fields pass false."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Disabled look and no input."
+  },
+  {
+   "name": "onSubmit",
+   "type": "(value: string) => void",
+   "description": "Enter without Shift. The caller decides the outcome (rename commits, capture saves, sheet accepts)."
+  },
+  {
+   "name": "onCancel",
+   "type": "() => void",
+   "description": "Escape. The caller decides (rename reverts, capture hides the bar)."
+  },
+  {
+   "name": "onBlur",
+   "type": "(value: string) => void",
+   "description": "Blur. Rename commits the same way as Enter."
+  },
+  {
+   "name": "className",
+   "type": "string",
+   "description": "Layout only (width, flex). Visual variation goes through size."
+  },
+  {
+   "name": "inputRef",
+   "type": "Ref<HTMLInputElement>",
+   "description": "Lets the host focus or select the field."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required. Sheet name fields use the headline (aria-label values per catalogue lines 316-317, not reproduced here)."
+  },
+  {
+   "name": "mode",
+   "type": "'inline' | 'draft'",
+   "description": "Added from A's mode axis, which had no prop. Default inline."
+  },
+  {
+   "name": "editRequest",
+   "type": "number | string",
+   "description": "Changing value asks an inline title to enter editing (uiStore titleEditReq)."
+  },
+  {
+   "name": "onCommit",
+   "type": "(title: string) => void",
+   "description": "Trimmed title on Enter or blur. Inline: host calls updateTask only if non-empty and changed, else the title reverts. Draft: host runs runDraftAction(title, 'commit'). Replaces B's onSubmit and onBlur, which carried no value."
+  },
+  {
+   "name": "selectOnOpen",
+   "type": "boolean",
+   "description": "Added (critic). Default true for inline: the whole text is selected when editing opens (catalogue line 125)."
+  }
+ ],
+ "states": [
+  "empty: placeholder shown",
+  "focused: focus ring token (not an accent border; see open)",
+  "filled",
+  "text selected on focus (accent allowed for selection; sheet name with a non-empty value, rename)",
+  "disabled",
+  "readonly: inline at rest, no fill (aria-readonly)",
+  "editing: inline, fill and ring shown, text selected on open",
+  "draft: resting fill, always editable",
+  "empty: placeholder 'Untitled' shown",
+  "wrapped: two lines, height 42px",
+  "dark theme: text oklch(0.94 0.004 260)"
+ ],
+ "role": "textbox (native input type=text; inferred from the element, not recorded in the catalogue).",
+ "keyboard": "Native text editing. Enter (no Shift): onSubmit. Escape: onCancel. Blur: onBlur. Tab is not handled and bubbles (capture Tab opens notes at App.tsx:48-50). With stopKeyPropagation, every key stops at the input (inline rename). Without it, keys bubble, so a sheet's window-level Enter still accepts (catalogue line 311). Shift+Enter is not recorded for Input.",
+ "replaces": [
+  "Inline list rename, tab bar",
+  "Capture title input",
+  "Sheet name input, bare",
+  "Task title, inspector, display or edit",
+  "New task title, draft inspector"
+ ],
+ "platform": "Same widget on both. Capture title exists only on desktop (quick-capture window opened by global hotkey); the web has no capture window. Sheet name fields are separate windows on desktop (no backdrop dimming) and in-page dialogs on web; autoFocus and select-on-open apply in both.",
+ "open": "1) Focus indicator: use the focus ring token, not an accent border (accent reserved for primary action and selection). Decision needed; the rename uses ring-focus-1l and ring-focus-1d, the sheet uses accent-500. 2) Rename font weight: font-medium kept here, B folded it to regular. Confirm. 3) Capture title line: 14px/20px folded to md 21px (1px change, visible in principle). Confirm. 4) Keydown isolation: stopKeyPropagation default false, true only for inline rename. Confirm that capture and sheet paths bubble. 5) Select-all on open for the inline rename is inferred (catalogue rows 101-116 record no selection). 6) Sheet placeholders 'Name this list' and 'Name this project' and their aria-labels (catalogue lines 316-317) are the sheet name examples; the aria-label values were not reproduced in the critique. 7) Shift+Enter in rename, capture and sheet is not recorded.",
+ "family": "text",
+ "families": [
+  "text"
+ ],
+ "folded": [
+  {
+   "name": "TitleField",
+   "how": "Add a multiline variant: a textarea that grows from one line (21px) to two (42px) with aria-multiline. The 600 18px display typography becomes a size or font variant. Both are role=textbox, and both commit a trimmed value on Enter or blur. Medium confidence (A): Input is defined as single-line, so growth is a new axis on Input.",
+   "role": "textbox with aria-multiline=true (native textarea; inferred from the element). readOnly sets aria-readonly.",
+   "keyboard": "Enter: onCommit with the trimmed value, default prevented, so Enter never inserts a line break. Escape: onCancel, default prevented (inline reverts and exits editing; draft cancels). Blur: onCommit (trimmed). Click on a readOnly title starts editing with the text selected. F2 or Enter from a focused list row requests rename through editRequest (host). Shift+Enter is not recorded; proposal: behave as Enter with no newline."
+  }
+ ]
+}

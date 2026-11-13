@@ -1,0 +1,167 @@
+{
+ "name": "Badge",
+ "purpose": "Read-only inline pill for a count or short label: subtask progress, attachment count, list name tag, settings match count, and the number of selected tasks. Never interactive. Folds in Indicator: Badge shape=dot or bar with no text. Both are non-interactive marks with shape and tone axes (index lines 3 and 27), and both are role none. Lower confidence (B): Indicator's bar marks the active draft or inspector and is not a count pill, so the team should decide whether the bar stays a decorative mark. Its separation from DropIndicator still holds.",
+ "base": "none (shadcn Badge pattern: a span with cva variants; no Radix primitive)",
+ "variants": [
+  {
+   "axis": "tone",
+   "default": "outline",
+   "values": [
+    {
+     "value": "outline",
+     "when": "Grey bordered pill with muted text. Covers the subtask count ('1 / 3') on main-window, task-list, draft-inspector, multi-inspector, filter-panel and trash, and the list name tag on multi-inspector. The attachment count defaults here (see open)."
+    },
+    {
+     "value": "recessed",
+     "when": "Settings match count on the General tab. The look is not recorded in the catalogue; B estimates a muted filled chip with no border. Kept as its own tone because it is a visibly different surface from outline. Confirm the look."
+    },
+    {
+     "value": "accent",
+     "when": "Filled accent-blue fill with light text, showing how many tasks are selected in the multi-select header. Accent is used only here because it marks selection; never use it for any other count."
+    },
+    {
+     "value": "neutral",
+     "when": "bg-edge-3. Filter dot when no filter is active (B); StatusDot idle grey (A)."
+    }
+   ]
+  },
+  {
+   "axis": "shape",
+   "default": "pill",
+   "values": [
+    {
+     "value": "pill",
+     "when": "Rounded pill for all text and count badges."
+    },
+    {
+     "value": "round",
+     "when": "Circle, used only with size lg (the 28px selected-count badge)."
+    },
+    {
+     "value": "dot",
+     "when": "6px rounded-full (h-1.5 w-1.5). Section accent dot and filter activity dot (StatusDot)."
+    },
+    {
+     "value": "bar",
+     "when": "2px by 16px (h-4 w-0.5). Draft accent caret in the title row; task inspector accent tick at the header edge (size not measured, folded here)."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "default": "md",
+   "values": [
+    {
+     "value": "md",
+     "when": "11px / 16.5px line, weight 600, padding px-space-3, 18px tall pill (measured box about 32x18 on main-window). Used by the subtask count, the attachment count, the list name tag and the settings match count. The reference's sm size (10.5px, px-space-4) for the list name tag and match count is folded here (see notWidgets)."
+    },
+    {
+     "value": "lg",
+     "when": "28x28 circle (h-8, min-w-8, 2rem on the 14px root) with 13px / 19.5px line, weight 600, padding px-space-5. Used by the selected-count badge. The reference weight 700 is folded to 600 (see notWidgets)."
+    }
+   ]
+  },
+  {
+   "axis": "icon",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "Text or count only."
+    },
+    {
+     "value": "leading",
+     "when": "Leading icon before the count, set through the icon prop. Used by the attachment count (attach_file, a paperclip). Rendered at the badge text size; the reference 13px, weight 500 is folded (see notWidgets)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "tone",
+   "type": "'outline' | 'recessed' | 'accent'",
+   "description": "Colour treatment. Default outline. Named tone, as in the catalogue; B's variant prop is the same job."
+  },
+  {
+   "name": "shape",
+   "type": "'pill' | 'round'",
+   "description": "Corner shape. round is valid only with size lg."
+  },
+  {
+   "name": "size",
+   "type": "'md' | 'lg'",
+   "description": "Font size, weight, padding and minimum box. Default md."
+  },
+  {
+   "name": "icon",
+   "type": "ReactNode",
+   "description": "Optional leading icon. Setting it sets icon to leading."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "The visible count or label text, e.g. '1 / 3', '4', 'Errands'."
+  },
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Hover tooltip. The subtask count passes '{doneChildren} of {children.length} subtasks done'."
+  },
+  {
+   "name": "srLabel",
+   "type": "string",
+   "description": "Visually hidden text for screen readers, e.g. '1 of 3 subtasks done' or '1 match'. The app supplies it; the subtask count must always pass it, because a title attribute alone is not reachable by keyboard. Same string as the title for the subtask count."
+  },
+  {
+   "name": "className",
+   "type": "string",
+   "description": "Escape hatch for layout only; not for colour."
+  },
+  {
+   "name": "visible",
+   "type": "boolean",
+   "description": "Section dot hidden when the section is inactive."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Text alternative supplied by the owning control (for example, filters active). Proposed."
+  }
+ ],
+ "states": [
+  "default (static, read-only; no hover, focus or press state)",
+  "not rendered (consumer rules, not widget states): subtask count hidden when the row has no visible children and in the search-typed flat list; match count hidden unless a settings search has matches greater than 0; attachment count shown only when attachments exist",
+  "visible",
+  "hidden",
+  "active (accent)",
+  "idle (neutral)"
+ ],
+ "role": "none (generic span). srLabel is visually hidden text inside it, so screen readers hear the subtask count.",
+ "keyboard": "None. Not focusable and has no actions.",
+ "replaces": [
+  "Subtask progress badge, bordered",
+  "Attachment count badge",
+  "Selected count badge, accent round",
+  "List name tag, outline",
+  "Match count badge, recessed",
+  "section accent dot",
+  "filter activity dot",
+  "draft accent caret bar",
+  "task inspector accent tick"
+ ],
+ "platform": "Same on web and desktop. The title tooltip is hover-only on both; desktop may show it as a native tooltip. The selected count depends on selection: Control-click on Windows and Command-click on macOS on desktop; on web the same platform modifier is handled by the page. The badge does not change. The attachment count reads attachments stored on the server on web and local files on desktop; the badge shows the count on both.",
+ "open": "Sources: A and B. (1) The attachment count's tone and look are not recorded; it defaults to outline and this is unconfirmed. (2) Attachment padding conflict: A records px-space-2 (tighter than the others) and asks whether it needs its own size; B folds it into md px-space-3. This merge folds it under the rule that a one-step padding difference is not felt, so it is not kept as a value. Confirm. (3) Match count look is not recorded; the recessed look is B's estimate. (4) Subtask border colour and radius on filter-panel and trash are estimates; B records them as not recorded on filter-panel, trash and main-window and folds them to the outline border token and a full pill radius. (5) Subtask text form conflict: A's example is '1 / 3' with spaces; B notes the catalogue text reads '{done} / {total}' with no spaces. Decide which form to use. (6) The title uses children.length, which is the task's subtask array, not this Badge's children prop; the app must pass the subtask count separately. (7) Folded values to confirm: sm to md (10.5px to 11px), lg weight 700 to 600, icon 13px to badge text size. (8) B's 'secondary' name is renamed to the catalogue name recessed. (9) The Badge name is inferred; component names are '?' on multi-inspector, filter-panel and trash.",
+ "family": "status",
+ "families": [
+  "status",
+  "structure"
+ ],
+ "folded": [
+  {
+   "name": "Indicator",
+   "how": "Badge shape=dot or bar with no text. Both are non-interactive marks with shape and tone axes (index lines 3 and 27), and both are role none. Lower confidence (B): Indicator's bar marks the active draft or inspector and is not a count pill, so the team should decide whether the bar stays a decorative mark. Its separation from DropIndicator still holds.",
+   "role": "none; aria-hidden. The meaning comes from the owning control's label.",
+   "keyboard": "None."
+  }
+ ]
+}

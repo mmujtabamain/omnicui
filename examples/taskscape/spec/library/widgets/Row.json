@@ -1,0 +1,100 @@
+{
+ "name": "Row",
+ "purpose": "Background and layout of a list row: the selected band across the task list, the hover wash, the multi-select row and the trash row. Row content comes in as children; the subtask composer and the refine row are their own widgets.",
+ "base": "none (custom; shadcn Item-style row)",
+ "variants": [
+  {
+   "axis": "shape",
+   "values": [
+    {
+     "value": "inset",
+     "when": "rounded-field, px-4, gap-5 (multi-select row, trash row)."
+    },
+    {
+     "value": "full-bleed",
+     "when": "No radius, edge to edge across the list (x 0 to 860). Task-list selection band."
+    }
+   ],
+   "default": "inset"
+  },
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "selection",
+     "when": "bg-selection-1 (selection-1 token); the row is selected."
+    },
+    {
+     "value": "wash",
+     "when": "wash-1 token; the row is hovered. Reveals child controls (Open in multi-select rows)."
+    }
+   ],
+   "default": "selection"
+  },
+  {
+   "axis": "density",
+   "values": [
+    {
+     "value": "md",
+     "when": "h-9 (multi-select rows; measured at a 32px pitch, which fits 14px rem at 31.5px)."
+    },
+    {
+     "value": "sm",
+     "when": "h-8 (refine rows)."
+    }
+   ],
+   "default": "md"
+  }
+ ],
+ "props": [
+  {
+   "name": "shape",
+   "type": "'inset' | 'full-bleed'",
+   "description": "Geometry."
+  },
+  {
+   "name": "tone",
+   "type": "'selection' | 'wash'",
+   "description": "Token."
+  },
+  {
+   "name": "density",
+   "type": "'sm' | 'md'",
+   "description": "Row height."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Selected fill."
+  },
+  {
+   "name": "indent",
+   "type": "number",
+   "description": "Pixels: depth times 24 for task rows."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Row content. Multi-select rows put the Open button here, shown on hover."
+  }
+ ],
+ "states": [
+  "idle (no fill)",
+  "hover (wash; reveals child controls)",
+  "selected (selection)",
+  "highlighted (last multi row; reason unverified)"
+ ],
+ "role": "none (the parent list owns the role; B's listitem or option proposal is not adopted)",
+ "keyboard": "None on the surface. Selection is made by the platform modifier: Control-click on Windows, Command-click on macOS (decision). The list owns that, not Row. Row children carry their own keys.",
+ "replaces": [
+  "multi-select row",
+  "task list selection highlight",
+  "trash row hover highlight"
+ ],
+ "platform": "Same. The selection gesture differs by OS modifier, not by look.",
+ "open": "Merged: A's RowSurface and B's Row are one widget named Row; B's bleed axis is A's shape (contained = inset). B's editing prop belongs to InlineComposer and B's refine-row job to RefineRow, so both are dropped here. Multi-select row density is h-9 in source but 32px measured; pick one px value. Trash row selected tone is uncertain (catalogue shows it on row 2 in trash-selected, per B only). Task list selection colour not measured (light blue in the shot). Last multi row highlight is unverified. The subtask composer's parent row is not in these files.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

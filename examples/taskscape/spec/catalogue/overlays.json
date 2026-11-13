@@ -1,0 +1,109 @@
+{
+ "kind": "overlays",
+ "title": "Sheets, dialogs and overlays",
+ "kinds": [
+  "sheet",
+  "dialog",
+  "toast",
+  "lightbox",
+  "tooltip"
+ ],
+ "description": "Modal and floating layers in the task-manager app: the undoable-action toast, the name and confirm sheet cards, the command palette overlay, and the attachment lightbox (both the inspector-mounted lightbox and its full-window overlay shell). Built from the five rows in rows-overlays.json; the sheet card row is split into a name card variant and a confirm card variant, giving six variants in total.",
+ "variants": [
+  {
+   "name": "toast, undoable action notice",
+   "kind": "toast",
+   "component": "Toast",
+   "description": "Undoable action notice shown after an undoable action. Mounted on the main window with no props. Only seen as an idle component in the recorded states, so its trigger and content are not in the inventory. Source conflict: the row's purpose text says \"Own screen: toast\" while its screen field is main-window; no separate toast screen is recorded, so usedIn follows the screen field. Unresolved.",
+   "look": "Not visible in the recorded states; no measured look.",
+   "states": [
+    "idle (no children in recorded states)"
+   ],
+   "behaviour": "Shown after an undoable action; the trigger is not in these files.",
+   "usedIn": [
+    "main-window"
+   ],
+   "examples": []
+  },
+  {
+   "name": "sheet card, name",
+   "kind": "dialog",
+   "component": "Surface (rendered as Surface2 in tree)",
+   "description": "Name sheet card: one surface holding a badge, headline and a text field with its action row. Used for new-list, new-project and rename-list. Role dialog, aria-modal, non-interactive container; keyboard focus is held by the field or the accept button. Whether the card shows visible text beyond the badge is in conflict in the source row: its text field says \"No visible text.\" while its purpose says the card holds a badge and text. Here \"text\" means the headline copy, which is unresolved against that field. The confirm card is a separate variant.",
+   "look": "364px wide (min(26rem,100%)); 141px tall at 408,309; radius 10.5px; background oklch(0.995 0.001 255); elevation menu, surface 2; overflow hidden. Padding not measured (estimate only: about 15px top and left, 10px sides and bottom). Entrance animation animate-sheet-in (see behaviour).",
+   "states": [
+    "new-list",
+    "new-project",
+    "rename-list"
+   ],
+   "behaviour": "Clicks inside do nothing. aria-labelledby is the headline id. aria-describedby is the detail id only when detail is present; no name-card state with detail is recorded. Plays the animate-sheet-in entrance animation when shown.",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": []
+  },
+  {
+   "name": "sheet card, confirm",
+   "kind": "dialog",
+   "component": "Surface (rendered as Surface2 in tree)",
+   "description": "Confirm sheet card: one surface holding a badge, headline, optional detail copy and an accept button action row. Used for delete-list and delete-confirm. Role dialog, aria-modal, non-interactive container; keyboard focus is held by the accept button. Shows detail when present, a conditional on this state rather than a separate screen state.",
+   "look": "364px wide (min(26rem,100%)); 122px tall at 408,319; radius 10.5px; background oklch(0.995 0.001 255); elevation menu, surface 2; overflow hidden. Padding not measured (estimate only: about 15px top and left, 10px sides and bottom). Entrance animation animate-sheet-in (see behaviour).",
+   "states": [
+    "delete-list",
+    "delete-confirm",
+    "has detail (conditional on this state)"
+   ],
+   "behaviour": "Clicks inside do nothing. aria-labelledby is the headline id. aria-describedby is the detail id only when detail is present. Plays the animate-sheet-in entrance animation when shown.",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": []
+  },
+  {
+   "name": "command palette overlay, modal layer",
+   "kind": "dialog",
+   "component": "Overlay",
+   "description": "Modal layer that hosts the command palette. Layer overlay, placement top, covering the whole-screen region. Wraps the scrim and palette panel, traps focus inside the palette, captures Escape and dismisses the palette through onDismiss, which calls onClose.",
+   "look": "No measured look in the inventory; the palette's visual appearance was not recorded.",
+   "states": [
+    "open (all three reference states)"
+   ],
+   "behaviour": "Dismiss by outside click or Escape (via onDismiss) calls onClose. Escape is captured by the overlay. Focus is trapped inside the palette.",
+   "usedIn": [
+    "command-palette"
+   ],
+   "examples": []
+  },
+  {
+   "name": "attachment lightbox, inspector-mounted",
+   "kind": "lightbox",
+   "component": "AttachmentLightbox (components/AttachmentLightbox, not read)",
+   "description": "Shows one local attachment full size, shared with note @mentions. The note @mentions usage is not a screen in the inventory, so usedIn lists only task-inspector. Mounted only while lightboxIndex is not null, inside the inspector root. Receives attachments, index, onIndex, onClose, onDeleted and onRenamed. Closing sets lightboxIndex to null; deletion closes and refreshes; rename refreshes. The component file was not read, so its internals are not described. The full-window overlay shell is rendered from this component (relationship not verified because AttachmentLightbox.tsx was not read).",
+   "look": "Not measured in the inventory.",
+   "states": [
+    "closed (not mounted)",
+    "open at index"
+   ],
+   "behaviour": "Closing sets lightboxIndex to null. Deleting an attachment closes the lightbox and refreshes. Renaming refreshes.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": []
+  },
+  {
+   "name": "attachment lightbox, full-window overlay shell",
+   "kind": "dialog",
+   "component": "Overlay",
+   "description": "Modal full-window shell for the attachment lightbox. Layer overlay, placement fill, with a strong dim and blur on the backdrop (Backdrop2 scrim). Not rendered when there is no attachment or no file kind (AttachmentLightbox.tsx:159). It is rendered from AttachmentLightbox; whether it is nested inside the inspector-mounted lightbox instance, or is a separate surface, is unverified because AttachmentLightbox.tsx was not read.",
+   "look": "Not measured in the inventory; placement fill, dim strong, blur.",
+   "states": [
+    "open (not rendered when there is no attachment or no file kind, AttachmentLightbox.tsx:159)"
+   ],
+   "behaviour": "Recorded fact: captureEscape is set, so Escape is captured. The claim that Escape is handled by Overlay comes only from a code comment in the source and is not verified in the inventory. Backdrop-click dismissal is disabled (dismissOn none); the stage click handles closing instead. onDismiss is onClose.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": []
+  }
+ ]
+}

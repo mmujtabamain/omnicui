@@ -1,0 +1,95 @@
+{
+ "name": "CommandInput",
+ "purpose": "Input row at the top of the command palette: a leading glyph, the search input and a bottom rule. Also (text): The filter field at the top of the command palette. It drives the palette listbox as a combobox, and its role and keys differ from a plain Input, so it is its own widget (moved out of A's TextField combobox mode). The catalogue names it a bare TextInput (text.json line 246); it is based on that. Matching is a case-insensitive substring match on the label (catalogue). Ranking by match index (earlier first, stable) is inferred from B. cmdk is an implementation option only; its default fuzzy filter must not be used unless the palette passes a substring filter.",
+ "base": "shadcn CommandInput (cmdk), framed by InputGroup shape bar",
+ "variants": [
+  {
+   "axis": "leading",
+   "values": [
+    {
+     "value": "icon",
+     "when": "Bolt glyph in the reference (at 355,102)."
+    }
+   ],
+   "default": "icon"
+  }
+ ],
+ "props": [
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Query."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: string) => void",
+   "description": "Query change."
+  },
+  {
+   "name": "placeholder",
+   "type": "string",
+   "description": "Placeholder text."
+  },
+  {
+   "name": "leading",
+   "type": "ReactNode",
+   "description": "Leading glyph."
+  },
+  {
+   "name": "autoFocus",
+   "type": "boolean",
+   "description": "Focused on open (useEffect focus in the reference)."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required."
+  },
+  {
+   "name": "aria-expanded",
+   "type": "boolean",
+   "description": "Supplied by the palette root."
+  },
+  {
+   "name": "aria-controls",
+   "type": "string",
+   "description": "Listbox id, supplied by the palette root."
+  },
+  {
+   "name": "activeDescendantId",
+   "type": "string",
+   "description": "Id of the active option, supplied by the host (aria-activedescendant)."
+  },
+  {
+   "name": "onMoveActive",
+   "type": "(direction: 'up' | 'down') => void",
+   "description": "ArrowDown moves the active row down, capped at the last result; with zero results it sets -1 (no active row). ArrowUp moves up, floored at 0. The host owns the active row."
+  },
+  {
+   "name": "onSubmit",
+   "type": "() => void",
+   "description": "Enter (default prevented). The host runs the active row. With no results the host does nothing."
+  }
+ ],
+ "states": [
+  "always shown",
+  "focused on open (proposed)",
+  "empty (placeholder)",
+  "typed (filters)",
+  "no results (no active row; Enter does nothing)",
+  "focus on open"
+ ],
+ "role": "combobox on the input (proposed); the row is none",
+ "keyboard": "Typing filters. Arrow keys move the active row in the list (cmdk; proposed). / ArrowDown and ArrowUp are forwarded to the host through onMoveActive. Enter runs the active row through onSubmit and prevents default. Typing resets the active row to the first. The catalogue does not specify Escape for the palette.",
+ "replaces": [
+  "command palette input row",
+  "Command palette filter"
+ ],
+ "platform": "Same. / Same on both. Desktop shows the palette as a window (not decided, see open); the web shows it as an in-page surface.",
+ "open": "Row is h-11 with a 1px bottom border, measured 44px; h-11 at 14px rem is 38.5px, so this conflicts with the rem decision (see TitleBar). / 1) Escape in the palette is not specified in the catalogue. 2) Whether the palette may open as a separate window on desktop is not decided. 3) Combobox role is inferred, not recorded. 4) Ranking by match index is inferred (B), not recorded. 5) Only if cmdk is used: its default fuzzy filter must be replaced by a substring filter.",
+ "family": "structure",
+ "families": [
+  "structure",
+  "text"
+ ]
+}

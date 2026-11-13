@@ -1,0 +1,111 @@
+{
+ "name": "Checkbox",
+ "purpose": "Binary mark on a task: done state, or row multi-select membership. One widget covers the inspector header done toggle (md), subtask and multi-inspector squares (sm), and the round check on task rows in two intents. Intent sets the colour, so done never looks like selection. Merge record: from A Checkbox and RoundCheck (both kept as this widget; RoundCheck is dropped as a separate component, with its round shape as shape=round and its Option-held lamp as a caller-passed shape=square, size=sm, intent=done). The widget does not read the modifier; the caller reads Option or Alt and passes intent (critique). The round select's white centre dot is kept as recorded (B's standard glyph is not adopted). From B Checkbox: sizes, shape and intent axes adopted. Default size is sm (critique: A's md default was backwards). Sources: A Checkbox, A RoundCheck, B Checkbox. Catalogue sizes are px; they convert to rem at 1rem = 14px in the token layer.",
+ "base": "Radix Checkbox. The select intent is an open role question (see role and open).",
+ "variants": [
+  {
+   "axis": "size",
+   "default": "sm",
+   "values": [
+    {
+     "value": "sm",
+     "when": "16x16 box, radius 4.375px, check icon 12px. Used for subtasks, the multi-inspector selected list, the task rows (done and select) and the Option-held done lamp. Covers 'checkbox, small square', 'task done checkbox, round, labelled Select' and 'task row select toggle, round'."
+    },
+    {
+     "value": "md",
+     "when": "18x18 box, check icon 14px, weight 700. Used only for the whole-task header control in the task inspector. Covers 'checkbox, medium (inspector header)'. Radius not recorded; md shape is square by assumption (open)."
+    }
+   ]
+  },
+  {
+   "axis": "shape",
+   "default": "square",
+   "values": [
+    {
+     "value": "square",
+     "when": "Radius rounded-field (4.375px). Inspector header, subtasks, multi-inspector list, and the Option-held done lamp."
+    },
+    {
+     "value": "round",
+     "when": "Radius 50%. Task rows: the done check and the row-select toggle."
+    }
+   ]
+  },
+  {
+   "axis": "intent",
+   "default": "done",
+   "values": [
+    {
+     "value": "done",
+     "when": "Checked fill is the done-lamp token, not accent blue. Used wherever a task is marked done. Round done checks and the square inspector and subtask checks use this intent."
+    },
+    {
+     "value": "select",
+     "when": "Checked fill is the selection accent (oklch(0.62 0.13 255)) with an inner white dot. Used for row multi-select membership on task rows (plain click; Option switches the caller to done)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "checked",
+   "type": "boolean",
+   "description": "Done state (intent=done) or picked state (intent=select)."
+  },
+  {
+   "name": "onCheckedChange",
+   "type": "(checked: boolean) => void",
+   "description": "The caller routes it: intent=done calls actToggleDone on the task or subtask; intent=select calls the membership toggle. Replaces A's onToggle(next, intent), which made the widget report the modifier."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md'",
+   "description": "Variant prop (cva). See variants."
+  },
+  {
+   "name": "shape",
+   "type": "'square' | 'round'",
+   "description": "Variant prop (cva). See variants."
+  },
+  {
+   "name": "intent",
+   "type": "'done' | 'select'",
+   "description": "Variant prop (cva). The caller sets intent=done, shape=square and size=sm while Option (Alt on Windows and web) is held on a round select check. The widget does not read keys."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required accessible name: 'Mark done' or 'Mark not done' for done; 'Select' or 'Deselect' for select (the catalogue's example names). The reference's round done check is labelled 'Select', which is wrong for done and is corrected here."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Not recorded in the catalogue; included for the standard Radix prop."
+  }
+ ],
+ "states": [
+  "unchecked, select intent (empty grey ring)",
+  "checked, select intent (accent fill with inner white dot)",
+  "unchecked, done intent (outline oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark)",
+  "checked, done intent (done-lamp fill with check glyph; the token value is not recorded)",
+  "hover (round select: border shifts to content-3 on the row group)",
+  "focus-visible (Radix default ring; not recorded)",
+  "option-held (transient; caller passes intent=done, shape=square, size=sm)",
+  "disabled (not recorded)",
+  "dark theme (same states on the dark tokens)"
+ ],
+ "role": "checkbox with aria-checked for both intents (B). Not aria-pressed for done: the reference's round done check reports aria-pressed=false with label 'Select', which exposes selection as if it were completion. Select intent: checkbox is the default here; A proposed a button with aria-pressed, and the catalogue records 'Check (button)' on rows 14 and 15 (unverified). Open.",
+ "keyboard": "Tab focuses; Space toggles (Radix Checkbox). Option (macOS) or Alt (Windows and web) with Space, on a select-intent round check, acts as the done switch (proposed; the catalogue records only the pointer modifier). Plain double-click does not toggle done (catalogue, task-list). The keyboard done switch is proposed, not recorded.",
+ "replaces": [
+  "task done checkbox, round, labelled Select",
+  "task row select toggle, round",
+  "checkbox, medium (inspector header)",
+  "checkbox, small square"
+ ],
+ "platform": "Same visual on both. Done-switch modifier: Option on macOS; Alt on Windows and web (decision; the caller reads it). Web: Alt+Space may be taken by the browser or the OS window menu, and browser shortcuts take precedence, so web needs an alternative keyboard route. Row-body multi-select uses Control-click on Windows and Command-click on macOS (decision; handled by the list, not this widget).",
+ "open": "1) Default intent per screen: the catalogue records the done checkbox (rows 3, 10, 21, 23) with a plain click that toggles done and the accessible name 'Select'; the decision says plain click on the round handle selects and Option switches to done. The caller passes intent explicitly; confirm the default on each screen. 2) Done colour: the catalogue records accent-blue fill oklch(0.62 0.13 255) on checked done checks (rows 6, 7, 11), which conflicts with the decision (done uses its own done-lamp colour). Change to the done-lamp token. The done-lamp value is not recorded; the catalogue's done-row colour oklch(0.62 0.013 264) is unverified. 3) Two accent blues: oklch(0.62 0.13 255) (checkboxes, round handle) and oklch(0.6 0.2 255) (segmented control, settings tab). Choose one token and name it selection (shadcn's accent is a neutral hover fill). 4) Select intent role: checkbox (aria-checked) here versus a toggle button (aria-pressed, A's proposal). The catalogue records 'Check (button)' on rows 14 and 15, and that component is '?' and unverified. 5) Multi-inspector square checkbox intent conflict: A records onCheckedChange calling actToggleDone (done); B records intent=select. Confirm which. 6) Round select's picked inner white dot (catalogue) is kept; B's standard check glyph is not adopted; confirm. 7) Whether the round done check (row 3) and the row-select toggle (row 5) are one control switched by Option, or two. The widget supports both. 8) Kind conflict: the catalogue records kind round-check for rows 21 and 23 but kind checkbox for rows 3 and 10. Reconcile before choosing a kind. 9) The round done check in row 3 looks empty in the screenshot although recorded as checked; unresolved. 10) Draft-inspector row count: the recorded row says 8 tasks but its state list has 9 (the catalogue flags this). Do not rely on the row-10 count until rows-choice.json is reconciled. 11) md radius not recorded; md shape=square is assumed. 12) Option-held square lamp: radius 4.375px is the same as the small square; it could reuse size sm (to confirm). 13) Unchecked outline: the open round rows use an oklch(0.26) glyph colour, the select ring is grey. Folded to one unchecked border token; confirm. 14) Border colour on multi-inspector sm not recorded. 15) No component is recorded on filter-panel and trash for 'task done checkbox, round'; those rows are unmapped. 16) Multi-inspector rows 14 and 15 have component '?'. 17) Disabled and focus-visible not recorded. 18) Row mapping is taken from the catalogue as written.",
+ "family": "choice",
+ "families": [
+  "choice"
+ ]
+}

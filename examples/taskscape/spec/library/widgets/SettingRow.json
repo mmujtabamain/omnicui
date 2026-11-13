@@ -1,0 +1,110 @@
+{
+ "name": "SettingRow",
+ "purpose": "A settings line: a title, an optional description, a control slot, an optional footnote, and an optional read-only value. Covers the stacked control rows (Theme, Capture mode, Saved to, Data folder, Restore defaults), the inline toggle rows (Show completed tasks, Reduced motion), the read-only app info line (version on the right), and the shortcut rows (the keycap is HotkeyControl in the control slot; a rebind error shows in the footnote). Folded from A's ShortcutRow. Sources: A and B. Folds in RefineRow: RefineRow becomes a SettingRow whose control slot holds a size-sm Segmented, which SettingRow's entry already lists in its slot. Add a leading icon slot and an inline layout. Both are role=group labelled by their label. Medium confidence (A): filter predicates and settings are different domains, but the job (a label plus a control in a panel) is the same.",
+ "base": "none (layout only). The control slot takes Radix Switch for toggles, the library Segmented, PathButton and Button, and HotkeyControl.",
+ "variants": [
+  {
+   "axis": "layout",
+   "default": "inline",
+   "values": [
+    {
+     "value": "inline",
+     "when": "Title and description on the left; control or read-only value on the right. Used by Show completed tasks and Reduced motion (Toggle), the app info row (value, no control), and the shortcut rows (HotkeyControl)."
+    },
+    {
+     "value": "stacked",
+     "when": "Control on its own full-width line under the title and description. Used by Theme (Segmented), Capture mode (Segmented, no description, has a footnote), Saved to and Data folder (PathButton), and Restore defaults (Button)."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "values": [
+    {
+     "value": "sm",
+     "when": "h-8 row (295x28 at 873,252 / 284 / 315); label 500 13px/19.5px; icon 15px weight 300."
+    }
+   ],
+   "default": "sm"
+  }
+ ],
+ "props": [
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Setting name (for example 'Theme', 'Show completed tasks', 'Taskscape'). The control is labelled by it."
+  },
+  {
+   "name": "description",
+   "type": "string | undefined",
+   "description": "Supporting text. Absent on Capture mode."
+  },
+  {
+   "name": "footnote",
+   "type": "ReactNode | undefined",
+   "description": "Note under the row: the Reduced motion force note, the Capture mode note, or the rebind error line for shortcut rows (shortcutsPane.tsx:18-23)."
+  },
+  {
+   "name": "control",
+   "type": "ReactNode | undefined",
+   "description": "Radix Switch (Toggle), Segmented, PathButton, Button or HotkeyControl."
+  },
+  {
+   "name": "value",
+   "type": "string | undefined",
+   "description": "Read-only trailing text, used for the app version (B's read-only value prop)."
+  },
+  {
+   "name": "icon",
+   "type": "ReactNode",
+   "description": "Predicate icon."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Notes, Attachments or Subtasks."
+  },
+  {
+   "name": "onChange",
+   "type": "(value) => void",
+   "description": "Calls update({notes | attachments | subtasks})."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "The Segmented control."
+  }
+ ],
+ "states": [
+  "default",
+  "footnote shown (its condition is met)",
+  "search-only (shown alone as the only search result)",
+  "control recording (child HotkeyControl)",
+  "any (label tone secondary)",
+  "with or none (label tone primary)"
+ ],
+ "role": "group labelled by the title when a control is present; no role for read-only rows. The footnote is linked by aria-describedby. The rebind error role is open (alert or polite live region).",
+ "keyboard": "The row itself is not focusable. Focus goes to the control in DOM order.",
+ "replaces": [
+  "setting row, stacked control",
+  "setting row, inline with toggle",
+  "setting row, inline, app info",
+  "shortcut row, keycap",
+  "refine row, tri-state"
+ ],
+ "platform": "Same on web and desktop: Theme, Show completed tasks, Reduced motion, Restore defaults. Desktop only: Capture mode, Saved to and Data folder (PathButton opens a local folder), and the capture shortcut rows (Screenshot capture, Capture bar, Clear capture draft). Web drops these (no capture, no local folder; files are on the server). App info copy: the reference reads 'A macOS task manager with a menu-bar capture bar.'; the web copy must not mention the menu bar capture, and Windows desktop needs its own copy.",
+ "open": "1) Restore defaults: the control variant is not recorded. If it resets all settings, should it use the danger colour (destructive actions use danger)? 2) The stacked and inline layouts are a visible difference, so both are kept as the layout axis. 3) The web replacement for the Data folder row is not decided. 4) The rebind error footnote's live-region role is open (alert or polite). 5) Shortcut row height: 36px measured (35px on some last rows). 36px is about 2.5714rem at 1rem=14px; A's 'about 2.5rem' equals 35px. B folds this to min-height and treats the 1px difference as measurement error. Confirm min-height versus fixed 36px. 6) The error line colour is not decided; danger is decided for destructive actions only (A). 7) Web default bindings must not collide with browser shortcuts; default key values are not in the catalogue (B). 8) Dropped from A's ShortcutRow: the 'scrolled' state (pane state, not a row state).",
+ "family": "rows",
+ "families": [
+  "rows",
+  "structure"
+ ],
+ "folded": [
+  {
+   "name": "RefineRow",
+   "how": "RefineRow becomes a SettingRow whose control slot holds a size-sm Segmented, which SettingRow's entry already lists in its slot. Add a leading icon slot and an inline layout. Both are role=group labelled by their label. Medium confidence (A): filter predicates and settings are different domains, but the job (a label plus a control in a panel) is the same.",
+   "role": "group, labelled by the label (proposed)",
+   "keyboard": "The Segmented control's keys."
+  }
+ ]
+}

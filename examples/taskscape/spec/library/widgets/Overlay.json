@@ -1,0 +1,97 @@
+{
+ "name": "Overlay",
+ "purpose": "Modal layer shell and the single Radix Dialog root for every modal layer: Portal, a scrim, a focus trap, Escape capture, and dismissal routed to onDismiss. Hosts the command palette (placement top, scrim dim, onDismiss = onClose, captureEscape set), the attachment lightbox full-window shell (placement fill, scrim strong, dismissOn none, captureEscape set; the lightbox itself is app code, see notWidgets), and Dialog cards (placement center, proposed). The blur recorded only on the lightbox shell is folded into scrim strong, the only scrim with blur.",
+ "base": "Radix Dialog (Root, Portal, Overlay, Content with focus scope). The catalogue names no primitive. shadcn DialogOverlay is the analogue for the scrim; no shadcn file exists for a full-window shell.",
+ "variants": [
+  {
+   "axis": "placement",
+   "values": [
+    {
+     "value": "top",
+     "when": "Panel near the top of the window; used by the command palette (not measured)."
+    },
+    {
+     "value": "fill",
+     "when": "Layer covers the whole window; used by the attachment lightbox full-window shell."
+    },
+    {
+     "value": "center",
+     "when": "Card placement used by Dialog. Not in the catalogue; proposed, confirm before shipping."
+    }
+   ],
+   "default": "center"
+  },
+  {
+   "axis": "scrim",
+   "values": [
+    {
+     "value": "dim",
+     "when": "Standard scrim; strength not recorded (assigned here). Used by the command palette and, on web, by Dialog cards (assumed)."
+    },
+    {
+     "value": "strong",
+     "when": "Strong dim plus blur (Backdrop2). Used by the attachment lightbox shell."
+    }
+   ],
+   "default": "dim"
+  }
+ ],
+ "props": [
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Controlled visibility; closed means not mounted."
+  },
+  {
+   "name": "onOpenChange",
+   "type": "(open: boolean) => void",
+   "description": "Standard Radix open change (proposed)."
+  },
+  {
+   "name": "placement",
+   "type": "'top' | 'fill' | 'center'",
+   "description": "Where the layer content sits. 'center' is proposed."
+  },
+  {
+   "name": "scrim",
+   "type": "'dim' | 'strong'",
+   "description": "Backdrop strength. Desktop shows no scrim whatever this is set to (platform rule, not a value)."
+  },
+  {
+   "name": "dismissOn",
+   "type": "'outside' | 'none' (default 'outside')",
+   "description": "'outside' lets a backdrop or outside click call onDismiss (palette). 'none' disables it (lightbox, where the stage click closes)."
+  },
+  {
+   "name": "captureEscape",
+   "type": "boolean (default true)",
+   "description": "When true, Escape is captured and routed to onDismiss. Recorded as set for the palette and the lightbox shell."
+  },
+  {
+   "name": "onDismiss",
+   "type": "() => void",
+   "description": "Called on Escape and, when dismissOn is 'outside', on outside click. The palette and the lightbox pass onClose."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Layer content: the palette panel, the lightbox stage, or a Dialog card."
+  }
+ ],
+ "states": [
+  "closed (not mounted)",
+  "open"
+ ],
+ "role": "dialog, aria-modal=true (Radix Dialog; proposed, since the catalogue records no role for overlays). The palette and lightbox content set their own roles inside the layer.",
+ "keyboard": "Escape calls onDismiss when captureEscape is true (recorded for the palette and the lightbox). Tab and Shift+Tab are trapped inside the layer (recorded for the palette; assumed for the lightbox). An outside click calls onDismiss only when dismissOn is 'outside'. Focus returns to the opener on close (Radix default, to verify). The palette opener is a web in-page shortcut and must not clash with browser shortcuts. On desktop, a global hotkey pressed while the main window is focused is handled by the main window.",
+ "replaces": [
+  "command palette overlay, modal layer",
+  "attachment lightbox, full-window overlay shell"
+ ],
+ "platform": "Differs. Web: a modal layer over the page; the scrim follows the scrim prop. Desktop: no backdrop dims the main window, so no scrim (platform rule, assumed; not in overlays.json). The palette and the lightbox each open either as their own window or as an in-window layer without scrim (undecided). If they become windows, placement top or fill becomes the window's placement. A fill layer with a strong scrim is not used in-window on desktop (assumed).",
+ "open": "1) Palette on desktop: the separate-window rule for dialogs may apply. Decide whether it becomes a window or an in-window panel without dimming; the rule is not in overlays.json. 2) Palette trigger is not in the inventory; on web it must not be a browser shortcut. 3) Palette states: the catalogue says 'open (all three reference states)' but records only open. The three states are missing; list only open until they are provided. 4) Escape capture on the lightbox shell comes from a code comment and is unverified; the catalogue records captureEscape as set. 5) Scrim dim strength and strong blur are not measured. 6) Placement center is not in the catalogue; it is needed by Dialog and is proposed. Default placement: A said top, B said center; center is set because Dialog is the most frequent use, and the palette and lightbox pass placement explicitly. 7) Tooltip: the catalogue kinds array (overlays.json line 9) lists 'tooltip' but no row uses it. Do not ship a tooltip widget until rows-overlays.json is checked or the kind is removed. 8) Whether the lightbox shell nests inside the inspector-mounted lightbox or is a separate surface is unverified (AttachmentLightbox.tsx was not read). 9) Single modal root: Dialog renders inside Overlay and does not add a second Radix Dialog root, which avoids duplicate focus trapping and Escape handling. 10) Dropped: B's states 'open with scrim none' and 'open with dismissOn none' (configurations, not states); 'none' as a scrim value (replaced by the desktop platform rule); A's scrim value 'default' renamed to 'dim'. 11) Palette, lightbox and the Dialog cards all use Escape through captureEscape; the catalogue's capture for the palette is followed, not A's onDismiss-only reading.",
+ "family": "overlays",
+ "families": [
+  "overlays"
+ ]
+}

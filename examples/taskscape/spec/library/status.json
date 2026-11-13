@@ -1,0 +1,323 @@
+{
+ "widgets": [
+  {
+   "name": "Badge",
+   "purpose": "Read-only inline pill for a count or short label: subtask progress, attachment count, list name tag, settings match count, and the number of selected tasks. Never interactive.",
+   "base": "none (shadcn Badge pattern: a span with cva variants; no Radix primitive)",
+   "variants": [
+    {
+     "axis": "tone",
+     "default": "outline",
+     "values": [
+      {
+       "value": "outline",
+       "when": "Grey bordered pill with muted text. Covers the subtask count ('1 / 3') on main-window, task-list, draft-inspector, multi-inspector, filter-panel and trash, and the list name tag on multi-inspector. The attachment count defaults here (see open)."
+      },
+      {
+       "value": "recessed",
+       "when": "Settings match count on the General tab. The look is not recorded in the catalogue; B estimates a muted filled chip with no border. Kept as its own tone because it is a visibly different surface from outline. Confirm the look."
+      },
+      {
+       "value": "accent",
+       "when": "Filled accent-blue fill with light text, showing how many tasks are selected in the multi-select header. Accent is used only here because it marks selection; never use it for any other count."
+      }
+     ]
+    },
+    {
+     "axis": "shape",
+     "default": "pill",
+     "values": [
+      {
+       "value": "pill",
+       "when": "Rounded pill for all text and count badges."
+      },
+      {
+       "value": "round",
+       "when": "Circle, used only with size lg (the 28px selected-count badge)."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "md",
+       "when": "11px / 16.5px line, weight 600, padding px-space-3, 18px tall pill (measured box about 32x18 on main-window). Used by the subtask count, the attachment count, the list name tag and the settings match count. The reference's sm size (10.5px, px-space-4) for the list name tag and match count is folded here (see notWidgets)."
+      },
+      {
+       "value": "lg",
+       "when": "28x28 circle (h-8, min-w-8, 2rem on the 14px root) with 13px / 19.5px line, weight 600, padding px-space-5. Used by the selected-count badge. The reference weight 700 is folded to 600 (see notWidgets)."
+      }
+     ]
+    },
+    {
+     "axis": "icon",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "Text or count only."
+      },
+      {
+       "value": "leading",
+       "when": "Leading icon before the count, set through the icon prop. Used by the attachment count (attach_file, a paperclip). Rendered at the badge text size; the reference 13px, weight 500 is folded (see notWidgets)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "tone",
+     "type": "'outline' | 'recessed' | 'accent'",
+     "description": "Colour treatment. Default outline. Named tone, as in the catalogue; B's variant prop is the same job."
+    },
+    {
+     "name": "shape",
+     "type": "'pill' | 'round'",
+     "description": "Corner shape. round is valid only with size lg."
+    },
+    {
+     "name": "size",
+     "type": "'md' | 'lg'",
+     "description": "Font size, weight, padding and minimum box. Default md."
+    },
+    {
+     "name": "icon",
+     "type": "ReactNode",
+     "description": "Optional leading icon. Setting it sets icon to leading."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "The visible count or label text, e.g. '1 / 3', '4', 'Errands'."
+    },
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Hover tooltip. The subtask count passes '{doneChildren} of {children.length} subtasks done'."
+    },
+    {
+     "name": "srLabel",
+     "type": "string",
+     "description": "Visually hidden text for screen readers, e.g. '1 of 3 subtasks done' or '1 match'. The app supplies it; the subtask count must always pass it, because a title attribute alone is not reachable by keyboard. Same string as the title for the subtask count."
+    },
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Escape hatch for layout only; not for colour."
+    }
+   ],
+   "states": [
+    "default (static, read-only; no hover, focus or press state)",
+    "not rendered (consumer rules, not widget states): subtask count hidden when the row has no visible children and in the search-typed flat list; match count hidden unless a settings search has matches greater than 0; attachment count shown only when attachments exist"
+   ],
+   "role": "none (generic span). srLabel is visually hidden text inside it, so screen readers hear the subtask count.",
+   "keyboard": "None. Not focusable and has no actions.",
+   "replaces": [
+    "Subtask progress badge, bordered",
+    "Attachment count badge",
+    "Selected count badge, accent round",
+    "List name tag, outline",
+    "Match count badge, recessed"
+   ],
+   "platform": "Same on web and desktop. The title tooltip is hover-only on both; desktop may show it as a native tooltip. The selected count depends on selection: Control-click on Windows and Command-click on macOS on desktop; on web the same platform modifier is handled by the page. The badge does not change. The attachment count reads attachments stored on the server on web and local files on desktop; the badge shows the count on both.",
+   "open": "Sources: A and B. (1) The attachment count's tone and look are not recorded; it defaults to outline and this is unconfirmed. (2) Attachment padding conflict: A records px-space-2 (tighter than the others) and asks whether it needs its own size; B folds it into md px-space-3. This merge folds it under the rule that a one-step padding difference is not felt, so it is not kept as a value. Confirm. (3) Match count look is not recorded; the recessed look is B's estimate. (4) Subtask border colour and radius on filter-panel and trash are estimates; B records them as not recorded on filter-panel, trash and main-window and folds them to the outline border token and a full pill radius. (5) Subtask text form conflict: A's example is '1 / 3' with spaces; B notes the catalogue text reads '{done} / {total}' with no spaces. Decide which form to use. (6) The title uses children.length, which is the task's subtask array, not this Badge's children prop; the app must pass the subtask count separately. (7) Folded values to confirm: sm to md (10.5px to 11px), lg weight 700 to 600, icon 13px to badge text size. (8) B's 'secondary' name is renamed to the catalogue name recessed. (9) The Badge name is inferred; component names are '?' on multi-inspector, filter-panel and trash.",
+   "family": "status"
+  },
+  {
+   "name": "ProgressBar",
+   "purpose": "Thin determinate bar showing the done ratio of a list or pane, with no text inside. Any percentage label is rendered by the consumer beside it (for example the draft-inspector '25 %' label is not part of the widget).",
+   "base": "Radix Progress (@radix-ui/react-progress), as shadcn Progress",
+   "variants": [
+    {
+     "axis": "tone",
+     "default": "done",
+     "values": [
+      {
+       "value": "done",
+       "when": "Fill uses the done-lamp colour token. The reference fills blue; both designs change this because accent blue is reserved for primary action and selection. Track uses the muted token. See open."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "value",
+     "type": "number",
+     "description": "Done ratio between 0 and max. Catalogue values: 0 (task-list empty), 0.25 (main-window, task-list, draft-inspector, filter-panel, trash) and 0.3333 (main-window split pane)."
+    },
+    {
+     "name": "max",
+     "type": "number",
+     "description": "Upper bound. Default 1, so value is a ratio."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Required, because the bar has no text. Examples: 'Done in Inbox', 'Done in this pane'."
+    },
+    {
+     "name": "tone",
+     "type": "'done'",
+     "description": "Fill colour token. Only done is defined."
+    },
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Layout escape hatch. Width is fixed at 84px (6rem on the 14px root) and track height about 4px (0.286rem) as fixed defaults; not set per consumer."
+    }
+   ],
+   "states": [
+    "empty (value 0; track only, as on the task-list empty row)",
+    "partial (0 < value < max; fill shows the ratio)",
+    "full (value equals max; fill to 100% with the done-lamp colour; B calls this complete and derives it; not recorded in the catalogue)"
+   ],
+   "role": "progressbar (from Radix Progress), with aria-valuenow, aria-valuemin 0 and aria-valuemax",
+   "keyboard": "None. Not focusable. Read-only, no actions.",
+   "replaces": [
+    "Thin progress bar, 84px"
+   ],
+   "platform": "Same on web and desktop.",
+   "open": "Sources: A and B. (1) Fill colour: the reference is blue (colour not measured); both designs use the done-lamp colour instead. Confirm against the source before the screens are built. (2) Full state: look not recorded; fill to 100% assumed. Decide whether a distinct complete look is needed. (3) Track height is measured on two rows and estimated on three. (4) Component name is '?' on filter-panel and trash. (5) B's single size default (84px width) is folded into the fixed defaults; it is not a catalogue variant.",
+   "family": "status"
+  },
+  {
+   "name": "EmptyState",
+   "purpose": "Centred message shown in place of content when a pane, list, trash or search has nothing to show. Shows a title, an optional muted subtitle or keyboard hint, an optional icon, and a loading form.",
+   "base": "none (custom; shadcn has no empty-state primitive; built from plain elements)",
+   "variants": [
+    {
+     "axis": "scope",
+     "default": "list",
+     "values": [
+      {
+       "value": "pane",
+       "when": "Fills the whole task pane on the surface-2 background (bg-surface-2l, dark bg-surface-2d). No icon. Used for no lists yet and no list selected. Pane spacing is not recorded."
+      },
+      {
+       "value": "list",
+       "when": "Inline in a scroll area: icon above a centred title and subtitle, using the measured list spacing (pt-24 pb-10) and a 30px icon. Used for the empty task list, the trash body (folded to this spacing, see notWidgets) and the settings search no-results panel (look not recorded; this scope is a guess)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Required. 15px (1.071rem), medium weight, secondary text colour. Examples: 'No lists yet', 'Nothing here yet', 'Trash is empty', 'No settings match'. The loading title is 'Loading…'."
+    },
+    {
+     "name": "subtitle",
+     "type": "ReactNode",
+     "description": "Optional muted line at 12.5px (0.893rem). Carries the pane subtitle (e.g. 'Create a list to start adding tasks'), the list hint including any keyboard shortcut, and the search query line ('Nothing here for “<query>”.', curly quotes). Omitted on trash. B calls this slot description; subtitle is kept as the catalogue name and as ReactNode so a shortcut can be marked up."
+    },
+    {
+     "name": "icon",
+     "type": "ReactNode",
+     "description": "Optional glyph at iconSize in muted text; omitted for pane scope. Values: landscape-style list icon, delete (trash; a neutral icon in the muted token, not the danger colour), search (settings search). The searching state uses search_off."
+    },
+    {
+     "name": "iconSize",
+     "type": "number",
+     "description": "Icon size in px. Default 30 (2.143rem). The reference 28px trash size is folded to 30 (see notWidgets)."
+    },
+    {
+     "name": "loading",
+     "type": "boolean",
+     "description": "When true, the title is the loading text (the app passes 'Loading…'), the element sets aria-busy true, and the change is announced. No icon and no subtitle are shown in this state."
+    },
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Layout escape hatch only."
+    }
+   ],
+   "states": [
+    "default (static: title, optional subtitle and icon)",
+    "loading (title 'Loading…', no icon, no subtitle, role status, aria-busy true; used by trash while the store loads)",
+    "searching with no matches (code path only; icon search_off, title 'No matches in {list.name}'; not in any recorded tree; kept as a state until the team decides whether to document it)"
+   ],
+   "role": "none for the default state; status with aria-busy true for the loading state",
+   "keyboard": "None. No actions and no focusable content. The way forward is an action elsewhere: the New list button in the title bar, the + control to add a task, or a list tab.",
+   "replaces": [
+    "Pane empty state, no icon",
+    "List empty state, icon and hint",
+    "Trash empty state, icon and title",
+    "Search no-results empty state"
+   ],
+   "platform": "Web: the add-task hint reads 'Press + to add a task', with no ⌘N, because the browser's new-window shortcut takes precedence; the capture clause is removed (no capture window, no global hotkeys). Desktop: 'Press + or ⌘N to add a task', using the platform modifier (⌘ on macOS, Ctrl on Windows); the clause '⌘↩ anywhere to capture one' stays only if capture stays on desktop.",
+   "open": "Sources: A and B. (1) Search no-results scope and spacing are not recorded (look null); list is a guess. (2) Conflict: A's web hint example 'Press + or ⌘N to add a task' contradicts A's own rule not to advertise ⌘N on web. This merge uses B's 'Press + to add a task' for web. Confirm. (3) Title colour conflict: A records the list title as grey with no size; B records 15px medium secondary for all titles. This merge uses secondary. Confirm. (4) The list hint text size is not recorded; it is treated as the 12.5px subtitle slot. Confirm. (5) Pane spacing is not recorded. (6) Decide whether the trash loading state shows a Spinner beside the title; the catalogue records the title only. (7) Trash icon folds from 28px to 30px and trash spacing folds to list spacing; confirm. (8) The searching state is code path only; decide whether it is documented. (9) Convert px to rem on the 14px root: 15px = 1.071rem, 12.5px = 0.893rem, 30px = 2.143rem.",
+   "family": "status"
+  },
+  {
+   "name": "Spinner",
+   "purpose": "Small inline indeterminate loading indicator, 12px, colour inherited from the surrounding text, shown inside a control while a long action runs. A generic loading indicator, kept in the shared library.",
+   "base": "none (shadcn has no Spinner; an animated icon with a spin animation)",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "sm",
+     "values": [
+      {
+       "value": "sm",
+       "when": "12px square (0.857rem on the 14px root). The only recorded size; used by the Shot button in the attachments section while a screen capture runs. No second size is added until another use appears."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "size",
+     "type": "'sm'",
+     "description": "Only sm is defined."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Accessible name, default 'Loading'. Rendered as visually hidden text."
+    },
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Layout escape hatch only."
+    }
+   ],
+   "states": [
+    "spinning (mounted while the action runs)",
+    "not rendered (the consumer renders it only while busy; there is no idle state, so it unmounts when loading ends)"
+   ],
+   "role": "status, named by label",
+   "keyboard": "None. Not focusable. Respect reduced-motion preferences by slowing or stopping the spin.",
+   "replaces": [
+    "Inline spinner, 12px, in capture button"
+   ],
+   "platform": "Web: no recorded use, because web has no screen capture; the widget stays in the shared library for other loading states. Desktop: the reference use exists only if the Shot button and screen capture stay on desktop; the brief does not settle this.",
+   "open": "Sources: A and B. (1) Decide whether desktop keeps the Shot button and screen capture. If it does not, Spinner has no recorded use in this family. (2) The Shot button's busy and disabled state belongs to the Button family; this widget only draws the indicator. (3) Look (colour and stroke) is not recorded.",
+   "family": "status"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "Badge size sm (10.5px / 15.75px line, weight 600, padding px-space-4), used by the List name tag and the settings Match count badge",
+   "reason": "Folded into size md (11px, px-space-3) by the consolidation rule. The 0.5px font step and one spacing step are not a distinction a user sees or feels, so the list name tag and match count use md. Confirm."
+  },
+  {
+   "variant": "Badge attachment count padding px-space-2 (tighter than the other badges)",
+   "reason": "Folded into md with px-space-3 under the same not-felt rule. A's open item asked whether it needs its own size; it is not kept as a value. Confirm."
+  },
+  {
+   "variant": "Badge size lg weight 700 (reference)",
+   "reason": "Folded to weight 600 per B, since a weight step at 13px in the one selection badge is not felt. The exact reference value 700 is recorded here so it can be restored if the team wants it."
+  },
+  {
+   "variant": "Badge icon leading at 13px with weight 500 (reference)",
+   "reason": "Folded to the icon rendered at the badge text size. The leading value and the icon prop are kept; the 13px size and 500 weight are not."
+  },
+  {
+   "variant": "EmptyState spacing axis: compact (py-16, 28px icon, Trash empty state) and relaxed (pt-24 pb-10, 30px icon, Task-list empty state)",
+   "reason": "The axis is removed. Compact folds into the list scope's fixed spacing, so the trash empty state uses the measured list spacing and 30px icon; the 8px vertical and 2px icon differences are not felt across separate screens. Relaxed remains as the fixed list spacing. Confirm."
+  }
+ ]
+}

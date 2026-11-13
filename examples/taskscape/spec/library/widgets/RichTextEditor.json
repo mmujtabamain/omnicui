@@ -1,0 +1,144 @@
+{
+ "name": "RichTextEditor",
+ "purpose": "The one rich-text body: bold, italic, underline, strikethrough, lists, links and @mention attachments, plus drop-to-attach. Covers three rows: saved note body, add-note draft and capture notes editor. The toolbar (floating or docked) and size (sm, md, capped) keep the visible differences: toolbar placement, minimum height and capture max height. Merged from A's RichTextEditor and B's. Kept A's three sizes: the add-note draft's min-h-24 (84px) against the saved note's min-h-14 (49px) is visible, so B's fold to one md size is rejected. Font sizes are recorded as the catalogue gives them (13.5px); B's fold to 14px is listed in open. Base: common-ui/RichTextEditor.tsx:135 (catalogue lines 165, 186, 205).",
+ "base": "common-ui/RichTextEditor.tsx:135 (library editor core; catalogue lines 165, 186, 205). shadcn and Radix ship no rich-text editor.",
+ "variants": [
+  {
+   "axis": "toolbar",
+   "default": "floating",
+   "values": [
+    {
+     "value": "floating",
+     "when": "Toolbar appears on focus (opacity 100, scale 100, pointer-events auto) and hides on blur. Saved note body. The add-note draft is inferred to match (not recorded)."
+    },
+    {
+     "value": "docked",
+     "when": "Toolbar always shown above the text with a top border (border-edge-1l, dark:border-edge-1d; gap-1, px-2 py-1.5). Capture notes editor. B called this 'fixed'; renamed to the catalogue's word."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "default": "sm",
+   "values": [
+    {
+     "value": "sm",
+     "when": "Saved note body. min-h-14 = 3.5rem (49px at 1rem=14px). 13.5px text on a 17.5px (1.25rem) line."
+    },
+    {
+     "value": "md",
+     "when": "Add-note draft. min-h-24 = 6rem (84px at 1rem=14px). Font size and line height are not recorded; the saved note's 13.5px/17.5px is an inference to confirm."
+    },
+    {
+     "value": "capped",
+     "when": "Capture notes editor. min-h-16 = 4rem (56px), max-h-40 = 10rem (140px), growing with content. 13.5px text on a 20px line."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "value",
+   "type": "rich document",
+   "description": "Controlled rich content; defaultValue for uncontrolled use."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value) => void",
+   "description": "Fires on every change (onChange in the reference). The host debounces autosave (saved note and add-note: api.createNote then api.updateNote)."
+  },
+  {
+   "name": "toolbar",
+   "type": "'floating' | 'docked'",
+   "description": "Toolbar placement. Default floating."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md' | 'capped'",
+   "description": "Minimum and maximum height and line box. Default sm."
+  },
+  {
+   "name": "placeholder",
+   "type": "string",
+   "description": "None for saved note; capture shows 'Notes ...'; add-note shows 'Write a note ... (drop an attachment to @mention it)'."
+  },
+  {
+   "name": "autoFocus",
+   "type": "boolean",
+   "description": "Add-note draft focuses on open."
+  },
+  {
+   "name": "maxLength",
+   "type": "number",
+   "description": "Default 2000."
+  },
+  {
+   "name": "onSubmit",
+   "type": "() => void",
+   "description": "Mod+Enter. Set only for capture; its presence is the reference's submitOnModEnter flag (A listed both, merged)."
+  },
+  {
+   "name": "onCancel",
+   "type": "() => void",
+   "description": "Escape. Set only for capture (hides the bar). Unset: Escape does nothing. A's onEscape, renamed to match the rest of the family."
+  },
+  {
+   "name": "collapseWhenEmpty",
+   "type": "boolean",
+   "description": "Capture: on blur while empty the host collapses to the Tab hint."
+  },
+  {
+   "name": "onBlur",
+   "type": "(content) => void",
+   "description": "Blur. Capture collapses here when empty; the add-note draft promotes to a saved NoteCard here only if document.hasFocus()."
+  },
+  {
+   "name": "onRequestLink",
+   "type": "() => void",
+   "description": "Link toolbar button; the host opens the link dialog."
+  },
+  {
+   "name": "onDropAttachment",
+   "type": "(file) => void",
+   "description": "Dropping an attachment tile inserts a mention chip."
+  },
+  {
+   "name": "onOpenMention",
+   "type": "(id: string) => void",
+   "description": "Clicking an @mention chip opens its attachment. B's onOpenAttachment is merged here."
+  },
+  {
+   "name": "mentions",
+   "type": "attachment list",
+   "description": "Added (critic). Source for the @ autocomplete: the attachments the @ list offers. Shape not recorded."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required."
+  }
+ ],
+ "states": [
+  "idle",
+  "focused (toolbar shown per the toolbar axis)",
+  "empty: placeholder shown",
+  "filled",
+  "mention-open: autocomplete while typing @query",
+  "at maxLength (2000 by default)",
+  "collapsed: capture only, not rendered (the host shows the Tab hint)",
+  "disabled (B; not recorded in the catalogue)"
+ ],
+ "role": "textbox with aria-multiline=true (inferred). The formatting bar is role toolbar with an aria-label. The mention list role is not recorded; B's listbox is a guess and is not confirmed.",
+ "keyboard": "Enter: new paragraph. Shift+Enter: line break. Mod+Enter: onSubmit when set. Escape: onCancel when set; otherwise nothing. Mod+B, Mod+I, Mod+U: bold, italic, underline (recorded for capture; assumed in all editors). Toolbar buttons preventDefault their blur so focus stays in the editor (capture). @ opens the mention list. Blur: onBlur(content).",
+ "replaces": [
+  "Note body editor, saved note",
+  "New note editor, add-note draft",
+  "Capture notes editor, open"
+ ],
+ "platform": "Web: Mod+B, Mod+I and Mod+U are browser shortcuts (bookmarks, view source) and browser shortcuts take precedence, so the toolbar buttons are the full path and the shortcuts a bonus (decision needed). Attachments: web uploads the dropped file to the server; desktop keeps it in local storage. Autosave: web to the cloud API, desktop to local SQLite. Capture editor is desktop-only (quick-capture window; Mod+Enter saves; Escape hides). The link dialog is a separate window on desktop. Keep the document.hasFocus() check on blur promotion on both platforms, since desktop windows can lose focus separately.",
+ "open": "1) Add-note draft toolbar mode (floating inferred) and Escape behaviour are not recorded; no Escape is inferred. 2) Font size fold: B folded 13.5px in the note and capture editors to 14px. Not applied here (recorded 13.5px); confirm. 3) Add-note min-h-24 folded to min-h-14 by B; rejected here (84px against 49px is visible). Confirm. 4) document.hasFocus() promotion on desktop: focus moving to another separate window makes the draft lose focus; decide whether that promotes the draft or keeps it open. 5) Token scale: the reference heights are 56, 96 and 64px at 16px rem; at 1rem=14px the classes resolve to 49, 84 and 56px, and max-h-40 to 140px. Confirm. 6) Focus border: the focused note body has a 2px blue border (catalogue line 167). Accent is reserved for selection and primary action, so the focus token needs a decision. 7) The mention list role and keys are not recorded. Whether Escape closes the mention list first is unknown. 8) The capture character counter is inferred. 9) The shape of the mentions source is not recorded. 10) Disabled state is not recorded in the catalogue.",
+ "family": "text",
+ "families": [
+  "text"
+ ]
+}

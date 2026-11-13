@@ -1,0 +1,119 @@
+{
+ "name": "SearchField",
+ "purpose": "The one search input for the four search rows: a magnifier, a native search input, and an optional clear button, in an InputGroup search well. Covers the list search bar (filter), the task-list search (match stepping and flattening), and the settings sidebar search in plain (no clear) and with-clear forms. They share one field, placeholder and text entry, so they merge. Kept the distinctions a user feels: navigation (filter or match stepping), the clear button (clearable) and the sidebar size. Width follows its pane (layout, not a variant). Merged from A's SearchField and B's SearchField. Source: spec/catalogue/text.json. The list search bar and task-list match search are merged on identical field geometry (catalogue 14,56 832x35 well; input 46,63 733x21, as B records). This widget does not claim the trash, multi-inspector, draft-inspector or filter-panel rows (see open).",
+ "base": "none (composed): InputGroup (tone search) around an Input type=search, with a leading magnifier and an optional clear IconButton from the library. No Radix primitive.",
+ "variants": [
+  {
+   "axis": "size",
+   "default": "md",
+   "values": [
+    {
+     "value": "md",
+     "when": "List panes: main window, multi-inspector, trash, draft-inspector, filter-panel, task-list (attribution per open). 14px/21px text, h-10 well (35px), full pane width, 18px leading icon (inferred from geometry; see open)."
+    },
+    {
+     "value": "sm",
+     "when": "Settings sidebar. 12px/18px text in an h-7 well (24.5px, measured 25px). About 139px wide as measured; width follows the pane, so it is layout, not a variant. Light grey pill (tone search)."
+    }
+   ]
+  },
+  {
+   "axis": "navigation",
+   "default": "filter",
+   "values": [
+    {
+     "value": "filter",
+     "when": "Typing filters the rows of the open list. Enter and Shift+Enter are not handled (inferred; see open)."
+    },
+    {
+     "value": "match",
+     "when": "Task list: typing filters to matching titles and flattens them. Enter steps to the next match, Shift+Enter to the previous, each focused and scrolled into view. Escape clears and blurs."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Controlled query."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: string) => void",
+   "description": "Fires on every change (onChange in the reference)."
+  },
+  {
+   "name": "placeholder",
+   "type": "string",
+   "description": "Settings uses 'Search'. Pane placeholders are the caller's."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md'",
+   "description": "Owns the well height and text size; passed down to InputGroup and Input."
+  },
+  {
+   "name": "navigation",
+   "type": "'filter' | 'match'",
+   "description": "Explicit navigation axis. Default filter. Match turns on Enter and Shift+Enter stepping and flattened rows."
+  },
+  {
+   "name": "clearable",
+   "type": "boolean",
+   "description": "Default false. Shows a trailing clear IconButton while the value is non-empty. True for settings-general; false for settings-plain and the pane fields. The button is an IconButton from the library, not part of this family."
+  },
+  {
+   "name": "onStepMatch",
+   "type": "(direction: 'next' | 'previous') => void",
+   "description": "Used with navigation=match. Enter gives next, Shift+Enter gives previous. B named this onStep with 'prev'."
+  },
+  {
+   "name": "onClear",
+   "type": "() => void",
+   "description": "Called when Escape or the clear button empties the query."
+  },
+  {
+   "name": "inputRef",
+   "type": "Ref<HTMLInputElement>",
+   "description": "Lets the host focus the field and select its text (registerSearchFocus, Cmd/Ctrl+F on desktop)."
+  },
+  {
+   "name": "autoFocus",
+   "type": "boolean",
+   "description": "Focus on mount."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Disabled look and no input."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required. For example 'Search settings' or 'Search Errands'."
+  }
+ ],
+ "states": [
+  "empty: placeholder shown, no clear button",
+  "focused: focus ring token (colour is an open decision)",
+  "filled: query present; clear button shown when clearable",
+  "stepping: navigation=match with a current match focused and scrolled into view",
+  "flattened: navigation=match; the host renders matches without subtasks",
+  "disabled"
+ ],
+ "role": "searchbox (native input type=search; inferred from the element, not recorded in the catalogue). Clear button: button with aria-label 'Clear search' (proposal; not in the reference). Leading icon is aria-hidden.",
+ "keyboard": "Printable keys edit the query. filter: Enter and Shift+Enter are not handled (inferred; see open). match: Enter next, Shift+Enter previous; key events stop propagation (task list); Escape clears the query and blurs. filter with clearable (settings-general): Escape clears a non-empty query; an empty query lets Escape bubble so the host can close its window. filter with clearable false (settings-plain): Escape is not recorded (not derived from clearable; see open). Cmd/Ctrl+F: desktop focuses the field and selects its text; the web must not bind it. A typed letter from anywhere focuses the task-list field (reference behaviour; call sites partly unverified). Clear button returning focus to the input is a proposal.",
+ "replaces": [
+  "List search bar, with leading search icon",
+  "Task list search, with match cycling",
+  "Settings search field, sidebar, plain",
+  "Settings search field, sidebar, with clear button"
+ ],
+ "platform": "Web: browser shortcuts take precedence, so Cmd/Ctrl+F stays browser find; the settings select-on-find is desktop only. The typed-letter focus on web is undecided (see open). Escape closing the settings window applies to the separate settings window on desktop; on web the settings view's Escape behaviour is not recorded (see open). Desktop: Cmd/Ctrl+F binds to the field; a global hotkey pressed while the main window is focused is handled by the main window.",
+ "open": "1) Focus indicator colour: the reference is a blue 1px border or outline. Accent blue is reserved for primary action and selection, so focus needs its own token unless focus counts as selection (decision needed). 2) Filter-mode Escape for the list bar and the plain settings field is not recorded. 3) Whether the task-list match search and the list search bar are the same on-screen control on the same pane is unconfirmed; merged on identical field geometry. 4) The settings search filter effect (what it filters) is unverified (catalogue lines 60 and 68). 5) Leading icon size: sm not recorded; md 18px inferred from geometry (catalogue line 17). 6) Clear button: shown only on settings-general (clearable true). B's default that added a clear button to every field is rejected; confirm. 7) Clear button aria-label 'Clear search' is a proposal. 8) Typed-letter focus from anywhere on web is undecided and may steal typing from other inputs. B's restriction (only when no editable field has focus) is a proposal, not the reference. 9) Title versus notes: row 2 description (catalogue line 40) says the task-list search filters by title and/or notes; its behaviour (line 47) says matching titles. Decide which the reference does. 10) Enter in filter mode is inferred as unhandled; the main-window onKeyDown was wired but its handler was not read. 11) Trash and multi-inspector components are recorded as '?' (catalogue line 15); draft-inspector and filter-panel attribution is unverified (lines 16 and 25-28). Assigning them to SearchField is not confirmed. 12) Settings Escape on web is a conflict between the two designs and is not recorded in the catalogue (text.json line 90, SettingsWindow.tsx:119-135). 13) Roles are inferred from the native elements, not recorded.",
+ "family": "text",
+ "families": [
+  "text"
+ ]
+}

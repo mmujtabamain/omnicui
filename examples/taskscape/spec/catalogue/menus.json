@@ -1,0 +1,451 @@
+{
+ "kind": "menus",
+ "title": "Menus",
+ "kinds": [
+  "menu",
+  "menu-item",
+  "context-menu",
+  "dropdown",
+  "popover"
+ ],
+ "description": "Menus are the family of floating or inline choice surfaces in the Taskscape desktop app: the project switcher pill and its project list, anchored popovers, right-click context menus with their rows and submenus, option menus opened from buttons, the command palette rows, and the mention autocomplete. The formatting floating toolbar is a strip of formatting buttons rather than a choice list; it is kept in this family only because the source groups it with the floating surfaces. The 29 source rows (from spec/inventory/rows-menus.json) group into 21 variants. Every row is in exactly one variant. Rows with no measured look (look null or \"Not measured\") are described from their component and text only, and the item notes say so. Kind vocabulary: 'context-menu' marks a menu opened at the cursor or by right-click; 'menu' marks a menu opened from a control such as a button or the search bar; 'menu-item' marks a single row; 'popover' and 'dropdown' mark anchored panels.",
+ "variants": [
+  {
+   "name": "project switcher pill",
+   "kind": "dropdown",
+   "component": "ProjectSwitcher (rows on main-window and draft-inspector name it; multi-inspector and trash list component as \"?\")",
+   "description": "The pill in the title bar that shows the active project and opens the project switcher. Same measured geometry on all four screens. The trash row calls it a \"filled pill\", but its measurements match the others, so it is grouped here. Only main-window records the dark-mode colours. The open state was not captured on any screen.",
+   "look": "Box 85x28 at 112,8; radius 7px; background oklch(0.944 0.003 255) light (main-window also records oklch(0.172 0.004 260) dark). Label 'Home' font 600 14px/21px at 124,12 (45x21), colour oklch(0.26 0.012 262) on draft-inspector, multi-inspector and trash. Chevron icon unfold_more, 15px, weight 300, colour oklch(0.62 0.013 264) light (oklch(0.57 0.011 262) dark on main-window), box at 173,15.",
+   "states": [
+    "default",
+    "open: not captured (the main-window row notes this; no measurement exists)"
+   ],
+   "behaviour": "Click opens the project switcher (handler body not in the inspected files). Pressing the pill again toggles the project menu closed (from the title-bar row).",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "multi-inspector",
+    "trash"
+   ],
+   "examples": [
+    "Home",
+    "Switch project (accessible label)",
+    "unfold_more (icon)"
+   ]
+  },
+  {
+   "name": "project menu panel",
+   "kind": "popover",
+   "component": "ProjectMenu (wraps Surface; the tree shows Surface2)",
+   "description": "The anchored dropdown under the project pill that lists projects and offers switch, rename, delete and new. The title-bar row calls it a popover and the context-menus row calls it a dropdown, but both describe the same panel (same 210x112 box at 112,43). It is anchored with anchorRef and onDismiss and is neither an Overlay nor a MenuPanel. Its row contents are in the two project-row variants. usedIn lists the capture screens only (title-bar and context-menus); the source does not say the panel is absent from the other screens that show the pill.",
+   "look": "Surface elevation=menu, surface=3, radius=panel; classes z-dropdown animate-sheet-in py-space-3 absolute top-10 left-0 min-w-60 origin-top-left; white surface, rounded corners, soft shadow. Tree box 210x112 at 112,43 (title-bar row: approximate screenshot span x 113 to 321, y 44 to 154). Row labels 400 13.5px/20.25px oklch(0.26 0.012 262) (from the context-menus row).",
+   "states": [
+    "open (only when the pill toggles it open)",
+    "closed (not rendered)"
+   ],
+   "behaviour": "Escape or a press outside the switcher dismisses it (useDismissable, ProjectSwitcher.tsx:133, from the title-bar row); onDismiss is the dismiss path on the context-menus row. Pressing the pill again closes it.",
+   "usedIn": [
+    "title-bar",
+    "context-menus"
+   ],
+   "examples": [
+    "Switch",
+    "Rename",
+    "Delete",
+    "New project"
+   ]
+  },
+  {
+   "name": "project menu row, checked",
+   "kind": "menu-item",
+   "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\") with a leading Label (tone accent, className \"flex w-4 items-center\") holding Icon check",
+   "description": "The row for the active project inside the project menu. It is the only row with a check icon. Rename and delete icons appear on hover. usedIn lists the capture screens only.",
+   "look": "Check icon size 15, weight 900, colour oklch(0.6 0.2 255) (blue). Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,53), box 119x20.",
+   "states": [
+    "checked (active)",
+    "default",
+    "hover (reveals rename and delete)"
+   ],
+   "behaviour": "Click is expected to switch to the project (inferred from the label; not verifiable from the tree). Rename and delete icons show on hover.",
+   "usedIn": [
+    "context-menus"
+   ],
+   "examples": [
+    "Home"
+   ]
+  },
+  {
+   "name": "project menu row, plain",
+   "kind": "menu-item",
+   "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\")",
+   "description": "A project row that is not the active project. It has no check icon and keeps an empty 14x0 check slot, so its label sits at the same x position as the checked row. usedIn lists the capture screens only.",
+   "look": "Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,85), box 119x20. No check icon.",
+   "states": [
+    "default",
+    "hover (reveals rename and delete)"
+   ],
+   "behaviour": "Click is expected to switch to the project (inferred; not verifiable from the tree). Rename and delete icons show on hover.",
+   "usedIn": [
+    "context-menus"
+   ],
+   "examples": [
+    "Spring launch"
+   ]
+  },
+  {
+   "name": "task row context menu",
+   "kind": "context-menu",
+   "component": "Row context menu (openMenu)",
+   "description": "The menu opened from right-click or the More button on a task row. It has two content sets, kept in this one variant because the source records them as one row with one open menu. The single-row set holds Copy, Add subtask, Rename, Move to list, Promote to top level (only when the task has a parent_id) and Delete task…. The multi-row set is used when two or more rows are selected and this row is one of them; it holds Copy {n} tasks, Mark {n} done, Mark {n} not done and Delete {n} tasks…, with no Rename and no Add subtask.",
+   "look": "Not measured (look null in the source row). Items use the same MenuItem rows as the other menus (icon + label). Dividers sit above 'Add subtask', above 'Mark {n} done' and above 'Delete task…' (and above 'Delete {n} tasks…' in the multi-row set). 'Promote to top level' appears only when the task has a parent_id.",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Each item runs its action: copy to clipboard, mark done or not done, add subtask (sets the inline composer), rename (beginTitleEdit), promote, delete (requestDeleteTask for one row or bulkDelete for many), or move. 'Move to list' is disabled when there are no other lists and opens a submenu of list names with id move:{listId}.",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "Copy",
+    "Add subtask",
+    "Rename",
+    "Move to list",
+    "Promote to top level",
+    "Delete task…",
+    "Copy {n} tasks",
+    "Mark {n} done",
+    "Mark {n} not done",
+    "Delete {n} tasks…"
+   ]
+  },
+  {
+   "name": "search scope and fields menu",
+   "kind": "menu",
+   "component": "ScopeFields menu (useContextMenu)",
+   "description": "The menu on the search bar that chooses what the search covers (scope) and which fields it matches (fields). The check icon marks the current choice, with defaults scope 'list' and fields 'both'. Items are in two groups separated by a divider. Look not measured.",
+   "look": "Not measured (look null in the source row). Check icon marks the current value.",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Clicking an item sets scope or fields on the pane's search state.",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "This list",
+    "Whole project",
+    "All projects",
+    "Title & notes",
+    "Title only",
+    "Notes only"
+   ]
+  },
+  {
+   "name": "filter sort and date option menu",
+   "kind": "menu",
+   "component": "Context menu (contextMenuContext useContextMenu, opened by MenuButton)",
+   "description": "The option list opened from either the Sort MenuButton or the Date range MenuButton on the filter panel. The two buttons carry different item sets, which come from each MenuButton's props; the examples list the items of both menus together. Only one can be open at a time. Items carry a check icon on the current value.",
+   "look": "Not measured. Popup visuals not read.",
+   "states": [
+    "closed",
+    "open (position x = button left, y = button bottom + 4)"
+   ],
+   "behaviour": "Picking an item calls onPick, which updates the matching view field.",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "Manual",
+    "Date created",
+    "Date updated",
+    "Alphabetical",
+    "Done last",
+    "Any time",
+    "Last 24 hours",
+    "Last 7 days",
+    "Last 30 days",
+    "Custom…"
+   ]
+  },
+  {
+   "name": "formatting floating toolbar",
+   "kind": "popover",
+   "component": "Floating toolbar container (RichTextEditor.tsx:572-583)",
+   "description": "The toolbar of formatting ToolButtons that floats above a rich-text note editor while the editor is focused. It is a strip of toggle buttons, not a choice list; it is kept in this family only because the source groups it with the floating surfaces. One per note editor; only the focused editor shows it.",
+   "look": "Position fixed, z-popover, shadow-menu, bottom-anchored above the editor. Visually a white rounded pill. About x 873 to 1121, y 300 to 330 (shot-measured). Holds 7 icon buttons 21x21 at y 305 with thin vertical separators.",
+   "states": [
+    "hidden (opacity 0, scale 95, pointer-events none; default when not focused)",
+    "shown (opacity 100, scale 100) on editor focus"
+   ],
+   "behaviour": "Appears on focus and disappears on blur; repositions on scroll or resize.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": []
+  },
+  {
+   "name": "attachment context menu",
+   "kind": "context-menu",
+   "component": "Attachment context menu (contextMenuContext useContextMenu().open)",
+   "description": "The menu opened at the cursor when a user right-clicks an attachment tile. It has four items for a local file (Rename…, Open, Reveal in Finder, Remove) and three for a remote link (Rename…, Open, Remove; Reveal in Finder is local only). Its items are in the 'attachment menu item' variant.",
+   "look": "Not measured (look null in the source row). Opens at the cursor.",
+   "states": [
+    "closed",
+    "open at cursor"
+   ],
+   "behaviour": "Right-click on a tile opens it; picking an item runs its action (see the attachment menu item variant).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Rename…",
+    "Open",
+    "Reveal in Finder",
+    "Remove"
+   ]
+  },
+  {
+   "name": "attachment menu item",
+   "kind": "menu-item",
+   "component": "Context menu item (contextMenuContext)",
+   "description": "The actions for one attachment: Rename…, Open, Reveal in Finder (local only) and Remove. Remove is the danger action with a divider above. It stays in this variant rather than being split into its own danger variant because the source records all four actions in one row (count 4); splitting it would break the one-row-to-one-variant mapping of the 29 source rows, so the danger treatment is stated in the states instead. For a remote link the set is Rename…, Open and Remove. Look not measured.",
+   "look": "Not measured (look null in the source row). Icons: drive_file_rename_outline (Rename…), open_in_new (Open), folder_open (Reveal in Finder), delete (Remove, danger, dividerAbove).",
+   "states": [
+    "normal",
+    "danger (Remove, with divider above)"
+   ],
+   "behaviour": "Rename… runs renameAttachment (askText 'Rename attachment', then api.renameAttachment and propagateAttachmentRename). Open runs api.openAttachment. Reveal in Finder runs api.revealAttachment. Remove runs removeAttachment (askConfirm 'Remove attachment?', then api.deleteAttachment).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Rename…",
+    "Open",
+    "Reveal in Finder",
+    "Remove"
+   ]
+  },
+  {
+   "name": "mention autocomplete popover",
+   "kind": "popover",
+   "component": "Mention autocomplete (RichTextEditor.tsx:598-630)",
+   "description": "The list of matching attachments that appears at the caret when the user types @ followed by a query. It is fixed in position and shows up to 6 matches.",
+   "look": "Not measured (look null in the source row). Fixed position at the caret. The layout values z-tooltip, w-60 and max-h-56 come from component code, not from a measurement. No measured colours.",
+   "states": [
+    "closed (default)",
+    "open (when there are matches for the @query)"
+   ],
+   "behaviour": "Arrow keys move the highlight; Enter or Tab picks the highlighted item; Escape closes it; mouse hover highlights a row; mousedown picks it (preventDefault).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": []
+  },
+  {
+   "name": "mention autocomplete row",
+   "kind": "menu-item",
+   "component": "Mention autocomplete row (RichTextEditor.tsx:603-628)",
+   "description": "One attachment candidate in the mention autocomplete list. The source row records count 0 for this item, so the row is listed for its look and states only.",
+   "look": "Not measured (look null in the source row). The values below come from component code (RichTextEditor.tsx:603-628), not from a measurement: highlighted row background selection-1; other rows text-content-2; icon fileKindFor(...).icon at size 15, weight 300; attachment name truncated.",
+   "states": [
+    "highlighted (current index)",
+    "normal"
+   ],
+   "behaviour": "Mousedown picks it and inserts an att-chip plus a trailing space.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": []
+  },
+  {
+   "name": "command palette row, with shortcut",
+   "kind": "menu-item",
+   "component": "MenuItem (command palette; props data-idx, active, onMouseMove, onClick, leading=Icon, trailing=HotkeyHint)",
+   "description": "A runnable command with a keyboard shortcut shown at the trailing edge. Click or Enter runs it and closes the palette. Taller than the no-shortcut variant (32 vs 30).",
+   "look": "Row 488 wide (x 346 to 834), height 32. Label 400 13px/19.5px oklch(0.26 0.012 262). Active background oklch(0.6 0.2 255 / 0.1). Icon 16px at x=355; label at x=378. Shortcut shown by HotkeyHint.",
+   "states": [
+    "inactive",
+    "active (idx 0 at open; any row under the pointer or reached by arrow keys)",
+    "hover (mouse move sets active to this row)"
+   ],
+   "behaviour": "Click calls runAt(i), which closes the palette and then runs cmd.run(). Mouse move sets active to i. Enter on the active row runs it the same way.",
+   "usedIn": [
+    "command-palette"
+   ],
+   "examples": [
+    "Toggle preview",
+    "Toggle split view",
+    "Show / hide completed",
+    "Collapse all",
+    "Expand all",
+    "New task",
+    "Search this list",
+    "Undo",
+    "Redo",
+    "New list",
+    "New project",
+    "Settings"
+   ]
+  },
+  {
+   "name": "command palette row, no shortcut (commands and jump targets)",
+   "kind": "menu-item",
+   "component": "MenuItem (command palette; props data-idx, active, onMouseMove, onClick, leading=Icon, no trailing)",
+   "description": "A runnable command or a jump target with no shortcut. Commands run their action. Jump rows (lists and projects such as Errands, Reading, Garden, Home, Spring launch) switch to the named list or project instead. Both kinds share the same row geometry and the same click and Enter path, so they are kept in one variant; the behaviour differs as stated. Click or Enter runs the command and closes the palette.",
+   "look": "Same geometry as the shortcut rows but no shortcut glyphs; row height 30; box 488 wide. Label font as in the shortcut row (400 13px/19.5px). Measured.",
+   "states": [
+    "inactive",
+    "active (highlighted by arrow keys or pointer)",
+    "hover (mouse move sets active)",
+    "clipped below the panel edge (Open Trash and the list and project rows in the palette state)"
+   ],
+   "behaviour": "Click or Enter runs the command, same as the shortcut rows. Jump rows switch to the named list or project. Labels for jump rows come from runtime data and are not in the tree.",
+   "usedIn": [
+    "command-palette"
+   ],
+   "examples": [
+    "Swap panes",
+    "Open Trash",
+    "Errands",
+    "Reading",
+    "Garden",
+    "Home",
+    "Spring launch"
+   ]
+  },
+  {
+   "name": "menu panel, top-level",
+   "kind": "context-menu",
+   "component": "MenuPanel",
+   "description": "The container that renders the rows of a top-level context menu (task row context menu and list tab context menu). Each row opens its submenu on mouse enter, or clears it.",
+   "look": "Not measured (look null in the source row) for colours and layout. Absolute; position clamped to a 4px inset of the viewport (ContextMenu.tsx:79-88). No measured colours.",
+   "states": [
+    "open",
+    "measuring (position set after first layout)"
+   ],
+   "behaviour": "Each row sets the open submenu on mouse enter (or clears it). Clicking a row without a submenu calls onPick(id) (ContextMenu.tsx:99-107).",
+   "usedIn": [
+    "context-menus",
+    "task-list"
+   ],
+   "examples": []
+  },
+  {
+   "name": "menu panel, nested submenu",
+   "kind": "context-menu",
+   "component": "Submenu wrapper plus nested MenuPanel",
+   "description": "The panel that opens beside a hovered row that has a submenu (for example Move to list in the task row context menu). It is not clamped to the viewport. The source row records count 0 and no states, so it is listed for its placement rule only.",
+   "look": "Not measured (look null in the source row). Nested=true (no clamp). Flips to the left when it would overflow the window.",
+   "states": [
+    "not recorded in any state"
+   ],
+   "behaviour": "Opens on hover of a row with a submenu; flips left on overflow (ContextMenu.tsx:142-165).",
+   "usedIn": [
+    "context-menus",
+    "task-list"
+   ],
+   "examples": []
+  },
+  {
+   "name": "list tab menu row, plain",
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "description": "A plain action row in the list tab context menu: Rename, Open in split view, Export list…. Width is 156 (the list tab menu) versus 152 for the task menu, so it is kept separate from the task menu plain row.",
+   "look": "tone default; row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9. No trailing icon; disabled not set.",
+   "states": [
+    "default (shown)",
+    "hover",
+    "disabled (not recorded; would show opacity-40 and no pointer events)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. Rename's rename sheet or field, and Export's save step, were not captured.",
+   "usedIn": [
+    "context-menus"
+   ],
+   "examples": [
+    "Rename (icon edit)",
+    "Open in split view (icon vertical_split)",
+    "Export list… (icon ios_share)"
+   ]
+  },
+  {
+   "name": "list tab menu row, danger",
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "description": "The destructive row in the list tab context menu: Delete list…. Its width is 156, matching the plain list tab rows.",
+   "look": "tone danger: icon delete and label both oklch(0.55 0.2 27) (red); hover background danger-100l; label 400 13px/19.5px; row 156x30.",
+   "states": [
+    "default (shown)",
+    "hover (danger background)"
+   ],
+   "behaviour": "Click starts list deletion and closes the menu. The ellipsis implies a confirmation step, not captured.",
+   "usedIn": [
+    "context-menus"
+   ],
+   "examples": [
+    "Delete list… (icon delete, size 15)"
+   ]
+  },
+  {
+   "name": "task menu row, plain",
+   "kind": "menu-item",
+   "component": "MenuItem (imported as MenuRow from common-ui components)",
+   "description": "A plain action row in the task row context menu: Copy, Add subtask, Rename. Same measured look and click behaviour across the three. Width is 152, versus 156 for the list tab menu. usedIn lists the task-list screen where the task row context menu is opened, and the context-menus capture.",
+   "look": "tone default; row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9. Classes text-[13px], px-space-6 py-space-4, gap-space-5, full width. Hover background wash-2l.",
+   "states": [
+    "default (shown)",
+    "hover (bg wash-2l)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. Mouse enter clears any open submenu. Rename starts renaming the task (rename UI not captured).",
+   "usedIn": [
+    "task-list",
+    "context-menus"
+   ],
+   "examples": [
+    "Copy (icon content_copy)",
+    "Add subtask (icon subdirectory_arrow_right)",
+    "Rename (icon edit)"
+   ]
+  },
+  {
+   "name": "task menu row, submenu",
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "description": "The Move to list row in the task row context menu. It has a submenu, so it shows a trailing chevron, and clicking it does nothing (only hover opens the submenu). usedIn lists the task-list screen where the task row context menu is opened, and the context-menus capture.",
+   "look": "tone default; row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon arrow_forward 15px oklch(0.62 0.013 264) at x+9. Trailing icon chevron_right.",
+   "states": [
+    "default (shown)",
+    "hover (opens submenu)",
+    "submenu open (not recorded)"
+   ],
+   "behaviour": "Hover opens the submenu (ContextMenu.tsx:105, 123-133). Click does nothing (onClick calls onPick only when there is no submenu, ContextMenu.tsx:107).",
+   "usedIn": [
+    "task-list",
+    "context-menus"
+   ],
+   "examples": [
+    "Move to list (icon arrow_forward; trailing chevron_right)"
+   ]
+  },
+  {
+   "name": "task menu row, danger",
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "description": "The destructive row at the bottom of the task row context menu that starts deleting the task. The ellipsis implies a confirmation step that was not captured. usedIn lists the task-list screen where the task row context menu is opened, and the context-menus capture.",
+   "look": "tone danger: text danger-500l, hover background danger-100l. Icon delete (size 15) and label both oklch(0.55 0.2 27) (red); label 400 13px/19.5px; row 152x30 (B measured).",
+   "states": [
+    "default (shown)",
+    "hover (danger background)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. The ellipsis implies a confirmation step, not captured.",
+   "usedIn": [
+    "task-list",
+    "context-menus"
+   ],
+   "examples": [
+    "Delete task… (icon delete)"
+   ]
+  }
+ ]
+}

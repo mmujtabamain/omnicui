@@ -1,0 +1,79 @@
+{
+ "name": "TabList",
+ "purpose": "Tab strip: the active project's list tabs in the title bar (horizontal), or the Settings section navigation (vertical). The New list button sits outside the tablist, because it is an action, not a tab.",
+ "base": "shadcn Tabs (Radix Tabs list)",
+ "variants": [
+  {
+   "axis": "orientation",
+   "values": [
+    {
+     "value": "horizontal",
+     "when": "Title-bar strip: flex h-full, items-stretch, min-w-0 flex-1, no-drag on desktop."
+    },
+    {
+     "value": "vertical",
+     "when": "Settings sidebar list: flex column, gap-1."
+    }
+   ],
+   "default": "horizontal"
+  },
+  {
+   "axis": "overflow",
+   "values": [
+    {
+     "value": "scroll",
+     "when": "Horizontal scroll when tabs overflow, scrollbar hidden (overflow-x-auto). Covers the list tab strip (A's ScrollArea horizontal hidden)."
+    },
+    {
+     "value": "fit",
+     "when": "Tabs fit, no scroll. Used by the vertical settings list (its overflow is not recorded; fit assumed)."
+    }
+   ],
+   "default": "scroll"
+  }
+ ],
+ "props": [
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Selected tab id."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: string) => void",
+   "description": "Selection handler."
+  },
+  {
+   "name": "loop",
+   "type": "boolean",
+   "description": "Wrap-around focus. Default true."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "aria-label, for example Settings sections."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Tab items from the tabs family."
+  }
+ ],
+ "states": [
+  "default",
+  "overflowing (scrolls)",
+  "empty (no tabs)"
+ ],
+ "role": "tablist; aria-orientation follows orientation",
+ "keyboard": "Horizontal: ArrowLeft and ArrowRight move between tabs. Vertical: ArrowUp and ArrowDown move to the next or previous section with wrap-around, selecting it and focusing its tab (SettingsWindow.tsx:186-196; onKeyDown at :265). Home and End are proposed.",
+ "replaces": [
+  "list tab strip",
+  "settings section tab list"
+ ],
+ "platform": "Same on web and desktop. On desktop the strip is no-drag inside the title bar. Tab drag-reorder is the tab family's job.",
+ "open": "ListTabs keyboard handling for the horizontal strip is not in the catalogue (no onKeyDown read). Tab stop behaviour and Home and End keys are not recorded for Settings. Web Settings as a route is open.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

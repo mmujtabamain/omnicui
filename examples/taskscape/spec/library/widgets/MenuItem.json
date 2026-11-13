@@ -1,0 +1,187 @@
+{
+ "name": "MenuItem",
+ "purpose": "A row inside a dropdown menu: a selectable choice, or the separated footer action that starts creating a new project. Merged entry: A's MenuItem (more exact values) and B's MenuItem (same name, same action row), with both sources' open items. Also (menus): One row of a Menu: an action; a radio choice inside a labelled group (project rows; search scope, search fields, sort and date choices); or a row that opens a submenu (Move to list). Leading icon 15px, label, optional trailing submenu chevron, radio check slot, or hover-revealed row actions (project rows only). Covers every menu row in the task, list tab, attachment and project menus. Task menu row classes: px-space-6, py-space-4, gap-space-5, text-[13px] (menus.json line 393).",
+ "base": "Radix DropdownMenu.Item (shadcn DropdownMenuItem); RadioItem when checked is used",
+ "variants": [
+  {
+   "axis": "variant",
+   "values": [
+    {
+     "value": "item",
+     "when": "Choice row. A check icon marks the current value (date range)."
+    },
+    {
+     "value": "action",
+     "when": "Footer action row: full width, h-9 = 32px, 13.5px/20.25px text, leading add icon 15px, separated from the choices above, label left."
+    }
+   ],
+   "default": "item"
+  },
+  {
+   "axis": "tone",
+   "default": "default",
+   "values": [
+    {
+     "value": "default",
+     "when": "Label oklch(0.26 0.012 262) (text-primary) and icon oklch(0.62 0.013 264) (muted), measured; hover background wash-2l. Used by Copy, Add subtask, Rename, Move to list, Open, Reveal in Finder, Copy n tasks, Mark n done, Mark n not done, Export list, Rename list, and the project rows."
+    },
+    {
+     "value": "danger",
+     "when": "Icon and label oklch(0.55 0.2 27); hover background danger-100l; text danger-500l on the task row. Used by Delete task…, Delete n tasks…, Delete list…, and Remove on the attachment menu (which has a divider above it)."
+    }
+   ]
+  },
+  {
+   "axis": "selection",
+   "default": "action",
+   "values": [
+    {
+     "value": "action",
+     "when": "No check slot. Runs an action."
+    },
+    {
+     "value": "radio",
+     "when": "Choice from a group: a 14px (w-4) check slot is always reserved so labels align. The current value shows a check icon 15px, weight 900 (measured; B's fold to weight 300 is not applied), in accent oklch(0.6 0.2 255). Role menuitemradio inside a role=group with a label (Projects for project rows; the group name for scope, fields, sort and date). Used by project rows and by the search scope, search fields, sort and date choices."
+    }
+   ]
+  },
+  {
+   "axis": "trailing",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No trailing element."
+    },
+    {
+     "value": "submenu",
+     "when": "Trailing chevron_right. Hover opens the submenu (pointer only); ArrowRight opens it; a click does nothing. Used by Move to list. Carries aria-haspopup=menu and aria-expanded."
+    }
+   ]
+  },
+  {
+   "axis": "size",
+   "default": "default",
+   "values": [
+    {
+     "value": "default",
+     "when": "Label 400 13px/19.5px, row height 30px (measured). Used by task, list tab and attachment menus. Leading icon 15px."
+    },
+    {
+     "value": "large",
+     "when": "Label 400 13.5px/20.25px (measured; B's fold to 13px is not applied). Used by project menu rows, checked and plain. Row height unmeasured: the project label boxes sit at y 53 and y 85, a 32px pitch (menus.json lines 63, 82). The 30px row height does not apply to project rows."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "variant",
+   "type": "'item' | 'action'",
+   "description": "Ordinary row or the separated action row."
+  },
+  {
+   "name": "leadingIcon",
+   "type": "IconName | undefined",
+   "description": "Leading glyph (add on the action row)."
+  },
+  {
+   "name": "checked",
+   "type": "boolean | undefined",
+   "description": "When set, the row is a radio item with a check indicator."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Muted, no selection."
+  },
+  {
+   "name": "onSelect",
+   "type": "(event) => void",
+   "description": "Runs the action. The menu closes first (Radix default)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Label: a list or project name, or New project… for the action."
+  },
+  {
+   "name": "icon",
+   "type": "string",
+   "description": "Leading icon name, 15px (for example content_copy, edit, delete, arrow_forward)."
+  },
+  {
+   "name": "label",
+   "type": "ReactNode",
+   "description": "Row text; truncates when long (truncate prop)."
+  },
+  {
+   "name": "truncate",
+   "type": "boolean",
+   "description": "Truncates long text, for project names."
+  },
+  {
+   "name": "tone",
+   "type": "'default' | 'danger'",
+   "description": "See variants."
+  },
+  {
+   "name": "selection",
+   "type": "'action' | 'radio'",
+   "description": "See variants."
+  },
+  {
+   "name": "value",
+   "type": "string",
+   "description": "Radio only; the value the row sets in its group."
+  },
+  {
+   "name": "trailing",
+   "type": "'none' | 'submenu'",
+   "description": "See variants."
+  },
+  {
+   "name": "size",
+   "type": "'default' | 'large'",
+   "description": "Type size and row height; see variants."
+  },
+  {
+   "name": "actions",
+   "type": "ReactNode",
+   "description": "Hover-revealed row actions, used by project rows for rename and delete. Rendered as sibling IconButtons outside the menuitem, not nested inside it."
+  }
+ ],
+ "states": [
+  "default",
+  "highlighted (keyboard or hover, wash-2)",
+  "checked (check icon)",
+  "disabled",
+  "focus",
+  "hover (wash-2l for default tone; danger-100l for danger tone; on a submenu row, hover opens the submenu for pointer users)",
+  "highlighted (keyboard focus, same look as hover, with a focus-visible ring)",
+  "checked (radio; check icon shown)",
+  "disabled (component default opacity-40, no pointer events; look not captured)",
+  "submenu-open (aria-expanded true)",
+  "actions revealed (on hover and on focus-within, so keyboard users reach them)"
+ ],
+ "role": "menuitem; menuitemradio when checked is set",
+ "keyboard": "ArrowUp and ArrowDown move the highlight; Home and End jump; Enter and Space select and close; Escape closes the menu and returns focus to the trigger; typeahead by first letter. / Enter or Space activates; for radio rows, selects the value. Arrow keys move between rows and skip disabled rows. ArrowRight on a submenu row opens it. Pointer hover opens a submenu row. Escape is handled by the Menu. Route to the row actions is undecided (see open).",
+ "replaces": [
+  "Project menu row, new project",
+  "project menu row, checked",
+  "project menu row, plain",
+  "attachment menu item",
+  "list tab menu row, plain",
+  "list tab menu row, danger",
+  "task menu row, plain",
+  "task menu row, submenu",
+  "task menu row, danger"
+ ],
+ "platform": "New project: desktop opens the New project sheet (a new window); web opens a create-project dialog (proposal). Desktop creates in the local SQLite store; web creates on the server for the signed-in account (assumption). / Same geometry on both. Web: hover-revealed actions also reveal on focus-within; touch has no hover, so a touch affordance is needed (open). Desktop: hover reveals row actions. Destructive actions: attachment Remove opens askConfirm (menus.json line 217, measured). Task and list deletions (Delete task…, Delete n tasks…, Delete list…) have an ellipsis that implies a confirmation, but the confirmation was not captured (menus.json lines 380, 441): unverified. Rename… opens askText (design statement, unverified). These dialogs belong to another family: separate windows on desktop, modal dialogs on web. Attachment set: a local file gets Rename…, Open, Reveal in Finder and Remove; a remote link omits Reveal in Finder (menus.json lines 190, 211). On web, uploads live on the server and there is no local file, so Reveal in Finder is hidden rather than disabled, and what Open does for an uploaded file must be confirmed. On desktop, Reveal in Finder is macOS wording; the Windows label is not in the catalogue.",
+ "open": "(1) New project handler conflict: title-bar code calls createProject() (ProjectSwitcher.tsx:99-103), but the context-menus recording shows it opening the New project sheet. Decide one: create inline, or open a sheet. (2) In the reference the title-bar row is a plain button, not a menu item; moving it to menu semantics is a change. (3) The handler is not recorded in the context-menus tree (B). Confirm. / 1) Hover-revealed rename and delete on project rows: nested controls inside a menuitem are invalid ARIA, so they are sibling IconButtons outside the row. The keyboard route is undecided: ArrowRight from the row to the sibling buttons, or F2 to rename and Delete to delete on the focused row. 2) Task row labels sit at x+31 and list tab labels at x+32 (menus.json lines 354, 393). Treated as one geometry unless a designer confirms the 1px difference. 3) The disabled look is the component default (opacity-40, no pointer events) and was not captured. 4) Mark n done and Mark n not done have no colour in the catalogue; kept in the default tone (neutral), because the done-lamp colour is reserved for done state; decision needed. 5) Project row height unmeasured (see size large). 6) Exact oklch values are recorded here; token names need the token file, which was not read. 7) Leading icon weight 300 follows the catalogue's other icons, not a measured row value.",
+ "family": "buttons",
+ "families": [
+  "buttons",
+  "menus"
+ ]
+}

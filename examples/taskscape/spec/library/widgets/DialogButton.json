@@ -1,0 +1,54 @@
+{
+ "name": "DialogButton",
+ "purpose": "Action button in a sheet or confirm dialog. Carries the dialog keyboard roles: accept on Enter, cancel on Escape, and instead for a secondary action. Sits in the sheet footer grid. Its tone axis is removed: the look comes from the Button variant (critique: one axis).",
+ "base": "Radix AlertDialog Action and Cancel (shadcn AlertDialogAction and AlertDialogCancel); instead is a plain Button",
+ "variants": [],
+ "props": [
+  {
+   "name": "role",
+   "type": "'accept' | 'cancel' | 'instead'",
+   "description": "Which keyboard and dismissal role the button plays. accept runs onActivate; cancel dismisses with action dismiss; instead resolves with insteadId."
+  },
+  {
+   "name": "insteadId",
+   "type": "string | undefined",
+   "description": "The id the instead role resolves with."
+  },
+  {
+   "name": "variant",
+   "type": "'primary' | 'neutral' | 'danger' | undefined",
+   "description": "Passed through to Button. Cancel and instead default to neutral; accept is neutral as recorded, primary proposed; destructive accept is danger."
+  },
+  {
+   "name": "onActivate",
+   "type": "() => void",
+   "description": "Handler. The caller owns the empty-field guard (focus the field, do nothing) and the trimmed text."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Passed to Button. Not used for the empty-field guard (see open)."
+  }
+ ],
+ "states": [
+  "default",
+  "hover (not captured)",
+  "pressed (not captured)",
+  "focus-visible (not verified)",
+  "disabled (code only; look not captured)"
+ ],
+ "role": "button (AlertDialog Action for accept, AlertDialog Cancel for cancel, plain button for instead)",
+ "keyboard": "Enter activates the accept button when focus is not in a text field (reference rule). Escape dismisses the sheet as cancel. Tab cycles through the footer. Danger accept fires on Enter at once with no guard in the reference.",
+ "replaces": [
+  "Sheet cancel button",
+  "Sheet accept button, neutral",
+  "Sheet accept button, danger",
+  "Sheet secondary button, left slot"
+ ],
+ "platform": "Desktop: each sheet is its own window with no backdrop; Escape closes the window. Web: a modal dialog; the backdrop style is not decided. The button look is the same on both.",
+ "open": "(1) Accept look: the reference uses neutral for the forward action of create, rename and move; the Filter panel Done uses blue. The decision says blue is for primary action, so accept becomes primary as proposed. Confirm; it changes the reference look. (2) Danger accept: Enter confirms deletion at once with no guard. Propose that a destructive sheet starts focus on Cancel. Confirm. (3) Empty-field behaviour: A's catalogue has both a guard (focus the field, do nothing) and a disabled accept. Guard kept, disabled not used; confirm. (4) The instead target is not verified: Import JSON leads somewhere beyond closing that is not shown in the code read. (5) Width: Cancel is 84px in the reference (measured) against code min-w-24 = 96px. Measured 84px used, so DialogButton uses lg with min-width 84px. Confirm.",
+ "family": "buttons",
+ "families": [
+  "buttons"
+ ]
+}

@@ -1,0 +1,243 @@
+{
+ "widgets": [
+  {
+   "name": "Toast",
+   "purpose": "Transient, non-blocking notice shown after an undoable action, with an optional action control (Undo). Wraps a Radix Toast Root inside a viewport; the app mounts one Radix Toast Provider and Viewport per window. No look was recorded, so there is no variant axis and no styling beyond shared tokens. Message copy, the Undo action, the shown state and the props are proposals; the catalogue records only the idle state.",
+   "base": "Radix Toast (proposed; the catalogue names no primitive)",
+   "variants": [],
+   "props": [
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Controlled visibility (proposed)."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Fires on auto-dismiss, close control, swipe, action or Escape (proposed)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Message text (proposed; copy is not in the inventory)."
+    },
+    {
+     "name": "action",
+     "type": "{ label: string; onAction: () => void } (optional)",
+     "description": "Undo control (proposed; assumed from the word 'undoable', not recorded). onAction runs the undo."
+    },
+    {
+     "name": "duration",
+     "type": "number (ms, optional)",
+     "description": "Auto-dismiss time (not recorded; the Radix default applies when omitted)."
+    }
+   ],
+   "states": [
+    "hidden (idle; the only state the catalogue records; not mounted)",
+    "shown (not recorded in the inventory; proposed)",
+    "paused while hovered or focused (Radix behaviour, to verify; not recorded)",
+    "dismissed (after timeout, swipe, close or action; proposed)"
+   ],
+   "role": "status (Radix Toast root; aria-live is set by the Toast type setting, to verify)",
+   "keyboard": "Radix defaults (to verify): the viewport hotkey (F8 by default) moves focus into the toast list, then Tab reaches the action and close controls; Escape dismisses when focus is inside; pointer swipe dismisses. On web the hotkey must stay page-scoped, must not clash with a browser shortcut, and must never be global. On desktop the hotkey is scoped to the main window as the toast is (assumed).",
+   "replaces": [
+    "toast, undoable action notice"
+   ],
+   "platform": "Same widget and props on web and desktop. The toast sits in the main window on both (per the screen field). The main window is never dimmed. A toast is neither a dialog nor a sheet, so the separate-window rule does not apply.",
+   "open": "1) Trigger and message copy are absent from the inventory. 2) Source conflict: the row's purpose says 'Own screen: toast' while its screen field says main-window; this design follows the screen field. 3) Undo keyboard shortcut and duration are not recorded. 4) Accent blue is reserved for the primary action and selection, so Undo stays neutral unless the team calls it primary. 5) No look is recorded, so no tone axis. A danger tone for undoable deletes needs the look first. B's single-value intent axis was dropped as pointless. 6) Hover pause, dismissed state, close control and live-region politeness are Radix behaviour to verify.",
+   "family": "overlays"
+  },
+  {
+   "name": "Dialog",
+   "purpose": "Modal card with a badge, a headline, optional detail copy, an optional field slot and an action row that holds the accept action. One widget covers both sheet-card rows: kind name (new-list, new-project, rename-list) and kind confirm (delete-list, delete-confirm). Named Dialog rather than SheetCard, because shadcn's Sheet is a side panel (see open, item 6). Measured: width min(26rem,100%) (364px at the 14px root), radius 0.75rem (10.5px), background oklch(0.995 0.001 255), elevation menu, surface 2, overflow hidden. Folded: the background into the card surface token, the menu elevation and surface 2 into the menu elevation, and animate-sheet-in into the standard open motion. Heights of 141px (name) and 122px (confirm) differ with content, so there is no height axis. Padding is an estimate only (about 15px top and left, 10px sides and bottom).",
+   "base": "Radix Dialog (Title, Description and Content), placed inside the single Radix Dialog root owned by Overlay; styled as shadcn DialogContent. It does not create a second Radix Dialog root.",
+   "variants": [
+    {
+     "axis": "kind",
+     "values": [
+      {
+       "value": "name",
+       "when": "Body is a text field and focus goes to the field (initial focus is the field here; the catalogue says field or accept button, proposed). Used by new-list, new-project and rename-list. Accept button is the primary action, in accent blue."
+      },
+      {
+       "value": "confirm",
+       "when": "Body is optional detail copy and focus goes to the accept button (catalogue). Detail appears only when present (conditional, not a separate state). Used by delete-list and delete-confirm. Accept button uses the danger colour (inferred)."
+      }
+     ],
+     "default": "name"
+    }
+   ],
+   "props": [
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Controlled visibility; passed to Overlay."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Called when the card requests a close. Escape and outside-click wiring is not recorded for these cards (see open)."
+    },
+    {
+     "name": "kind",
+     "type": "'name' | 'confirm'",
+     "description": "Selects the body and the initial focus target."
+    },
+    {
+     "name": "tone",
+     "type": "'default' | 'destructive'",
+     "description": "Colour of the accept button. Defaults from kind (name gives default, confirm gives destructive). Inferred: the catalogue does not record the accept colour."
+    },
+    {
+     "name": "badge",
+     "type": "ReactNode (optional)",
+     "description": "Badge slot at the top of the card (catalogue: both sheet cards hold a badge)."
+    },
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Headline, rendered as Dialog.Title so it labels the dialog through aria-labelledby."
+    },
+    {
+     "name": "description",
+     "type": "string (optional)",
+     "description": "Detail copy, rendered as Dialog.Description. aria-describedby is set only when present."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode (optional)",
+     "description": "Body slot. For kind name this holds the text field; omitted for kind confirm."
+    },
+    {
+     "name": "acceptLabel",
+     "type": "string",
+     "description": "Accept button label."
+    },
+    {
+     "name": "onAccept",
+     "type": "() => void",
+     "description": "Runs the accept action. The action row holds only the accept button; no cancel prop, because the row's other contents are not recorded."
+    }
+   ],
+   "states": [
+    "closed (not mounted)",
+    "entering (open motion plays when shown)",
+    "open",
+    "name: new-list",
+    "name: new-project",
+    "name: rename-list",
+    "confirm: delete-list",
+    "confirm: delete-confirm"
+   ],
+   "role": "dialog with aria-modal=true (as recorded). aria-labelledby points at the title; aria-describedby points at the description only when it is set. Open question whether confirm should use alertdialog.",
+   "keyboard": "Initial focus is the field (kind name) or the accept button (kind confirm), as recorded. Tab and Shift+Tab stay inside the card (Radix modal focus trap, proposed). Enter activates the focused accept button. Clicks inside do nothing. Escape and outside-click dismissal are not recorded for either kind (see open). On close, focus returns to the opener (Radix default, to verify).",
+   "replaces": [
+    "sheet card, name",
+    "sheet card, confirm"
+   ],
+   "platform": "Differs. Web: a modal card over the page, inside Overlay with placement center; a dim scrim is assumed, not recorded. Desktop: each card opens as its own window whose content is this card, with the title as the window title (suggested). No scrim, so the main window is never dimmed and an outside click does nothing to it. Window chrome supplies the close control. The separate-window rule is not in overlays.json (assumption). Window size and chrome are not decided.",
+   "open": "1) Accept colour is not recorded. Tone is inferred from kind and the danger rule, which is not in overlays.json. Tone is a prop that defaults from kind, not a variant axis: A's tone axis and B's intent axis both duplicated kind. An explicit override is held back until a non-destructive confirm is recorded. 2) Role: the catalogue records dialog for both kinds; shadcn AlertDialog uses alertdialog for destructive confirms. Decide whether confirm changes role. 3) Initial focus: the catalogue puts focus on the accept button of confirm cards, so Enter deletes on open. Decide whether Cancel takes focus instead; cancel is not recorded. B's initialFocus prop was dropped, since kind sets focus. 4) Dismissal: Escape and outside-click are not recorded for either kind; Radix defaults would close them. Decide. 5) Source conflict on the name card: its text field says 'No visible text.' while its purpose says the card holds a badge and text. The headline is treated as visible text here; unresolved. 6) Naming and kind: A named this SheetCard to keep it apart from shadcn Sheet; this design uses Dialog. The catalogue kinds array lists 'sheet' (overlays.json line 5) but no row uses it, and both cards are tagged dialog. Decide whether kind 'sheet' is kept (retag the rows) or dropped; the name is open if the team wants the catalogue term. 7) The catalogue component for both cards is Surface (rendered as Surface2). It is treated here as this card's surface token and menu elevation, not a separate primitive; confirm whether Surface is a primitive to reuse. 8) Padding is estimated only; measure before setting spacing tokens. 9) The action row is accept-only. B's actions ReactNode was dropped. 10) Confirm with a description is a conditional, not a state (A's note); B's separate state entry was dropped. 11) Window size and chrome are not decided on desktop.",
+   "family": "overlays"
+  },
+  {
+   "name": "Overlay",
+   "purpose": "Modal layer shell and the single Radix Dialog root for every modal layer: Portal, a scrim, a focus trap, Escape capture, and dismissal routed to onDismiss. Hosts the command palette (placement top, scrim dim, onDismiss = onClose, captureEscape set), the attachment lightbox full-window shell (placement fill, scrim strong, dismissOn none, captureEscape set; the lightbox itself is app code, see notWidgets), and Dialog cards (placement center, proposed). The blur recorded only on the lightbox shell is folded into scrim strong, the only scrim with blur.",
+   "base": "Radix Dialog (Root, Portal, Overlay, Content with focus scope). The catalogue names no primitive. shadcn DialogOverlay is the analogue for the scrim; no shadcn file exists for a full-window shell.",
+   "variants": [
+    {
+     "axis": "placement",
+     "values": [
+      {
+       "value": "top",
+       "when": "Panel near the top of the window; used by the command palette (not measured)."
+      },
+      {
+       "value": "fill",
+       "when": "Layer covers the whole window; used by the attachment lightbox full-window shell."
+      },
+      {
+       "value": "center",
+       "when": "Card placement used by Dialog. Not in the catalogue; proposed, confirm before shipping."
+      }
+     ],
+     "default": "center"
+    },
+    {
+     "axis": "scrim",
+     "values": [
+      {
+       "value": "dim",
+       "when": "Standard scrim; strength not recorded (assigned here). Used by the command palette and, on web, by Dialog cards (assumed)."
+      },
+      {
+       "value": "strong",
+       "when": "Strong dim plus blur (Backdrop2). Used by the attachment lightbox shell."
+      }
+     ],
+     "default": "dim"
+    }
+   ],
+   "props": [
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Controlled visibility; closed means not mounted."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Standard Radix open change (proposed)."
+    },
+    {
+     "name": "placement",
+     "type": "'top' | 'fill' | 'center'",
+     "description": "Where the layer content sits. 'center' is proposed."
+    },
+    {
+     "name": "scrim",
+     "type": "'dim' | 'strong'",
+     "description": "Backdrop strength. Desktop shows no scrim whatever this is set to (platform rule, not a value)."
+    },
+    {
+     "name": "dismissOn",
+     "type": "'outside' | 'none' (default 'outside')",
+     "description": "'outside' lets a backdrop or outside click call onDismiss (palette). 'none' disables it (lightbox, where the stage click closes)."
+    },
+    {
+     "name": "captureEscape",
+     "type": "boolean (default true)",
+     "description": "When true, Escape is captured and routed to onDismiss. Recorded as set for the palette and the lightbox shell."
+    },
+    {
+     "name": "onDismiss",
+     "type": "() => void",
+     "description": "Called on Escape and, when dismissOn is 'outside', on outside click. The palette and the lightbox pass onClose."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Layer content: the palette panel, the lightbox stage, or a Dialog card."
+    }
+   ],
+   "states": [
+    "closed (not mounted)",
+    "open"
+   ],
+   "role": "dialog, aria-modal=true (Radix Dialog; proposed, since the catalogue records no role for overlays). The palette and lightbox content set their own roles inside the layer.",
+   "keyboard": "Escape calls onDismiss when captureEscape is true (recorded for the palette and the lightbox). Tab and Shift+Tab are trapped inside the layer (recorded for the palette; assumed for the lightbox). An outside click calls onDismiss only when dismissOn is 'outside'. Focus returns to the opener on close (Radix default, to verify). The palette opener is a web in-page shortcut and must not clash with browser shortcuts. On desktop, a global hotkey pressed while the main window is focused is handled by the main window.",
+   "replaces": [
+    "command palette overlay, modal layer",
+    "attachment lightbox, full-window overlay shell"
+   ],
+   "platform": "Differs. Web: a modal layer over the page; the scrim follows the scrim prop. Desktop: no backdrop dims the main window, so no scrim (platform rule, assumed; not in overlays.json). The palette and the lightbox each open either as their own window or as an in-window layer without scrim (undecided). If they become windows, placement top or fill becomes the window's placement. A fill layer with a strong scrim is not used in-window on desktop (assumed).",
+   "open": "1) Palette on desktop: the separate-window rule for dialogs may apply. Decide whether it becomes a window or an in-window panel without dimming; the rule is not in overlays.json. 2) Palette trigger is not in the inventory; on web it must not be a browser shortcut. 3) Palette states: the catalogue says 'open (all three reference states)' but records only open. The three states are missing; list only open until they are provided. 4) Escape capture on the lightbox shell comes from a code comment and is unverified; the catalogue records captureEscape as set. 5) Scrim dim strength and strong blur are not measured. 6) Placement center is not in the catalogue; it is needed by Dialog and is proposed. Default placement: A said top, B said center; center is set because Dialog is the most frequent use, and the palette and lightbox pass placement explicitly. 7) Tooltip: the catalogue kinds array (overlays.json line 9) lists 'tooltip' but no row uses it. Do not ship a tooltip widget until rows-overlays.json is checked or the kind is removed. 8) Whether the lightbox shell nests inside the inspector-mounted lightbox or is a separate surface is unverified (AttachmentLightbox.tsx was not read). 9) Single modal root: Dialog renders inside Overlay and does not add a second Radix Dialog root, which avoids duplicate focus trapping and Escape handling. 10) Dropped: B's states 'open with scrim none' and 'open with dismissOn none' (configurations, not states); 'none' as a scrim value (replaced by the desktop platform rule); A's scrim value 'default' renamed to 'dim'. 11) Palette, lightbox and the Dialog cards all use Escape through captureEscape; the catalogue's capture for the palette is followed, not A's onDismiss-only reading.",
+   "family": "overlays"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "attachment lightbox, inspector-mounted",
+   "reason": "App-level feature composition, not a library primitive. AttachmentLightbox (components/AttachmentLightbox, not read) mounts only while the lightbox index is not null, inside the task inspector, and owns the index, close, delete and rename callbacks. Props as recorded: attachments (element type not recorded); index (number or null; null means closed and not mounted); onIndex (index change request); onClose (sets index to null); onDeleted (called after delete, which closes the lightbox and refreshes); onRenamed (called after rename, which refreshes). Its visual is Overlay with placement fill, scrim strong, dismissOn none and captureEscape set. Previous and next through onIndex is a proposal, and arrow keys are not recorded. The delete control uses the danger tone (proposed; not recorded). Source: desktop shows a local file; web shows a file uploaded to the server. Desktop window or in-page presentation is undecided. Mount rule: the shell is not rendered without an attachment or file kind (AttachmentLightbox.tsx:159). It is kept out of the widget list because its placement is open: the catalogue names it as shared with note @mentions (line 81) and places it under components/AttachmentLightbox (line 80). It stays app-level and reuses Overlay; if @mentions also use it, share it at app level. Its internals (the file-kind check and the attachment type) were not read."
+  }
+ ]
+}

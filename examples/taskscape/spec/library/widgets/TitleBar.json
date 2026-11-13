@@ -1,0 +1,94 @@
+{
+ "name": "TitleBar",
+ "purpose": "Header strip at the top of a window or of a pane. Window scope is the draggable window chrome on desktop and can hold WindowControls and the list tabs or project switcher. Pane scope is an in-pane header that does not drag.",
+ "base": "none (custom; composes TabList and WindowControls)",
+ "variants": [
+  {
+   "axis": "scope",
+   "values": [
+    {
+     "value": "window",
+     "when": "h-13 (catalogue), items-stretch, border-b edge-2, bg surface-1. Measured 1180x46 (820x46 narrow). Drag region on desktop. Main and settings windows. The settings-about bottom hairline is this standard border (folded)."
+    },
+    {
+     "value": "pane",
+     "when": "In-pane header (Trash). Not draggable. Border edge-1 per A (measured: 46px in the tree, 44px band in the shot). B folded this to edge-2; A kept, see open."
+    }
+   ],
+   "default": "window"
+  },
+  {
+   "axis": "controls",
+   "values": [
+    {
+     "value": "leading",
+     "when": "WindowControls at the leading edge (macOS style): main, settings and trash on desktop."
+    },
+    {
+     "value": "none",
+     "when": "No window or pane controls. Web build, where the browser provides the chrome."
+    }
+   ],
+   "default": "none"
+  }
+ ],
+ "props": [
+  {
+   "name": "scope",
+   "type": "'window' | 'pane'",
+   "description": "Sets border token, height and drag region."
+  },
+  {
+   "name": "controls",
+   "type": "'leading' | 'none'",
+   "description": "Places controlsSlot at the leading edge."
+  },
+  {
+   "name": "controlsSlot",
+   "type": "ReactNode",
+   "description": "WindowControls, or a close TrafficLight for the trash pane."
+  },
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Title text (for example Settings, Trash)."
+  },
+  {
+   "name": "titleAs",
+   "type": "'div' | 'h1' | 'h2'",
+   "description": "Settings uses h1."
+  },
+  {
+   "name": "trailing",
+   "type": "ReactNode",
+   "description": "Optional trailing slot (settings-general discard button). Not recorded as present in A, so a prop and not an axis."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "ListTabs and Toolbar (window scope), project switcher, or the pane title content. Interactive children carry data-no-drag."
+  }
+ ],
+ "states": [
+  "default",
+  "window-focused (controls lit)",
+  "window-blurred (controls grey)",
+  "project-menu-open",
+  "narrow (820 wide)",
+  "scrolled",
+  "recording"
+ ],
+ "role": "banner when scope is window and top-level; none when scope is pane",
+ "keyboard": "The bar is not focusable. Window scope: the drag region is pointer only; double-click on a data-tauri-drag-region target calls getCurrentWindow().toggleMaximize() (TitleBar.tsx:43-46). Children keep their own keys.",
+ "replaces": [
+  "main window title bar",
+  "settings window title bar",
+  "trash pane title bar"
+ ],
+ "platform": "Desktop: drag region, double-click maximise and leading window controls on macOS; Windows caption placement is open. Web: no drag region and no window controls; the same bar is the app header with the project switcher and list tabs.",
+ "open": "Height: catalogue h-13 is measured 46px. At 1rem = 14px, h-13 is 45.5px (rounds to 46), but h-11 (command input, 44px) and h-10 (capture title row, 40px) match 16px rem, so the rem base must be resolved before tokens are written (same conflict for CommandInput and InputGroup bar). Windows caption-control placement is open (no trailing rule in the catalogue). Pane border conflict: A edge-1, B edge-2; kept A's edge-1 because it is measured and visible; designer to confirm. Default controls: A none, B leading; kept none.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

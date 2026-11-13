@@ -1,0 +1,57 @@
+{
+ "name": "WindowFrame",
+ "purpose": "Root element of one window. Titled is the full app window (main and settings) with a TitleBar under it. Frameless is the borderless quick-add capture card, desktop only. Fills its window and holds the title bar, body and overlays.",
+ "base": "none",
+ "variants": [
+  {
+   "axis": "chrome",
+   "values": [
+    {
+     "value": "titled",
+     "when": "h-screen w-screen, flex column, bg-surface-1, text-content-1, overflow hidden. Used by the main and settings windows. Window size (1180x760 default, 820x640 narrow, Settings 1180x760 at 0,0) is window configuration, not a variant."
+    },
+    {
+     "value": "frameless",
+     "when": "rounded-panel, 1px border, w-screen, no TitleBar, light surface (dark grey in dark theme). Used only by the capture bar (desktop only)."
+    }
+   ],
+   "default": "titled"
+  }
+ ],
+ "props": [
+  {
+   "name": "chrome",
+   "type": "'titled' | 'frameless'",
+   "description": "Selects window chrome."
+  },
+  {
+   "name": "onKeyDown",
+   "type": "KeyboardEventHandler<HTMLDivElement>",
+   "description": "Frameless only. Handles Enter, Escape and Tab for the whole capture bar."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Titled: TitleBar and body row (PaneGroup) with overlays. Frameless: the capture bar rows."
+  }
+ ],
+ "states": [
+  "default",
+  "narrow-window (820x640, main)",
+  "light theme",
+  "dark theme"
+ ],
+ "role": "none (document root; each desktop window is its own document)",
+ "keyboard": "Frameless: root onKeyDown handles Enter, Escape and Tab for the whole bar. Titled: none.",
+ "replaces": [
+  "main window root",
+  "settings window frame",
+  "capture bar card"
+ ],
+ "platform": "Desktop: each window is a real OS window; main and settings are native windows; capture is a separate frameless window. Web: no window chrome from the app; main is the app root page; Settings is a route, not a window; no capture bar.",
+ "open": "Web presentation of Settings (route or dialog) is undecided. Capture bar is desktop-only and drops out of the web build. Merge: A's kind main and kind settings collapse into titled (B): both render the same frame (surface-1, full window); Settings identity sits in its content. A's name Window is dropped for WindowFrame. A's settings frame has no recorded fill, so surface-1 is assumed for it (confirm).",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

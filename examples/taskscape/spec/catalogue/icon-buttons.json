@@ -1,0 +1,1010 @@
+{
+ "kind": "icon-buttons",
+ "title": "Icon buttons",
+ "kinds": [
+  "icon-button"
+ ],
+ "description": "Icon-only buttons across the Taskscape screens: window traffic lights and Windows/Linux window controls, list tab and project controls, search-bar and row action buttons, toolbar buttons, inspector header actions, filter panel, lightbox, settings and trash controls. The 93 source rows are grouped into 50 variants by look and behaviour; widgets that act differently are kept apart (for example, the inert traffic lights and the close, minimise and full-screen lights).",
+ "variants": [
+  {
+   "name": "Traffic light, close, enabled",
+   "kind": "icon-button",
+   "component": "Light (button), id=\"close\"",
+   "description": "Red macOS window traffic light that closes the window (or the Settings window). Rows: title-bar close, main-window close (same disc as the title-bar row, bundled in the main-window row), settings-capture close, settings-about close. The main-window row and the title-bar row are the same control on different screens.",
+   "look": "14x14 disc (title-bar box 14x14 at 18,15); button size-4 (16px) containing svg viewBox 85.4; lit ring #e24b41, fill #ed6a5f, glyph #460804; glyph X fades in on hover. The oklch(0.26 0.012 262) value recorded in the main-window and Trash rows is not used for this glyph: it sits beside font settings and is probably the text colour (unverified).",
+   "states": [
+    "lit, focused (red)",
+    "unlit when window blurred (inactive colours, no glyph)",
+    "hover (glyph fades in)"
+   ],
+   "behaviour": "Click closes the window. Title-bar calls win.close() (WindowControls.tsx:139). Disabled only if the action is missing.",
+   "usedIn": [
+    "title-bar",
+    "main-window",
+    "settings-capture",
+    "settings-about"
+   ],
+   "examples": [
+    "tooltip \"Close\" (title-bar)",
+    "aria label \"Close\" (settings-about)"
+   ]
+  },
+  {
+   "name": "Traffic light, minimise, enabled",
+   "kind": "icon-button",
+   "component": "Light (button), id=\"minimize\"",
+   "description": "Yellow window traffic light that minimises the window. Rows 1 (main-window bundle), 10, 11 and 12 (title-bar) are the same control on different screens.",
+   "look": "14x14 disc at 39,15; button size-4; svg viewBox 85.4; lit ring #e1a73e, fill #f6be50, glyph #90591d; minus glyph on hover.",
+   "states": [
+    "lit, focused (yellow)",
+    "unlit (gray inactive colours)",
+    "hover (glyph fades in)"
+   ],
+   "behaviour": "Click calls win.minimize() (WindowControls.tsx:140).",
+   "usedIn": [
+    "title-bar",
+    "main-window"
+   ],
+   "examples": [
+    "tooltip \"Minimize\""
+   ]
+  },
+  {
+   "name": "Traffic light, full screen, enabled",
+   "kind": "icon-button",
+   "component": "Light (button), id=\"fullscreen\"",
+   "description": "Green window traffic light that toggles full screen. Rows 1 (main-window bundle), 10, 11 and 12 (title-bar) are the same control on different screens.",
+   "look": "14x14 disc at 60,15; button size-4; svg viewBox 85.4; lit ring #2dac2f, fill #61c555, glyph #2a6218; diagonal-arrows glyph on hover.",
+   "states": [
+    "lit, focused (green)",
+    "unlit (gray inactive colours)",
+    "hover (glyph fades in)"
+   ],
+   "behaviour": "Click reads win.isFullscreen() then calls win.setFullscreen(!f) (WindowControls.tsx:141-142).",
+   "usedIn": [
+    "title-bar",
+    "main-window"
+   ],
+   "examples": [
+    "tooltip \"Full Screen\""
+   ]
+  },
+  {
+   "name": "Traffic light, close Trash pane, enabled",
+   "kind": "icon-button",
+   "component": "Light (MacLights), id=\"close\"",
+   "description": "Red traffic light in the Trash pane that closes the Trash pane, not the window.",
+   "look": "14x14 at 879,61; red in shot. The oklch(0.26 0.012 262) value recorded for this light is not confirmed as the glyph colour (it may be the text colour); no glyph hex is recorded.",
+   "states": [
+    "default",
+    "focused"
+   ],
+   "behaviour": "Click calls onClose and closes the Trash pane (close target not confirmed; handler supplied by parent).",
+   "usedIn": [
+    "trash"
+   ],
+   "examples": [
+    "title \"Close Trash\""
+   ]
+  },
+  {
+   "name": "Traffic light, inert",
+   "kind": "icon-button",
+   "component": "Light (MacLights / Light), id=\"minimize\" and id=\"fullscreen\"",
+   "description": "Minimise and full-screen traffic lights shown with inert=true in the Trash and Settings windows. Grey in the screenshots.",
+   "look": "14x14 discs; grey circle with no glyph. Trash at 900,61 (minimise) and 921,61 (full screen); Settings windows at 39,15 and 60,15.",
+   "states": [
+    "focused",
+    "inert (no action)",
+    "disabled (unverified reading; inert is the recorded attribute)"
+   ],
+   "behaviour": "No effect; inert=true and no onClick in the tree.",
+   "usedIn": [
+    "settings-capture",
+    "settings-about",
+    "trash"
+   ],
+   "examples": [
+    "no title in tree (Trash, Settings capture)",
+    "aria labels \"Minimize\" and \"Full Screen\" (Settings about)"
+   ]
+  },
+  {
+   "name": "Windows minimise button, code-derived",
+   "kind": "icon-button",
+   "component": "WinControls minimize button (plain button)",
+   "description": "Windows/Linux only minimise control at the trailing edge of the title bar. Code-derived: no recorded instance, so the look and states come from code only.",
+   "look": "w-[46px] h-full; icon remove size 20. Not measured in any recording (all recorded states are macOS).",
+   "states": [
+    "default",
+    "hover (bg-wash-2)"
+   ],
+   "behaviour": "Click calls win.minimize().",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "tooltip \"Minimize\"",
+    "icon remove"
+   ]
+  },
+  {
+   "name": "Windows maximise and restore button, code-derived",
+   "kind": "icon-button",
+   "component": "WinControls maximize/restore button (plain button)",
+   "description": "Windows/Linux only control that maximises or restores the window, depending on state. Code-derived: no recorded instance.",
+   "look": "Icon crop_square size 14 when not maximized, filter_none when maximized. Not measured in any recording.",
+   "states": [
+    "maximize",
+    "restore",
+    "hover"
+   ],
+   "behaviour": "Click calls win.toggleMaximize().",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "tooltip \"Maximize\" or \"Restore\""
+   ]
+  },
+  {
+   "name": "Windows close button, red hover, code-derived",
+   "kind": "icon-button",
+   "component": "WinControls close button (plain button)",
+   "description": "Windows/Linux only close control at the trailing edge; turns red on hover. Code-derived: no recorded instance.",
+   "look": "Icon close size 20; hover background #e81123 with white glyph (WIN_CLOSE). Not measured in any recording.",
+   "states": [
+    "default",
+    "hover (red)"
+   ],
+   "behaviour": "Click calls win.close().",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "tooltip \"Close\""
+   ]
+  },
+  {
+   "name": "Delete list tab button",
+   "kind": "icon-button",
+   "component": "IconButton (icon close, delete list)",
+   "description": "Close icon on each list tab that starts deleting that list. Shown on every tab, including the focused one; absent in no-lists. Merged from the danger and plain rows: the danger prop is recorded on the main-window, title-bar and draft-inspector rows, and the plain rows (multi-inspector, filter-panel, trash) carry no variant prop in the source, so their assignment is unconfirmed.",
+   "look": "21x21 box, radius 4.375px; icon close 15px, iconWeight 500 (from the danger row); glyph colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark in default; box at y 11 with x 280, 380, 475 in main-default.",
+   "states": [
+    "default",
+    "hover (danger tint on the danger-variant rows; no hover recorded on the plain rows)"
+   ],
+   "behaviour": "Click stops propagation and calls deleteList(list) (ListTabs.tsx:241-244); starts the delete-list confirmation sheet (not confirmed in these files).",
+   "usedIn": [
+    "main-window",
+    "title-bar",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "title / label \"Delete list\"",
+    "icon close"
+   ]
+  },
+  {
+   "name": "New list button, large",
+   "kind": "icon-button",
+   "component": "IconButton (icon add, New list)",
+   "description": "Large add-icon button after the last list tab that creates a new list. Also the only control in the tab row when there are no lists (moves to x 218).",
+   "look": "25x25 box, radius 5.25px, size lg, className my-auto ml-2 rounded-md; icon add 18px, iconWeight 300; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; box at 518,10.",
+   "states": [
+    "default",
+    "hover",
+    "moved to x 218 when there are no tabs"
+   ],
+   "behaviour": "Click calls createList() (ListTabs.tsx:298); opens the new-list sheet (sheets screen).",
+   "usedIn": [
+    "main-window",
+    "title-bar",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "tooltip / label \"New list\"",
+    "icon add"
+   ]
+  },
+  {
+   "name": "New task button, small",
+   "kind": "icon-button",
+   "component": "IconButton (icon add, New task)",
+   "description": "Small add-icon button in the search bar that starts a new task (draft). The + key or cmd-N does the same (task-list empty-state hint).",
+   "look": "21x21 box, radius 4.375px; icon add 18px, iconWeight 400; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; box at 816,63.",
+   "states": [
+    "default",
+    "all states with a pane"
+   ],
+   "behaviour": "Click starts a draft task (main-window sets draftListId, PreviewPanel.tsx:48-49; task-list calls startNewTask(list.id)).",
+   "usedIn": [
+    "main-window",
+    "task-list",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "title / label \"New task\"",
+    "icon add"
+   ]
+  },
+  {
+   "name": "Search options, tune icon (target unverified)",
+   "kind": "icon-button",
+   "component": "IconButton (search options), wrapped by ScopeFields",
+   "description": "Tune icon in the search bar that opens search options. Merged from two rows with the same button at the same position. The click target is unverified: main-window (inferred) reads it as opening the Filter and Sort panel, while task-list reads it as opening the search-options scope menu below the button. Draft-inspector and multi-inspector targets are also unverified. The filter-panel and trash tune rows are not assigned here until their targets are confirmed.",
+   "look": "21x21 box at 784,63, radius 4.375px; icon span 787,66 15x15, tune 15px, iconWeight 300, font 400 15px/15px; plain variant; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark. Moves to 745,63 (21x21) when a search is typed.",
+   "states": [
+    "default",
+    "open (scope menu open, task-list)",
+    "all states with a pane"
+   ],
+   "behaviour": "Mouse down is set on main-window and prevented on task-list so focus stays in the field. Click target unverified: opens the Filter and Sort panel (main-window, inferred) or the search options menu below the button (task-list, y = bottom + 6).",
+   "usedIn": [
+    "main-window",
+    "task-list",
+    "draft-inspector",
+    "multi-inspector"
+   ],
+   "examples": [
+    "title / label \"Search options\"",
+    "icon tune"
+   ]
+  },
+  {
+   "name": "Clear search, search field",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Close icon at the trailing edge of the pane search field that clears the query and restores the full list.",
+   "look": "Button [784,63,21,21], radius 4.375px; icon close 15px, iconWeight 300, font 400 15px/15px; plain; colour oklch(0.62 0.013 264).",
+   "states": [
+    "hidden with no query",
+    "visible with a query",
+    "default"
+   ],
+   "behaviour": "Click clears the pane search and restores the full list.",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "title \"Clear search\"",
+    "icon close"
+   ]
+  },
+  {
+   "name": "Clear search, settings sidebar, small, not measured",
+   "kind": "icon-button",
+   "component": "IconButton (trailing of InputWell)",
+   "description": "Small close icon in the Settings sidebar search field that clears the query and returns to the normal pane view.",
+   "look": "size sm; icon close 14px; plain variant. Not measured: no box recorded. The non-empty state exists in code only; no settings-search row is recorded.",
+   "states": [
+    "hidden when query is empty (settings-general)"
+   ],
+   "behaviour": "Click runs clearSearch: query set to empty and scoped set to false.",
+   "usedIn": [
+    "settings-general"
+   ],
+   "examples": [
+    "title \"Clear search\"",
+    "aria-label \"Clear search\""
+   ]
+  },
+  {
+   "name": "Close split view, search bar",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Close icon at the trailing edge of the search bar that ends split view. Shown only when split is on. On task-list it calls layoutStore.closeSplit() to close the split view for this pane. The main-window row describes it as closing the right pane and ending split view; its handler is not in these files, so the main-window action is unverified.",
+   "look": "21x21 box, radius 4.375px; icon close 16px, iconWeight 300, className -mr-1; glyph at 822,66 in main-window (box 820,63); colour oklch(0.62 0.013 264).",
+   "states": [
+    "shown only when split is on (not in any recorded task-list state)",
+    "right pane only (main-window split-view)"
+   ],
+   "behaviour": "Click closes split view. Task-list calls layoutStore.closeSplit(); main-window handler not in these files (unverified).",
+   "usedIn": [
+    "main-window",
+    "task-list"
+   ],
+   "examples": [
+    "accessible label / title \"Close split\"",
+    "icon close"
+   ]
+  },
+  {
+   "name": "Subtask expand chevron, button",
+   "kind": "icon-button",
+   "component": "button (raw element); the bare icon row is the same control",
+   "description": "Expand or collapse button on a parent row in the task list, left of the subtask counter. Merged with the bare chevron icon at the same position (771,246), which has the same colour, size and -90 rotation when expanded. Hover-only when expanded; always visible when collapsed; hidden when the row has no visible children (search typed).",
+   "look": "Button [770,245,18,18], radius 4.375px; grid h-5 w-5; icon span [771,246,16,16] font 400 16px/16px, iconWeight 300; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; transition-transform duration-100.",
+   "states": [
+    "collapsed (not rotated, always visible)",
+    "expanded (rotated -90, shown on row hover only)",
+    "hidden when the row has no visible children"
+   ],
+   "behaviour": "Click toggles the row in the collapsed set and stops propagation; double-click stopped. The bare icon row reads as a toggle too (not confirmed in these files).",
+   "usedIn": [
+    "task-list",
+    "main-window"
+   ],
+   "examples": [
+    "title \"Expand\" when collapsed",
+    "title \"Collapse\" when expanded",
+    "icon chevron_left"
+   ]
+  },
+  {
+   "name": "Row more menu button",
+   "kind": "icon-button",
+   "component": "IconButton (more)",
+   "description": "Ellipsis button at the right end of each task row that opens that row's context menu below the button. Recorded on eight rows per screen.",
+   "look": "21x21 box, radius 4.375px; icon more_horiz 17px, iconWeight 300, variant ghostStrong, font 400 17px/17px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; x 830 in the default layout.",
+   "states": [
+    "default",
+    "opened for a row (context-menus: row-more-menu)"
+   ],
+   "behaviour": "Click opens the row context menu; double-click handler present (body not in the files; double-click stopped on task-list).",
+   "usedIn": [
+    "main-window",
+    "task-list",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "context-menus",
+    "trash"
+   ],
+   "examples": [
+    "title / label \"More\"",
+    "icon more_horiz"
+   ]
+  },
+  {
+   "name": "Sort and filter button, footer",
+   "kind": "icon-button",
+   "component": "ViewControl",
+   "description": "Tune icon in the footer that opens the Sort and filter panel for the list.",
+   "look": "box 25x19 at 12,735, radius 4.375px; icon tune 14px, iconWeight 300; font 600 11px/16.5px; colour oklch(0.62 0.013 264).",
+   "states": [
+    "default",
+    "all states with a StatsBar"
+   ],
+   "behaviour": "Click opens the Sort and filter panel (filter-panel), inferred from the label.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "trash"
+   ],
+   "examples": [
+    "accessible label \"Sort & filter\"",
+    "icon tune"
+   ]
+  },
+  {
+   "name": "Close preview panel, inspector header",
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "description": "Last-page icon at the top of the task inspector that hides the preview panel.",
+   "look": "21x21, radius 4.375px, transparent; glyph 16px, colour oklch(0.62 0.013 264) (dark theme glyph oklch(0.57 0.011 262)).",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls setPreviewOpen(false), hiding the preview panel.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title \"Close panel\"",
+    "icon last_page"
+   ]
+  },
+  {
+   "name": "Discard draft, draft header",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Last-page icon at the top right of the draft inspector that drops the draft without creating a task.",
+   "look": "21x21, radius 4.375px; icon 16px; colour oklch(0.62 0.013 264); default variant.",
+   "states": [
+    "default (hover and pressed not shown in code or tree)"
+   ],
+   "behaviour": "Click runs runDraftAction('', 'cancel'); nothing is written. Mouse down is prevented so the title textarea does not blur first.",
+   "usedIn": [
+    "draft-inspector"
+   ],
+   "examples": [
+    "tooltip \"Discard draft\"",
+    "icon last_page"
+   ]
+  },
+  {
+   "name": "Rename task title, inspector header",
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "description": "Edit icon in the task inspector header that starts in-place title editing (no sheet).",
+   "look": "21x21, radius 4.375px, transparent; glyph 15px, iconWeight 300; colour oklch(0.62 0.013 264).",
+   "states": [
+    "default",
+    "hover and pressed from IconButton"
+   ],
+   "behaviour": "Click calls startTitleEdit: sets the draft to the saved title, enters editing, focuses and selects the title field.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title \"Rename\"",
+    "icon edit"
+   ]
+  },
+  {
+   "name": "Copy task, inspector header",
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "description": "Copy icon in the task inspector header that copies the task title and notes as markdown to the clipboard.",
+   "look": "21x21, radius 4.375px, transparent; glyph 15px; colour oklch(0.62 0.013 264).",
+   "states": [
+    "default (icon content_copy, title \"Copy task\")",
+    "copied (icon check, title \"Copied\") for 1200 ms"
+   ],
+   "behaviour": "Click calls copyTask: api.copyTasks([task.id]), then navigator.clipboard.writeText(md or title), then copied=true for 1200 ms. Clipboard errors are swallowed.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title \"Copy task\"",
+    "title \"Copied\""
+   ]
+  },
+  {
+   "name": "Delete task, inspector header, danger",
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "description": "Danger delete icon in the task inspector header that requests deletion of the task. Whether it opens a confirmation sheet or uses Trash is not verified.",
+   "look": "21x21, radius 4.375px, transparent; glyph 15px; colour oklch(0.62 0.013 264) in default.",
+   "states": [
+    "default",
+    "hover and pressed from IconButton"
+   ],
+   "behaviour": "Click calls requestDeleteTask(task); destination not verified.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title \"Delete task\"",
+    "icon delete"
+   ]
+  },
+  {
+   "name": "Delete note, hover-only circle",
+   "kind": "icon-button",
+   "component": "IconButton (NoteCard.tsx:65-73)",
+   "description": "Close icon at the top-right corner of each note card, shown only while the note is hovered. Deleting goes through a confirmation.",
+   "look": "21x21, fully rounded, background oklch(1 0 0); close glyph 14px, colour oklch(0.62 0.013 264); plain variant, hover-only (opacity-0, group-hover/note:opacity-100). Recorded in the task-inspector tree at 1154,204 and 1154,329.",
+   "states": [
+    "hidden (opacity 0) by default",
+    "visible on hover of the note"
+   ],
+   "behaviour": "Click calls onDelete: runs removeNote and opens askConfirm 'Delete note?' with accept 'Delete' (no direct delete).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title \"Delete note\"",
+    "icon close"
+   ]
+  },
+  {
+   "name": "Split view toggle, toolbar",
+   "kind": "icon-button",
+   "component": "BarButton (local) > IconButton (icon vertical_split)",
+   "description": "Toolbar button that opens or closes split view for the active list. Filled when split is on.",
+   "look": "size xl, radius control (7px), icon 19px, iconWeight 300; 28x28 box at 1077,8 (717,8 in narrow-window); colour oklch(0.62 0.013 264) (muted).",
+   "states": [
+    "default (filled=false, active=false)",
+    "disabled when there is no split target (no-lists, shown faded)",
+    "active (filled, title \"Close split view\"; not in any recorded state)"
+   ],
+   "behaviour": "Click calls toggleSplit(splitTarget) when a target exists (TitleBar.tsx:36-38, 90). Disabled when splitTarget is null (TitleBar.tsx:88).",
+   "usedIn": [
+    "title-bar",
+    "draft-inspector"
+   ],
+   "examples": [
+    "tooltip \"Split view\"",
+    "tooltip \"Close split view\" when split is on"
+   ]
+  },
+  {
+   "name": "Preview panel toggle, toolbar",
+   "kind": "icon-button",
+   "component": "BarButton (local) > IconButton (right_panel_close / right_panel_open)",
+   "description": "Toolbar button that shows or hides the preview panel on the right of the main window. Filled while the preview is open.",
+   "look": "size xl, radius control (7px), icon 19px; 28x28 box at 1110,8 (750,8 narrow-window); icon colour oklch(0.26 0.012 262) when active.",
+   "states": [
+    "active (filled, shows right_panel_close)",
+    "inactive (shows right_panel_open; not in any recorded state)"
+   ],
+   "behaviour": "Click calls togglePreview() (TitleBar.tsx:96). The cmd-backslash hotkey (toggle_preview) toggles it too; binding not in these files.",
+   "usedIn": [
+    "title-bar",
+    "draft-inspector"
+   ],
+   "examples": [
+    "tooltip \"Hide preview panel\" followed by the cmd and backslash shortcut (JSON escapes the backslash)"
+   ]
+  },
+  {
+   "name": "Settings button, toolbar",
+   "kind": "icon-button",
+   "component": "BarButton (local) > IconButton (icon settings)",
+   "description": "Toolbar gear button that opens the Settings window.",
+   "look": "size xl, radius control (7px), icon 19px, iconWeight 300; 28x28 box at 1143,8 (783,8 in narrow-window); colour oklch(0.62 0.013 264) (muted).",
+   "states": [
+    "default (every recorded state)"
+   ],
+   "behaviour": "Click calls api.openSettings() (TitleBar.tsx:98-102). The cmd-comma hotkey (open_settings) also opens Settings.",
+   "usedIn": [
+    "title-bar",
+    "draft-inspector"
+   ],
+   "examples": [
+    "tooltip and label \"Settings  ⌘,\" (two spaces before the shortcut)"
+   ]
+  },
+  {
+   "name": "Swap panes, toolbar, code-derived",
+   "kind": "icon-button",
+   "component": "BarButton (local) > IconButton (icon swap_horiz)",
+   "description": "Toolbar button that swaps the left and right panes in split view. Only shown when split is on. Code-derived: no recorded instance.",
+   "look": "28x28 box; size xl, radius control, icon 19px, iconWeight 300. Not measured in any recording.",
+   "states": [
+    "default (only when split is on; not in any recorded state)"
+   ],
+   "behaviour": "Click calls swapPanes() (TitleBar.tsx:82).",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "tooltip \"Swap panes\""
+   ]
+  },
+  {
+   "name": "Rename project, revealed on hover",
+   "kind": "icon-button",
+   "component": "IconButton (icon edit)",
+   "description": "Edit icon on each project row in the project switcher dropdown. Hidden until the row is hovered; renames that project.",
+   "look": "21x21 box; icon 16px, colour oklch(0.62 0.013 264); plain variant; iconWeight 500 in the title-bar prop (glyph weight 400 measured in context-menus).",
+   "states": [
+    "hidden (opacity-0) until row hover",
+    "visible on row hover",
+    "hover",
+    "focus (context-menus)"
+   ],
+   "behaviour": "Click stops propagation, closes the menu, then calls renameProject(p) (ProjectSwitcher.tsx:76-80).",
+   "usedIn": [
+    "title-bar",
+    "context-menus"
+   ],
+   "examples": [
+    "tooltip \"Rename project\"",
+    "icon edit"
+   ]
+  },
+  {
+   "name": "Delete project, revealed on hover, danger on hover",
+   "kind": "icon-button",
+   "component": "IconButton (icon delete)",
+   "description": "Delete icon on each project row in the project switcher. Hidden until the row is hovered; turns danger-coloured on hover; deletes the project.",
+   "look": "21x21 box; icon 16px, colour oklch(0.62 0.013 264) (measured); hover class recorded in source as 'hover:text-danger-500l dark:hover:text-danger-500d'. The trailing l and d suffixes are unverified; this look reads them as text-danger-500 (normalised), so the exact string is not confirmed.",
+   "states": [
+    "hidden (opacity-0) until row hover",
+    "visible on row hover",
+    "hover (danger colour)"
+   ],
+   "behaviour": "Title-bar: click stops propagation, closes the menu, then calls deleteProject(p) (ProjectSwitcher.tsx:89-93). Context-menus: handler not recorded; likely confirmed, not captured.",
+   "usedIn": [
+    "title-bar",
+    "context-menus"
+   ],
+   "examples": [
+    "tooltip \"Delete project\"",
+    "icon delete"
+   ]
+  },
+  {
+   "name": "Clear selection, summary header",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Close icon in the multi-selection summary header that clears the focused list's selection and leaves this screen.",
+   "look": "21x21 at 1147,68; radius 4.375px; icon close 16px at 1149,70; colour oklch(0.62 0.013 264); default variant, no size prop.",
+   "states": [
+    "enabled"
+   ],
+   "behaviour": "Click calls useSelectionStore.clear(focusedListId). No-op when there is no focused list.",
+   "usedIn": [
+    "multi-inspector"
+   ],
+   "examples": [
+    "title \"Clear selection\"",
+    "icon close"
+   ]
+  },
+  {
+   "name": "Open task alone, row hover",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Open-in-full icon on each selected task row that narrows the selection to that one task and opens it.",
+   "look": "21x21 button at x 1147 (y 207, 239, 270, 302); icon open_in_full 13px at x 1151; variant ghostStrong; colour oklch(0.62 0.013 264).",
+   "states": [
+    "hidden (opacity 0) until the row is hovered",
+    "visible on row hover"
+   ],
+   "behaviour": "Click calls openOne(task.id): setPane(focusedListId, empty set, id), then focus(id).",
+   "usedIn": [
+    "multi-inspector"
+   ],
+   "examples": [
+    "title \"Open\"",
+    "icon open_in_full"
+   ]
+  },
+  {
+   "name": "Close filter panel, header",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Close icon in the Filter and Sort panel header that closes the panel.",
+   "look": "25x25 box at 1147,52, radius 4.375px; size lg; icon close 16px at 1151,56; colour oklch(0.62 0.013 264).",
+   "states": [
+    "default",
+    "hover and focus (common-ui defaults, not verified)"
+   ],
+   "behaviour": "Click calls onClose, the parent's close handler.",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "icon close",
+    "accessible label \"Close\""
+   ]
+  },
+  {
+   "name": "Clear section, restart icon, code-derived",
+   "kind": "icon-button",
+   "component": "SectionHeader (common-ui) clear control",
+   "description": "Restart icon at the right of an active section header in the filter panel; resets that section to its default. Rendered only when the section is active. Code-derived: look not measured.",
+   "look": "Not measured; icon restart_alt; styling from SectionHeader, not read.",
+   "states": [
+    "hidden when inactive (all four sections in the recorded state)",
+    "visible when active"
+   ],
+   "behaviour": "Click runs that section's onClear.",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "title \"Clear sort\"",
+    "title \"Clear show\"",
+    "title \"Clear refine\"",
+    "title \"Clear date\""
+   ]
+  },
+  {
+   "name": "Fewer days stepper button, code-derived",
+   "kind": "icon-button",
+   "component": "IconButton (local DaysStepper, minus)",
+   "description": "Minus button in the custom date range stepper; decreases the day count by 1, clamped between 1 and 365. Code-derived: no recorded instance.",
+   "look": "Not measured (code classes only): h-6.5 w-6.5 (26px square), bg-surface-0, icon remove 14px.",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)"
+   ],
+   "behaviour": "Click calls onChange(clamp(value-1)); NaN becomes 1.",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "title \"Fewer days\"",
+    "icon remove"
+   ]
+  },
+  {
+   "name": "More days stepper button, code-derived",
+   "kind": "icon-button",
+   "component": "IconButton (local DaysStepper, plus)",
+   "description": "Plus button in the custom date range stepper; increases the day count by 1, clamped between 1 and 365. Code-derived: no recorded instance.",
+   "look": "Not measured (code classes only): h-6.5 w-6.5 (26px square), bg-surface-0, icon add 14px.",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)"
+   ],
+   "behaviour": "Click calls onChange(clamp(value+1)).",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "title \"More days\"",
+    "icon add"
+   ]
+  },
+  {
+   "name": "Dismiss toast",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Close icon on the toast pill. Dismisses the toast only; the undo action is not run and the task stays in Trash.",
+   "look": "Box [670,710,25,25], about 8px from the pill's right edge; corner radius 4.375px; icon close 14px; muted grey; default style.",
+   "states": [
+    "default (muted grey) in both recorded states",
+    "hover, pressed and focus not defined in Toast.tsx"
+   ],
+   "behaviour": "Click calls useToastStore.getState().dismiss() only.",
+   "usedIn": [
+    "toast"
+   ],
+   "examples": [
+    "tooltip / title \"Dismiss\"",
+    "aria label \"Dismiss\"",
+    "icon close size 14"
+   ]
+  },
+  {
+   "name": "Restore item, row hover",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Restore icon on a trashed task row that restores that one item.",
+   "look": "25x25 at x 1110 (y 141, 173); radius 4.375px; size lg; variant ghostStrong; icon restore 16px, font 400; colour oklch(0.62 0.013 264).",
+   "states": [
+    "hidden by default (opacity 0)",
+    "visible on row hover and on the selected row",
+    "hover"
+   ],
+   "behaviour": "Click calls restore([t.id]) (TrashPane.tsx:113).",
+   "usedIn": [
+    "trash"
+   ],
+   "examples": [
+    "title \"Restore\"",
+    "aria label \"Restore\"",
+    "icon restore"
+   ]
+  },
+  {
+   "name": "Delete permanently, row hover, danger",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Danger delete_forever icon on a trashed row that purges that one item immediately.",
+   "look": "25x25 at x 1142 (y 141, 173); radius 4.375px; size lg; variant danger; icon 16px; colour oklch(0.62 0.013 264).",
+   "states": [
+    "hidden by default (opacity 0)",
+    "visible on row hover and on the selected row",
+    "hover"
+   ],
+   "behaviour": "Click calls purge([t.id]) immediately; no confirmation in this file (TrashPane.tsx:122).",
+   "usedIn": [
+    "trash"
+   ],
+   "examples": [
+    "title \"Delete permanently\"",
+    "aria label \"Delete permanently\"",
+    "icon delete_forever"
+   ]
+  },
+  {
+   "name": "Roll another name, sheet field",
+   "kind": "icon-button",
+   "component": "IconButton (roll)",
+   "description": "Dice button at the trailing edge of a sheet input. Replaces the text with a freshly rolled name and reselects it. Not in the tab order.",
+   "look": "25x25 at 728,365 (measured), radius 4.375px; size lg; variant ghostStrong; icon casino 16px at 732,369; colour oklch(0.62 0.013 264); tabIndex -1.",
+   "states": [
+    "default",
+    "present only when ask.dice is set (new-list, new-project, rename-list)",
+    "absent in delete-list and delete-confirm"
+   ],
+   "behaviour": "Click replaces the text with rollName(dice), focuses the input and selects it on the next frame (SheetHost.tsx:95-101). Mouse-down is prevented so the field keeps focus (SheetHost.tsx:175).",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": [
+    "aria-label \"Roll another name\"",
+    "title \"Roll another name\"",
+    "icon casino"
+   ]
+  },
+  {
+   "name": "Lightbox, open externally",
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "description": "Top-bar button in the attachment lightbox that opens the attachment in the default external app. Leaves the app.",
+   "look": "28x28 box, radius 7px; icon open_in_new 17px; variant onMedia; colour about white at 70% alpha; no fill; font 400 14px/21px.",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click calls api.openAttachment(attachment). Does not change screen.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Open externally\"",
+    "icon open_in_new"
+   ]
+  },
+  {
+   "name": "Lightbox, reveal in Finder",
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "description": "Top-bar button that reveals the file in the file manager. Hidden when the attachment is remote. The recorded label is exact; the app runs on Linux, so the label may not match the file manager used.",
+   "look": "28x28 box, radius 7px; icon folder_open 17px; variant onMedia; colour about white at 70% alpha; no fill.",
+   "states": [
+    "default",
+    "hover (styling not read)",
+    "hidden when the attachment is remote"
+   ],
+   "behaviour": "Click calls api.revealAttachment(attachment). Opens the file manager; does not change screen.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Reveal in Finder\"",
+    "icon folder_open"
+   ]
+  },
+  {
+   "name": "Lightbox, rename attachment",
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "description": "Top-bar button that opens the rename text sheet for the attachment name.",
+   "look": "28x28 box, radius 7px; icon drive_file_rename_outline 17px; variant onMedia; colour about white at 70% alpha; no fill.",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click runs rename(): askText sheet headline \"Rename attachment\", value = base name, tail = extension; detail \"Renames the label only — the linked file is untouched.\" for remote, otherwise \"The stored file is renamed to match.\". Empty or unchanged name is ignored; on success calls api.renameAttachment, propagateAttachmentRename, then onRenamed. Rename UI not shown in the recording.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Rename\"",
+    "icon drive_file_rename_outline"
+   ]
+  },
+  {
+   "name": "Lightbox, remove attachment (danger on hover)",
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "description": "Top-bar button that removes the attachment. Attachments skip the Trash. The default look is neutral; danger styling appears only on hover.",
+   "look": "28x28 box, radius 7px; icon delete 17px; variant onMedia; default colour about white at 70% alpha, no fill, neutral (not danger-styled in the recording). Hover uses a danger background with a white glyph, recorded as hover:bg-danger-500l and hover:text-white (trailing l unverified).",
+   "states": [
+    "default (neutral)",
+    "hover (danger background and white glyph)"
+   ],
+   "behaviour": "Click runs remove(): askConfirm sheet, glyph delete_forever, tone danger, headline \"Remove attachment?\", accept \"Remove\". If accepted calls api.deleteAttachment(id), then onDeleted. Confirmation not shown in the recording.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Remove attachment\"",
+    "icon delete"
+   ]
+  },
+  {
+   "name": "Lightbox, close",
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "description": "Top-bar close button that closes the lightbox and returns to the main window.",
+   "look": "28x28 box, radius 7px; icon close 17px; colour about white at 70% alpha; no fill.",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click calls onClose.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Close  Esc\" (two spaces in source)",
+    "icon close"
+   ]
+  },
+  {
+   "name": "Lightbox step, previous",
+   "kind": "icon-button",
+   "component": "button (plain DOM element)",
+   "description": "Circular previous chevron at the left edge of the lightbox. Steps back one attachment and wraps to the last.",
+   "look": "39x39 circle (fully rounded), background about white at 10% alpha; glyph chevron_left 26px at about white 80%; hover bg-white/20 and text-white. Measured 39x39 (code class h-11 w-11 would be 44px).",
+   "states": [
+    "default",
+    "hover (bg-white/20, text-white)"
+   ],
+   "behaviour": "Click calls step(-1) with stopPropagation, so the lightbox stays open. Wraps from first to last.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Previous\"",
+    "icon chevron_left size 26"
+   ]
+  },
+  {
+   "name": "Lightbox step, next",
+   "kind": "icon-button",
+   "component": "button (plain DOM element)",
+   "description": "Circular next chevron at the right edge of the lightbox. Steps forward one attachment and wraps to the first.",
+   "look": "39x39 circle (fully rounded), background about white at 10% alpha; glyph chevron_right 26px at about white 80%; hover bg-white/20 and text-white. Measured 39x39 (code class h-11 w-11 would be 44px).",
+   "states": [
+    "default",
+    "hover (bg-white/20, text-white)"
+   ],
+   "behaviour": "Click calls step(1) with stopPropagation. Wraps from last to first. Recording shows 2 / 2 with no disabled state.",
+   "usedIn": [
+    "attachment-lightbox"
+   ],
+   "examples": [
+    "title \"Next\"",
+    "icon chevron_right size 26"
+   ]
+  },
+  {
+   "name": "Discard changes, settings title bar, code-derived",
+   "kind": "icon-button",
+   "component": "IconButton (trailing of SettingsTitleBar)",
+   "description": "Undo icon in the Settings title bar that discards every change made since the window opened, across settings and hotkeys. Shown only when a change is pending. Code-derived: no recorded instance and no measured look.",
+   "look": "Not recorded (no measured look); size xl, radius control, icon undo 19px, iconWeight 300, variant ghostStrong.",
+   "states": [
+    "hidden when no change is pending (all recorded states)",
+    "shown when settings or hotkeys changed (source only)"
+   ],
+   "behaviour": "Click runs settings.discardAll() and hotkeys.discardAll().",
+   "usedIn": [
+    "settings-general"
+   ],
+   "examples": [
+    "title \"Discard every change made since this window opened\"",
+    "aria-label \"Discard changes\"",
+    "icon undo"
+   ]
+  },
+  {
+   "name": "Reset hotkey to default, row, code-derived",
+   "kind": "icon-button",
+   "component": "IconButton",
+   "description": "Restart icon on a hotkey row that resets that binding to its shipped default. Shown only when the binding differs from its default and the row is not recording. Code-derived: no recorded instance.",
+   "look": "Not measured (not rendered in any recorded state); icon restart_alt 15px; variant ghostStrong; opacity 0 until row hover.",
+   "states": [
+    "hidden (opacity 0) until row hover",
+    "hover (opacity 100)",
+    "not rendered when accel equals default (all recorded states)"
+   ],
+   "behaviour": "Click calls editor.reset(binding.id), which resets to the shipped default (useHotkeyEditor.ts:100-107, 148).",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "title \"Reset to default\"",
+    "aria-label \"Reset {label} to default\"",
+    "icon restart_alt"
+   ]
+  },
+  {
+   "name": "Discard group changes, section header, code-derived",
+   "kind": "icon-button",
+   "component": "SectionHeader (capture pane) clear control",
+   "description": "Undo icon on the Screenshots group header that reverts that group's unsaved changes in this window (screenshot_mode). Visible only when the group reports changed. Code-derived: look not recorded.",
+   "look": "Not recorded (look null).",
+   "states": [
+    "visible only when the group reports changed (not shown in the recorded tree)"
+   ],
+   "behaviour": "Click calls onDiscard, which calls ctx.discard('screenshot_mode') (capturePane.tsx:33).",
+   "usedIn": [
+    "settings-capture"
+   ],
+   "examples": [
+    "title \"Discard changes made since this window opened\"",
+    "icon undo"
+   ]
+  }
+ ]
+}

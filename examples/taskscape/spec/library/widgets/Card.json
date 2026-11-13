@@ -1,0 +1,173 @@
+{
+ "name": "Card",
+ "purpose": "Rounded container for grouped content: settings groups, the note card and the attachments empty box. Folds in SettingsGroup: Card's purpose already names settings groups. Add a label prop so the container takes role=group labelled by it (Card's role entry already reads group when labelled). Add a header slot or discard-pending-change action prop for SettingsGroup's discard button. SettingsGroup's state and context axes become Card props, and the result stays a container only. Both are shadcn Card containers.",
+ "base": "shadcn Card",
+ "variants": [
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "base",
+     "when": "No fill (window or pane colour). B's value; the note card if its fill is not confirmed."
+    },
+    {
+     "value": "surface-2",
+     "when": "bg-surface-2. Default fill: settings group card; note card assumed (A). B's raised folded here."
+    },
+    {
+     "value": "surface-3",
+     "when": "Sunken fill: attachments empty box. Kept distinct because the sunken box is visibly different."
+    }
+   ],
+   "default": "surface-2"
+  },
+  {
+   "axis": "border",
+   "values": [
+    {
+     "value": "none",
+     "when": "No border."
+    },
+    {
+     "value": "solid",
+     "when": "1px border-edge-2 (B's edge). Settings group card, note card."
+    },
+    {
+     "value": "dashed",
+     "when": "Dashed border: attachments empty box. Kept (visible; B folded it to solid)."
+    }
+   ],
+   "default": "solid"
+  },
+  {
+   "axis": "radius",
+   "values": [
+    {
+     "value": "panel",
+     "when": "rounded-panel."
+    },
+    {
+     "value": "control",
+     "when": "rounded-control."
+    }
+   ],
+   "default": "panel"
+  },
+  {
+   "axis": "state",
+   "default": "idle",
+   "values": [
+    {
+     "value": "idle",
+     "when": "No pending change. No dot, no discard action."
+    },
+    {
+     "value": "changed",
+     "when": "A change is pending and onDiscard is provided. Shows the changed dot and the discard action. Not a recorded catalogue state; the catalogue lists it as onDiscard-driven (B)."
+    }
+   ]
+  },
+  {
+   "axis": "context",
+   "default": "page",
+   "values": [
+    {
+     "value": "page",
+     "when": "A settings pane group or a shortcut scope group."
+    },
+    {
+     "value": "search",
+     "when": "A search result. The label becomes the breadcrumb path (for example 'General · Appearance') and only matching child rows render."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "tone",
+   "type": "'base' | 'surface-2' | 'surface-3'",
+   "description": "Fill token."
+  },
+  {
+   "name": "border",
+   "type": "'none' | 'solid' | 'dashed'",
+   "description": "Border style."
+  },
+  {
+   "name": "radius",
+   "type": "'panel' | 'control'",
+   "description": "Corner token."
+  },
+  {
+   "name": "divided",
+   "type": "boolean",
+   "description": "Hairline between child rows (divide-y edge-1), used by settings groups."
+  },
+  {
+   "name": "asChild",
+   "type": "boolean",
+   "description": "Render onto the child element (B)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Rows, editor or buttons."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Group heading (Appearance, Tasks, Screenshots, Global, Main window, Capture bar)."
+  },
+  {
+   "name": "breadcrumb",
+   "type": "string | undefined",
+   "description": "Search-result path, for example 'General · Appearance'. Shown only in the search context (B's separate prop)."
+  },
+  {
+   "name": "hint",
+   "type": "string | undefined",
+   "description": "Secondary line. Only the Global group has one in the reference: 'work anywhere in macOS'."
+  },
+  {
+   "name": "changed",
+   "type": "boolean",
+   "description": "Shows the change dot when a change is pending."
+  },
+  {
+   "name": "onDiscard",
+   "type": "(() => void) | undefined",
+   "description": "Discard action, shown when changed is true."
+  }
+ ],
+ "states": [
+  "idle",
+  "focus-within (note card: editor toolbar appears)",
+  "emptied and blurred (note discard, owned by NoteCard)",
+  "idle (no dot)",
+  "changed (dot and discard action; only while a change is pending and onDiscard is set)",
+  "search result (breadcrumb label, matching child rows only)"
+ ],
+ "role": "none (group when labelled)",
+ "keyboard": "None on the container; children own keys.",
+ "replaces": [
+  "note card",
+  "settings group card",
+  "attachments empty box",
+  "shortcut scope group, labelled"
+ ],
+ "platform": "Same.",
+ "open": "Note card fill conflict: A assumes surface-2; B says base (colour not in elements.json). Designer to confirm. Note and settings card radius not measured (panel assumed). Attachments empty box is h-20 and holds two buttons split by a level-2 Separator (length fill). The lightbox fallback card is an EmptyState surface card (A), not Card; B listed it here, so the replaces string is kept on EmptyState. The discard-on-empty-blur rule is NoteCard behaviour, not Card.",
+ "family": "structure",
+ "families": [
+  "structure",
+  "rows"
+ ],
+ "folded": [
+  {
+   "name": "SettingsGroup",
+   "how": "Card's purpose already names settings groups. Add a label prop so the container takes role=group labelled by it (Card's role entry already reads group when labelled). Add a header slot or discard-pending-change action prop for SettingsGroup's discard button. SettingsGroup's state and context axes become Card props, and the result stays a container only. Both are shadcn Card containers.",
+   "role": "group, labelled by the label heading (aria-labelledby). The discard action is a button.",
+   "keyboard": "The card is not focusable. The discard button is reachable by Tab."
+  }
+ ]
+}

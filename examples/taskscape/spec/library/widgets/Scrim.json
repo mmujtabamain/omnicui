@@ -1,0 +1,59 @@
+{
+ "name": "Scrim",
+ "purpose": "Full-window layer behind a modal, a menu or the lightbox. Dims the window, and a press on it outside the panel dismisses. Also the invisible click-catcher under a context menu.",
+ "base": "Radix Dialog Overlay (soft and strong-blur); a plain layer for none",
+ "variants": [
+  {
+   "axis": "dim",
+   "values": [
+    {
+     "value": "soft",
+     "when": "bg-black/30 (oklab 0 0 0 / 0.3), no blur. Sheets and the command palette."
+    },
+    {
+     "value": "strong-blur",
+     "when": "Strong dim plus backdrop blur, flex column, full window. Attachment lightbox. B's separate blur axis is folded here."
+    },
+    {
+     "value": "none",
+     "when": "Invisible full-window hit area under a menu; catches clicks and right-clicks outside the menu."
+    }
+   ],
+   "default": "soft"
+  }
+ ],
+ "props": [
+  {
+   "name": "dim",
+   "type": "'soft' | 'strong-blur' | 'none'",
+   "description": "Dimming look."
+  },
+  {
+   "name": "onDismiss",
+   "type": "() => void",
+   "description": "Mousedown outside the panel dismisses the owning layer (B's onPress)."
+  },
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Rendered only while open."
+  }
+ ],
+ "states": [
+  "open",
+  "closed (not rendered)"
+ ],
+ "role": "none; aria-hidden",
+ "keyboard": "None; Escape belongs to the owning modal or menu.",
+ "replaces": [
+  "modal scrim, soft dim",
+  "lightbox scrim",
+  "menu click-catcher, invisible"
+ ],
+ "platform": "Web: under Dialog overlay, CommandPalette overlay and Lightbox overlay. Desktop: no scrim for dialogs or sheets (decision). The invisible click-catcher for menus is still needed on desktop unless native menus are used (undecided).",
+ "open": "Lightbox: whether a bare click on the scrim closes it is not confirmed (Overlay source not read). The scrim colour is a literal (bg-black/30), not a token. Palette and lightbox presentation on desktop open.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

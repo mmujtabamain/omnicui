@@ -1,0 +1,71 @@
+{
+ "name": "AttachmentTile",
+ "purpose": "Grid tile for one attachment: a thumbnail for images or a glyph for a remote link. Click opens it; drag carries it into a note.",
+ "base": "none (a button)",
+ "variants": [
+  {
+   "axis": "kind",
+   "values": [
+    {
+     "value": "link",
+     "when": "Remote link: link glyph 22px, colour oklch(0.62 0.013 264). Click opens the link externally (api.openAttachment). Three-item context menu."
+    },
+    {
+     "value": "image",
+     "when": "Local image: img alt empty, object-cover thumbnail when loaded. Click opens the lightbox at its index. Four-item context menu."
+    }
+   ],
+   "default": "image"
+  }
+ ],
+ "props": [
+  {
+   "name": "kind",
+   "type": "'link' | 'image'",
+   "description": "Content type (B's source)."
+  },
+  {
+   "name": "name",
+   "type": "string",
+   "description": "Attachment name; accessible name."
+  },
+  {
+   "name": "thumbnailSrc",
+   "type": "string",
+   "description": "Image kind only."
+  },
+  {
+   "name": "onOpen",
+   "type": "() => void",
+   "description": "Click action: opens the lightbox or the link."
+  },
+  {
+   "name": "menuItems",
+   "type": "MenuItem[]",
+   "description": "Supplied by the caller: three for link, four for image."
+  },
+  {
+   "name": "draggable",
+   "type": "boolean",
+   "description": "Carries ATTACHMENT_MIME; a drop onto a note inserts a mention chip."
+  }
+ ],
+ "states": [
+  "default (border-edge-2)",
+  "hover (border-edge-3; open_in_full overlay appears)",
+  "dragging (ATTACHMENT_MIME, copy effect)",
+  "focus-visible"
+ ],
+ "role": "button; accessible name from name",
+ "keyboard": "Enter or Space opens (native button). Right-click opens the menu; the context-menu key or Shift+F10 is proposed. Dragging onto a note has no keyboard path in the reference (open).",
+ "replaces": [
+  "attachment tile, remote link",
+  "attachment tile, local image"
+ ],
+ "platform": "Web: files are uploaded to the server, so thumbnails and the lightbox load from the server; the link opens in a new tab. Desktop: local files open from disk. How api.openAttachment opens a remote link on web is not read.",
+ "open": "Tile is 94x94, radius 7px (B folds to rounded-control; radius to confirm), background oklch(1 0 0) is a literal, not a token. Menu item counts: link three, image four; the fourth image item is not named in either design. Keep one item set across platforms, dropping only items that need local disk (B).",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

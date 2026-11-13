@@ -1,0 +1,79 @@
+{
+ "name": "HotkeyHint",
+ "purpose": "Display-only glyph sequence for one accelerator. It draws the platform modifier glyph, the Option or Alt glyph, and the key glyph in the order the catalogue gives, edge to edge. It is used inside Keycap, in the command palette row, and on capture bar buttons, so one job uses one widget everywhere. Sizes at 1rem = 14px (from A and B): sm uses 12px glyphs = 0.857rem, weight 300; md uses 13px modifier glyphs (0.929rem) with 13px key letters in this build, on an 18px = 1.286rem line. MERGE NOTES: Sources are A (reference capture) and B (shadcn consolidation). A's mixed md sizes (13px modifier glyphs, 12px letters) are folded to one 13px rule (B) because the 1px letter difference is not a user-felt size change; A's 12px letters are recorded here and listed in open items. B's palette icon weight 400 is folded to glyph weight 300 to match the other two hints (B). A's platform values macos|windows|other are kept over B's mac|windows|linux, since 'other' covers Linux. B's palette letter fold and A's reference size are both kept as open items. Two props from A and B are identical (accel, size, tone, platform) and are not duplicated.",
+ "base": "shadcn/ui Kbd pattern: a kbd element extended with platform glyph mapping (B). A lists the base as none (display element with kbd as the natural host). No Radix primitive.",
+ "variants": [
+  {
+   "axis": "size",
+   "values": [
+    {
+     "value": "sm",
+     "when": "12px glyphs and text (0.857rem), weight 300. Used inside the settings Keycap (idle) and on the capture bar Clear and screenshot buttons (capture bar font 12px/12px)."
+    },
+    {
+     "value": "md",
+     "when": "13px glyphs and text (0.929rem), weight 300. Used only in command palette rows, where the reference calls it the larger size. Takes the row colour, so it changes with the active row. Reference key letters were 12px on an 18px = 1.286rem line; folded to 13px per B, see open items."
+    }
+   ],
+   "default": "sm"
+  },
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "inherit",
+     "when": "Uses currentColor, so it takes the parent's text colour. Settings keycap: oklch(0.46 0.013 262). Palette row: the row colour, oklch(0.62 0.013 264) in default rows, changing with the active row. Reads as part of its container."
+    },
+    {
+     "value": "muted",
+     "when": "Muted-foreground token, oklch(0.62 0.013 264) in light mode. Used on the capture bar Clear and screenshot buttons. The dark-mode value differs in the reference and is open (see open items)."
+    }
+   ],
+   "default": "inherit"
+  }
+ ],
+ "props": [
+  {
+   "name": "accel",
+   "type": "string",
+   "description": "Canonical accelerator (modifiers plus key) from the binding store. Stored format is not yet defined. An empty value renders nothing (proposed in A). The consumer renders the widget only when an accelerator exists (palette rows) or in the stated capture-bar states."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md'",
+   "description": "Glyph and text size from the size axis. Default sm."
+  },
+  {
+   "name": "tone",
+   "type": "'inherit' | 'muted'",
+   "description": "Colour from the tone axis. Default inherit."
+  },
+  {
+   "name": "platform",
+   "type": "'macos' | 'windows' | 'other'",
+   "description": "Host OS, from app context by default (B), used to resolve glyphs: Command and Option on macOS; Control and Alt on Windows and web. 'other' covers Linux, whose glyph map is not in the brief (A kept; B's 'mac' | 'windows' | 'linux' is a naming alternative, see open items)."
+  }
+ ],
+ "states": [
+  "shown",
+  "sm + inherit (settings keycap, idle)",
+  "md + inherit (command palette row, follows active row)",
+  "sm + muted (capture bar Clear and screenshot buttons)",
+  "not shown, consumer rule: palette rows without an accelerator",
+  "not shown, consumer rule: capture-bar Clear hint unless the Clear button is shown",
+  "not shown, consumer rule: screenshot hint except in idle, and not while capturing or on error"
+ ],
+ "role": "none. Renders a kbd element with aria-hidden glyphs and a visually hidden text equivalent, for example 'Command Shift N' or 'Command Shift H', so a screen reader reads the shortcut and not glyph names (proposed, A and B).",
+ "keyboard": "Not focusable. No keyboard behaviour.",
+ "replaces": [
+  "hotkey hint inside settings keycap",
+  "hotkey hint, command palette row",
+  "hotkey hint, capture bar button"
+ ],
+ "platform": "Glyph resolution differs by platform. macOS: Command glyph (keyboard_command_key) and Option glyph (keyboard_option_key). Windows: Control glyph for the Command modifier (inferred from Control-click; the shortcut mapping is not stated, so confirm) and Alt for Option. Web follows the same rule as Windows for Command and Alt for Option, per the decision (A). Linux glyph map is not in the brief. Capture-bar hints are desktop only. Palette rows on web must not show accelerators that browsers reserve (for example N, F, Shift+N), see open items.",
+ "open": "1) Confirm the Command to Control glyph mapping on Windows and web (A). 2) The Linux glyph map and the canonical accelerator format are not in the brief; confirm whether 'other' covers Linux or a separate 'linux' value is needed (A, B). 3) Muted dark-mode value: the reference records oklch(0.57 0.011 262) only for the screenshot hint, and that is uncertain. Decide one token or two; B folds both into one muted-foreground token (A, B). 4) Palette md sizes: reference uses 13px modifier glyphs with 12px key letters on an 18px line; B folds letters to 13px. Confirm visually, and revert to 12px letters if the palette rhythm suffers (A, B). The palette icon weight 400 in the reference is folded to 300 (B); confirm. 5) Glyph names in the reference are Material Symbols style (keyboard_command_key, keyboard_option_key, keyboard_return, backspace, arrow_upward, arrow_back). The text-key mapping (N, F, Z, comma, backslash, minus) must be confirmed (A). 6) Palette accelerators that browsers commonly reserve on web (N, F, Shift+N) need a product decision: drop them or mark them on web (A, B). 7) Consumer rules sit outside this widget: the capture-bar screenshot hint is shown only in the idle state, and the Clear hint only with the Clear button (A, B).",
+ "family": "keys",
+ "families": [
+  "keys"
+ ]
+}

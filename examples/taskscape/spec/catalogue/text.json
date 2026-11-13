@@ -1,0 +1,339 @@
+{
+ "kind": "text",
+ "title": "Text entry",
+ "kinds": [
+  "text-field",
+  "search-field",
+  "rich-text-editor",
+  "select"
+ ],
+ "description": "Text entry widgets across Taskscape: list, settings and draft search fields, inline and title text fields, note and capture rich-text editors, the command palette filter, the day-count number input and the sheet name fields. The inventory has no select rows, so no select variants are listed.",
+ "variants": [
+  {
+   "name": "List search bar, with leading search icon",
+   "kind": "search-field",
+   "component": "InputWell > TextInput2 (bare, className w-full text-[14px]) on main-window. The component for multi-inspector and trash is not recorded ('?').",
+   "description": "Grey rounded search field in the task list pane with a leading magnifier icon. It filters the open list's rows as you type. Used on the main window, the multi-inspector and the trash screens. On draft-inspector and filter-panel the field is the task-list pane shown beside those screens; the filter-panel attribution is unverified because its component is '?'. On the trash screen, the trailing options and add buttons are separate controls, not part of this field.",
+   "look": "Input 733x21 at 46,63; font 400 14px/21px; text colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; placeholder grey (not measured). Leading icon 'search' 18px at 23,65, colour oklch(0.62 0.013 264). Main-window InputWell 832x35 at 14,56 with class mx-4 mt-3 mb-2 h-10 shrink-0. Multi-inspector container is a grey rounded field spanning x 14-846, y 56-91 (screenshot). Trash field fill and radius estimated from screenshot. Input width varies by layout: 373 narrow-window, 1053 preview-hidden, 303 split left, 279 split right. The leading icon on the main-window field is inferred from identical input geometry, not confirmed in the rows.",
+   "states": [
+    "empty, placeholder shown",
+    "focus (onFocus; not captured in recordings)",
+    "typed (filters rows; not captured in main-window recording)"
+   ],
+   "behaviour": "Typing filters the list rows (onChange). Handler bodies were not read, so behaviour is inferred. Main-window row also wires onKeyDown.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "filter-panel",
+    "multi-inspector",
+    "trash"
+   ],
+   "examples": [
+    "Search Errands",
+    "Search Reading (split right pane, main-window)"
+   ]
+  },
+  {
+   "name": "Task list search, with match cycling",
+   "kind": "search-field",
+   "component": "TextInput (bare, ref=searchRef). Distinct from the list search bar, which is InputWell > TextInput2 with onChange and onKeyDown only.",
+   "description": "Search field for the open list that filters tasks by title and/or notes, flattens matches and steps through them from the keyboard. Its TextInput component, searchRef and Enter, Shift+Enter and Escape handlers distinguish it from the list search bar; whether it is the same on-screen control on the same pane was not confirmed.",
+   "look": "Input box 46,63, 733x21; text colour oklch(0.26 0.012 262); font 400 14px/21px; className w-full text-[14px].",
+   "states": [
+    "empty (placeholder)",
+    "typed (value 'b' in search-typed; rows filter to matches and flatten)",
+    "focused (onFocus focuses pane; blue 1px border visible in search-typed, visual)"
+   ],
+   "behaviour": "Typing calls setQuery and filters rows to matching titles, flattening them (subtasks and subtask counter disappear). Enter cycles matches forward, Shift+Enter backward, focusing and scrolling each into view. Escape clears the query and blurs. Keydown propagation is stopped. Cmd+F or a typed letter from anywhere focuses the field (registerSearchFocus; call sites outside the read files, partly unverified).",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "Search Errands",
+    "Search Inbox (empty-list state)"
+   ]
+  },
+  {
+   "name": "Settings search field, sidebar, plain",
+   "kind": "search-field",
+   "component": "InputWell className h-7 (leading Icon search) > TextInput2 bare, className text-[12px]. Row settings-capture input and settings-about input are the same field inside the well.",
+   "description": "Small grey search pill at the top of the settings sidebar, intended to search settings panes and rows by label, description and keywords. The exact filter effect was not verified in the sources read (see behaviour).",
+   "look": "Well 139x25 at [7,53]; input box [35,56,102,18]; font 400 12px/18px; text colour oklch(0.26 0.012 262). Pill fill and radius not in elements.json (light grey in shot.png); outer field about x 7-146, y 53-77 (estimated).",
+   "states": [
+    "empty, placeholder 'Search' shown",
+    "focus (not recorded)",
+    "typing (not recorded in settings-capture)",
+    "scrolled and recording (settings-shortcuts)"
+   ],
+   "behaviour": "Typing sets the query via onChange. Clicking the well focuses the input. The exact filter effect is not in the sources read (uncertain). In settings-shortcuts the search indexes every binding through the keywords on the Shortcuts rows (shortcutsPane.tsx:16, useHotkeyEditor.ts:28-30). Escape handling for these fields was not read (only settings-general documents it; see the clear-button variant).",
+   "usedIn": [
+    "settings-shortcuts",
+    "settings-capture",
+    "settings-about"
+   ],
+   "examples": [
+    "Search (placeholder)",
+    "Search settings (aria-label)"
+   ]
+  },
+  {
+   "name": "Settings search field, sidebar, with clear button",
+   "kind": "search-field",
+   "component": "InputWell className h-7 (leading Icon search, trailing clear button when query is non-empty) > TextInput bare, ref=searchRef, className text-[12px]",
+   "description": "Settings search in the general settings sidebar. Shows a trailing clear button once a query is typed, and Escape clears the query. Grouped from two inventory rows on this screen (container and input); Escape is documented only for this input.",
+   "look": "Well 139x25 at [7,53] (className h-7); text 12px/18px; text colour oklch(0.26 0.012 262). Field fill not recorded.",
+   "states": [
+    "empty: placeholder 'Search', trailing clear absent",
+    "filled: query 'motion' with trailing clear button (settings-search)",
+    "focused: blue focus outline (settings-search screenshot; selectable via Cmd/Ctrl+F)"
+   ],
+   "behaviour": "Typing sets the query on every change and clears the scoped flag. Cmd+F / Ctrl+F selects the text. Escape clears a non-empty query; with an empty query Escape closes the window (SettingsWindow.tsx:119-135). Clicking the well focuses the input (InputWell internals not read; uncertain).",
+   "usedIn": [
+    "settings-general"
+   ],
+   "examples": [
+    "Search (placeholder)",
+    "Search settings (aria-label)",
+    "motion (filled query in settings-search)"
+   ]
+  },
+  {
+   "name": "Inline list rename, tab bar",
+   "kind": "text-field",
+   "component": "TextInput (inline rename, autoFocus, bare)",
+   "description": "Replaces a list's tab name while renaming it in place. Opens on double-click.",
+   "look": "Focus ring: ring-1 with ring-focus-1l dark:ring-focus-1d (one class pair used throughout this entry). px-space-4; h-6; max-w-40; py-0; font-medium. Not in any recorded state, so not measured.",
+   "states": [
+    "editing (only after double-click; not in any recorded state)"
+   ],
+   "behaviour": "Enter commits the trimmed name if non-empty and changed. Escape cancels. Blur commits the same way. Key events stop propagation.",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "defaultValue = list.name (no placeholder)"
+   ]
+  },
+  {
+   "name": "Task title, inspector, display or edit",
+   "kind": "text-field",
+   "component": "textarea (plain element, styled as the title field), rows=1, spellCheck=false",
+   "description": "Task title at the top of the task inspector. It reads as text and becomes editable on click; one field serves both so the height does not change.",
+   "look": "Font 600 18px/21px (shot-measured line height; source class text-[18px] leading-6 font-semibold font-display, unresolved); colour oklch(0.26 0.012 262), dark oklch(0.94 0.004 260); radius 4.375px; box x 894, width 246; height 42px when wrapped to two lines, 21px for one line. Editing adds bg-surface-0 fill and ring-2 ring-surface-0.",
+   "states": [
+    "readonly (default)",
+    "editing (focused, text selected on open)",
+    "empty (placeholder Untitled)",
+    "two-line wrap",
+    "dark theme"
+   ],
+   "behaviour": "Click while readonly starts editing; typing edits the draft; Enter commits (preventDefault); Escape reverts the draft and exits editing; blur commits. Commit trims the draft; an empty or unchanged value reverts to the saved title, otherwise calls updateTask(task.id, {title}). Rename is requested from a row or F2/Enter via uiStore titleEditReq.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Untitled (placeholder)",
+    "Rewrite the hero section",
+    "Book bike service",
+    "Buy groceries for the week",
+    "Post the parcel to Mum"
+   ]
+  },
+  {
+   "name": "New task title, draft inspector",
+   "kind": "text-field",
+   "component": "textarea (native, not a component)",
+   "description": "Auto-growing title field for a new task's draft; focused when the draft opens.",
+   "look": "Textarea 235x21 at (898,60); background oklch(0.944 0.003 255); radius 4.375px; font 600 18px/21px; colour oklch(0.26 0.012 262); ring-2 ring-surface-0; resize-none, overflow-hidden, font-display. Placeholder grey (not measured). Height grows to scrollHeight.",
+   "states": [
+    "empty (placeholder 'Untitled' visible, grey)",
+    "typed (value shown, height grows)",
+    "focused (autofocus on mount)"
+   ],
+   "behaviour": "Typing updates the title and grows the field. Enter (preventDefault) runs runDraftAction(title, 'commit'). Escape (preventDefault) runs runDraftAction('', 'cancel'). Blur runs runDraftAction(title, 'commit'). Typed title confirmed only by the screenshot.",
+   "usedIn": [
+    "draft-inspector"
+   ],
+   "examples": [
+    "Untitled (placeholder)",
+    "Water the plants (typed in screenshot B)"
+   ]
+  },
+  {
+   "name": "Note body editor, saved note",
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+   "description": "Rich-text body of an existing note inside a NoteCard: bold, italic, underline, strikethrough, lists, links and @mention attachments. Shows a floating toolbar when focused.",
+   "look": "minHeightClass min-h-14; font 400 13.5px/17.5px; colour oklch(0.26 0.012 262); focused border about 2px blue (screenshot; colour not in elements.json); focused paragraph at [885,346,272,18] (note 2).",
+   "states": [
+    "idle",
+    "focused (floating toolbar shown: opacity 100, scale 100, pointer-events auto)",
+    "mention autocomplete open (while typing @query)"
+   ],
+   "behaviour": "Typing fires onChange (debounced autosave). Enter inserts a new paragraph; Shift+Enter inserts a line break. Escape does nothing (onEscape not set). Clicking an @mention chip opens its attachment. Dropping an attachment tile inserts a chip. Link toolbar button runs requestNoteLink. Default maxLength 2000; onRequestLink set; no placeholder; onSubmit not set.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Lead with the one-line promise, then three proof points.",
+    "Ask design for two layouts by Friday.",
+    "Check the cupboard before going."
+   ]
+  },
+  {
+   "name": "New note editor, add-note draft",
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+   "description": "Draft editor opened to add a note in the task inspector. It is focused on open; the draft becomes a saved NoteCard when it loses focus while the document has focus.",
+   "look": "minHeightClass min-h-24. No measured look in the inventory row.",
+   "states": [
+    "focused on open (autoFocus)",
+    "empty (placeholder shown)",
+    "filled"
+   ],
+   "behaviour": "onChange schedules a debounced addNoteSave (api.createNote, then api.updateNote). onBlur calls finishAddNote only if document.hasFocus(), which promotes the draft to a saved NoteCard and closes the editor. Enter inserts a paragraph (no onSubmit).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Write a note ... (drop an attachment to @mention it)"
+   ]
+  },
+  {
+   "name": "Capture notes editor, open",
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (tree name RichTextEditor2), editable area PureEditorContent (inside RichTextEditor; source not read)",
+   "description": "Notes box under the quick-capture title, opened with Tab. Cmd+Enter saves the draft; no floating toolbar; collapses on blur when empty.",
+   "look": "Open tree box @1,42 758x101 and editable area 758x64 (both dimensions estimated in the rows file); minHeightClass min-h-16, maxHeightClass max-h-40; toolbar top border (border-edge-1l dark:border-edge-1d, gap-1, px-2 py-1.5) at about y106 (estimate). Font 400 13.5px/20px; colour oklch(0.26 0.012 262).",
+   "states": [
+    "open (@1,42 758x101, estimated)",
+    "empty (placeholder 'Notes ...' shown; blur while empty collapses it)",
+    "with content",
+    "closed (not rendered; collapsed button shown instead)"
+   ],
+   "behaviour": "Typing edits the note text. Cmd+Enter submits (submitOnModEnter, onSubmit=draft.save). Escape hides the bar (onEscape=api.hideMini). Blur while empty collapses back to the Tab hint (onBlur); toolbar clicks preventDefault their blur. Cmd+B, Cmd+I, Cmd+U per toolbar labels. The character counter reflects length (inferred).",
+   "usedIn": [
+    "capture-bar"
+   ],
+   "examples": [
+    "Notes ... (placeholder)"
+   ]
+  },
+  {
+   "name": "Capture title input",
+   "kind": "text-field",
+   "component": "TextInput (tree name TextInput2)",
+   "description": "Title field at the top of the quick-capture bar; focused automatically when the bar appears. Enter saves the draft.",
+   "look": "Box x13 y11 h20 when empty (w734). Typed-state width w629 when Clear is shown is an estimate in the rows file. Font 400 14px/20px (text-sm); colour oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark; placeholder colour not measured.",
+   "states": [
+    "empty (placeholder shown)",
+    "typed ('Call the plumber'; Enter result unverified, no recording shows Enter)",
+    "focused (autoFocus)",
+    "empty with placeholder, dark theme (capture-bar-dark)"
+   ],
+   "behaviour": "Typing calls draft.setTitle (TitleRow.tsx:39). Enter (no Shift) saves the draft (App.tsx:42-44); the submit result is unverified. Escape hides the bar (App.tsx:45-47). Tab opens notes when closed (App.tsx:48-50).",
+   "usedIn": [
+    "capture-bar"
+   ],
+   "examples": [
+    "Capture a task ... (code; screenshot shows 'Capture a task …')",
+    "Call the plumber (typed state)"
+   ]
+  },
+  {
+   "name": "Command palette filter",
+   "kind": "text-field",
+   "component": "TextInput (tree name TextInput2), bare, className w-full text-[14px], ref inputRef",
+   "description": "Filter query at the top of the command palette. Focused on open; filters commands by case-insensitive substring match on the label.",
+   "look": "Input box at [380,100,446,21]; font 400 14px/21px; text colour oklch(0.26 0.012 262); placeholder grey (exact colour not captured).",
+   "states": [
+    "empty (placeholder shown)",
+    "typed (filters the list; 'new' and 'zzzz' no-match in reference states)",
+    "focused on open (useEffect focus)"
+   ],
+   "behaviour": "Typing sets q and resets the active row to 0. Results are a case-insensitive substring match on the label (not fuzzy), ranked by match index, earlier first, stable. ArrowDown moves active down, capped at results.length-1; with zero results it becomes -1. ArrowUp moves up, floored at 0. Enter runs the active row (default prevented); Enter with no results does nothing.",
+   "usedIn": [
+    "command-palette"
+   ],
+   "examples": [
+    "Run a command or jump to…",
+    "new (typed)",
+    "zzzz (no match)"
+   ]
+  },
+  {
+   "name": "Day count number input, filter panel",
+   "kind": "text-field",
+   "component": "TextInput (common-ui), type=number",
+   "description": "Direct entry of the custom day count in the filter panel; the value is clamped to 1-365 on every change. Only shown when the date range is custom.",
+   "look": "Not measured (code classes only): h-6.5 (26px) by w-12 (48px), centred, tabular-nums, spin buttons hidden; focus:ring-1. Default customDays value not read.",
+   "states": [
+    "custom date range only (not in either recorded tree)",
+    "focus (focus:ring-1)"
+   ],
+   "behaviour": "min=1, max=365; typing calls onChange(clamp(Number(value))) on every change. Props beyond these were not verified (TextInput source not read).",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "No placeholder or label in code"
+   ]
+  },
+  {
+   "name": "Sheet field well, h-10 class",
+   "kind": "text-field",
+   "component": "InputWell (className FIELD)",
+   "description": "Bordered well that holds the one field a name sheet is about; taller than inline fields. A trailing roll (dice) button sits in it when ask.dice is set.",
+   "look": "Class h-10 (intended 40px), text-[14px], border border-edge-2 (light and dark), bg-surface-1; focus border accent-500, ring off. Measured box 345x35 at 418,359, so the measured height is 35px and conflicts with the h-10 class (noted in inventory). Radius and fill value not measured.",
+   "states": [
+    "resting (border edge-2)",
+    "focus (border accent-500, hairline, no glow)",
+    "present in new-list, new-project, rename-list",
+    "absent in delete-list and delete-confirm (no ask)"
+   ],
+   "behaviour": "Click focuses the inner input. Trailing roll button is in this well when ask.dice is set.",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": []
+  },
+  {
+   "name": "Sheet name input, bare",
+   "kind": "text-field",
+   "component": "TextInput (rendered as TextInput2 in tree), bare, autoFocus, spellCheck=false, className text-[14px]",
+   "description": "Single-line field inside a name sheet (new list, new project, rename list) that receives the name being typed. Focus and selection are set on open.",
+   "look": "Input box 428,366, 295x21 inside the well, text inset 10px; font 400 14px/21px; colour oklch(0.26 0.012 262).",
+   "states": [
+    "focused on open, whole value selected when the initial text is non-empty",
+    "value rolled from dice (new-list, new-project)",
+    "value from ask.value (rename-list, selected on focus)"
+   ],
+   "behaviour": "Typing edits the value. On open the whole value is selected when the initial text is non-empty (SheetHost.tsx:103-108); onFocus also selects when ask.value is set (SheetHost.tsx:189). Enter anywhere in the window accepts; with empty trimmed text Enter refocuses the field.",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": [
+    "new-list: value 'Golden Oasis', placeholder 'Name this list', aria-label 'New list'",
+    "new-project: value 'Nereid', placeholder 'Name this project', aria-label 'New project'",
+    "rename-list: value 'Reading', no placeholder, aria-label 'Rename list'"
+   ]
+  },
+  {
+   "name": "Sheet name input with fixed suffix",
+   "kind": "text-field",
+   "component": "SuffixInput",
+   "description": "Name field whose end is fixed (for example a file name with an extension). The suffix is shown greyed and locked and is appended to the trimmed text on accept.",
+   "look": "Not measured.",
+   "states": [
+    "not in any recorded state (the code can show it)"
+   ],
+   "behaviour": "Tail is uneditable and is appended to the trimmed text on accept. aria-label set to the headline; onFocus selects when ask.value is set. Uses the FIELD className.",
+   "usedIn": [
+    "sheets"
+   ],
+   "examples": [
+    "Suffix from the spec; sheet.ts comment cites '.png' as the example tail"
+   ]
+  }
+ ]
+}

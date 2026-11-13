@@ -1,0 +1,120 @@
+{
+ "name": "SectionHeader",
+ "purpose": "Eyebrow heading for a content block: an 11px semibold uppercase muted label with an optional hairline rule, an optional trailing slot (count text or add buttons), and an optional restore control with a changed dot. Covers the four section headers (plain, add toolbar, reset, discard) and the command group heading, which is the same eyebrow look in a listbox (inset listGroup). Sources: A (rule, restore, inset axes; label, trailing, active, onRestore props) and B (eyebrow size 11, caps, clear icon and label per restore kind, and the merge of the command group heading). Also (structure): Label that starts a group of settings or inspector fields. It can carry a trailing rule and an accent dot that marks a non-default section.",
+ "base": "none; composes Text (size xs, weight semibold, tone muted, case uppercase) and an IconButton for the restore control.",
+ "variants": [
+  {
+   "axis": "rule",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "no trailing rule. section header with add toolbar, section header with discard, command group heading."
+    },
+    {
+     "value": "hairline",
+     "when": "hairline rule after the label. plain section header (shot-only, estimated) and section header with reset (trailing rule about x 917 to 1168, filter reset groups)."
+    },
+    {
+     "value": "trailing",
+     "when": "Hairline from the end of the label to the pane edge, drawn with Separator inset label (estimated positions)."
+    }
+   ]
+  },
+  {
+   "axis": "restore",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "no restore control."
+    },
+    {
+     "value": "reset",
+     "when": "filter group heading (Sort, Show, Refine, Date). Restore icon restart_alt. Restores the group to its default (Sort to manual and asc, Show to all, Refine to any, Date to default). Labels like Clear sort, Clear show, Clear refine, Clear date."
+    },
+    {
+     "value": "discard",
+     "when": "settings group heading (Appearance, Tasks, Global, Main window, Capture bar, Screenshots, Application, Reset). Restore icon undo. Restores the values from when the window opened, not the shipped defaults. Label: Discard changes made since this window opened."
+    }
+   ]
+  },
+  {
+   "axis": "inset",
+   "default": "block",
+   "values": [
+    {
+     "value": "block",
+     "when": "standard block heading (sidebar, inspector, filter and settings headings). Tracking 0.08em (caps)."
+    },
+    {
+     "value": "listGroup",
+     "when": "group label inside a listbox (command palette): px inset and mt/mb spacing, no rule, rendered as div. Spacing kept as the reference shows it. Tracking folded to the single caps value 0.08em (A used 0.1em)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "label",
+   "type": "ReactNode",
+   "description": "Heading text, for example Notes, Subtasks, Start with, Selected, Attachments, Sort, Show, Refine, Date, Appearance, Tasks, Global, Main window, Capture bar, Screenshots, Application, Reset. (B's title.)"
+  },
+  {
+   "name": "trailing",
+   "type": "ReactNode",
+   "description": "Trailing slot: a count Text (Notes, Subtasks; numeric, muted; B's count prop) or add IconButtons (Attachments; B's actions prop). Add buttons suppress the rule."
+  },
+  {
+   "name": "active",
+   "type": "boolean",
+   "description": "True when the group is non-default or changed. Shows the changed dot and the restore control. Default false. (B's state idle|changed.)"
+  },
+  {
+   "name": "onRestore",
+   "type": "() => void",
+   "description": "Runs the restore for reset or discard. Required when restore is not none. (B's onClear.)"
+  },
+  {
+   "name": "restoreLabel",
+   "type": "string",
+   "description": "Accessible name and tooltip for the restore control, for example Clear sort or Discard changes made since this window opened. On web, name the web baseline (for example last saved). (B's clearLabel.)"
+  },
+  {
+   "name": "as",
+   "type": "'h2' | 'h3' | 'div'",
+   "description": "Heading level for block headings. Default h3. Use div for listGroup, where the listbox group labels itself."
+  },
+  {
+   "name": "rule",
+   "type": "'trailing' | 'none'",
+   "description": "Trailing hairline."
+  }
+ ],
+ "states": [
+  "idle (active false, no restore control)",
+  "changed (active true: dot and restore control shown)",
+  "with trailing slot",
+  "with rule",
+  "default",
+  "active (dot visible)",
+  "with notes or empty (task inspector)"
+ ],
+ "role": "heading (level from as) for block headings. none for listGroup, where the listbox group uses aria-labelledby pointing at the label.",
+ "keyboard": "The header is not focusable. The restore control is a tab stop; Enter or Space runs it. After restore the control disappears, so focus moves to the group's first control or the header title, not lost to the page. Trailing add buttons are reached by Tab in order. / None.",
+ "replaces": [
+  "section header, plain",
+  "section header, with add toolbar",
+  "section header, with reset",
+  "section header, with discard",
+  "command group heading",
+  "section label rule"
+ ],
+ "platform": "Same widget. Desktop headers sit in the settings window; web in the settings page. The discard copy differs: desktop restores to the values when the window opened; web has no window open, so its restoreLabel names its own baseline (for example last saved). Filter groups are the same on both. Capture Screenshots header is desktop only. / Same.",
+ "open": "1) Changed dot colour: A reset header uses an accent dot; A discard header dot colour is not stated; B proposes primary ink (content-1). Accent is reserved for primary action and selection, so a changed-filter dot needs another token. Decision needed. 2) The plain header hairline is shot-only and estimated. Confirm before shipping. 3) The settings-general header passes look null; the catalogue does not say what null renders. Confirm it is this same header. 4) The discard header in shortcuts and about has no clear control in the recording; whether restore shows there is uncertain. 5) The Capture Screenshots header has no restore props (desktop only). 6) Tracking conflict: A 0.12em (block) and 0.1em (listGroup), B one caps value. Merged to 0.08em; confirm. 7) The clear control icon follows the restore kind (restart_alt for filter groups, undo for settings discard), per B. / Rule positions are shot estimates (task inspector about x 927-1086; settings shortcuts to about x 1163). Settings-about rule look is not recorded. The dot is Indicator and its accent colour conflicts with the accent rule (see DropIndicator). B has no SectionHeader; its section accent dot is in Indicator.",
+ "family": "labels",
+ "families": [
+  "labels",
+  "structure"
+ ]
+}

@@ -1,0 +1,67 @@
+{
+ "name": "WindowControls",
+ "purpose": "Cluster of three TrafficLight discs in a macOS-style group, with glyphs shown on group hover. Used in the window title bar, the settings windows and the trash pane close light.",
+ "base": "none (custom)",
+ "variants": [
+  {
+   "axis": "live",
+   "values": [
+    {
+     "value": "all",
+     "when": "Close, minimise and full screen all act. Main title bar, multi-inspector, filter panel, draft inspector."
+    },
+    {
+     "value": "close",
+     "when": "Only close acts; minimise and full screen are inert. Settings windows and the trash pane close light (Close Trash)."
+    }
+   ],
+   "default": "all"
+  }
+ ],
+ "props": [
+  {
+   "name": "live",
+   "type": "'all' | 'close'",
+   "description": "Which discs are live."
+  },
+  {
+   "name": "focused",
+   "type": "boolean",
+   "description": "Window focus (useWindowFocused); lit when true, grey when false. Passed to each disc."
+  },
+  {
+   "name": "onClose",
+   "type": "() => void",
+   "description": "Closes the window, or the pane for Trash (setTrashOpen(false)). The caller sets the target."
+  },
+  {
+   "name": "onMinimize",
+   "type": "() => void",
+   "description": "Minimise action; inert when live is close."
+  },
+  {
+   "name": "onFullScreen",
+   "type": "() => void",
+   "description": "Full-screen action; inert when live is close. B's spelling onFullscreen is the same prop."
+  }
+ ],
+ "states": [
+  "focused (discs lit)",
+  "blurred (discs grey)",
+  "hover (glyphs shown on all discs)",
+  "idle"
+ ],
+ "role": "group, aria-label 'Window controls' (proposed)",
+ "keyboard": "Not in the reference. Proposed: each live disc is a focusable button with its own label (Close, Minimize, Full Screen). Tab moves between live discs; Enter or Space activates; inert discs are skipped. No arrow navigation.",
+ "replaces": [
+  "traffic-light cluster, all lights live",
+  "pane close light, Close Trash",
+  "traffic-light cluster, settings (close live, others inert)"
+ ],
+ "platform": "Desktop only, macOS look. Web has no native window to close. Windows and Linux need their own caption controls; the catalogue has none.",
+ "open": "Pane close: the Trash close light closes the pane, not the window. Same look; the caller sets onClose. B asks whether pane close should be WindowControls on desktop and an IconButton on web; decide one widget for both. Trash appears in both the all-live and the close-only rows in the catalogue (B); A records close-only. Settings cluster: source records disabled=[2] for the group, but the Light rows mark minimize and fullscreen inert (uncertain). Draft Light onClick handlers and settings-general and settings-shortcuts Light onClick targets were not read.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

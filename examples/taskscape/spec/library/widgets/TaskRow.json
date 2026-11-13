@@ -1,0 +1,168 @@
+{
+ "name": "TaskRow",
+ "purpose": "One task line in a flat list: the main-window preview list, the draft-inspector list, the split-view right pane, and the multi-inspector and filter name rows. Clicking the row body (the title in the reference) selects the task for the inspector. Due dates are dropped, so there is no due-date line. Tree rows are TaskTreeRow and inspector subtasks are SubtaskRow. Sources: A and B.",
+ "base": "none (custom row). The round check is the Radix Checkbox primitive styled round (shared round check control, to confirm). The disclosure is a plain button with aria-expanded.",
+ "variants": [
+  {
+   "axis": "depth",
+   "default": "0",
+   "values": [
+    {
+     "value": "0",
+     "when": "Top-level task. Title at x 47 in the reference (first indent level)."
+    },
+    {
+     "value": "1",
+     "when": "Subtask indented 24px (1.7143rem at 1rem=14px) under its parent. Title at x 71. Same widget, indented. Deeper levels add 24px each (B)."
+    }
+   ]
+  },
+  {
+   "axis": "lines",
+   "default": "one",
+   "values": [
+    {
+     "value": "one",
+     "when": "Title only. min-height 2.25rem (31.5px). Reference draft rows measured 32px."
+    },
+    {
+     "value": "two",
+     "when": "Title plus a secondary subtitle line, set when subtitle is passed. Subtitle 12.5px (main-window measurement). min-height 3.25rem (45.5px). Reference main-window two-line rows measured 46px."
+    }
+   ]
+  },
+  {
+   "axis": "disclosure",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No subtask group under this row."
+    },
+    {
+     "value": "chevron",
+     "when": "Chevron at the row start toggles the subtask group. Rotated -90deg when expanded (draft copy value; main-window rotation not recorded). The draft copy also shows subtaskCount."
+    }
+   ]
+  },
+  {
+   "axis": "check",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No round check. Main-window rows (the catalogue does not document one; uncertain)."
+    },
+    {
+     "value": "done",
+     "when": "Round check toggles done (draft-inspector copy). Checked fill uses the done-lamp token, never accent blue."
+    },
+    {
+     "value": "select",
+     "when": "Round check selects the row into the multi-selection (picked). Used in the split-view right pane (reference x 451; placement uncertain). Option or Alt does not change this check (A; see open)."
+    }
+   ]
+  },
+  {
+   "axis": "selection",
+   "default": "single",
+   "values": [
+    {
+     "value": "single",
+     "when": "Click selects this one task and feeds the TaskInspector / PreviewPanel."
+    },
+    {
+     "value": "multi",
+     "when": "Used by the multi-inspector and filter name rows. Platform-modifier click toggles a row in the selection; Shift-click extends a range. Shows the picked tint."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Task title, weight 500, 1rem (14px) with 1.1875rem (16.625px) line height. Muted with strikethrough when done."
+  },
+  {
+   "name": "subtitle",
+   "type": "string | undefined",
+   "description": "Secondary line. Its presence sets lines to two; absent for one."
+  },
+  {
+   "name": "depth",
+   "type": "number",
+   "description": "Nesting level, default 0. Indent 24px (1.7143rem) per level."
+  },
+  {
+   "name": "done",
+   "type": "boolean",
+   "description": "Muted text colour and strikethrough."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "The previewed task; selection background (selection-1). Replaces B's previewed state."
+  },
+  {
+   "name": "picked",
+   "type": "boolean",
+   "description": "Part of a multi-selection; blue tint. Only meaningful with selection multi."
+  },
+  {
+   "name": "expanded",
+   "type": "boolean | undefined",
+   "description": "Subtask group open. Only used with disclosure chevron."
+  },
+  {
+   "name": "onExpandedChange",
+   "type": "((expanded: boolean) => void) | undefined",
+   "description": "Chevron toggle, controlled. Only with disclosure chevron. Folds A's onToggleExpanded."
+  },
+  {
+   "name": "subtaskCount",
+   "type": "number | undefined",
+   "description": "Count badge for the subtask group. Shown only when provided; the reference shows it only in the draft copy."
+  },
+  {
+   "name": "checked",
+   "type": "boolean",
+   "description": "Round check state: done when check is done, picked when check is select."
+  },
+  {
+   "name": "onCheckedChange",
+   "type": "((next: boolean) => void) | undefined",
+   "description": "Round check click. The check is shown only when this is provided (A's onToggleDone rule, generalised to the check axis)."
+  },
+  {
+   "name": "onSelect",
+   "type": "(event: { platformModifier: boolean; shift: boolean }) => void",
+   "description": "Row-body click (title click in the reference). Carries modifier state: platform modifier toggles in multi, Shift extends a range."
+  }
+ ],
+ "states": [
+  "undone",
+  "done (muted title, strikethrough, check in done-lamp token)",
+  "previewed (selected; selection background)",
+  "picked (blue tint, multi selection only)",
+  "expanded or collapsed (disclosure chevron only)",
+  "hover (wash-1, visual only)",
+  "focus-visible (keyboard focus ring on the focused part)"
+ ],
+ "role": "option inside a listbox (the listbox gets aria-multiselectable when selection is multi). The round check is role checkbox with aria-checked, labelled 'Select {title}' (check select) or 'Mark {title} done' (check done). The disclosure is a button with aria-expanded. Conflict: B exposes listitem outside the tree; option kept as the more exact selection role.",
+ "keyboard": "Tab moves through the check, the disclosure and the title in that order (those present). Up and Down move between rows (roving focus). Space on the check toggles it. Enter or Space on the row selects it (single) or toggles it in the selection (multi). Shift+Up or Shift+Down extends a multi selection. Platform modifier (Control on Windows, Command on macOS) with Enter or Space toggles a row in multi. Left and Right on the disclosure collapse or expand the subtask group. Conflict: B proposes Enter to preview and ArrowRight/ArrowLeft to expand; A's keys are used.",
+ "replaces": [
+  "task row, one line, depth 0",
+  "task row, two lines with subtitle",
+  "task row, parent with subtasks, expanded",
+  "subtask row, indented 24 px",
+  "task row, split-view pane",
+  "task name row, component not identified"
+ ],
+ "platform": "Same on web and desktop for the row. Modifier: Control on Windows and Command on macOS on desktop; on the web Control on Windows and Linux, Command on macOS (A). Desktop Linux is not covered (open). Option or Alt does not change TaskRow (A). The draft-inspector copy is a separate window on desktop and an in-app dialog or sheet on the web; the row itself is identical.",
+ "open": "1) Main-window rows: is there a round check and multi selection? The catalogue records neither (uncertain); check none is assumed. 2) Main-window subtask count badge: draft only in the reference; main-window use undecided. 3) Split-pane check at x 451 may not be a real layout difference (A); B folds it into the host list layout. Kept as check select. Confirm its action (B says select; A records none) and whether Option applies (conflict: B says Option switches it; A says Option does not change TaskRow; A followed). 4) Catalogue state 'picked not recorded' is unexplained; mapped to the picked tint only. 5) Task name row component not identified; multi selection inferred from the Shift and command-click selection in the multi-inspector; check none assumed. 6) Done-lamp token value is not in the catalogue (the reference records only grey done text); accent blue is not allowed on the done check. 7) The check and disclosure are nested controls inside role option, an ARIA weak spot; confirm the listbox choice. 8) Draft-inspector checks toggle done with no modifier; confirm whether task-list checks follow the select/Option rule (decided only for TaskTreeRow). 9) Click target: A records title click; B folds to row body. Confirm whether the whole row body selects. 10) Subtitle size: 12.5px kept (main-window measurement). The draft's about-12px estimate is dropped as unmeasured and not user-felt (B). 11) Two-line height: 46px is 3.2857rem; 3.25rem (45.5px) used. B suggests snapping to the nearest library step; confirm. 12) Desktop Linux modifier not decided (B). 13) Dropped from A: the placement axis (split-pane check folded into check select, see 3). Dropped from B: the density axis (the 28px compact row moved to SubtaskRow), the done axis (duplicates the done prop), the expansion axis (folded into disclosure plus expanded), the selection none/previewed/picked axis (folded into selection single/multi plus selected/picked), and draggable, dragging, dropIndicator, doubleClickToggles and onContextMenu (moved to TaskTreeRow).",
+ "family": "rows",
+ "families": [
+  "rows"
+ ]
+}

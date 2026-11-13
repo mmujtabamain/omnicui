@@ -1,0 +1,110 @@
+{
+ "name": "ScrollArea",
+ "purpose": "Scroll container for the task list and the trash list. The task list is also a drop target. Scroll is native; the widget sets the axis and whether the scrollbar shows.",
+ "base": "Radix ScrollArea (shadcn ScrollArea) when the bar is visible; plain overflow when hidden",
+ "variants": [
+  {
+   "axis": "orientation",
+   "values": [
+    {
+     "value": "vertical",
+     "when": "Task list and trash list body. Every recorded use."
+    },
+    {
+     "value": "horizontal",
+     "when": "Horizontal scroll. Not used by any widget here: the list tab strip is TabList with overflow scroll, which is the same look as A's ScrollArea horizontal hidden."
+    }
+   ],
+   "default": "vertical"
+  },
+  {
+   "axis": "scrollbar",
+   "values": [
+    {
+     "value": "native",
+     "when": "Visible scrollbar."
+    },
+    {
+     "value": "hidden",
+     "when": "Scrollbar hidden; scrolls with wheel and trackpad. Not used by ScrollArea in the catalogue (TabList covers the tab strip); kept for parity."
+    }
+   ],
+   "default": "native"
+  },
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "base",
+     "when": "No fill. Task list and trash list."
+    },
+    {
+     "value": "raised",
+     "when": "bg-surface-2 with text-content-2. Scroll region on a raised surface, such as the lightbox text preview (AttachmentPreview text kind)."
+    }
+   ],
+   "default": "base"
+  }
+ ],
+ "props": [
+  {
+   "name": "orientation",
+   "type": "'vertical' | 'horizontal'",
+   "description": "Scroll axis."
+  },
+  {
+   "name": "scrollbar",
+   "type": "'native' | 'hidden'",
+   "description": "Scrollbar visibility."
+  },
+  {
+   "name": "tone",
+   "type": "'base' | 'raised'",
+   "description": "Fill token."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Accessible name; makes the region labelled."
+  },
+  {
+   "name": "overscroll",
+   "type": "'contain'",
+   "description": "overscroll-contain, the default."
+  },
+  {
+   "name": "dropTarget",
+   "type": "boolean",
+   "description": "Task list: drop onto blank space moves the task to the list root."
+  },
+  {
+   "name": "onPressBlank",
+   "type": "() => void",
+   "description": "Task list: a press on blank space (not a data-task-id row) clears selection and focus."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Scrolled content."
+  }
+ ],
+ "states": [
+  "default",
+  "scrolling",
+  "scrolls when content overflows",
+  "drop-over (rootDropOver, task list)",
+  "scrolled to bottom (settings shortcuts)"
+ ],
+ "role": "region when labelled; none otherwise. Scrollable regions get tabIndex 0 when they overflow (proposed).",
+ "keyboard": "Native scroll keys when focused: arrows, PageUp, PageDown, Home, End; mouse wheel and trackpad. Drop target: pointer drag only in the catalogue, with edge auto-scroll.",
+ "replaces": [
+  "task list scroll area",
+  "trash list body"
+ ],
+ "platform": "Same on both.",
+ "open": "Dropped duplicates: A's 'list tab strip' is TabList; B's 'settings content pane' is TabPanel; B's 'command palette results list' is CommandList; B's 'lightbox text preview' is AttachmentPreview. Task list scrollbar visibility is not recorded; assumed native. Edge auto-scroll while dragging is the task list's behaviour. Keyboard reorder to the list root has no path in the catalogue.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

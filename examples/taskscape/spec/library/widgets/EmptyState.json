@@ -1,0 +1,108 @@
+{
+ "name": "EmptyState",
+ "purpose": "Centred message shown in place of content when a pane, list, trash or search has nothing to show. Shows a title, an optional muted subtitle or keyboard hint, an optional icon, and a loading form. Also (structure): Centred message for a view with nothing to show, with an optional action: the aside when no task is selected, and the lightbox fallback card when a preview fails.",
+ "base": "none (custom; shadcn has no empty-state primitive; built from plain elements)",
+ "variants": [
+  {
+   "axis": "scope",
+   "default": "list",
+   "values": [
+    {
+     "value": "pane",
+     "when": "Fills the whole task pane on the surface-2 background (bg-surface-2l, dark bg-surface-2d). No icon. Used for no lists yet and no list selected. Pane spacing is not recorded."
+    },
+    {
+     "value": "list",
+     "when": "Inline in a scroll area: icon above a centred title and subtitle, using the measured list spacing (pt-24 pb-10) and a 30px icon. Used for the empty task list, the trash body (folded to this spacing, see notWidgets) and the settings search no-results panel (look not recorded; this scope is a guess)."
+    }
+   ]
+  },
+  {
+   "axis": "surface",
+   "values": [
+    {
+     "value": "plain",
+     "when": "No fill. Aside empty state: 28px icon box, title 15px medium secondary, subtitle 12.5px muted, centred. Also B's only look for EmptyState."
+    },
+    {
+     "value": "card",
+     "when": "bg-surface-2, rounded-panel, px-10 py-12, text-center. Lightbox fallback card with an action button."
+    }
+   ],
+   "default": "plain"
+  }
+ ],
+ "props": [
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Required. 15px (1.071rem), medium weight, secondary text colour. Examples: 'No lists yet', 'Nothing here yet', 'Trash is empty', 'No settings match'. The loading title is 'Loading…'."
+  },
+  {
+   "name": "subtitle",
+   "type": "ReactNode",
+   "description": "Optional muted line at 12.5px (0.893rem). Carries the pane subtitle (e.g. 'Create a list to start adding tasks'), the list hint including any keyboard shortcut, and the search query line ('Nothing here for “<query>”.', curly quotes). Omitted on trash. B calls this slot description; subtitle is kept as the catalogue name and as ReactNode so a shortcut can be marked up."
+  },
+  {
+   "name": "icon",
+   "type": "ReactNode",
+   "description": "Optional glyph at iconSize in muted text; omitted for pane scope. Values: landscape-style list icon, delete (trash; a neutral icon in the muted token, not the danger colour), search (settings search). The searching state uses search_off."
+  },
+  {
+   "name": "iconSize",
+   "type": "number",
+   "description": "Icon size in px. Default 30 (2.143rem). The reference 28px trash size is folded to 30 (see notWidgets)."
+  },
+  {
+   "name": "loading",
+   "type": "boolean",
+   "description": "When true, the title is the loading text (the app passes 'Loading…'), the element sets aria-busy true, and the change is announced. No icon and no subtitle are shown in this state."
+  },
+  {
+   "name": "className",
+   "type": "string",
+   "description": "Layout escape hatch only."
+  },
+  {
+   "name": "description",
+   "type": "string",
+   "description": "Secondary line."
+  },
+  {
+   "name": "action",
+   "type": "ReactNode",
+   "description": "Optional button, for example Open externally (A)."
+  },
+  {
+   "name": "surface",
+   "type": "'plain' | 'card'",
+   "description": "Fill."
+  }
+ ],
+ "states": [
+  "default (static: title, optional subtitle and icon)",
+  "loading (title 'Loading…', no icon, no subtitle, role status, aria-busy true; used by trash while the store loads)",
+  "searching with no matches (code path only; icon search_off, title 'No matches in {list.name}'; not in any recorded tree; kept as a state until the team decides whether to document it)",
+  "default (nothing selected)",
+  "no-lists",
+  "no-preview",
+  "unreadable (fallback card)"
+ ],
+ "role": "none for the default state; status with aria-busy true for the loading state",
+ "keyboard": "None. No actions and no focusable content. The way forward is an action elsewhere: the New list button in the title bar, the + control to add a task, or a list tab. / None on the message; the action button is an ordinary button.",
+ "replaces": [
+  "Pane empty state, no icon",
+  "List empty state, icon and hint",
+  "Trash empty state, icon and title",
+  "Search no-results empty state",
+  "empty state, no task selected",
+  "lightbox fallback card"
+ ],
+ "platform": "Web: the add-task hint reads 'Press + to add a task', with no ⌘N, because the browser's new-window shortcut takes precedence; the capture clause is removed (no capture window, no global hotkeys). Desktop: 'Press + or ⌘N to add a task', using the platform modifier (⌘ on macOS, Ctrl on Windows); the clause '⌘↩ anywhere to capture one' stays only if capture stays on desktop. / Same.",
+ "open": "Sources: A and B. (1) Search no-results scope and spacing are not recorded (look null); list is a guess. (2) Conflict: A's web hint example 'Press + or ⌘N to add a task' contradicts A's own rule not to advertise ⌘N on web. This merge uses B's 'Press + to add a task' for web. Confirm. (3) Title colour conflict: A records the list title as grey with no size; B records 15px medium secondary for all titles. This merge uses secondary. Confirm. (4) The list hint text size is not recorded; it is treated as the 12.5px subtitle slot. Confirm. (5) Pane spacing is not recorded. (6) Decide whether the trash loading state shows a Spinner beside the title; the catalogue records the title only. (7) Trash icon folds from 28px to 30px and trash spacing folds to list spacing; confirm. (8) The searching state is code path only; decide whether it is documented. (9) Convert px to rem on the 14px root: 15px = 1.071rem, 12.5px = 0.893rem, 30px = 2.143rem. / Icon colour oklch(0.62 0.013 264) light and oklch(0.57 0.011 262) dark, and the title and subtitle colours, are literals; map them to the secondary and muted tokens. Fallback card sizes beyond its strings are not recorded. B's MediaPreview fallback names Card; A's EmptyState card is kept because it carries the action.",
+ "family": "status",
+ "families": [
+  "status",
+  "structure"
+ ]
+}

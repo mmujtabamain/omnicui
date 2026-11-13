@@ -1,0 +1,850 @@
+{
+ "widgets": [
+  {
+   "name": "Text",
+   "purpose": "The one general text label for titles, names, metadata lines, counts, captions, stats, inline values, helper and footnote lines, toast and lightbox text. Named Text rather than Label so it does not collide with the shadcn/Radix form Label. Covers A's Text rows and B's Text rows. A's Description rows (helper text, footnote, settings row description, shortcut error line) are Text with as p, tone muted or danger, and live. Headings go to Heading and SectionHeader, search highlights to MatchHighlight, timestamps to RelativeTime, and the character counter to CharacterCounter. Sizes are in rem with 1rem = 14px. A's ten 0.5px steps are snapped to four named steps (B's fold, ties going up). Sources: A (labels.json rows and lens) and B (consolidated).",
+   "base": "none (plain styled span, p or div; not a Radix primitive). Wrapped in a Radix Tooltip only when the tooltip prop is set.",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "xs",
+       "when": "11px (0.786rem). footer done count, footer percent, bulk bar selection count, search match count, notes count, attachment tile caption, trash row meta, filter panel subtitle, menu shortcut hint, footnote and shortcut error line (A Description 11px), character counter (A 10.5px folded up, used only inside CharacterCounter)."
+      },
+      {
+       "value": "sm",
+       "when": "12px (0.857rem). metadata project name, metadata list name, timestamp with tooltip (A 11.5 folded up), done tally, 11.5px rows (done tally, done tally), filter summary line, lightbox position counter, app version value, settings row description (A 11.5 folded up), helper text (12px)."
+      },
+      {
+       "value": "md",
+       "when": "13px (0.929rem). list tab name, task note preview (A 12.5 folded up), sheet detail line (A 12.5 folded up), stepper caption (A 12.5 folded up), toast message, settings row title, command empty message, lightbox loading placeholder."
+      },
+      {
+       "value": "base",
+       "when": "14px (1rem). project name, switcher menu row (A 13.5 folded up), task title, list row, task title, trash row (A 13.5 folded up; uncertain, see open), lightbox file name (A 13.5 folded up), lightbox fallback file name."
+      },
+      {
+       "value": "inherit",
+       "when": "unbound shortcut placeholder: takes the size of the keycap it sits in (not measured)."
+      }
+     ]
+    },
+    {
+     "axis": "weight",
+     "default": "regular",
+     "values": [
+      {
+       "value": "regular",
+       "when": "400. Default for most rows: settings row title, project name switcher row, notes count, done tally, timestamp, lightbox rows, command empty message, sheet detail line, app version value, metadata rows, trash row title, attachment tile caption (assumed), trash row meta."
+      },
+      {
+       "value": "medium",
+       "when": "500. list tab name, task title list row, filter panel subtitle, toast message, filter summary line, stepper caption."
+      },
+      {
+       "value": "semibold",
+       "when": "600. search match count, footer done count, footer percent, bulk bar selection count (uppercase stats and the match count)."
+      }
+     ]
+    },
+    {
+     "axis": "tone",
+     "default": "primary",
+     "values": [
+      {
+       "value": "primary",
+       "when": "content-1 (oklch 0.26 light). Names and titles: project name in switcher menu row, task title list row (open), task title trash row, settings row title, toast message, bulk bar selection count, lightbox fallback file name, focused list tab."
+      },
+      {
+       "value": "secondary",
+       "when": "content-2 (oklch 0.46 light, 0.74 dark). metadata project name, task note preview, footer percent, sheet detail line, filter summary line, stepper caption, app version value."
+      },
+      {
+       "value": "muted",
+       "when": "content-3 (oklch 0.62 light, 0.57 dark). unfocused list tab, footer done count, search match count, notes count, done tally, timestamp, metadata list name, attachment tile caption, trash row meta, filter panel subtitle, command empty message, menu shortcut hint (assumed, not measured), settings row description, helper and footnote text, done task title (with done=struck)."
+      },
+      {
+       "value": "danger",
+       "when": "danger-500 token. character counter near its limit (CharacterCounter), shortcut error line."
+      },
+      {
+       "value": "onMedia",
+       "when": "white (100%) on the lightbox dark surface. lightbox file name."
+      },
+      {
+       "value": "onMediaMuted",
+       "when": "white at 60%. lightbox position counter (A 55% folded up), lightbox loading placeholder (60%), lightbox status card helper (proposed, see open)."
+      },
+      {
+       "value": "inherit",
+       "when": "takes the parent colour. unbound shortcut placeholder (colour not measured)."
+      }
+     ]
+    },
+    {
+     "axis": "font",
+     "default": "sans",
+     "values": [
+      {
+       "value": "sans",
+       "when": "default UI font (A name; B's body value merged into it)."
+      },
+      {
+       "value": "mono",
+       "when": "monospace, font-mono. app version value only (11.5px in A, sm here)."
+      }
+     ]
+    },
+    {
+     "axis": "overflow",
+     "default": "wrap",
+     "values": [
+      {
+       "value": "wrap",
+       "when": "text wraps onto more lines."
+      },
+      {
+       "value": "truncate",
+       "when": "one line with ellipsis; the caller supplies the full string as tooltip. Used for project name switcher row, list tab name, task title list row, task title trash row, task note preview, metadata project name, attachment tile caption, trash row meta, lightbox file name, lightbox fallback file name, filter panel subtitle, stepper caption, filter summary line."
+      }
+     ]
+    },
+    {
+     "axis": "case",
+     "default": "normal",
+     "values": [
+      {
+       "value": "normal",
+       "when": "sentence or title case, no letter spacing."
+      },
+      {
+       "value": "uppercase",
+       "when": "uppercase by CSS with tracking 0.08em (one caps value, folded from A's 0.08em and the section header tracking). footer done count, footer percent, bulk bar selection count."
+      }
+     ]
+    },
+    {
+     "axis": "numeric",
+     "default": "off",
+     "values": [
+      {
+       "value": "off",
+       "when": "proportional digits."
+      },
+      {
+       "value": "tabular",
+       "when": "tabular-nums for counts and numbers: search match count, footer done count, footer percent, bulk bar selection count, notes count, done tally, character counter, filter summary line, lightbox position counter."
+      }
+     ]
+    },
+    {
+     "axis": "style",
+     "default": "normal",
+     "values": [
+      {
+       "value": "normal",
+       "when": "upright."
+      },
+      {
+       "value": "italic",
+       "when": "unbound shortcut placeholder (catalogue: Italic). Kept from A; B dropped it."
+      }
+     ]
+    },
+    {
+     "axis": "done",
+     "default": "off",
+     "values": [
+      {
+       "value": "off",
+       "when": "open task or any text without done state."
+      },
+      {
+       "value": "struck",
+       "when": "done task title: tone forced to muted and line-through. Task list row and filter panel (click selects)."
+      },
+      {
+       "value": "faded",
+       "when": "task note preview of a done task: opacity 55%. Shown on task-list in the reference."
+      }
+     ]
+    },
+    {
+     "axis": "align",
+     "default": "start",
+     "values": [
+      {
+       "value": "start",
+       "when": "default."
+      },
+      {
+       "value": "center",
+       "when": "command empty message and attachment tile caption."
+      },
+      {
+       "value": "end",
+       "when": "right-aligned text (A value, no current catalogue use)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "as",
+     "type": "'span' | 'p' | 'div'",
+     "description": "Element. Default span. p for helper, footnote and error lines. div for block rows. Heading levels are not here; they belong to Heading."
+    },
+    {
+     "name": "selectable",
+     "type": "boolean",
+     "description": "Default false. True lets the user select and copy the text. Used for app version value (A SelectableText)."
+    },
+    {
+     "name": "tooltip",
+     "type": "string",
+     "description": "Full value shown on hover and keyboard focus when the text is truncated, so the full name can be read."
+    },
+    {
+     "name": "live",
+     "type": "'off' | 'polite' | 'assertive'",
+     "description": "Default off. Set polite on the shortcut error line so the rejection is announced when it appears (from A Description)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "The text."
+    }
+   ],
+   "states": [
+    "default",
+    "truncated (ellipsis, tooltip available)",
+    "done (struck or faded, per the done axis)",
+    "matched (contains a MatchHighlight child inside a title or note)",
+    "selectable (user can select and copy)",
+    "unbound (tone inherit, italic, caller passes the text None)",
+    "announced (live polite or assertive on the shortcut error line)"
+   ],
+   "role": "none (span, p and div carry no role). Headings use Heading or SectionHeader.",
+   "keyboard": "Not focusable. Where text is a tooltip trigger (truncated text, timestamp, reduced-motion status, truncated lightbox file name) the owning row or control must be tabbable (tabIndex 0) so keyboard users reach the tooltip. Escape dismisses it.",
+   "replaces": [
+    "project name, switcher menu row",
+    "list tab name",
+    "search match count",
+    "task title, list row",
+    "task title, trash row",
+    "task note preview",
+    "footer done count, uppercase",
+    "footer percent, uppercase",
+    "bulk bar selection count",
+    "metadata project name",
+    "metadata list name",
+    "notes count",
+    "done tally, 11.5px",
+    "attachment tile caption",
+    "unbound shortcut placeholder",
+    "settings row title",
+    "app version value",
+    "lightbox file name",
+    "lightbox position counter",
+    "lightbox loading placeholder",
+    "lightbox fallback file name",
+    "command empty message",
+    "menu shortcut hint",
+    "sheet detail line",
+    "toast message",
+    "trash row meta",
+    "filter panel subtitle",
+    "stepper caption",
+    "filter summary line",
+    "helper text, muted 12px",
+    "footnote, muted 11px",
+    "settings row description",
+    "shortcut error line"
+   ],
+   "platform": "Same widget on web and desktop. Differences are in content, not the widget. Desktop-only strings (Saved to, Data folder, capture rows, Low Power Mode, the macOS footnotes) do not appear on web. The sheet detail string '⌘Z puts it back' needs a per-platform string (Ctrl+Z on Windows and web). The native title tooltip is replaced by the Radix Tooltip on both. Web: browsers select text by default, so chrome labels need user-select none to match the desktop feel; the reference marks only app version value as selectable.",
+   "open": "1) Size steps: A's ten 0.5px steps are merged to xs, sm, md, base plus inherit (B's snap, ties up). Confirm the snap; it sets the rem values. 2) Conflict on the default size: A default 13 (md), B default base (14). Kept md (A). Confirm. 3) Conflict on the trash task title: A 13.5px regular (uncertain; measured estimate about 14px regular); B folds to base 14px regular. Kept base regular and flagged uncertain; it differs from the list title only in weight. Confirm. 4) Done task title is muted with strike (measured). Decide whether it takes the done-lamp colour (the brief) or stays muted. 5) Conflict on the done task note preview: A keeps faded (opacity 55%); B folds it to tone muted. Kept faded because it is a visible fade distinct from muted. Confirm. 6) Conflict on the unbound shortcut placeholder tone: A inherit (assumed), B muted. Kept inherit (colour not measured; it takes the keycap colour). Italic kept (catalogue lists Italic). Size inherits the keycap. Confirm. 7) Menu shortcut hint tone muted is assumed (not measured). 8) Attachment tile caption weight regular is assumed. 9) Lightbox status card helper: colour not measured; proposed onMediaMuted over the dark lightbox. It may be an error and need danger. Decide. 10) Lightbox position counter alpha 55% folded to 60%. Confirm. 11) Title-bar project pill owner: A puts it in Heading, B in Text with a display font. Merged to Heading (see Heading open). Confirm. 12) Shortcut error line live polite is proposed (A Description). 13) Settings row description 11.5px (A) folded to 12px (sm, B). Confirm.",
+   "family": "labels"
+  },
+  {
+   "name": "Heading",
+   "purpose": "Display-family (font-display) semibold title for window titles (settings, trash), the filter panel title, the sheet headline (dialog or sheet title and its accessible name), the selection summary headline in the multi-select inspector, and the title-bar project pill. Always tone primary. Sources: A (Heading rows, sizes 13.5, 14, 15, 16) and B (folded sizes: 13.5 to 14 ties up, 15 to 16 ties up). Conflict resolved: the title-bar project pill is in A's Heading (span) and B's Text (display font). It is placed in Heading here, because the display family is Heading's job.",
+   "base": "none (styled h1, h2, h3, p or span; not a Radix primitive).",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "sm",
+     "values": [
+      {
+       "value": "sm",
+       "when": "14px (1rem). settings window title and trash window title (A 13.5 folded up), filter panel title, title-bar project pill (14px semibold)."
+      },
+      {
+       "value": "md",
+       "when": "16px (1.143rem). sheet headline (A 15 folded up, text-pretty), selection summary headline (16px semibold)."
+      }
+     ]
+    },
+    {
+     "axis": "overflow",
+     "default": "truncate",
+     "values": [
+      {
+       "value": "truncate",
+       "when": "one line with ellipsis: window titles, panel title, project pill."
+      },
+      {
+       "value": "wrap",
+       "when": "wraps onto more lines with text-pretty: sheet headline."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "as",
+     "type": "'h1' | 'h2' | 'h3' | 'p' | 'span'",
+     "description": "Default h2. h1 for the settings window title and the trash window title (B folds A's div to h1). h2 for the sheet headline on web and for the selection summary (A says p; see open). p gives no heading role. span for the title-bar project pill (a trigger, kept out of the heading outline)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Title content."
+    }
+   ],
+   "states": [
+    "default",
+    "wrapped (sheet headline, text-wrap pretty)",
+    "truncated (single line with ellipsis)"
+   ],
+   "role": "heading (level 1 to 3) when as is h1, h2 or h3. none for p and span.",
+   "keyboard": "Not focusable. On desktop the settings and trash title bars are drag regions and take no keyboard focus. Dragging belongs to the title bar, not the text.",
+   "replaces": [
+    "project name, title bar pill",
+    "settings window title",
+    "trash window title",
+    "sheet headline",
+    "filter panel title",
+    "selection summary headline"
+   ],
+   "platform": "Desktop: each sheet is its own window with no dimmed backdrop, so the sheet headline is that window title and renders as h1. The settings and trash titles sit in window title bars; the settings bar is a drag region. Trash drag behaviour is not recorded, so do not assume it drags. Web: no window title bars. The page or route title is the h1; a dialog title renders h2.",
+   "open": "1) Trash window title size: A says 13.5px (code text-[13.5px]; measured estimate about 14px, bold). B folds to 14px (sm). Font weight kept at semibold here. Confirm the size and weight. 2) Whether the trash title bar drags the window is not recorded. 3) Settings window title states (scrolled, recording) are window chrome; the catalogue does not say whether the text changes. 4) Conflict on the title-bar project pill owner: A Heading (span), B Text with font display. Merged to Heading. Span (no heading role) proposed because it is a trigger. Confirm. 5) Conflict on the selection summary element: A uses p (reference); B recommends h2 for landmark structure. Kept p pending confirmation. 6) Sheet headline size: A 15px, folded to 16px (md). Confirm.",
+   "family": "labels"
+  },
+  {
+   "name": "SectionHeader",
+   "purpose": "Eyebrow heading for a content block: an 11px semibold uppercase muted label with an optional hairline rule, an optional trailing slot (count text or add buttons), and an optional restore control with a changed dot. Covers the four section headers (plain, add toolbar, reset, discard) and the command group heading, which is the same eyebrow look in a listbox (inset listGroup). Sources: A (rule, restore, inset axes; label, trailing, active, onRestore props) and B (eyebrow size 11, caps, clear icon and label per restore kind, and the merge of the command group heading).",
+   "base": "none; composes Text (size xs, weight semibold, tone muted, case uppercase) and an IconButton for the restore control.",
+   "variants": [
+    {
+     "axis": "rule",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "no trailing rule. section header with add toolbar, section header with discard, command group heading."
+      },
+      {
+       "value": "hairline",
+       "when": "hairline rule after the label. plain section header (shot-only, estimated) and section header with reset (trailing rule about x 917 to 1168, filter reset groups)."
+      }
+     ]
+    },
+    {
+     "axis": "restore",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "no restore control."
+      },
+      {
+       "value": "reset",
+       "when": "filter group heading (Sort, Show, Refine, Date). Restore icon restart_alt. Restores the group to its default (Sort to manual and asc, Show to all, Refine to any, Date to default). Labels like Clear sort, Clear show, Clear refine, Clear date."
+      },
+      {
+       "value": "discard",
+       "when": "settings group heading (Appearance, Tasks, Global, Main window, Capture bar, Screenshots, Application, Reset). Restore icon undo. Restores the values from when the window opened, not the shipped defaults. Label: Discard changes made since this window opened."
+      }
+     ]
+    },
+    {
+     "axis": "inset",
+     "default": "block",
+     "values": [
+      {
+       "value": "block",
+       "when": "standard block heading (sidebar, inspector, filter and settings headings). Tracking 0.08em (caps)."
+      },
+      {
+       "value": "listGroup",
+       "when": "group label inside a listbox (command palette): px inset and mt/mb spacing, no rule, rendered as div. Spacing kept as the reference shows it. Tracking folded to the single caps value 0.08em (A used 0.1em)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "label",
+     "type": "ReactNode",
+     "description": "Heading text, for example Notes, Subtasks, Start with, Selected, Attachments, Sort, Show, Refine, Date, Appearance, Tasks, Global, Main window, Capture bar, Screenshots, Application, Reset. (B's title.)"
+    },
+    {
+     "name": "trailing",
+     "type": "ReactNode",
+     "description": "Trailing slot: a count Text (Notes, Subtasks; numeric, muted; B's count prop) or add IconButtons (Attachments; B's actions prop). Add buttons suppress the rule."
+    },
+    {
+     "name": "active",
+     "type": "boolean",
+     "description": "True when the group is non-default or changed. Shows the changed dot and the restore control. Default false. (B's state idle|changed.)"
+    },
+    {
+     "name": "onRestore",
+     "type": "() => void",
+     "description": "Runs the restore for reset or discard. Required when restore is not none. (B's onClear.)"
+    },
+    {
+     "name": "restoreLabel",
+     "type": "string",
+     "description": "Accessible name and tooltip for the restore control, for example Clear sort or Discard changes made since this window opened. On web, name the web baseline (for example last saved). (B's clearLabel.)"
+    },
+    {
+     "name": "as",
+     "type": "'h2' | 'h3' | 'div'",
+     "description": "Heading level for block headings. Default h3. Use div for listGroup, where the listbox group labels itself."
+    }
+   ],
+   "states": [
+    "idle (active false, no restore control)",
+    "changed (active true: dot and restore control shown)",
+    "with trailing slot",
+    "with rule"
+   ],
+   "role": "heading (level from as) for block headings. none for listGroup, where the listbox group uses aria-labelledby pointing at the label.",
+   "keyboard": "The header is not focusable. The restore control is a tab stop; Enter or Space runs it. After restore the control disappears, so focus moves to the group's first control or the header title, not lost to the page. Trailing add buttons are reached by Tab in order.",
+   "replaces": [
+    "section header, plain",
+    "section header, with add toolbar",
+    "section header, with reset",
+    "section header, with discard",
+    "command group heading"
+   ],
+   "platform": "Same widget. Desktop headers sit in the settings window; web in the settings page. The discard copy differs: desktop restores to the values when the window opened; web has no window open, so its restoreLabel names its own baseline (for example last saved). Filter groups are the same on both. Capture Screenshots header is desktop only.",
+   "open": "1) Changed dot colour: A reset header uses an accent dot; A discard header dot colour is not stated; B proposes primary ink (content-1). Accent is reserved for primary action and selection, so a changed-filter dot needs another token. Decision needed. 2) The plain header hairline is shot-only and estimated. Confirm before shipping. 3) The settings-general header passes look null; the catalogue does not say what null renders. Confirm it is this same header. 4) The discard header in shortcuts and about has no clear control in the recording; whether restore shows there is uncertain. 5) The Capture Screenshots header has no restore props (desktop only). 6) Tracking conflict: A 0.12em (block) and 0.1em (listGroup), B one caps value. Merged to 0.08em; confirm. 7) The clear control icon follows the restore kind (restart_alt for filter groups, undo for settings discard), per B.",
+   "family": "labels"
+  },
+  {
+   "name": "Icon",
+   "purpose": "One Material Symbols glyph widget for decorative chrome, status glyphs, chevrons, metadata glyphs, keycap glyphs, menu and command glyphs, and the tinted 32px glyph badge for sheets (tint axis; replaces A's IconBadge). Sizes are px with rem values; off-scale sizes snap to the nearest step with ties up (B): 13 to 14, 15 to 16, 19 to 20. Weight stays an axis (A: 200, 300, 400) because the measured 400 and 200 rows are visible; B's fixed 300 is not kept. Always pointer-events none, so a press reaches the parent control or drag region (B; replaces A's passThrough prop). Sources: A and B.",
+   "base": "none (Material Symbols font, ligature names as in the catalogue; not a Radix primitive).",
+   "variants": [
+    {
+     "axis": "size",
+     "default": "md",
+     "values": [
+      {
+       "value": "xs",
+       "when": "12px (0.857rem). keycap glyph inside a shortcut keycap."
+      },
+      {
+       "value": "sm",
+       "when": "14px (1rem). settings search icon, attachment tile expand icon (in a 20px circle), metadata glyph (A 13 folded up; folder_open, schedule, update), path button folder icon, menu submenu chevron, toast undo button icon, toast dismiss icon, capture target button icon."
+      },
+      {
+       "value": "md",
+       "when": "16px (1.143rem). subtask chevron (chevron_left, rotated), project switcher chevron (unfold_more, A 15 folded up), settings tab icon, segment icon (A 15 folded up), command row icon, menu row icon (A 15 folded up), capture clear button icon, capture screenshot button icon (A 15 folded up), lightbox file-type icon (16px)."
+      },
+      {
+       "value": "lg",
+       "when": "18px (1.286rem). input leading icon (search, bolt), pane header icon (tune, delete), sheet glyph inside the tint badge."
+      },
+      {
+       "value": "xl",
+       "when": "20px (1.429rem). window drag grip icon, split-view marker icon (20 assumed; no catalogue size), reduced-motion glyph inside StatusIndicator (A 19 folded up)."
+      },
+      {
+       "value": "display",
+       "when": "44px (3.143rem). lightbox fallback card file-type glyph."
+      }
+     ]
+    },
+    {
+     "axis": "weight",
+     "default": "300",
+     "values": [
+      {
+       "value": "200",
+       "when": "lightbox fallback card icon (44px), measured thin."
+      },
+      {
+       "value": "300",
+       "when": "default; most glyphs."
+      },
+      {
+       "value": "400",
+       "when": "measured 400: window drag grip, split-view marker, project switcher chevron, trash pane header icon, toast undo and dismiss icons, lightbox file-type icon, segment fullscreen icon, capture screenshot icon."
+      }
+     ]
+    },
+    {
+     "axis": "tone",
+     "default": "muted",
+     "values": [
+      {
+       "value": "inherit",
+       "when": "currentColor. For glyphs whose colour the parent sets: segment, settings tab, path folder, capture clear, target and screenshot buttons (colour not recorded in the catalogue)."
+      },
+      {
+       "value": "primary",
+       "when": "content-1 (oklch 0.26 light). Window drag grip icon."
+      },
+      {
+       "value": "secondary",
+       "when": "content-2 (oklch 0.46 light). pane header icon, attachment tile expand icon, keycap glyph."
+      },
+      {
+       "value": "muted",
+       "when": "content-3 (oklch 0.62 light). Default for standalone glyphs and chevrons: input leading, settings search, subtask chevron, project switcher chevron, metadata glyph, command row icon, menu row icon, menu submenu chevron, toast dismiss icon, lightbox fallback card icon."
+      },
+      {
+       "value": "accent",
+       "when": "accent-500 (oklch 0.6 0.2 255). split-view marker icon (a state indicator), toast undo button icon (follows the Undo button). See open."
+      },
+      {
+       "value": "danger",
+       "when": "danger-500. menu row icon on a destructive row (glyph follows the row tone); sheet tint danger."
+      },
+      {
+       "value": "onMedia",
+       "when": "white (100%) on the dark lightbox scrim. Available for lightbox glyphs."
+      },
+      {
+       "value": "onMediaMuted",
+       "when": "white at 60%. lightbox file-type icon at 16px (A 70% folded to 60%, matching the Text muted value)."
+      }
+     ]
+    },
+    {
+     "axis": "tint",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "bare glyph."
+      },
+      {
+       "value": "accent",
+       "when": "32px box (size-8, radius of rounded-control), background selection-1 (bg-selection-1l, dark bg-selection-1d), glyph 18px in accent-500 (oklch 0.6 0.2 255). Create, rename and confirm sheets: list_alt_add, create_new_folder, edit. Delete-confirm is listed here in the catalogue; see open."
+      },
+      {
+       "value": "danger",
+       "when": "32px box, background danger-100 (bg-danger-100l, dark bg-danger-100d), glyph 18px in danger (oklch 0.55 0.2 27). Delete-list sheet."
+      }
+     ]
+    },
+    {
+     "axis": "reveal",
+     "default": "always",
+     "values": [
+      {
+       "value": "always",
+       "when": "visible."
+      },
+      {
+       "value": "groupHover",
+       "when": "opacity 0 until the enclosing tile is hovered, and also when the tile has focus-within. Attachment tile expand icon (focus-within is an accessibility addition)."
+      }
+     ]
+    },
+    {
+     "axis": "rotate",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "not rotated."
+      },
+      {
+       "value": "ccw90",
+       "when": "-90deg with a 100ms transition; no transition under reduced motion. Subtask chevron when its group is expanded (draft inspector)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "name",
+     "type": "string",
+     "description": "Material Symbols ligature name, for example drag_indicator, chevron_left, restart_alt. Required. For modifier keys the caller passes the platform glyph name."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Optional. Given, the icon has role img with this name. Omitted, it is decorative and aria-hidden. Required for the reduced-motion glyph. (Replaces A's decorative prop.)"
+    }
+   ],
+   "states": [
+    "default",
+    "expanded (rotate ccw90, driven by the caller)",
+    "hidden until hover (reveal groupHover, opacity 0)",
+    "tinted (inside a 32px badge)",
+    "error (caller swaps name to error; capture screenshot button)"
+   ],
+   "role": "img with a label when label is given (for example the reduced-motion status glyph). Otherwise none, aria-hidden.",
+   "keyboard": "Never a tab stop. Inside a button, menu item or toggle, the parent holds focus and handles keys.",
+   "replaces": [
+    "window drag grip icon",
+    "split-view marker icon",
+    "input leading icon, 18px",
+    "settings search icon, 14px",
+    "subtask chevron, 16px",
+    "project switcher chevron, 15px",
+    "pane header icon, 18px",
+    "metadata glyph, 13px",
+    "attachment tile expand icon",
+    "lightbox file-type icon, 16px",
+    "lightbox file-type icon, 44px",
+    "keycap glyph, 12px",
+    "settings tab icon, 16px",
+    "path button folder icon, 14px",
+    "segment icon, 15px",
+    "command row icon, 16px",
+    "menu row icon, 15px",
+    "menu submenu chevron, 14px",
+    "toast undo button icon, 14px",
+    "toast dismiss icon, 14px",
+    "capture clear button icon, 16px",
+    "capture target button icon, 14px",
+    "capture screenshot button icon, 15px",
+    "sheet glyph badge, accent",
+    "sheet glyph badge, danger"
+   ],
+   "platform": "Desktop only: window drag grip (desktop window chrome; web has no drag region), split-view markers (desktop split layout), capture clear, target and screenshot icons (capture bar; web has no screen capture), and settings capture pane icons. Keycap glyph: macOS desktop shows keyboard_command_key and keyboard_option_key; Windows and web show Ctrl and Alt as text, since the reference has no glyph name for either. Reduced-motion tooltip wording is per platform (see StatusIndicator). Sheets: desktop uses separate windows and web uses dialogs; the tinted badge is the same on both.",
+   "open": "1) Accent tone on the split-view marker (a state indicator; A) and the toast undo icon (follows the Undo button): accent is reserved for primary action and selection. B reads the split-view marker as a selection indicator and keeps accent. Decide the token and confirm. 2) Delete-confirm: the catalogue lists it under the accent sheet badge, but destructive actions use danger. Proposed: tint danger for delete-confirm. Confirm. 3) Weight conflict: A keeps 200, 300, 400 measured values; B folds everything to 300. Kept the axis. If the heavier stroke is not felt in review, collapse to 300 and drop the axis. 4) Colour not recorded for segment, settings tab, path folder, capture clear, capture target and capture screenshot: inherit assumed. Confirm in review. 5) Error glyph colour for the capture screenshot button is not recorded. 6) Reveal on focus-within for the attachment expand icon is an accessibility addition, not in the reference. 7) Split-view marker size 20 is assumed (no catalogue size). 8) Lightbox white at 70% folded to 60%. Confirm. 9) Sizes are in px in the reference; rem values are given here with 1rem = 14px.",
+   "family": "labels"
+  },
+  {
+   "name": "StatusIndicator",
+   "purpose": "Non-interactive 32px status cell holding a 20px glyph (A 19 folded up) that shows only while a status is active (reduced motion). Its explanation is a tooltip. Kept as its own widget (A) because it is a 32px cell with a conditional render and a tooltip, not an icon variant. B folds only the glyph into Icon xl.",
+   "base": "Radix Tooltip (the reference used a title attribute).",
+   "variants": [],
+   "props": [
+    {
+     "name": "icon",
+     "type": "string",
+     "description": "Glyph name, motion_photos_off in the reference. Rendered by Icon at xl."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Accessible name for the status (required)."
+    },
+    {
+     "name": "tooltip",
+     "type": "string",
+     "description": "Explanation shown on hover and on focus when the cell is focusable. Chooses between the Low Power wording and the Settings wording."
+    }
+   ],
+   "states": [
+    "shown (only while the status is active)",
+    "hidden (status not active; renders nothing)",
+    "tooltip open"
+   ],
+   "role": "img with aria-label (the label prop).",
+   "keyboard": "Not focusable in the reference. Recommend tabIndex 0 so the Radix Tooltip opens on focus and Esc closes it.",
+   "replaces": [
+    "reduced-motion status icon"
+   ],
+   "platform": "Desktop only for the Low Power wording: 'Reduced motion active on Low Power Mode' is a macOS condition. Web cannot read Low Power Mode, so only the 'Reduced motion is on (Settings > General)' branch applies there, and that path names a desktop window, so web needs its own copy. Windows uses the OS reduced-motion setting.",
+   "open": "1) A hover-only tooltip is not reachable by keyboard or touch. Decide whether the cell is focusable (recommended tabIndex 0). 2) Whether web shows this indicator at all (it would come from prefers-reduced-motion) is a product decision. 3) The Settings > General wording needs a web version.",
+   "family": "labels"
+  },
+  {
+   "name": "RelativeTime",
+   "purpose": "Created or Updated time shown as a relative phrase, with the full date and time in a tooltip. Kept as its own widget (A) because it carries a dateTime value and an absolute tooltip; B folds it to Text with tooltip. Look: Text size sm, tone muted, weight regular.",
+   "base": "Radix Tooltip, rendered in a time element.",
+   "variants": [],
+   "props": [
+    {
+     "name": "at",
+     "type": "string | Date",
+     "description": "Moment; becomes the dateTime attribute of the time element."
+    },
+    {
+     "name": "relative",
+     "type": "string",
+     "description": "Relative phrase shown in the row, for example 1w ago or 5d ago."
+    },
+    {
+     "name": "absolute",
+     "type": "string",
+     "description": "Full date and time shown in the tooltip, for example Nov 6, 2026, 9:00 AM."
+    }
+   ],
+   "states": [
+    "default",
+    "tooltip open"
+   ],
+   "role": "time element (implicit role time). Tooltip role while open.",
+   "keyboard": "Not focusable in the reference (hover only). Recommend tabIndex 0 so the tooltip opens on focus; Esc closes it.",
+   "replaces": [
+    "timestamp with tooltip"
+   ],
+   "platform": "Same on both. The reference uses a native title tooltip (OS-drawn, own delay); the library uses Radix Tooltip on both, so behaviour matches across platforms.",
+   "open": "1) Native title versus Radix Tooltip changes the look and the delay. Deliberate change to confirm. 2) Relative phrase locale and absolute date format need a decision. 3) Created and Updated only; no due date (dropped by the brief).",
+   "family": "labels"
+  },
+  {
+   "name": "CharacterCounter",
+   "purpose": "Character count against the note limit. Switches to the danger tone when the count passes nearRatio of the limit (1800 of 2000 in the reference). Kept as its own widget (A) because the threshold switch is a felt behaviour; built from Text size xs, tabular numbers. B folds it to Text.",
+   "base": "none (built from Text).",
+   "variants": [],
+   "props": [
+    {
+     "name": "count",
+     "type": "number",
+     "description": "Current character count."
+    },
+    {
+     "name": "limit",
+     "type": "number",
+     "description": "Maximum length (2000 in the reference)."
+    },
+    {
+     "name": "nearRatio",
+     "type": "number",
+     "description": "Share of the limit where the danger tone starts. Default 0.9."
+    }
+   ],
+   "states": [
+    "normal (muted tone)",
+    "near limit (danger tone, count above nearRatio of limit)"
+   ],
+   "role": "none. Optionally a polite status when the threshold is crossed.",
+   "keyboard": "None.",
+   "replaces": [
+    "character counter, 10.5px"
+   ],
+   "platform": "Same component. Desktop uses it in the capture bar note field (capture is desktop only); both platforms use it in the task inspector note editor.",
+   "open": "1) Confirm the threshold: the reference says chars > 90% of maxLength (strictly greater than nearRatio times limit). 2) Whether screen readers are told when the limit is approached: suggest a polite status only on crossing the threshold.",
+   "family": "labels"
+  },
+  {
+   "name": "MatchHighlight",
+   "purpose": "Inline highlight behind the text that matches the search query, in task titles and note previews. Kept as its own widget (A) because a highlight is a separate job from a text label (A's Text excludes search highlights) and its fill token is still open. B folded it into a Text emphasis axis; that axis is dropped here. Fill: accent-500 at 25% light and 30% dark, radius 3px, text inherits.",
+   "base": "none (renders a mark element).",
+   "variants": [],
+   "props": [
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Matched text."
+    }
+   ],
+   "states": [
+    "visible (query trimmed is non-empty)",
+    "hidden (no query)"
+   ],
+   "role": "mark (implicit role mark).",
+   "keyboard": "None.",
+   "replaces": [
+    "search match highlight"
+   ],
+   "platform": "Same on both.",
+   "open": "The fill is accent-500 at 25% light and 30% dark. Accent is reserved for primary action and selection, so the match highlight needs its own non-accent search highlight token (B). Decision needed. Placement and count of matches are approximate in the catalogue.",
+   "family": "labels"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "metadata line wrapper",
+   "reason": "Both A and B agree. A layout wrapper with no text and no look of its own: a flex column in the task inspector, and a flex row with a gap (mt-2.5 items-center gap-1.5) in the draft header and breadcrumb. It belongs to the layout family (Stack or Inline). Its children are Text with tone muted, size sm (A 11.5 folded up to 12), numeric tabular. The wrapper must not set type styles itself. Same on web and desktop."
+  },
+  {
+   "variant": "Description (widget)",
+   "reason": "Dropped as a separate widget and folded into Text (as p or div, tone muted or danger, live prop). Same look and job as Text; its sizes fold to Text xs and sm, and its replaces move to Text. One component per job."
+  },
+  {
+   "variant": "IconBadge (widget)",
+   "reason": "Dropped as a separate widget and folded into Icon tint (accent or danger). It is the same tinted 32px box with an 18px glyph, which is a variant of Icon. Its replaces move to Icon. Accent-or-danger for delete-confirm is an open decision."
+  },
+  {
+   "variant": "Text font: display",
+   "reason": "Moved to Heading. The display font is the Heading family's job, and the title-bar project pill (B's only display use) is placed in Heading. Keeping it on Text would duplicate Heading."
+  },
+  {
+   "variant": "Text font: body",
+   "reason": "Dropped as a duplicate name. The default UI font is sans (A's name)."
+  },
+  {
+   "variant": "Text tracking axis (normal, 0.01em, 0.08em)",
+   "reason": "Dropped as an axis (B fold). The 0.01em on list tab name (about 0.13px at 13px) is not felt and goes to normal. The 0.08em uppercase tracking is carried by case uppercase."
+  },
+  {
+   "variant": "Text alpha axis (full, muted, faint)",
+   "reason": "Dropped as an axis and folded into tone (onMedia 100%, onMediaMuted 60%). The 55% faint value (lightbox position counter) folds up to 60%; a 5-point difference is not felt."
+  },
+  {
+   "variant": "Text decoration axis (none, strike)",
+   "reason": "Dropped as a duplicate of the done axis (struck means line-through and tone muted)."
+  },
+  {
+   "variant": "Text emphasis axis (none, match)",
+   "reason": "Dropped as a duplicate of MatchHighlight, which owns the search highlight job. Its fill token is still open."
+  },
+  {
+   "variant": "Text prop truncate (boolean)",
+   "reason": "Dropped as a duplicate of the overflow axis (truncate value)."
+  },
+  {
+   "variant": "Text prop numeric (boolean)",
+   "reason": "Dropped as a duplicate of the numeric axis (tabular value)."
+  },
+  {
+   "variant": "Text as: h1 to h6",
+   "reason": "Dropped. Heading levels belong to Heading (A's own purpose). Text renders span, p or div only."
+  },
+  {
+   "variant": "Text axis name caps (B)",
+   "reason": "Renamed to case (A's name), with values normal and uppercase. Same behaviour."
+  },
+  {
+   "variant": "Heading as: div (trash window title)",
+   "reason": "Folded to h1 (B). The trash window title is a window title, which is h1 in its own window; div gave no heading role."
+  },
+  {
+   "variant": "Heading prop truncate (boolean, B)",
+   "reason": "Dropped as a duplicate of the overflow axis (truncate default, wrap for the sheet headline)."
+  },
+  {
+   "variant": "SectionHeader props title, count, actions, onClear, clearIcon, clearLabel, state (B)",
+   "reason": "Mapped to A's names and folded: title to label, count and actions to trailing, onClear to onRestore, clearLabel to restoreLabel, state to active. clearIcon is derived from the restore kind (restart_alt for reset, undo for discard). A's names keep the reset and discard distinction."
+  },
+  {
+   "variant": "SectionHeader tracking 0.12em and 0.1em (A)",
+   "reason": "Folded to the one caps value 0.08em (B). Letter spacing difference is small. Flagged in open for confirmation; the listGroup spacing is kept."
+  },
+  {
+   "variant": "Icon weight fixed 300 (B)",
+   "reason": "Dropped in favour of A's weight axis (200, 300, 400), which keeps the measured 400 and 200 rows. B's open item 2 proposes the same fallback. Confirm in review."
+  },
+  {
+   "variant": "Icon prop passThrough (A)",
+   "reason": "Dropped as a duplicate: Icon is always pointer-events none (B), so presses reach the parent or drag region."
+  },
+  {
+   "variant": "Icon prop decorative (A)",
+   "reason": "Dropped as a duplicate: decorative is derived from label (B). Given a label, the icon is img; omitted, it is aria-hidden."
+  },
+  {
+   "variant": "Icon prop revealOnHover (A)",
+   "reason": "Dropped to the reveal axis (groupHover), which holds the same behaviour."
+  },
+  {
+   "variant": "Icon prop rotate (A)",
+   "reason": "Dropped to the rotate axis (ccw90), which holds the same behaviour."
+  }
+ ]
+}

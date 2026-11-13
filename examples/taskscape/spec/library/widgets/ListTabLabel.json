@@ -1,0 +1,79 @@
+{
+ "name": "ListTabLabel",
+ "purpose": "Text name of an open list shown beside the active one on the inspectors, filter panel and trash. Click selects the list; on multi-inspector it keeps that list open. Optional close x on the active tab. Covers the label-only looks, which have no drag, rename or delete. Merge record: from A ListTabLabel (kept; tone axis converted to the selected prop; surface axis kept; closable limited to selected tabs; close x sits outside the tab element; paneDot unified as paneMarker). From B: the text look of the merged Tab is folded here. B's Tab merge is dropped because the label, titlebar and sidebar looks differ in behaviour the user feels.",
+ "base": "Radix Tabs (TabsTrigger) inside a tablist. The close control is a plain button.",
+ "variants": [
+  {
+   "axis": "surface",
+   "default": "flat",
+   "values": [
+    {
+     "value": "flat",
+     "when": "No surface. Default for every recorded label except the active tab on draft-inspector. Only meaningful for selected=false, or for selected=true on screens other than draft-inspector."
+    },
+    {
+     "value": "raised",
+     "when": "White raised surface with divider rules. Used only by the active tab on draft-inspector (catalogue state 'selected (draft-inspector, white/raised with divider rules)'). Only valid with selected=true."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "name",
+   "type": "string",
+   "description": "List name. Truncates at max-w-40."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Active tab (primary text oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark, 500 13px/19.5px). False is the inactive tab (muted oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark, same font). Replaces the tone axis of A."
+  },
+  {
+   "name": "surface",
+   "type": "'flat' | 'raised'",
+   "description": "Variant prop: see variants. Raised applies only when selected is true."
+  },
+  {
+   "name": "paneMarker",
+   "type": "boolean",
+   "description": "Split view: blue pane marker before the name; the active label text moves to x 249 (main-window). The inactive tab in the right pane also carries the marker (Reading)."
+  },
+  {
+   "name": "closable",
+   "type": "boolean",
+   "description": "Shows the close x. Applies only when selected is true (recorded on multi-inspector and filter-panel active tabs; x 280 on filter-panel)."
+  },
+  {
+   "name": "onSelect",
+   "type": "() => void",
+   "description": "Click selects the list; on multi-inspector it keeps this list open."
+  },
+  {
+   "name": "onClose",
+   "type": "() => void",
+   "description": "Close x button; rendered only when closable and selected. It is a sibling of the tab element, not a child."
+  }
+ ],
+ "states": [
+  "active (selected=true)",
+  "inactive (selected=false, default)",
+  "split-view pane marker (main-window; Reading in the right pane)",
+  "raised active surface (draft-inspector)",
+  "close x shown (multi-inspector, filter-panel)",
+  "hairline frame around the active label (rows 4 and 19; styling, see open)",
+  "hover and focus not recorded"
+ ],
+ "role": "tab on the label (proposed; the catalogue records no ARIA role for labels). The close button is a separate button.",
+ "keyboard": "Enter or Space selects (proposed). Left and Right move focus with roving tabindex when inside a tablist (proposed). The close x is reached by Tab and activated by Enter or Space (proposed).",
+ "replaces": [
+  "list tab, active (label)",
+  "list tab, inactive (label)"
+ ],
+ "platform": "Same on both. The catalogue records these only on the inspector, filter and trash screens, with no platform split.",
+ "open": "1) Letter spacing tracking-[0.01em] is recorded on main-window (rows 1 and 2) but not on draft-inspector (rows 8 and 9): token or drop. 2) Presence of the close x on main-window, draft-inspector and trash is not recorded; its size and colour are not recorded. 3) Frame position differs by 1px (211-308 in rows 4 and 19 versus 212-309 in row 1); unresolved. 4) Row 12 refers to a 'see close entry' that does not exist in rows-choice.json, so the close button is specified only from the look field. 5) Hairline frame around the active label (rows 4 and 19): not a prop; proposed as styling of selected=true; confirm. 6) Thin vertical separators between tabs on several screens: a styling rule of the tab group container, not a prop. 7) Whether the close x removes the list or only closes the inspector tab is not recorded. 8) The catalogue gives '?' components on multi-inspector, filter-panel and trash for the list tab variants; those rows are not mapped with certainty. 9) ARIA role not recorded (tab proposed). 10) Hover and focus not recorded.",
+ "family": "choice",
+ "families": [
+  "choice"
+ ]
+}

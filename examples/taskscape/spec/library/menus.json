@@ -1,0 +1,662 @@
+{
+ "widgets": [
+  {
+   "name": "MenuButton",
+   "purpose": "Trigger button that opens a Menu anchored to itself and shows the current value with a trailing chevron. Covers the project switcher pill in the title bar, the filter Sort and Date triggers (named in the catalogue under the filter sort and date option menu, without their own rows), and the icon-only More button on task rows (named in the catalogue, without its own row). Merges A's MenuTrigger and B's MenuButton into one trigger widget with a look axis.",
+   "base": "Radix DropdownMenu.Trigger (asChild) rendered through the shared shadcn Button shell.",
+   "variants": [
+    {
+     "axis": "variant",
+     "default": "pill",
+     "values": [
+      {
+       "value": "pill",
+       "when": "Filled pill (the catalogue calls this look filled pill on the trash screen, menus.json line 17), used by the project switcher in the title bar. Box 85x28 at x 112, y 8 (measured). Radius 7px kept as measured (menus.json line 18). Background oklch(0.944 0.003 255) light; oklch(0.172 0.004 260) dark (recorded on main-window only). Label 600 14px/21px oklch(0.26 0.012 262). Trailing unfold_more 15px weight 300 in oklch(0.62 0.013 264) light; oklch(0.57 0.011 262) dark (main-window only). Dark values are theme tokens, not a separate variant."
+      },
+      {
+       "value": "ghost",
+       "when": "No background; for text-only triggers (filter Sort and Date) and the icon-only More button. The look is not in the catalogue, so this is a design assignment, not a measurement. Label and icon values follow the pill's type and colour tokens as a stated assumption."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "default",
+     "values": [
+      {
+       "value": "default",
+       "when": "28px high, label 14px/21px (pill size). The 28px height is measured on the pill."
+      },
+      {
+       "value": "icon",
+       "when": "Square 28px, icon only, for the task row More button. The 28px square is a design assignment, not measured."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "label",
+     "type": "string | ReactNode",
+     "description": "Visible current value, for example the active project name Home. Omitted for icon-only triggers."
+    },
+    {
+     "name": "icon",
+     "type": "string | ReactNode",
+     "description": "Optional leading icon."
+    },
+    {
+     "name": "trailingIcon",
+     "type": "string | ReactNode | null",
+     "description": "Defaults to unfold_more at 15px, weight 300. Pass null to hide the chevron."
+    },
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Controlled open state; drives aria-expanded and the open look."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Fired on press to toggle the menu, and on Escape or outside press."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Disables the trigger. Disabled look not captured."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Accessible name that includes the current value, for example 'Switch project, Home', so screen readers hear both."
+    }
+   ],
+   "states": [
+    "default",
+    "hover",
+    "open (aria-expanded true; the open look was never captured, so the library must pick one treatment: reuse the shared Button aria-expanded style, or capture it)",
+    "focus-visible",
+    "disabled (look not captured)"
+   ],
+   "role": "button with aria-haspopup=menu and aria-expanded",
+   "keyboard": "Enter, Space or ArrowDown opens the Menu and moves focus to its first enabled item. Enter or Space again closes it. A pointer press on the trigger while open closes it. Escape closes the Menu and returns focus to the trigger.",
+   "replaces": [
+    "project switcher pill"
+   ],
+   "platform": "Same on web and desktop. The label is the active project: from the server on web (multi-user), local on desktop (offline). On web, the project list and rename or delete rights may differ per user, but the trigger itself does not change. Dark-mode colours are theme tokens; the dark values are recorded on main-window only, so dark tokens must cover the trigger on every screen.",
+   "open": "1) Open-state look not captured; the library must pick a treatment. 2) The Sort, Date and More triggers use ghost and icon; their looks are unmeasured design assignments. The catalogue names Sort and Date (menus.json line 147) and More (lines 97-98), so they are in scope. 3) Whether More opens the task row menu at the cursor or anchored to the button: both entry points are recorded and the decision is not; decide once (see Menu). 4) Radius 7px is kept as measured; mapping it to a standard token needs the token file, which was not read, and would be a flagged fold. 5) The 0.5rem radius assumes 1rem=14px, a derived value not stated in the catalogue.",
+   "family": "menus"
+  },
+  {
+   "name": "Menu",
+   "purpose": "Floating role=menu panel holding MenuItem and MenuSeparator rows. One panel family for every menu, with three placements and four widths. Which rows appear is the caller's choice, not the widget's: for example the single-row or multi-row set in the task row context menu, and the conditional Promote to top level row (shown only when the task has a parent_id, menus.json lines 99, 113). Used by: project menu panel (control, project width, offset 7px); task row context menu (cursor, task width); search scope and fields menu (control, content); filter sort and date option menu (control, content); attachment context menu (cursor, content); list tab context menu, which the catalogue calls menu panel, top-level (cursor, tab width); Move to list, which the catalogue calls menu panel, nested submenu (submenu, content). Panel style: Surface elevation menu, surface 3, radius panel, py-space-3, z-dropdown, animate-sheet-in. This style is measured for the project panel only (menus.json line 41); the other menus assume it.",
+   "base": "Radix ContextMenu (Content and Sub parts) for cursor placement and for any submenu under a cursor menu; Radix DropdownMenu (Content and Sub parts) for control placement and for any submenu under a control menu. The submenu's Radix root must match its parent's root. shadcn ContextMenuContent and DropdownMenuContent.",
+   "variants": [
+    {
+     "axis": "placement",
+     "default": "cursor",
+     "values": [
+      {
+       "value": "cursor",
+       "when": "Opens at the pointer. Clamped to the viewport with a 4px inset (ContextMenu.tsx:79-88). Used by the task row context menu (right-click), the list tab context menu and the attachment context menu."
+      },
+      {
+       "value": "control",
+       "when": "Anchored below its trigger: x = trigger left, y = trigger bottom + offset. Offset default 4px (the filter Sort and Date menus record this). The project panel passes offset 7px, measured (pill bottom 36, panel top 43; menus.json lines 18, 40). Used by the project menu panel, the search scope and fields menu, the filter sort and date option menu, and the task row menu if More is the entry point (open item)."
+      },
+      {
+       "value": "submenu",
+       "when": "Opens beside the hovered parent row. Not clamped to the viewport; flips left when it would overflow the window (ContextMenu.tsx:142-165). Used by Move to list."
+      }
+     ]
+    },
+    {
+     "axis": "width",
+     "default": "content",
+     "values": [
+      {
+       "value": "content",
+       "when": "Sized by its rows, no fixed width. Used where the look was not measured: attachment, search scope and fields, filter sort and date, and Move to list."
+      },
+      {
+       "value": "task",
+       "when": "152px measured (task menu box B). Task row context menu."
+      },
+      {
+       "value": "tab",
+       "when": "156px measured (list tab menu box A). List tab context menu. Kept apart from task because the reference distinguishes the two widths; not folded to 152 without a designer's confirmation."
+      },
+      {
+       "value": "project",
+       "when": "min-width 210px (min-w-60 = 15rem at 1rem=14px, derived; measured box 210x112 at x 112, y 43). Project menu panel."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Controlled open state."
+    },
+    {
+     "name": "onOpenChange",
+     "type": "(open: boolean) => void",
+     "description": "Fired on Escape, outside press, Tab, or activation of a row when closeOnSelect applies. Replaces B's separate onDismiss."
+    },
+    {
+     "name": "placement",
+     "type": "'cursor' | 'control' | 'submenu'",
+     "description": "Positioning rule and Radix root; see variants."
+    },
+    {
+     "name": "width",
+     "type": "'content' | 'task' | 'tab' | 'project'",
+     "description": "Panel width; see variants."
+    },
+    {
+     "name": "anchorRef",
+     "type": "RefObject<HTMLElement>",
+     "description": "Trigger element for control placement."
+    },
+    {
+     "name": "point",
+     "type": "{x: number; y: number}",
+     "description": "Pointer position for cursor placement; clamped with a 4px inset."
+    },
+    {
+     "name": "offset",
+     "type": "number",
+     "description": "Gap below the trigger for control placement. Default 4; the project panel passes 7 (measured)."
+    },
+    {
+     "name": "closeOnSelect",
+     "type": "boolean",
+     "description": "Whether activating a row closes the menu. Default true is this design's assumption; the catalogue does not record close-on-pick for the scope, fields, sort and date menus (see open)."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Accessible name of the menu. Required; the catalogue records no menu name."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "MenuItem and MenuSeparator rows."
+    }
+   ],
+   "states": [
+    "open",
+    "closed (not rendered; covers dismissed by Escape, outside press, Tab, or item activation, one state)",
+    "measuring (hidden until the first layout sets its position, so it does not flash at 0,0)"
+   ],
+   "role": "menu. A submenu row (MenuItem) carries aria-haspopup=menu and aria-expanded.",
+   "keyboard": "Opens focused on the first enabled item when opened from the keyboard. ArrowDown and ArrowUp move focus, skipping disabled rows and separators. Home and End jump to the ends. Letters do typeahead. Enter or Space activates. ArrowRight opens a submenu row (reference); Enter also opens it (added by this design, not in the reference). ArrowLeft or Escape closes a submenu and returns focus to its row. Escape closes a root menu and returns focus to the trigger, or for a cursor-opened menu, to the element focused before the cursor open. Tab closes the menu. Shift+F10 or the ContextMenu key opens a cursor menu from the keyboard. Hovering a submenu row opens it for pointer users only.",
+   "replaces": [
+    "project menu panel",
+    "task row context menu",
+    "search scope and fields menu",
+    "filter sort and date option menu",
+    "attachment context menu",
+    "menu panel, top-level",
+    "menu panel, nested submenu"
+   ],
+   "platform": "Web: the cursor placement must call preventDefault on the contextmenu event to replace the browser menu; browser shortcuts take precedence over menu accelerators; the menu clamps to the browser viewport. Desktop: menus are in-window popups, not separate windows, and never dim or cover the main window with a backdrop (decision: menus never dim; the no-backdrop rule for dialogs and sheets is a decision, not in menus.json). The clamp uses the app window bounds. Multi-row task selection uses the platform modifier: Control on Windows, Command on macOS. The web and Linux modifier is not defined.",
+   "open": "1) Task row menu: right-click (cursor) or More (anchored) both exist in the catalogue (menus.json lines 97-98), but which one is the menu's placement is not recorded. This also decides whether Move to list uses ContextMenu or DropdownMenu sub parts. 2) The 152px and 156px widths are off the 14px rem grid (10.86rem and 11.14rem). Both kept as measured; a token or content width needs a decision. 3) Surface: only the project panel is measured. The tree shows Surface2 while the source prop is surface=3; surface=3 is kept, and the conflict is open. The other menus assume the same surface. 4) Desktop: whether cursor menus are native OS menus; the reference renders them in-app and this design assumes in-app. 5) Web and Linux multi-row modifier is not stated. 6) closeOnSelect for the search scope, search fields, sort and date menus is not recorded (menus.json lines 125-130, 147-153); decide per menu, including project radio rows. 7) Project panel offset 7px (measured) versus the 4px rule of the filter menus; confirm. 8) The pill appears on four screens, but the project panel usedIn lists only title-bar and context-menus (menus.json lines 24-29, 47-50); confirm whether the panel exists on other screens. 9) Panel layer z-dropdown and the animate-sheet-in class are measured only for the project panel (menus.json line 41). 10) Every rem-based value (min-w-60 at 210px, the widths) assumes 1rem=14px, which is derived, not stated.",
+   "family": "menus"
+  },
+  {
+   "name": "MenuItem",
+   "purpose": "One row of a Menu: an action; a radio choice inside a labelled group (project rows; search scope, search fields, sort and date choices); or a row that opens a submenu (Move to list). Leading icon 15px, label, optional trailing submenu chevron, radio check slot, or hover-revealed row actions (project rows only). Covers every menu row in the task, list tab, attachment and project menus. Task menu row classes: px-space-6, py-space-4, gap-space-5, text-[13px] (menus.json line 393).",
+   "base": "Radix DropdownMenu.Item, DropdownMenu.RadioItem and DropdownMenu.SubTrigger in control menus; ContextMenu.Item, ContextMenu.RadioItem and ContextMenu.SubTrigger in cursor menus. The root is fixed by the parent Menu's placement. shadcn DropdownMenuItem and ContextMenuItem.",
+   "variants": [
+    {
+     "axis": "tone",
+     "default": "default",
+     "values": [
+      {
+       "value": "default",
+       "when": "Label oklch(0.26 0.012 262) (text-primary) and icon oklch(0.62 0.013 264) (muted), measured; hover background wash-2l. Used by Copy, Add subtask, Rename, Move to list, Open, Reveal in Finder, Copy n tasks, Mark n done, Mark n not done, Export list, Rename list, and the project rows."
+      },
+      {
+       "value": "danger",
+       "when": "Icon and label oklch(0.55 0.2 27); hover background danger-100l; text danger-500l on the task row. Used by Delete task…, Delete n tasks…, Delete list…, and Remove on the attachment menu (which has a divider above it)."
+      }
+     ]
+    },
+    {
+     "axis": "selection",
+     "default": "action",
+     "values": [
+      {
+       "value": "action",
+       "when": "No check slot. Runs an action."
+      },
+      {
+       "value": "radio",
+       "when": "Choice from a group: a 14px (w-4) check slot is always reserved so labels align. The current value shows a check icon 15px, weight 900 (measured; B's fold to weight 300 is not applied), in accent oklch(0.6 0.2 255). Role menuitemradio inside a role=group with a label (Projects for project rows; the group name for scope, fields, sort and date). Used by project rows and by the search scope, search fields, sort and date choices."
+      }
+     ]
+    },
+    {
+     "axis": "trailing",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No trailing element."
+      },
+      {
+       "value": "submenu",
+       "when": "Trailing chevron_right. Hover opens the submenu (pointer only); ArrowRight opens it; a click does nothing. Used by Move to list. Carries aria-haspopup=menu and aria-expanded."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "default",
+     "values": [
+      {
+       "value": "default",
+       "when": "Label 400 13px/19.5px, row height 30px (measured). Used by task, list tab and attachment menus. Leading icon 15px."
+      },
+      {
+       "value": "large",
+       "when": "Label 400 13.5px/20.25px (measured; B's fold to 13px is not applied). Used by project menu rows, checked and plain. Row height unmeasured: the project label boxes sit at y 53 and y 85, a 32px pitch (menus.json lines 63, 82). The 30px row height does not apply to project rows."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "icon",
+     "type": "string",
+     "description": "Leading icon name, 15px (for example content_copy, edit, delete, arrow_forward)."
+    },
+    {
+     "name": "label",
+     "type": "ReactNode",
+     "description": "Row text; truncates when long (truncate prop)."
+    },
+    {
+     "name": "truncate",
+     "type": "boolean",
+     "description": "Truncates long text, for project names."
+    },
+    {
+     "name": "tone",
+     "type": "'default' | 'danger'",
+     "description": "See variants."
+    },
+    {
+     "name": "selection",
+     "type": "'action' | 'radio'",
+     "description": "See variants."
+    },
+    {
+     "name": "checked",
+     "type": "boolean",
+     "description": "Radio only; shows the check icon when true."
+    },
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Radio only; the value the row sets in its group."
+    },
+    {
+     "name": "trailing",
+     "type": "'none' | 'submenu'",
+     "description": "See variants."
+    },
+    {
+     "name": "size",
+     "type": "'default' | 'large'",
+     "description": "Type size and row height; see variants."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Dimmed and no pointer events. Move to list is disabled when there are no other lists."
+    },
+    {
+     "name": "actions",
+     "type": "ReactNode",
+     "description": "Hover-revealed row actions, used by project rows for rename and delete. Rendered as sibling IconButtons outside the menuitem, not nested inside it."
+    },
+    {
+     "name": "onSelect",
+     "type": "() => void",
+     "description": "Runs the action; for radio rows, selects the value."
+    }
+   ],
+   "states": [
+    "default",
+    "hover (wash-2l for default tone; danger-100l for danger tone; on a submenu row, hover opens the submenu for pointer users)",
+    "highlighted (keyboard focus, same look as hover, with a focus-visible ring)",
+    "checked (radio; check icon shown)",
+    "disabled (component default opacity-40, no pointer events; look not captured)",
+    "submenu-open (aria-expanded true)",
+    "actions revealed (on hover and on focus-within, so keyboard users reach them)"
+   ],
+   "role": "menuitem. menuitemradio with aria-checked for selection radio, inside a role=group with a label. A submenu row adds aria-haspopup=menu and aria-expanded.",
+   "keyboard": "Enter or Space activates; for radio rows, selects the value. Arrow keys move between rows and skip disabled rows. ArrowRight on a submenu row opens it. Pointer hover opens a submenu row. Escape is handled by the Menu. Route to the row actions is undecided (see open).",
+   "replaces": [
+    "project menu row, checked",
+    "project menu row, plain",
+    "attachment menu item",
+    "list tab menu row, plain",
+    "list tab menu row, danger",
+    "task menu row, plain",
+    "task menu row, submenu",
+    "task menu row, danger"
+   ],
+   "platform": "Same geometry on both. Web: hover-revealed actions also reveal on focus-within; touch has no hover, so a touch affordance is needed (open). Desktop: hover reveals row actions. Destructive actions: attachment Remove opens askConfirm (menus.json line 217, measured). Task and list deletions (Delete task…, Delete n tasks…, Delete list…) have an ellipsis that implies a confirmation, but the confirmation was not captured (menus.json lines 380, 441): unverified. Rename… opens askText (design statement, unverified). These dialogs belong to another family: separate windows on desktop, modal dialogs on web. Attachment set: a local file gets Rename…, Open, Reveal in Finder and Remove; a remote link omits Reveal in Finder (menus.json lines 190, 211). On web, uploads live on the server and there is no local file, so Reveal in Finder is hidden rather than disabled, and what Open does for an uploaded file must be confirmed. On desktop, Reveal in Finder is macOS wording; the Windows label is not in the catalogue.",
+   "open": "1) Hover-revealed rename and delete on project rows: nested controls inside a menuitem are invalid ARIA, so they are sibling IconButtons outside the row. The keyboard route is undecided: ArrowRight from the row to the sibling buttons, or F2 to rename and Delete to delete on the focused row. 2) Task row labels sit at x+31 and list tab labels at x+32 (menus.json lines 354, 393). Treated as one geometry unless a designer confirms the 1px difference. 3) The disabled look is the component default (opacity-40, no pointer events) and was not captured. 4) Mark n done and Mark n not done have no colour in the catalogue; kept in the default tone (neutral), because the done-lamp colour is reserved for done state; decision needed. 5) Project row height unmeasured (see size large). 6) Exact oklch values are recorded here; token names need the token file, which was not read. 7) Leading icon weight 300 follows the catalogue's other icons, not a measured row value.",
+   "family": "menus"
+  },
+  {
+   "name": "MenuSeparator",
+   "purpose": "Hairline divider between groups of rows in a Menu. Used above Add subtask; above Mark n done; above Delete task… and Delete n tasks… in the task menus; above Remove on the attachment menu item; and between the two groups of the search scope and fields menu (menus.json line 125). Not a catalogue variant; it supports the Menu rows.",
+   "base": "Radix DropdownMenu.Separator in control menus; ContextMenu.Separator in cursor menus. shadcn DropdownMenuSeparator.",
+   "variants": [],
+   "props": [
+    {
+     "name": "className",
+     "type": "string",
+     "description": "Optional spacing override; no other props."
+    }
+   ],
+   "states": [
+    "static"
+   ],
+   "role": "separator",
+   "keyboard": "Not focusable; arrow-key focus skips it.",
+   "replaces": [],
+   "platform": "Same on web and desktop.",
+   "open": "None.",
+   "family": "menus"
+  },
+  {
+   "name": "Popover",
+   "purpose": "Anchored floating list for the mention autocomplete at the caret. Holds ComboboxItem mention rows, shown only when the @ query has matches, at most 6 (maxItems). Focus stays in the editor throughout; the list is linked by aria-activedescendant. The formatting floating toolbar that the source groups with floating surfaces is not here (see notWidgets). Presentation is single, so no variant axis.",
+   "base": "Radix Popover (Content with a virtual point anchor at the caret).",
+   "variants": [],
+   "props": [
+    {
+     "name": "open",
+     "type": "boolean",
+     "description": "Shown when there are matches for the @ query."
+    },
+    {
+     "name": "anchor",
+     "type": "{x: number; y: number}",
+     "description": "Caret point; repositioned on scroll and resize."
+    },
+    {
+     "name": "maxItems",
+     "type": "number",
+     "description": "Maximum matches shown. Default 6."
+    },
+    {
+     "name": "onEscape",
+     "type": "() => void",
+     "description": "Closes the list; typed text stays in the editor."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "ComboboxItem rows with context mention."
+    }
+   ],
+   "states": [
+    "closed (default; no matches)",
+    "open (matches for the @ query; listbox shown)",
+    "scrolled (rows exceed the 196px height cap)"
+   ],
+   "role": "listbox, owned by the editor. The editor is the combobox and points at the active option with aria-activedescendant.",
+   "keyboard": "ArrowUp and ArrowDown move the highlight. Enter or Tab picks the highlighted row. Escape closes the list and leaves the typed text; typing continues in the editor. Focus stays in the editor. Mousedown on a row picks it with preventDefault so focus stays in the editor.",
+   "replaces": [
+    "mention autocomplete popover"
+   ],
+   "platform": "Same on both. Neither opens a window on desktop, and neither uses a backdrop. Web: the mousedown pick must not take focus from the editor (preventDefault).",
+   "open": "1) Layer: the reference uses z-tooltip (RichTextEditor.tsx:598-630); B's fold to z-dropdown is proposed here; a popover over the editor should not share the tooltip layer. Decision needed. 2) Width w-60 = 210px and max-h-56 = 196px are derived from 1rem=14px, not measured; confirm. 3) The look is not measured; values come from component code. 4) The toolbar's focus and keyboard model moved with it to the Toolbar family (see notWidgets).",
+   "family": "menus"
+  },
+  {
+   "name": "ComboboxItem",
+   "purpose": "A selectable option row in a listbox where focus stays in a text field. Two contexts: palette rows inside CommandPalette (run a command, or jump to a list or project, with an optional trailing shortcut); and mention rows inside Popover (an attachment candidate). Merges A's ComboboxItem and B's CommandItem; the measured values of A are kept.",
+   "base": "Palette: shadcn CommandItem (cmdk Command.Item) row inside CommandPalette. Mention: no Radix primitive; the same listbox option pattern as the palette.",
+   "variants": [
+    {
+     "axis": "context",
+     "default": "palette",
+     "values": [
+      {
+       "value": "palette",
+       "when": "Command palette. Row 488px wide (x 346 to 834); label 400 13px/19.5px; leading icon 16px at x 355, label at x 378 (measured). Active background oklch(0.6 0.2 255 / 0.1) (measured; see open). Click or Enter runs the command or jump and closes the palette."
+      },
+      {
+       "value": "mention",
+       "when": "Mention autocomplete. Icon fileKindFor(...).icon at 15px, weight 300; attachment name truncated; highlighted row background selection-1; other rows text-content-2. Values from component code (RichTextEditor.tsx:603-628), not measured. Mousedown picks it and inserts an att-chip plus a trailing space (preventDefault keeps editor focus); Enter or Tab also picks."
+      }
+     ]
+    },
+    {
+     "axis": "shortcut",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No trailing element. Row height 30. Used by commands and jump targets (Errands, Reading, Garden, Home, Spring launch) and mention rows."
+      },
+      {
+       "value": "hotkey",
+       "when": "Trailing HotkeyHint glyph. Row height 32 (measured; not folded to 30). Palette context only."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "icon",
+     "type": "string",
+     "description": "Leading icon name; 16px in palette context, 15px in mention context."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Row text; runtime data for jump rows; truncates."
+    },
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Text the palette filter matches against."
+    },
+    {
+     "name": "id",
+     "type": "string",
+     "description": "Option id, referenced by aria-activedescendant."
+    },
+    {
+     "name": "shortcut",
+     "type": "string",
+     "description": "Rendered as HotkeyHint; only with shortcut hotkey."
+    },
+    {
+     "name": "active",
+     "type": "boolean",
+     "description": "Highlighted row, from arrow keys or pointer."
+    },
+    {
+     "name": "context",
+     "type": "'palette' | 'mention'",
+     "description": "Sets geometry, highlight token and commit behaviour."
+    },
+    {
+     "name": "onSelect",
+     "type": "() => void",
+     "description": "Palette: runs the command or jump, then closes. Mention: inserts the attachment chip and trailing space."
+    }
+   ],
+   "states": [
+    "inactive",
+    "active (highlighted; index 0 on palette open; any row reached by pointer or arrow keys)",
+    "hover (mouse move sets active)"
+   ],
+   "role": "option, with aria-selected true on the active row. The catalogue kind is menu-item; it changes to option because focus stays in a text field (the palette search input or the editor), and the menu focus model does not apply there.",
+   "keyboard": "ArrowUp and ArrowDown move the active row (handled by the parent list). Enter picks the active row: palette runs and closes; mention inserts. Tab picks in mention context only. Escape closes the list (handled by the parent). Mouse move sets active.",
+   "replaces": [
+    "mention autocomplete row",
+    "command palette row, with shortcut",
+    "command palette row, no shortcut (commands and jump targets)"
+   ],
+   "platform": "Shortcut glyphs are platform-specific: Control on Windows, Command on macOS (decision). Web: palette shortcuts must not use a combination the browser reserves, because browser shortcuts take precedence; the catalogue gives no key values, so this check cannot be done from it. Desktop: a global hotkey pressed while the main window is focused is handled by the main window. Jump-row labels come from runtime data on both platforms.",
+   "open": "1) The palette active row is an accent blue wash oklch(0.6 0.2 255 / 0.1) (measured). Accent blue is reserved for primary action and selection, and a keyboard highlight is neither. Decide: neutral wash-2l (as the menu hover) or accept it as selection. Kept as measured until decided. 2) The palette accent wash and the mention selection-1 token should resolve to one selection token, or be separate by decision. 3) The palette list must scroll; the reference clips rows (see CommandPalette). 4) Shortcut row height 32 kept as measured. 5) Role option instead of the catalogue's menu-item is a change; confirm. 6) Mention values are from component code and not measured. 7) The web shortcut check is blocked: no key values in the catalogue.",
+   "family": "menus"
+  },
+  {
+   "name": "CommandPalette",
+   "purpose": "Container for the command palette: a panel with its own search input that keeps focus, a listbox of ComboboxItem palette rows, and a scroll region. Runs a command or jumps to a list or project. Split from B's Command widget; the caret mention list is Popover. Container, not a catalogue row; its look is not measured.",
+   "base": "shadcn Command (cmdk) root for the input and listbox. On web, a dialog-style overlay.",
+   "variants": [],
+   "props": [
+    {
+     "name": "items",
+     "type": "ComboboxItem[]",
+     "description": "Palette rows (context palette)."
+    },
+    {
+     "name": "query",
+     "type": "string",
+     "description": "Filter text typed in the search input."
+    },
+    {
+     "name": "activeIndex",
+     "type": "number",
+     "description": "Controlled highlight index; index 0 on open."
+    },
+    {
+     "name": "onActiveChange",
+     "type": "(index: number) => void",
+     "description": "Highlight callback for arrow keys and pointer."
+    },
+    {
+     "name": "onSelect",
+     "type": "(item) => void",
+     "description": "Runs the picked row, then closes the palette."
+    },
+    {
+     "name": "onClose",
+     "type": "() => void",
+     "description": "Fires on Escape."
+    },
+    {
+     "name": "aria-label",
+     "type": "string",
+     "description": "Accessible name of the palette."
+    }
+   ],
+   "states": [
+    "closed (not rendered)",
+    "open (search input focused; first row active)",
+    "scrolled (rows exceed the panel height; the list scrolls, does not clip)"
+   ],
+   "role": "listbox for the rows; the search input is the combobox.",
+   "keyboard": "Typing filters the rows. ArrowUp and ArrowDown move the active row. Enter runs the active row and closes. Escape closes.",
+   "replaces": [],
+   "platform": "Web: opens from an in-app key; browser-reserved combinations cannot be used, because browser shortcuts take precedence; no global hotkey on web. Desktop: a global hotkey pressed while the main window is focused is handled by the main window and opens the palette there.",
+   "open": "1) Desktop: a separate window (as dialogs are) or an in-window overlay is not stated. 2) Web: whether the palette dims the window as a modal is not stated (menus never dim; the palette is dialog-like, unconfirmed). 3) Container look is not measured. 4) The reference clips rows past the panel edge; this container must scroll instead (a defect, not a state). 5) The web palette open key is not in the catalogue.",
+   "family": "menus"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "formatting floating toolbar",
+   "reason": "Not a choice list and not a Menu. It is a strip of seven toggle icon buttons (21x21 each, thin vertical separators), so it has role toolbar with toggle items, not menu or option. It belongs to a Toolbar and ToggleGroup widget in the shared text-editing family. Measured geometry (white rounded pill, x 873 to 1121, y 300 to 330; buttons at y 305; hidden opacity 0, scale 95, pointer-events none; shown opacity 100, scale 100, z-popover, shadow-menu) moves with it. Shown on editor focus and hidden on blur. Mousedown must not take editor focus (not in reference; needed). Keyboard: roving focus with arrow keys recommended (not in reference). Kept in this family only as the source groups it with floating surfaces. Moved from A's Popover toolbar variant, per the critique and B."
+  },
+  {
+   "variant": "A: MenuTrigger (as its own widget)",
+   "reason": "Dropped as a separate widget and merged into MenuButton. The pill look and measured values are kept on the pill variant. A's claim that the Sort and Date MenuButtons are not in the catalogue is wrong (menus.json line 147; More at lines 97-98), so they are assigned to MenuButton with ghost and icon."
+  },
+  {
+   "variant": "A: MenuTrigger single-value variant axis",
+   "reason": "A single value ('pill') does no work. Dropped; pill is now the default of variant, with ghost added, and size adds icon for the More button."
+  },
+  {
+   "variant": "B: MenuButton variant subtle",
+   "reason": "Renamed to pill to match the catalogue's name for this look (menus.json line 17, filled pill). ghost kept, labelled as an unmeasured assignment."
+  },
+  {
+   "variant": "B: Command (presentation palette | caret)",
+   "reason": "Dropped as one widget: it combines two focus models (palette search input holds focus; caret list keeps focus in the editor with aria-activedescendant). Split: the palette becomes CommandPalette; the caret list becomes Popover (mention autocomplete popover). Its name suggested cmdk semantics the caret does not use."
+  },
+  {
+   "variant": "B: CommandItem",
+   "reason": "Duplicate of ComboboxItem. Its shortcut axis is covered by A's shortcut axis (none, hotkey), and its missing context axis (palette vs mention highlight, text colour, icon size) is restored from A. B's folds (palette icon 16 to 15, hotkey row 32 to 30) are dropped; the measured values are kept. Its value and id props are merged into ComboboxItem."
+  },
+  {
+   "variant": "A: Popover variant toolbar",
+   "reason": "Moved to notWidgets (see the formatting floating toolbar entry). Popover keeps only the mention suggestion list, so its variant axis is dropped."
+  },
+  {
+   "variant": "B: Menu onDismiss prop",
+   "reason": "Duplicate of onOpenChange, which fires on Escape, outside press, Tab and item activation. Merged into onOpenChange."
+  },
+  {
+   "variant": "B: Menu closed and dismissed states",
+   "reason": "Same rendering outcome (not rendered). Merged into one closed state, with the dismissing event noted."
+  },
+  {
+   "variant": "B: Menu anchor axis (pointer | control | submenu)",
+   "reason": "Duplicate of A's placement axis. Kept as placement, with the value cursor (A's name) in place of pointer. Width axis added from A, per the critique."
+  },
+  {
+   "variant": "B: MenuItem indicator axis (none | check)",
+   "reason": "Duplicate of A's selection axis (action | radio). Kept as selection, with the 14px check slot and the measured weight 900 check icon."
+  },
+  {
+   "variant": "A and B: MenuSeparator (both designs)",
+   "reason": "Duplicate entries for one component. Kept once, with the usage list merged from both, including the scope and fields divider (menus.json line 125) from B."
+  },
+  {
+   "variant": "A: ComboboxItem clipped state",
+   "reason": "A clipped row is a layout defect in the reference (menus.json line 300), not a state of the new widget. Dropped; the scroll requirement lives in CommandPalette."
+  },
+  {
+   "variant": "A: Menu onOpenChange firing on item activation for all menus",
+   "reason": "Decided close-on-pick for every menu without a catalogue record for scope, fields, sort and date (menus.json lines 125-130, 147-153). Replaced with a closeOnSelect prop and an open decision."
+  },
+  {
+   "variant": "A: MenuItem base (DropdownMenu.Item, RadioItem, SubTrigger only)",
+   "reason": "Wrong for cursor menus, whose items must come from ContextMenu. Replaced by a per-root base (ContextMenu parts for cursor, DropdownMenu parts for control; submenu parts match the parent root), so Move to list under a cursor menu uses ContextMenu sub parts."
+  },
+  {
+   "variant": "A: Menu control placement fixed at 4px for the project panel",
+   "reason": "The catalogue measures the project panel 7px below the pill (menus.json lines 18, 40). Replaced by an offset prop: default 4 for control; the project panel passes 7."
+  },
+  {
+   "variant": "B: fold of the 152px task and 156px list tab widths into one",
+   "reason": "A fold without a designer's confirmation (critique). Both kept as separate width values; the 4px difference is open."
+  },
+  {
+   "variant": "B: fold of the project panel gap to 4px and the pill radius to a standard radius",
+   "reason": "Measured values are 7px (menus.json lines 18, 40) and 7px radius (line 18). Both kept as measured; any token mapping needs the token file and is a flagged fold."
+  },
+  {
+   "variant": "B: folds of check weight 900 to 300, label 13.5px to 13px, palette icon 16px to 15px, hotkey row 32px to 30px",
+   "reason": "Measured values not folded without evidence (critique). Kept: check weight 900 (menus.json line 63), large label 13.5px, palette icon 16px, hotkey row 32px (menus.json line 265). Any fold is a designer decision."
+  },
+  {
+   "variant": "B: 'row height is 30px in all menus' (includes project rows)",
+   "reason": "Project row height was never measured (label boxes at y 53 and y 85 give a 32px pitch). The 30px claim applies to task, list tab and attachment menus only; project rows are listed as unmeasured."
+  },
+  {
+   "variant": "A: MenuItem and MenuTrigger claim the Sort, Date and More controls are out of scope",
+   "reason": "Wrong against the catalogue (menus.json lines 97-98, 147). They are assigned to MenuButton; their looks are design assignments."
+  },
+  {
+   "variant": "A and B: 'destructive actions open a confirmation' as a catalogue fact for every destructive row",
+   "reason": "Only attachment Remove is recorded as askConfirm (menus.json line 217). Task and list deletions are marked unverified (lines 380, 441). Kept only as unverified."
+  }
+ ]
+}

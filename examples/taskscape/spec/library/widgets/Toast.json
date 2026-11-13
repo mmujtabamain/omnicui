@@ -1,0 +1,92 @@
+{
+ "name": "Toast",
+ "purpose": "Transient, non-blocking notice shown after an undoable action, with an optional action control (Undo). Wraps a Radix Toast Root inside a viewport; the app mounts one Radix Toast Provider and Viewport per window. No look was recorded, so there is no variant axis and no styling beyond shared tokens. Message copy, the Undo action, the shown state and the props are proposals; the catalogue records only the idle state. Also (structure): Brief notice pill at the bottom centre of the window, with an optional action. One toast at a time from the store. The wrapper passes clicks through everywhere except the pill.",
+ "base": "Radix Toast (proposed; the catalogue names no primitive)",
+ "variants": [
+  {
+   "axis": "position",
+   "values": [
+    {
+     "value": "bottom-centre",
+     "when": "Fixed bottom-5, full width, flex justify-center; viewport pointer-events none; the pill is pointer-events auto. Tree bounds 1180x41 at 0,702; pill 225x41 at 477,702."
+    }
+   ],
+   "default": "bottom-centre"
+  },
+  {
+   "axis": "tone",
+   "values": [
+    {
+     "value": "neutral",
+     "when": "Floating popover tone with lift shadow and radius control; animate-rise on entry. The only look in the catalogue (B's tone)."
+    }
+   ],
+   "default": "neutral"
+  }
+ ],
+ "props": [
+  {
+   "name": "open",
+   "type": "boolean",
+   "description": "Controlled visibility (proposed)."
+  },
+  {
+   "name": "onOpenChange",
+   "type": "(open: boolean) => void",
+   "description": "Fires on auto-dismiss, close control, swipe, action or Escape (proposed)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "Message text (proposed; copy is not in the inventory)."
+  },
+  {
+   "name": "action",
+   "type": "{ label: string; onAction: () => void } (optional)",
+   "description": "Undo control (proposed; assumed from the word 'undoable', not recorded). onAction runs the undo."
+  },
+  {
+   "name": "duration",
+   "type": "number (ms, optional)",
+   "description": "Auto-dismiss time (not recorded; the Radix default applies when omitted)."
+  },
+  {
+   "name": "message",
+   "type": "ReactNode",
+   "description": "Notice text."
+  },
+  {
+   "name": "actions",
+   "type": "ReactNode",
+   "description": "Optional action buttons (B's single action)."
+  },
+  {
+   "name": "onDismiss",
+   "type": "() => void",
+   "description": "Dismiss handler."
+  }
+ ],
+ "states": [
+  "hidden (idle; the only state the catalogue records; not mounted)",
+  "shown (not recorded in the inventory; proposed)",
+  "paused while hovered or focused (Radix behaviour, to verify; not recorded)",
+  "dismissed (after timeout, swipe, close or action; proposed)",
+  "hidden (store toast is null; renders nothing)",
+  "entering (animate-rise)",
+  "shown (single toast in store)"
+ ],
+ "role": "status (Radix Toast root; aria-live is set by the Toast type setting, to verify)",
+ "keyboard": "Radix defaults (to verify): the viewport hotkey (F8 by default) moves focus into the toast list, then Tab reaches the action and close controls; Escape dismisses when focus is inside; pointer swipe dismisses. On web the hotkey must stay page-scoped, must not clash with a browser shortcut, and must never be global. On desktop the hotkey is scoped to the main window as the toast is (assumed). / Action buttons are focusable once focus moves into the viewport. Radix Toast has a default hotkey (F8, moves focus to the viewport); set it explicitly. On web browser shortcuts take precedence; on desktop it must not act as a global hotkey. Escape to dismiss is recommended (B), not in the catalogue.",
+ "replaces": [
+  "toast, undoable action notice",
+  "toast layout wrapper",
+  "toast pill"
+ ],
+ "platform": "Same widget and props on web and desktop. The toast sits in the main window on both (per the screen field). The main window is never dimmed. A toast is neither a dialog nor a sheet, so the separate-window rule does not apply. / Same position on both. Desktop: a toast raised from a separate sheet window must appear in that window, not the main one.",
+ "open": "1) Trigger and message copy are absent from the inventory. 2) Source conflict: the row's purpose says 'Own screen: toast' while its screen field says main-window; this design follows the screen field. 3) Undo keyboard shortcut and duration are not recorded. 4) Accent blue is reserved for the primary action and selection, so Undo stays neutral unless the team calls it primary. 5) No look is recorded, so no tone axis. A danger tone for undoable deletes needs the look first. B's single-value intent axis was dropped as pointless. 6) Hover pause, dismissed state, close control and live-region politeness are Radix behaviour to verify. / Dismiss rules (timeout, swipe) are not recorded. The store holds one toast; a second replaces the first (confirm). Pill radius is an estimate (about 6-8px); shadow and border are literals. The floating surface folds surface-2 and surface-3 into one popover tone (B), which also applies to the palette and menus; designer to confirm.",
+ "family": "overlays",
+ "families": [
+  "overlays",
+  "structure"
+ ]
+}

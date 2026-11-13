@@ -1,0 +1,550 @@
+{
+ "widgets": [
+  {
+   "name": "TrafficLight",
+   "purpose": "macOS window traffic light: a 14px disc (1rem) inside a 16px (size-4) button around an svg with viewBox 85.4. Used for close, minimise and full-screen in the title bar and main window, the Settings windows and the Trash pane. It is window chrome, so it is desktop-only. Kept apart from IconButton because it is window chrome, not an in-app control.",
+   "base": "none (custom component styled with cva; no shadcn or Radix primitive applies to macOS window chrome)",
+   "variants": [
+    {
+     "axis": "kind",
+     "default": "close",
+     "values": [
+      {
+       "value": "close",
+       "when": "Red light. Lit ring #e24b41, fill #ed6a5f, glyph #460804. X glyph fades in on hover (lit only). Closes the window, or the pane when the caller binds a pane close (Trash)."
+      },
+      {
+       "value": "minimize",
+       "when": "Yellow light. Lit ring #e1a73e, fill #f6be50, glyph #90591d. Minus glyph fades in on hover. Calls the window minimise."
+      },
+      {
+       "value": "fullscreen",
+       "when": "Green light. Lit ring #2dac2f, fill #61c555, glyph #2a6218. Diagonal arrows glyph fades in on hover. Toggles full screen."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "kind",
+     "type": "'close' | 'minimize' | 'fullscreen'",
+     "description": "Variant prop: which light, glyph and lit colours."
+    },
+    {
+     "name": "active",
+     "type": "boolean (default true)",
+     "description": "Window focused. True gives the lit colours and the hover glyph; false gives the unlit grey disc with no glyph. The caller sets it from window focus."
+    },
+    {
+     "name": "inert",
+     "type": "boolean (optional; minimize and fullscreen only)",
+     "description": "No action: grey disc, no glyph, removed from the tab order and hidden from assistive tech. Used by the Trash and Settings minimise and full-screen lights. Not valid for close."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean",
+     "description": "Set only when the close action is missing (catalogue: disabled only if the action is missing)."
+    },
+    {
+     "name": "onClick",
+     "type": "() => void",
+     "description": "Caller action. Title bar close calls win.close(); Trash close calls the pane close; minimise and full-screen call the window actions."
+    },
+    {
+     "name": "label",
+     "type": "string (required)",
+     "description": "Accessible name and tooltip: 'Close', 'Minimize', 'Full Screen', or a pane name such as 'Close Trash'."
+    }
+   ],
+   "states": [
+    "lit (active true)",
+    "unlit (active false; grey inactive colours, no glyph)",
+    "inert (grey disc, no glyph, no action, not focusable; minimize and fullscreen only)",
+    "hover (glyph fades in; lit only; unlit hover is unverified)",
+    "focus-visible",
+    "disabled (close with action missing)"
+   ],
+   "role": "button",
+   "keyboard": "Tab and Shift+Tab focus the light unless it is inert; inert lights are skipped in the tab order. Enter and Space activate. No arrow-key movement between lights (none recorded, none added).",
+   "replaces": [
+    "Traffic light, close, enabled",
+    "Traffic light, minimise, enabled",
+    "Traffic light, full screen, enabled",
+    "Traffic light, close Trash pane, enabled",
+    "Traffic light, inert"
+   ],
+   "platform": "Desktop on macOS only. Web does not render it, because the browser owns window chrome. Desktop on Windows and Linux uses CaptionButton. The Trash close light targets the Trash pane through onClick and label, not through a variant. Inert lights exist only on desktop.",
+   "open": "1) Trash close light: its look and target are unverified. A window-style light is kept here. If Trash is a pane on desktop, use IconButton close instead. 2) Inert hiding: the catalogue records the inert attribute, and the Settings-about inert lights carry aria labels Minimize and Full Screen (line 109), so hiding from assistive tech is unverified. Decide between aria-hidden and a labelled control. 3) Inert is a prop on TrafficLight, not a separate widget. Catalogue line 7 keeps widgets that act differently apart; this design relaxes that because the inert light shares the disc and grey colours and differs only by having no action. Confirm, or split it out. 4) Unlit and inert grey hex values are not recorded (only gray inactive colours, line 40). 5) Whether an unlit light shows a glyph on hover is not recorded. 6) The glyph colour oklch(0.26 0.012 262) is unverified and may be the text colour; this design takes the glyph colour from its own token. 7) Close colours are hard-coded reds. Decide whether they are window-chrome tokens (recommended, since closing a window is not destructive) or the danger token. 8) Whether lit lights should be keyboard focusable is not recorded; this design makes them focusable.",
+   "family": "icon-buttons"
+  },
+  {
+   "name": "CaptionButton",
+   "purpose": "Windows and Linux window control at the trailing edge of the title bar: minimise, maximise or restore, and close. Full title-bar height, 46px wide (3.286rem). Code-derived only: no recorded instance, so look and states come from code.",
+   "base": "none (custom component styled with cva, shadcn-style)",
+   "variants": [
+    {
+     "axis": "kind",
+     "default": "minimize",
+     "values": [
+      {
+       "value": "minimize",
+       "when": "Icon remove 20px. Hover background bg-wash-2."
+      },
+      {
+       "value": "maximize",
+       "when": "Icon crop_square 14px, or filter_none 14px when maximized. Hover background bg-wash-2."
+      },
+      {
+       "value": "close",
+       "when": "Icon close 20px. Hover background #e81123 (fixed caption red) with white glyph."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "kind",
+     "type": "'minimize' | 'maximize' | 'close'",
+     "description": "Variant prop."
+    },
+    {
+     "name": "maximized",
+     "type": "boolean (optional; kind maximize only)",
+     "description": "Swaps crop_square for filter_none and the label to Restore."
+    },
+    {
+     "name": "onClick",
+     "type": "() => void",
+     "description": "Calls win.minimize(), win.toggleMaximize() or win.close()."
+    },
+    {
+     "name": "label",
+     "type": "string (required)",
+     "description": "'Minimize', 'Maximize' or 'Restore', 'Close'."
+    }
+   ],
+   "states": [
+    "default",
+    "hover (minimize and maximize: bg-wash-2; close: #e81123 with white glyph)",
+    "maximize (not maximized)",
+    "restore (maximized; filter_none glyph)",
+    "focus-visible"
+   ],
+   "role": "button",
+   "keyboard": "Tab focuses it. Enter and Space activate. No shortcut is bound to these controls.",
+   "replaces": [
+    "Windows minimise button, code-derived",
+    "Windows maximise and restore button, code-derived",
+    "Windows close button, red hover, code-derived"
+   ],
+   "platform": "Desktop on Windows and Linux only. Not rendered on macOS desktop (uses TrafficLight) or on web (browser chrome).",
+   "open": "1) The close hover uses the fixed caption red #e81123 rather than the danger token. A window close is not destructive, so the fixed red is kept; confirm. 2) No measured instance exists: the 46px width, the 20px and 14px icons and the wash hover are code-derived and unverified in the recordings.",
+   "family": "icon-buttons"
+  },
+  {
+   "name": "IconButton",
+   "purpose": "The icon-only push-action button for toolbars, list and row actions, inspector and panel headers, search-field clears, the filter panel, sheets, the toast, the day steppers, the lightbox bar and pagers, Settings, Trash and the toggles (pressed). Icon-only, so a label is always required. Window lights, the disclosure chevron and the caption buttons are separate widgets. No icon button uses accent blue; accent is for primary actions (the Button widget).",
+   "base": "shadcn Button pattern (cva variant, surface, size and shape axes) with Radix Slot for asChild, Radix Tooltip for the label and shortcut, and Radix Toggle semantics for pressed. Menu triggers are wrapped by Radix DropdownMenu through asChild.",
+   "variants": [
+    {
+     "axis": "variant",
+     "default": "ghost",
+     "values": [
+      {
+       "value": "ghost",
+       "when": "Transparent, muted glyph, hover wash. Merges the recorded default and plain variants, which have no recorded visual difference (see open). Covers New list, New task, Search options, Clear search, Close split view, Row more menu, Discard draft, Discard changes, Discard group changes, Clear section, Reset hotkey, Close filter panel, Rename, Copy task, Settings, Swap panes, Clear selection, Dismiss toast, Roll another name, Restore, Open task alone, Close preview panel, Delete task, Delete project, Delete permanently, Delete list tab, the lightbox bar on media, and the split view and preview toggles."
+      },
+      {
+       "value": "strong",
+       "when": "ghostStrong: stronger emphasis than ghost. Used by Row more menu, Restore, Open task alone, Roll another name, Reset hotkey and Discard changes. Its fill, glyph and hover values are not recorded (see open)."
+      },
+      {
+       "value": "filled",
+       "when": "Surface fill (bg-surface-0) behind the glyph. Used by the day steppers and the note delete circle. On media (lightbox pagers, size step) it is a white 10 percent fill that becomes white 20 percent on hover."
+      }
+     ]
+    },
+    {
+     "axis": "size",
+     "default": "default",
+     "values": [
+      {
+       "value": "sm",
+       "when": "Box not measured (B's 17.5px, 1.25rem, assumed; see open). Default icon 14px. Radius 4.375px. Used by Clear search in the settings sidebar."
+      },
+      {
+       "value": "default",
+       "when": "21px box (1.5rem). Default icon 16px. Radius 4.375px. The standard size for most row, header and search controls (Delete list tab, Search options, Clear search, Close split view, Row more menu, Close preview panel, Discard draft, Rename task title, Copy task, Delete task, Delete note, Rename project, Delete project, Clear selection, Open task alone, Reset hotkey, Clear section, Discard group changes)."
+      },
+      {
+       "value": "lg",
+       "when": "25px box (1.786rem, as measured; 24.5px is open). Default icon 16px. Radius 4.375px. Used by New list, Close filter panel, Dismiss toast, Restore, Delete permanently, Roll another name, and the day steppers (code 26px; see open)."
+      },
+      {
+       "value": "footer",
+       "when": "25x19 box in the footer strip. Icon 14px. Radius 4.375px. Used by Sort and filter (ViewControl)."
+      },
+      {
+       "value": "xl",
+       "when": "28px box (2rem). Radius 7px (0.5rem, the xl control radius). Icon 19px in the toolbar (Settings, Swap panes, the split and preview toggles, Discard changes); 17px in the lightbox top bar."
+      },
+      {
+       "value": "step",
+       "when": "39px circle (2.786rem). Icon 26px. Used by the lightbox previous and next pagers only; on media, filled, shape round."
+      }
+     ]
+    },
+    {
+     "axis": "surface",
+     "default": "default",
+     "values": [
+      {
+       "value": "default",
+       "when": "Glyph in the muted token on the app surface (oklch 0.62 0.013 264 light; oklch 0.57 0.011 262 dark)."
+      },
+      {
+       "value": "media",
+       "when": "Over photos and the lightbox. Glyph white 70 percent; the step size uses white 80 percent (catalogue lines 917 and 936). Hover: ghost gets its wash, filled gets white 20 percent, and danger tone gets a solid fill with a white glyph."
+      }
+     ]
+    },
+    {
+     "axis": "shape",
+     "default": "square",
+     "values": [
+      {
+       "value": "square",
+       "when": "Corner radius from size."
+      },
+      {
+       "value": "round",
+       "when": "Fully rounded disc. Used by the note delete circle (filled) and the lightbox pagers (step)."
+      }
+     ]
+    },
+    {
+     "axis": "tone",
+     "default": "neutral",
+     "values": [
+      {
+       "value": "neutral",
+       "when": "Default. Destructive colour is not shown at rest."
+      },
+      {
+       "value": "danger",
+       "when": "Destructive action, hover only (never shown at rest; rest glyph stays muted). Hover on ghost and filled: danger text. Hover on media: solid danger fill with white glyph (lightbox remove attachment). The Delete list tab alone also takes a danger tint background on hover (catalogue default variant); see open. Used by Delete list tab, Delete task, Delete note (see open), Delete project, Delete permanently, Lightbox remove attachment."
+      }
+     ]
+    },
+    {
+     "axis": "reveal",
+     "default": "always",
+     "values": [
+      {
+       "value": "always",
+       "when": "Visible at rest."
+      },
+      {
+       "value": "row",
+       "when": "Opacity 0 until the row or card is hovered, has keyboard focus within it, or is selected (data-selected). Mapped: Rename project, Delete project, Open task alone, Restore (also on the selected row), Delete permanently (also on the selected row), Delete note (hover-only circle), Reset hotkey to default."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "icon",
+     "type": "string | ReactNode",
+     "description": "Material Symbols ligature name, or a node. Must not be a raw button element. The caller may swap it: Copy task shows content_copy, then check for 1200 ms. Clear section uses restart_alt; Discard uses undo (see open for Discard draft)."
+    },
+    {
+     "name": "label",
+     "type": "string (required)",
+     "description": "Becomes aria-label and the tooltip text. Use the catalogue's title or aria label for each job (for example 'Close', 'New task', 'Delete permanently')."
+    },
+    {
+     "name": "shortcut",
+     "type": "string (optional)",
+     "description": "Shortcut hint shown in the tooltip after the label, for example cmd-N, cmd-comma, cmd-backslash, plus, Esc. Platform-specific (see platform)."
+    },
+    {
+     "name": "variant",
+     "type": "'ghost' | 'strong' | 'filled'",
+     "description": "Visual intent. Default ghost. See variants."
+    },
+    {
+     "name": "size",
+     "type": "'sm' | 'default' | 'lg' | 'footer' | 'xl' | 'step'",
+     "description": "Box size. Default default. See variants."
+    },
+    {
+     "name": "surface",
+     "type": "'default' | 'media'",
+     "description": "Use media over photos and the lightbox."
+    },
+    {
+     "name": "shape",
+     "type": "'square' | 'round'",
+     "description": "Default square."
+    },
+    {
+     "name": "tone",
+     "type": "'neutral' | 'danger'",
+     "description": "Destructive treatment on hover only. Default neutral."
+    },
+    {
+     "name": "reveal",
+     "type": "'always' | 'row'",
+     "description": "Default always. row: opacity 0 until the parent row is hovered, has keyboard focus within it, or is selected."
+    },
+    {
+     "name": "iconSize",
+     "type": "number (px, per use)",
+     "description": "Per-use icon size, not folded into a size token. Defaults by size: sm 14, default 16, lg 16, footer 14, xl 19 (17 on media), step 26. Catalogue per-use values: Delete list tab 15; New list 18; New task 18; Search options 15; Clear search (search field) 15; Clear search (settings sidebar) 14; Close split view 16; Split view and Preview panel toggles 19; Row more menu 17; Sort and filter 14; Close preview panel 16; Discard draft 16; Rename task title 15; Copy task 15; Delete task 15; Delete note 14; Settings 19; Swap panes 19; Rename project 16; Delete project 16; Clear selection 16; Open task alone 13; Close filter panel 16; Clear section unrecorded (16 assumed); day steppers 14; Dismiss toast 14; Restore 16; Delete permanently 16; Roll another name 16; lightbox bar 17 (open externally, reveal in Finder, rename attachment, remove attachment, close); lightbox steps 26; Discard changes 19; Reset hotkey to default 15; Discard group changes unrecorded (16 assumed)."
+    },
+    {
+     "name": "iconWeight",
+     "type": "300 | 400 | 500",
+     "description": "Stroke weight per use. Default 300. New task 400; Delete list tab 500 (catalogue)."
+    },
+    {
+     "name": "radius",
+     "type": "number (px, optional)",
+     "description": "Corner radius override. Default from size (4.375px for sm, default, lg, footer; 7px for xl). New list passes 5.25px (catalogue className override rounded-md, line 197)."
+    },
+    {
+     "name": "pressed",
+     "type": "boolean (optional)",
+     "description": "Toggle state. Sets aria-pressed and the filled look. Used by the Split view toggle (vertical_split when off; label Split view, becoming Close split view when on) and the Preview panel toggle (right_panel_open when off; label Show preview panel, becoming Hide preview panel when on)."
+    },
+    {
+     "name": "pressedIcon",
+     "type": "string (optional)",
+     "description": "Glyph when pressed. The Preview panel toggle swaps to right_panel_close."
+    },
+    {
+     "name": "haspopup",
+     "type": "'menu' | 'dialog' (optional)",
+     "description": "Sets aria-haspopup for buttons that open a menu or panel (Row more menu, Search options, depending on its target)."
+    },
+    {
+     "name": "keepFocusOnPress",
+     "type": "boolean (optional)",
+     "description": "Pointer only: prevents the mousedown default so a focused text field keeps focus. Used by Search options, Discard draft and Roll another name."
+    },
+    {
+     "name": "focusable",
+     "type": "boolean (default true)",
+     "description": "False sets tabIndex -1. Roll another name is false in the reference; this design keeps the recorded value until confirmed (see open)."
+    },
+    {
+     "name": "disabled",
+     "type": "boolean (optional)",
+     "description": "Disables the button. Used by the Split view toggle when there is no split target."
+    },
+    {
+     "name": "onClick",
+     "type": "(event) => void",
+     "description": "Caller action. Row-level stopPropagation and double-click handling stay with the caller (delete project, lightbox steps)."
+    },
+    {
+     "name": "asChild",
+     "type": "boolean (optional)",
+     "description": "Radix Slot, so the button can be the trigger of a menu (Row more menu)."
+    }
+   ],
+   "states": [
+    "rest",
+    "hover (ghost: wash; filled on media: white 20 percent fill; tone danger: danger text, or solid danger fill with white glyph on media)",
+    "focus-visible (ring; tooltip opens)",
+    "active (pressed down by the pointer)",
+    "disabled",
+    "pressed (aria-pressed true, filled look; toggles only)",
+    "open (aria-expanded true while the menu or panel it opens is shown)",
+    "hidden (reveal row: opacity 0)",
+    "revealed (row hover, keyboard focus within the row, or row selected)",
+    "swapped icon (caller-driven: Copy task shows check for 1200 ms)"
+   ],
+   "role": "button (native button element); accessible name from label; aria-pressed on toggles; aria-haspopup and aria-expanded on menu or panel triggers",
+   "keyboard": "Tab and Shift+Tab move focus. focusable false removes the button from the Tab order. Enter and Space activate. The tooltip opens on focus; Escape closes an open tooltip, otherwise Escape is left to the containing menu or dialog. As a DropdownMenu trigger (asChild), Enter, Space and ArrowDown open the menu (Radix behaviour). keepFocusOnPress affects the pointer only. Reveal-hidden buttons also show on keyboard focus within their row (added by this design; the catalogue records hover only). Row-level stopPropagation stays with the caller.",
+   "replaces": [
+    "Delete list tab button",
+    "New list button, large",
+    "New task button, small",
+    "Search options, tune icon (target unverified)",
+    "Clear search, search field",
+    "Clear search, settings sidebar, small, not measured",
+    "Close split view, search bar",
+    "Row more menu button",
+    "Sort and filter button, footer",
+    "Close preview panel, inspector header",
+    "Discard draft, draft header",
+    "Rename task title, inspector header",
+    "Copy task, inspector header",
+    "Delete task, inspector header, danger",
+    "Delete note, hover-only circle",
+    "Split view toggle, toolbar",
+    "Preview panel toggle, toolbar",
+    "Settings button, toolbar",
+    "Swap panes, toolbar, code-derived",
+    "Rename project, revealed on hover",
+    "Delete project, revealed on hover, danger on hover",
+    "Clear selection, summary header",
+    "Open task alone, row hover",
+    "Close filter panel, header",
+    "Clear section, restart icon, code-derived",
+    "Fewer days stepper button, code-derived",
+    "More days stepper button, code-derived",
+    "Dismiss toast",
+    "Restore item, row hover",
+    "Delete permanently, row hover, danger",
+    "Roll another name, sheet field",
+    "Lightbox, open externally",
+    "Lightbox, reveal in Finder",
+    "Lightbox, rename attachment",
+    "Lightbox, remove attachment (danger on hover)",
+    "Lightbox, close",
+    "Lightbox step, previous",
+    "Lightbox step, next",
+    "Discard changes, settings title bar, code-derived",
+    "Reset hotkey to default, row, code-derived",
+    "Discard group changes, section header, code-derived"
+   ],
+   "platform": "Same widget and look on web and desktop. Differences: (a) Shortcut hints follow the platform. Desktop bindings: cmd-N, cmd-comma, cmd-backslash, plus, Esc. On web the browser takes precedence, so New task must not advertise cmd-N, and each hint shows only if the web app actually receives that key. (b) Reveal in Finder is desktop only (file manager); web does not render it, because attachments are server-stored. Desktop also hides it when the attachment is remote (catalogue line 844). (c) Open externally: desktop uses the default app; web opens a new tab or downloads (agreed here; A said open or download, B said new tab or download; sourced outside the catalogue). (d) Settings: desktop opens a separate window; web opens the settings page (agreed here; B proposed an in-app dialog; sourced outside the catalogue). (e) Discard group changes exists only in the capture settings window (screenshot_mode), and web drops it with screenshots. (f) Reset hotkey to default is a desktop global-hotkey control; web drops it if the editor covers only global hotkeys (the catalogue does not say what the editor covers). (g) Roll another name: a separate window on desktop, a modal with backdrop on web. (h) Rename and remove attachment: desktop renames the label only for remote files and the stored file otherwise; web attachments are server files in a multi-user app, so the rule differs (not specified; see open).",
+   "open": "1) Search options target is unverified: a Filter and Sort panel (main window, inferred) or a scope menu (task list). Set haspopup to match. A panel on desktop may need a window. Check it does not share the tune icon with Sort and filter (footer, which opens the panel). 2) Delete note: the reference shows neutral with no danger hover; tone danger is assigned here so deletes match. Confirm. Also catalogue line 488 records plain but a white background; this design uses filled. Confirm plain versus filled. 3) Discard draft, Discard changes and Discard group changes are ghost (neutral). Decide whether discarding unsaved edits is destructive (danger). Discard draft uses last_page, which Close preview panel also uses for hiding; recommend undo for discard, as Discard changes and Discard group changes do. 4) Ghost merges default and plain, which have no recorded visual difference: confirm from the CSS. The ghostStrong fill, glyph and hover values are not recorded: read from the CSS or keep as unverified. 5) Unrecorded and assumed sizes: sm box (17.5px assumed by B); Clear section, Reset hotkey and Discard group changes sizes are unrecorded (default assumed); the day steppers are code-only at 26px and mapped to lg, which is 25px measured; confirm whether lg is 25px or 24.5px (1.75rem). Sort and filter footer comes from the ViewControl component and its 11px font 600 text is unexplained; if it shows a visible label it is a Button, not an IconButton. New list radius 5.25px (rounded-md override): confirm it is intended. 6) Roll another name is tabIndex -1 in the reference, so keyboard users cannot reach it. Recommend focusable true; confirm. 7) Hover-only (reveal row) controls: the catalogue records hover only; this design also reveals on keyboard focus within the row. Confirm. 8) Delete list tab: tone on plain rows (multi-inspector, filter panel, trash) is unconfirmed; keep neutral until confirmed. The Delete list tab alone has a danger tint background on hover (catalogue default variant), which the ghost variant cannot express: keep as a per-control look or drop it. 9) Close split view on the main window: its handler is not in these files, so the action is unverified. 10) Desktop lightbox: whether it is an in-window screen or a separate window (desktop convention says new windows) is not recorded. 11) Lightbox rename attachment uses drive_file_rename_outline while the other renames use edit; recommend edit. 12) Delete permanently purges with no confirmation in the reference. Decide whether the widget or the caller confirms. 13) Delete task destination (catalogue line 474) and the delete-list confirmation sheet (line 178) are unverified; confirm both. 14) Hit area: sm (17.5px) and default (21px) boxes are below the 24px WCAG 2.2 target size; add hit-area padding in the widget and confirm. 15) Lightbox reveal in Finder: hidden when the attachment is remote (line 844); the Linux label may not match the file manager (line 839). Confirm the label. 16) Toggle label and glyph set: the off-state label set and the inactive preview icon right_panel_open were not all recorded (only the active state was seen). The filled look colour is the active colour oklch(0.26 0.012 262), which may be the text colour (same question as TrafficLight glyph). Confirm. 17) Lightbox step glyph uses white 80 percent (catalogue) while the other lightbox buttons use 70 percent; confirm. 18) Lightbox remove attachment: solid danger fill with white glyph on hover; confirm. 19) Lightbox rename and remove on web: the rule for server-stored attachments in a multi-user app is not specified; decide. 20) Platform rules (a) to (h) are sourced outside the catalogue (the catalogue has no web or desktop data); confirm each. Open external and Settings conflicts between the two designs are resolved above and need confirmation. 21) Reset hotkey editor coverage: confirm whether web drops it.",
+   "family": "icon-buttons"
+  },
+  {
+   "name": "DisclosureButton",
+   "purpose": "Expand or collapse control on a parent task row, placed left of the subtask counter. Box 18px (not an IconButton size), icon 16px, weight 300. Kept separate from IconButton because it is a disclosure (aria-expanded) that rotates rather than a push action. Collapsed: always visible, not rotated. Expanded: rotated -90, transition-transform 100ms, visible on row hover (and on keyboard focus within the row). Hidden when the row has no visible children (for example while searching).",
+   "base": "Radix Collapsible trigger (shadcn Collapsible), rendered as a button; styled with IconButton's base button classes",
+   "variants": [],
+   "props": [
+    {
+     "name": "expanded",
+     "type": "boolean",
+     "description": "Whether the row's subtasks are shown. Rotates the chevron -90 with a 100ms transition when true."
+    },
+    {
+     "name": "onExpandedChange",
+     "type": "(expanded: boolean) => void",
+     "description": "Toggles the row in the collapsed set."
+    },
+    {
+     "name": "hidden",
+     "type": "boolean",
+     "description": "True when the row has no visible children; the control is not rendered."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Automatic: 'Expand' when collapsed, 'Collapse' when expanded."
+    }
+   ],
+   "states": [
+    "collapsed (not rotated, always visible)",
+    "expanded (rotated -90, visible on row hover and keyboard focus within the row)",
+    "hidden (no visible children)",
+    "focus-visible"
+   ],
+   "role": "button with aria-expanded",
+   "keyboard": "Tab focuses it. Enter and Space toggle it. Click and double-click stop propagation so the row does not open. It stops propagation itself; callers do not need to.",
+   "replaces": [
+    "Subtask expand chevron, button"
+   ],
+   "platform": "Same on both.",
+   "open": "1) The catalogue merges a bare chevron icon row at the same position; it is unconfirmed whether that icon is also a toggle. 2) The expanded chevron's keyboard reveal: this design shows it on focus within the row; confirm. 3) The 18px box is below the 24px target size; add hit-area padding and confirm.",
+   "family": "icon-buttons"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "WindowControl (design B widget, dropped)",
+   "reason": "Merged macOS traffic lights and Windows caption buttons and let invalid action pairs through (fullscreen with caption, maximize with traffic). Split into TrafficLight and CaptionButton, per the critique. All eight of its replaces are kept under those two widgets."
+  },
+  {
+   "variant": "IconToggle (design A widget, dropped as a widget)",
+   "reason": "Folded into IconButton as the pressed prop with pressedIcon and the label swap rules. Its single-value xl size axis is removed. Its two replaces, Split view toggle, toolbar and Preview panel toggle, toolbar, are kept under IconButton."
+  },
+  {
+   "variant": "BarButton wrapper (design B, dropped)",
+   "reason": "Folded into IconButton size xl; the catalogue has no separate bar-button widget."
+  },
+  {
+   "variant": "IconButton variant default (design A, dropped value)",
+   "reason": "Merged into ghost because no visual difference is recorded (critique). Open item 4 asks for a CSS check."
+  },
+  {
+   "variant": "IconButton variant plain (design A, dropped value)",
+   "reason": "Merged into ghost for the same reason. Open item 4 asks for a CSS check."
+  },
+  {
+   "variant": "IconButton variant onMedia (design A, moved)",
+   "reason": "Moved from the variant axis to the surface axis so context is not mixed with style values; the step compound becomes filled with size step on media."
+  },
+  {
+   "variant": "IconButton variant surface (design A, renamed)",
+   "reason": "Renamed filled, because surface is now the context axis and the name would clash."
+  },
+  {
+   "variant": "IconButton variant secondary (design B, renamed)",
+   "reason": "Renamed filled. Same surface-0 fill look."
+  },
+  {
+   "variant": "IconButton variant destructive (design B, renamed)",
+   "reason": "Renamed to the tone danger axis so the hover danger treatment is orthogonal to variant and applies to ghost, filled and media. Destructive's muted rest glyph is kept."
+  },
+  {
+   "variant": "IconButton pressed as the mouse-down state (design B, renamed)",
+   "reason": "The mouse-down state is named active; pressed now means aria-pressed only."
+  },
+  {
+   "variant": "IconButton expanded prop and chevron_down icon swap (design B, dropped)",
+   "reason": "The subtask chevron stays DisclosureButton, which rotates -90 with the 100ms transition. The rotation is a visible motion, so the expanded prop and icon swap are removed."
+  },
+  {
+   "variant": "IconButton single-value size axes on IconToggle and DisclosureButton (design A, dropped)",
+   "reason": "A one-value size axis adds nothing; IconToggle xl and DisclosureButton default are fixed."
+  },
+  {
+   "variant": "TrafficLight state axis (design A, replaced)",
+   "reason": "Replaced by the active boolean and an inert prop limited to minimize and fullscreen. Window focus and the static no-action attribute are different things, and inert was wrongly allowed on close."
+  },
+  {
+   "variant": "IconButton one-token fold of icon sizes (design B, dropped)",
+   "reason": "Per-use iconSize kept with the catalogue values (13 to 19px, and 26px for steps), because the measured glyphs change under B's fold (Open task alone 13 to 16, Dismiss toast 14 to 16, New list 18 to 16, Settings 19 to 18, lightbox bar 17 to 18)."
+  },
+  {
+   "variant": "IconButton sm mapping of the subtask chevron and sort footer (design B, dropped)",
+   "reason": "The chevron is measured at an 18px box with a 16px icon and moves to DisclosureButton. The sort and filter footer keeps its measured 25x19 footer size, not a 17.5px square."
+  },
+  {
+   "variant": "IconButton step pagers folded into xl (design B, dropped)",
+   "reason": "The lightbox pagers keep size step (39px circle, 26px icon). B's fold to 28px and an 18px glyph is a visible change and is not adopted."
+  },
+  {
+   "variant": "IconButton note delete white disc folded away (design B, dropped)",
+   "reason": "The note delete keeps the filled white surface and round shape. B's fold would change the look without an open item."
+  },
+  {
+   "variant": "IconButton lg radius 5.25px folded to 4.375px (design B, dropped)",
+   "reason": "Kept as the radius prop; New list passes 5.25px (catalogue line 197)."
+  },
+  {
+   "variant": "IconButton iconWeight fold (design B, dropped)",
+   "reason": "Weight prop kept, because 300, 400 and 500 are recorded (New task 400, Delete list tab 500)."
+  },
+  {
+   "variant": "IconButton purpose wording 'the one icon-only button in the library' (design A, reworded)",
+   "reason": "Toggles, the disclosure chevron and window lights are icon-only too. Reworded to the icon-only push-action button, with those kept as separate or folded widgets."
+  },
+  {
+   "variant": "IconButton keyboard rule that callers stop propagation for the subtask chevron (design A, dropped)",
+   "reason": "The chevron is DisclosureButton, which stops propagation itself. The two rules disagreed."
+  },
+  {
+   "variant": "IconButton rem icon units (design B, corrected)",
+   "reason": "Corrected to px. At the 14px root, 1.25rem is 17.5px and 1.125rem is 15.75px; the catalogue measures in px."
+  }
+ ]
+}

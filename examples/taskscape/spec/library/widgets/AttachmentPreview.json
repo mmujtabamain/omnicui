@@ -1,0 +1,86 @@
+{
+ "name": "AttachmentPreview",
+ "purpose": "Inline preview of one attachment inside the lightbox, chosen by its type. A failure switches to the EmptyState card.",
+ "base": "none (native img, video, audio, embed and pre)",
+ "variants": [
+  {
+   "axis": "kind",
+   "values": [
+    {
+     "value": "image",
+     "when": "img with alt set to the attachment name, fitted to the stage, rounded-control, object-contain, shadow-2xl, draggable false. About 480x300 (16:10)."
+    },
+    {
+     "value": "video",
+     "when": "Native video with controls and autoPlay, rounded-control, shadow-2xl."
+    },
+    {
+     "value": "audio",
+     "when": "Panel in the Card look (surface-2, rounded-panel, px-8 py-10) with a 40px glyph (weight 200) and native audio controls with autoPlay."
+    },
+    {
+     "value": "pdf",
+     "when": "Embedded viewer (type application/pdf), rounded-control, h-full w-full max-w-4xl."
+    },
+    {
+     "value": "text",
+     "when": "Selectable pre in surface-2, 12.5px, leading-5, max-w-3xl, overflow-auto, p-5. Capped at 262144 characters."
+    }
+   ],
+   "default": "image"
+  }
+ ],
+ "props": [
+  {
+   "name": "kind",
+   "type": "'image' | 'video' | 'audio' | 'pdf' | 'text'",
+   "description": "Preview type."
+  },
+  {
+   "name": "src",
+   "type": "string",
+   "description": "Attachment URL or path."
+  },
+  {
+   "name": "name",
+   "type": "string",
+   "description": "Alt text and label."
+  },
+  {
+   "name": "autoPlay",
+   "type": "boolean",
+   "description": "Default true for video and audio."
+  },
+  {
+   "name": "text",
+   "type": "string",
+   "description": "Text content (text kind)."
+  },
+  {
+   "name": "onError",
+   "type": "() => void",
+   "description": "Switches to the EmptyState card."
+  }
+ ],
+ "states": [
+  "loading (text shows Loading...)",
+  "loaded",
+  "playing (autoPlay)",
+  "error (fallback EmptyState card)"
+ ],
+ "role": "image: img; video and audio: native controls; pdf: embedded viewer; text: pre",
+ "keyboard": "Native media controls for video and audio (play, pause, seek). Text is selectable. PDF uses the browser or webview viewer's keys. Image has no action.",
+ "replaces": [
+  "lightbox image preview",
+  "lightbox video preview",
+  "lightbox audio panel",
+  "lightbox PDF preview",
+  "lightbox text preview"
+ ],
+ "platform": "PDF depends on a built-in PDF viewer in the browser or the desktop webview; desktop WebView support must be checked (open). Web media is served from the server; desktop media is read from disk.",
+ "open": "Merged: B's MediaPreview is this widget (B's text kind omission is corrected from A). B's error fallback names Card; A's EmptyState card is kept. The PDF embed has no onError in either design, so a failed PDF never reaches the fallback. Zoom and pan are not evidenced. Image radius not measured.",
+ "family": "structure",
+ "families": [
+  "structure"
+ ]
+}

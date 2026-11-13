@@ -1,0 +1,416 @@
+{
+ "kind": "rows",
+ "title": "Rows and settings",
+ "kinds": [
+  "list-row",
+  "task-row",
+  "setting-row",
+  "settings-group"
+ ],
+ "description": "Widgets for rows in task, project, note, trash and filter lists, plus the settings groups, setting rows and shortcut rows in the Taskscape settings screens. Built from the 38 rows in spec/inventory/rows-rows.json, grouped into 18 variants.",
+ "variants": [
+  {
+   "name": "task row, one line, depth 0",
+   "kind": "task-row",
+   "component": "TaskRow2 (depth 0)",
+   "description": "Top-level task that fits on one line. Covers the open and done states of the same row. Main-window rows are recorded as kind task-row; the draft-inspector copies are recorded as kind list-row. Merged on look and click behaviour; the draft copies also have a check that toggles done, which the main-window rows do not document (uncertain).",
+   "look": "Title font 500 14px/16.625px at x 47; row 32 px tall (draft boxes 0,175, 0,207 and 0,144 at 860x32). Open colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark. Done colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark with strikethrough.",
+   "states": [
+    "undone",
+    "done (strikethrough, grey text, checked in draft)",
+    "picked not recorded"
+   ],
+   "behaviour": "Clicking the title selects the task. Main window: feeds the PreviewPanel (TaskInspector). Draft-inspector: check toggles done, row body selects. Handlers for the main window are not in the inventory files.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector"
+   ],
+   "examples": [
+    "Book bike service",
+    "Cut a spare key",
+    "Post the parcel to Mum"
+   ]
+  },
+  {
+   "name": "task row, two lines with subtitle",
+   "kind": "task-row",
+   "component": "TaskRow2 (depth 0, with subtitle)",
+   "description": "Open top-level task with a secondary note line under the title. Draft copy is recorded as kind list-row.",
+   "look": "46 px tall (main-window tree box 0,98 860x46). Title font 500 14px/16.625px at x 47. Subtitle small secondary text, 12.5px in main window (about 12px estimated in draft).",
+   "states": [
+    "undone",
+    "two-line (secondary Label present)"
+   ],
+   "behaviour": "Clicking the title selects the task (TaskInspector). Draft: check toggles done, row body selects. Handlers not in the inventory files.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector"
+   ],
+   "examples": [
+    "Pick up prescription",
+    "Counter closes at 6"
+   ]
+  },
+  {
+   "name": "task row, parent with subtasks, expanded",
+   "kind": "task-row",
+   "component": "TaskRow2 (depth 0, with children)",
+   "description": "Top-level task that owns a subtask group and shows it expanded. Draft copy adds a subtask count badge.",
+   "look": "126 px tall (draft box 0,238 860x126). Title font 500 14px/16.625px at x 47. Open colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark.",
+   "states": [
+    "expanded (chevron rotated; -90deg in draft)",
+    "subtask count badge shown (draft only)"
+   ],
+   "behaviour": "Clicking the title selects the task (TaskInspector). Draft: chevron toggles the subtasks. Handler not read.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector"
+   ],
+   "examples": [
+    "Buy groceries for the week",
+    "1 / 3"
+   ]
+  },
+  {
+   "name": "subtask row, indented 24 px",
+   "kind": "task-row",
+   "component": "TaskRow2 (depth 1)",
+   "description": "Subtask shown under an expanded parent, indented one level. Open and completed subtasks share the variant. Main-window row is kind task-row; draft copies are kind list-row.",
+   "look": "Title font 500 14px/16.625px at x 71 (24 px indent). Open colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; completed colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark with strikethrough. Draft rows 32 px tall.",
+   "states": [
+    "open",
+    "completed (strikethrough, grey text)"
+   ],
+   "behaviour": "Clicking the title selects the task (TaskInspector). Draft: check toggles done, row body selects.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector"
+   ],
+   "examples": [
+    "Oat milk",
+    "Sourdough loaf",
+    "Apples"
+   ]
+  },
+  {
+   "name": "task row, split-view pane",
+   "kind": "task-row",
+   "component": "TaskRow2 (split right pane rows)",
+   "description": "Tasks of the second list shown in the right pane of split view. Kept separate from the main list because the checkbox sits at x 451 in this placement (uncertain whether that is a real layout difference).",
+   "look": "Title font 500 14px/16.625px. Open colour oklch(0.26 0.012 262); completed colour oklch(0.62 0.013 264). Checkbox at x 451.",
+   "states": [
+    "open",
+    "completed (struck through, one row)"
+   ],
+   "behaviour": "Clicking the title selects the task (TaskInspector). Handler not in the inventory files.",
+   "usedIn": [
+    "main-window"
+   ],
+   "examples": [
+    "Finish the novel on the nightstand",
+    "Read the long article on soil health",
+    "Return library books"
+   ]
+  },
+  {
+   "name": "task tree row, root (depth 0)",
+   "kind": "list-row",
+   "component": "TaskRow (memo) wrapper div with data-task-id",
+   "description": "Root task in the task-list tree. Rich row with multi-select, drag and drop, and a context menu.",
+   "look": "Title font 500 14px/16.625px, title boxes at x 47. Row min-h-9 (about 31-32 px); row with a note about 46 px. Right padding pr-space-6.",
+   "states": [
+    "default",
+    "hover (hover:bg-wash-1, visual only)",
+    "selected (bg-selection-1 when previewed or picked)",
+    "picked (blue tint in multi-selection)",
+    "completed (muted title, strikethrough)",
+    "dragging (opacity-40)",
+    "nest drop target (ring and selection background)",
+    "drop before or after line"
+   ],
+   "behaviour": "Click calls paneRowClick; Cmd/Ctrl toggles and Shift extends a range (TaskRow.tsx:328-333 forwards modifiers). Double-click toggles done. Right-click opens the row context menu. Drag moves the task or selection; drop zone by vertical position: top 30% before, bottom 30% after, middle nests.",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "Pick up prescription",
+    "Counter closes at 6",
+    "Post the parcel to Mum",
+    "Book bike service",
+    "Cut a spare key",
+    "Buy groceries for the week"
+   ]
+  },
+  {
+   "name": "task tree row, subtask (depth 1)",
+   "kind": "list-row",
+   "component": "TaskRow (memo) wrapper div, depth 1",
+   "description": "Subtask nested under its parent in the task-list tree. Same widget as the root row, indented.",
+   "look": "Left padding depth x 24px; title at x 71, font 500 14px/16.625px. Round select at x 44. Hairline dividers start at x about 70. Title boxes at [71,277,59,16], [71,308,106,16], [71,340,47,16].",
+   "states": [
+    "open",
+    "completed (muted, strikethrough)",
+    "hidden when the parent is collapsed (collapsed-all)",
+    "hidden in search (flat list)"
+   ],
+   "behaviour": "Same as root rows: click selects, Cmd/Ctrl toggles, Shift extends, double-click toggles done, right-click opens the row menu, drag nests or reorders.",
+   "usedIn": [
+    "task-list"
+   ],
+   "examples": [
+    "Oat milk",
+    "Sourdough loaf",
+    "Apples"
+   ]
+  },
+  {
+   "name": "subtask row, inspector with checkbox",
+   "kind": "list-row",
+   "component": "SubtaskRow (TaskInspector.tsx:37-70, recursive)",
+   "description": "Subtask shown in the task inspector's Subtasks section. Recurses into its own children.",
+   "look": "Row h-8, rounded-field, -mx-1.5, hover background wash-1. Paddingleft 6 at depth 0, 18 px per extra depth. Row box 305x28; rows spaced 28-30 px; title text at x 897. Font not recorded.",
+   "states": [
+    "undone",
+    "done (title line-through, muted tone)",
+    "hover (bg wash-1)"
+   ],
+   "behaviour": "Checkbox toggles done. Title button selects that task.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Draft headline options",
+    "Pick the hero image",
+    "Oat milk",
+    "Sourdough loaf",
+    "Apples"
+   ]
+  },
+  {
+   "name": "bulleted list item, note body",
+   "kind": "list-row",
+   "component": "Note body bulleted list (RichTextEditor, no separate component)",
+   "description": "Bullet item inside a note body. Not a standalone component; edited inside the note's RichTextEditor.",
+   "look": "Font 400 13.5px/17.5px, colour oklch(0.26 0.012 262). Bullets at about x 889 (from screenshot).",
+   "states": [
+    "read",
+    "focused (partly covered by the toolbar while editing)"
+   ],
+   "behaviour": "None on its own; the list belongs to the note body and is edited inside that RichTextEditor.",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "Fast capture",
+    "Works offline",
+    "Keyboard first"
+   ]
+  },
+  {
+   "name": "task name row, component not identified",
+   "kind": "list-row",
+   "component": "? (not identified in the inventory)",
+   "description": "Plain task-name row in the multi-select, filter and trash lists, where the component is not identified. Merged because look and inferred click behaviour match. Uncertain: may be one of the known TaskRow or TaskRow2 components.",
+   "look": "Font 500 14px/16.625px. Open colour oklch(0.26 0.012 262); done colour oklch(0.62 0.013 264) with strikethrough. Filter rows about 31-38 px apart with hairline separators; subtask rows at x 71, top-level at x 47.",
+   "states": [
+    "open",
+    "selected (shift and cmd-two, multi-inspector)",
+    "done (struck through)",
+    "default (trash, filter)"
+   ],
+   "behaviour": "Click opens or selects the task and opens the task inspector (inferred, not confirmed in the code).",
+   "usedIn": [
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "Pick up prescription",
+    "Book bike service",
+    "Cut a spare key",
+    "Buy groceries for the week",
+    "Sourdough loaf",
+    "Apples",
+    "Post the parcel to Mum",
+    "Oat milk"
+   ]
+  },
+  {
+   "name": "trash row, deleted root task",
+   "kind": "list-row",
+   "component": "div (plain), class group/trash",
+   "description": "Deleted root item in the trash list, with restore and delete actions shown on hover.",
+   "look": "Code: h-9 (36px), px-space-5, gap-space-5, rounded-field. Measured rows 31 px apart (y 131 and 162). Row 1 title about y 138-152; row 2 title about y 169-183.",
+   "states": [
+    "default (at rest)",
+    "hover (wash-1 background; the two icon buttons become visible)",
+    "selected/highlighted (row 2 in trash-selected)"
+   ],
+   "behaviour": "Hover reveals two icon buttons (restore and delete). Clicking the row body is not captured in either recording.",
+   "usedIn": [
+    "trash"
+   ],
+   "examples": [
+    "Call the printer about samples",
+    "Website · deleted 3d ago",
+    "Print the old flyer",
+    "Errands · deleted 5d ago"
+   ]
+  },
+  {
+   "name": "project row, switcher menu",
+   "kind": "list-row",
+   "component": "Project row (plain div, group)",
+   "description": "One project in the project switcher menu. Shows a check when selected.",
+   "look": "h-9, px-space-6, gap-space-4, flex, items-center, cursor default. Measured row pitch about 32 px (y 53 and 85). Selected check: Icon check, Label tone accent, 15x15 at 122,56, colour oklch(0.6 0.2 255).",
+   "states": [
+    "selected (check shown)",
+    "unselected",
+    "hover (wash-2 background, reveals edit and delete icons)"
+   ],
+   "behaviour": "Click calls selectProject(p.id) and closes the menu (ProjectSwitcher.tsx:57-60). No tooltip on the row.",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "Home",
+    "Spring launch"
+   ]
+  },
+  {
+   "name": "settings group card",
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "description": "Labelled container card that groups setting rows in the settings panes. Container only, not interactive.",
+   "look": "Appearance and Tasks: stacked bordered card with rounded corners (radius not recorded); Appearance box 172,58 991x162; Tasks box 172,238 991x77. Screenshots box 172,58 991x191 (border not recorded).",
+   "states": [
+    "idle (no dot)",
+    "changed (only when a change is pending; onDiscard set; not in recorded states)",
+    "search result (label 'General · Appearance', only the matching row shown)"
+   ],
+   "behaviour": "Container only. No action of its own.",
+   "usedIn": [
+    "settings-general",
+    "settings-capture"
+   ],
+   "examples": [
+    "Appearance",
+    "Tasks",
+    "Screenshots"
+   ]
+  },
+  {
+   "name": "shortcut scope group, labelled",
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "description": "Scope group that holds the shortcut rows for one scope (shortcutsPane.tsx:6-10). Only the Global group has a hint line.",
+   "look": "Global 991x97 at 172,93; Main window 991x1140 at 172,207; Capture bar 991x60 at 172,1365.",
+   "states": [
+    "default",
+    "scrolled (offset 676px)",
+    "recording"
+   ],
+   "behaviour": "Scrolls with the pane content. No action of its own.",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "Global (hint: work anywhere in macOS)",
+    "Main window",
+    "Capture bar"
+   ]
+  },
+  {
+   "name": "setting row, stacked control",
+   "kind": "setting-row",
+   "component": "SettingRow (layout stacked)",
+   "description": "Setting row with the control on its own full-width line under the title and description. Covers the Segmented, PathButton and button controls. Capture mode has no description but has a footnote.",
+   "look": "Stacked layout. Measured boxes: Capture mode 173,82 989x88; Saved to 173,169 989x79; Data folder 989x79; Restore defaults 989x86. Theme box not recorded.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Container only; the control inside does the action (Segmented for Theme and Capture mode, PathButton for Saved to and Data folder, a button for Restore defaults).",
+   "usedIn": [
+    "settings-general",
+    "settings-capture",
+    "settings-about"
+   ],
+   "examples": [
+    "Theme",
+    "Follow the system appearance, or pin one.",
+    "Capture mode",
+    "Saved to",
+    "Click to open the folder.",
+    "Data folder",
+    "Restore defaults"
+   ]
+  },
+  {
+   "name": "setting row, inline with toggle",
+   "kind": "setting-row",
+   "component": "SettingRow (layout inline)",
+   "description": "Setting row with title and description on the left and a Toggle on the right. Reduced motion shows a footnote when a motion force is active.",
+   "look": "Inline layout (default). Show completed tasks box 173,261 989x53.",
+   "states": [
+    "default",
+    "shown alone as the only search result (settings-search)"
+   ],
+   "behaviour": "Container only; the control is the Toggle.",
+   "usedIn": [
+    "settings-general"
+   ],
+   "examples": [
+    "Reduced motion",
+    "Cuts animations and transitions to the minimum.",
+    "Show completed tasks",
+    "Keep finished tasks in the list instead of hiding them."
+   ]
+  },
+  {
+   "name": "setting row, inline, app info",
+   "kind": "setting-row",
+   "component": "SettingRow (layout inline, value on right)",
+   "description": "Inline setting row that shows the app name and a short description, with the version on the right. No toggle or action.",
+   "look": "Inline layout, 989x54. Version shown on the right.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "usedIn": [
+    "settings-about"
+   ],
+   "examples": [
+    "Taskscape",
+    "A macOS task manager with a menu-bar capture bar."
+   ]
+  },
+  {
+   "name": "shortcut row, keycap",
+   "kind": "setting-row",
+   "component": "SettingRow with HotkeyControl",
+   "description": "One keyboard shortcut: label on the left and a keycap on the right. Its footnote slot shows an error line when a rebind fails (shortcutsPane.tsx:18-23). 34 rows in the default state.",
+   "look": "Row x 173 to 1162, height 36 (35 on some last rows); keycap right edge at x 1153; text vertically centred.",
+   "states": [
+    "default (34 rows)",
+    "scrolled (same 34 rows, offset 676px)",
+    "recording (New task recording)"
+   ],
+   "behaviour": "Clicking the keycap records a new key combination for that row. The row itself is not clickable (code takes precedence over the screenshot reading).",
+   "usedIn": [
+    "settings-shortcuts"
+   ],
+   "examples": [
+    "New task",
+    "Search",
+    "Toggle preview",
+    "Delete task",
+    "Switch to list 1",
+    "Undo",
+    "Redo",
+    "Capture bar",
+    "Screenshot capture",
+    "Clear capture draft"
+   ]
+  }
+ ]
+}

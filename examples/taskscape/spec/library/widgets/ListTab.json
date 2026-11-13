@@ -1,0 +1,98 @@
+{
+ "name": "ListTab",
+ "purpose": "Full interactive list tab in the desktop title bar: a list-selecting tab with hover, drop-target and drag feedback, inline rename, and a delete button on its right. Kept separate from ListTabLabel and SidebarTab because only this look has rename, drag, drop and delete, which the catalogue says behaves differently from the label-only variants. Merge record: from A ListTab (kept; selected axis removed and replaced by the selected prop; paneDot renamed paneMarker; rename split into start, commit and cancel). From B: the titlebar look of the merged Tab is folded in here. B's Tab merge is dropped because it put this draggable, deletable tab in the same widget as the vertical settings sidebar tab, overriding the catalogue rationale. Reorder and task drop are both always on for this look, with no boolean toggle, per the critique.",
+ "base": "Radix Tabs (TabsTrigger) for role, selection and roving focus. Rename, reorder, drop target and delete are custom.",
+ "variants": [],
+ "props": [
+  {
+   "name": "name",
+   "type": "string",
+   "description": "List name shown as text; replaced by the text input while editing."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Active list. Gives the bg-surface-2 fill with hairline edges (catalogue state 'focused (selected)'). Replaces A's selected variant axis, which duplicated this prop."
+  },
+  {
+   "name": "editing",
+   "type": "boolean",
+   "description": "Inline rename mode. The input is rendered beside the tab element, not inside it (ARIA: no interactive children of role=tab)."
+  },
+  {
+   "name": "dropTarget",
+   "type": "boolean",
+   "description": "A dragged task row or tab is over this tab; background bg-selection-1."
+  },
+  {
+   "name": "dragging",
+   "type": "boolean",
+   "description": "This tab is being dragged; opacity-40."
+  },
+  {
+   "name": "paneMarker",
+   "type": "boolean",
+   "description": "Split-view pane marker. Renamed from A's paneDot to match ListTabLabel. Conflict: A records it as possible only, in no recorded screen; the critique cites catalogue state 'split (pane dot shown)' on the full list tab. Followed the critique; see open."
+  },
+  {
+   "name": "onSelect",
+   "type": "() => void",
+   "description": "Click selects the list (calls selectList)."
+  },
+  {
+   "name": "onRenameStart",
+   "type": "() => void",
+   "description": "Double-click starts inline rename. Split from A's onRename per the critique."
+  },
+  {
+   "name": "onRenameCommit",
+   "type": "(name: string) => void",
+   "description": "Commits the typed name (Enter, or blur with a changed name). Added per the critique."
+  },
+  {
+   "name": "onRenameCancel",
+   "type": "() => void",
+   "description": "Cancels rename and restores the name (Escape). Added per the critique."
+  },
+  {
+   "name": "onDelete",
+   "type": "() => void",
+   "description": "Delete button on the right, and middle-click (aux button 1) on desktop. Kept as a separate prop from any close action."
+  },
+  {
+   "name": "onContextMenu",
+   "type": "(event) => void",
+   "description": "Right-click opens the list context menu (library menu on web)."
+  },
+  {
+   "name": "onDropTask",
+   "type": "(taskId: string) => void",
+   "description": "Dropping a task row on the tab moves that task to this list."
+  },
+  {
+   "name": "onReorder",
+   "type": "(fromIndex: number, toIndex: number) => void",
+   "description": "Dragging the tab reorders the tab strip."
+  }
+ ],
+ "states": [
+  "focused (selected): bg-surface-2 fill, hairline edges (Errands, Garden in the recorded states)",
+  "unfocused (not selected): no fill recorded",
+  "hover: bg-wash-1",
+  "drop target: bg-selection-1",
+  "dragging: opacity-40",
+  "editing: inline rename input",
+  "pane marker: split view (catalogue state 'split (pane dot shown)'; see open)"
+ ],
+ "role": "tab on the element that selects the list (proposed; the catalogue records no ARIA role for list tabs). The wrapper is a plain div. The delete button and rename input are siblings of the tab element, not children.",
+ "keyboard": "Enter or Space selects (proposed). Left and Right move between tabs with roving tabindex (proposed). The reference has no keyboard route to rename or delete (double-click, middle-click and the delete button are pointer-only). Proposed additions: F2 starts rename; the context-menu key or Shift+F10 opens the list menu with Rename and Delete items.",
+ "replaces": [
+  "list tab, full (title bar, with rename and delete)"
+ ],
+ "platform": "Desktop: title bar of the main window, the only recorded place. Web: no title bar, so a header mount point is needed if the web app keeps this strip. Middle-click delete must not be the only delete route on web: on Windows and Linux browsers the middle button starts autoscroll, so the delete button is the web route. Right-click uses the library context menu on web, not the browser menu.",
+ "open": "1) Keyboard routes for rename (F2 proposed) and delete (context menu proposed) are not in the catalogue. 2) Whether the delete button is always visible or appears on hover is not recorded. 3) ARIA role is proposed (tab); the catalogue records none. 4) Whether the web app keeps a tab strip at all. 5) Whether delete removes the list or only closes it is not recorded. 6) Destructive delete: hover and focus colour should use the danger token; the catalogue records no colour for it. 7) Activation mode (automatic or manual) is not recorded. 8) Pane marker conflict: A says paneDot is in no recorded screen; the critique cites catalogue state 'split (pane dot shown)'. Kept as paneMarker per the critique. 9) The catalogue gives '?' components on multi-inspector, filter-panel and trash for the list tab variants, so those rows are not mapped with certainty (see ListTabLabel).",
+ "family": "choice",
+ "families": [
+  "choice"
+ ]
+}

@@ -1,0 +1,209 @@
+{
+ "name": "Keycap",
+ "purpose": "A button that shows one shortcut binding as keycap glyphs in a settings row and, when activated, records the next key combo for that action. Idle and recording are one component on a mode axis because they share the box, radius, font and focus handling. The reset control is a sibling button beside the keycap, never nested inside it. Sizes at 1rem = 14px (reference from A): height 21px = 1.5rem; idle minimum width 49px = 3.5rem, content width otherwise; recording fixed width 101px = 7.214rem; radius 4.375px = 0.3125rem, which is the radius-sm token; label text 11px = 0.786rem on a 16.5px = 1.179rem line. MERGE NOTES: Sources are A (reference capture) and B (shadcn consolidation). A's 52px (3.714rem) idle width for three-glyph combos is dropped as a separate size and folded into content width above the 3.5rem minimum (B), because a 3px difference is not a distinction a user feels. B's label prop is dropped as a duplicate of actionName. B's binding prop is dropped as a duplicate of accel. B's custom boolean is dropped and folded into the binding variant value custom, which keeps A's visible reset-control distinction. B's onRecordStart and onRecordCancel are dropped as duplicates of A's onStartRecording and onCancel. A's onUnbind is folded into onCapture(null) (B), because the split is an API detail a user cannot see. The 'disabled' prop and state come from B only and are kept as library additions outside the reference. Folds in HotkeyControl: Keycap's mode axis (idle, recording) covers HotkeyControl's recording state. ShortcutRecorder's reserved list and scope become props. Its reset button becomes Keycap's optional reset prop, rendered beside the keycap, since Keycap's wrapper group already holds an optional reset control. Keycap's base (widgets.json ~line 2992) already composes HotkeyHint in idle. All three are role=button and record a new key combo on activation. Folds in ShortcutRecorder: Keycap's mode axis (idle, recording) covers HotkeyControl's recording state. ShortcutRecorder's reserved list and scope become props. Its reset button becomes Keycap's optional reset prop, rendered beside the keycap, since Keycap's wrapper group already holds an optional reset control. Keycap's base (widgets.json ~line 2992) already composes HotkeyHint in idle. All three are role=button and record a new key combo on activation.",
+ "base": "shadcn/ui Button pattern (secondary-style surface, no Radix primitive; A calls it a custom control on the library's button element), rendered as a native button. In idle mode it composes HotkeyHint (size sm, tone inherit) for the glyphs. In recording mode the HotkeyHint child is removed. The root is a group element (B) so the reset IconButton can sit beside the keycap without nesting interactive elements.",
+ "variants": [
+  {
+   "axis": "mode",
+   "values": [
+    {
+     "value": "idle",
+     "when": "Default. Muted fill: reference surface oklch(0.944 0.003 255) mapped to the muted token. Text: reference oklch(0.46 0.013 262) mapped to muted-foreground. Shows HotkeyHint sm, tone inherit, for the accel, or the unboundLabel text when accel is empty. Width is a 3.5rem (49px) minimum and content width otherwise."
+    },
+    {
+     "value": "recording",
+     "when": "Used only on the row being edited, and only one row at a time (the owning list enforces this). HotkeyHint and glyphs are removed and the prompt is shown. Fixed width 101px = 7.214rem. Reference text colour is accent blue oklch(0.6 0.2 255) with a thin blue outline (width not measured); this build replaces the blue with foreground text and the shared neutral focus ring outline pending open item 1. accel is ignored while recording."
+    }
+   ],
+   "default": "idle"
+  },
+  {
+   "axis": "binding",
+   "values": [
+    {
+     "value": "default",
+     "when": "Binding equals the built-in default. No reset control rendered."
+    },
+    {
+     "value": "custom",
+     "when": "Binding has been customised. The reset control (shared ghost IconButton, sibling of the keycap) is shown beside the keycap. Reset look, size and position are open (see open items)."
+    },
+    {
+     "value": "unbound",
+     "when": "accel is empty or null. Shows the unboundLabel text (default None) in muted text in place of glyphs."
+    }
+   ],
+   "default": "default"
+  },
+  {
+   "axis": "state",
+   "default": "idle",
+   "values": [
+    {
+     "value": "idle",
+     "when": "Shows the current combination as keycaps."
+    },
+    {
+     "value": "recording",
+     "when": "Waiting for a new combination. Prompt text replaces the keys (New task recording in the reference)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "mode",
+   "type": "'idle' | 'recording'",
+   "description": "Variant axis. Controlled by the owning list, which holds the editor state. Only one keycap in a list is in recording mode at a time."
+  },
+  {
+   "name": "binding",
+   "type": "'default' | 'custom' | 'unbound'",
+   "description": "Variant axis for binding content, derived by the owner: unbound when accel is empty or null, custom when the binding has been customised, otherwise default. Ignored in recording mode. Replaces B's custom boolean."
+  },
+  {
+   "name": "accel",
+   "type": "string | null",
+   "description": "Current accelerator for the row. Empty or null means unbound. Stored format is defined by the binding store and is not yet specified (see open items). Kept from A; B's binding prop is the same job and is dropped."
+  },
+  {
+   "name": "actionName",
+   "type": "string",
+   "description": "Name of the command the row binds. Used in the accessible name. Kept from A; B's label prop is the same job and is dropped."
+  },
+  {
+   "name": "prompt",
+   "type": "string",
+   "default": "Type shortcut…",
+   "description": "Text shown while recording. Reference English text; needs a localisation key (open item)."
+  },
+  {
+   "name": "unboundLabel",
+   "type": "string",
+   "default": "None",
+   "description": "Text shown when unbound. Reference English text; needs a localisation key (open item)."
+  },
+  {
+   "name": "onStartRecording",
+   "type": "() => void",
+   "description": "Called on activation when idle. The owning list then sets mode to recording. Kept from A; B's onRecordStart is a duplicate and is dropped."
+  },
+  {
+   "name": "onCapture",
+   "type": "(accel: string | null) => void",
+   "description": "Called with the captured combo while recording. Called with null when a bare Backspace or Delete unbinds the row (B consolidation of A's onCapture and onUnbind). A's onUnbind is folded into this callback."
+  },
+  {
+   "name": "onCancel",
+   "type": "() => void",
+   "description": "Called on Escape, or on a second activation of the recording keycap. Kept from A; B's onRecordCancel is a duplicate and is dropped."
+  },
+  {
+   "name": "onReset",
+   "type": "() => void",
+   "description": "Restores the default binding. Called from the reset control, which is rendered only when binding is custom."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Library addition from B, not in the reference capture. Disables activation and styling."
+  },
+  {
+   "name": "keys",
+   "type": "string[]",
+   "description": "Keycap glyphs for the current combination. A records a single string; string[] is kept as the glyph list (confirm)."
+  },
+  {
+   "name": "label",
+   "type": "string",
+   "description": "Name of the shortcut row, used in the accessible name."
+  },
+  {
+   "name": "recording",
+   "type": "boolean | undefined",
+   "description": "Controlled recording state. True while waiting for a new combination."
+  },
+  {
+   "name": "onRecordStart",
+   "type": "() => void",
+   "description": "Activation starts recording (click in the reference). A's onStartRecording."
+  },
+  {
+   "name": "onRecord",
+   "type": "(combo: string) => void",
+   "description": "A combination was captured."
+  },
+  {
+   "name": "isReserved",
+   "type": "(combo: string) => boolean",
+   "description": "Platform hook. Web supplies browser-reserved combinations; desktop supplies OS-reserved ones. A reserved combination is not captured and the row footnote shows the error."
+  },
+  {
+   "name": "combo",
+   "type": "string | null",
+   "description": "Stored combination shown as a Keycap; null shows None."
+  },
+  {
+   "name": "customised",
+   "type": "boolean",
+   "description": "When true, the reset control is shown."
+  },
+  {
+   "name": "reserved",
+   "type": "string[]",
+   "description": "Combos the platform owns and that cannot be bound. A recorded reserved combo is refused with a message. Added per critique (B lacked it)."
+  },
+  {
+   "name": "scope",
+   "type": "'app' | 'global'",
+   "description": "app works while the app window is focused (the only scope on web). global is a system-wide hotkey, desktop only."
+  }
+ ],
+ "states": [
+  "idle (default)",
+  "idle + custom (reset control shown beside the keycap)",
+  "idle + unbound (shows unboundLabel, muted text)",
+  "recording",
+  "hover (not in reference capture; B proposes foreground text on a slightly darker muted fill, values to confirm)",
+  "focus-visible (reference look not captured; uses the shared neutral focus ring token, not accent blue)",
+  "disabled (library addition from B)",
+  "idle",
+  "recording (keycap waits for a combination; reference: New task recording)",
+  "focus-visible",
+  "disabled (not in the catalogue; only if a parent sets it)",
+  "idle (keycap shows the combination)",
+  "recording (keycap shows a prompt; the reference shows this on the New task row only)",
+  "custom (reset control visible)",
+  "unbound (shows None)",
+  "reserved (refused with a message; proposed)"
+ ],
+ "role": "button for the keycap. Accessible name is actionName plus the spelled-out accel, for example 'Delete task, Backspace, press to change' (B example). aria-keyshortcuts carries accel (proposed, A). group for the wrapper that holds the optional reset control (B). While recording, the prompt is announced through a polite live region (proposed in A, also in B).",
+ "keyboard": "Tab moves focus to the keycap. The reset control is a separate Tab stop after the keycap and activates with Enter or Space (B). Enter or Space starts recording (native button activation; the reference documents only click, so this is proposed). While recording, keydowns are captured and default-prevented so app shortcuts do not fire, except that Tab is proposed (A) to pass through and cancel (open item; this is an exception to B's every-keydown rule). Escape cancels. Bare Backspace or Delete calls onCapture(null) to unbind. Any other combo calls onCapture(accel). Activating the keycap again (click, Enter or Space) cancels; the click cancel is from the reference at useHotkeyEditor.ts:121-124. Blur cancelling is not in the reference (proposed yes, open item).",
+ "replaces": [
+  "keycap, idle",
+  "keycap, recording",
+  "Shortcut row recorder control, click to record"
+ ],
+ "platform": "Same component on both platforms. Web: recording sees only keys the page receives. Browser-reserved combos (for example Ctrl/Cmd+T, W, N, and Cmd+N, Cmd+W, Cmd+T on macOS) never reach the page, so recording must reject or warn (proposed in A; B asks for block, warn or accept). Web has no global hotkeys, so recorded accelerators are in-app only. Capture bar, screenshot and clear-capture-draft rows do not exist on web (no capture window, no screenshots). Desktop: capture is in the focused main window. A global hotkey pressed while the main window is focused is captured as the new combo and does not fire (inferred in A, not stated in the catalogue). Desktop bindings may be global hotkeys (B); OS-reserved combos cannot be captured. If settings runs in its own window, Escape cancels recording and must not close that window (B).",
+ "open": "1) Recording colour and accent use: the reference draws recording text and outline in accent blue oklch(0.6 0.2 255). Accent blue is reserved for primary action and selection, so this build proposes foreground text plus the neutral ring (B). A token is needed before the library ships. Confirm. 2) Hover and focus-visible looks are not in the captured tree; proposed hover is foreground text on a slightly darker muted fill, and focus uses the shared neutral ring token (B). Values to confirm; keyboard use needs a visible focus state. 3) Reset control look, size and position are not captured. It is a shared ghost IconButton (B) and must be a sibling of the keycap, not nested. Confirm neutral ghost rather than danger, since restoring a default is not destructive (B). 4) The strings None and Type shortcut… are English reference text and need localisation keys. 5) Not in the reference: whether Tab is captured during recording (proposed: Tab passes through and cancels, A), whether blur cancels recording (proposed yes, A and B), and whether a bare modifier keydown (for example Shift alone) completes a recording (B; not stated in the catalogue). 6) Web: should a browser-reserved combo be blocked, warned about, or accepted when recorded (A proposes reject or warn, B asks). 7) Desktop: Escape inside a dialog or settings window must cancel recording only (B, to confirm). Whether a combo recorded here that is also a global hotkey (for example screenshot capture) is registered globally is not in the catalogue (A). 8) Stored accel format is defined by the binding store and is not yet specified (A, B).",
+ "family": "keys",
+ "families": [
+  "keys",
+  "rows",
+  "buttons"
+ ],
+ "folded": [
+  {
+   "name": "HotkeyControl",
+   "how": "Keycap's mode axis (idle, recording) covers HotkeyControl's recording state. ShortcutRecorder's reserved list and scope become props. Its reset button becomes Keycap's optional reset prop, rendered beside the keycap, since Keycap's wrapper group already holds an optional reset control. Keycap's base (widgets.json ~line 2992) already composes HotkeyHint in idle. All three are role=button and record a new key combo on activation.",
+   "role": "button with aria-label 'Change shortcut for <label>, currently <keys>' (A). While recording, a polite live region announces the request to press the new keys (proposed).",
+   "keyboard": "Tab reaches the keycap. Enter or Space starts recording (proposed; the reference only says clicking records). The next key combination is recorded. Escape cancels (proposed). A combination with no non-modifier key is rejected (proposed). Web: browser-reserved combinations are not captured and the row footnote shows the error. Desktop: a global hotkey pressed while the main window is focused is handled by the main window (decision); while recording, the recorder captures it first (inferred; uncertain)."
+  },
+  {
+   "name": "ShortcutRecorder",
+   "how": "Keycap's mode axis (idle, recording) covers HotkeyControl's recording state. ShortcutRecorder's reserved list and scope become props. Its reset button becomes Keycap's optional reset prop, rendered beside the keycap, since Keycap's wrapper group already holds an optional reset control. Keycap's base (widgets.json ~line 2992) already composes HotkeyHint in idle. All three are role=button and record a new key combo on activation.",
+   "role": "button for the recorder (accessible name includes the action and the current binding); the reset control is a separate button; recording state announced politely",
+   "keyboard": "Enter or Space starts recording. While recording, the next key combination is captured. Escape cancels the recording (proposed). The reset control is a separate Tab stop, reached after the recorder when shown."
+  }
+ ]
+}

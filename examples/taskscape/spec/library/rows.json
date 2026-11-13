@@ -1,0 +1,684 @@
+{
+ "widgets": [
+  {
+   "name": "TaskRow",
+   "purpose": "One task line in a flat list: the main-window preview list, the draft-inspector list, the split-view right pane, and the multi-inspector and filter name rows. Clicking the row body (the title in the reference) selects the task for the inspector. Due dates are dropped, so there is no due-date line. Tree rows are TaskTreeRow and inspector subtasks are SubtaskRow. Sources: A and B.",
+   "base": "none (custom row). The round check is the Radix Checkbox primitive styled round (shared round check control, to confirm). The disclosure is a plain button with aria-expanded.",
+   "variants": [
+    {
+     "axis": "depth",
+     "default": "0",
+     "values": [
+      {
+       "value": "0",
+       "when": "Top-level task. Title at x 47 in the reference (first indent level)."
+      },
+      {
+       "value": "1",
+       "when": "Subtask indented 24px (1.7143rem at 1rem=14px) under its parent. Title at x 71. Same widget, indented. Deeper levels add 24px each (B)."
+      }
+     ]
+    },
+    {
+     "axis": "lines",
+     "default": "one",
+     "values": [
+      {
+       "value": "one",
+       "when": "Title only. min-height 2.25rem (31.5px). Reference draft rows measured 32px."
+      },
+      {
+       "value": "two",
+       "when": "Title plus a secondary subtitle line, set when subtitle is passed. Subtitle 12.5px (main-window measurement). min-height 3.25rem (45.5px). Reference main-window two-line rows measured 46px."
+      }
+     ]
+    },
+    {
+     "axis": "disclosure",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No subtask group under this row."
+      },
+      {
+       "value": "chevron",
+       "when": "Chevron at the row start toggles the subtask group. Rotated -90deg when expanded (draft copy value; main-window rotation not recorded). The draft copy also shows subtaskCount."
+      }
+     ]
+    },
+    {
+     "axis": "check",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No round check. Main-window rows (the catalogue does not document one; uncertain)."
+      },
+      {
+       "value": "done",
+       "when": "Round check toggles done (draft-inspector copy). Checked fill uses the done-lamp token, never accent blue."
+      },
+      {
+       "value": "select",
+       "when": "Round check selects the row into the multi-selection (picked). Used in the split-view right pane (reference x 451; placement uncertain). Option or Alt does not change this check (A; see open)."
+      }
+     ]
+    },
+    {
+     "axis": "selection",
+     "default": "single",
+     "values": [
+      {
+       "value": "single",
+       "when": "Click selects this one task and feeds the TaskInspector / PreviewPanel."
+      },
+      {
+       "value": "multi",
+       "when": "Used by the multi-inspector and filter name rows. Platform-modifier click toggles a row in the selection; Shift-click extends a range. Shows the picked tint."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Task title, weight 500, 1rem (14px) with 1.1875rem (16.625px) line height. Muted with strikethrough when done."
+    },
+    {
+     "name": "subtitle",
+     "type": "string | undefined",
+     "description": "Secondary line. Its presence sets lines to two; absent for one."
+    },
+    {
+     "name": "depth",
+     "type": "number",
+     "description": "Nesting level, default 0. Indent 24px (1.7143rem) per level."
+    },
+    {
+     "name": "done",
+     "type": "boolean",
+     "description": "Muted text colour and strikethrough."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "The previewed task; selection background (selection-1). Replaces B's previewed state."
+    },
+    {
+     "name": "picked",
+     "type": "boolean",
+     "description": "Part of a multi-selection; blue tint. Only meaningful with selection multi."
+    },
+    {
+     "name": "expanded",
+     "type": "boolean | undefined",
+     "description": "Subtask group open. Only used with disclosure chevron."
+    },
+    {
+     "name": "onExpandedChange",
+     "type": "((expanded: boolean) => void) | undefined",
+     "description": "Chevron toggle, controlled. Only with disclosure chevron. Folds A's onToggleExpanded."
+    },
+    {
+     "name": "subtaskCount",
+     "type": "number | undefined",
+     "description": "Count badge for the subtask group. Shown only when provided; the reference shows it only in the draft copy."
+    },
+    {
+     "name": "checked",
+     "type": "boolean",
+     "description": "Round check state: done when check is done, picked when check is select."
+    },
+    {
+     "name": "onCheckedChange",
+     "type": "((next: boolean) => void) | undefined",
+     "description": "Round check click. The check is shown only when this is provided (A's onToggleDone rule, generalised to the check axis)."
+    },
+    {
+     "name": "onSelect",
+     "type": "(event: { platformModifier: boolean; shift: boolean }) => void",
+     "description": "Row-body click (title click in the reference). Carries modifier state: platform modifier toggles in multi, Shift extends a range."
+    }
+   ],
+   "states": [
+    "undone",
+    "done (muted title, strikethrough, check in done-lamp token)",
+    "previewed (selected; selection background)",
+    "picked (blue tint, multi selection only)",
+    "expanded or collapsed (disclosure chevron only)",
+    "hover (wash-1, visual only)",
+    "focus-visible (keyboard focus ring on the focused part)"
+   ],
+   "role": "option inside a listbox (the listbox gets aria-multiselectable when selection is multi). The round check is role checkbox with aria-checked, labelled 'Select {title}' (check select) or 'Mark {title} done' (check done). The disclosure is a button with aria-expanded. Conflict: B exposes listitem outside the tree; option kept as the more exact selection role.",
+   "keyboard": "Tab moves through the check, the disclosure and the title in that order (those present). Up and Down move between rows (roving focus). Space on the check toggles it. Enter or Space on the row selects it (single) or toggles it in the selection (multi). Shift+Up or Shift+Down extends a multi selection. Platform modifier (Control on Windows, Command on macOS) with Enter or Space toggles a row in multi. Left and Right on the disclosure collapse or expand the subtask group. Conflict: B proposes Enter to preview and ArrowRight/ArrowLeft to expand; A's keys are used.",
+   "replaces": [
+    "task row, one line, depth 0",
+    "task row, two lines with subtitle",
+    "task row, parent with subtasks, expanded",
+    "subtask row, indented 24 px",
+    "task row, split-view pane",
+    "task name row, component not identified"
+   ],
+   "platform": "Same on web and desktop for the row. Modifier: Control on Windows and Command on macOS on desktop; on the web Control on Windows and Linux, Command on macOS (A). Desktop Linux is not covered (open). Option or Alt does not change TaskRow (A). The draft-inspector copy is a separate window on desktop and an in-app dialog or sheet on the web; the row itself is identical.",
+   "open": "1) Main-window rows: is there a round check and multi selection? The catalogue records neither (uncertain); check none is assumed. 2) Main-window subtask count badge: draft only in the reference; main-window use undecided. 3) Split-pane check at x 451 may not be a real layout difference (A); B folds it into the host list layout. Kept as check select. Confirm its action (B says select; A records none) and whether Option applies (conflict: B says Option switches it; A says Option does not change TaskRow; A followed). 4) Catalogue state 'picked not recorded' is unexplained; mapped to the picked tint only. 5) Task name row component not identified; multi selection inferred from the Shift and command-click selection in the multi-inspector; check none assumed. 6) Done-lamp token value is not in the catalogue (the reference records only grey done text); accent blue is not allowed on the done check. 7) The check and disclosure are nested controls inside role option, an ARIA weak spot; confirm the listbox choice. 8) Draft-inspector checks toggle done with no modifier; confirm whether task-list checks follow the select/Option rule (decided only for TaskTreeRow). 9) Click target: A records title click; B folds to row body. Confirm whether the whole row body selects. 10) Subtitle size: 12.5px kept (main-window measurement). The draft's about-12px estimate is dropped as unmeasured and not user-felt (B). 11) Two-line height: 46px is 3.2857rem; 3.25rem (45.5px) used. B suggests snapping to the nearest library step; confirm. 12) Desktop Linux modifier not decided (B). 13) Dropped from A: the placement axis (split-pane check folded into check select, see 3). Dropped from B: the density axis (the 28px compact row moved to SubtaskRow), the done axis (duplicates the done prop), the expansion axis (folded into disclosure plus expanded), the selection none/previewed/picked axis (folded into selection single/multi plus selected/picked), and draggable, dragging, dropIndicator, doubleClickToggles and onContextMenu (moved to TaskTreeRow).",
+   "family": "rows"
+  },
+  {
+   "name": "TaskTreeRow",
+   "purpose": "One row of the task-list tree, for root tasks and nested subtasks. Kept separate from TaskRow because its tree interaction is felt by users: a round select check (Option on macOS, Alt on Windows and web switches it to done), platform-modifier and Shift multi-select, drag to reorder or nest, double-click to toggle done, a right-click row menu, and treeitem semantics. B folded this into TaskRow using draggable and doubleClickToggles props; kept here because these behaviours differ from the flat list. Sources: A and B.",
+   "base": "none (custom tree item). The round check is the shared RoundCheck control (Radix Checkbox styled round). The row menu is a Radix ContextMenu.",
+   "variants": [
+    {
+     "axis": "depth",
+     "default": "0",
+     "values": [
+      {
+       "value": "0",
+       "when": "Root task, no indent. Title at x 47. The row menu opens on right-click. Root check position not recorded."
+      },
+      {
+       "value": "1",
+       "when": "Subtask nested under its parent, indented 24px (1.7143rem); title at x 71; round select check at x 44. Same widget, indented. Deeper levels add 24px each (B)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Task title, weight 500, 1rem (14px) with 1.1875rem line height."
+    },
+    {
+     "name": "depth",
+     "type": "number",
+     "description": "Nesting level: 0 for a root task, 1 for a subtask. Drives indent and aria-level."
+    },
+    {
+     "name": "done",
+     "type": "boolean",
+     "description": "Muted title with strikethrough. The check uses the done-lamp token."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Previewed or picked; selection background."
+    },
+    {
+     "name": "picked",
+     "type": "boolean",
+     "description": "Part of the multi selection (blue tint)."
+    },
+    {
+     "name": "dragging",
+     "type": "boolean",
+     "description": "Row is being dragged; drawn at 40% opacity (reference opacity-40)."
+    },
+    {
+     "name": "dropIndicator",
+     "type": "'none' | 'before' | 'after' | 'nest'",
+     "description": "Drop feedback by vertical zone: top 30% is before, bottom 30% is after, the middle is nest. B names the middle zone inside; nest is kept (matches A's states and onDrop)."
+    },
+    {
+     "name": "checkAction",
+     "type": "'select' | 'done'",
+     "description": "Action of the round check. 'select' by default; 'done' while Option (macOS) or Alt (Windows and web) is held. Set by the parent from the held key (decided)."
+    },
+    {
+     "name": "draggable",
+     "type": "boolean",
+     "description": "Whether the row can be dragged (true for tree rows)."
+    },
+    {
+     "name": "onActivate",
+     "type": "(event: { platformModifier: boolean; shift: boolean }) => void",
+     "description": "Row click. Forwards modifiers (TaskRow.tsx:328-333): platform modifier toggles, Shift extends a range."
+    },
+    {
+     "name": "onCheck",
+     "type": "(action: 'select' | 'done') => void",
+     "description": "Round check click. Acts according to checkAction."
+    },
+    {
+     "name": "onToggleDone",
+     "type": "() => void",
+     "description": "Double-click toggles done."
+    },
+    {
+     "name": "onContextMenu",
+     "type": "(event) => void",
+     "description": "Opens the row menu on right-click. The web must call preventDefault so the browser menu does not show (B)."
+    },
+    {
+     "name": "onDrop",
+     "type": "(position: 'before' | 'after' | 'nest') => void",
+     "description": "Drop onto this row at the computed zone."
+    }
+   ],
+   "states": [
+    "default",
+    "hover (wash-1 background, visual only)",
+    "selected (selection-1 background when previewed or picked)",
+    "picked (blue tint in a multi selection)",
+    "done (muted title, strikethrough)",
+    "dragging (40% opacity)",
+    "nest drop target (ring plus selection background)",
+    "drop before or after (line on the top or bottom edge)",
+    "focus-visible (proposed)",
+    "not rendered when the parent is collapsed (collapse-all) or in a flat search list (visibility rules, not row states)"
+   ],
+   "role": "treeitem inside a tree (the tree gets aria-multiselectable when selection is multi). aria-level = depth + 1, aria-selected from selected, aria-expanded when the row has children (B). The round check is role checkbox with aria-checked, labelled 'Select {title}' when checkAction is select or 'Mark {title} done' when it is done. Conflict: A uses generic 'Select task' and 'Mark done'; per-title names are kept (B) so each row name is unique.",
+   "keyboard": "Up and Down move focus between rows. Space toggles the focused row in the selection. Enter selects the focused row (proposed; not in the reference). Platform modifier with Space or click toggles; Shift with click or Shift+Up/Down extends the range. Option (macOS) or Alt (Windows, web) with the check switches it to done; a keyboard equivalent for this check mode is not decided. The context-menu key or Shift+F10 opens the row menu. ArrowRight and ArrowLeft expand and collapse the subtask group (proposed, tree convention, from B). Double-click to toggle done has no keyboard path in the reference; B proposes Ctrl/Cmd+Enter (proposed). Drag and drop has no keyboard path.",
+   "replaces": [
+    "task tree row, root (depth 0)",
+    "task tree row, subtask (depth 1)"
+   ],
+   "platform": "Desktop: platform modifier is Control on Windows and Command on macOS; Option on macOS and Alt on Windows switch the round check; native drag and native context menu. Web: Control on Windows and Linux, Command on macOS; Alt switches the check (decided for the web). Browser shortcuts take precedence, so the row must not bind keys the browser reserves. HTML drag with the same three drop zones. The web suppresses the browser context menu and uses the library menu. Desktop Linux is not covered (open).",
+   "open": "1) The keyboard equivalent for the Option or Alt check switch, and for double-click to toggle done, is not in the reference (B proposes Ctrl/Cmd+Enter). 2) Drag and drop has no keyboard alternative (A and B agree). 3) Root check position not recorded; only the subtask position x 44 is. 4) Confirm the round check is the shared RoundCheck from another family and uses the done-lamp token in the done state, never accent blue. 5) macOS web: the physical key is Option, while the decision says Alt on the web; confirm the label shown in the UI. 6) Tree expansion props are not recorded in A (collapse-all is a visibility rule). Confirm whether the tree needs a disclosure. 7) Desktop Linux modifier not decided (B). 8) Kept separate from TaskRow (see purpose). If the team merges them, draggable, dropIndicator, checkAction, doubleClickToggles and onContextMenu become TaskRow axes or props.",
+   "family": "rows"
+  },
+  {
+   "name": "SubtaskRow",
+   "purpose": "A subtask in the task inspector's Subtasks section. It recurses into its own children, indented per level. The checkbox toggles done; the title button selects that subtask. Kept separate from TaskRow and TaskTreeRow because the check is a square checkbox, the title is a separate button, and the row is a compact 28px. Sources: A. B folded this into TaskRow with a round check.",
+   "base": "Radix Checkbox (shadcn Checkbox) for the checkbox.",
+   "variants": [],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Subtask title, muted with strikethrough when done."
+    },
+    {
+     "name": "done",
+     "type": "boolean",
+     "description": "Done state (line-through, muted tone)."
+    },
+    {
+     "name": "depth",
+     "type": "number",
+     "description": "Nesting level. Left padding 6px (0.4286rem) at depth 0; each further level adds 18px (1.2857rem)."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Nested SubtaskRow items for the next level."
+    },
+    {
+     "name": "onToggleDone",
+     "type": "(done: boolean) => void",
+     "description": "Checkbox click."
+    },
+    {
+     "name": "onSelectTask",
+     "type": "() => void",
+     "description": "Title button click; selects that subtask task."
+    }
+   ],
+   "states": [
+    "undone",
+    "done (title line-through, muted)",
+    "hover (wash-1 background on the rounded field)",
+    "focus-visible"
+   ],
+   "role": "listitem containing a checkbox (aria-checked) and a title button, with a nested list for children.",
+   "keyboard": "Tab moves to the checkbox, then the title button. Space toggles the checkbox. Enter on the title button selects the subtask.",
+   "replaces": [
+    "subtask row, inspector with checkbox"
+   ],
+   "platform": "Same on web and desktop. Desktop: the task inspector may be a separate window (a container decision); the row is identical on both platforms.",
+   "open": "1) The row is 28px tall (h-8 = 2rem at 1rem=14px). B's compact density is this fixed height. The font is not recorded; the 500 weight of the other rows is assumed. 2) Conflict: A records a square checkbox for the subtask check; B puts inspector subtasks on the round check. A kept (the checkbox is recorded on purpose); confirm. 3) Recursion depth limit not recorded. 4) Conflict on indent: A's 6px base plus 18px per further level is kept for the inspector; B folded it into 24px per level. Confirm the inspector indent against the reference.",
+   "family": "rows"
+  },
+  {
+   "name": "ListRow",
+   "purpose": "A plain row with a title, an optional meta line, an optional check for the selected item, and trailing actions that appear on hover or focus. Covers the trash list rows and the project switcher rows. Folded from A's TrashRow and ProjectRow (see notWidgets): the look is the same, and the one real difference, the host (a plain list or a DropdownMenu), is the host axis. Sources: A and B.",
+   "base": "Radix DropdownMenu.RadioItem when host is menu (shadcn DropdownMenu; role menuitemradio, Radix check indicator). None when host is list.",
+   "variants": [
+    {
+     "axis": "host",
+     "default": "list",
+     "values": [
+      {
+       "value": "list",
+       "when": "Plain list row in the trash list. Role listitem."
+      },
+      {
+       "value": "menu",
+       "when": "Project switcher row inside a DropdownMenu. Choosing it switches the active project and closes the menu. Role menuitemradio."
+      }
+     ]
+    },
+    {
+     "axis": "indicator",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No check (trash rows)."
+      },
+      {
+       "value": "check",
+       "when": "Check shown when selected, in the accent tone (accent marks selection). Project switcher rows."
+      }
+     ]
+    },
+    {
+     "axis": "actions",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "No trailing actions."
+      },
+      {
+       "value": "hover",
+       "when": "Trailing icon buttons appear on hover and on focus-within. Trash rows: restore (neutral) and delete (danger). Project rows: edit and delete (delete uses danger)."
+      }
+     ]
+    },
+    {
+     "axis": "selection",
+     "default": "none",
+     "values": [
+      {
+       "value": "none",
+       "when": "Not selected."
+      },
+      {
+       "value": "selected",
+       "when": "Selection background (selection-1). The highlighted trash row (A's highlighted) and the selected project."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Row title. Required. Replaces A's name on ProjectRow and B's title."
+    },
+    {
+     "name": "meta",
+     "type": "string | undefined",
+     "description": "Secondary line. Trash examples read 'Website · deleted 3d ago' (inferred to be a meta line; uncertain)."
+    },
+    {
+     "name": "selected",
+     "type": "boolean",
+     "description": "Selection background. With indicator check, shows the check. Replaces A's highlighted on trash rows."
+    },
+    {
+     "name": "onActivate",
+     "type": "(() => void) | undefined",
+     "description": "Row click. Project rows select the project and close the menu (ProjectSwitcher.tsx:57-60). The trash row click is not captured in the reference."
+    },
+    {
+     "name": "actions",
+     "type": "ReactNode | undefined",
+     "description": "Trailing IconButtons. Trash: 'Restore <title>' and 'Delete <title>' labels (A). Delete must be the danger variant. Replaces A's onRestore and onDelete on TrashRow and onEdit and onDelete on ProjectRow."
+    }
+   ],
+   "states": [
+    "default",
+    "hover (wash-1; project wash-2 folded into it)",
+    "selected",
+    "selected with check (indicator check)",
+    "actions revealed (hover or focus-within)",
+    "focus-visible"
+   ],
+   "role": "listitem in a list (host list). menuitemradio with aria-checked when host is menu. Action buttons keep their own button role.",
+   "keyboard": "Enter or Space activates the row. Tab moves into the row actions. Actions must show on focus-within because keyboard users cannot hover (proposed). In host menu, the Radix menu keyboard applies: Up and Down move through items; Enter or Space selects the item and closes the menu; Escape closes the menu without changing the project.",
+   "replaces": [
+    "trash row, deleted root task",
+    "project row, switcher menu"
+   ],
+   "platform": "Desktop: local data; projects and trash are local; the project switcher sits in the window title bar; hover reveal with the mouse. Web: projects and trash are per user on the server; the switcher sits in the app header; the project list may include projects shared with the user (open); touch has no hover, so actions need another reveal path (open). Permanent delete from trash probably needs confirmation: a separate window without backdrop on desktop, a modal with backdrop on web. That confirmation sits outside this widget.",
+   "open": "1) Trash row body click is not captured in either design (uncertain). 2) Does delete from trash remove permanently or move to another state? Not recorded. 3) Trash meta line versus title grouping: 'Website · deleted 3d ago' is treated as the meta line (inferred). 4) Padding differs: trash px-space-5 with gap-space-5, project px-space-6 with gap-space-4. Folded into one ListRow token; confirm. The project radius is not recorded; the trash rounded-field is used. 5) Row height: the trash note says h-9 (36px), but at 1rem=14px h-9 is 2.25rem (31.5px), matching the measured 31px pitch. B treats 36px as wrong and uses 31.5px; confirm. Project row is 2.25rem (reference pitch 32px). 6) The project check icon is 15x15 and is folded to the library standard icon size (1rem=14px); the library size is not recorded; confirm. 7) Project edit and delete icons are nested interactive controls inside a menu item, which the menu pattern does not support. Move them to a trailing button outside the item or to an item context menu. 8) Project delete uses the danger colour; project edit and delete labels are not recorded. 9) No tooltip on the project row (reference). 10) Hover-only reveal is unreachable by keyboard unless focus-within also reveals; the touch reveal path is undecided. 11) Web multi-user: trash per user or per project is undecided. 12) Desktop-only check: none (B).",
+   "family": "rows"
+  },
+  {
+   "name": "SettingsGroup",
+   "purpose": "A labelled bordered container that groups setting rows in a settings pane, or the shortcut rows of one scope in the Shortcuts pane. It is a container only; its one action is discarding a pending change. Sources: A and B.",
+   "base": "shadcn Card (structure only).",
+   "variants": [
+    {
+     "axis": "state",
+     "default": "idle",
+     "values": [
+      {
+       "value": "idle",
+       "when": "No pending change. No dot, no discard action."
+      },
+      {
+       "value": "changed",
+       "when": "A change is pending and onDiscard is provided. Shows the changed dot and the discard action. Not a recorded catalogue state; the catalogue lists it as onDiscard-driven (B)."
+      }
+     ]
+    },
+    {
+     "axis": "context",
+     "default": "page",
+     "values": [
+      {
+       "value": "page",
+       "when": "A settings pane group or a shortcut scope group."
+      },
+      {
+       "value": "search",
+       "when": "A search result. The label becomes the breadcrumb path (for example 'General · Appearance') and only matching child rows render."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Group heading (Appearance, Tasks, Screenshots, Global, Main window, Capture bar)."
+    },
+    {
+     "name": "breadcrumb",
+     "type": "string | undefined",
+     "description": "Search-result path, for example 'General · Appearance'. Shown only in the search context (B's separate prop)."
+    },
+    {
+     "name": "hint",
+     "type": "string | undefined",
+     "description": "Secondary line. Only the Global group has one in the reference: 'work anywhere in macOS'."
+    },
+    {
+     "name": "changed",
+     "type": "boolean",
+     "description": "Shows the change dot when a change is pending."
+    },
+    {
+     "name": "onDiscard",
+     "type": "(() => void) | undefined",
+     "description": "Discard action, shown when changed is true."
+    },
+    {
+     "name": "children",
+     "type": "ReactNode",
+     "description": "Setting rows or shortcut rows."
+    }
+   ],
+   "states": [
+    "idle (no dot)",
+    "changed (dot and discard action; only while a change is pending and onDiscard is set)",
+    "search result (breadcrumb label, matching child rows only)"
+   ],
+   "role": "group, labelled by the label heading (aria-labelledby). The discard action is a button.",
+   "keyboard": "The card is not focusable. The discard button is reachable by Tab.",
+   "replaces": [
+    "settings group card",
+    "shortcut scope group, labelled"
+   ],
+   "platform": "Same widget on both. Web drops the Screenshots group (no screen capture), the Capture bar group (no capture window) and the Global group (no global hotkeys). Desktop keeps them where macOS or Windows offer them. The Global hint 'work anywhere in macOS' is macOS wording; desktop on Windows needs its own hint text. Appearance and Tasks groups are kept on both.",
+   "open": "1) The card radius and border are not recorded; library radius and border tokens are used (uncertain). 2) Where discard sits (in the group or the pane) is not decided. 3) Whether the changed dot is per group or per pane (B). 4) The format of the search-result path on each platform is not decided. 5) Settings screens: a separate window on desktop or a page on web (decision: new windows wherever a desktop app would open one). 6) Dropped states: 'scrolled' (pane scroll, not a group state) and 'recording' (belongs to HotkeyControl).",
+   "family": "rows"
+  },
+  {
+   "name": "SettingRow",
+   "purpose": "A settings line: a title, an optional description, a control slot, an optional footnote, and an optional read-only value. Covers the stacked control rows (Theme, Capture mode, Saved to, Data folder, Restore defaults), the inline toggle rows (Show completed tasks, Reduced motion), the read-only app info line (version on the right), and the shortcut rows (the keycap is HotkeyControl in the control slot; a rebind error shows in the footnote). Folded from A's ShortcutRow. Sources: A and B.",
+   "base": "none (layout only). The control slot takes Radix Switch for toggles, the library Segmented, PathButton and Button, and HotkeyControl.",
+   "variants": [
+    {
+     "axis": "layout",
+     "default": "inline",
+     "values": [
+      {
+       "value": "inline",
+       "when": "Title and description on the left; control or read-only value on the right. Used by Show completed tasks and Reduced motion (Toggle), the app info row (value, no control), and the shortcut rows (HotkeyControl)."
+      },
+      {
+       "value": "stacked",
+       "when": "Control on its own full-width line under the title and description. Used by Theme (Segmented), Capture mode (Segmented, no description, has a footnote), Saved to and Data folder (PathButton), and Restore defaults (Button)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "title",
+     "type": "string",
+     "description": "Setting name (for example 'Theme', 'Show completed tasks', 'Taskscape'). The control is labelled by it."
+    },
+    {
+     "name": "description",
+     "type": "string | undefined",
+     "description": "Supporting text. Absent on Capture mode."
+    },
+    {
+     "name": "footnote",
+     "type": "ReactNode | undefined",
+     "description": "Note under the row: the Reduced motion force note, the Capture mode note, or the rebind error line for shortcut rows (shortcutsPane.tsx:18-23)."
+    },
+    {
+     "name": "control",
+     "type": "ReactNode | undefined",
+     "description": "Radix Switch (Toggle), Segmented, PathButton, Button or HotkeyControl."
+    },
+    {
+     "name": "value",
+     "type": "string | undefined",
+     "description": "Read-only trailing text, used for the app version (B's read-only value prop)."
+    }
+   ],
+   "states": [
+    "default",
+    "footnote shown (its condition is met)",
+    "search-only (shown alone as the only search result)",
+    "control recording (child HotkeyControl)"
+   ],
+   "role": "group labelled by the title when a control is present; no role for read-only rows. The footnote is linked by aria-describedby. The rebind error role is open (alert or polite live region).",
+   "keyboard": "The row itself is not focusable. Focus goes to the control in DOM order.",
+   "replaces": [
+    "setting row, stacked control",
+    "setting row, inline with toggle",
+    "setting row, inline, app info",
+    "shortcut row, keycap"
+   ],
+   "platform": "Same on web and desktop: Theme, Show completed tasks, Reduced motion, Restore defaults. Desktop only: Capture mode, Saved to and Data folder (PathButton opens a local folder), and the capture shortcut rows (Screenshot capture, Capture bar, Clear capture draft). Web drops these (no capture, no local folder; files are on the server). App info copy: the reference reads 'A macOS task manager with a menu-bar capture bar.'; the web copy must not mention the menu bar capture, and Windows desktop needs its own copy.",
+   "open": "1) Restore defaults: the control variant is not recorded. If it resets all settings, should it use the danger colour (destructive actions use danger)? 2) The stacked and inline layouts are a visible difference, so both are kept as the layout axis. 3) The web replacement for the Data folder row is not decided. 4) The rebind error footnote's live-region role is open (alert or polite). 5) Shortcut row height: 36px measured (35px on some last rows). 36px is about 2.5714rem at 1rem=14px; A's 'about 2.5rem' equals 35px. B folds this to min-height and treats the 1px difference as measurement error. Confirm min-height versus fixed 36px. 6) The error line colour is not decided; danger is decided for destructive actions only (A). 7) Web default bindings must not collide with browser shortcuts; default key values are not in the catalogue (B). 8) Dropped from A's ShortcutRow: the 'scrolled' state (pane state, not a row state).",
+   "family": "rows"
+  },
+  {
+   "name": "HotkeyControl",
+   "purpose": "The keycap button in a shortcut row. It shows the current combination as keycaps and, when activated, records a new combination. It sits in SettingRow's control slot; rebind errors show in the SettingRow footnote. Replaces the keycap part of A's ShortcutRow (the label-left, keycap-right layout is the inline SettingRow). Sources: A and B.",
+   "base": "none (button; keycap glyphs styled as a shadcn Kbd would be).",
+   "variants": [
+    {
+     "axis": "state",
+     "default": "idle",
+     "values": [
+      {
+       "value": "idle",
+       "when": "Shows the current combination as keycaps."
+      },
+      {
+       "value": "recording",
+       "when": "Waiting for a new combination. Prompt text replaces the keys (New task recording in the reference)."
+      }
+     ]
+    }
+   ],
+   "props": [
+    {
+     "name": "keys",
+     "type": "string[]",
+     "description": "Keycap glyphs for the current combination. A records a single string; string[] is kept as the glyph list (confirm)."
+    },
+    {
+     "name": "label",
+     "type": "string",
+     "description": "Name of the shortcut row, used in the accessible name."
+    },
+    {
+     "name": "recording",
+     "type": "boolean | undefined",
+     "description": "Controlled recording state. True while waiting for a new combination."
+    },
+    {
+     "name": "onRecordStart",
+     "type": "() => void",
+     "description": "Activation starts recording (click in the reference). A's onStartRecording."
+    },
+    {
+     "name": "onRecord",
+     "type": "(combo: string) => void",
+     "description": "A combination was captured."
+    },
+    {
+     "name": "onCancel",
+     "type": "(() => void) | undefined",
+     "description": "Ends recording without changing the key. Escape is proposed; not in the reference."
+    },
+    {
+     "name": "isReserved",
+     "type": "(combo: string) => boolean",
+     "description": "Platform hook. Web supplies browser-reserved combinations; desktop supplies OS-reserved ones. A reserved combination is not captured and the row footnote shows the error."
+    }
+   ],
+   "states": [
+    "idle",
+    "recording (keycap waits for a combination; reference: New task recording)",
+    "focus-visible",
+    "disabled (not in the catalogue; only if a parent sets it)"
+   ],
+   "role": "button with aria-label 'Change shortcut for <label>, currently <keys>' (A). While recording, a polite live region announces the request to press the new keys (proposed).",
+   "keyboard": "Tab reaches the keycap. Enter or Space starts recording (proposed; the reference only says clicking records). The next key combination is recorded. Escape cancels (proposed). A combination with no non-modifier key is rejected (proposed). Web: browser-reserved combinations are not captured and the row footnote shows the error. Desktop: a global hotkey pressed while the main window is focused is handled by the main window (decision); while recording, the recorder captures it first (inferred; uncertain).",
+   "replaces": [],
+   "platform": "Desktop: records global hotkeys (Capture bar, Screenshot capture) as well as in-app combinations; OS-reserved combinations may conflict. Default shortcut row count on desktop is 34. Web: local key handling only; no global hotkeys; browser-reserved combinations are rejected through isReserved. Modifier glyphs follow the OS: Command on macOS, Control on Windows (inferred; uncertain).",
+   "open": "1) The scope of each row (in-app or global) is not in the catalogue. Capture bar and Screenshot capture are global by name; Clear capture draft is uncertain (A). 2) Keyboard start and cancel keys (Enter or Space to start, Escape to cancel) are proposals. 3) Behaviour when a web-reserved combination is pressed: error footnote or silent reject (B). 4) Whether Alt on Windows conflicts with a default binding (B). 5) Modifier glyph display on web on macOS: Command or Control (B). 6) Keycap display format (symbols or words) is not recorded (A). 7) Keys type: A records a string, B a string array; string[] kept, confirm. 8) Combinations with no non-modifier key are rejected (proposed).",
+   "family": "rows"
+  }
+ ],
+ "notWidgets": [
+  {
+   "variant": "bulleted list item, note body",
+   "reason": "Recorded by both A and B: not a library widget. It is a list node inside the note body's RichTextEditor, edited there. Its 400 weight and 13.5px / 17.5px line (about 0.964rem at 1rem=14px) belong to the editor's text tokens, not the row widgets."
+  },
+  {
+   "variant": "TaskRow2 and TaskRow (memo)",
+   "reason": "Dropped as duplicates of TaskRow. The catalogue says they merge on look and click behaviour, so they are one component (B)."
+  },
+  {
+   "variant": "TrashRow",
+   "reason": "Dropped as a widget (A) and folded into ListRow with host list, actions hover, meta and selected. Its replaces entry 'trash row, deleted root task' is kept under ListRow. Props: highlighted becomes selected; onRestore and onDelete become the actions slot with 'Restore <title>' and 'Delete <title>' labels."
+  },
+  {
+   "variant": "ProjectRow",
+   "reason": "Dropped as a widget (A) and folded into ListRow with host menu (menuitemradio, check indicator, closes on select). Its replaces entry 'project row, switcher menu' is kept under ListRow. Props: name becomes title; onSelect becomes onActivate; onEdit and onDelete move to the actions slot."
+  },
+  {
+   "variant": "ShortcutRow",
+   "reason": "Dropped as a widget (A) and folded into SettingRow (inline layout, error as footnote) with HotkeyControl in the control slot. Its replaces entry 'shortcut row, keycap' is kept under SettingRow. Props: keys, recording, onStartRecording (now onRecordStart), onRecord, onCancel move to HotkeyControl; error moves to the SettingRow footnote."
+  },
+  {
+   "variant": "shortcut row or shortcut scope group, scrolled (state)",
+   "reason": "Dropped from both designs. The scrolled state is pane scroll, not a row or group state."
+  }
+ ]
+}

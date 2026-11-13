@@ -1,0 +1,309 @@
+{
+ "kind": "choice",
+ "title": "Selection and toggles",
+ "kinds": [
+  "checkbox",
+  "round-check",
+  "toggle",
+  "segmented-control",
+  "tab",
+  "nav-item"
+ ],
+ "description": "Selection and toggle widgets of the Taskscape desktop task manager: list tabs in the title bar and inspectors, round task checkboxes and row-select toggles, small square checkboxes, segmented controls, the settings switch, and the settings sidebar tabs. All 39 rows in rows-choice.json are assigned to exactly one of the 13 variants below.",
+ "variants": [
+  {
+   "name": "list tab, active (label)",
+   "kind": "tab",
+   "component": "Label (list tab name, active); ListTabs > Label on draft-inspector; ? on multi-inspector, filter-panel, trash",
+   "description": "The labelled name of the open list, shown in primary tone with a medium weight. Covers rows 1 (main-window), 8 (draft-inspector), 12 (multi-inspector), 19 (filter-panel) and 22 (trash, combined row that also lists the inactive tabs; assigned here because a row can land in only one variant). Multi-inspector and filter-panel record a close x button on the active tab (x 280 on filter-panel); main-window and draft-inspector do not record one. Whether the other screens' tabs carry a close button is not recorded. Row 12 refers to a 'see close entry' that does not exist in rows-choice.json; the close button is therefore described in this variant's look field as a sub-element.",
+   "look": "Text box 51x20 at 224,12; font 500 13px/19.5px; truncate; max-w-40; text-[13px]. tracking-[0.01em] is recorded on main-window (row 1 and row 2); draft-inspector (rows 8 and 9) lists no tracking, so it is either omitted there or not recorded. Colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark. Tab sits in a hairline frame about x 211-308 (rows 4 and 19; shot estimate). Row 1 records 212-309 instead; this 1 px difference is unresolved and may be a shot-estimate artefact. Close button sub-element (multi-inspector and filter-panel only): an x button on the active tab, at x 280 on filter-panel; its own size and colour are not recorded.",
+   "states": [
+    "active",
+    "split-view: blue pane marker before the name, text moves to x 249 (main-window)",
+    "selected (draft-inspector, white/raised with divider rules)"
+   ],
+   "behaviour": "Click selects the list (handler not in these files; inferred). On multi-inspector, click keeps this list open (switching not recorded); close via its x button.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "Errands"
+   ]
+  },
+  {
+   "name": "list tab, inactive (label)",
+   "kind": "tab",
+   "component": "Label (list tab name, inactive); ListTabs > Label on draft-inspector; ? on multi-inspector, filter-panel",
+   "description": "The labelled name of another list in muted tone, shown beside the active tab. Covers rows 2 (main-window), 9 (draft-inspector), 13 (multi-inspector) and 20 (filter-panel). Trash is listed in usedIn because its inactive Reading and Garden tabs share this look; those tabs are recorded only inside row 22, which is assigned to the active variant, so they are not counted as separate rows here. Thin vertical separators sit between tabs on several screens.",
+   "look": "Font 500 13px/19.5px, truncate, max-w-40, text-[13px]. Colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark. Label boxes: Reading at 322,12 (54x20), Garden at 422,12 (48x20).",
+   "states": [
+    "inactive (default)",
+    "split-view: Reading has a blue marker and sits in the right pane (main-window)"
+   ],
+   "behaviour": "Click selects that list (inferred; handler not read).",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "multi-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "Reading",
+    "Garden"
+   ]
+  },
+  {
+   "name": "list tab, full (title bar, with rename and delete)",
+   "kind": "tab",
+   "component": "List tab (plain div per list)",
+   "description": "The full, interactive list tab in the title bar (row 4 only). It is a container around the list name with focus, hover, drag and inline-rename states, and a delete button on its right side. This is the richest form of the list tab and behaves differently from the label-only variants, so it is kept separate.",
+   "look": "Container classes: group hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-4 pr-space-5 pl-space-7 relative flex cursor-default items-center border-b border-transparent. Focused container about x 211 to 308 (Errands) or x 408 to 503 (Garden), with hairline edges. Focus fill bg-surface-2; drop target bg-selection-1; dragging opacity-40. Count of 3 tabs in every recorded state with tabs.",
+   "states": [
+    "focused (active list)",
+    "unfocused (inactive)",
+    "hover (bg-wash-1)",
+    "drop target (bg-selection-1)",
+    "dragging (opacity-40)",
+    "editing (inline rename)",
+    "split (pane dot shown; not in any recorded state)"
+   ],
+   "behaviour": "Click selects the list (selectList). Double-click starts inline rename. Right-click opens the list context menu. Middle-click deletes the list (aux button 1). Drag reorders tabs; dropping a task row on a tab moves it there.",
+   "usedIn": [
+    "title-bar"
+   ],
+   "examples": [
+    "Errands",
+    "Reading",
+    "Garden"
+   ]
+  },
+  {
+   "name": "task done checkbox, round, labelled Select",
+   "kind": "round-check",
+   "component": "Check (round-check); component not identified on filter-panel and trash. Row 3 may be the same Check button as the row select toggle (row 5, used without Option held); this is not verified.",
+   "description": "The round 16px circle that marks a task done or open, one per task row. Covers rows 3 (main-window), 10 (draft-inspector), 21 (filter-panel) and 23 (trash). Its accessible label is Select and it reads aria-pressed=false, which is the row selection state, not completion. Row 3 wires both onToggleDone and onToggleSelect, so this may overlap the row select toggle variant; that merge is unverified. Row 10 count is unresolved: the row records 8 draft-inspector tasks, but its states list 7 unchecked rows plus 2 checked rows (t-post, t-milk), which totals 9. Do not rely on the 8 figure until rows-choice.json is reconciled. Rows 21 and 23 record the kind as round-check; row 3 and row 10 record it as checkbox.",
+   "look": "16x16 circle, fully round (radius 50%). Stroke or glyph colour oklch(0.26 0.012 262) on open rows (light) and oklch(0.94 0.004 260) (dark). The done-row colour oklch(0.62 0.013 264) is unverified: row 3 notes that the shot shows the done checkboxes visually empty, and that mismatch is unresolved. Font 400 14px/21px. Top-level rows at x 20, subtasks at x 44.",
+   "states": [
+    "unchecked (open rows; most rows)",
+    "checked done (t-post, t-milk, t-article; struck-through rows; t-article is recorded as done in row 3's tree; only row 21 records a checked state as a recorded state)",
+    "hover (not recorded)"
+   ],
+   "behaviour": "Click toggles the task done state (onToggleDone). Selection is through onToggleSelect (gesture not confirmed). On filter-panel (row 21), toggling completion is inferred from the label and count. Trash (row 23) records only unchecked rows, so its done behaviour and checked look are inferred from the label.",
+   "usedIn": [
+    "main-window",
+    "draft-inspector",
+    "filter-panel",
+    "trash"
+   ],
+   "examples": [
+    "Select (accessible label)"
+   ]
+  },
+  {
+   "name": "task row select toggle, round",
+   "kind": "round-check",
+   "component": "Check (button) on task-list (row 5). Multi-inspector component is unverified: rows 14 and 15 record component '?', and the Check (button) assumption there is inherited from row 5 and not confirmed.",
+   "description": "The round 16px handle that adds or removes a task from the multi-selection. Covers row 5 (task-list, default select mode), row 14 (multi-inspector, selected) and row 15 (multi-inspector, unselected). Row 5 also has an Option-held mode that turns the same button into a square done lamp (rounded-field, radius 4.375px, check stroke). That is one button with two modes, not a separate widget, so it stays here. Row 5 is the only row recording the Option mode.",
+   "look": "Button 16x16, select mode radius full. Unpicked: empty grey ring, no fill. Picked: fill oklch(0.62 0.13 255) with an inner white dot. Option mode: square lamp, radius 4.375px. Top-level at x 20 (task-list y 113, 151, 183, 214, 246); subtasks at x 44 (y 277, 309, 340); multi-inspector picked at x 20.",
+   "states": [
+    "unpicked (empty grey ring)",
+    "picked (filled, white centre dot)",
+    "hover (border shifts to content-3 on the row group, task-list)",
+    "option-held done lamp (square, task-list only)"
+   ],
+   "behaviour": "Click: if Option (altKey) is held, toggles done; otherwise toggles the row's multi-select membership. Double-click is stopped so it does not toggle done (task-list). On multi-inspector, clicking a selected row deselects it and clicking an unselected row adds it to the selection.",
+   "usedIn": [
+    "task-list",
+    "multi-inspector"
+   ],
+   "examples": [
+    "Select",
+    "Deselect",
+    "Mark done (Option held)",
+    "Mark not done (Option held)"
+   ]
+  },
+  {
+   "name": "checkbox, medium (inspector header)",
+   "kind": "checkbox",
+   "component": "Checkbox (common-ui/components)",
+   "description": "The large done checkbox in the task inspector header that marks the whole task done. Only row 6 (task-inspector) uses this size.",
+   "look": "size=md; 18x18 box. Unchecked outline oklch(0.26 0.012 262) (dark oklch(0.94 0.004 260)). Checked: blue fill oklch(0.62 0.13 255) with glyph colour oklch(0.99 0.005 255); check icon size 14, weight 700.",
+   "states": [
+    "unchecked (outline only)",
+    "checked (blue fill with check icon)",
+    "dark theme"
+   ],
+   "behaviour": "Click calls actToggleDone(task).",
+   "usedIn": [
+    "task-inspector"
+   ],
+   "examples": [
+    "title 'Mark done' (when not done)",
+    "title 'Mark not done' (when done)"
+   ]
+  },
+  {
+   "name": "checkbox, small square",
+   "kind": "checkbox",
+   "component": "Checkbox (common-ui/components)",
+   "description": "The small done checkbox used for subtasks in the task inspector and for each selected task in the multi-inspector. Covers rows 7 (task-inspector, subtasks, 3 rows) and 11 (multi-inspector, Selected list, 4 rows). Same size, shape and behaviour in both places.",
+   "look": "16x16, radius 4.375px. Checked: blue background oklch(0.62 0.13 255) with check icon 12px/12px in oklch(0.99 0.005 255). Unchecked: outline oklch(0.26 0.012 262) on task-inspector; border colour not recorded on multi-inspector.",
+   "states": [
+    "unchecked (Mark done)",
+    "checked (Mark not done, with check icon)"
+   ],
+   "behaviour": "Click calls actToggleDone on the subtask (task-inspector) or on the task (multi-inspector, actToggleDone(task), defined in stores/actions). The row's done tally and label style update from the store.",
+   "usedIn": [
+    "task-inspector",
+    "multi-inspector"
+   ],
+   "examples": [
+    "title 'Mark done'",
+    "title 'Mark not done'"
+   ]
+  },
+  {
+   "name": "segmented control, text-only, default size",
+   "kind": "segmented-control",
+   "component": "Segmented (common-ui)",
+   "description": "A text-only segmented control at default size. Covers row 16 (Show filter: All, Active, Done, value=view.filter) and row 18 (Date field: Created, Updated, value=view.dateField). Both are on filter-panel with the same look and the same click behaviour. Distinct from the small tri-state control (row 17), which is size=sm.",
+   "look": "Segments 96x23 (Show) or 145x23 (Date field); font 600 12px/18px; radius 4.375px. Selected: background oklch(0.6 0.2 255), text oklch(0.99 0.005 255). Unselected text oklch(0.46 0.013 262). Show group container 295x26 at 873,186 (tree); track bounds are an estimate.",
+   "states": [
+    "first option selected",
+    "middle or last option selected",
+    "unselected segments"
+   ],
+   "behaviour": "Click calls update({filter}) (Show) or update({dateField}) (Date field).",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "All",
+    "Active",
+    "Done",
+    "Created",
+    "Updated"
+   ]
+  },
+  {
+   "name": "segmented control, small tri-state",
+   "kind": "segmented-control",
+   "component": "Segmented (common-ui), inside TriRow",
+   "description": "The small three-way control used for each refine predicate on filter-panel. Only row 17 uses it. It is size=sm and wrapped in a w-40 shrink-0 container, so it is visibly smaller than the default control.",
+   "look": "Segments 44x19; font 600 11px/16.5px; radius 4.375px. Selected background oklch(0.6 0.2 255), text oklch(0.99 0.005 255). Unselected text oklch(0.46 0.013 262) (B estimate). Group container 140x23 (tree). The Without label looks clipped at the right edge of the panel in the shot (observed, uncertain).",
+   "states": [
+    "Any selected (all three rows)",
+    "With selected (has)",
+    "Without selected (none)"
+   ],
+   "behaviour": "Click calls the row's onChange with the new TriState.",
+   "usedIn": [
+    "filter-panel"
+   ],
+   "examples": [
+    "Any",
+    "With",
+    "Without"
+   ]
+  },
+  {
+   "name": "segmented control, surface thumb with icons",
+   "kind": "segmented-control",
+   "component": "Segmented (variant surfaceThumb)",
+   "description": "A segmented control in the surfaceThumb style where each segment has a leading icon and a label. Covers row 28 (settings-general, Theme row, 3 segments) and row 37 (settings-capture, Screenshots mode, 2 segments). The look is shared, but the behaviour differs: row 28 calls set('theme', value) and has no hint text; row 37 calls onChange with the new mode, writes screenshot_mode through ctx.set, and updates a hint text below the control. The two are kept as one variant on look alone; if the behaviour difference matters, they would be split.",
+   "look": "Variant surfaceThumb. Icons 15px in row 28. Row 37 track is a grey box about x 181 to 1153, y 113 to 140 (B estimate; tree box 181,113 972x26). Row 28 look is not measured.",
+   "states": [
+    "first segment selected (System; fullscreen)",
+    "other segments selected (Light, Dark, Region): not in recorded states"
+   ],
+   "behaviour": "Click calls set('theme', value) with system, light or dark (settings-general). Click calls onChange with the new mode and writes screenshot_mode through ctx.set (settings-capture); the hint text below updates.",
+   "usedIn": [
+    "settings-general",
+    "settings-capture"
+   ],
+   "examples": [
+    "System (icon contrast)",
+    "Light (icon light_mode)",
+    "Dark (icon dark_mode)",
+    "Full screen (icon fullscreen)",
+    "Region (icon crop_free)"
+   ]
+  },
+  {
+   "name": "toggle switch",
+   "kind": "toggle",
+   "component": "Toggle",
+   "description": "An on/off switch with no visible label; the row title names it. Covers row 29 (Reduced motion) and row 30 (Show completed tasks), both on settings-general. Reduced motion can also be disabled and forced on by Low Power Mode or macOS Reduce Motion; that is recorded as a state, not as a separate variant. Look was not measured.",
+   "look": "Not measured (look is null in both rows).",
+   "states": [
+    "off (aria-checked=false)",
+    "on (aria-checked=true)",
+    "disabled and forced on (Reduced motion only; Low Power Mode or Reduce Motion)"
+   ],
+   "behaviour": "Click flips reduced_motion to '1' or '0' (Reduced motion) or show_completed to '1' or '0' (Show completed tasks; default on, task-list effect not in recordings). Disabled: no effect.",
+   "usedIn": [
+    "settings-general"
+   ],
+   "examples": [
+    "Reduced motion (aria label)",
+    "Show completed tasks (aria label)"
+   ]
+  },
+  {
+   "name": "settings sidebar tab, selected",
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "description": "The highlighted sidebar tab for the settings pane currently open, with a leading icon and label. Covers row 24 (General on settings-general), row 31 (Shortcuts on settings-shortcuts), row 36 (Capture on settings-capture) and row 38 (About on settings-about). The kind is recorded as tab; no row uses the nav-item kind. The selected fill is unresolved; three fill descriptions are recorded: oklch(0.32 0.02 262 / 0.09) (rows 31 default and 36), oklch(0.6 0.2 255 / 0.1) (row 31 scrolled and recording states), and a grey pill with no colour value (row 38, About). This variant's look shows the first candidate only as the most common recorded value; the fill is not settled.",
+   "look": "Button 139x30, radius 4.375px. Icon 16x16 (e.g. Shortcuts icon at [16,156]). Label font 400 13px/19.5px, colour oklch(0.26 0.012 262). Background fill unresolved: oklch(0.32 0.02 262 / 0.09) is recorded for the Shortcuts default state (row 31) and Capture (row 36); oklch(0.6 0.2 255 / 0.1) is recorded for the scrolled and recording states of Shortcuts (row 31); About (row 38) records a grey pill default fill with no colour value.",
+   "states": [
+    "active (aria-selected=true, tabIndex=0)",
+    "searching but not scoped (General on settings-search; aria-selected=true, tabIndex=0; row 24 records active=false for this state, so it may look different from the active state)",
+    "Badge trailing shown when searching with matches (General)"
+   ],
+   "behaviour": "Click selects this pane; it is already current, so no change. On General, selectPane('general') scrolls the content to top and keeps the query only if this pane has matches.",
+   "usedIn": [
+    "settings-general",
+    "settings-shortcuts",
+    "settings-capture",
+    "settings-about"
+   ],
+   "examples": [
+    "General (icon tune)",
+    "Capture (icon screenshot_monitor)",
+    "Shortcuts (icon keyboard)",
+    "About (icon info)"
+   ]
+  },
+  {
+   "name": "settings sidebar tab, plain",
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "description": "The unselected sidebar tab for another settings pane, with a leading icon and label and no fill. Covers row 25 (Capture), row 26 (Shortcuts) and row 27 (About) on settings-general, row 32 (General, Capture, About on settings-shortcuts, x3), rows 33 to 35 (General, Shortcuts, About on settings-capture) and row 39 (General, Capture, Shortcuts on settings-about, x3). On a search with no matches, the tab dims to opacity-40: the screenshot shows the tab dimmed, and the recorded JSON colour value is what conflicts with it (row 25). Clicking switches to that pane and clears the query if it has no matches there.",
+   "look": "Button 139x30, radius 4.375px; no fill. Icon 16x16 colour oklch(0.62 0.013 264). Label font 400 13px/19.5px, colour oklch(0.26 0.012 262).",
+   "states": [
+    "inactive (tabIndex=-1, aria-selected=false)",
+    "searching with no matches (opacity-40; the screenshot shows the dim, the JSON colour value conflicts)",
+    "hover and focus not recorded"
+   ],
+   "behaviour": "Click switches the Settings window to that pane (selectPane; the search is cleared if the query has no matches there, SettingsWindow.tsx:179-184).",
+   "usedIn": [
+    "settings-general",
+    "settings-shortcuts",
+    "settings-capture",
+    "settings-about"
+   ],
+   "examples": [
+    "General (icon tune)",
+    "Capture (icon screenshot_monitor)",
+    "Shortcuts (icon keyboard)",
+    "About (icon info)"
+   ]
+  }
+ ]
+}

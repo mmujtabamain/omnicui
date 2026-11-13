@@ -1,0 +1,118 @@
+{
+ "name": "Toggle",
+ "purpose": "Two-state button with aria-pressed, for things that switch a panel, mode or formatting mark on and off: title-bar split view and preview, footer Sort and filter, rich-text format marks, capture-bar formatting marks. Replaces the pressed uses of A's IconButton and ToolbarButton. Single owner of aria-pressed (critique).",
+ "base": "Radix Toggle (shadcn Toggle, cva)",
+ "variants": [
+  {
+   "axis": "size",
+   "values": [
+    {
+     "value": "sm",
+     "when": "h-6 = 21px. Text shape 12px/18px weight 600 (footer Sort and filter), or icon shape 21px square with a 15px glyph (rich-text format marks)."
+    },
+    {
+     "value": "md",
+     "when": "h-7 = 24.5px (measured 24 to 25). Icon shape 24px square with a 14px glyph at weight 300 (capture-bar formatting marks; weight 400 in the reference is folded to 300). Radius 5px."
+    },
+    {
+     "value": "lg",
+     "when": "h-8 = 28px. Icon shape 28px square with a 19px glyph (title-bar split view and preview). Radius 7px."
+    }
+   ],
+   "default": "sm"
+  },
+  {
+   "axis": "shape",
+   "values": [
+    {
+     "value": "text",
+     "when": "Label and icon, width follows content. Footer Sort and filter."
+    },
+    {
+     "value": "icon",
+     "when": "Square at the size height. All other toggles."
+    }
+   ],
+   "default": "icon"
+  }
+ ],
+ "props": [
+  {
+   "name": "pressed",
+   "type": "boolean | undefined",
+   "description": "Controlled pressed state. Split view pressed while on; preview pressed while the preview column shows; Sort and filter pressed while its panel is open; formatting marks pressed while the mark is active."
+  },
+  {
+   "name": "defaultPressed",
+   "type": "boolean",
+   "description": "Uncontrolled initial state."
+  },
+  {
+   "name": "onPressedChange",
+   "type": "(pressed: boolean) => void",
+   "description": "Fires on click, Enter or Space. Moved here from IconButton (critique: ToolbarButton had no change handler)."
+  },
+  {
+   "name": "size",
+   "type": "'sm' | 'md' | 'lg'",
+   "description": "Height and glyph size. See size axis."
+  },
+  {
+   "name": "shape",
+   "type": "'text' | 'icon'",
+   "description": "Icon-only square or label with icon."
+  },
+  {
+   "name": "icon",
+   "type": "IconName | { pressed: IconName; off: IconName }",
+   "description": "Glyph. A pair keys the glyph to pressed state: the preview toggle uses right_panel_close when shown (pressed) and right_panel_open when hidden."
+  },
+  {
+   "name": "label",
+   "type": "string | undefined",
+   "description": "Visible text for the text shape."
+  },
+  {
+   "name": "ariaLabel",
+   "type": "string | undefined",
+   "description": "Required for the icon shape. Constant; it does not change with state."
+  },
+  {
+   "name": "shortcut",
+   "type": "Accelerator | undefined",
+   "description": "Tooltip only, platform-mapped (preview toggle shows Cmd on macOS, Ctrl on Windows). Added per critique."
+  },
+  {
+   "name": "retainFocus",
+   "type": "boolean",
+   "description": "Prevents default on mousedown so the editor keeps focus. Used by the rich-text format marks and the capture-bar formatting marks."
+  },
+  {
+   "name": "disabled",
+   "type": "boolean",
+   "description": "Muted, no activation (title-bar split view when there are no lists)."
+  }
+ ],
+ "states": [
+  "off",
+  "on (pressed: wash fill, strong tone, darker icon)",
+  "hover (wash-1 fill, strong tone)",
+  "focus-visible (ring)",
+  "disabled (muted)"
+ ],
+ "role": "button with aria-pressed (Radix Toggle)",
+ "keyboard": "Enter and Space toggle. Tab reaches each toggle. No arrow-key behaviour; use SegmentedControl for a mutually exclusive set.",
+ "replaces": [
+  "Title bar icon button, split view toggle",
+  "Title bar icon button, preview panel toggle",
+  "Footer sort and filter button",
+  "Rich-text format toggle, 21px",
+  "Formatting toolbar button, 24px (capture bar notes)"
+ ],
+ "platform": "Same on both. Capture-bar formatting toggles are desktop only (capture bar is desktop only). On web, browser shortcuts take precedence, so the preview shortcut and Mod+B, Mod+I and Mod+U must not depend on a combination the browser reserves.",
+ "open": "(1) Title-bar toggles change their label in the reference (Split view / Close split view; Hide preview panel / Show preview panel). Proposed: one constant label with aria-pressed. Confirm. (2) Preview glyph swaps in the reference (right_panel_close when shown, right_panel_open when hidden); the icon pair above keeps it. Confirm, or fix the glyph. (3) Split view and preview on multi-inspector, filter-panel and trash are inferred from labels, not verified in code. (4) Footer Sort and filter shows its non-default state as accent text with a Filtered label; accent is reserved for primary action and selection, so the library uses strong neutral text. Confirm. (5) Footer Sort and filter 19px and 11px label fold to sm 21px and 12px; the 19px height is below the 24px target (see Button). (6) Glyph weight: 300 in the title bar, 400 in the capture-bar formatting row; 300 used throughout (assumption). (7) Glyph sizes: sm 15px and md 14px snap from the reference 16px; lg 19px title bar. (8) Sort and filter is a dark or grey icon by panel state in the reference; pressed carries that.",
+ "family": "buttons",
+ "families": [
+  "buttons"
+ ]
+}

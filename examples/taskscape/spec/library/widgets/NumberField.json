@@ -1,0 +1,50 @@
+{
+ "name": "NumberField",
+ "purpose": "Narrow numeric input for the day count: centred, tabular figures, spin buttons hidden, clamped to min..max on every change. Covers the one day-count row (filter panel, shown only when the date range is custom). Kept as its own widget, not an Input type, because the clamp and centring change what the user sees and types (A's reasoning; B folded it into Input type=number, rejected here). The size axis is removed: only one size was recorded, so the compact look is fixed inside the widget (critic).",
+ "base": "shadcn Input with type=number (native input, spin buttons hidden).",
+ "variants": [],
+ "props": [
+  {
+   "name": "value",
+   "type": "number",
+   "description": "Controlled day count."
+  },
+  {
+   "name": "onValueChange",
+   "type": "(value: number) => void",
+   "description": "Receives the clamped value on every change."
+  },
+  {
+   "name": "min",
+   "type": "number",
+   "description": "Default 1."
+  },
+  {
+   "name": "max",
+   "type": "number",
+   "description": "Default 365."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Required. The day count has none in code (B flagged it)."
+  }
+ ],
+ "states": [
+  "resting",
+  "focused (ring-1)",
+  "clamped: value pinned to min or max on change",
+  "absent unless the host shows it (only when the date range is custom)"
+ ],
+ "role": "spinbutton (native input type=number), with aria-valuemin 1 and aria-valuemax 365 from min and max.",
+ "keyboard": "Digits edit the value. ArrowUp and ArrowDown step natively by 1 (spin buttons are hidden; assumed to still work). Each change is clamped to 1-365. Enter and Escape are not recorded.",
+ "replaces": [
+  "Day count number input, filter panel"
+ ],
+ "platform": "Same on both. The filter panel uses the same field.",
+ "open": "1) Empty input: the reference clamps clamp(Number(value)) on every change, and Number('') is 0, so clearing the field may immediately pin it to 1. Confirm, and decide whether to commit on blur instead. 2) Whether arrow keys step natively with hidden spin buttons. 3) The default customDays value was not read. 4) Dimensions: at 1rem=14px, h-6.5 = 22.75px and w-12 = 42px; the catalogue's 26px and 48px assumed 16px. Confirm the token scale. 5) Enter and Escape not recorded. 6) Focus ring-1 token: decide against the accent rule (see Input open 1).",
+ "family": "text",
+ "families": [
+  "text"
+ ]
+}

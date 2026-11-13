@@ -1,0 +1,94 @@
+{
+ "name": "CommandPalette",
+ "purpose": "Container for the command palette: a panel with its own search input that keeps focus, a listbox of ComboboxItem palette rows, and a scroll region. Runs a command or jumps to a list or project. Split from B's Command widget; the caret mention list is Popover. Container, not a catalogue row; its look is not measured. Also (structure): Command palette: a 490px card near the top of the window with a search input and a list of commands.",
+ "base": "shadcn Command (cmdk) root for the input and listbox. On web, a dialog-style overlay.",
+ "variants": [
+  {
+   "axis": "presentation",
+   "values": [
+    {
+     "value": "overlay",
+     "when": "Centred near the top, over Scrim soft. The recorded case."
+    },
+    {
+     "value": "window",
+     "when": "Desktop option if the palette is treated as a dialog window (undecided)."
+    }
+   ],
+   "default": "overlay"
+  }
+ ],
+ "props": [
+  {
+   "name": "items",
+   "type": "ComboboxItem[]",
+   "description": "Palette rows (context palette)."
+  },
+  {
+   "name": "query",
+   "type": "string",
+   "description": "Filter text typed in the search input."
+  },
+  {
+   "name": "activeIndex",
+   "type": "number",
+   "description": "Controlled highlight index; index 0 on open."
+  },
+  {
+   "name": "onActiveChange",
+   "type": "(index: number) => void",
+   "description": "Highlight callback for arrow keys and pointer."
+  },
+  {
+   "name": "onSelect",
+   "type": "(item) => void",
+   "description": "Runs the picked row, then closes the palette."
+  },
+  {
+   "name": "onClose",
+   "type": "() => void",
+   "description": "Fires on Escape."
+  },
+  {
+   "name": "aria-label",
+   "type": "string",
+   "description": "Accessible name of the palette."
+  },
+  {
+   "name": "commands",
+   "type": "Command[]",
+   "description": "From getCommands (buildCommands)."
+  },
+  {
+   "name": "presentation",
+   "type": "'overlay' | 'window'",
+   "description": "Where it appears."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "CommandInput and CommandList."
+  }
+ ],
+ "states": [
+  "closed (not rendered)",
+  "open (search input focused; first row active)",
+  "scrolled (rows exceed the panel height; the list scrolls, does not clip)",
+  "palette (all commands, 490x456)",
+  "palette-search (filtered, 490x184)",
+  "palette-no-match (490x109)",
+  "open"
+ ],
+ "role": "listbox for the rows; the search input is the combobox.",
+ "keyboard": "Typing filters the rows. ArrowUp and ArrowDown move the active row. Enter runs the active row and closes. Escape closes. / Escape closes via onClose. Arrow keys move the active row (cmdk; proposed). The opening shortcut is not confirmed (useAppKeyboard not read). The active row is scrolled into view. Web browser shortcuts take precedence; on desktop a global hotkey pressed while the main window is focused is handled by the main window.",
+ "replaces": [
+  "command palette panel"
+ ],
+ "platform": "Web: opens from an in-app key; browser-reserved combinations cannot be used, because browser shortcuts take precedence; no global hotkey on web. Desktop: a global hotkey pressed while the main window is focused is handled by the main window and opens the palette there. / Desktop: presentation open. Web: overlay; the opening shortcut must not clash with a browser shortcut.",
+ "open": "1) Desktop: a separate window (as dialogs are) or an in-window overlay is not stated. 2) Web: whether the palette dims the window as a modal is not stated (menus never dim; the palette is dialog-like, unconfirmed). 3) Container look is not measured. 4) The reference clips rows past the panel edge; this container must scroll instead (a defect, not a state). 5) The web palette open key is not in the catalogue. / Presentation on desktop is undecided. Width is min(35rem, 100%): 490px at 14px rem (560px at 16px); top edge at y 91; max-h 60vh. Opening shortcut not confirmed.",
+ "family": "menus",
+ "families": [
+  "menus",
+  "structure"
+ ]
+}

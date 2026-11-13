@@ -1,0 +1,110 @@
+{
+ "name": "ListRow",
+ "purpose": "A plain row with a title, an optional meta line, an optional check for the selected item, and trailing actions that appear on hover or focus. Covers the trash list rows and the project switcher rows. Folded from A's TrashRow and ProjectRow (see notWidgets): the look is the same, and the one real difference, the host (a plain list or a DropdownMenu), is the host axis. Sources: A and B.",
+ "base": "Radix DropdownMenu.RadioItem when host is menu (shadcn DropdownMenu; role menuitemradio, Radix check indicator). None when host is list.",
+ "variants": [
+  {
+   "axis": "host",
+   "default": "list",
+   "values": [
+    {
+     "value": "list",
+     "when": "Plain list row in the trash list. Role listitem."
+    },
+    {
+     "value": "menu",
+     "when": "Project switcher row inside a DropdownMenu. Choosing it switches the active project and closes the menu. Role menuitemradio."
+    }
+   ]
+  },
+  {
+   "axis": "indicator",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No check (trash rows)."
+    },
+    {
+     "value": "check",
+     "when": "Check shown when selected, in the accent tone (accent marks selection). Project switcher rows."
+    }
+   ]
+  },
+  {
+   "axis": "actions",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "No trailing actions."
+    },
+    {
+     "value": "hover",
+     "when": "Trailing icon buttons appear on hover and on focus-within. Trash rows: restore (neutral) and delete (danger). Project rows: edit and delete (delete uses danger)."
+    }
+   ]
+  },
+  {
+   "axis": "selection",
+   "default": "none",
+   "values": [
+    {
+     "value": "none",
+     "when": "Not selected."
+    },
+    {
+     "value": "selected",
+     "when": "Selection background (selection-1). The highlighted trash row (A's highlighted) and the selected project."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Row title. Required. Replaces A's name on ProjectRow and B's title."
+  },
+  {
+   "name": "meta",
+   "type": "string | undefined",
+   "description": "Secondary line. Trash examples read 'Website · deleted 3d ago' (inferred to be a meta line; uncertain)."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Selection background. With indicator check, shows the check. Replaces A's highlighted on trash rows."
+  },
+  {
+   "name": "onActivate",
+   "type": "(() => void) | undefined",
+   "description": "Row click. Project rows select the project and close the menu (ProjectSwitcher.tsx:57-60). The trash row click is not captured in the reference."
+  },
+  {
+   "name": "actions",
+   "type": "ReactNode | undefined",
+   "description": "Trailing IconButtons. Trash: 'Restore <title>' and 'Delete <title>' labels (A). Delete must be the danger variant. Replaces A's onRestore and onDelete on TrashRow and onEdit and onDelete on ProjectRow."
+  }
+ ],
+ "states": [
+  "default",
+  "hover (wash-1; project wash-2 folded into it)",
+  "selected",
+  "selected with check (indicator check)",
+  "actions revealed (hover or focus-within)",
+  "focus-visible"
+ ],
+ "role": "listitem in a list (host list). menuitemradio with aria-checked when host is menu. Action buttons keep their own button role.",
+ "keyboard": "Enter or Space activates the row. Tab moves into the row actions. Actions must show on focus-within because keyboard users cannot hover (proposed). In host menu, the Radix menu keyboard applies: Up and Down move through items; Enter or Space selects the item and closes the menu; Escape closes the menu without changing the project.",
+ "replaces": [
+  "trash row, deleted root task",
+  "project row, switcher menu"
+ ],
+ "platform": "Desktop: local data; projects and trash are local; the project switcher sits in the window title bar; hover reveal with the mouse. Web: projects and trash are per user on the server; the switcher sits in the app header; the project list may include projects shared with the user (open); touch has no hover, so actions need another reveal path (open). Permanent delete from trash probably needs confirmation: a separate window without backdrop on desktop, a modal with backdrop on web. That confirmation sits outside this widget.",
+ "open": "1) Trash row body click is not captured in either design (uncertain). 2) Does delete from trash remove permanently or move to another state? Not recorded. 3) Trash meta line versus title grouping: 'Website · deleted 3d ago' is treated as the meta line (inferred). 4) Padding differs: trash px-space-5 with gap-space-5, project px-space-6 with gap-space-4. Folded into one ListRow token; confirm. The project radius is not recorded; the trash rounded-field is used. 5) Row height: the trash note says h-9 (36px), but at 1rem=14px h-9 is 2.25rem (31.5px), matching the measured 31px pitch. B treats 36px as wrong and uses 31.5px; confirm. Project row is 2.25rem (reference pitch 32px). 6) The project check icon is 15x15 and is folded to the library standard icon size (1rem=14px); the library size is not recorded; confirm. 7) Project edit and delete icons are nested interactive controls inside a menu item, which the menu pattern does not support. Move them to a trailing button outside the item or to an item context menu. 8) Project delete uses the danger colour; project edit and delete labels are not recorded. 9) No tooltip on the project row (reference). 10) Hover-only reveal is unreachable by keyboard unless focus-within also reveals; the touch reveal path is undecided. 11) Web multi-user: trash per user or per project is undecided. 12) Desktop-only check: none (B).",
+ "family": "rows",
+ "families": [
+  "rows"
+ ]
+}

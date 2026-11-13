@@ -1,0 +1,117 @@
+{
+ "name": "TaskTreeRow",
+ "purpose": "One row of the task-list tree, for root tasks and nested subtasks. Kept separate from TaskRow because its tree interaction is felt by users: a round select check (Option on macOS, Alt on Windows and web switches it to done), platform-modifier and Shift multi-select, drag to reorder or nest, double-click to toggle done, a right-click row menu, and treeitem semantics. B folded this into TaskRow using draggable and doubleClickToggles props; kept here because these behaviours differ from the flat list. Sources: A and B.",
+ "base": "none (custom tree item). The round check is the shared RoundCheck control (Radix Checkbox styled round). The row menu is a Radix ContextMenu.",
+ "variants": [
+  {
+   "axis": "depth",
+   "default": "0",
+   "values": [
+    {
+     "value": "0",
+     "when": "Root task, no indent. Title at x 47. The row menu opens on right-click. Root check position not recorded."
+    },
+    {
+     "value": "1",
+     "when": "Subtask nested under its parent, indented 24px (1.7143rem); title at x 71; round select check at x 44. Same widget, indented. Deeper levels add 24px each (B)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "title",
+   "type": "string",
+   "description": "Task title, weight 500, 1rem (14px) with 1.1875rem line height."
+  },
+  {
+   "name": "depth",
+   "type": "number",
+   "description": "Nesting level: 0 for a root task, 1 for a subtask. Drives indent and aria-level."
+  },
+  {
+   "name": "done",
+   "type": "boolean",
+   "description": "Muted title with strikethrough. The check uses the done-lamp token."
+  },
+  {
+   "name": "selected",
+   "type": "boolean",
+   "description": "Previewed or picked; selection background."
+  },
+  {
+   "name": "picked",
+   "type": "boolean",
+   "description": "Part of the multi selection (blue tint)."
+  },
+  {
+   "name": "dragging",
+   "type": "boolean",
+   "description": "Row is being dragged; drawn at 40% opacity (reference opacity-40)."
+  },
+  {
+   "name": "dropIndicator",
+   "type": "'none' | 'before' | 'after' | 'nest'",
+   "description": "Drop feedback by vertical zone: top 30% is before, bottom 30% is after, the middle is nest. B names the middle zone inside; nest is kept (matches A's states and onDrop)."
+  },
+  {
+   "name": "checkAction",
+   "type": "'select' | 'done'",
+   "description": "Action of the round check. 'select' by default; 'done' while Option (macOS) or Alt (Windows and web) is held. Set by the parent from the held key (decided)."
+  },
+  {
+   "name": "draggable",
+   "type": "boolean",
+   "description": "Whether the row can be dragged (true for tree rows)."
+  },
+  {
+   "name": "onActivate",
+   "type": "(event: { platformModifier: boolean; shift: boolean }) => void",
+   "description": "Row click. Forwards modifiers (TaskRow.tsx:328-333): platform modifier toggles, Shift extends a range."
+  },
+  {
+   "name": "onCheck",
+   "type": "(action: 'select' | 'done') => void",
+   "description": "Round check click. Acts according to checkAction."
+  },
+  {
+   "name": "onToggleDone",
+   "type": "() => void",
+   "description": "Double-click toggles done."
+  },
+  {
+   "name": "onContextMenu",
+   "type": "(event) => void",
+   "description": "Opens the row menu on right-click. The web must call preventDefault so the browser menu does not show (B)."
+  },
+  {
+   "name": "onDrop",
+   "type": "(position: 'before' | 'after' | 'nest') => void",
+   "description": "Drop onto this row at the computed zone."
+  }
+ ],
+ "states": [
+  "default",
+  "hover (wash-1 background, visual only)",
+  "selected (selection-1 background when previewed or picked)",
+  "picked (blue tint in a multi selection)",
+  "done (muted title, strikethrough)",
+  "dragging (40% opacity)",
+  "nest drop target (ring plus selection background)",
+  "drop before or after (line on the top or bottom edge)",
+  "focus-visible (proposed)",
+  "not rendered when the parent is collapsed (collapse-all) or in a flat search list (visibility rules, not row states)"
+ ],
+ "role": "treeitem inside a tree (the tree gets aria-multiselectable when selection is multi). aria-level = depth + 1, aria-selected from selected, aria-expanded when the row has children (B). The round check is role checkbox with aria-checked, labelled 'Select {title}' when checkAction is select or 'Mark {title} done' when it is done. Conflict: A uses generic 'Select task' and 'Mark done'; per-title names are kept (B) so each row name is unique.",
+ "keyboard": "Up and Down move focus between rows. Space toggles the focused row in the selection. Enter selects the focused row (proposed; not in the reference). Platform modifier with Space or click toggles; Shift with click or Shift+Up/Down extends the range. Option (macOS) or Alt (Windows, web) with the check switches it to done; a keyboard equivalent for this check mode is not decided. The context-menu key or Shift+F10 opens the row menu. ArrowRight and ArrowLeft expand and collapse the subtask group (proposed, tree convention, from B). Double-click to toggle done has no keyboard path in the reference; B proposes Ctrl/Cmd+Enter (proposed). Drag and drop has no keyboard path.",
+ "replaces": [
+  "task tree row, root (depth 0)",
+  "task tree row, subtask (depth 1)"
+ ],
+ "platform": "Desktop: platform modifier is Control on Windows and Command on macOS; Option on macOS and Alt on Windows switch the round check; native drag and native context menu. Web: Control on Windows and Linux, Command on macOS; Alt switches the check (decided for the web). Browser shortcuts take precedence, so the row must not bind keys the browser reserves. HTML drag with the same three drop zones. The web suppresses the browser context menu and uses the library menu. Desktop Linux is not covered (open).",
+ "open": "1) The keyboard equivalent for the Option or Alt check switch, and for double-click to toggle done, is not in the reference (B proposes Ctrl/Cmd+Enter). 2) Drag and drop has no keyboard alternative (A and B agree). 3) Root check position not recorded; only the subtask position x 44 is. 4) Confirm the round check is the shared RoundCheck from another family and uses the done-lamp token in the done state, never accent blue. 5) macOS web: the physical key is Option, while the decision says Alt on the web; confirm the label shown in the UI. 6) Tree expansion props are not recorded in A (collapse-all is a visibility rule). Confirm whether the tree needs a disclosure. 7) Desktop Linux modifier not decided (B). 8) Kept separate from TaskRow (see purpose). If the team merges them, draggable, dropIndicator, checkAction, doubleClickToggles and onContextMenu become TaskRow axes or props.",
+ "family": "rows",
+ "families": [
+  "rows"
+ ]
+}

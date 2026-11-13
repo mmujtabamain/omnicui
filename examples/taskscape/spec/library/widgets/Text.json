@@ -1,0 +1,324 @@
+{
+ "name": "Text",
+ "purpose": "The one general text label for titles, names, metadata lines, counts, captions, stats, inline values, helper and footnote lines, toast and lightbox text. Named Text rather than Label so it does not collide with the shadcn/Radix form Label. Covers A's Text rows and B's Text rows. A's Description rows (helper text, footnote, settings row description, shortcut error line) are Text with as p, tone muted or danger, and live. Headings go to Heading and SectionHeader, search highlights to MatchHighlight, timestamps to RelativeTime, and the character counter to CharacterCounter. Sizes are in rem with 1rem = 14px. A's ten 0.5px steps are snapped to four named steps (B's fold, ties going up). Sources: A (labels.json rows and lens) and B (consolidated). Also (structure): Single-line text in a task row: the title and the secondary subtitle. Both truncate. Folds in RelativeTime: Text with as=time, a dateTime prop (the machine-readable value is kept) and the existing tooltip prop. The folded widget's role stays time, since RelativeTime is already a time element with implicit role time, so the role is not changed. A rejected this on the assumption that Text would become role none, which this variant does not do. Index line 50 says B folds it to Text with tooltip. The claim that Text already wraps itself in a Tooltip when the tooltip prop is set is B's and is unverified.",
+ "base": "none (plain styled span, p or div; not a Radix primitive). Wrapped in a Radix Tooltip only when the tooltip prop is set.",
+ "variants": [
+  {
+   "axis": "size",
+   "default": "md",
+   "values": [
+    {
+     "value": "xs",
+     "when": "11px (0.786rem). footer done count, footer percent, bulk bar selection count, search match count, notes count, attachment tile caption, trash row meta, filter panel subtitle, menu shortcut hint, footnote and shortcut error line (A Description 11px), character counter (A 10.5px folded up, used only inside CharacterCounter)."
+    },
+    {
+     "value": "sm",
+     "when": "12px (0.857rem). metadata project name, metadata list name, timestamp with tooltip (A 11.5 folded up), done tally, 11.5px rows (done tally, done tally), filter summary line, lightbox position counter, app version value, settings row description (A 11.5 folded up), helper text (12px)."
+    },
+    {
+     "value": "md",
+     "when": "13px (0.929rem). list tab name, task note preview (A 12.5 folded up), sheet detail line (A 12.5 folded up), stepper caption (A 12.5 folded up), toast message, settings row title, command empty message, lightbox loading placeholder."
+    },
+    {
+     "value": "base",
+     "when": "14px (1rem). project name, switcher menu row (A 13.5 folded up), task title, list row, task title, trash row (A 13.5 folded up; uncertain, see open), lightbox file name (A 13.5 folded up), lightbox fallback file name."
+    },
+    {
+     "value": "inherit",
+     "when": "unbound shortcut placeholder: takes the size of the keycap it sits in (not measured)."
+    },
+    {
+     "value": "title",
+     "when": "14px, weight medium (500), line 16.625px (task row title)."
+    },
+    {
+     "value": "caption",
+     "when": "12.5px, line leading-4.25 (task row subtitle)."
+    }
+   ]
+  },
+  {
+   "axis": "weight",
+   "default": "regular",
+   "values": [
+    {
+     "value": "regular",
+     "when": "400. Default for most rows: settings row title, project name switcher row, notes count, done tally, timestamp, lightbox rows, command empty message, sheet detail line, app version value, metadata rows, trash row title, attachment tile caption (assumed), trash row meta."
+    },
+    {
+     "value": "medium",
+     "when": "500. list tab name, task title list row, filter panel subtitle, toast message, filter summary line, stepper caption."
+    },
+    {
+     "value": "semibold",
+     "when": "600. search match count, footer done count, footer percent, bulk bar selection count (uppercase stats and the match count)."
+    }
+   ]
+  },
+  {
+   "axis": "tone",
+   "default": "primary",
+   "values": [
+    {
+     "value": "primary",
+     "when": "content-1 (oklch 0.26 light). Names and titles: project name in switcher menu row, task title list row (open), task title trash row, settings row title, toast message, bulk bar selection count, lightbox fallback file name, focused list tab."
+    },
+    {
+     "value": "secondary",
+     "when": "content-2 (oklch 0.46 light, 0.74 dark). metadata project name, task note preview, footer percent, sheet detail line, filter summary line, stepper caption, app version value."
+    },
+    {
+     "value": "muted",
+     "when": "content-3 (oklch 0.62 light, 0.57 dark). unfocused list tab, footer done count, search match count, notes count, done tally, timestamp, metadata list name, attachment tile caption, trash row meta, filter panel subtitle, command empty message, menu shortcut hint (assumed, not measured), settings row description, helper and footnote text, done task title (with done=struck)."
+    },
+    {
+     "value": "danger",
+     "when": "danger-500 token. character counter near its limit (CharacterCounter), shortcut error line."
+    },
+    {
+     "value": "onMedia",
+     "when": "white (100%) on the lightbox dark surface. lightbox file name."
+    },
+    {
+     "value": "onMediaMuted",
+     "when": "white at 60%. lightbox position counter (A 55% folded up), lightbox loading placeholder (60%), lightbox status card helper (proposed, see open)."
+    },
+    {
+     "value": "inherit",
+     "when": "takes the parent colour. unbound shortcut placeholder (colour not measured)."
+    }
+   ]
+  },
+  {
+   "axis": "font",
+   "default": "sans",
+   "values": [
+    {
+     "value": "sans",
+     "when": "default UI font (A name; B's body value merged into it)."
+    },
+    {
+     "value": "mono",
+     "when": "monospace, font-mono. app version value only (11.5px in A, sm here)."
+    }
+   ]
+  },
+  {
+   "axis": "overflow",
+   "default": "wrap",
+   "values": [
+    {
+     "value": "wrap",
+     "when": "text wraps onto more lines."
+    },
+    {
+     "value": "truncate",
+     "when": "one line with ellipsis; the caller supplies the full string as tooltip. Used for project name switcher row, list tab name, task title list row, task title trash row, task note preview, metadata project name, attachment tile caption, trash row meta, lightbox file name, lightbox fallback file name, filter panel subtitle, stepper caption, filter summary line."
+    }
+   ]
+  },
+  {
+   "axis": "case",
+   "default": "normal",
+   "values": [
+    {
+     "value": "normal",
+     "when": "sentence or title case, no letter spacing."
+    },
+    {
+     "value": "uppercase",
+     "when": "uppercase by CSS with tracking 0.08em (one caps value, folded from A's 0.08em and the section header tracking). footer done count, footer percent, bulk bar selection count."
+    }
+   ]
+  },
+  {
+   "axis": "numeric",
+   "default": "off",
+   "values": [
+    {
+     "value": "off",
+     "when": "proportional digits."
+    },
+    {
+     "value": "tabular",
+     "when": "tabular-nums for counts and numbers: search match count, footer done count, footer percent, bulk bar selection count, notes count, done tally, character counter, filter summary line, lightbox position counter."
+    }
+   ]
+  },
+  {
+   "axis": "style",
+   "default": "normal",
+   "values": [
+    {
+     "value": "normal",
+     "when": "upright."
+    },
+    {
+     "value": "italic",
+     "when": "unbound shortcut placeholder (catalogue: Italic). Kept from A; B dropped it."
+    }
+   ]
+  },
+  {
+   "axis": "done",
+   "default": "off",
+   "values": [
+    {
+     "value": "off",
+     "when": "open task or any text without done state."
+    },
+    {
+     "value": "struck",
+     "when": "done task title: tone forced to muted and line-through. Task list row and filter panel (click selects)."
+    },
+    {
+     "value": "faded",
+     "when": "task note preview of a done task: opacity 55%. Shown on task-list in the reference."
+    }
+   ]
+  },
+  {
+   "axis": "align",
+   "default": "start",
+   "values": [
+    {
+     "value": "start",
+     "when": "default."
+    },
+    {
+     "value": "center",
+     "when": "command empty message and attachment tile caption."
+    },
+    {
+     "value": "end",
+     "when": "right-aligned text (A value, no current catalogue use)."
+    }
+   ]
+  }
+ ],
+ "props": [
+  {
+   "name": "as",
+   "type": "'span' | 'p' | 'div'",
+   "description": "Element. Default span. p for helper, footnote and error lines. div for block rows. Heading levels are not here; they belong to Heading."
+  },
+  {
+   "name": "selectable",
+   "type": "boolean",
+   "description": "Default false. True lets the user select and copy the text. Used for app version value (A SelectableText)."
+  },
+  {
+   "name": "tooltip",
+   "type": "string",
+   "description": "Full value shown on hover and keyboard focus when the text is truncated, so the full name can be read."
+  },
+  {
+   "name": "live",
+   "type": "'off' | 'polite' | 'assertive'",
+   "description": "Default off. Set polite on the shortcut error line so the rejection is announced when it appears (from A Description)."
+  },
+  {
+   "name": "children",
+   "type": "ReactNode",
+   "description": "The text."
+  },
+  {
+   "name": "size",
+   "type": "'title' | 'caption'",
+   "description": "Type scale."
+  },
+  {
+   "name": "tone",
+   "type": "'primary' | 'secondary' | 'muted'",
+   "description": "Colour token."
+  },
+  {
+   "name": "truncate",
+   "type": "boolean",
+   "description": "Default true."
+  },
+  {
+   "name": "at",
+   "type": "string | Date",
+   "description": "Moment; becomes the dateTime attribute of the time element."
+  },
+  {
+   "name": "relative",
+   "type": "string",
+   "description": "Relative phrase shown in the row, for example 1w ago or 5d ago."
+  },
+  {
+   "name": "absolute",
+   "type": "string",
+   "description": "Full date and time shown in the tooltip, for example Nov 6, 2026, 9:00 AM."
+  }
+ ],
+ "states": [
+  "default",
+  "truncated (ellipsis, tooltip available)",
+  "done (struck or faded, per the done axis)",
+  "matched (contains a MatchHighlight child inside a title or note)",
+  "selectable (user can select and copy)",
+  "unbound (tone inherit, italic, caller passes the text None)",
+  "announced (live polite or assertive on the shortcut error line)",
+  "open (primary tone)",
+  "done (muted tone)",
+  "all rows",
+  "tooltip open"
+ ],
+ "role": "none (span, p and div carry no role). Headings use Heading or SectionHeader.",
+ "keyboard": "Not focusable. Where text is a tooltip trigger (truncated text, timestamp, reduced-motion status, truncated lightbox file name) the owning row or control must be tabbable (tabIndex 0) so keyboard users reach the tooltip. Escape dismisses it. / None.",
+ "replaces": [
+  "project name, switcher menu row",
+  "list tab name",
+  "search match count",
+  "task title, list row",
+  "task title, trash row",
+  "task note preview",
+  "footer done count, uppercase",
+  "footer percent, uppercase",
+  "bulk bar selection count",
+  "metadata project name",
+  "metadata list name",
+  "notes count",
+  "done tally, 11.5px",
+  "attachment tile caption",
+  "unbound shortcut placeholder",
+  "settings row title",
+  "app version value",
+  "lightbox file name",
+  "lightbox position counter",
+  "lightbox loading placeholder",
+  "lightbox fallback file name",
+  "command empty message",
+  "menu shortcut hint",
+  "sheet detail line",
+  "toast message",
+  "trash row meta",
+  "filter panel subtitle",
+  "stepper caption",
+  "filter summary line",
+  "helper text, muted 12px",
+  "footnote, muted 11px",
+  "settings row description",
+  "shortcut error line",
+  "task row title label",
+  "task row subtitle",
+  "timestamp with tooltip"
+ ],
+ "platform": "Same widget on web and desktop. Differences are in content, not the widget. Desktop-only strings (Saved to, Data folder, capture rows, Low Power Mode, the macOS footnotes) do not appear on web. The sheet detail string '⌘Z puts it back' needs a per-platform string (Ctrl+Z on Windows and web). The native title tooltip is replaced by the Radix Tooltip on both. Web: browsers select text by default, so chrome labels need user-select none to match the desktop feel; the reference marks only app version value as selectable. / Same.",
+ "open": "1) Size steps: A's ten 0.5px steps are merged to xs, sm, md, base plus inherit (B's snap, ties up). Confirm the snap; it sets the rem values. 2) Conflict on the default size: A default 13 (md), B default base (14). Kept md (A). Confirm. 3) Conflict on the trash task title: A 13.5px regular (uncertain; measured estimate about 14px regular); B folds to base 14px regular. Kept base regular and flagged uncertain; it differs from the list title only in weight. Confirm. 4) Done task title is muted with strike (measured). Decide whether it takes the done-lamp colour (the brief) or stays muted. 5) Conflict on the done task note preview: A keeps faded (opacity 55%); B folds it to tone muted. Kept faded because it is a visible fade distinct from muted. Confirm. 6) Conflict on the unbound shortcut placeholder tone: A inherit (assumed), B muted. Kept inherit (colour not measured; it takes the keycap colour). Italic kept (catalogue lists Italic). Size inherits the keycap. Confirm. 7) Menu shortcut hint tone muted is assumed (not measured). 8) Attachment tile caption weight regular is assumed. 9) Lightbox status card helper: colour not measured; proposed onMediaMuted over the dark lightbox. It may be an error and need danger. Decide. 10) Lightbox position counter alpha 55% folded to 60%. Confirm. 11) Title-bar project pill owner: A puts it in Heading, B in Text with a display font. Merged to Heading (see Heading open). Confirm. 12) Shortcut error line live polite is proposed (A Description). 13) Settings row description 11.5px (A) folded to 12px (sm, B). Confirm. / B lists the task row title and subtitle as notWidgets owned by a task-row text widget in another family. Kept here per A's measured type scale; the owner can move it. Subtitle is recorded only on the t-pharmacy row. No due-date text (dropped by decision). No full-title tooltip is recorded for truncated text.",
+ "family": "labels",
+ "families": [
+  "labels",
+  "structure"
+ ],
+ "folded": [
+  {
+   "name": "RelativeTime",
+   "how": "Text with as=time, a dateTime prop (the machine-readable value is kept) and the existing tooltip prop. The folded widget's role stays time, since RelativeTime is already a time element with implicit role time, so the role is not changed. A rejected this on the assumption that Text would become role none, which this variant does not do. Index line 50 says B folds it to Text with tooltip. The claim that Text already wraps itself in a Tooltip when the tooltip prop is set is B's and is unverified.",
+   "role": "time element (implicit role time). Tooltip role while open.",
+   "keyboard": "Not focusable in the reference (hover only). Recommend tabIndex 0 so the tooltip opens on focus; Esc closes it."
+  }
+ ]
+}
