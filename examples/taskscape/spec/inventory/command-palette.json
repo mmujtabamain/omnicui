@@ -1,0 +1,407 @@
+{
+ "id": "command-palette",
+ "title": "Command palette",
+ "tier": "high",
+ "states": [
+  "palette",
+  "palette-search",
+  "palette-no-match"
+ ],
+ "purpose": "The ⌘K command palette is a modal overlay over the main window that lets the user run any app command, or jump to a list in the active project or any project, by typing part of its label. Results are grouped under View, Task, Manage, Go to list and Go to project, and the list filters live as the user types.",
+ "regions": [
+  {
+   "name": "Scrim",
+   "contents": "Full-window dim layer at [0,0,1180,760]. Soft dim (background oklab(0 0 0 / 0.3)), no blur. Its className starts \"px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh…\", so the panel sits near the top, centred horizontally. Mousedown outside the panel dismisses the palette. The main window is visible through it."
+  },
+  {
+   "name": "Palette panel",
+   "contents": "Menu-elevation surface 2, panel radius, 490 px wide at x=345, top edge y=91. Height follows content: 456 px (palette), 184 px (palette-search), 109 px (palette-no-match). Max height 60vh, flex column, overflow hidden, animate-sheet-in. Contains the input row and the results list or the empty message. No footer, no close button, no hint bar."
+  },
+  {
+   "name": "Input row",
+   "contents": "Header row, h-11 (44 px), shrink-0, flex, centred, gap-space-5, px-space-6, with a bottom border that acts as the divider under the input. Holds the bolt icon at 355,102 (18x18) and the command text input at 380,100 (446x21)."
+  },
+  {
+   "name": "Results list",
+   "contents": "Scrolling container (ref listRef), py-space-3, min-h-0, flex-1, overflow-y-auto. Palette state: 19 rows under 5 group headings (View, Task, Manage, Go to list, Go to project), content taller than the 60vh cap so it scrolls at some window sizes. Palette-search state (query \"new\"): 3 rows under 2 headings (Task, Manage). Keeps the active row in view with scrollIntoView block nearest."
+  },
+  {
+   "name": "Empty state (palette-no-match)",
+   "contents": "Single centred message \"No matching commands\" in a box at [346,134,488,62] below the input row (query \"zzzz\"). No rows and no group headings."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "dialog",
+   "component": "Overlay",
+   "variant": "layer=\"overlay\", placement=\"top\", captureEscape, trapFocus; onDismiss=onClose",
+   "purpose": "Modal layer that hosts the palette, traps focus, captures Escape and dismisses the palette.",
+   "text": "No visible text.",
+   "states": [
+    "open (all three reference states)"
+   ],
+   "behaviour": "Dismiss (outside click or Escape, via onDismiss) calls onClose. Escape is captured by the overlay. Focus is trapped inside the palette.",
+   "count": 1,
+   "region": "Whole screen (wraps Scrim and Palette panel)",
+   "sources": [
+    "CommandPalette.tsx:70-77",
+    "state:palette tree.txt:101",
+    "state:palette-search tree.txt:101",
+    "state:palette-no-match tree.txt:101"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Backdrop2 (tree name; not imported in CommandPalette.tsx)",
+   "variant": "dim=\"soft\", blur=false, layer=\"overlay\", tabIndex=-1; className starts \"px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh…\"",
+   "purpose": "Dimming scrim behind the palette panel; an outside mousedown on it dismisses the palette.",
+   "text": "No visible text.",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Mousedown on the scrim outside the panel dismisses the palette (onMouseDown on Backdrop2, with onDismiss on the Overlay).",
+   "count": 1,
+   "region": "Scrim",
+   "look": "div at [0,0,1180,760]; background oklab(0 0 0 / 0.3); no border; covers the whole window.",
+   "sources": [
+    "state:palette tree.txt:102",
+    "state:palette-search tree.txt:102",
+    "state:palette-no-match tree.txt:102",
+    "state:palette elements.json (div, box [0,0,1180,760], bg oklab(0 0 0 / 0.3))",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Surface (tree name Surface2)",
+   "variant": "elevation=\"menu\", surface=2, radius=\"panel\"; className \"animate-sheet-in flex max-h-[60vh] w-[min(35rem,100%)] flex-col overflow-hidden\"",
+   "purpose": "The palette panel container: the visual card that holds the input row and the results list or empty message.",
+   "text": "No visible text.",
+   "states": [
+    "palette: 490x456 at 345,91",
+    "palette-search: 490x184 at 345,91",
+    "palette-no-match: 490x109 at 345,91",
+    "open"
+   ],
+   "behaviour": "Display only. Its height changes with the number of results. Does not take input itself.",
+   "count": 1,
+   "region": "Palette panel",
+   "look": "Menu-elevation surface 2 with panel radius; 490 px wide; top edge at y=91; white background; soft drop shadow visible in the shot; exact radius and shadow not captured.",
+   "sources": [
+    "CommandPalette.tsx:78-83",
+    "state:palette tree.txt:103",
+    "state:palette-search tree.txt:103",
+    "state:palette-no-match tree.txt:103",
+    "state:palette shot.png",
+    "state:palette-search shot.png",
+    "state:palette-no-match shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "div (plain element; no component)",
+   "variant": "className \"border-edge-1l dark:border-edge-1d gap-space-5 px-space-6 flex h-11 shrink-0 items-center border-b\"",
+   "purpose": "Header row that holds the search glyph, the search input and the bottom divider rule.",
+   "text": "No visible text.",
+   "states": [
+    "always shown"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Input row",
+   "look": "44 px tall (h-11), top at y=91 (about 92 in the shot); 1px bottom border (hairline, colour not captured); bolt at 355,102; input at 380,100.",
+   "sources": [
+    "CommandPalette.tsx:84",
+    "state:palette tree.txt:104",
+    "state:palette-search tree.txt:104",
+    "state:palette-no-match tree.txt:104",
+    "state:palette elements.json (input box [380,100,446,21])",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"bolt\", size=18, weight=300, className \"text-content-3l dark:text-content-3d shrink-0\"",
+   "purpose": "Leading glyph in the search row marking this as the command input.",
+   "text": "Icon name \"bolt\" (Material Symbols).",
+   "states": [
+    "always shown"
+   ],
+   "behaviour": "None; decorative, not clickable.",
+   "count": 1,
+   "region": "Input row",
+   "look": "18x18 at 355,102; font 400 18px/18px; colour oklch(0.62 0.013 264).",
+   "sources": [
+    "CommandPalette.tsx:85-90",
+    "state:palette tree.txt:104",
+    "state:palette-search tree.txt:104",
+    "state:palette-no-match tree.txt:104",
+    "state:palette elements.json (span 'bolt', box [355,102,18,18])",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (tree name TextInput2)",
+   "variant": "bare=true; className \"w-full text-[14px]\"; ref inputRef; value bound to q",
+   "purpose": "Filter query for the command list. It is focused automatically on open.",
+   "text": "Placeholder \"Run a command or jump to…\" (single ellipsis character). Typed values in reference states: \"\" (palette), \"new\" (palette-search), \"zzzz\" (palette-no-match).",
+   "states": [
+    "empty (placeholder shown)",
+    "typed (value filters the list)",
+    "focused on open (useEffect focus)"
+   ],
+   "behaviour": "Typing sets q and resets the active row to 0. The list is filtered by case-insensitive substring match on the label (not fuzzy) and ranked by match index, earlier matches first, stable. ArrowDown moves active down, capped at results.length-1; with zero results it becomes -1 and nothing is highlighted. ArrowUp moves active up, floored at 0. Enter runs the active row; the default key is prevented for these keys. Enter with no results does nothing.",
+   "count": 1,
+   "region": "Input row",
+   "look": "Input box at [380,100,446,21]; font 400 14px/21px; text colour oklch(0.26 0.012 262); placeholder grey (exact colour not captured).",
+   "sources": [
+    "CommandPalette.tsx:35-55",
+    "CommandPalette.tsx:91-113",
+    "state:palette tree.txt:105 (value=\"\")",
+    "state:palette-search tree.txt:105 (value=\"new\")",
+    "state:palette-no-match tree.txt:105 (value=\"zzzz\")",
+    "state:palette elements.json (input box [380,100,446,21])",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "div (plain element; no component)",
+   "variant": "className \"py-space-3 min-h-0 flex-1 overflow-y-auto\"; ref listRef",
+   "purpose": "Scrolling container for group headings and command rows; keeps the active row in view.",
+   "text": "No visible text.",
+   "states": [
+    "populated (palette, palette-search)",
+    "empty, shows the empty message (palette-no-match)",
+    "scrolls when content exceeds the 60vh cap"
+   ],
+   "behaviour": "Mouse wheel and trackpad scroll. When active changes, scrolls the row with data-idx equal to active into view (block nearest).",
+   "count": 1,
+   "region": "Results list",
+   "look": "py-space-3 vertical padding; palette-state content taller than the 60vh cap, so it scrolls at some window sizes.",
+   "sources": [
+    "CommandPalette.tsx:115-118",
+    "CommandPalette.tsx:57-61",
+    "state:palette tree.txt:106",
+    "state:palette elements.json"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (as=\"div\")",
+   "variant": "tone=\"muted\", weight=\"semibold\"; className \"mt-space-3 mb-space-1 px-space-6 text-[10.5px] tracking-widest uppercase\"; rendered only when the group changes from the previous row",
+   "purpose": "Heading that names the group of the command rows below it.",
+   "text": "Group name as in code, shown in capitals via CSS uppercase: \"View\", \"Task\", \"Manage\", \"Go to list\", \"Go to project\". Palette state shows all five; palette-search shows Task and Manage.",
+   "states": [
+    "shown when a new group begins",
+    "not shown when the results are empty"
+   ],
+   "behaviour": "Display only; not interactive.",
+   "count": 5,
+   "region": "Results list",
+   "look": "Uppercase, small, bold, letter-spaced grey label at x=355; 10.5px with widest tracking; colour not captured (grey).",
+   "sources": [
+    "CommandPalette.tsx:132-141",
+    "palette.ts:91,127,143,168,176 (group strings)",
+    "state:palette tree.txt:106 (View)",
+    "state:palette tree.txt:133 (Task)",
+    "state:palette tree.txt:151 (Manage)",
+    "state:palette tree.txt:168 (Go to list)",
+    "state:palette tree.txt:175 (Go to project)",
+    "state:palette-search tree.txt:106 (Task)",
+    "state:palette-search tree.txt:111 (Manage)",
+    "state:palette elements.json (text 'VIEW', 'TASK', 'MANAGE' inside container div)",
+    "state:palette-search shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (as=\"p\")",
+   "variant": "tone=\"muted\", className \"px-space-7 py-6 text-center text-[13px]\"; shown only when results are empty",
+   "purpose": "Empty-result message shown when no command label contains the query.",
+   "text": "\"No matching commands\"",
+   "states": [
+    "shown only in palette-no-match (query \"zzzz\")"
+   ],
+   "behaviour": "Display only; not interactive. Enter with no results does nothing (runAt returns early).",
+   "count": 1,
+   "region": "Empty state (palette-no-match)",
+   "look": "Box at [346,134,488,62]; font 400 13px/19.5px; colour oklch(0.62 0.013 264); text centred.",
+   "sources": [
+    "CommandPalette.tsx:119-127",
+    "CommandPalette.tsx:63-65",
+    "state:palette-no-match tree.txt:106 (134, 488x62)",
+    "state:palette-no-match elements.json (p 'No matching commands', box [346,134,488,62])",
+    "state:palette-no-match shot.png"
+   ]
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem",
+   "variant": "Command row with a keyboard hint. Props: data-idx=i, active, onMouseMove, onClick, leading=Icon, trailing=HotkeyHint.",
+   "purpose": "One runnable command with a keyboard shortcut. Click or Enter runs it and closes the palette.",
+   "text": "Command labels in palette state: \"Toggle preview\", \"Toggle split view\", \"Show / hide completed\", \"Collapse all\", \"Expand all\", \"New task\", \"Search this list\", \"Undo\", \"Redo\", \"New list\", \"New project\", \"Settings\". Labels in palette-search: \"New task\", \"New list\", \"New project\".",
+   "states": [
+    "inactive",
+    "active (highlighted; idx 0 at open, and any row under the pointer or reached by arrow keys)",
+    "hover (mouse move sets active to this row)"
+   ],
+   "behaviour": "Click calls runAt(i), which closes the palette and then runs cmd.run(). Mouse move sets active to i. Enter on the active row runs it the same way.",
+   "count": 12,
+   "region": "Results list",
+   "look": "Row 488 wide (346 to 834), height 32; label font 400 13px/19.5px, colour oklch(0.26 0.012 262); active background oklch(0.6 0.2 255 / 0.1); icon 16px at x=355; label at x=378.",
+   "sources": [
+    "CommandPalette.tsx:142-165",
+    "CommandPalette.tsx:63-68",
+    "state:palette tree.txt idx 0,1,3,4,5,6,7,8,9,10,11,13",
+    "state:palette-search tree.txt idx 0,1,2 (lines 107,112,117)",
+    "state:palette elements.json (buttons with text 'Toggle split view', 'Show / hide completed', 'Collapse all', 'Expand all', 'New task', 'Search this list', 'Undo', 'Redo', 'New list', 'New project', 'Settings')",
+    "state:palette elements.json (button 'Toggle preview', box [346,155,488,32], bg oklch(0.6 0.2 255 / 0.1))",
+    "state:palette-search elements.json (button 'New task', box [346,155,488,32], bg oklch(0.6 0.2 255 / 0.1))",
+    "state:palette shot.png",
+    "state:palette-search shot.png"
+   ]
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem",
+   "variant": "Command row without a hotkey. Props: data-idx=i, active, onMouseMove, onClick, leading=Icon (no trailing).",
+   "purpose": "One runnable command or jump target that has no shortcut. Click or Enter runs it and closes the palette.",
+   "text": "\"Swap panes\" (View) and \"Open Trash\" (Manage). Runtime jump rows: \"Errands\", \"Reading\", \"Garden\" (Go to list) and \"Home\", \"Spring launch\" (Go to project). Jump-row labels come from runtime data and are not in the tree.",
+   "states": [
+    "inactive",
+    "active (highlighted by arrow keys or pointer)",
+    "hover (mouse move sets active)",
+    "clipped below the panel edge (Open Trash and the list and project rows in the palette state)"
+   ],
+   "behaviour": "Click or Enter runs the command, same as the hotkey rows. Jump rows switch to the named list or project.",
+   "count": 7,
+   "region": "Results list",
+   "look": "Same geometry as the hotkey rows but no shortcut glyphs; row height 30; box 488 wide.",
+   "sources": [
+    "CommandPalette.tsx:142-165",
+    "palette.ts:59-64 (swap_panes, no accel)",
+    "palette.ts:142-147 (trash, no accel)",
+    "palette.ts:165-180 (go-list and go-proj rows, no accel)",
+    "state:palette tree.txt idx 2,12,14,15,16,17,18",
+    "state:palette elements.json (buttons 'Swap panes', 'Open Trash', 'list Errands', 'list Reading', 'list Garden', 'folder Home', 'folder Spring launch')",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (leading slot of MenuItem)",
+   "variant": "name=cmd.icon ?? 'chevron_right', size=16, weight=300",
+   "purpose": "Glyph identifying each command or destination.",
+   "text": "Icon names in palette state, by row: right_panel_open, vertical_split, swap_horiz, visibility, unfold_less, unfold_more, add, search, undo, redo, playlist_add, create_new_folder, delete, settings, list (Errands, Reading, Garden), folder (Home, Spring launch). Palette-search: add, playlist_add, create_new_folder. The 'chevron_right' fallback is not used by any command.",
+   "states": [
+    "default",
+    "active (colour unchanged)"
+   ],
+   "behaviour": "None; decorative.",
+   "count": 19,
+   "region": "Results list",
+   "look": "16x16 at x=355; font 400 16px/16px; colour oklch(0.62 0.013 264). Palette-search rows are also 16x16.",
+   "sources": [
+    "CommandPalette.tsx:147-153",
+    "palette.ts:43-178 (icon field per command)",
+    "state:palette tree.txt:108-177 (Icon name=… size=16 weight=300)",
+    "state:palette-search tree.txt:108,113,118 (size=16)",
+    "state:palette elements.json (span icon text per row)",
+    "state:palette shot.png"
+   ]
+  },
+  {
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "variant": "hotkey=parseAccel(cmd.accel), size=\"md\", tone=\"inherit\"; rendered only when the command has an accel",
+   "purpose": "Shows the keyboard shortcut for the command at the right edge of its row.",
+   "text": "No text node; modifiers are Icons keyboard_command_key (command), keyboard_option_key (option) and shift (shift). Shortcuts shown: ⌘ \\ Toggle preview; ⌘ ⌥ S Toggle split view; ⌘ ⇧ H Show / hide completed; ⌘ ⌥ - Collapse all; ⌘ ⌥ = Expand all; ⌘ N New task; ⌘ F Search this list; ⌘ Z Undo; ⌘ ⇧ Z Redo; ⌘ ⇧ N New list; ⌘ ⇧ P New project; ⌘ , Settings. Palette-search: ⌘ N, ⌘ ⇧ N, ⌘ ⇧ P.",
+   "states": [
+    "inherits row colour (tone inherit), so it changes with the active row"
+   ],
+   "behaviour": "Display only; not clickable.",
+   "count": 12,
+   "region": "Results list (right edge of command rows)",
+   "look": "Modifier spans 13x13, font 400 13px/13px; key letters 400 12px/18px; colour inherits the row colour (oklch(0.62 0.013 264) in default rows, shot). No keycap border captured.",
+   "sources": [
+    "CommandPalette.tsx:154-162",
+    "state:palette tree.txt:109,113,120,125,130,136,140,144,148,154,159,166",
+    "state:palette-search tree.txt:109,114,119",
+    "state:palette elements.json (spans 'keyboard_command_key', 'keyboard_option_key', 'shift', and key letters)",
+    "state:palette shot.png",
+    "state:palette-search elements.json"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Click or Enter on 'Toggle preview' (View group) — palette.ts:45 togglePreview"
+  },
+  {
+   "to": "main-window",
+   "via": "Click or Enter on 'Toggle split view' (View group) — palette.ts:53-56 toggleSplit(splitTargetId())"
+  },
+  {
+   "to": "main-window",
+   "via": "Click or Enter on 'Swap panes' (View group) — palette.ts:63 swapPanes"
+  },
+  {
+   "to": "task-list",
+   "via": "Click or Enter on 'Show / hide completed' (View group) — palette.ts:71 toggleShowCompleted"
+  },
+  {
+   "to": "task-list",
+   "via": "Click or Enter on 'Collapse all' or 'Expand all' (View group) — palette.ts:79, 87 (collapseAll/expandAll; target inferred, not read)"
+  },
+  {
+   "to": "task-list",
+   "via": "Click or Enter on 'Search this list' (Task group, ⌘ F) — palette.ts:106 focusSearch(focusedListId)"
+  },
+  {
+   "to": "draft-inspector",
+   "via": "Click or Enter on 'New task' (Task group, ⌘ N, also in search results) — palette.ts:96 startNewTask(focusedListId); target inferred, not verified"
+  },
+  {
+   "to": "sheets",
+   "via": "Click or Enter on 'New list' (Manage group, ⌘ ⇧ N) — palette.ts:131 createList; target inferred, not verified"
+  },
+  {
+   "to": "sheets",
+   "via": "Click or Enter on 'New project' (Manage group, ⌘ ⇧ P) — palette.ts:139 createProject; target inferred, not verified"
+  },
+  {
+   "to": "trash",
+   "via": "Click or Enter on 'Open Trash' (Manage group) — palette.ts:146 setTrashOpen(true)"
+  },
+  {
+   "to": "settings-general",
+   "via": "Click or Enter on 'Settings' (Manage group, ⌘ ,) — palette.ts:154 api.openSettings(); the pane it opens on was not determined"
+  },
+  {
+   "to": "sheets",
+   "via": "Click or Enter on 'Delete “<task title>”' (Task group; only when a task is selected) — palette.ts:157-164 requestDeleteTask; target inferred; absent from all reference states"
+  },
+  {
+   "to": "main-window",
+   "via": "Click or Enter on a 'go-list-<id>' row (Go to list group; Errands, Reading, Garden in the reference) — palette.ts:165-172 layout.selectList(l.id)"
+  },
+  {
+   "to": "title-bar",
+   "via": "Click or Enter on a 'go-proj-<id>' row (Go to project group; Home, Spring launch in the reference) — palette.ts:173-180 selectProject(p.id); shown in the ProjectSwitcher"
+  },
+  {
+   "to": "main-window",
+   "via": "Click outside the panel on the scrim, press Escape, or run any row (palette closes first, then the command runs) — CommandPalette.tsx:70-77, 63-68"
+  }
+ ],
+ "notes": "Merged from inventory A (code) and inventory B (measurements) after the critique.\n\nConflicts resolved per the critique:\n- Palette panel geometry: A's values used (490 px wide at x=345, y=91; heights 456/184/109). B's 488 wide at x=346, y=92 measured the row width, not the panel. B's panel corner radius and soft shadow are kept as visual notes only.\n- Palette-search icons: 16x16 (A and the critic). B's 18x18 claim is dropped.\n- Scrim click: dismisses the palette (A, verified by onMouseDown on Backdrop2 and onDismiss on Overlay). B's \"unverified\" wording is superseded.\n- Placeholder: single ellipsis character \"…\" (code and tree), not three periods as in B.\n- Group headings: all five palette-state headings (View, Task, Manage, Go to list, Go to project) are kept, as the critic says the tree records both Go headings. B's section-header kind is merged into A's label kind and component Label (as=\"div\").\n- Jump-row labels (Errands, Reading, Garden, Home, Spring launch) are taken from B's elements.json and kept as runtime text in the no-hotkey MenuItem entry.\n\nMerged matches: Scrim (Backdrop2), Palette panel (Surface2), input row with divider, bolt icon, text input, results list, group headings (Label as div), empty message (Label as p), hotkey and no-hotkey MenuItem rows, row icons, HotkeyHint. Looks from B are attached to A's components.\n\nDropped:\n- B's \"Dimmed app window behind scrim\" widget and its region: main-window content (TitleBar, TaskPane, PreviewPanel, Resizer), out of scope for the palette, per the critic.\n- B's separate \"Divider\" widget: folded into the input row (border-b), per the critic.\n- B's separate section-header widgets for VIEW, TASK and MANAGE: merged into the single label widget.\n- B's separate jump-to list and project row widgets: merged into the no-hotkey MenuItem entry (same component and variant).\n\nUnverified in both inventories: Overlay, Backdrop2, Surface, TextInput, MenuItem, HotkeyHint and Label implementations were not read, so hover, focus, pressed and disabled looks and the exact Escape behaviour are unconfirmed. The ⌘K opener binding and how the palette is opened were not captured. Link targets marked inferred (draft-inspector, sheets, trash, settings-general pane, collapse/expand targets) were not observed.",
+ "counts": {
+  "A": 13,
+  "B": 17,
+  "issues": 12
+ }
+}

@@ -1,0 +1,1351 @@
+{
+ "id": "main-window",
+ "title": "Main window",
+ "tier": "high",
+ "states": [
+  "main-default",
+  "main-dark",
+  "split-view",
+  "preview-hidden",
+  "narrow-window",
+  "no-lists"
+ ],
+ "purpose": "The main window is the full Taskscape task-manager window. It composes the title bar, one task pane (or two in split view), an empty state when there are no lists, a right-hand aside that shows the preview/inspector panel (or the trash pane or filter panel), and app-wide overlays (command palette, sheet host, toast).",
+ "regions": [
+  {
+   "name": "window root",
+   "contents": "App root div (App.tsx:57), flex column, h-screen w-screen, overflow-hidden; wrapped by ContextMenuProvider (App.tsx:56, 146). 1180x760 in main-default, main-dark, split-view, preview-hidden and no-lists; 820x640 in narrow-window (footer at y 615-617)."
+  },
+  {
+   "name": "title bar",
+   "contents": "TitleBar at 0,0 1180x46 (820x46 in narrow-window). Holds window controls, drag grip, project switcher 'Home', list tabs 'Errands', 'Reading', 'Garden' (each with a delete-list button), the New list button, and the right-side toolbar (Split view, Swap panes in split view only, Hide/Show preview panel, Settings). Light grey surface in the light theme, dark in main-dark. Full detail is on the title-bar screen."
+  },
+  {
+   "name": "body row",
+   "contents": "div flex min-h-0 flex-1 (App.tsx:60), y=46 to 761 in main-default. Places the task area and the right aside side by side."
+  },
+  {
+   "name": "task area (left)",
+   "contents": "div flex min-w-0 flex-1 (App.tsx:62) when an active list exists. Holds the left TaskPane in a flexBasis slot (App.tsx:63-70; 100% alone, splitRatio*100% when split) and, when split, a Resizer and a second TaskPane slot (App.tsx:71-90). When no active list exists, EmptyState fills the area (App.tsx:92-106). Each pane has a search bar, task rows (y 98 to about 364 in main-default) and a StatsBar footer (y 729-760)."
+  },
+  {
+   "name": "search bar",
+   "contents": "Top of each pane, y 56-91 in main-default. Search field with leading search icon and placeholder 'Search Errands' (split right pane: 'Search Reading'), then Search options (tune) inside a ScopeFields wrapper, a vertical hairline divider, and New task (add). The split right pane also has a Close split button."
+  },
+  {
+   "name": "task rows",
+   "contents": "Rows of 32 px (one-line), 46 px (two-line with subtitle) and 126 px (expanded parent with subtasks), with hairline dividers between rows. Each row: Select round checkbox, title, optional subtitle or subtask badge, More button. Completed rows have struck-through grey text."
+  },
+  {
+   "name": "split divider",
+   "contents": "Resizer between the two task panes (App.tsx:73-85). Only present in split-view (state:split-view tree.txt:99, @430,46 4x715). Drag sets splitRatio clamped to 0.25 to 0.75; double-click resets it (App.tsx:78-84)."
+  },
+  {
+   "name": "right aside",
+   "contents": "Resizer (App.tsx:110-116) followed by aside with style width previewW, shrink-0, border-l (App.tsx:117-120). Rendered when previewOpen || trashOpen || filterOpen (App.tsx:108). Shows TrashPane if trashOpen, else FilterPanel if filterOpen, else PreviewPanel (App.tsx:121-131). Main-default: aside at 861,46 319x715, hairline at x about 860. Surface is a little darker in main-dark (not measured)."
+  },
+  {
+   "name": "empty list state",
+   "contents": "EmptyState in place of the task area when the active project has no lists (App.tsx:92-105). Shown only in no-lists, centred in the blank area (860x715 at y 46)."
+  },
+  {
+   "name": "overlays",
+   "contents": "Mounted at window-root level after the frame (App.tsx:138-145): CommandPalette when paletteOpen, SheetHost (always mounted), Toast (always mounted)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "App (div root)",
+   "variant": "root flex column; bg-surface-1l dark:bg-surface-1d; text-content-1l dark:text-content-1d; h-screen w-screen; overflow-hidden",
+   "purpose": "Window frame for the whole main window.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "window root",
+   "sources": [
+    "App.tsx:57",
+    "state:main-default tree.txt:1 (App 1180x760)",
+    "state:narrow-window tree.txt:1 (App 820x640)",
+    "state:main-default shot.png (window size)"
+   ],
+   "look": "1180x760 default; 820x640 narrow-window"
+  },
+  {
+   "kind": "surface",
+   "component": "div (body row)",
+   "variant": "flex min-h-0 flex-1",
+   "purpose": "Places the task area and the right aside side by side below the title bar.",
+   "text": "none",
+   "states": [
+    "all states"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "body row",
+   "sources": [
+    "App.tsx:60"
+   ],
+   "look": "y=46, height 715 in main-default"
+  },
+  {
+   "kind": "surface",
+   "component": "div (task area)",
+   "variant": "flex min-w-0 flex-1; rendered only when activeList is set",
+   "purpose": "Wrapper for the left task pane and any split pane.",
+   "text": "none",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view",
+    "preview-hidden",
+    "narrow-window"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:61-62"
+   ],
+   "look": "not measured separately; left pane is 860x715 at 0,46 in main-default"
+  },
+  {
+   "kind": "surface",
+   "component": "div (left pane slot)",
+   "variant": "min-w-0 flex; style flexBasis 100% when not split, splitRatio*100% when split",
+   "purpose": "Sizes the left pane.",
+   "text": "none",
+   "states": [
+    "all states with an active list"
+   ],
+   "behaviour": "none; width set by splitRatio (clamped 0.25 to 0.75 by the split Resizer)",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:63-68",
+    "App.tsx:78-81"
+   ],
+   "look": "split-view left slot 430px of 860px; default 860px of 860px"
+  },
+  {
+   "kind": "surface",
+   "component": "div (split pane slot)",
+   "variant": "border-edge-2l dark:border-edge-2d flex min-w-0 flex-1 border-l",
+   "purpose": "Holds the second, split task pane with a left hairline border.",
+   "text": "none",
+   "states": [
+    "split-view"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:86-88",
+    "state:split-view tree.txt:100 (@431,46 429x715)"
+   ],
+   "look": "429x715 at 431,46; border-l hairline between panes"
+  },
+  {
+   "kind": "other",
+   "component": "TaskPane",
+   "variant": "list={\"Errands\"} isSplit=false (left/primary pane)",
+   "purpose": "Task list for the active list: search bar, task rows, footer stats.",
+   "text": "list name prop 'Errands'",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view (left pane)",
+    "preview-hidden",
+    "narrow-window"
+   ],
+   "behaviour": "Contents are described in the task-list screen; this screen only hosts it.",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:69",
+    "state:main-default tree.txt:34 (@0,46 860x715)",
+    "state:preview-hidden tree.txt:34 (@0,46 1180x715)",
+    "state:narrow-window tree.txt:34 (@0,46 500x595)",
+    "state:split-view tree.txt:39 (@0,46 430x715)"
+   ],
+   "look": "860x715 at 0,46 in main-default; 1180x715 in preview-hidden; 430x715 in split-view; 500x595 in narrow-window"
+  },
+  {
+   "kind": "other",
+   "component": "TaskPane",
+   "variant": "list={\"Reading\"} isSplit=true (second, split pane)",
+   "purpose": "Second task list shown beside the first in split view.",
+   "text": "list name prop 'Reading'",
+   "states": [
+    "split-view"
+   ],
+   "behaviour": "Contents described in task-list screen.",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:87",
+    "state:split-view tree.txt:100 (@431,46 429x715)"
+   ],
+   "look": "429x715 at 431,46"
+  },
+  {
+   "kind": "other",
+   "component": "Resizer (split divider, with onReset)",
+   "variant": "onResize + onReset; 4px grab strip (w-1.25, cursor-col-resize) with 1px hairline span; class z-raised relative -mr-1.25 w-1.25 shrink-0",
+   "purpose": "Drags the split ratio between the two task panes; double-click resets the ratio.",
+   "text": "none (no label or tooltip)",
+   "states": [
+    "idle (hairline transparent)",
+    "hover (hover:bg-edge-2l dark:hover:bg-edge-2d)",
+    "active while dragging (bg-edge-3l dark:bg-edge-3d)"
+   ],
+   "behaviour": "Mouse drag horizontally sets splitRatio clamped 0.25 to 0.75 (App.tsx:78-82); double-click calls resetSplitRatio (App.tsx:84).",
+   "count": 1,
+   "region": "split divider",
+   "sources": [
+    "App.tsx:73-85",
+    "App.tsx:151-189",
+    "state:split-view tree.txt:99 (Resizer onResize=ƒ onReset=ƒ @430,46 4x715)",
+    "state:split-view shot.png (pane hairline at x about 430)"
+   ],
+   "look": "4x715 box at 430,46; 1px hairline span; colour per state classes"
+  },
+  {
+   "kind": "other",
+   "component": "Resizer (right aside edge, onResize only)",
+   "variant": "onResize only; no onReset",
+   "purpose": "Drags the width of the right aside.",
+   "text": "none",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view",
+    "narrow-window",
+    "no-lists"
+   ],
+   "behaviour": "Drag sets previewW clamped 280 to 420 px (App.tsx:110-115). No reset. Not present in preview-hidden.",
+   "count": 1,
+   "region": "right aside",
+   "sources": [
+    "App.tsx:110-116",
+    "state:main-default tree.txt:94 (Resizer onResize=ƒ @860,46 4x715)",
+    "state:narrow-window tree.txt:94 (@500,46 4x595)",
+    "state:no-lists tree.txt:28 (@860,46 4x715)",
+    "state:main-default shot.png (pane hairline at x about 860)"
+   ],
+   "look": "4x715 at 860,46 in main-default; 4x595 at 500,46 in narrow-window"
+  },
+  {
+   "kind": "empty-state",
+   "component": "EmptyState (no lists yet)",
+   "variant": "title 'No lists yet'; subtitle 'Create a list to start adding tasks'; className bg-surface-2l dark:bg-surface-2d; no icon",
+   "purpose": "Shown in place of the task pane when the active project has no lists.",
+   "text": "title: 'No lists yet'; subtitle: 'Create a list to start adding tasks'",
+   "states": [
+    "no-lists"
+   ],
+   "behaviour": "No actions on the empty state itself; the New list IconButton in the title bar is the way forward.",
+   "count": 1,
+   "region": "empty list state",
+   "sources": [
+    "App.tsx:92-105 (branch when listsInProject.length === 0)",
+    "state:no-lists tree.txt:25 (EmptyState @0,46 860x715)",
+    "state:no-lists tree.txt:26-27 (title Label font-display text-[15px] tone secondary weight medium; subtitle Label text-[12.5px] tone muted)",
+    "state:no-lists shot.png (text and centring)"
+   ],
+   "look": "860x715 at y=46; title box 84x23 at 388,380; subtitle 209x19 at 326,407; title font display 15px medium secondary; subtitle 12.5px muted"
+  },
+  {
+   "kind": "empty-state",
+   "component": "EmptyState (no list selected)",
+   "variant": "title 'No list selected'; subtitle 'Pick a list tab to view its tasks'; className bg-surface-2l dark:bg-surface-2d",
+   "purpose": "Shown in place of the task pane when lists exist in the project but no list is active.",
+   "text": "title: 'No list selected'; subtitle: 'Pick a list tab to view its tasks'",
+   "states": [
+    "none recorded (code path only)"
+   ],
+   "behaviour": "No actions; pick a list tab in the title bar.",
+   "count": 0,
+   "region": "task area (left)",
+   "sources": [
+    "App.tsx:92-105 (branch when listsInProject.length > 0 and no activeList)"
+   ],
+   "look": "not recorded (no state shows it)"
+  },
+  {
+   "kind": "surface",
+   "component": "aside (right panel)",
+   "variant": "style width previewW; border-edge-2l dark:border-edge-2d shrink-0 border-l; shows TrashPane, FilterPanel or PreviewPanel",
+   "purpose": "Right-hand panel host.",
+   "text": "none",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view",
+    "narrow-window",
+    "no-lists"
+   ],
+   "behaviour": "Hidden when previewOpen, trashOpen and filterOpen are all false (App.tsx:108).",
+   "count": 1,
+   "region": "right aside",
+   "sources": [
+    "App.tsx:117-132",
+    "state:main-default tree.txt:95 (PreviewPanel @861,46 319x715)",
+    "state:narrow-window tree.txt:95 (@501,46 319x595)",
+    "state:main-default shot.png (region x 861-1180, y 46-760; light grey in light theme)"
+   ],
+   "look": "319px wide in recorded states (861,46 in main-default; 501,46 in narrow-window); width from previewW clamped 280 to 420; surface colour not measured"
+  },
+  {
+   "kind": "other",
+   "component": "PreviewPanel",
+   "variant": "inspector router; no props; picks MultiInspector, TaskInspector, DraftInspector or EmptyState from store state",
+   "purpose": "Inspector panel for the focused pane's selection.",
+   "text": "none on its own",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view",
+    "narrow-window",
+    "no-lists (empty branch)"
+   ],
+   "behaviour": "Routing only: more than one selected task shows MultiInspector; one task shows TaskInspector; a draft list shows DraftInspector; otherwise the empty state.",
+   "count": 1,
+   "region": "right aside",
+   "sources": [
+    "PreviewPanel.tsx:15-60",
+    "PreviewPanel.tsx:43 (root class bg-surface-1l dark:bg-surface-1d flex h-full flex-col overflow-hidden)",
+    "state:main-default tree.txt:95"
+   ],
+   "look": "class bg-surface-1l dark:bg-surface-1d flex h-full flex-col overflow-hidden; 319x715 at 861,46 in main-default"
+  },
+  {
+   "kind": "other",
+   "component": "EmptyState (no task selected, inside PreviewPanel)",
+   "variant": "icon left_click, iconSize 28; title 'No task selected'; subtitle 'Select a task to inspect it'",
+   "purpose": "Shown when nothing is selected in the focused pane.",
+   "text": "icon: left_click; title: 'No task selected'; subtitle: 'Select a task to inspect it'",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view",
+    "narrow-window",
+    "no-lists"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "right aside",
+   "sources": [
+    "PreviewPanel.tsx:50-56",
+    "state:main-default tree.txt:96 (EmptyState @861,46 319x715)",
+    "state:main-default tree.txt:97 (Icon left_click size 28 className text-content-3l dark:text-content-3d @1007,363 28x28)",
+    "state:main-default tree.txt:98 (Label as=div tone=secondary weight=medium className font-display text-[15px] @958,396 125x23)",
+    "state:main-default tree.txt:99 (Label as=div tone=muted className text-[12.5px] @941,424 159x19)",
+    "state:main-default shot.png (heading and hint text)"
+   ],
+   "look": "icon box 1007,363 28x28, 28px glyph, colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; title box 958,396 125x23 font display 15px medium secondary; subtitle box 941,424 159x19 12.5px muted; centred near x 1020"
+  },
+  {
+   "kind": "other",
+   "component": "MultiInspector",
+   "variant": "several tasks selected (selectionTasks.length > 1)",
+   "purpose": "Bulk inspector for a multi-selection. Own screen: multi-inspector.",
+   "text": "not in tree",
+   "states": [
+    "none recorded"
+   ],
+   "behaviour": "Shown from PreviewPanel routing.",
+   "count": 0,
+   "region": "right aside",
+   "sources": [
+    "PreviewPanel.tsx:44-45"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "TaskInspector",
+   "variant": "single selected task (key task.id)",
+   "purpose": "Inspector for one task. Own screen: task-inspector.",
+   "text": "not in tree",
+   "states": [
+    "none recorded"
+   ],
+   "behaviour": "Shown from PreviewPanel routing.",
+   "count": 0,
+   "region": "right aside",
+   "sources": [
+    "PreviewPanel.tsx:46-47"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "DraftInspector",
+   "variant": "new task before content (key draftListId)",
+   "purpose": "Inspector for a draft task. Own screen: draft-inspector.",
+   "text": "not in tree",
+   "states": [
+    "none recorded"
+   ],
+   "behaviour": "Shown from PreviewPanel routing when draftListId is set and no task is selected.",
+   "count": 0,
+   "region": "right aside",
+   "sources": [
+    "PreviewPanel.tsx:48-49"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "TrashPane",
+   "variant": "replaces PreviewPanel in the aside when trashOpen; prop onClose -> setTrashOpen(false)",
+   "purpose": "Trash view. Own screen: trash.",
+   "text": "not in tree",
+   "states": [
+    "none recorded"
+   ],
+   "behaviour": "Close calls setTrashOpen(false).",
+   "count": 0,
+   "region": "right aside",
+   "sources": [
+    "App.tsx:121-124"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "FilterPanel",
+   "variant": "replaces PreviewPanel in the aside when filterOpen (and trash not open); prop onClose -> setFilterOpen(false)",
+   "purpose": "Filter and Sort panel. Own screen: filter-panel. Renders in the main window per the comment.",
+   "text": "not in tree",
+   "states": [
+    "none recorded"
+   ],
+   "behaviour": "Close calls setFilterOpen(false).",
+   "count": 0,
+   "region": "right aside",
+   "sources": [
+    "App.tsx:125-128",
+    "panels.tsx:11-13 (comment: filter panel renders in the main window)"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "CommandPalette",
+   "variant": "overlay; props getCommands=buildCommands, onClose -> setPaletteOpen(false)",
+   "purpose": "Command palette. Own screen: command-palette.",
+   "text": "not in tree",
+   "states": [
+    "none recorded (shown only when paletteOpen)"
+   ],
+   "behaviour": "Closes via onClose. Opening shortcut not confirmed in these files (useAppKeyboard not read).",
+   "count": 0,
+   "region": "overlays",
+   "sources": [
+    "App.tsx:138-143",
+    "App.tsx:34"
+   ],
+   "look": "not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "SheetHost",
+   "variant": "no props; always mounted; renders sheets when requested",
+   "purpose": "Host for in-app sheets (new list, rename, delete confirmations). Own screen: sheets.",
+   "text": "none in recorded states",
+   "states": [
+    "idle (renders no children in recorded states)"
+   ],
+   "behaviour": "Sheets are opened elsewhere (New list and delete-list buttons); trigger bodies not in these files.",
+   "count": 1,
+   "region": "overlays",
+   "sources": [
+    "App.tsx:144",
+    "state:main-default tree.txt:100",
+    "panels.tsx:11-13"
+   ],
+   "look": "not visible"
+  },
+  {
+   "kind": "toast",
+   "component": "Toast",
+   "variant": "no props; always mounted; idle in recorded states",
+   "purpose": "Undoable action notice. Own screen: toast.",
+   "text": "not recorded in tree",
+   "states": [
+    "idle (no children in recorded states)"
+   ],
+   "behaviour": "Shown after an undoable action; trigger not in these files.",
+   "count": 1,
+   "region": "overlays",
+   "sources": [
+    "App.tsx:145",
+    "state:main-default tree.txt:101"
+   ],
+   "look": "not visible"
+  },
+  {
+   "kind": "other",
+   "component": "ContextMenuProvider",
+   "variant": "non-visual provider wrapping the whole window",
+   "purpose": "Supplies context-menu state to the window. Own screen: context-menus.",
+   "text": "none",
+   "states": [
+    "not in tree (no visual node)"
+   ],
+   "behaviour": "none directly",
+   "count": 1,
+   "region": "window root",
+   "sources": [
+    "App.tsx:6",
+    "App.tsx:56",
+    "App.tsx:146"
+   ],
+   "look": "no visual node"
+  },
+  {
+   "kind": "other",
+   "component": "TitleBar",
+   "variant": "title bar row, 1180x46 (820x46 in narrow-window)",
+   "purpose": "Hosts the title bar; its content is the title-bar screen.",
+   "text": "none",
+   "states": [
+    "all states"
+   ],
+   "behaviour": "Contents described in the title-bar screen.",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "App.tsx:58",
+    "state:main-default tree.txt:2 (TitleBar @0,0 1180x46)",
+    "state:narrow-window tree.txt:2 (TitleBar @0,0 820x46)",
+    "state:main-default shot.png (title bar background, y 0-45)"
+   ],
+   "look": "0,0 1180x46 (tree); B read y 0-45 from shot; light grey surface in light theme, dark in main-dark (colour not measured)"
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (inside MacLights, WindowControls, MacControls)",
+   "variant": "id close / minimize / fullscreen; focused=true; inert=false; macOS traffic-light style",
+   "purpose": "Standard window close, minimise and full-screen controls.",
+   "text": "accessible labels 'Close', 'Minimize', 'Full Screen'; no visible text",
+   "states": [
+    "focused=true in all recorded states (plain dots)",
+    "glyphs (x, minus, arrow) drawn inside in split-view and narrow-window shots, likely a hover or group-focus capture"
+   ],
+   "behaviour": "click (Close closes the window, Minimize minimises, Full Screen toggles full screen; inferred from labels; onClick handler body not in these files)",
+   "count": 3,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:5-8 (MacLights focused=true act={...} @0,0 84x45; Light @18,15 / @39,15 / @60,15)",
+    "state:main-dark tree.txt:5-8 (same)",
+    "state:main-default elements.json (buttons 'Close', 'Minimize', 'Full Screen')",
+    "state:split-view shot.png and state:narrow-window shot.png (glyphs)"
+   ],
+   "look": "14x14 each at x 18, 39, 60, y 15; font 400 14px/21px; glyph colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; red, yellow and green dots in the light theme shot"
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name drag_indicator; size 20; className pointer-events-none",
+   "purpose": "Drag grip in the title bar; pointer-events disabled, so it is not itself a control.",
+   "text": "drag_indicator",
+   "states": [
+    "all states"
+   ],
+   "behaviour": "none (pointer-events-none)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:9 (@85,12 20x20)",
+    "state:main-default shot.png"
+   ],
+   "look": "box 85,12 20x20; font 400 20px/20px; colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark"
+  },
+  {
+   "kind": "dropdown",
+   "component": "ProjectSwitcher",
+   "variant": "label + unfold_more chevron; pill chip, radius 7px; 85x28",
+   "purpose": "Shows the active project and opens the project switcher.",
+   "text": "'Home' (Label child, bold); icon unfold_more size 15 weight 300; accessible label 'Switch project'",
+   "states": [
+    "all states",
+    "open menu not captured"
+   ],
+   "behaviour": "click opens project switcher (handler body not in these files)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:10-12 (ProjectSwitcher @112,8 85x28)",
+    "state:main-default elements.json (button 'Switch project', box 112,8 85x28)",
+    "state:main-default shot.png (chip 'Home')"
+   ],
+   "look": "box 112,8 85x28; chip bg oklch(0.944 0.003 255) light / oklch(0.172 0.004 260) dark; 'Home' font 600 14px/21px at 124,12 (45x21); chevron 15px at 173,15, colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "other",
+   "component": "ListTabs",
+   "variant": "tab strip; 857x45 (main-default), 824x45 (split-view), 497x45 (narrow-window), 857x45 (preview-hidden), 857x45 (no-lists, holds only the New list button)",
+   "purpose": "Shows list tabs for the project and their actions.",
+   "text": "none",
+   "states": [
+    "all states"
+   ],
+   "behaviour": "Contents described below and in title-bar screen.",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "App.tsx:27-28",
+    "state:main-default tree.txt:13 (ListTabs @211,0 857x45)",
+    "state:split-view tree.txt:13 (ListTabs @211,0 824x45)",
+    "state:narrow-window tree.txt:13 (ListTabs @211,0 497x45)"
+   ],
+   "look": "at 211,0; 857x45 in main-default"
+  },
+  {
+   "kind": "tab",
+   "component": "Label (list tab name, active)",
+   "variant": "active tab: tone primary; truncate; weight medium; className max-w-40 text-[13px] tracking-[0.01em]",
+   "purpose": "Name of the active list tab; marks the list shown in the left pane.",
+   "text": "'Errands'",
+   "states": [
+    "active (main-default, main-dark, preview-hidden, narrow-window)",
+    "split-view: blue pane marker before the name; text moves to x 249"
+   ],
+   "behaviour": "click selects the list tab (handler not in these files; inferred)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:14 (Label 51x20)",
+    "state:split-view tree.txt:15",
+    "state:main-default elements.json (text 'Errands')",
+    "state:main-default shot.png (active frame about x 212-309, y 0-45)"
+   ],
+   "look": "box 51x20 at 224,12; font 500 13px/19.5px; colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; hairline frame about x 212-309, y 0-45"
+  },
+  {
+   "kind": "tab",
+   "component": "Label (list tab name, inactive)",
+   "variant": "inactive tabs: tone muted; truncate; weight medium; className max-w-40 text-[13px] tracking-[0.01em]",
+   "purpose": "Other lists in the project; selects them when clicked.",
+   "text": "'Reading' (x 322), 'Garden' (x 422)",
+   "states": [
+    "inactive",
+    "split-view: Reading has a blue marker and sits in the right pane"
+   ],
+   "behaviour": "click selects the list (inferred)",
+   "count": 2,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:17,20 (Label 54x20, 48x20)",
+    "state:split-view tree.txt:19,22",
+    "state:main-default elements.json (texts 'Reading', 'Garden')"
+   ],
+   "look": "font 500 13px/19.5px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (split indicator)",
+   "variant": "line_start_circle and line_end_circle; className text-accent-500l dark:text-accent-500d",
+   "purpose": "Marks which tabs are in split view (accent-coloured start and end markers).",
+   "text": "line_start_circle (before first split tab, box 224,12); line_end_circle (before second split tab, box 347,12)",
+   "states": [
+    "split-view only"
+   ],
+   "behaviour": "none (indicator only)",
+   "count": 2,
+   "region": "title bar",
+   "sources": [
+    "state:split-view tree.txt:14 (Icon line_start_circle @224,12 20x20)",
+    "state:split-view tree.txt:18 (Icon line_end_circle @347,12 20x20)",
+    "state:split-view shot.png"
+   ],
+   "look": "20x20; font 400 20px/20px; colour oklch(0.6 0.2 255) (blue)"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (delete list)",
+   "variant": "icon close, iconSize 15, iconWeight 500, variant danger; small radius 4.375px; 21x21",
+   "purpose": "Deletes the list tab (opens the delete-list confirmation).",
+   "text": "title / accessible label 'Delete list'; icon close",
+   "states": [
+    "all states with tabs"
+   ],
+   "behaviour": "click starts list deletion (sheet path; confirmation not confirmed in these files)",
+   "count": 3,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:15,18,21 (IconButton @280,11 / @380,11 / @475,11)",
+    "state:split-view tree.txt:16,20,23 (IconButton @306,11 / @431,11 / @526,11)",
+    "state:main-default elements.json ('Delete list')"
+   ],
+   "look": "21x21 at x 280, 380, 475 (y 11) in main-default; x 306, 431, 526 in split-view; glyph 15px at +3,+3; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "thin vertical hairline between tabs and before the New list button",
+   "purpose": "Separates the list tabs.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "title bar",
+   "sources": [
+    "state:main-default shot.png (about x 408 and 503)"
+   ],
+   "look": "thin vertical line, about x 408 and 503; colour not recorded"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (new list)",
+   "variant": "icon add, size lg, iconSize 18, iconWeight 300; className my-auto ml-2 rounded-md; square ghost, radius 5.25px; 25x25",
+   "purpose": "Creates a new list (opens the new-list sheet).",
+   "text": "title / accessible label 'New list'; icon add",
+   "states": [
+    "all states (at x 218,10 in no-lists, the only control in the tab row)"
+   ],
+   "behaviour": "click starts new list creation (sheet path; not confirmed in these files)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:23 (IconButton @518,10 25x25)",
+    "state:no-lists tree.txt:14 (@218,10 25x25)",
+    "state:main-default elements.json ('New list')"
+   ],
+   "look": "box 518,10 25x25; glyph 18px at 522,13; font 400 18px/18px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "BarButton (split view)",
+   "variant": "icon vertical_split; wraps IconButton size xl radius control, iconSize 19, iconWeight 300; icon-only ghost toggle, radius 7px",
+   "purpose": "Turns split view on and off for the active list.",
+   "text": "title 'Split view' (inactive) / 'Close split view' (active); icon vertical_split",
+   "states": [
+    "inactive: active=false, filled=false (main-default, main-dark, preview-hidden, narrow-window)",
+    "active: active=true, filled=true, icon darker oklch(0.26 0.012 262) (split-view)",
+    "disabled: disabled=true (no-lists)"
+   ],
+   "behaviour": "click toggles split view (App.tsx:28 splitListId)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:25-27 (BarButton @1077,8 28x28)",
+    "state:split-view tree.txt:30-31",
+    "state:no-lists tree.txt:16-17 (disabled=true)",
+    "state:main-default elements.json ('Split view')"
+   ],
+   "look": "box 28x28 at 1077,8 (717,8 in narrow-window); radius 7px; glyph 19px at +4,+5; colour oklch(0.62 0.013 264) default"
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "BarButton (swap panes)",
+   "variant": "icon swap_horiz; IconButton filled=false active=false",
+   "purpose": "Swaps the two split panes.",
+   "text": "title / label 'Swap panes'; icon swap_horiz",
+   "states": [
+    "split-view only"
+   ],
+   "behaviour": "click swaps panes (handler not in these files)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:split-view tree.txt:27-29 (BarButton @1044,8 28x28)",
+    "state:split-view elements.json ('Swap panes')"
+   ],
+   "look": "box 28x28 at 1044,8; glyph 19px at 1048,13; colour oklch(0.62 0.013 264)"
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "BarButton (preview toggle)",
+   "variant": "shown: icon right_panel_close, active=true, filled=true; hidden: icon right_panel_open, active=false, filled=false; IconButton size xl radius control, iconSize 19, iconWeight 300",
+   "purpose": "Shows or hides the right aside (previewOpen).",
+   "text": "'Hide preview panel  ⌘\\\\' (preview open) or 'Show preview panel  ⌘\\\\' (preview hidden)",
+   "states": [
+    "preview open: main-default, main-dark, split-view, narrow-window, no-lists (hide variant, darker icon)",
+    "preview hidden: preview-hidden (show variant, grey icon)"
+   ],
+   "behaviour": "click or the shortcut toggles previewOpen (App.tsx:29, 108)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:28-30 (BarButton @1110,8 28x28, active=true)",
+    "state:preview-hidden tree.txt:28-30 (icon right_panel_open, active=false)",
+    "state:main-default elements.json (label 'Hide preview panel')"
+   ],
+   "look": "box 28x28 at 1110,8 (750,8 in narrow-window); radius 7px; glyph 19px at +5,+5; hide variant icon oklch(0.26 0.012 262); show variant icon oklch(0.62 0.013 264)"
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "BarButton (settings)",
+   "variant": "icon settings; IconButton size xl radius control, iconSize 19, iconWeight 300, filled=false, active=false",
+   "purpose": "Opens the Settings window.",
+   "text": "title 'Settings  ⌘,'; icon settings",
+   "states": [
+    "all states"
+   ],
+   "behaviour": "click or ⌘, opens the Settings window (panels.tsx:25 routes the settings window; which pane opens first not confirmed)",
+   "count": 1,
+   "region": "title bar",
+   "sources": [
+    "state:main-default tree.txt:31-32 (BarButton @1143,8 28x28)",
+    "panels.tsx:25",
+    "state:main-default elements.json ('Settings')"
+   ],
+   "look": "box 28x28 at 1143,8 (783,8 in narrow-window); radius 7px; glyph 19px at +5,+5; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell + TextInput2 (search bar)",
+   "variant": "InputWell className mx-4 mt-3 mb-2 h-10 shrink-0; TextInput2 bare=true value='' className w-full text-[14px]; handlers onFocus, onChange, onKeyDown",
+   "purpose": "Filters the task pane's list.",
+   "text": "placeholder 'Search Errands' (split right pane: 'Search Reading')",
+   "states": [
+    "all states with a pane (focus and typed text not captured)"
+   ],
+   "behaviour": "typing filters the rows (handler body not in these files; inferred)",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:35-37 (InputWell @14,56 832x35; TextInput2 @46,63 733x21)",
+    "state:split-view tree.txt:40-42 (InputWell 402x35)",
+    "state:split-view tree.txt:101-103 (placeholder 'Search Reading')",
+    "state:main-default shot.png (placeholder)"
+   ],
+   "look": "InputWell 832x35 at 14,56; TextInput2 at 46,63, 733x21; font 400 14px/21px; text colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; placeholder grey; width 373 in narrow-window, 1053 in preview-hidden, 303 split left, 279 split right"
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (search)",
+   "variant": "name search; size 18; weight 300",
+   "purpose": "Leading search glyph in the search bar.",
+   "text": "search",
+   "states": [
+    "all states with a pane"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:36 (@23,65 18x18)"
+   ],
+   "look": "box 23,65 18x18; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "other",
+   "component": "ScopeFields",
+   "variant": "wrapper around the Search options IconButton",
+   "purpose": "Wraps the search-options control in the search bar.",
+   "text": "none",
+   "states": [
+    "all states with a pane"
+   ],
+   "behaviour": "none directly (wraps the Search options button)",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:38 (ScopeFields @784,63 21x21)",
+    "state:split-view tree.txt:38 area (critic: split left 354,63; split right 761,63)"
+   ],
+   "look": "box 784,63 21x21 in main-default"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (search options)",
+   "variant": "icon tune, iconSize 15, iconWeight 300, variant plain; wrapped by ScopeFields; onMouseDown and onClick; small ghost radius 4.375px",
+   "purpose": "Opens search options and the Filter & Sort panel.",
+   "text": "title / label 'Search options'; icon tune",
+   "states": [
+    "all states with a pane"
+   ],
+   "behaviour": "click opens the Filter & Sort panel (filter-panel), inferred; handler body not in these files",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:39 (IconButton tune, title 'Search options' @784,63)",
+    "state:main-default elements.json ('Search options')",
+    "panels.tsx:11-13"
+   ],
+   "look": "box 784,63 21x21; glyph 15px at +3,+3; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "divider",
+   "component": "Divider",
+   "variant": "orientation vertical; className h-4 shrink-0",
+   "purpose": "Separates the search controls from the New task button.",
+   "text": "none",
+   "states": [
+    "all states with a pane"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:41 (@810,56 1x14)",
+    "state:main-default shot.png (hairline near x 810)"
+   ],
+   "look": "1x14 at 810,56; colour not recorded"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (new task)",
+   "variant": "icon add, iconSize 18, iconWeight 400; small ghost radius 4.375px; 21x21",
+   "purpose": "Starts a new task (draft).",
+   "text": "title / label 'New task'; icon add",
+   "states": [
+    "all states with a pane"
+   ],
+   "behaviour": "click starts a draft task (sets draftListId, PreviewPanel.tsx:48-49; handler not in these files)",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:main-default tree.txt:42-43 (@816,63 21x21)",
+    "state:main-default elements.json ('New task')",
+    "state:split-view (left New task at 386,63)"
+   ],
+   "look": "box 816,63 21x21; glyph 18px at 818,65; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (close split)",
+   "variant": "icon close, iconSize 16, iconWeight 300, className -mr-1; small ghost radius 4.375px; 21x21",
+   "purpose": "Closes the right pane and ends split view.",
+   "text": "title / label 'Close split'; icon close",
+   "states": [
+    "split-view (right pane only)"
+   ],
+   "behaviour": "click closes split view (handler not in these files; inferred from label)",
+   "count": 1,
+   "region": "search bar",
+   "sources": [
+    "state:split-view tree.txt:110-111 (@820,63 21x21)",
+    "state:split-view elements.json ('Close split')"
+   ],
+   "look": "box 820,63 21x21; glyph 16px at 822,66; colour oklch(0.62 0.013 264)"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (open, one line, depth 0)",
+   "variant": "depth 0, undone, one line, 32 px tall",
+   "purpose": "Shows an open top-level task title; click selects it.",
+   "text": "'Book bike service' (t-bike, y 182), 'Cut a spare key' (t-keys, y 214)",
+   "states": [
+    "undone",
+    "picked not recorded"
+   ],
+   "behaviour": "click the title selects the task and feeds the PreviewPanel (TaskInspector); handler not in these files",
+   "count": 2,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:55,60 (TaskRow2 taskId=t-bike, t-keys)",
+    "state:main-default elements.json (span titles)",
+    "state:main-default shot.png"
+   ],
+   "look": "title font 500 14px/16.625px at x 47; colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (open, with subtitle, depth 0)",
+   "variant": "depth 0, undone, two-line row, 46 px tall (tree @0,98 860x46)",
+   "purpose": "Shows an open top-level task with a secondary note line.",
+   "text": "'Pick up prescription' (t-pharmacy, box 47,105) with subtitle 'Counter closes at 6'",
+   "states": [
+    "undone"
+   ],
+   "behaviour": "click the title selects the task (TaskInspector); handler not in these files",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:44 (TaskRow2 taskId=t-pharmacy depth=0 @0,98 860x46)",
+    "state:main-default elements.json (span 'Pick up prescription')",
+    "state:main-default shot.png (subtitle 'Counter closes at 6')"
+   ],
+   "look": "46 px tall; title font 500 14px/16.625px; subtitle small secondary text 12.5px"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (done, depth 0)",
+   "variant": "depth 0, done=true, struck through",
+   "purpose": "Shows a finished top-level task.",
+   "text": "'Post the parcel to Mum' (t-post, box 47,151)",
+   "states": [
+    "done (strikethrough, grey text)"
+   ],
+   "behaviour": "click the title selects the task (TaskInspector); handler not in these files",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:50-51 (TaskRow2 taskId=t-post, Check done=true)",
+    "state:main-default elements.json (span 'Post the parcel to Mum')"
+   ],
+   "look": "title font 500 14px/16.625px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (parent with subtasks, expanded, depth 0)",
+   "variant": "depth 0, has subtasks, expanded; 126 px tall",
+   "purpose": "Shows a task with subtasks and its subtask progress.",
+   "text": "'Buy groceries for the week' (t-groceries, box 47,245)",
+   "states": [
+    "expanded (chevron rotated)"
+   ],
+   "behaviour": "click the title selects the task (TaskInspector); handler not in these files",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:65,68-69 (TaskRow2 t-groceries, 126px tall)",
+    "state:main-default elements.json (span 'Buy groceries for the week')",
+    "state:main-default shot.png"
+   ],
+   "look": "title font 500 14px/16.625px; colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; 126 px tall"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (subtask, depth 1)",
+   "variant": "depth 1, indented 24px, completed or open",
+   "purpose": "Shows a subtask under an expanded parent.",
+   "text": "'Oat milk' (t-milk, box 71,277, completed); 'Sourdough loaf' (t-bread, box 71,308); 'Apples' (t-apples, box 71,340)",
+   "states": [
+    "completed (Oat milk, strikethrough, grey text)",
+    "open (Sourdough loaf, Apples)"
+   ],
+   "behaviour": "click the title selects the task (TaskInspector); handler not in these files",
+   "count": 3,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:72-86 (depth-1 TaskRow2 children of t-groceries)",
+    "state:main-default elements.json (spans 'Oat milk', 'Sourdough loaf', 'Apples')"
+   ],
+   "look": "title font 500 14px/16.625px at x 71; open colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; completed colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "task-row",
+   "component": "TaskRow2 (split right pane rows)",
+   "variant": "depth 0 rows in the split right pane (list 'Reading')",
+   "purpose": "Tasks of the second list in the right pane.",
+   "text": "'Finish the novel on the nightstand' (t-novel, 478,105, open); 'Read the long article on soil health' (t-article, 478,137, done=true, struck through); 'Return library books' (t-library, 478,168, open)",
+   "states": [
+    "split-view (open rows, and one completed row)"
+   ],
+   "behaviour": "click the title selects the task (TaskInspector); handler not in these files",
+   "count": 3,
+   "region": "task area (split right pane)",
+   "sources": [
+    "state:split-view tree.txt:112,117,122 (right pane rows)",
+    "state:split-view tree.txt:118 (t-article done=true)",
+    "state:split-view elements.json (spans)"
+   ],
+   "look": "title font 500 14px/16.625px; open colour oklch(0.26 0.012 262); completed colour oklch(0.62 0.013 264); checkbox at x 451"
+  },
+  {
+   "kind": "checkbox",
+   "component": "Check (round-check)",
+   "variant": "done=true or done=false; picked=false; onToggleDone and onToggleSelect handlers; 16x16 circle; x 20 top-level, x 44 subtask, x 451 in split right pane",
+   "purpose": "Marks a task done or open; onToggleSelect handles selection.",
+   "text": "accessible label 'Select'; aria-pressed=false on every row in elements.json",
+   "states": [
+    "unchecked (most rows; aria-pressed=false)",
+    "checked done=true in tree for t-post, t-milk and t-article (visually empty in shot; mismatch unresolved)"
+   ],
+   "behaviour": "click toggles the done state (onToggleDone); selection via onToggleSelect (gesture not confirmed)",
+   "count": 8,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:45,51,56,61,66,73,78,83 (Check @20,113 etc.)",
+    "state:split-view tree.txt:118 (t-article done=true)",
+    "state:main-default elements.json (buttons 'Select', box 20,151 16x16)",
+    "state:main-default shot.png"
+   ],
+   "look": "16x16 circle; stroke oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; font 400 14px/21px"
+  },
+  {
+   "kind": "other",
+   "component": "Label (task title)",
+   "variant": "tone primary (open) or muted (done); weight medium; text-[14px]; truncate; as=div",
+   "purpose": "Task title.",
+   "text": "title text from the TaskRow2 entries above",
+   "states": [
+    "all rows"
+   ],
+   "behaviour": "none",
+   "count": 8,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:46,52,57,62,67,74,79,84",
+    "state:main-default elements.json (span titles)"
+   ],
+   "look": "font 500 14px/16.625px"
+  },
+  {
+   "kind": "other",
+   "component": "Label (task subtitle)",
+   "variant": "tone secondary; text-[12.5px] leading-4.25; truncate; as=div",
+   "purpose": "Secondary line under a task title.",
+   "text": "'Counter closes at 6'",
+   "states": [
+    "t-pharmacy only"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:47 (@47,122 774x15)",
+    "state:main-default shot.png (subtitle)"
+   ],
+   "look": "box 47,122 774x15; font 12.5px secondary, truncated"
+  },
+  {
+   "kind": "icon-button",
+   "component": "Icon (expand chevron)",
+   "variant": "name chevron_left; size 16; weight 300; className transition-transform duration-100 -rotate-90 when expanded",
+   "purpose": "Expand control on a parent task; shows its subtasks are expanded.",
+   "text": "icon chevron_left",
+   "states": [
+    "expanded (t-groceries, rotated -90)"
+   ],
+   "behaviour": "click toggles expansion (not confirmed in these files)",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:68 (Icon chevron_left @771,246 16x16, -rotate-90)",
+    "state:main-default elements.json (span 'chevron_left' box 771,246 16x16)"
+   ],
+   "look": "box 771,246 16x16; font 400 16px/16px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; not visible in shot.png at that position"
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "className px-space-3; bordered subtask count",
+   "purpose": "Subtask progress on a parent row.",
+   "text": "title '1 of 3 subtasks done'; visible text '1 / 3' (digits at x 798, 807, 813)",
+   "states": [
+    "t-groceries"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:69 (@793,245 32x18)",
+    "state:main-default elements.json (spans '1', '/', '3')",
+    "state:main-default shot.png"
+   ],
+   "look": "box 793,245 32x18; font 600 11px/16.5px; thin border; text colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; radius not recorded"
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (more)",
+   "variant": "icon more_horiz, iconSize 17, iconWeight 300, variant ghostStrong; small ghost radius 4.375px; 21x21; onClick and onDoubleClick",
+   "purpose": "Opens the row's more actions menu.",
+   "text": "title / label 'More'; icon more_horiz",
+   "states": [
+    "all rows"
+   ],
+   "behaviour": "click opens row actions (row context menu, inferred); double-click handler present but body not in these files",
+   "count": 8,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:48,53,58,63,70,75,80,85 (IconButton @830,110 etc.)",
+    "state:main-default elements.json ('More')"
+   ],
+   "look": "box 21x21 at x 830 (main-default), 400 (split left), 830 (split right), 470 (narrow-window), 1150 (preview-hidden); glyph 17px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "thin horizontal hairline between task rows",
+   "purpose": "Separates task rows.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 8,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default shot.png (about y 143, 174, 206, 237, 269, 300, 332, 363)"
+   ],
+   "look": "thin hairline; colour not recorded"
+  },
+  {
+   "kind": "other",
+   "component": "StatsBar",
+   "variant": "footer; className border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d; props done=2 total=8 pct=25 (main-default); done=1 total=3 pct=33 (split right pane)",
+   "purpose": "Footer stats for the pane.",
+   "text": "children below (done count, percentage)",
+   "states": [
+    "main-default",
+    "main-dark",
+    "split-view (left: done=2 total=8 pct=25; right: done=1 total=3 pct=33)",
+    "preview-hidden",
+    "narrow-window"
+   ],
+   "behaviour": "none in these files",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:87-88 (StatsBar @0,729 860x32)",
+    "state:split-view tree.txt:127-128 (StatsBar @431,729 429x32)",
+    "state:main-default shot.png (footer y 729-760)"
+   ],
+   "look": "box 0,729 860x32 in main-default; 429x32 at 431,729 in split right; surface bg-surface-2l / dark:bg-surface-2d"
+  },
+  {
+   "kind": "icon-button",
+   "component": "ViewControl (in StatsBar)",
+   "variant": "icon tune, size 14, weight 300; small ghost radius 4.375px; 25x19",
+   "purpose": "Opens the Sort & filter panel from the footer.",
+   "text": "accessible label 'Sort & filter'; icon tune",
+   "states": [
+    "all states with a StatsBar"
+   ],
+   "behaviour": "click opens the filter panel (filter-panel); handler body not in these files",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:89-90 (ViewControl @12,735 25x19)",
+    "state:main-default elements.json (button 'Sort & filter' box 12,735 25x19)",
+    "state:main-default shot.png (icon at about 18,738)"
+   ],
+   "look": "box 12,735 25x19; glyph 14px; font 600 11px/16.5px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; radius 4.375px"
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (in StatsBar)",
+   "variant": "orientation vertical; className h-3",
+   "purpose": "Separator in the footer, between the sort button and the stats.",
+   "text": "none",
+   "states": [
+    "all states with a StatsBar"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:91 (@44,730 1x11)",
+    "state:main-default shot.png (x 44; x 475 in split right)"
+   ],
+   "look": "1x11 at 44,730; colour not recorded"
+  },
+  {
+   "kind": "label",
+   "component": "Label (StatsBar done count)",
+   "variant": "uppercase footer count label; font 600 11px/16.5px uppercase",
+   "purpose": "Shows how many tasks in the list are done.",
+   "text": "'2 / 8 done' (split right pane: '1 / 3 done')",
+   "states": [
+    "all states with a StatsBar"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default elements.json (span '2 / 8 done' box 52,737 65x17)",
+    "state:main-default shot.png ('2/8 DONE')",
+    "state:split-view shot.png ('1 / 3 done')"
+   ],
+   "look": "box 52,737 65x17; font 600 11px/16.5px uppercase; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark"
+  },
+  {
+   "kind": "progress-bar",
+   "component": "ProgressBar",
+   "variant": "thin track with blue fill; value 0.25 (main-default); value 0.3333 (split right pane)",
+   "purpose": "Shows the proportion of done tasks for the pane.",
+   "text": "none",
+   "states": [
+    "main-default (fill about 25%)",
+    "split-view (right pane fill about 33%)"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:92 (ProgressBar value=0.25 @731,743 84x4)",
+    "state:split-view tree.txt:132 (value=0.3333333333333333)",
+    "state:main-default shot.png (track x 731-815, y about 744; blue fill)"
+   ],
+   "look": "84x4 at 731,743; track x 731-815 at y about 744; fill blue (colour not measured); x 301-385 in split left; x 1051-1135 in preview-hidden"
+  },
+  {
+   "kind": "label",
+   "component": "Label (stats text, percentage)",
+   "variant": "tone secondary; className w-8 text-right; font 600 11px/16.5px uppercase",
+   "purpose": "Numeric percent-complete text in the footer.",
+   "text": "'25 %' (shot shows '25%'); split right '33 %'",
+   "states": [
+    "all states with a StatsBar"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "task area (left)",
+   "sources": [
+    "state:main-default tree.txt:93 (@820,737 28x17)",
+    "state:main-default elements.json (span '25 %')",
+    "state:main-default shot.png"
+   ],
+   "look": "box 820,737 28x17; font 600 11px/16.5px uppercase; colour oklch(0.46 0.013 262) light / oklch(0.74 0.008 260) dark"
+  }
+ ],
+ "links": [
+  {
+   "to": "title-bar",
+   "via": "Embedded: TitleBar is rendered at the top of this screen (App.tsx:58). Its controls are listed in widgets above."
+  },
+  {
+   "to": "task-list",
+   "via": "Embedded: TaskPane hosts the task-list screen content in the task area (App.tsx:69, 87)."
+  },
+  {
+   "to": "task-inspector",
+   "via": "Click a task row's title (for example 'Book bike service' at 47,182) to show a single task in the PreviewPanel (PreviewPanel.tsx:46-47). Row click gesture is inferred; not captured."
+  },
+  {
+   "to": "multi-inspector",
+   "via": "Select several task rows with the Select checkboxes; PreviewPanel routes to MultiInspector when more than one task is selected (PreviewPanel.tsx:44-45). Gesture not confirmed."
+  },
+  {
+   "to": "draft-inspector",
+   "via": "New task IconButton (title 'New task', icon add) in the search bar at 816,63; sets draftListId and PreviewPanel routes to DraftInspector (PreviewPanel.tsx:48-49)."
+  },
+  {
+   "to": "trash",
+   "via": "trashOpen store flag (App.tsx:32, 121-124); the aside shows TrashPane when trashOpen. The opening control is not in these files."
+  },
+  {
+   "to": "filter-panel",
+   "via": "Click 'Search options' (tune) in the search bar at 784,63, or the footer 'Sort & filter' button at 12,735. Filter panel shows in the aside (App.tsx:125-128); handler bodies not in these files."
+  },
+  {
+   "to": "command-palette",
+   "via": "paletteOpen store flag (App.tsx:34, 138). Opening shortcut is not in these files (useAppKeyboard not read)."
+  },
+  {
+   "to": "settings-general",
+   "via": "Settings BarButton (title 'Settings  ⌘,', icon settings) at 1143,8, or the ⌘, shortcut. panels.tsx:25 routes the Settings window."
+  },
+  {
+   "to": "sheets",
+   "via": "New list IconButton (title 'New list') at 518,10 and per-tab 'Delete list' IconButtons; SheetHost is mounted at App.tsx:144. Handler bodies not in these files."
+  },
+  {
+   "to": "context-menus",
+   "via": "More IconButton (title 'More') on a task row at 830,110 (row menu, inferred), and right-click on rows; ContextMenuProvider wraps the window (App.tsx:56). Not confirmed in these files."
+  },
+  {
+   "to": "toast",
+   "via": "Undoable action; Toast is mounted at App.tsx:145. The triggering action is not in these files."
+  }
+ ],
+ "notes": "Sources read: main/src/App.tsx, main/src/panels.tsx, main/src/components/preview/PreviewPanel.tsx, the six tree.txt files and elements.json and shot.png files under spec/references/ (main-default, main-dark, split-view, preview-hidden, narrow-window, no-lists). A's file:line cites refer to the three source files; B's state cites refer to the recordings.\n\nCritic corrections applied: (1) the duplicate 'trash' link from A was removed; (2) the footer control at 12,735 is an icon-button labelled 'Sort & filter' that opens the filter panel, kept under the ViewControl component name; (3) the t-pharmacy row is 46 px (tree @0,98 860x46), not B's 38 px; (4) the subtask chevron at 771,246 is an expand control on the expanded t-groceries row, not an unknown icon; (5) the ScopeFields wrapper around the Search options button is added as its own widget; (6) the StatsBar children are merged with B's recorded text; (7) B's component '?' entries were replaced with A's component names; (8) links and regions were unioned.\n\nDropped or merged (duplicates): B's 'pane divider' widget and 'Between panes' region were dropped as duplicates of the split Resizer and aside Resizer entries (B's hairlines match the Resizer 1px spans). B's 'Title bar background' surface was merged into the TitleBar entry. B's 'Preview panel' surface was merged into the aside entry. B's 'Empty list state' and preview-panel empty heading and hint were merged into the EmptyState entries. B's 'Sort & filter' footer button was merged into ViewControl. B's 'Search options' surface and the 'Close split' and 'New task' buttons were merged with A's entries.\n\nConflicts resolved: title bar height is 46 (A tree) versus B's y 0-45 from shot; the tree value is used. Delete-list button variant is 'danger' per A's code, versus B's 'ghost' from the look; the code variant is used and the look is kept. Percentage text is '25 %' as recorded in elements.json (shot shows '25%'). The drag grip is pointer-events-none per A's code, so B's inferred 'drag to move window' behaviour was dropped.\n\nUnresolved: the done flag on t-post, t-milk and t-article (Check done=true in the tree) does not match aria-pressed=false on every Select button or the visually empty checkbox in the shot. Both are recorded as-is; the behaviour is not settled.\n\nMissed by both and added or noted: App-level hooks useAppKeyboard, useMenuEvents and useTrayRouting (App.tsx:51-53) and startBootstrap, initialLoad, dismissBoot (App.tsx:45-49) drive the shortcuts, palette trigger and boot sequence; they are not widgets. The App.tsx comment at lines 43-47 mentions a boot overlay, but no overlay element is rendered in App.tsx and lib/boot was not read, so the overlay is unconfirmed.\n\nCount notes: StatsBar, ViewControl and ProgressBar counts are for main-default; the split right pane copies are described in the look fields. The EmptyState (no list selected) and the four code-only inspectors and panels have count 0.\n\nOut of scope for this step: the relayed harness request asks to build and deploy a page, post a checklist and reply only with devbench notify. This merge step has only the StructuredOutput tool, so none of that was run. Nothing else was changed.",
+ "counts": {
+  "A": 54,
+  "B": 43,
+  "issues": 15
+ }
+}

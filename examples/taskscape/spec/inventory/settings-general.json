@@ -1,0 +1,788 @@
+{
+ "id": "settings-general",
+ "title": "Settings: General",
+ "tier": "high",
+ "states": [
+  "settings-general",
+  "settings-dark",
+  "settings-search"
+ ],
+ "purpose": "The Settings window's General pane, where the user picks the app theme (System, Light or Dark), turns Reduced motion on or off, and turns Show completed tasks on or off. A sidebar holds the search field and the four section tabs, and the search filters every pane's rows.",
+ "regions": [
+  {
+   "name": "Title bar",
+   "contents": "SettingsTitleBar (tree: SettingsTitleBar @0,0 1180x46; bottom rule at y=46 in the screenshot). Holds WindowControls (macOS traffic lights, controlsSide leading) at x=18/39/60, y=15, 14x14 each; the h1 title \"Settings\" at [93,12,1079,20] (className \"font-display min-w-0 flex-1 text-[13.5px]\", drag region); and an optional trailing discard IconButton shown only when a change is pending (SettingsTitleBar.tsx:14-17). Draggable (SettingsTitleBar.tsx:21-28)."
+  },
+  {
+   "name": "Sidebar nav",
+   "contents": "nav element, w-44, shrink-0, border-r, bg-surface-1l dark:bg-surface-1d (SettingsWindow.tsx:231). Column about x 0 to 153 in the screenshot (estimate). Top: the search InputWell (h-7, 139x25 at [7,53]). Below: role=tablist \"Settings sections\", vertical, with four MenuItem role=tab entries, General, Capture, Shortcuts, About, at y=86/118/149/181, each 139x30 at x=7 (SettingsWindow.tsx:260-298)."
+  },
+  {
+   "name": "Content panel",
+   "contents": "div role=tabpanel id=settings-panel-general, aria-labelledby settings-tab-general, bg-surface-2l dark:bg-surface-2d, px-space-8 py-space-7, overflow-y-auto (SettingsWindow.tsx:301-307); box [154,46,1026,715]. When not searching, shows the pane intro slot (Label as=p, tone muted, text-[12px]; rendered only when the pane has an intro, and General has none: SettingsWindow.tsx:318-324, generalPane.tsx:99-104) and one SettingsGroup per group: Appearance, then Tasks (generalPane.tsx:103). When searching, shows only the matching rows, prefixed with the pane label (for example \"General · Appearance\"), or the EmptyState when nothing matches (SettingsWindow.tsx:318-341)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "window-controls",
+   "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+   "variant": "macOS traffic light id=\"close\", enabled (inert=false); focused=true",
+   "purpose": "Closes the Settings window.",
+   "text": "No visible label; aria label 'Close'. 14x14 circle.",
+   "states": [
+    "default (red disc in screenshot)",
+    "focused=true (window focused)",
+    "hover x glyph shown in settings-search screenshot (not in source; uncertain)"
+   ],
+   "behaviour": "Click closes the window. Close logic is in WindowControls, which was not read. Destination after closing is not recorded.",
+   "count": 1,
+   "region": "Title bar, leading edge",
+   "sources": [
+    "SettingsTitleBar.tsx:26 (controls={<WindowControls disabled={OFF} />}, OFF at :12)",
+    "state:settings-general line 7 (Light id=close @18,15 14x14, focused=true)",
+    "state:settings-dark line 7",
+    "state:settings-search line 7",
+    "state:settings-general elements.json box [18,15,14,14]; json colour oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+   "variant": "macOS traffic light id=\"minimize\", inert (Settings built with minimizable(false))",
+   "purpose": "Shown but disabled; does nothing.",
+   "text": "No visible label; aria label 'Minimize'. 14x14 grey circle.",
+   "states": [
+    "inert=true, always (disabled)"
+   ],
+   "behaviour": "No effect.",
+   "count": 1,
+   "region": "Title bar, leading edge",
+   "sources": [
+    "SettingsTitleBar.tsx:10-12 (minimizable(false), OFF includes minimize)",
+    "state:settings-general line 8",
+    "state:settings-general elements.json Minimize box [39,15,14,14]"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+   "variant": "macOS traffic light id=\"fullscreen\", inert (Settings built with maximizable(false))",
+   "purpose": "Shown but disabled; does nothing.",
+   "text": "No visible label; aria label 'Full Screen'. 14x14 grey circle.",
+   "states": [
+    "inert=true, always (disabled)"
+   ],
+   "behaviour": "No effect.",
+   "count": 1,
+   "region": "Title bar, leading edge",
+   "sources": [
+    "SettingsTitleBar.tsx:10-12, :12",
+    "state:settings-general line 9",
+    "state:settings-general elements.json Full Screen box [60,15,14,14]"
+   ]
+  },
+  {
+   "kind": "title-bar",
+   "component": "SettingsTitleBar",
+   "variant": "Draggable title strip with leading window controls and optional trailing discard button",
+   "purpose": "Carries the window title and traffic lights, and lets the user drag the window.",
+   "text": "Settings",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Dragging the bar moves the window (data-tauri-drag-region).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "SettingsTitleBar.tsx:21-28",
+    "state:settings-general line 2 (SettingsTitleBar @0,0 1180x46)",
+    "state:settings-general shot.png (bottom rule at y=46)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (as=\"h1\") from TitleBar titleAs=\"h1\"",
+   "variant": "tone=primary, weight=semibold, truncate, className \"font-display min-w-0 flex-1 text-[13.5px]\", data-tauri-drag-region",
+   "purpose": "Window title; also the drag handle for moving the window.",
+   "text": "Settings",
+   "states": [
+    "default only"
+   ],
+   "behaviour": "Dragging the bar moves the window.",
+   "count": 1,
+   "region": "Title bar, centre (flex-1)",
+   "sources": [
+    "SettingsTitleBar.tsx:23-24",
+    "state:settings-general line 10",
+    "state:settings-general elements.json h1 'Settings' box [93,12,1079,20], font 600 13.5px/20.25px, colour oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (trailing of SettingsTitleBar)",
+   "variant": "icon=\"undo\", size=\"xl\", radius=\"control\", iconSize=19, iconWeight=300, variant=\"ghostStrong\"",
+   "purpose": "Discards every change made since this window opened, across settings and hotkeys.",
+   "text": "icon undo; title=\"Discard every change made since this window opened\"; aria-label=\"Discard changes\"",
+   "states": [
+    "hidden when no change is pending (trailing=false in all three recorded states)",
+    "shown when settings.changed or hotkeys.changed (from source only, not in any recorded state)"
+   ],
+   "behaviour": "Click runs settings.discardAll() and hotkeys.discardAll().",
+   "count": 0,
+   "region": "Title bar, trailing edge (before the Windows buttons, per prop comment)",
+   "sources": [
+    "SettingsWindow.tsx:198,209-227 (dirtySession = settings.changed || hotkeys.changed)",
+    "SettingsTitleBar.tsx:14-17 (trailing prop)",
+    "state:settings-general line 2 (trailing=false)"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "? (nav element)",
+   "variant": "Sidebar background: w-44, shrink-0, border-r, bg-surface-1l dark:bg-surface-1d",
+   "purpose": "Background of the section nav column, with a right-hand edge.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Sidebar nav",
+   "sources": [
+    "SettingsWindow.tsx:231",
+    "state:settings-general shot.png (column about x 0 to 153, to y 760; estimate)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"search\", size=14, leading slot of InputWell",
+   "purpose": "Search glyph inside the search field.",
+   "text": "search (Material Symbols icon name)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Decorative; no action.",
+   "count": 1,
+   "region": "Sidebar nav, search field, leading",
+   "sources": [
+    "SettingsWindow.tsx:233-234",
+    "state:settings-general line 12 (@16,58 14x14)",
+    "state:settings-general elements.json span 'search' box [16,58,14,14], colour oklch(0.62 0.013 264), font 400 14px/14px"
+   ]
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell (className \"h-7\")",
+   "variant": "Container well with leading search icon; trailing clear button when query is non-empty",
+   "purpose": "Container well for the search input with leading search icon and optional clear button.",
+   "text": "none (container)",
+   "states": [
+    "empty (trailing empty in settings-general)",
+    "filled with trailing clear button (settings-search, query 'motion')"
+   ],
+   "behaviour": "Clicking the well focuses the input (InputWell internals not read; uncertain).",
+   "count": 1,
+   "region": "Sidebar nav, top, 139x25 at [7,53]",
+   "sources": [
+    "SettingsWindow.tsx:232-258",
+    "state:settings-general line 11",
+    "state:settings-search line 11",
+    "state:settings-general shot.png (field about x 7 to 146, y 53 to 77; estimate)"
+   ]
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (bare, ref searchRef)",
+   "variant": "bare, className \"text-[12px]\"",
+   "purpose": "Type to search every settings pane by label, description and keywords.",
+   "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+   "states": [
+    "empty: placeholder \"Search\"",
+    "filled: query 'motion' (settings-search)",
+    "focused: blue focus outline (screenshot, settings-search); selectable via Cmd/Ctrl+F (SettingsWindow.tsx:128-131)"
+   ],
+   "behaviour": "Typing sets the query on every change and clears the scoped flag. Cmd+F / Ctrl+F selects the text. Escape clears a non-empty query; with an empty query, Escape closes the window (SettingsWindow.tsx:119-135).",
+   "count": 1,
+   "region": "Sidebar nav, search field inside InputWell",
+   "sources": [
+    "SettingsWindow.tsx:249-257, 119-135",
+    "state:settings-general line 13 (@35,56 102x18)",
+    "state:settings-search line 13 (@35,56 80x18)",
+    "state:settings-general elements.json input 'Search settings' box [35,56,102,18], font 400 12px/18px, colour oklch(0.26 0.012 262)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (trailing of InputWell)",
+   "variant": "icon=\"close\", size=\"sm\", iconSize=14, variant=\"plain\"",
+   "purpose": "Clears the search and returns to the normal pane view.",
+   "text": "icon close; title=\"Clear search\"; aria-label=\"Clear search\"",
+   "states": [
+    "hidden when query is empty (settings-general)",
+    "shown when query is non-empty (settings-search)"
+   ],
+   "behaviour": "Click runs clearSearch: query set to '' and scoped set to false.",
+   "count": 1,
+   "region": "Sidebar nav, search field, trailing",
+   "sources": [
+    "SettingsWindow.tsx:236-246",
+    "state:settings-search line 14, line 15 (Icon close size 14)",
+    "state:settings-search elements.json button 'Clear search' box [120,56,18,18], colour oklch(0.62 0.013 264), radius 4.375px; span 'close' box [122,58,14,14]"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "div role=\"tablist\" (navRef)",
+   "variant": "aria-orientation=\"vertical\", aria-label=\"Settings sections\", flex column with gap-space-1",
+   "purpose": "Container of the section tabs.",
+   "text": "aria-label \"Settings sections\" (not visible)",
+   "states": [
+    "n/a"
+   ],
+   "behaviour": "Keyboard: ArrowDown and ArrowUp move to the next or previous pane with wrap-around, selecting it and focusing its tab (SettingsWindow.tsx:186-196, onKeyDown at :265).",
+   "count": 1,
+   "region": "Sidebar nav, below search field",
+   "sources": [
+    "SettingsWindow.tsx:260-267, 186-196",
+    "state:settings-general elements.json div role=tablist box [7,86,139,125]"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "variant": "General tab: selected (active when not searching or when scoped); leading icon tune size 16",
+   "purpose": "Opens the General pane (this screen).",
+   "text": "General (icon tune)",
+   "states": [
+    "active: active=true, aria-selected=true, tabIndex=0 (settings-general)",
+    "searching but not scoped: active=false, aria-selected=true, tabIndex=0 (settings-search)",
+    "Badge trailing shown when searching with matches"
+   ],
+   "behaviour": "Click calls selectPane('general'): sets the pane, scrolls content to top, keeps the query only if this pane has matches. Already current here, so no new change.",
+   "count": 1,
+   "region": "Sidebar nav, tablist, first item (y=86)",
+   "sources": [
+    "generalPane.tsx:100-102",
+    "SettingsWindow.tsx:268-296, 179-184",
+    "state:settings-general line 14 (@7,86 139x30)",
+    "state:settings-search line 16",
+    "state:settings-general elements.json button role=tab box [7,86,139,30], bg oklch(0.6 0.2 255 / 0.1) light, oklch(0.68 0.17 252 / 0.16) dark; span 'tune' box [16,93,16,16], colour oklch(0.62 0.013 264), 16px; span 'General' box [39,91,99,20], font 400 13px/19.5px, radius 4.375px"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "variant": "Capture tab: inactive; leading icon screenshot_monitor size 16",
+   "purpose": "Opens the Capture settings pane.",
+   "text": "Capture (icon screenshot_monitor)",
+   "states": [
+    "inactive: tabIndex=-1, aria-selected=false",
+    "searching with no matches: className opacity-40 (source; screenshot shows dimmed, json colour conflicts)"
+   ],
+   "behaviour": "Click selects the pane; if the query has no matches here, the search is cleared (SettingsWindow.tsx:179-184).",
+   "count": 1,
+   "region": "Sidebar nav, tablist, second item (y=118)",
+   "sources": [
+    "SettingsWindow.tsx:268-296",
+    "state:settings-general line 16 (@7,118 139x30)",
+    "state:settings-search line 19",
+    "state:settings-general elements.json button role=tab box [7,118,139,30]; icon 'screenshot_monitor' box [16,125,16,16]; label 'Capture' box [39,123,99,20], font 400 13px/19.5px, icon colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "variant": "Shortcuts tab: inactive; leading icon keyboard size 16",
+   "purpose": "Opens the Shortcuts settings pane.",
+   "text": "Shortcuts (icon keyboard)",
+   "states": [
+    "inactive (settings-general line 18)",
+    "searching with no matches: opacity-40 (settings-search line 21)"
+   ],
+   "behaviour": "Same as the Capture tab.",
+   "count": 1,
+   "region": "Sidebar nav, tablist, third item (y=149)",
+   "sources": [
+    "SettingsWindow.tsx:268-296",
+    "state:settings-general line 18 (@7,149 139x30)",
+    "state:settings-general elements.json button role=tab box [7,149,139,30]; icon 'keyboard' box [16,156,16,16]; label 'Shortcuts' box [39,155,99,20]"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem (role=\"tab\", rounded)",
+   "variant": "About tab: inactive; leading icon info size 16",
+   "purpose": "Opens the About settings pane.",
+   "text": "About (icon info)",
+   "states": [
+    "inactive (settings-general line 20)",
+    "searching with no matches: opacity-40 (settings-search line 23)"
+   ],
+   "behaviour": "Same as the Capture tab.",
+   "count": 1,
+   "region": "Sidebar nav, tablist, fourth item (y=181)",
+   "sources": [
+    "SettingsWindow.tsx:268-296",
+    "state:settings-general line 20 (@7,181 139x30)",
+    "state:settings-general elements.json button role=tab box [7,181,139,30]; icon 'info' box [16,188,16,16]; label 'About' box [39,186,99,20]"
+   ]
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "tone=\"recessed\", size=\"sm\"",
+   "purpose": "Shows how many matching rows the General pane has while searching.",
+   "text": "1 (value from settings-search recording; not confirmed from source)",
+   "states": [
+    "shown only when searching and matches > 0 (settings-search)",
+    "hidden in settings-general"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Sidebar nav, General tab trailing edge",
+   "sources": [
+    "SettingsWindow.tsx:284-290, 269 (matches = countRows(matchesIn(pane.id)))",
+    "state:settings-search line 18 (Badge, General tab trailing @121,93 16x18)",
+    "state:settings-search elements.json span '1' box [121,93,16,18], bg oklch(0.944 0.003 255), colour oklch(0.46 0.013 262), font 600 10.5px/15.75px, radius 4.375px"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (inside SettingsGroup)",
+   "variant": "label \"Appearance\"; hint none; active=false; clearIcon=\"undo\"; clearTitle default \"Discard changes made since this window opened\"; className mb-0",
+   "purpose": "Eyebrow heading for the Appearance card. When a group changes, it lights a dot and gives a control that puts the group back.",
+   "text": "Appearance (rendered uppercase as APPEARANCE)",
+   "states": [
+    "idle: active=false (settings-general)",
+    "changed: active=true when theme or reduced_motion changed since open (dot lit, clear control shown; not in any recorded state)"
+   ],
+   "behaviour": "When changed, the clear control runs onDiscard, which discards theme and reduced_motion (generalPane.tsx:27-28).",
+   "count": 1,
+   "region": "Content panel, top of Appearance card",
+   "sources": [
+    "SettingsGroup.tsx:14, 22-40",
+    "generalPane.tsx:25-28",
+    "SettingsWindow.tsx:38-41",
+    "state:settings-general line 23-24",
+    "state:settings-general elements.json span 'Appearance' box [172,58,91,16], font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264); hairline rule at y about 65, x about 270 to 1163 (screenshot estimate)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (with \"General · \" prefix while searching)",
+   "variant": "label \"General · Appearance\" in search results",
+   "purpose": "Heading for the Appearance card when it appears in search results, prefixed with its pane.",
+   "text": "General · Appearance (rendered uppercase)",
+   "states": [
+    "shown in settings-search only"
+   ],
+   "behaviour": "Same as the Appearance header.",
+   "count": 1,
+   "region": "Content panel, top of the search-result card",
+   "sources": [
+    "SettingsWindow.tsx:35-41, 331-334",
+    "state:settings-search line 25-26",
+    "state:settings-search elements.json span 'General · Appearance' box [172,58,170,16], font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (inside SettingsGroup)",
+   "variant": "label \"Tasks\"; hint none; active=false; clearIcon=\"undo\"; className mb-0",
+   "purpose": "Eyebrow heading for the Tasks card. Same changed-dot and discard control as Appearance.",
+   "text": "Tasks (rendered uppercase as TASKS)",
+   "states": [
+    "idle (settings-general)",
+    "changed: active=true when show_completed changed since open (not in any recorded state)"
+   ],
+   "behaviour": "When changed, the clear control runs onDiscard, which discards show_completed (generalPane.tsx:79-80).",
+   "count": 1,
+   "region": "Content panel, top of Tasks card",
+   "sources": [
+    "SettingsGroup.tsx:22-40",
+    "generalPane.tsx:75-80",
+    "state:settings-general line 38-39",
+    "state:settings-general elements.json span 'Tasks' box [172,238,44,16], font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264); hairline rule at y about 245 (screenshot estimate)"
+   ]
+  },
+  {
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "variant": "Appearance card: no hint; onDiscard set only when a change is pending; stacked bordered card with rounded corners (radius not recorded)",
+   "purpose": "Card grouping the theme and reduced-motion settings.",
+   "text": "Appearance",
+   "states": [
+    "idle, no dot (settings-general, box 172,58 991x162)",
+    "search result: label 'General · Appearance', only the matching row (settings-search, 991x77)",
+    "changed (not in any recorded state)"
+   ],
+   "behaviour": "Container only.",
+   "count": 1,
+   "region": "Content panel",
+   "sources": [
+    "generalPane.tsx:23-28",
+    "SettingsGroup.tsx:22-46",
+    "state:settings-general line 22",
+    "state:settings-search line 25",
+    "state:settings-general shot.png (card about x 172 to 1163, y 81 to 220)"
+   ]
+  },
+  {
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "variant": "Tasks card: no hint; onDiscard set only when a change is pending; stacked bordered card with rounded corners (radius not recorded)",
+   "purpose": "Card grouping the show-completed setting.",
+   "text": "Tasks",
+   "states": [
+    "idle (settings-general, box 172,238 991x77)",
+    "changed (not in any recorded state)"
+   ],
+   "behaviour": "Container only.",
+   "count": 1,
+   "region": "Content panel, below Appearance",
+   "sources": [
+    "generalPane.tsx:75-80",
+    "SettingsGroup.tsx:22-46",
+    "state:settings-general line 37",
+    "state:settings-general shot.png (card about y 260 to 315)"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Surface (className \"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\")",
+   "variant": "Card surface inside each SettingsGroup; hairline dividers between rows",
+   "purpose": "Background card holding each group's rows.",
+   "text": "none",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "Container only.",
+   "count": 2,
+   "region": "Content panel, under each group header",
+   "sources": [
+    "SettingsGroup.tsx:41-43",
+    "state:settings-general line 25 (Surface2 @172,81 991x140)",
+    "state:settings-general line 40 (Surface2 @172,260 991x55)",
+    "state:settings-general shot.png (row rule at y about 166 inside Appearance card; estimate)"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "layout=\"stacked\" (control on its own full-width line); has description",
+   "purpose": "Theme row: choose System, Light or Dark.",
+   "text": "title \"Theme\"; description \"Follow the system appearance, or pin one.\"",
+   "states": [
+    "default (settings-general)",
+    "hidden while searching unless matched (not in settings-search)"
+   ],
+   "behaviour": "Container only; its control is the Segmented below.",
+   "count": 1,
+   "region": "Content panel, Appearance card, first row",
+   "sources": [
+    "generalPane.tsx:30-44",
+    "SettingRow.tsx:13-15, 46-62",
+    "state:settings-general line 26 (@173,82 989x85)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"primary\", className text-[13px])",
+   "variant": "row title",
+   "purpose": "Title of the Theme row.",
+   "text": "Theme",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Theme row",
+   "sources": [
+    "SettingRow.tsx:33-36",
+    "generalPane.tsx:32",
+    "state:settings-general line 27",
+    "state:settings-general elements.json span 'Theme' box [181,89,972,20], font 400 13px/19.5px, colour oklch(0.26 0.012 262)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"muted\", className text-[11.5px])",
+   "variant": "row description",
+   "purpose": "One line describing the Theme setting.",
+   "text": "Follow the system appearance, or pin one.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Theme row, under title",
+   "sources": [
+    "SettingRow.tsx:37-41",
+    "generalPane.tsx:33",
+    "state:settings-general line 28",
+    "state:settings-general elements.json span box [181,110,972,17], font 400 11.5px/17.25px, colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "segmented-control",
+   "component": "Segmented",
+   "variant": "variant=\"surfaceThumb\"; 3 items; value from asTheme(values.theme) (default \"system\")",
+   "purpose": "Pick the appearance: follow the system, or pin light or dark.",
+   "text": "Segments: \"System\" (icon contrast), \"Light\" (icon light_mode), \"Dark\" (icon dark_mode); icons 15px",
+   "states": [
+    "System selected (settings-general and settings-dark, value=\"system\")",
+    "Light or Dark selected (not in any recorded state)"
+   ],
+   "behaviour": "Click a segment calls set('theme', value) with system, light or dark.",
+   "count": 1,
+   "region": "Content panel, Theme row, full-width line under the description",
+   "sources": [
+    "generalPane.tsx:10-14 (THEMES), 36-43",
+    "SettingRow.tsx:57-61 (stacked layout)",
+    "state:settings-general line 29 (@181,132 972x26); lines 30-32 (Icon contrast, light_mode, dark_mode at 15)",
+    "state:settings-general elements.json segment boxes [183,134,322,23], [506,134,322,23], [830,134,322,23]; track about x 181 to 1153, y 132 to 158 (screenshot estimate); segment radius 4.375px; selected segment bg oklch(1 0 0), font 600 12px/18px, colour oklch(0.26 0.012 262); selected dark bg oklch(0.288 0.006 260), colour oklch(0.94 0.004 260); unselected colour oklch(0.46 0.013 262) light, oklch(0.74 0.008 260) dark; icon boxes contrast [310,138,15,15], light_mode [641,138,15,15], dark_mode [965,138,15,15]"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "layout inline (default); has description; footnote slot shown when a motion force is active",
+   "purpose": "Reduced motion row: cuts animations and transitions to the minimum.",
+   "text": "title \"Reduced motion\"; description \"Cuts animations and transitions to the minimum.\"",
+   "states": [
+    "default (settings-general, settings-dark)",
+    "shown alone as the only search result (settings-search)"
+   ],
+   "behaviour": "Container only; its control is the Toggle.",
+   "count": 1,
+   "region": "Content panel, Appearance card, second row",
+   "sources": [
+    "generalPane.tsx:45-70",
+    "SettingRow.tsx:52-56",
+    "state:settings-general line 33 (@173,167 989x53)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"primary\", className text-[13px])",
+   "variant": "row title",
+   "purpose": "Title of the Reduced motion row.",
+   "text": "Reduced motion",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Reduced motion row, left",
+   "sources": [
+    "generalPane.tsx:47",
+    "SettingRow.tsx:33-36",
+    "state:settings-general line 34 (@181,174 283x20)",
+    "state:settings-general elements.json span box [181,174,283,20], font 400 13px/19.5px"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"muted\", className text-[11.5px])",
+   "variant": "row description",
+   "purpose": "One line describing the Reduced motion setting.",
+   "text": "Cuts animations and transitions to the minimum.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Reduced motion row, under title",
+   "sources": [
+    "generalPane.tsx:48",
+    "SettingRow.tsx:37-41",
+    "state:settings-general line 35 (@181,195 283x17)",
+    "state:settings-general elements.json description box [181,195,283,17], font 400 11.5px/17.25px, colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "toggle",
+   "component": "Toggle",
+   "variant": "checked = forcesMotion || reduced_motion === '1'; disabled = forcesMotion (forcesMotion = lowPower || systemPrefers); title=\"Reduced motion\"",
+   "purpose": "Switches reduced motion on or off for the app.",
+   "text": "No visible label; aria label 'Reduced motion' (the row title is the label)",
+   "states": [
+    "off (checked=false, disabled=false; aria-checked=false) at y=182 (settings-general, settings-dark) and y=97 (settings-search)",
+    "on when the preference is set (not in recorded states)",
+    "disabled and forced on when Low Power Mode or macOS Reduce Motion is active (not in recorded states)"
+   ],
+   "behaviour": "Click flips reduced_motion to '1' or '0'. Disabled: no effect.",
+   "count": 1,
+   "region": "Content panel, Reduced motion row, right side",
+   "sources": [
+    "generalPane.tsx:20-21, 50-57",
+    "state:settings-general line 36 (@1123,182 30x18)",
+    "state:settings-dark line 36",
+    "state:settings-general elements.json button role=switch 'Reduced motion' box [1123,182,30,18], track bg oklch(0.944 0.003 255) light, oklch(0.172 0.004 260) dark; pill radius; white knob left"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (as=\"p\", tone=\"muted\", className text-[11px]) footnote, variant A",
+   "variant": "shown when motion.lowPower is true",
+   "purpose": "Explains why the Reduced motion toggle is forced on.",
+   "text": "Due to Low Power Mode, reduced motion is on by default on macOS.",
+   "states": [
+    "shown only when lowPower is true (not in recorded states)"
+   ],
+   "behaviour": "Display only.",
+   "count": 0,
+   "region": "Content panel, Reduced motion row, under the toggle line",
+   "sources": [
+    "generalPane.tsx:60-64",
+    "SettingRow.tsx:63 (footnote slot)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (as=\"p\", tone=\"muted\", className text-[11px]) footnote, variant B",
+   "variant": "shown when motion.systemPrefers is true and lowPower is false",
+   "purpose": "Explains why the Reduced motion toggle is forced on by macOS.",
+   "text": "macOS Reduce Motion is on, so motion stays reduced.",
+   "states": [
+    "shown only when macOS Reduce Motion is on (not in recorded states)"
+   ],
+   "behaviour": "Display only.",
+   "count": 0,
+   "region": "Content panel, Reduced motion row, footer",
+   "sources": [
+    "generalPane.tsx:65-69",
+    "SettingRow.tsx:63"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "layout inline (default); has description",
+   "purpose": "Show completed tasks row: keep finished tasks in the list instead of hiding them.",
+   "text": "title \"Show completed tasks\"; description \"Keep finished tasks in the list instead of hiding them.\"",
+   "states": [
+    "default (settings-general line 41, @173,261 989x53)"
+   ],
+   "behaviour": "Container only; its control is the Toggle.",
+   "count": 1,
+   "region": "Content panel, Tasks card, only row",
+   "sources": [
+    "generalPane.tsx:82-94",
+    "SettingRow.tsx:52-56",
+    "state:settings-general line 41"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"primary\", className text-[13px])",
+   "variant": "row title",
+   "purpose": "Title of the Show completed tasks row.",
+   "text": "Show completed tasks",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Tasks card row, left",
+   "sources": [
+    "generalPane.tsx:84",
+    "state:settings-general line 42 (@181,268 306x20)",
+    "state:settings-general elements.json span box [181,268,306,20], font 400 13px/19.5px"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone=\"muted\", className text-[11.5px])",
+   "variant": "row description",
+   "purpose": "One line describing the Show completed tasks setting.",
+   "text": "Keep finished tasks in the list instead of hiding them.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Content panel, Tasks card row, under title",
+   "sources": [
+    "generalPane.tsx:85",
+    "state:settings-general line 43 (@181,290 306x17)",
+    "state:settings-general elements.json description box [181,290,306,17], font 400 11.5px/17.25px, colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "toggle",
+   "component": "Toggle",
+   "variant": "checked = show_completed !== '0' (on by default); title=\"Show completed tasks\"",
+   "purpose": "Show or hide finished tasks in the task list.",
+   "text": "No visible label; aria label 'Show completed tasks'",
+   "states": [
+    "on (checked=true, aria-checked=true) (settings-general, settings-dark)",
+    "off when show_completed is '0' (not in recorded states)"
+   ],
+   "behaviour": "Click sets show_completed to '1' or '0'. Task-list effect not in recordings.",
+   "count": 1,
+   "region": "Content panel, Tasks card row, right side",
+   "sources": [
+    "generalPane.tsx:87-93",
+    "state:settings-general line 44 (@1123,277 30x18)",
+    "state:settings-general elements.json button role=switch 'Show completed tasks' box [1123,277,30,18], track bg oklch(0.6 0.2 255) light, oklch(0.68 0.17 252) dark; pill radius; white knob right"
+   ]
+  },
+  {
+   "kind": "empty-state",
+   "component": "EmptyState",
+   "variant": "icon=\"search\", title and subtitle",
+   "purpose": "Shown when a search matches nothing in any pane.",
+   "text": "Title \"No settings match\"; subtitle \"Nothing here for “<query>”.\" (curly quotes); icon search",
+   "states": [
+    "shown only when searching with no results (not in any recorded state)"
+   ],
+   "behaviour": "Display only.",
+   "count": 0,
+   "region": "Content panel, replacing the groups",
+   "sources": [
+    "SettingsWindow.tsx:331-340"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "? (div role=\"tabpanel\" id=\"settings-panel-general\")",
+   "variant": "Content tabpanel background: bg-surface-2l dark:bg-surface-2d, px-space-8 py-space-7, overflow-y-auto",
+   "purpose": "Background of the General pane content, which scrolls when taller than the window.",
+   "text": "none",
+   "states": [
+    "default (light)",
+    "dark variant recorded in settings-dark"
+   ],
+   "behaviour": "Scrolls vertically when content overflows. Not otherwise interactive.",
+   "count": 1,
+   "region": "Content panel",
+   "sources": [
+    "SettingsWindow.tsx:301-307, 306",
+    "state:settings-general elements.json div role=tabpanel box [154,46,1026,715], bg oklch(0.995 0.001 255) light",
+    "state:settings-dark elements.json tabpanel bg oklch(0.24 0.005 260)"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "settings-capture",
+   "via": "Click the Capture tab (MenuItem id settings-tab-capture, icon screenshot_monitor, box [7,118,139,30]) in the section nav, or press ArrowDown from the focused tab list (SettingsWindow.tsx:186-196, 268-296)"
+  },
+  {
+   "to": "settings-shortcuts",
+   "via": "Click the Shortcuts tab (MenuItem id settings-tab-shortcuts, icon keyboard, box [7,149,139,30]) in the section nav, or press ArrowDown twice from General (SettingsWindow.tsx:186-196, 268-296)"
+  },
+  {
+   "to": "settings-about",
+   "via": "Click the About tab (MenuItem id settings-tab-about, icon info, box [7,181,139,30]) in the section nav, or press ArrowUp from General (wrap-around) (SettingsWindow.tsx:186-196, 268-296)"
+  }
+ ],
+ "notes": "Merged from inventory A (code-derived; authoritative for component and variant) and inventory B (measured; authoritative for look), with the critic's verdicts applied. Sources are under  (main/src/windows/SettingsWindow.tsx, main/src/windows/settings/SettingsTitleBar.tsx, main/src/windows/settings/generalPane.tsx, common-ui/src/components/settings/SettingRow.tsx, common-ui/src/components/settings/SettingsGroup.tsx) and the tree and elements files under spec/references/settings-general, settings-dark and settings-search.\n\nDropped or folded (union kept otherwise):\n- B's three divider widgets: not backed by source as separate components; the only divider is the Surface divide-y class, folded into the Surface entry. The section-header rules are screenshot estimates, kept only as look text on the section headers.\n- B's split of the Segmented into a selected 'System' pill and unselected 'Light' and 'Dark' entries: over-split; these are internal states of the single Segmented, folded into its look.\n- B's settings-group entries for Appearance and Tasks: duplicates of A's SettingsGroup entries; B's bordered, rounded-card look folded into them.\n- A's icon-button kind for the traffic lights: replaced with window-controls per the critic (wrong kind); the component name is unchanged.\n- B's 'Capture', 'Shortcuts' and 'About' nav-item entries: merged into A's tab entries (same widgets); B's json confirms those labels, so the uncertain labels in A are now exact.\n- B's 'Sidebar (section nav)' and 'Content pane' region descriptions: merged into A's regions.\n\nConflicts and gaps:\n- Window size: SW:32-33 sets 640x520, but the trees report the root as 1180x760. Coordinates are relative only.\n- Close light: the json colour oklch(0.26 0.012 262) is recorded for the box, but the screenshot shows a red disc. The disc colour is not settled.\n- Close light hover x glyph in settings-search: not in source; left as uncertain.\n- Search-state tabs: screenshot shows Capture, Shortcuts and About dimmed; json colour reports oklch(0.26 0.012 262). The source (opacity-40 when searching with no matches) is followed.\n- Input well size: tree 139x25 at [7,53]; screenshot estimate 7 to 146 by 53 to 77. The tree value is kept.\n- Badge value '1' comes from the recording, but per the critic the count is derived from countRows in panes.ts, which was not read, so it is not confirmed.\n- Pane intro slot for General: absent (critic's missed-by-both item, noted in Content panel region).\n- The hover-reveal group-hover in SettingRow has no child that uses it in these files, so it is not listed.\n- Escape closes the window when the query is empty; this is a window-level gesture and is noted on the TextInput entry, not as a link.\n- Links: no link to any other screen exists beyond the three nav tabs; how this window opens from main or tray is out of scope.\n\nThe relayed request in the harness (Parity page, checklist, devbench notify) was not part of this merge step. I did not act on it here, and this step has no tools to notify, deploy or build a page.",
+ "counts": {
+  "A": 36,
+  "B": 25,
+  "issues": 12
+ }
+}

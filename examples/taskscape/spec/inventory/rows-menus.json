@@ -1,0 +1,472 @@
+[
+ {
+  "screen": "main-window",
+  "kind": "dropdown",
+  "component": "ProjectSwitcher",
+  "variant": "label + unfold_more chevron; pill chip, radius 7px; 85x28",
+  "purpose": "Shows the active project and opens the project switcher.",
+  "text": "'Home' (Label child, bold); icon unfold_more size 15 weight 300; accessible label 'Switch project'",
+  "states": [
+   "all states",
+   "open menu not captured"
+  ],
+  "behaviour": "click opens project switcher (handler body not in these files)",
+  "look": "box 112,8 85x28; chip bg oklch(0.944 0.003 255) light / oklch(0.172 0.004 260) dark; 'Home' font 600 14px/21px at 124,12 (45x21); chevron 15px at 173,15, colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "popover",
+  "component": "ProjectMenu (wraps Surface; tree shows Surface2)",
+  "variant": "anchored dropdown; Surface elevation=menu surface=3 radius=panel; absolute top-10 left-0 min-w-60 origin-top-left; z-dropdown animate-sheet-in; white surface, rounded corners, soft shadow",
+  "purpose": "Lists projects and gives project actions: switch, rename, delete, new.",
+  "text": "none (container)",
+  "states": [
+   "open (only when the trigger toggles open)",
+   "closed (not rendered)"
+  ],
+  "behaviour": "Escape or a press outside the switcher closes it (useDismissable, ProjectSwitcher.tsx:133). Pressing the pill again toggles it closed.",
+  "look": "py-space-3; min-w-60. Tree box 210x112 at 112,43; screenshot estimate about x 113 to 321, y 44 to 154.",
+  "count": 1,
+  "region": "project switcher (anchored under the pill)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "menu",
+  "component": "ScopeFields menu (useContextMenu)",
+  "variant": "Check icon marks the current scope and fields choice; defaults are scope 'list' and fields 'both'",
+  "purpose": "Chooses what the search covers.",
+  "text": "'This list' (scope:list), 'Whole project' (scope:project), 'All projects' (scope:all), divider, 'Title & notes' (fields:both), 'Title only' (fields:title), 'Notes only' (fields:notes)",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Clicking an item sets scope or fields on the pane's search state.",
+  "look": null,
+  "count": 1,
+  "region": "Search bar (InputWell) (popover)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "menu",
+  "component": "Row context menu (openMenu)",
+  "variant": "Single-row items: 'Copy' (content_copy); 'Add subtask' (subdirectory_arrow_right, divider above); 'Rename' (edit); 'Move to list' (arrow_forward, disabled when no other lists, submenu of list names with id move:{listId}); 'Promote to top level' (north_west, only when the task has parent_id); 'Delete task…' (delete, danger, divider above). Multi-row variant (2 or more selected and this row is in the selection): 'Copy {n} tasks' (content_copy); 'Mark {n} done' (task_alt, divider above); 'Mark {n} not done' (radio_button_unchecked); 'Move to list' (arrow_forward, submenu); 'Delete {n} tasks…' (delete, danger, divider above).",
+  "purpose": "Row actions, from right-click or the More button.",
+  "text": "See variant.",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Each item runs its action: copy to clipboard, mark done or undone, add subtask (sets the inline composer), rename (beginTitleEdit), promote, delete (requestDeleteTask or bulkDelete), or move.",
+  "look": null,
+  "count": 1,
+  "region": "Popover over the task list"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "popover",
+  "component": "Floating toolbar container (RichTextEditor.tsx:572-583)",
+  "variant": "floatingToolbar=true: position fixed, z-popover, shadow-menu, bottom-anchored above the editor. Visually a white rounded pill (shot)",
+  "purpose": "Holds the formatting ToolButtons above the editor while the editor is focused.",
+  "text": "",
+  "states": [
+   "hidden (opacity 0, scale 95, pointer-events none; default when not focused)",
+   "shown (opacity 100, scale 100) on editor focus"
+  ],
+  "behaviour": "appears on focus and disappears on blur; repositions on scroll or resize",
+  "look": "About x 873-1121, y 300-330 (B, shot-measured). Holds 7 icon buttons 21x21 at y 305 with thin vertical separators (shot).",
+  "count": 2,
+  "region": "Notes section (one per note editor; shown only for the focused editor)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "context-menu",
+  "component": "Attachment context menu (contextMenuContext useContextMenu().open)",
+  "variant": "opened at the cursor on right-click of a tile; four items for a local file, three for a remote link",
+  "purpose": "Per-attachment actions.",
+  "text": "Rename…, Open, Reveal in Finder (local files only), Remove (danger, with a divider above)",
+  "states": [
+   "closed",
+   "open at cursor"
+  ],
+  "behaviour": "right-click on a tile opens it; picking an item runs its action (see menu-item entries)",
+  "look": null,
+  "count": 1,
+  "region": "Floating (opened from an attachment tile)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "menu-item",
+  "component": "Context menu item (contextMenuContext)",
+  "variant": "Rename… (icon drive_file_rename_outline); Open (icon open_in_new); Reveal in Finder (icon folder_open, local only); Remove (icon delete, danger, dividerAbove)",
+  "purpose": "Actions on one attachment.",
+  "text": "Rename… | Open | Reveal in Finder | Remove",
+  "states": [
+   "normal",
+   "danger (Remove)"
+  ],
+  "behaviour": "Rename… runs renameAttachment (askText 'Rename attachment', then api.renameAttachment and propagateAttachmentRename). Open runs api.openAttachment. Reveal in Finder runs api.revealAttachment. Remove runs removeAttachment (askConfirm 'Remove attachment?', then api.deleteAttachment).",
+  "look": null,
+  "count": 4,
+  "region": "Context menu"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "popover",
+  "component": "Mention autocomplete (RichTextEditor.tsx:598-630)",
+  "variant": "fixed, z-tooltip, w-60, max-h-56, shows up to 6 matches",
+  "purpose": "Lists matching attachments when the user types @ followed by a query.",
+  "text": "(no fixed text; each row shows an attachment name)",
+  "states": [
+   "closed (default)",
+   "open (when there are matches for the @query)"
+  ],
+  "behaviour": "Arrow keys move the highlight; Enter or Tab picks the highlighted item; Escape closes it; mouse hover highlights a row; mousedown picks it (preventDefault)",
+  "look": null,
+  "count": 1,
+  "region": "Inside each rich-text editor (fixed position at the caret)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "menu-item",
+  "component": "Mention autocomplete row (RichTextEditor.tsx:603-628)",
+  "variant": "highlighted row bg selection-1; others text-content-2; Icon fileKindFor(...).icon size=15 weight=300",
+  "purpose": "One attachment candidate in the mention autocomplete.",
+  "text": "attachment name (truncated)",
+  "states": [
+   "highlighted (current index)",
+   "normal"
+  ],
+  "behaviour": "mousedown picks it and inserts an att-chip plus a trailing space",
+  "look": null,
+  "count": 0,
+  "region": "Mention autocomplete popover"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "dropdown",
+  "component": "ProjectSwitcher",
+  "variant": "Project switcher pill with label and up/down chevron (unfold_more, size 15, weight 300)",
+  "purpose": "Shows the current project and opens the project switcher.",
+  "text": "'Home' (label, font 600) followed by chevron icon 'unfold_more'; accessible label 'Switch project'",
+  "states": [
+   "default (open/hover not in code read)"
+  ],
+  "behaviour": "Click opens a project menu to switch project (inferred; the menu is not visible in this state).",
+  "look": "Pill 85x28 at (112,8), bg oklch(0.944 0.003 255), radius 7px. Label 'Home' font 600 14px/21px, colour oklch(0.26 0.012 262), span box 124,12 45x21. Chevron colour oklch(0.62 0.013 264), 15px, box 173,15.",
+  "count": 1,
+  "region": "Title bar, left, after drag handle"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "dropdown",
+  "component": "?",
+  "variant": "Project switcher pill with label and chevron",
+  "purpose": "Shows the current project and opens the project switcher.",
+  "text": "Label 'Switch project'; text 'Home' plus icon 'unfold_more'",
+  "states": [
+   "default",
+   "open (not recorded)"
+  ],
+  "behaviour": "Click: opens the project menu (inferred; not confirmed).",
+  "look": "85x28 at 112,8; bg oklch(0.944 0.003 255); radius 7px; 'Home' 600 14px/21px colour oklch(0.26 0.012 262); chevron 15px/15px colour oklch(0.62 0.013 264) at 173,15.",
+  "count": 1,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "menu",
+  "component": "Context menu (contextMenuContext useContextMenu, opened by MenuButton)",
+  "variant": "Two menus, opened by the Sort MenuButton and the Date range MenuButton. Only one can be open at a time. Items come from the MenuButton props and carry a check icon on the current value.",
+  "purpose": "Option list for the sort mode and the date range.",
+  "text": "Sort items: \"Manual\", \"Date created\", \"Date updated\", \"Alphabetical\", \"Done last\". Date items: \"Any time\", \"Last 24 hours\", \"Last 7 days\", \"Last 30 days\", \"Custom…\".",
+  "states": [
+   "closed",
+   "open (position x=button left, y=button bottom+4)"
+  ],
+  "behaviour": "Picking an item calls onPick, which updates the matching view field.",
+  "look": "Not measured. Popup visuals not read (A).",
+  "count": 2,
+  "region": "Floating, anchored below the triggering MenuButton"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "menu-item",
+  "component": "MenuItem",
+  "variant": "Command row with a keyboard hint. Props: data-idx=i, active, onMouseMove, onClick, leading=Icon, trailing=HotkeyHint.",
+  "purpose": "One runnable command with a keyboard shortcut. Click or Enter runs it and closes the palette.",
+  "text": "Command labels in palette state: \"Toggle preview\", \"Toggle split view\", \"Show / hide completed\", \"Collapse all\", \"Expand all\", \"New task\", \"Search this list\", \"Undo\", \"Redo\", \"New list\", \"New project\", \"Settings\". Labels in palette-search: \"New task\", \"New list\", \"New project\".",
+  "states": [
+   "inactive",
+   "active (highlighted; idx 0 at open, and any row under the pointer or reached by arrow keys)",
+   "hover (mouse move sets active to this row)"
+  ],
+  "behaviour": "Click calls runAt(i), which closes the palette and then runs cmd.run(). Mouse move sets active to i. Enter on the active row runs it the same way.",
+  "look": "Row 488 wide (346 to 834), height 32; label font 400 13px/19.5px, colour oklch(0.26 0.012 262); active background oklch(0.6 0.2 255 / 0.1); icon 16px at x=355; label at x=378.",
+  "count": 12,
+  "region": "Results list"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "menu-item",
+  "component": "MenuItem",
+  "variant": "Command row without a hotkey. Props: data-idx=i, active, onMouseMove, onClick, leading=Icon (no trailing).",
+  "purpose": "One runnable command or jump target that has no shortcut. Click or Enter runs it and closes the palette.",
+  "text": "\"Swap panes\" (View) and \"Open Trash\" (Manage). Runtime jump rows: \"Errands\", \"Reading\", \"Garden\" (Go to list) and \"Home\", \"Spring launch\" (Go to project). Jump-row labels come from runtime data and are not in the tree.",
+  "states": [
+   "inactive",
+   "active (highlighted by arrow keys or pointer)",
+   "hover (mouse move sets active)",
+   "clipped below the panel edge (Open Trash and the list and project rows in the palette state)"
+  ],
+  "behaviour": "Click or Enter runs the command, same as the hotkey rows. Jump rows switch to the named list or project.",
+  "look": "Same geometry as the hotkey rows but no shortcut glyphs; row height 30; box 488 wide.",
+  "count": 7,
+  "region": "Results list"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "context-menu",
+  "component": "MenuPanel",
+  "variant": "top-level (nested=false): absolute, position clamped to a 4px inset of the viewport (ContextMenu.tsx:79-88); nested=true for submenus (no clamp)",
+  "purpose": "Renders the list of menu rows for a menu or submenu.",
+  "text": "none",
+  "states": [
+   "open",
+   "measuring (position set after first layout)"
+  ],
+  "behaviour": "Each row sets the open submenu on mouse enter (or clears it). Clicking a row without a submenu calls onPick(id) (ContextMenu.tsx:99-107).",
+  "look": null,
+  "count": 1,
+  "region": "task-context-menu; tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (imported as MenuRow from common-ui components)",
+  "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+  "purpose": "Copies the task from the task-row menu.",
+  "text": "Copy (icon content_copy)",
+  "states": [
+   "default (shown)",
+   "hover (bg wash-2l)",
+   "focus (native button)"
+  ],
+  "behaviour": "Click calls onPick(item.id) and closes the menu. Mouse enter clears any open submenu.",
+  "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9. Code classes: text-[13px], px-space-6 py-space-4, gap-space-5, full width; hover bg wash-2l; leading icon in grid span coloured content-3l.",
+  "count": 1,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (imported as MenuRow from common-ui components)",
+  "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+  "purpose": "Adds a subtask under the task.",
+  "text": "Add subtask (icon subdirectory_arrow_right)",
+  "states": [
+   "default (shown)",
+   "hover (bg wash-2l)",
+   "focus (native button)"
+  ],
+  "behaviour": "Click calls onPick(item.id) and closes the menu. Target of the action not captured.",
+  "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9.",
+  "count": 1,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (imported as MenuRow from common-ui components)",
+  "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+  "purpose": "Starts renaming the task.",
+  "text": "Rename (icon edit)",
+  "states": [
+   "default (shown)",
+   "hover (bg wash-2l)",
+   "focus (native button)"
+  ],
+  "behaviour": "Click starts renaming the task (rename UI not captured). Mouse enter clears any open submenu.",
+  "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9.",
+  "count": 1,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"default\"; disabled=false; has submenu, so trailing shows a chevron_right icon",
+  "purpose": "Opens the list submenu to move the task to another list; submenu contents are not recorded.",
+  "text": "Move to list (icon arrow_forward; trailing chevron_right)",
+  "states": [
+   "default (shown)",
+   "hover (opens submenu)",
+   "submenu open (not recorded)"
+  ],
+  "behaviour": "Hover opens the submenu (ContextMenu.tsx:105, 123-133). Click does nothing (onClick only calls onPick when there is no submenu, ContextMenu.tsx:107).",
+  "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"danger\" (text colour danger-500l, hover bg danger-100l); leading icon; no trailing",
+  "purpose": "Destructive action at the bottom of the task menu that starts deleting the task.",
+  "text": "Delete task… (icon delete, size 15)",
+  "states": [
+   "default (shown)",
+   "hover (danger background)",
+   "focus (native button)"
+  ],
+  "behaviour": "Click calls onPick(item.id) and closes the menu. The ellipsis implies a confirmation step, not captured.",
+  "look": "Row 152x30 (B measured). Icon delete and label both oklch(0.55 0.2 27) (red); label 400 13px/19.5px. Code tokens: danger-500l text, danger-100l hover bg.",
+  "count": 1,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"default\"; leading icon; no trailing; disabled=false not set on Rename",
+  "purpose": "Renames the list from its tab menu.",
+  "text": "Rename (icon edit)",
+  "states": [
+   "default (shown)",
+   "hover",
+   "disabled (not recorded; would show opacity-40 and no pointer events)"
+  ],
+  "behaviour": "Click renames the list (rename sheet or field not captured). Click calls onPick(item.id) and closes the menu.",
+  "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9.",
+  "count": 1,
+  "region": "tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"default\"; leading icon; no trailing; disabled=false",
+  "purpose": "Opens the list in the split view.",
+  "text": "Open in split view (icon vertical_split)",
+  "states": [
+   "default (shown)",
+   "hover",
+   "disabled (not recorded; would show opacity-40 and no pointer events)"
+  ],
+  "behaviour": "Click opens the list in split view (inferred from label) and closes the menu.",
+  "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9.",
+  "count": 1,
+  "region": "tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"default\"; leading icon; no trailing",
+  "purpose": "Exports the list.",
+  "text": "Export list… (icon ios_share)",
+  "states": [
+   "default (shown)",
+   "hover",
+   "disabled (not recorded)"
+  ],
+  "behaviour": "Click exports the list (ellipsis implies a save step, not captured) and closes the menu.",
+  "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9.",
+  "count": 1,
+  "region": "tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "MenuItem (common-ui)",
+  "variant": "tone=\"danger\"; leading icon delete; no trailing",
+  "purpose": "Deletes the list from its tab menu.",
+  "text": "Delete list… (icon delete, size 15)",
+  "states": [
+   "default (shown)",
+   "hover (danger background)"
+  ],
+  "behaviour": "Click starts list deletion and closes the menu. The ellipsis implies a confirmation, not captured.",
+  "look": "Row 156x30. Icon delete and label both oklch(0.55 0.2 27) (red); label 400 13px/19.5px.",
+  "count": 1,
+  "region": "tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "context-menu",
+  "component": "Submenu wrapper plus nested MenuPanel",
+  "variant": "nested=true (no clamp); flips to the left when it would overflow the window",
+  "purpose": "Opens beside a hovered row that has a submenu.",
+  "text": "none recorded",
+  "states": [
+   "not recorded in any state"
+  ],
+  "behaviour": "Opens on hover of a row with a submenu; flips left on overflow (ContextMenu.tsx:142-165).",
+  "look": null,
+  "count": 0,
+  "region": "submenu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "dropdown",
+  "component": "ProjectMenu",
+  "variant": "anchored dropdown with anchorRef and onDismiss; Surface2 classes \"z-dropdown animate-sheet-in py-space-3 absolute top-10 left-…\" (truncated in tree); not an Overlay and not a MenuPanel",
+  "purpose": "Lists projects so the user can switch project, rename or delete one, or add a new one.",
+  "text": "No labels recorded in tree.txt; project names come from elements.json and the screenshot.",
+  "states": [
+   "open (project-menu state)"
+  ],
+  "behaviour": "Dismissed via onDismiss. Opened from the ProjectSwitcher.",
+  "look": "Surface2 210x112 at @112,43; elevation menu, surface 3, radius panel. Row labels 400 13.5px/20.25px oklch(0.26 0.012 262) (B).",
+  "count": 1,
+  "region": "project-dropdown"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\") with leading Label (tone accent, className \"flex w-4 items-center\") holding Icon check",
+  "variant": "current project row (checked); Icon check size=15 weight=900",
+  "purpose": "Shows the active project (Home) and switches to it.",
+  "text": "Home (check icon)",
+  "states": [
+   "checked (active)",
+   "default",
+   "hover (reveals rename and delete)"
+  ],
+  "behaviour": "Click expected to switch to Home (inferred; not verifiable from the tree). Rename and delete icons appear on hover.",
+  "look": "Check icon 15px oklch(0.6 0.2 255) (blue). Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,53), 119x20.",
+  "count": 1,
+  "region": "project-dropdown"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "menu-item",
+  "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\")",
+  "variant": "inactive project row (no check; empty 14x0 check slot)",
+  "purpose": "Switches to the Spring launch project.",
+  "text": "Spring launch",
+  "states": [
+   "default (shown)",
+   "hover (reveals rename and delete)"
+  ],
+  "behaviour": "Click expected to switch to Spring launch (inferred; not verifiable from the tree).",
+  "look": "Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,85), 119x20. No check icon.",
+  "count": 1,
+  "region": "project-dropdown"
+ },
+ {
+  "screen": "trash",
+  "kind": "dropdown",
+  "component": "?",
+  "variant": "Project switcher, filled pill with label and up/down chevron",
+  "purpose": "Switch the current project (Home).",
+  "text": "'Home' with icon 'unfold_more'; aria label 'Switch project'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click opens the project list (inferred from the chevron and label; not captured).",
+  "look": "Box 85x28 at 112,8. Background oklch(0.944 0.003 255). Radius 7px. 'Home' font 600 14px/21px, colour oklch(0.26 0.012 262). Chevron 15px, colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "main title bar (full width, y 0-45)"
+ }
+]

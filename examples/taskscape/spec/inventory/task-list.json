@@ -1,0 +1,840 @@
+{
+ "id": "task-list",
+ "title": "Task list",
+ "tier": "high",
+ "states": [
+  "main-default",
+  "row-hover",
+  "row-selected",
+  "option-held-hover",
+  "multi-select-shift",
+  "rename-inline",
+  "collapsed-all",
+  "empty-list",
+  "search-typed"
+ ],
+ "purpose": "The task list pane for the active list. It shows a search bar, the task tree (root tasks with nested subtasks), and a footer that shows per-list done stats, or a bulk-action bar when one or more rows are selected. Selecting or previewing a row drives the preview panel, which is outside this screen.",
+ "regions": [
+  {
+   "name": "Search bar (InputWell)",
+   "contents": "Top strip of the pane, approx. x 14-846, y 56-91 (visual estimate from shot.png). Holds the leading search icon, the bare search TextInput with placeholder 'Search {list name}', the 'Search options' tune button, the match count and 'Clear search' button (only while a query is typed), a thin vertical divider at about x 810, the 'New task' add button, and the 'Close split' button (only when split). Source: TaskPane.tsx:204-263; state:main-default tree.txt:35-42; state:search-typed."
+  },
+  {
+   "name": "Task list scroll area",
+   "contents": "Scrollable column below the search bar, rows from about y 98 to 364 in the Errands list (visual). Contains TaskRow trees (roots at depth 0, subtasks at depth+1, indented 24px per level), an optional root drop indicator while dragging over blank space, and the EmptyState when there are no visible roots (Inbox empty-list: icon landscape, centred, approx. x 238-622, y 182-261). Blank-space click clears selection and focus. Edge auto-scroll while dragging. Source: TaskPane.tsx:266-326, 117-161; state:main-default tree.txt:44-86; state:empty-list; shot.png."
+  },
+  {
+   "name": "Footer (StatsBar or BulkBar)",
+   "contents": "Footer band at y approx. 730-760 (visual), h-9 (36px), top border, bg-surface-2. Shows BulkBar when the pane selection count is above 0 (selCount > 0), otherwise StatsBar: the Sort & filter control on the left, a divider, the done label '{done}/{total} done', a progress bar (84px wide) and the percentage. Source: TaskPane.tsx:328-332, 493-523; state:main-default tree.txt:87-93; state:multi-select-shift tree.txt:87-100."
+  },
+  {
+   "name": "Popover over the task list",
+   "contents": "Row context menu (openMenu) opened from right-click or the More button, and the ScopeFields search options menu opened from the Search options button. Source: TaskRow.tsx:155-261; TaskPane.tsx:340-402."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "InputWell",
+   "variant": "search container, leading slot holds the search icon",
+   "purpose": "Frames the search bar.",
+   "text": "(no text)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None; the inner search field takes focus.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:204-207",
+    "A: state:main-default tree.txt:35",
+    "B: shot.png (container box approx. x 14-846, y 56-91, visual)"
+   ],
+   "look": "Approx. x 14-846, y 56-91, light grey rounded bar (visual estimate, not measured)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=search size=18 weight=300, leading in InputWell",
+   "purpose": "Decorative search glyph marking the field as a search input.",
+   "text": "search (icon name)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None, decorative.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:206",
+    "A: state:main-default tree.txt:36",
+    "B: elements.json span [23,65,18,18]"
+   ],
+   "look": "Span [23,65,18,18], colour oklch(0.62 0.013 264), font 400 18px/18px."
+  },
+  {
+   "kind": "search-field",
+   "component": "TextInput (bare, ref=searchRef)",
+   "variant": "bare, className w-full text-[14px], value bound to pane query; input box [46,63,733,21]",
+   "purpose": "Filters this list's tasks by title and/or notes.",
+   "text": "Placeholder 'Search ' + list name: 'Search Errands' (state:main-default, visible in shot.png), 'Search Inbox' (state:empty-list). Typed value 'b' in state:search-typed.",
+   "states": [
+    "empty (placeholder)",
+    "typed (value 'b' in search-typed; rows filter to matches and flatten)",
+    "focused (onFocus focuses pane; blue 1px border visible in search-typed, visual)"
+   ],
+   "behaviour": "Typing calls setQuery and filters rows to matching titles, flattening them (subtasks and the subtask counter disappear). Enter cycles matches forward and Shift+Enter backward, focusing and scrolling each into view. Escape clears the query and blurs. Keydown propagation is stopped. Cmd+F or a typed letter from anywhere focuses the field (registerSearchFocus; call sites outside the files read, so partly unverified).",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:208-225, 98-110, 174-194",
+    "B: state:main-default",
+    "B: state:search-typed",
+    "B: state:empty-list",
+    "B: shot.png (placeholder)"
+   ],
+   "look": "Input box [46,63,733,21], text colour oklch(0.26 0.012 262), font 400 14px/21px."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (wrapped by ScopeFields)",
+   "variant": "icon=tune size 15 weight 300, variant plain",
+   "purpose": "Opens the search scope and fields menu.",
+   "text": "title 'Search options'; icon name 'tune'",
+   "states": [
+    "default",
+    "open (menu open)"
+   ],
+   "behaviour": "Mouse down is prevented so focus stays in the field. Click opens the search options menu anchored below the button (x = button left, y = bottom + 6).",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:340-402, 392-400",
+    "A: state:main-default tree.txt:38-40",
+    "B: state:main-default",
+    "B: state:search-typed (moves to [745,63,21,21])"
+   ],
+   "look": "Button [784,63,21,21], radius 4.375px, icon span [787,66,15,15] font 400 15px/15px, colour oklch(0.62 0.013 264). In search-typed the button moves to [745,63,21,21] with icon span [748,66,15,15]."
+  },
+  {
+   "kind": "menu",
+   "component": "ScopeFields menu (useContextMenu)",
+   "variant": "Check icon marks the current scope and fields choice; defaults are scope 'list' and fields 'both'",
+   "purpose": "Chooses what the search covers.",
+   "text": "'This list' (scope:list), 'Whole project' (scope:project), 'All projects' (scope:all), divider, 'Title & notes' (fields:both), 'Title only' (fields:title), 'Notes only' (fields:notes)",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Clicking an item sets scope or fields on the pane's search state.",
+   "count": 1,
+   "region": "Search bar (InputWell) (popover)",
+   "sources": [
+    "A: TaskPane.tsx:351-389, 344-345"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone muted, weight semibold, text-[11px] tabular-nums, shrink-0",
+   "purpose": "Shows the number of direct search matches.",
+   "text": "'2' in search-typed (direct match count for query 'b')",
+   "states": [
+    "shown only while query.trim() is non-empty",
+    "hidden with no query"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:227-235, 164-172",
+    "A: state:search-typed tree.txt:41",
+    "B: state:search-typed shot.png (digit 2)",
+    "B: state:search-typed (badge)"
+   ],
+   "look": "Span [771,65,8,17], font 600 11px/16.5px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=close size 15 weight 300, variant plain",
+   "purpose": "Clears the search query.",
+   "text": "title 'Clear search'; icon name 'close'",
+   "states": [
+    "default",
+    "hidden with no query",
+    "visible with a query"
+   ],
+   "behaviour": "Click clears the pane search and restores the full list.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:236-243",
+    "A: state:search-typed tree.txt:42",
+    "B: state:search-typed"
+   ],
+   "look": "Button [784,63,21,21], radius 4.375px, icon span [787,66,15,15] font 400 15px/15px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider",
+   "variant": "orientation vertical, className h-4 shrink-0",
+   "purpose": "Separates the search tools from the New task button.",
+   "text": "(none)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:246",
+    "A: state:main-default tree.txt:41",
+    "B: shot.png (visual)"
+   ],
+   "look": "Visual only, about x 810, y 56-70."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=add size 18 weight 400, no variant prop (default)",
+   "purpose": "Starts a new task in this list.",
+   "text": "title 'New task'; icon name 'add'. The '+' key or ⌘N does the same (empty-state hint).",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls startNewTask(list.id), which opens the draft flow.",
+   "count": 1,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:247-253",
+    "A: state:main-default tree.txt:42",
+    "B: state:main-default, state:search-typed, state:empty-list, state:row-selected"
+   ],
+   "look": "Button [816,63,21,21], radius 4.375px, icon span [818,65,18,18] font 400 18px/18px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=close size 16 weight 300, className -mr-1 (conditional on isSplit)",
+   "purpose": "Closes the split view for this pane.",
+   "text": "title 'Close split'; icon name 'close'",
+   "states": [
+    "shown only when isSplit is true (not in any recorded state)"
+   ],
+   "behaviour": "Click calls layoutStore.closeSplit().",
+   "count": 0,
+   "region": "Search bar (InputWell)",
+   "sources": [
+    "A: TaskPane.tsx:254-263, 260"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "div (scroll container)",
+   "variant": "className min-h-0 flex-1 overflow-y-auto overscroll-contain",
+   "purpose": "Scrolls the task tree.",
+   "text": "(none)",
+   "states": [
+    "default",
+    "drop-over (rootDropOver)"
+   ],
+   "behaviour": "Click on blank space (not a [data-task-id] row) clears selection and focus. Dropping a dragged task here moves it to the list root (single drop or multi-id drop set). Edge auto-scroll while dragging.",
+   "count": 1,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskPane.tsx:266-297, 117-161",
+    "B: task-rows region (rows about y 98-364, visual)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "div (root drop indicator)",
+   "variant": "accent line h-0.5 with a dot at the left end; shown while rootDropOver and draggingId are set",
+   "purpose": "Shows where a dragged task will land at the root.",
+   "text": "(none)",
+   "states": [
+    "hidden",
+    "shown while dragging over blank space"
+   ],
+   "behaviour": "None.",
+   "count": 0,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskPane.tsx:303-307"
+   ]
+  },
+  {
+   "kind": "empty-state",
+   "component": "EmptyState",
+   "variant": "searching: icon search_off, title 'No matches in {list.name}', subtitle 'Try a different search or scope' (code path only). Not searching: icon landscape, title 'Nothing here yet', subtitle 'Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one' (or 'Press + or ⌘N to add a task' when there is no capture hint). iconSize 30, className pt-24 pb-10",
+   "purpose": "Explains an empty or no-match list and how to add a task.",
+   "text": "Inbox empty-list: title 'Nothing here yet'; subtitle 'Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one'. The 'No matches in ...' variant is not in any recorded tree.",
+   "states": [
+    "empty list (empty-list, Inbox, 0/0)",
+    "no matches (code path only)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskPane.tsx:308-324; A: state:empty-list tree.txt:38-41",
+    "B: state:empty-list; shot.png (title and hint, approx. y 228 and 253)"
+   ],
+   "look": "Icon span [415,182,30,30] font 400 30px/30px, colour oklch(0.62 0.013 264). Title and hint grey and centred (visual)."
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow (memo) wrapper div with data-task-id",
+   "variant": "depth 0 (root tasks); min-h-9 pr-space-6; a row with notes is taller (about 46px)",
+   "purpose": "One root task in the tree.",
+   "text": "task.title. Errands roots seen in screenshots: 'Pick up prescription' (subtitle 'Counter closes at 6'), 'Post the parcel to Mum' (completed), 'Book bike service', 'Cut a spare key', 'Buy groceries for the week' (parent with subtasks). Mapping to taskId not confirmed in the tree.",
+   "states": [
+    "default",
+    "hover (hover:bg-wash-1; visual only)",
+    "selected (bg-selection-1 when previewed or picked)",
+    "picked (in multi-selection, blue tint)",
+    "completed (muted title, strikethrough)",
+    "dragging (opacity-40)",
+    "nest drop target (ring and selection bg)",
+    "drop before or after line"
+   ],
+   "behaviour": "Click: paneRowClick; Cmd/Ctrl toggles and Shift extends a range (TaskRow.tsx:328-333 forwards the modifiers). Double-click: toggles done (Shift-mousedown prevented from text-selecting). Right-click: opens the row context menu. Drag: moves the task (or selection) by dropping before, after or nested into another row. Drop zone by vertical position: top 30% before, bottom 30% after, middle nest.",
+   "count": 5,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskRow.tsx:263-352, 119-125, 284-322, 328-333; A: state:main-default tree.txt:44-86",
+    "B: state:main-default, state:row-hover, state:row-selected, state:option-held-hover, state:multi-select-shift, state:rename-inline, state:collapsed-all, state:search-typed"
+   ],
+   "look": "Titles font 500 14px/16.625px; title boxes at x=47 (for example [47,105,138,16], [47,151,162,16]); row heights about 31-32px; first row about 46px because of the subtitle (visual)."
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow (memo) wrapper div with data-task-id",
+   "variant": "depth 1 (subtasks, depth+1); left padding depth*24px",
+   "purpose": "A subtask shown nested under its parent row.",
+   "text": "'Oat milk' (completed), 'Sourdough loaf', 'Apples' (under 'Buy groceries for the week').",
+   "states": [
+    "open",
+    "completed (Oat milk)",
+    "hidden when the parent is collapsed (collapsed-all)",
+    "hidden in search-typed (flat list)"
+   ],
+   "behaviour": "Same as root rows: click selects, Cmd/Ctrl toggles, Shift extends, double-click toggles done, right-click opens the row menu, drag nests or reorders.",
+   "count": 3,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskRow.tsx:263-352; A: state:main-default tree.txt:44-86",
+    "B: state:main-default, state:row-hover, state:row-selected, state:option-held-hover, state:multi-select-shift, state:rename-inline"
+   ],
+   "look": "Round select at x=44; title at x=71 (font 500 14px/16.625px). Title boxes [71,277,59,16], [71,308,106,16], [71,340,47,16]. Hairline dividers start at x about 70."
+  },
+  {
+   "kind": "divider",
+   "component": "span (row separator)",
+   "variant": "absolute, bottom 0, h-px, pointer-events none, left = depth*24+44",
+   "purpose": "Inset line between rows.",
+   "text": "(none)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 8,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskRow.tsx:354-358",
+    "B: state:main-default (hairline, visual)"
+   ],
+   "look": "About 1px light grey, from x about 44-70 to 860 (visual)."
+  },
+  {
+   "kind": "divider",
+   "component": "span (drop indicator)",
+   "variant": "accent line h-0.5 with dot, placed at top (before) or bottom (after) of the row",
+   "purpose": "Drop position feedback for before or after.",
+   "text": "(none)",
+   "states": [
+    "hidden",
+    "before",
+    "after"
+   ],
+   "behaviour": "None.",
+   "count": 0,
+   "region": "Task list scroll area",
+   "sources": [
+    "A: TaskRow.tsx:360-371"
+   ]
+  },
+  {
+   "kind": "round-check",
+   "component": "Check (button)",
+   "variant": "Round select handle (rounded-full) by default; when Option is held (useAltPressed) it becomes a square done lamp (rounded-field) showing a check stroke. One button, two modes; the Option-held state is not a separate widget.",
+   "purpose": "Selects the row (default) or toggles done (Option held).",
+   "text": "title 'Select' or 'Deselect' by default; 'Mark done' or 'Mark not done' when Option is held. aria-pressed reflects active.",
+   "states": [
+    "unpicked (empty grey ring)",
+    "picked (filled, inner white dot in select mode)",
+    "done (check stroke filled in done mode)",
+    "hover (border shifts to content-3 on the row group)",
+    "option-held (done mode, square)"
+   ],
+   "behaviour": "Click: if Option (altKey), toggles done; otherwise toggles the row's multi-select membership. Double-click on it is stopped so it does not toggle done.",
+   "count": 8,
+   "region": "Task list scroll area (row, left)",
+   "sources": [
+    "A: TaskRow.tsx:375-381, 499-578",
+    "A: state:main-default tree.txt:45-73; state:multi-select-shift tree.txt:45-61; state:option-held-hover tree.txt (same props as main-default)",
+    "B: round-check and Mark-done entries (merged; B's separate checkbox widget dropped)"
+   ],
+   "look": "Button 16x16. Select mode radius full (round), colour oklch(0.26 0.012 262). Picked fill oklch(0.62 0.13 255). Done-mode lamp radius 4.375px. Top-level boxes at x=20 (y 113, 151, 183, 214, 246); subtask boxes at x=44 (y 277, 309, 340)."
+  },
+  {
+   "kind": "label",
+   "component": "Label as=div (title)",
+   "variant": "truncate, weight medium, tone primary (muted when done), text-[14px] leading-4.75; inner span with class strike (strike-on when done)",
+   "purpose": "The task title.",
+   "text": "task.title (exact titles not in the tree; see the root and subtask row entries for screenshot titles).",
+   "states": [
+    "open (dark title)",
+    "done (muted grey, struck through)",
+    "matched (highlight marks inside the title)"
+   ],
+   "behaviour": "None; double-click on the row toggles done.",
+   "count": 8,
+   "region": "Task list scroll area (row, centre)",
+   "sources": [
+    "A: TaskRow.tsx:385-395, 49-73",
+    "B: state:main-default and other states"
+   ],
+   "look": "Font 500 14px/16.625px. Open colour oklch(0.26 0.012 262); completed colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "Label as=div (notes preview)",
+   "variant": "truncate, tone secondary (muted when done), text-[12.5px] leading-4.25, opacity-55 when done. Rendered only when task.notes is set.",
+   "purpose": "Shows the first line of notes under the title.",
+   "text": "task.notes. Visible in the screenshot as 'Counter closes at 6' under 'Pick up prescription' (visual; tree records only t-pharmacy).",
+   "states": [
+    "default",
+    "done (faded, opacity-55)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list scroll area (row, centre)",
+   "sources": [
+    "A: TaskRow.tsx:396-408; A: state:main-default tree.txt:47",
+    "B: shot.png (subtitle, visual)"
+   ],
+   "look": "Subtitle text visual only; row about 46px tall with it."
+  },
+  {
+   "kind": "label",
+   "component": "mark (inside title or notes preview)",
+   "variant": "bg-accent-500l/25 (dark bg-accent-500d/30), rounded-[3px], text-inherit",
+   "purpose": "Highlights the matched query text inside a title or notes preview.",
+   "text": "the matched substring (search-typed: 'B' in 'Book', 'b' in 'bike', 'B' in 'Buy')",
+   "states": [
+    "shown while query.trim() is non-empty",
+    "visible in state:search-typed (shot.png)"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Task list scroll area (row, centre)",
+   "sources": [
+    "A: TaskRow.tsx:49-73, 61-66",
+    "B: state:search-typed (behaviour; highlighted letters in shot.png)"
+   ],
+   "look": "Background bg-accent-500l/25, rounded-[3px] (visual count and placement approximate)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "button (raw element)",
+   "variant": "Icon chevron_left size 16 weight 300; className grid h-5 w-5; rotated -90 deg when expanded; hover-only when expanded (opacity-0 otherwise); always visible when collapsed; shown only when the row has visible children",
+   "purpose": "Expands or collapses the subtasks.",
+   "text": "title 'Collapse' when expanded, 'Expand' when collapsed; icon name 'chevron_left'",
+   "states": [
+    "expanded (rotated, shown on row hover only)",
+    "collapsed (not rotated, always visible)",
+    "hidden when the row has no visible children (search-typed)"
+   ],
+   "behaviour": "Click toggles the row in the collapsed set (stops propagation). Double-click stopped.",
+   "count": 1,
+   "region": "Task list scroll area (row, right gutter)",
+   "sources": [
+    "A: TaskRow.tsx:411-440; A: state:main-default tree.txt:68 (rotated, groceries); A: state:collapsed-all tree.txt:68 (not rotated)",
+    "B: state:collapsed-all (Expand); B: state:main-default (chevron span not visible in shot.png)"
+   ],
+   "look": "Button [770,245,18,18], radius 4.375px, icon span [771,246,16,16] font 400 16px/16px, colour oklch(0.62 0.013 264). Sits left of the subtask counter."
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "className px-space-3, shown when the row has visible children; spans [done][/][total] with no spaces",
+   "purpose": "Shows subtask progress.",
+   "text": "title '{doneChildren} of {children.length} subtasks done' (state:main-default: '1 of 3 subtasks done'); body text '1' '/' '3'.",
+   "states": [
+    "default",
+    "hidden in search-typed (flat list)"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Task list scroll area (row, right gutter)",
+   "sources": [
+    "A: TaskRow.tsx:441-450, 446-448; A: state:main-default tree.txt:69",
+    "B: state:main-default, state:row-hover, state:row-selected, state:option-held-hover, state:multi-select-shift, state:rename-inline, state:collapsed-all (counter '1 / 3' in B text, corrected to no spaces per code)"
+   ],
+   "look": "Digits font 600 11px/16.5px, colour oklch(0.62 0.013 264). Spans '1' [798,246,8,17], '/' [807,246,4,17], '3' [813,246,8,17]. Pill approx. x 793-825, y 245-263 (visual)."
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "className px-space-2, icon attach_file size 13 weight 500 plus the attachment count; shown only when task.attachments.length > 0",
+   "purpose": "Shows the attachment count on a task.",
+   "text": "attach_file icon plus the count digit",
+   "states": [
+    "shown when the task has attachments (no recorded row has one)"
+   ],
+   "behaviour": "None.",
+   "count": 0,
+   "region": "Task list scroll area (row, right gutter)",
+   "sources": [
+    "A: TaskRow.tsx:451-456"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=more_horiz size 17 weight 300, variant ghostStrong",
+   "purpose": "Opens the row context menu from the row itself.",
+   "text": "title 'More'; icon name 'more_horiz'; accessible label 'More'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click stops propagation and opens the row menu anchored below the button (x = button left, y = bottom + 4). Double-click stopped.",
+   "count": 8,
+   "region": "Task list scroll area (row, right end)",
+   "sources": [
+    "A: TaskRow.tsx:457-471; A: state:main-default tree.txt:48-49",
+    "B: each row in all states"
+   ],
+   "look": "Button [830,y,21,21], radius 4.375px, icon span [832,y+2,17,17] font 400 17px/17px, colour oklch(0.62 0.013 264). Top-level y 110, 149, 180, 212, 243; subtasks y 275, 306, 338."
+  },
+  {
+   "kind": "menu",
+   "component": "Row context menu (openMenu)",
+   "variant": "Single-row items: 'Copy' (content_copy); 'Add subtask' (subdirectory_arrow_right, divider above); 'Rename' (edit); 'Move to list' (arrow_forward, disabled when no other lists, submenu of list names with id move:{listId}); 'Promote to top level' (north_west, only when the task has parent_id); 'Delete task…' (delete, danger, divider above). Multi-row variant (2 or more selected and this row is in the selection): 'Copy {n} tasks' (content_copy); 'Mark {n} done' (task_alt, divider above); 'Mark {n} not done' (radio_button_unchecked); 'Move to list' (arrow_forward, submenu); 'Delete {n} tasks…' (delete, danger, divider above).",
+   "purpose": "Row actions, from right-click or the More button.",
+   "text": "See variant.",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Each item runs its action: copy to clipboard, mark done or undone, add subtask (sets the inline composer), rename (beginTitleEdit), promote, delete (requestDeleteTask or bulkDelete), or move.",
+   "count": 1,
+   "region": "Popover over the task list",
+   "sources": [
+    "A: TaskRow.tsx:155-261, 238-259, 248",
+    "B: More button entry (menu not observed in B's recordings)"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "SubtaskComposer",
+   "variant": "row-height 36px, indented by depth*24+6; Icon subdirectory_arrow_right size 15 weight 300; TextInput with autofocus",
+   "purpose": "Adds a subtask inline under the parent row.",
+   "text": "placeholder 'Subtask title — Enter to add'",
+   "states": [
+    "shown only after 'Add subtask' sets composeFor for this row (not in any recorded tree)",
+    "focused on mount",
+    "dismissed by empty Enter, Escape or blur"
+   ],
+   "behaviour": "Enter with a title creates the subtask and clears the field. Enter with empty input dismisses. Escape dismisses. Blur dismisses.",
+   "count": 0,
+   "region": "Task list scroll area (under a parent row)",
+   "sources": [
+    "A: TaskRow.tsx:580-623, 475-486"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label as=div (StatsBar done label)",
+   "variant": "tone muted, weight semibold, uppercase, tracking-[0.08em], text-[11px]",
+   "purpose": "Footer done count for this list.",
+   "text": "'{done}/{total} done' (state:main-default: '2/8 done'; state:empty-list: '0/0 done'). Rendered uppercase by CSS (shot.png shows 2/8 DONE).",
+   "states": [
+    "populated (2/8 done)",
+    "empty (0/0 done)"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:328-332, 493-523, 85-96, 513; A: state:main-default tree.txt:87-93; A: state:empty-list tree.txt:42-48",
+    "B: footer-stats (text corrected to no spaces per code and critic)"
+   ],
+   "look": "Span [52,737,65,17], font 600 11px/16.5px, text-transform uppercase, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "Label tone=secondary",
+   "variant": "w-8 text-right",
+   "purpose": "Shows the completion percentage.",
+   "text": "'{pct}%' (e.g. '25%'; '0%' for empty-list)",
+   "states": [
+    "default",
+    "empty (0%)"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:517-519; A: state:main-default tree.txt:93",
+    "B: footer-stats (text corrected from '25 %' to '25%' per code)"
+   ],
+   "look": "Span [820,737,28,17], font 600 11px/16.5px, text-transform uppercase, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "progress-bar",
+   "component": "ProgressBar",
+   "variant": "value = done/total (0.25 in main-default), width 84px",
+   "purpose": "Visual completion of the list.",
+   "text": "(none)",
+   "states": [
+    "default (25% filled)",
+    "empty (value 0, empty track)"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:516; A: state:main-default tree.txt:92",
+    "B: footer-stats progress track (visual, about x 731-815, about 4px tall)"
+   ],
+   "look": "Width 84px (code); track about 4px tall, light grey, blue fill (visual)."
+  },
+  {
+   "kind": "button",
+   "component": "ViewControl (raw button)",
+   "variant": "Icon tune size 14 weight 300, rounded-field, h-5.5; inactive text content-3 with hover content-1; active text accent-500 with a 'Filtered' label",
+   "purpose": "Opens or closes the Filter and Sort panel for the list.",
+   "text": "title 'Sort & filter'; icon name 'tune'; 'Filtered' text only when the pane view is non-default; accessible label 'Sort & filter'",
+   "states": [
+    "default",
+    "hover",
+    "active (accent colour, 'Filtered' label; TaskPane.tsx:548-551)",
+    "hidden in multi-select-shift (BulkBar replaces the footer)"
+   ],
+   "behaviour": "Click toggles uiStore.filterOpen (the Filter and Sort panel in the preview column).",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:525-555, 494-510, 540-551; A: state:main-default tree.txt:89-90",
+    "B: footer-stats Sort & filter button (look)"
+   ],
+   "look": "Button [12,735,25,19], radius 4.375px, font 600 11px/16.5px, colour oklch(0.62 0.013 264). Icon span [18,738,14,14] font 400 14px/14px."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider",
+   "variant": "orientation vertical, className h-3 (in StatsBar: between sort control and done count; in BulkBar: between count and verbs)",
+   "purpose": "Separates footer controls.",
+   "text": "(none)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:511; A: state:main-default tree.txt:91; A: state:multi-select-shift tree.txt:89",
+    "B: footer divider about x 44 (StatsBar) and about x 101 (BulkBar), visual"
+   ],
+   "look": "Visual; spans the footer height. Divider x about 44 (StatsBar) and about 101 (BulkBar)."
+  },
+  {
+   "kind": "other",
+   "component": "BulkBar",
+   "variant": "replaces StatsBar while selCount > 0; h-9, border-t, px-space-6",
+   "purpose": "Bulk actions for the current row selection.",
+   "text": "See children below.",
+   "states": [
+    "shown when one or more rows are selected (state:multi-select-shift, 4 selected)"
+   ],
+   "behaviour": "None on its own; children act on the pane selection.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:328-329, 406-423; A: state:multi-select-shift tree.txt:87",
+    "B: bulk-bar region (shot.png)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label tone=primary weight=semibold",
+   "variant": "uppercase, tracking-[0.08em], text-[11px], tabular-nums",
+   "purpose": "Shows the number of selected rows.",
+   "text": "'{count} selected' (state:multi-select-shift: '4 selected'; rendered uppercase)",
+   "states": [
+    "shown in BulkBar"
+   ],
+   "behaviour": "Read-only.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:424-430; A: state:multi-select-shift tree.txt:88",
+    "B: bulk-bar label '4 selected'"
+   ],
+   "look": "Span [9,737,86,17], font 600 11px/16.5px, uppercase, colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=task_alt, iconWeight 300, size sm",
+   "purpose": "Marks every selected task done.",
+   "text": "label 'Done'; title 'Mark done'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls bulkSetDone(listId, true).",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:432-440; A: state:multi-select-shift tree.txt:90",
+    "B: bulk-bar 'Done' button"
+   ],
+   "look": "Button [104,734,64,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [110,737,15,15] font 400 15px/15px."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=radio_button_unchecked, size sm",
+   "purpose": "Marks every selected task not done.",
+   "text": "label 'Undone'; title 'Mark not done'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls bulkSetDone(listId, false).",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:441-449; A: state:multi-select-shift tree.txt:92",
+    "B: bulk-bar 'Undone' button"
+   ],
+   "look": "Button [171,734,81,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [176,737,15,15]."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=arrow_forward, size sm; disabled when there are no other lists in the active project",
+   "purpose": "Moves the selection to another list.",
+   "text": "label 'Move to…'; title 'Move to another list'",
+   "states": [
+    "default",
+    "disabled (no other lists)"
+   ],
+   "behaviour": "Click opens a menu of the other lists in the active project (items are list names, ids are list ids). Picking one calls bulkMove(listId, id).",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:450-459, 413-421, 455; A: state:multi-select-shift tree.txt:94 (disabled=false)",
+    "B: bulk-bar 'Move to…' button (menu target unobserved; resolved by code)"
+   ],
+   "look": "Button [254,734,95,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [260,737,15,15]."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=content_copy, size sm",
+   "purpose": "Copies the selection as a checklist.",
+   "text": "label 'Copy'; title 'Copy as checklist'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls bulkCopy(listId).",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:460-468; A: state:multi-select-shift tree.txt:96",
+    "B: bulk-bar 'Copy' button"
+   ],
+   "look": "Button [352,734,62,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [358,737,15,15]."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=delete, size sm, variant danger",
+   "purpose": "Deletes the selected tasks.",
+   "text": "label 'Delete'; title 'Delete selection'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click calls bulkDelete(listId). Whether a confirmation sheet appears is not verified in the files read.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:469-478; A: state:multi-select-shift tree.txt:98",
+    "B: bulk-bar 'Delete' button"
+   ],
+   "look": "Button [417,734,73,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [423,737,15,15]."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=close, size sm, className ml-auto",
+   "purpose": "Clears the selection and returns the footer to StatsBar.",
+   "text": "label 'Clear'; title 'Clear selection'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click clears the pane selection, so the footer returns to StatsBar.",
+   "count": 1,
+   "region": "Footer (StatsBar or BulkBar)",
+   "sources": [
+    "A: TaskPane.tsx:479-488; A: state:multi-select-shift tree.txt:100",
+    "B: bulk-bar 'Clear' button (right aligned)"
+   ],
+   "look": "Button [787,734,64,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [792,737,15,15]."
+  }
+ ],
+ "links": [
+  {
+   "to": "task-inspector",
+   "via": "Single-click a task row (or its title area) to select it. The preview panel then shows its TaskInspector (state:row-selected, state:rename-inline, state:option-held-hover)."
+  },
+  {
+   "to": "multi-inspector",
+   "via": "Cmd-click or Ctrl-click a row to add it to the selection, Shift-click for a range, or click the Check handle on rows. With one or more rows selected the footer becomes BulkBar and the preview shows MultiInspector (state:multi-select-shift)."
+  },
+  {
+   "to": "context-menus",
+   "via": "Right-click a task row, or click its More (more_horiz) button. Shows the row context menu (single or multi variant)."
+  },
+  {
+   "to": "context-menus",
+   "via": "Click the Search options (tune) button in the search bar. Shows the scope and fields menu."
+  },
+  {
+   "to": "context-menus",
+   "via": "Row context menu item 'Move to list' (submenu of list names), or BulkBar 'Move to…' (menu of other lists in the active project)."
+  },
+  {
+   "to": "filter-panel",
+   "via": "Click the Sort & filter (tune) button in the footer. Toggles the Filter & Sort panel."
+  },
+  {
+   "to": "draft-inspector",
+   "via": "Click the New task (add) button in the search bar, or press '+' or ⌘N (per the empty-state hint)."
+  },
+  {
+   "to": "sheets",
+   "via": "Row context menu 'Delete task…' or 'Delete {n} tasks…', or BulkBar 'Delete'. The confirmation sheet is inferred from requestDeleteTask and is not verified in the files read."
+  },
+  {
+   "to": "capture-bar",
+   "via": "Empty-list subtitle text '⌘↩ anywhere to capture one' refers to the capture bar. This is text only in the code; the hotkey is toggle_capture_bar. Target inferred."
+  }
+ ],
+ "notes": "Sources merged: A (code-based inventory, TaskPane.tsx and TaskRow.tsx, plus tree.txt states main-default, row-hover, row-selected, option-held-hover, multi-select-shift, rename-inline, collapsed-all, empty-list, search-typed) and B (screenshot and measurement inventory, elements.json and shot.png). A's component and variant names are used; B's measured look values are used where present. The critic's verdicts were applied.\n\nCorrections applied from the critique: (1) BulkBar threshold is one or more selected rows (selCount > 0, TaskPane.tsx:328), not two. Both A's link text and B's multi-inspector and round-check wording were corrected. (2) The Search options (tune) button opens the ScopeFields menu, so B's link to filter-panel was dropped; the link is to context-menus. (3) Footer and percent text has no spaces: '2/8 done', '25%', subtask counter '1' '/' '3' (no spaces). B's '2 / 8 done', '25 %' and '1 / 3' were corrected. (4) The search-typed match count digit is 2 (B correct; A had it unknown). (5) Option-held is one Check widget with two modes (A correct); B's separate 'checkbox' widget was dropped as a wrong variant. (6) Highlight marks are recorded as a visible element in search-typed (count 3, visible per screenshot), replacing A's count-0 entry. (7) A's note 3 on search-typed (groceries with a chevron and no children) was dropped: the tree and screenshot show no chevron and no counter for groceries, which matches the flattened search state; the child hiding comes from isVisibleInPane, outside the files read. (8) Shift-click range selection is supported by the call at TaskRow.tsx:328-333, so A's wording was kept and B's 'not confirmed' was dropped.\n\nDrops and changes: B's 'checkbox' widget (wrong variant, merged into Check). B's Search options link to filter-panel (wrong link). A's link text 'two or more rows' (corrected to one or more). A's 'Close split' link to 'main-window' (dropped; the code calls layoutStore.closeSplit() and does not navigate to a screen named main-window). B's count of the Option-held 'checkbox' state dropped. A's search-typed chevron note dropped (see above).\n\nKept at count 0 (no tree evidence, but present in code): Close split button, root drop indicator, row before/after drop indicator, attachment badge, SubtaskComposer. The 'No matches in {list}' empty state is kept as a code-path variant of EmptyState.\n\nGaps and uncertainties: rename-inline state lists no inline text input in any row or the pane; the rename field is not in TaskRow.tsx or TaskPane.tsx, so the inline rename UI is not verified on this screen. Hover, selected, highlight and Option-held visuals are inferred from code and screenshots where the tree has no class data. Row titles are not in the tree except via screenshots; the taskId-to-title mapping is not confirmed. Targets not observed in B's recordings (More, New task, Sort & filter, Search options, bulk Move to, Copy, Delete) are resolved by A's code, except the delete confirmation sheet (inferred, unverified). Copy, Mark done and Undone may raise a toast; the toast call is not in the files read, so no link is claimed.\n\nOut of scope for this worker: the devbench notify step, the deploy step and the progress checklist requested in the relayed message were not performed here. This worker only merges inventories and returns output.",
+ "counts": {
+  "A": 40,
+  "B": 28,
+  "issues": 18
+ }
+}

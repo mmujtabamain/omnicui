@@ -1,0 +1,1297 @@
+{
+ "id": "task-inspector",
+ "title": "Task inspector",
+ "tier": "high",
+ "states": [
+  "row-selected",
+  "inspector-notes",
+  "note-editing",
+  "row-with-subtasks-selected",
+  "done-row-selected",
+  "row-selected-dark"
+ ],
+ "purpose": "The task-inspector screen is the single-task detail panel in the right-hand preview pane of the main window (about 319px wide, 715px tall). It is keyed by task id and remounts on each selection change (TaskInspector.tsx:72-75), showing one task's editable title, done toggle, project/list path, created/updated times, rich-text notes, subtasks and attachments.",
+ "regions": [
+  {
+   "name": "Panel frame",
+   "contents": "Right-hand pane of the 1180x760 window, roughly x 860-1180, y 46-760 (B, shot-measured). Light grey surface in the light theme, dark charcoal in the dark theme (background colour not in elements.json). A thin vertical divider at about x 860 separates it from the task list (shot only)."
+  },
+  {
+   "name": "Header",
+   "contents": "TaskInspector.tsx:260-375 (A). Left: done Checkbox (md) with a decorative 2px accent index tick at the left edge. Middle: the title textarea (x 894, width 246, y about 54-170 per B), then a meta Label block with three rows: project / list breadcrumb, Created, Updated. Right: a vertical column of four icon buttons at x 1150 (Close panel, Rename, Copy task, Delete task at y 54, 77, 100, 123)."
+  },
+  {
+   "name": "Scroll body",
+   "contents": "TaskInspector.tsx:377-466 (A), overflow-y-auto. Three sections in order: Notes (:378-441), Subtasks (:443-459, only when the task has children), Attachments (:461-465, always rendered by AttachmentSection)."
+  },
+  {
+   "name": "Notes section",
+   "contents": "Label row at y about 159-184 (B): SectionHeader 'Notes' with a hairline rule (shot only), and when notes exist a trailing count and a '+ Note' button. Below: a list of NoteCard rich-text editors (always live, no read mode), an add-note RichTextEditor while adding, and a dashed full-width 'Add note' button when there are no notes and no add editor (TaskInspector.tsx:379-439)."
+  },
+  {
+   "name": "Subtasks section",
+   "contents": "Label row at y about 274-400 (B): SectionHeader 'Subtasks' with a hairline rule (shot only) and a trailing '{done} done / {total}' count; then a recursive list of SubtaskRow (checkbox plus title button), 28-30px row pitch (TaskInspector.tsx:443-459, 37-70)."
+  },
+  {
+   "name": "Attachments section",
+   "contents": "AttachmentSection.tsx:167-270. SectionHeader 'Attachments' (no rule) with trailing buttons Shot, Link, File at x 990, 1054, 1116; then either a grid of attachment tiles with captions (94x94 at x 875 and 974, y 517) or a dashed empty box with 'Copy a file' and 'Add a link' (y about 309-379 per B)."
+  },
+  {
+   "name": "Lightbox overlay (conditional)",
+   "contents": "TaskInspector.tsx:468-480. AttachmentLightbox is mounted only when lightboxIndex is not null. It is a separate screen (attachment-lightbox)."
+  },
+  {
+   "name": "Window context (not this screen)",
+   "contents": "Title bar, task list pane, resizer, preview panel shell, SheetHost and Toast belong to other screens (title-bar, task-list). Only the selected list row decides which task this inspector shows."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "other",
+   "component": "span (plain element)",
+   "variant": "accent index tick (decorative, absolute left-0)",
+   "purpose": "Decorative accent bar at the left edge of the header that signals the panel received the selection.",
+   "text": "",
+   "states": [
+    "always shown"
+   ],
+   "behaviour": "none (not interactive)",
+   "count": 1,
+   "region": "Header",
+   "sources": [
+    "TaskInspector.tsx:261-262 (comment 'Index tick: the panel receives the selection'; classes bg-accent-500l dark:bg-accent-500d absolute top-4.75 left-0 h-4 w-0.5)",
+    "B shot: blue tick at x about 861, y 62-76 (shot only; measured height differs from h-4 source class)"
+   ]
+  },
+  {
+   "kind": "checkbox",
+   "component": "Checkbox (common-ui/components)",
+   "variant": "size=md; 18x18 box; checked renders Icon check size 14 weight 700",
+   "purpose": "Marks the whole task done or not done.",
+   "text": "title='Mark done' when not done; title='Mark not done' when done (no visible text)",
+   "states": [
+    "unchecked (outline oklch(0.26 0.012 262); dark oklch(0.94 0.004 260))",
+    "checked (blue fill oklch(0.62 0.13 255), glyph colour oklch(0.99 0.005 255))",
+    "dark theme"
+   ],
+   "behaviour": "click calls actToggleDone(task)",
+   "count": 1,
+   "region": "Header",
+   "sources": [
+    "TaskInspector.tsx:265-270",
+    "B state:inspector-notes (box 873,60 18x18, radius 4.375px)",
+    "B state:done-row-selected (glyph span 875,61 14x14)",
+    "A state:row-selected (Checkbox checked=false size=md @873,60 18x18)",
+    "B state:row-selected-dark (dark colours)"
+   ]
+  },
+  {
+   "kind": "text-field",
+   "component": "textarea (plain element, styled as the title field)",
+   "variant": "readonly display vs editing (editing adds bg-surface-0 fill and ring-2 ring-surface-0); rows=1, spellCheck=false",
+   "purpose": "Shows the task title and edits it in place; one field serves display and edit so the height does not change.",
+   "text": "placeholder='Untitled'. Shown values: 'Rewrite the hero section' (two lines), 'Book bike service', 'Buy groceries for the week' (two lines), 'Post the parcel to Mum'.",
+   "states": [
+    "readonly (default)",
+    "editing (focused, text selected on open)",
+    "empty (placeholder Untitled)",
+    "two-line wrap",
+    "dark theme"
+   ],
+   "behaviour": "click while readonly starts editing; typing edits the draft; Enter commits (preventDefault); Escape reverts the draft and exits editing; blur commits. Commit trims the draft; an empty or unchanged value reverts to the saved title, otherwise calls updateTask(task.id, {title}). Rename is requested from a row or F2/Enter via uiStore titleEditReq.",
+   "count": 1,
+   "region": "Header",
+   "look": "Font 600 18px/21px measured (B; shot-measured line height). Source class text-[18px] leading-6 font-semibold font-display (leading-6 would be 24px under default spacing; unresolved). Colour oklch(0.26 0.012 262) (dark oklch(0.94 0.004 260)). Radius 4.375px. Box x 894, width 246; height 42px when wrapped to two lines, 21px for one line (measured).",
+   "sources": [
+    "TaskInspector.tsx:275-302 (A)",
+    "TaskInspector.tsx:194-205 (startTitleEdit, commitTitle)",
+    "TaskInspector.tsx:211-218 (titleEditReq)",
+    "TaskInspector.tsx:228-243 (focus, select, autosize)",
+    "B state:inspector-notes (box 894,58 246x42)",
+    "B state:row-selected (box 894,58 246x21)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label as=div (common-ui/components)",
+   "variant": "tone=muted; flex-col meta block; text-[11.5px] tabular-nums",
+   "purpose": "Container for the three meta rows: project/list path and Created/Updated times.",
+   "text": "",
+   "states": [
+    "shown always"
+   ],
+   "behaviour": "none (display only)",
+   "count": 1,
+   "region": "Header",
+   "look": "Text 11.5px/17.25px, colour oklch(0.62 0.013 264); tabular-nums.",
+   "sources": [
+    "TaskInspector.tsx:303-307 (A)",
+    "A state:row-selected (Label as=div tone=muted @898,88 246x59)",
+    "B state:row-selected (box 898,88)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (common-ui/Icon)",
+   "variant": "name=folder_open size=13 weight=300",
+   "purpose": "Leading glyph for the project / list row.",
+   "text": "folder_open",
+   "states": [
+    "shown always"
+   ],
+   "behaviour": "none (decorative)",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "13px, colour oklch(0.62 0.013 264) (text-content-3 in source).",
+   "sources": [
+    "TaskInspector.tsx:309-314 (A)",
+    "B state:inspector-notes (box 898,111 13x13)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label tone=secondary truncate",
+   "variant": "project name (followed by a span '/ {listName}' when the list is found)",
+   "purpose": "Shows the task's project.",
+   "text": "{projectName ?? '-'} (values seen: 'Spring launch' for the Website tasks; 'Home' for the Errands tasks)",
+   "states": [
+    "project present",
+    "no project (dash shown)",
+    "truncates"
+   ],
+   "behaviour": "none (display only; no action recorded)",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.46 0.013 262) (dark oklch(0.74 0.008 260)).",
+   "sources": [
+    "TaskInspector.tsx:315-318 (A), TaskInspector.tsx:79-82 (lookup)",
+    "A state:row-selected (Label tone=secondary truncate @916,88 34x17)",
+    "B state:inspector-notes (box 916,109 79x17)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "span (inside the project label)",
+   "variant": "list name, shown only when the list exists",
+   "purpose": "Shows the list the task sits in, after the project.",
+   "text": "/ {listName} (values seen: '/ Website' for Rewrite; '/ Errands' for the other tasks)",
+   "states": [
+    "list present",
+    "list missing (span not rendered)"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:315-318 (A)",
+    "B state:inspector-notes (box 1000,109 53x17)",
+    "B state:row-selected (box 955,88 52x17)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (common-ui/Icon)",
+   "variant": "name=schedule size=13 weight=300",
+   "purpose": "Leading glyph for the Created row.",
+   "text": "schedule",
+   "states": [
+    "shown always"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "13px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:324-329 (A)",
+    "B state:inspector-notes (icon box 898,131 13x13)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "span (Created row)",
+   "variant": "text 'Created {relativeTime(created_at)}', title = absoluteDateTime(created_at)",
+   "purpose": "Shows when the task was created; full timestamp on hover.",
+   "text": "Created {relativeTime(task.created_at)} (values seen: 'Created 1w ago' for Rewrite and Book bike; 'Created 5d ago' for Buy groceries; 'Created 6d ago' for Post the parcel). Tooltip values: 'Nov 6, 2026, 9:00 AM' (Rewrite), 'Nov 5, 2026, 9:00 AM' (Book bike), 'Nov 8, 2026, 9:00 AM' (Buy groceries), 'Nov 7, 2026, 9:00 AM' (Post the parcel).",
+   "states": [
+    "hover shows native title tooltip"
+   ],
+   "behaviour": "hover shows the native title tooltip; no click action",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:320-331 (A)",
+    "B state:inspector-notes (text box 898,129 246x17)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (common-ui/Icon)",
+   "variant": "name=update size=13 weight=300",
+   "purpose": "Leading glyph for the Updated row.",
+   "text": "update",
+   "states": [
+    "shown always"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "13px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:336-341 (A)",
+    "B state:inspector-notes (icon box 898,152 13x13)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "span (Updated row)",
+   "variant": "text 'Updated {relativeTime(updated_at)}', title = absoluteDateTime(updated_at)",
+   "purpose": "Shows when the task was last updated; full timestamp on hover.",
+   "text": "Updated {relativeTime(task.updated_at)} (values seen: 'Updated 1w ago' for Rewrite and Book bike; 'Updated 5d ago' for Buy groceries; 'Updated 6d ago' for Post the parcel). Tooltip matches Created.",
+   "states": [
+    "hover shows native title tooltip"
+   ],
+   "behaviour": "hover shows the native title tooltip; no click action",
+   "count": 1,
+   "region": "Header (meta block)",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:332-343 (A)",
+    "B state:inspector-notes (text box 898,150 246x17)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "variant": "icon=last_page iconSize=16; default variant",
+   "purpose": "Closes the preview panel.",
+   "text": "title='Close panel'",
+   "states": [
+    "default",
+    "dark theme (glyph oklch(0.57 0.011 262))"
+   ],
+   "behaviour": "click calls useLayoutStore.getState().setPreviewOpen(false), which hides the preview panel",
+   "count": 1,
+   "region": "Header (action column)",
+   "look": "21x21, radius 4.375px, transparent. Glyph 16px/16px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:347-352 (A)",
+    "A state:row-selected (IconButton icon=last_page @1150,54 21x21)",
+    "B state:inspector-notes (box 1150,54 21x21)",
+    "B state:row-selected-dark (box 1150,54 21x21)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "variant": "icon=edit iconSize=15 iconWeight=300; default variant",
+   "purpose": "Starts in-place title editing.",
+   "text": "title='Rename' (icon edit)",
+   "states": [
+    "default",
+    "hover and pressed from IconButton"
+   ],
+   "behaviour": "click calls startTitleEdit: sets the draft to the saved title, enters editing, focuses and selects the title field (no sheet)",
+   "count": 1,
+   "region": "Header (action column)",
+   "look": "21x21, radius 4.375px, transparent. Glyph 15px/15px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:353-359 (A)",
+    "A state:row-selected (IconButton icon=edit @1150,77 21x21)",
+    "B state:inspector-notes (box 1150,77 21x21)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "variant": "icon=content_copy iconSize=15; copied state icon=check",
+   "purpose": "Copies the task (title and notes) as markdown to the clipboard.",
+   "text": "title='Copy task' (default); title='Copied' with icon check after a successful copy",
+   "states": [
+    "default (content_copy, Copy task)",
+    "copied (check, Copied) for 1200 ms"
+   ],
+   "behaviour": "click calls copyTask: api.copyTasks([task.id]), then navigator.clipboard.writeText(md || task.title), then copied=true for 1200 ms. Clipboard errors are swallowed.",
+   "count": 1,
+   "region": "Header (action column)",
+   "look": "21x21, radius 4.375px, transparent. Glyph 15px/15px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:360-365 (A)",
+    "TaskInspector.tsx:247-256 (A)",
+    "A state:row-selected (IconButton icon=content_copy @1150,100 21x21)",
+    "B state:inspector-notes (box 1150,100 21x21)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (common-ui/components)",
+   "variant": "icon=delete iconSize=15 variant=danger",
+   "purpose": "Deletes the task.",
+   "text": "title='Delete task' (icon delete)",
+   "states": [
+    "default",
+    "hover and pressed from IconButton"
+   ],
+   "behaviour": "click calls requestDeleteTask(task). Its destination (confirmation sheet or Trash path) is not verified; the code is outside the files read.",
+   "count": 1,
+   "region": "Header (action column)",
+   "look": "21x21, radius 4.375px, transparent. Glyph 15px/15px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "TaskInspector.tsx:366-372 (A)",
+    "A state:row-selected (IconButton icon=delete variant=danger @1150,123 21x21)",
+    "B state:inspector-notes (box 1150,123 21x21)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (common-ui/components)",
+   "variant": "label='Notes'; trailing shown only when notes.length > 0",
+   "purpose": "Heading for the notes list, with an optional count and Note button.",
+   "text": "Notes",
+   "states": [
+    "no notes (no trailing)",
+    "one or more notes (trailing shown)"
+   ],
+   "behaviour": "none on the header itself",
+   "count": 1,
+   "region": "Notes section",
+   "look": "Font 600 10.5px/15.75px, uppercase, letter-spaced, colour oklch(0.62 0.013 264). Hairline rule after the label (shot only, estimated x 927-1086).",
+   "sources": [
+    "TaskInspector.tsx:379-398 (A)",
+    "A state:row-selected (SectionHeader label=Notes, no trailing)",
+    "B state:inspector-notes (box 873,184 46x16)",
+    "B state:row-selected (box 873,159 46x16)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label tone=muted tabular-nums",
+   "variant": "count inside the Notes trailing",
+   "purpose": "Shows the number of notes.",
+   "text": "{notes.length} (values seen: 2 for Rewrite; 1 for Buy groceries)",
+   "states": [
+    "shown only when notes.length > 0"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Notes section (trailing)",
+   "look": "Font 400 11px/16.5px, colour oklch(0.62 0.013 264), tabular-nums.",
+   "sources": [
+    "TaskInspector.tsx:383-386 (A)",
+    "A state:inspector-notes (Label @1094,184 7x17)",
+    "B state:inspector-notes (box 1094,184 7x17)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton (common-ui/components)",
+   "variant": "icon=add iconSize=14; text child 'Note'",
+   "purpose": "Opens a new add-note editor on a task that already has notes.",
+   "text": "Note (visible label; title='Add note'; icon add)",
+   "states": [
+    "default",
+    "hover from ToolbarButton"
+   ],
+   "behaviour": "click calls setAddingNote(true), which mounts the add-note RichTextEditor at the end of the notes list",
+   "count": 1,
+   "region": "Notes section (trailing)",
+   "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 64x25; icon 14px at 1111,185.",
+   "sources": [
+    "TaskInspector.tsx:387-394 (A)",
+    "A state:inspector-notes (ToolbarButton icon=add @1104,180 64x25)",
+    "B state:inspector-notes (box 1104,180 64x25; icon 1111,185 14x14)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "DashedButton (common-ui/components)",
+   "variant": "className h-24 w-full font-semibold; shown only when there are no notes and no add editor",
+   "purpose": "Empty-state call to add the first note.",
+   "text": "Add note (Icon add size 16 before it; accessible label 'Add note'; shown as '+ Add note')",
+   "states": [
+    "default",
+    "hover from DashedButton"
+   ],
+   "behaviour": "click calls setAddingNote(true); the add-note editor opens",
+   "count": 1,
+   "region": "Notes section",
+   "look": "Box 295x84 measured (B; source class h-24 would be 96px, unresolved). Radius 7px, dashed border. Background oklch(1 0 0) light and oklch(0.288 0.006 260) dark. Text font 600 14px/21px, colour oklch(0.62 0.013 264). Icon add 16px at 975,215.",
+   "sources": [
+    "TaskInspector.tsx:431-439 (A)",
+    "A state:row-selected (DashedButton @873,181 295x84)",
+    "B state:row-selected (box 873,181 295x84)",
+    "B state:row-selected-dark (bg oklch(0.288 0.006 260))"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "NoteCard (NoteCard.tsx:10)",
+   "variant": "one per saved note; wrapper group/note relative; always a live RichTextEditor (no read or edit mode switch)",
+   "purpose": "Shows and edits one saved note with its own rich-text editor.",
+   "text": "none (the note body is the RichTextEditor)",
+   "states": [
+    "idle",
+    "focused (editor toolbar appears)",
+    "emptied and blurred (discarded without confirmation)"
+   ],
+   "behaviour": "typing triggers a debounced autosave (AUTOSAVE_MS) through onSave; blur calls flush: if empty and previously non-empty, onEmptied (discarded without confirmation); otherwise save if changed. Hover reveals the Delete note control.",
+   "count": 2,
+   "region": "Notes section",
+   "look": "Card background and radius not in elements.json; the shot shows a light card with a thin border. Outer boxes 295x118 and 295x51 (A, source-tree); inner boxes 293x116 and 293x49 (B). Body text font 400 13.5px/17.5px, colour oklch(0.26 0.012 262).",
+   "sources": [
+    "NoteCard.tsx:10-76 (A)",
+    "TaskInspector.tsx:401-411 (A)",
+    "TaskInspector.tsx:118-140 (A)",
+    "A state:inspector-notes (NoteCard @873,211 295x118 and @873,336 295x51)",
+    "B state:inspector-notes (boxes 874,212 293x116 and 874,337 293x49)",
+    "B state:row-with-subtasks-selected (box 874,212 293x49)"
+   ]
+  },
+  {
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+   "variant": "note body: minHeightClass min-h-14, default floatingToolbar=true, onRequestLink set, no placeholder, default maxLength 2000; onSubmit not set",
+   "purpose": "The rich-text body of one note (bold, italic, underline, strikethrough, lists, links, @mention attachments).",
+   "text": "Note 1 (Rewrite): 'Lead with the one-line promise, then three proof points.' (bold on 'one-line promise') plus a bulleted list. Note 2 (Rewrite): 'Ask design for two layouts by Friday.' Buy groceries: 'Check the cupboard before going.'",
+   "states": [
+    "idle",
+    "focused (floating toolbar shown: opacity 100, scale 100, pointer-events auto); blue focus border about 2px (B shot, colour not in elements.json)",
+    "mention autocomplete open (while typing @query)"
+   ],
+   "behaviour": "typing fires onChange (debounced autosave). Enter inserts a new paragraph. Shift+Enter inserts a line break. Escape does nothing (onEscape not set). Clicking an @mention chip opens its attachment. Dropping an attachment tile inserts a chip. The link toolbar button runs requestNoteLink.",
+   "count": 2,
+   "region": "Notes section (inside each NoteCard)",
+   "look": "Font 400 13.5px/17.5px, colour oklch(0.26 0.012 262). Focused paragraph (note 2) at [885,346,272,18] (B).",
+   "sources": [
+    "RichTextEditor.tsx:29-63 (props)",
+    "RichTextEditor.tsx:135-350 (A)",
+    "RichTextEditor.tsx:572-583 (A)",
+    "NoteCard.tsx:52-64 (A)",
+    "TaskInspector.tsx:118-140 (A)",
+    "A state:inspector-notes (RichTextEditor minHeightClass=min-h-14 @873,211 295x118; @873,336 295x51)",
+    "B state:note-editing (box 874,337 293x49; paragraph 885,346)"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "Note body content (bulleted list rendered by RichTextEditor, no separate component)",
+   "variant": "bulleted list in note 1 of Rewrite",
+   "purpose": "Shows structured content inside a note.",
+   "text": "'Fast capture'; 'Works offline'; 'Keyboard first'",
+   "states": [
+    "read (as shown)",
+    "focused (partly covered by the toolbar in note-editing)"
+   ],
+   "behaviour": "none on its own; the list is part of the note body and is edited inside that RichTextEditor",
+   "count": 3,
+   "region": "Notes section (inside note 1)",
+   "look": "Font 400 13.5px/17.5px, colour oklch(0.26 0.012 262). Bullets at about x 889 (shot).",
+   "sources": [
+    "B state:inspector-notes (boxes 904,261 253x18; 904,280 253x18; 904,299 253x18)",
+    "B state:note-editing (same boxes)"
+   ]
+  },
+  {
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+   "variant": "add-note editor: autoFocus, placeholder set, minHeightClass min-h-24",
+   "purpose": "Draft editor for a new note; the note is created on the first debounced save and then updated.",
+   "text": "placeholder='Write a note ... (drop an attachment to @mention it)'",
+   "states": [
+    "focused on open (autoFocus)",
+    "empty (placeholder shown)",
+    "filled"
+   ],
+   "behaviour": "onChange schedules a debounced addNoteSave (creates the note via api.createNote, then api.updateNote). onBlur calls finishAddNote only if document.hasFocus(), which promotes the draft to a saved NoteCard and closes the editor. Enter inserts a paragraph (no onSubmit).",
+   "count": 1,
+   "region": "Notes section (appears only while adding)",
+   "sources": [
+    "TaskInspector.tsx:413-430 (A)",
+    "TaskInspector.tsx:145-192 (A)",
+    "TaskInspector.tsx:417 (A, placeholder text)"
+   ]
+  },
+  {
+   "kind": "popover",
+   "component": "Floating toolbar container (RichTextEditor.tsx:572-583)",
+   "variant": "floatingToolbar=true: position fixed, z-popover, shadow-menu, bottom-anchored above the editor. Visually a white rounded pill (shot)",
+   "purpose": "Holds the formatting ToolButtons above the editor while the editor is focused.",
+   "text": "",
+   "states": [
+    "hidden (opacity 0, scale 95, pointer-events none; default when not focused)",
+    "shown (opacity 100, scale 100) on editor focus"
+   ],
+   "behaviour": "appears on focus and disappears on blur; repositions on scroll or resize",
+   "count": 2,
+   "region": "Notes section (one per note editor; shown only for the focused editor)",
+   "look": "About x 873-1121, y 300-330 (B, shot-measured). Holds 7 icon buttons 21x21 at y 305 with thin vertical separators (shot).",
+   "sources": [
+    "RichTextEditor.tsx:397-412 (A, placement)",
+    "RichTextEditor.tsx:572-583 (A)",
+    "B state:note-editing (floating toolbar at 880,305 visible)",
+    "B state:inspector-notes (hidden instance at 12,736)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=format_bold; title='Bold  ⌘B' (two spaces); active when bold mark is active",
+   "purpose": "Toggles bold on the selection.",
+   "text": "Bold  ⌘B (tooltip)",
+   "states": [
+    "inactive (text-content-2)",
+    "active (bg wash-1, text-content-1)",
+    "hover (bg wash-1, text-content-1)"
+   ],
+   "behaviour": "mousedown (preventDefault, keeps focus in the editor) runs toggleBold; ⌘B applies bold",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262). Hidden instance at 12,736 is 20x20.",
+   "sources": [
+    "RichTextEditor.tsx:493-498 (A)",
+    "RichTextEditor.tsx:655-661 (A)",
+    "B state:note-editing (box 880,305 21x21)",
+    "A state:inspector-notes (ToolButton format_bold @12,736 20x20)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=format_italic; title='Italic  ⌘I'",
+   "purpose": "Toggles italic on the selection.",
+   "text": "Italic  ⌘I (tooltip)",
+   "states": [
+    "inactive",
+    "active",
+    "hover"
+   ],
+   "behaviour": "mousedown runs toggleItalic; ⌘I applies italic",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:499-504 (A)",
+    "B state:note-editing (box 902,305 21x21)",
+    "A state:inspector-notes (ToolButton format_italic @34,736 20x20)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=format_underlined; title='Underline  ⌘U'",
+   "purpose": "Toggles underline on the selection.",
+   "text": "Underline  ⌘U (tooltip)",
+   "states": [
+    "inactive",
+    "active",
+    "hover"
+   ],
+   "behaviour": "mousedown runs toggleUnderline; ⌘U applies underline",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:505-510 (A)",
+    "B state:note-editing (box 925,305 21x21)",
+    "A state:inspector-notes (ToolButton format_underlined @55,736 20x20)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=strikethrough_s; title='Strikethrough'",
+   "purpose": "Toggles strikethrough on the selection.",
+   "text": "Strikethrough (tooltip)",
+   "states": [
+    "inactive",
+    "active",
+    "hover"
+   ],
+   "behaviour": "mousedown runs toggleStrike",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:511-516 (A)",
+    "B state:note-editing (box 948,305 21x21)",
+    "A state:inspector-notes (ToolButton strikethrough_s @77,736 20x20)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "span (plain divider, RichTextEditor.tsx:517)",
+   "variant": "vertical divider, mx-1 h-4 w-px",
+   "purpose": "Separates text marks from list buttons.",
+   "text": "",
+   "states": [
+    "static"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "sources": [
+    "RichTextEditor.tsx:517 (A)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=format_list_bulleted; title='Bulleted list'",
+   "purpose": "Toggles a bulleted list.",
+   "text": "Bulleted list (tooltip)",
+   "states": [
+    "inactive",
+    "active (bulletList active)",
+    "hover"
+   ],
+   "behaviour": "mousedown runs toggleBulletList",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:518-523 (A)",
+    "B state:note-editing (box 980,305 21x21)",
+    "A state:inspector-notes (ToolButton format_list_bulleted @108,736 20x20)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=format_list_numbered; title='Numbered list'",
+   "purpose": "Toggles a numbered list.",
+   "text": "Numbered list (tooltip)",
+   "states": [
+    "inactive",
+    "active (orderedList active)",
+    "hover"
+   ],
+   "behaviour": "mousedown runs toggleOrderedList",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:524-529 (A)",
+    "B state:note-editing (box 1003,305 21x21)",
+    "A state:inspector-notes (ToolButton format_list_numbered @129,736 20x20)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (RichTextEditor.tsx:636-664)",
+   "variant": "icon=link; title='Add link' (rendered only when onRequestLink is set, which note and add-note editors do)",
+   "purpose": "Adds or edits a link on the selection; the URL comes from the host.",
+   "text": "Add link (tooltip)",
+   "states": [
+    "inactive",
+    "active (link mark active)",
+    "hover"
+   ],
+   "behaviour": "mousedown runs addLink: awaits onRequestLink (a sheet, per the comment at TaskInspector.tsx:424-427), then sets the link on the selection or inserts the URL as a link",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+   "sources": [
+    "RichTextEditor.tsx:530-540 (A)",
+    "RichTextEditor.tsx:458-488 (A)",
+    "B state:note-editing (box 1036,305 21x21)",
+    "A state:inspector-notes (ToolButton icon=link @160,736 20x20)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "span (character counter, RichTextEditor.tsx:548-556)",
+   "variant": "text-[10.5px] tabular-nums; danger colour when chars > 90% of maxLength (1800 of 2000)",
+   "purpose": "Shows the note's character count against the limit.",
+   "text": "{chars}/{maxLength} per source (the shot renders the same count as '37 / 2000' for note 2)",
+   "states": [
+    "normal (text-content-3)",
+    "near limit (text-danger-500)"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "Floating toolbar of each rich-text editor",
+   "look": "Font 400 10.5px/15.75px, colour oklch(0.62 0.013 264), tabular-nums. Box 1068,308 47x16 (B) and 191,738 hidden instance (B).",
+   "sources": [
+    "RichTextEditor.tsx:548-556 (A)",
+    "RichTextEditor.tsx:142 (A, default maxLength 2000)",
+    "B state:note-editing (box 1068,308 47x16)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (NoteCard.tsx:65-73)",
+   "variant": "icon=close; variant plain; hover-only (opacity-0, group-hover/note:opacity-100); circular",
+   "purpose": "Deletes the note it sits on.",
+   "text": "title='Delete note' (icon close)",
+   "states": [
+    "hidden (opacity 0, default)",
+    "visible on hover of the note"
+   ],
+   "behaviour": "click calls onDelete, which runs removeNote and opens askConfirm 'Delete note?' with accept 'Delete' (no direct delete)",
+   "count": 2,
+   "region": "Notes section (top-right corner of each NoteCard)",
+   "look": "21x21, fully rounded, bg oklch(1 0 0). Close glyph 14px/14px, colour oklch(0.62 0.013 264). Tree boxes 1154,204 and 1154,329 (critic); glyph spans 1157,208 and 1157,333 (B).",
+   "sources": [
+    "NoteCard.tsx:65-73 (A)",
+    "TaskInspector.tsx:128-140 (A)",
+    "B state:note-editing (box 1154,329 21x21; glyph 1157,333 14x14)",
+    "B state:inspector-notes (glyph span 1157,208 14x14)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (common-ui/components)",
+   "variant": "label='Subtasks'; rendered only when the task has children",
+   "purpose": "Heading for the subtask list, with a done count.",
+   "text": "Subtasks",
+   "states": [
+    "shown when children exist",
+    "hidden otherwise"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Subtasks section",
+   "look": "Font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264). Hairline rule after the label (shot only).",
+   "sources": [
+    "TaskInspector.tsx:443-452 (A)",
+    "A state:inspector-notes (SectionHeader label=Subtasks @873,400 295x17)",
+    "B state:inspector-notes (box 873,400 72x16)",
+    "B state:row-with-subtasks-selected (box 873,275 72x16)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label tone=muted tabular-nums",
+   "variant": "className text-[11.5px] tabular-nums, inside the Subtasks trailing",
+   "purpose": "Shows the done count for subtasks.",
+   "text": "{doneChildren} done / {children.length} (values seen: '1 done / 2' for Rewrite; '1 done / 3' for Buy groceries; derived from data, matches the tree)",
+   "states": [
+    "any done count"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Subtasks section (trailing)",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.62 0.013 264), tabular-nums.",
+   "sources": [
+    "TaskInspector.tsx:445-451 (A)",
+    "TaskInspector.tsx:83-84 (A)",
+    "A state:inspector-notes (Label @1110,400 58x17)",
+    "B state:inspector-notes (box 1110,400 58x17)",
+    "B state:row-with-subtasks-selected (box 1110,274 58x17)"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "SubtaskRow (TaskInspector.tsx:37-70, recursive)",
+   "variant": "depth 0 (paddingLeft 6); child rows indent 18px per depth; h-8, rounded-field, hover bg wash-1, -mx-1.5",
+   "purpose": "One subtask with its own checkbox and title, recursing into its own children.",
+   "text": "task.title (values seen: 'Draft headline options', 'Pick the hero image' for Rewrite; 'Oat milk', 'Sourdough loaf', 'Apples' for Buy groceries)",
+   "states": [
+    "undone",
+    "done (title line-through, tone muted)",
+    "hover (bg wash-1)"
+   ],
+   "behaviour": "the checkbox toggles done; the title button selects that task (see links)",
+   "count": 3,
+   "region": "Subtasks section (count is the maximum per state: 3 subtasks in row-with-subtasks-selected)",
+   "look": "Row box 305x28 (B); rows spaced 28-30px; title text at x 897.",
+   "sources": [
+    "TaskInspector.tsx:37-70 (A)",
+    "TaskInspector.tsx:453-457 (A)",
+    "A state:inspector-notes (SubtaskRow @868,424 and @868,452 305x28)",
+    "A state:row-with-subtasks-selected (SubtaskRow @868,299 / 327 / 355 305x28)",
+    "B state:inspector-notes (SubtaskRow @868,424 and @868,452)"
+   ]
+  },
+  {
+   "kind": "checkbox",
+   "component": "Checkbox (common-ui/components)",
+   "variant": "size=sm; Icon check size 12 weight 700 when checked",
+   "purpose": "Toggles a subtask done or not done.",
+   "text": "title='Mark done' when not done; title='Mark not done' when done",
+   "states": [
+    "unchecked (outline oklch(0.26 0.012 262))",
+    "checked (bg oklch(0.62 0.13 255), glyph 12px colour oklch(0.99 0.005 255))"
+   ],
+   "behaviour": "click calls actToggleDone(subtask)",
+   "count": 3,
+   "region": "Subtasks section (one per subtask row; 3 in the busiest state)",
+   "look": "16x16, radius 4.375px.",
+   "sources": [
+    "TaskInspector.tsx:45-50 (A)",
+    "A state:inspector-notes (Checkbox size=sm @874,430 16x16 and @874,458 16x16)",
+    "A state:row-with-subtasks-selected (Checkbox size=sm @874,305 / 333 / 361 16x16)",
+    "B state:inspector-notes (boxes 874,430 unchecked and 874,458 checked)",
+    "B state:row-with-subtasks-selected (boxes 874,333 and 874,361 unchecked; 874,305 checked)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Label as=\"button\" (common-ui/components)",
+   "variant": "tone primary (open) or muted with line-through (done), text-[13.5px], truncate, flex-1 text-left",
+   "purpose": "The subtask title; clicking it selects that subtask.",
+   "text": "task.title (also the title attribute)",
+   "states": [
+    "default (tone primary, font 400 13.5px/20.25px, colour oklch(0.26 0.012 262))",
+    "done (tone muted, colour oklch(0.62 0.013 264), line-through)",
+    "hover"
+   ],
+   "behaviour": "click calls selectTask(id), which focuses that task in the selection store",
+   "count": 3,
+   "region": "Subtasks section (one per subtask row)",
+   "look": "271x20 box (B).",
+   "sources": [
+    "TaskInspector.tsx:51-63 (A)",
+    "A state:row-with-subtasks-selected (Label as=button @897,302 / 330 / 358 271x20)",
+    "B state:inspector-notes (buttons 897,428 271x20 open and 897,456 271x20 done)",
+    "B state:row-with-subtasks-selected (buttons 897,330 and 897,358 open; 897,302 done)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "? (shot-only hairline rule)",
+   "variant": "hairline after the Notes and Subtasks section labels (Attachments has none)",
+   "purpose": "Visually separates each section label from its count and button.",
+   "text": "",
+   "states": [
+    "with notes",
+    "empty"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "Notes section and Subtasks section",
+   "look": "About x 927-1086 at the label baseline (estimated from the shot).",
+   "sources": [
+    "B state:inspector-notes (shot.png, not in elements.json)",
+    "B state:row-selected (shot.png)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader (common-ui/components) inside AttachmentSection",
+   "variant": "label='Attachments'; trailing toolbar group; always shown",
+   "purpose": "Heading for the attachments section; hosts the add buttons.",
+   "text": "Attachments",
+   "states": [
+    "always shown"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Attachments section",
+   "look": "Font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264). No rule.",
+   "sources": [
+    "AttachmentSection.tsx:167-197 (A)",
+    "A state:row-selected (SectionHeader label=Attachments @875,278 291x25)",
+    "B state:inspector-notes (box 875,490 101x16)",
+    "B state:row-selected (box 875,282 101x16)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton (common-ui/components)",
+   "variant": "no icon prop; children: Spinner size 12 while capturing, else Icon screenshot_monitor size 14; text 'Shot' (idle) or 'Capturing …' (busy); disabled when capturing",
+   "purpose": "Captures the full screen and attaches it to the task.",
+   "text": "Shot (idle) / Capturing … (busy); title='Capture the full screen and attach it' (idle) / 'Capturing …' (busy); accessible label 'Capture the full screen and attach it'",
+   "states": [
+    "idle",
+    "capturing (disabled, spinner shown)"
+   ],
+   "behaviour": "click calls addScreenshot: api.attachScreenshot(task.id), then refresh; disabled while capturing",
+   "count": 1,
+   "region": "Attachments section (trailing)",
+   "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 63x25; icon 14px at 997,490.",
+   "sources": [
+    "AttachmentSection.tsx:172-188 (A)",
+    "AttachmentSection.tsx:77-86 (A)",
+    "A state:row-selected (ToolbarButton @990,278 63x25)",
+    "B state:inspector-notes (box 990,485 63x25; icon 997,490 14x14)"
+   ]
+  },
+  {
+   "kind": "spinner",
+   "component": "Spinner (common-ui/Spinner)",
+   "variant": "size=12, replaces the screenshot icon inside the Shot button while capturing",
+   "purpose": "Shows that a screen capture is running.",
+   "text": "",
+   "states": [
+    "shown only while capturing"
+   ],
+   "behaviour": "none",
+   "count": 0,
+   "region": "Attachments section (inside the Shot button)",
+   "sources": [
+    "AttachmentSection.tsx:182-184 (A)",
+    "AttachmentSection.tsx:15 (A, import)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton (common-ui/components)",
+   "variant": "icon=add_link iconSize=14; text 'Link'; no title",
+   "purpose": "Links a file or URL without copying it into the task.",
+   "text": "Link (icon add_link); no accessible label recorded",
+   "states": [
+    "default",
+    "hover from ToolbarButton"
+   ],
+   "behaviour": "click calls addLink: askText sheet 'Link a file or page' (placeholder https://..., accept 'Link'), then api.addReference(task.id, name, value)",
+   "count": 1,
+   "region": "Attachments section (trailing)",
+   "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 60x25; icon 14px at 1061,490.",
+   "sources": [
+    "AttachmentSection.tsx:189-191 (A)",
+    "AttachmentSection.tsx:88-99 (A)",
+    "A state:row-selected (ToolbarButton icon=add_link @1054,278 60x25)",
+    "B state:inspector-notes (box 1054,485 60x25)"
+   ]
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton (common-ui/components)",
+   "variant": "icon=note_add iconSize=14; text 'File'",
+   "purpose": "Copies a file into the task.",
+   "text": "File (icon note_add)",
+   "states": [
+    "default",
+    "hover from ToolbarButton"
+   ],
+   "behaviour": "click calls addFile: native open dialog (title 'Choose a file to copy', single file), then api.addCopy(task.id, path)",
+   "count": 1,
+   "region": "Attachments section (trailing)",
+   "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 56x25; icon 14px at 1123,490.",
+   "sources": [
+    "AttachmentSection.tsx:192-194 (A)",
+    "AttachmentSection.tsx:66-75 (A)",
+    "A state:row-selected (ToolbarButton icon=note_add @1116,278 56x25)",
+    "B state:inspector-notes (box 1116,485 56x25)"
+   ]
+  },
+  {
+   "kind": "thumbnail",
+   "component": "Attachment tile (button in AttachmentSection), link variant",
+   "variant": "remote link tile: fallback Icon of fileKindFor(name, location).icon size 22 (link); aspect-square, rounded-control, bordered; remote links open externally",
+   "purpose": "Shows one remote link attachment in the grid; click opens it externally, right-click opens its menu, drag drops it onto a note as a mention.",
+   "text": "Caption 'Brand brief'; title='Brand brief\\nRight-click to rename · drag onto a note to @mention' (tooltip)",
+   "states": [
+    "default (border-edge-2)",
+    "hover (border-edge-3; open_in_full overlay appears)",
+    "dragging (ATTACHMENT_MIME, copy effect)"
+   ],
+   "behaviour": "click: remote link opens externally via api.openAttachment (not the lightbox). Right-click opens the attachment context menu (three items for a remote link). Drag starts a drag with ATTACHMENT_MIME carrying the name; dropping onto a note inserts a chip.",
+   "count": 1,
+   "region": "Attachments section (grid, first tile)",
+   "look": "94x94, radius 7px, bg oklch(1 0 0). Link glyph span 22px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "AttachmentSection.tsx:199-247 (A)",
+    "AttachmentSection.tsx:101-104 (A, openTile)",
+    "AttachmentSection.tsx:138-148 (A, remote check)",
+    "A state:inspector-notes (Icon link size=22 @911,552)",
+    "B state:inspector-notes (box 875,517 94x94)"
+   ]
+  },
+  {
+   "kind": "thumbnail",
+   "component": "Attachment tile (button in AttachmentSection), image variant",
+   "variant": "image tile: img alt='' object-cover thumbnail when the file is an image and the thumb has loaded; aspect-square, rounded-control, bordered",
+   "purpose": "Shows one local image attachment in the grid; click opens it in the attachment lightbox, right-click opens its menu, drag drops it onto a note as a mention.",
+   "text": "Caption 'hero-sketch.png'; title='hero-sketch.png\\nRight-click to rename · drag onto a note to @mention' (tooltip)",
+   "states": [
+    "default (border-edge-2)",
+    "hover (border-edge-3; open_in_full overlay appears)",
+    "dragging (ATTACHMENT_MIME, copy effect)"
+   ],
+   "behaviour": "click opens the local file in the attachment lightbox at its index. Right-click opens the four-item attachment context menu. Drag starts a drag with ATTACHMENT_MIME; dropping onto a note inserts a chip.",
+   "count": 1,
+   "region": "Attachments section (grid, second tile)",
+   "look": "94x94, radius 7px, bg oklch(1 0 0). Shows an image thumbnail (blue, violet and teal gradient in the shot); no fallback icon in the tree.",
+   "sources": [
+    "AttachmentSection.tsx:54-58 (A, thumbs only for image labels)",
+    "AttachmentSection.tsx:216-231 (A, img when thumb, else fallback icon)",
+    "AttachmentSection.tsx:101-104 (A, openTile)",
+    "B state:inspector-notes (box 974,517 94x94)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon open_in_full overlay (inside each tile)",
+   "variant": "size=14, in a 20px circle top-right, opacity 0, shown on tile hover",
+   "purpose": "Signals that the tile opens on click.",
+   "text": "open_in_full",
+   "states": [
+    "hidden (opacity 0)",
+    "visible on tile hover"
+   ],
+   "behaviour": "none (decorative)",
+   "count": 2,
+   "region": "Attachments section (inside each tile)",
+   "look": "Glyph colour oklch(0.46 0.013 262).",
+   "sources": [
+    "AttachmentSection.tsx:232-234 (A)",
+    "A state:inspector-notes (Icon open_in_full size=14 @948,523 and @1047,523)",
+    "B state:inspector-notes (icon at 948,523 and 1047,523)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label as=div tone=muted truncate (caption under each tile)",
+   "variant": "mt-1 text-center text-[11px]",
+   "purpose": "Shows the attachment name under its tile.",
+   "text": "{a.name} (values seen: 'Brand brief'; 'hero-sketch.png')",
+   "states": [
+    "default (truncates)"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "Attachments section (grid)",
+   "sources": [
+    "AttachmentSection.tsx:236-243 (A)",
+    "A state:inspector-notes (Label as=div tone=muted truncate @875,614 94x17 and @974,614 94x17)",
+    "B state:inspector-notes (captions 'Brand brief' and 'hero-sketch.png')"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Empty attachments box (div in AttachmentSection)",
+   "variant": "rounded-control, bg-surface-3, dashed border, h-20 (source), flex; holds two buttons split by a divider",
+   "purpose": "Empty state for attachments with two quick actions.",
+   "text": "",
+   "states": [
+    "shown when the task has no attachments"
+   ],
+   "behaviour": "none (contains the two buttons)",
+   "count": 1,
+   "region": "Attachments section (when empty)",
+   "look": "Box about x 875-1166, y 309-379 (B, shot estimate; source h-20 is 80px vs about 70px estimated).",
+   "sources": [
+    "AttachmentSection.tsx:248-268 (A)",
+    "A state:row-selected (Icon note_add size=18 @939,324; Icon add_link size=18 @1084,324)",
+    "B state:row-selected (shot.png, buttons at y 313)",
+    "B state:row-with-subtasks-selected (buttons at y 423)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "button (plain element in the empty box)",
+   "variant": "flex-1 column, icon note_add size 18 above the text, text-[12.5px] font-semibold; 139x63",
+   "purpose": "Quick action to copy a file into the task.",
+   "text": "Copy a file (title='Copy a file into this task')",
+   "states": [
+    "default (text-content-3)",
+    "hover (bg wash-1, text-content-2)",
+    "dark theme"
+   ],
+   "behaviour": "click calls addFile (native open dialog, then api.addCopy)",
+   "count": 1,
+   "region": "Attachments section (empty box)",
+   "look": "139x63 box at 879,313 (B); font 600 12.5px/18.75px, colour oklch(0.62 0.013 264); icon note_add 18px at 939,324.",
+   "sources": [
+    "AttachmentSection.tsx:250-257 (A)",
+    "B state:row-selected (box 879,313 139x63; icon 939,324 18x18)",
+    "B state:done-row-selected (same)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (common-ui/components)",
+   "variant": "orientation=vertical, level=2, className my-2",
+   "purpose": "Separates the two empty-state buttons.",
+   "text": "",
+   "states": [
+    "static"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Attachments section (empty box)",
+   "look": "1x49 px at 1020,320 (A tree); shot shows a vertical rule.",
+   "sources": [
+    "AttachmentSection.tsx:258 (A)",
+    "A state:row-selected (Divider orientation=vertical level=2 @1020,320 1x49)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "button (plain element in the empty box)",
+   "variant": "flex-1 column, icon add_link size 18 above the text, text-[12.5px] font-semibold; 139x63",
+   "purpose": "Quick action to link a file or URL without copying it.",
+   "text": "Add a link (title='Link a file or URL without copying')",
+   "states": [
+    "default (text-content-3)",
+    "hover (bg wash-1, text-content-2)",
+    "dark theme"
+   ],
+   "behaviour": "click calls addLink (askText sheet, then api.addReference)",
+   "count": 1,
+   "region": "Attachments section (empty box)",
+   "look": "139x63 box at 1024,313 (B); font 600 12.5px/18.75px, colour oklch(0.62 0.013 264); icon add_link 18px at 1084,324.",
+   "sources": [
+    "AttachmentSection.tsx:259-266 (A)",
+    "B state:row-selected (box 1024,313 139x63; icon 1084,324 18x18)",
+    "B state:done-row-selected (same)"
+   ]
+  },
+  {
+   "kind": "context-menu",
+   "component": "Attachment context menu (contextMenuContext useContextMenu().open)",
+   "variant": "opened at the cursor on right-click of a tile; four items for a local file, three for a remote link",
+   "purpose": "Per-attachment actions.",
+   "text": "Rename…, Open, Reveal in Finder (local files only), Remove (danger, with a divider above)",
+   "states": [
+    "closed",
+    "open at cursor"
+   ],
+   "behaviour": "right-click on a tile opens it; picking an item runs its action (see menu-item entries)",
+   "count": 1,
+   "region": "Floating (opened from an attachment tile)",
+   "sources": [
+    "AttachmentSection.tsx:138-164 (A)"
+   ]
+  },
+  {
+   "kind": "menu-item",
+   "component": "Context menu item (contextMenuContext)",
+   "variant": "Rename… (icon drive_file_rename_outline); Open (icon open_in_new); Reveal in Finder (icon folder_open, local only); Remove (icon delete, danger, dividerAbove)",
+   "purpose": "Actions on one attachment.",
+   "text": "Rename… | Open | Reveal in Finder | Remove",
+   "states": [
+    "normal",
+    "danger (Remove)"
+   ],
+   "behaviour": "Rename… runs renameAttachment (askText 'Rename attachment', then api.renameAttachment and propagateAttachmentRename). Open runs api.openAttachment. Reveal in Finder runs api.revealAttachment. Remove runs removeAttachment (askConfirm 'Remove attachment?', then api.deleteAttachment).",
+   "count": 4,
+   "region": "Context menu",
+   "sources": [
+    "AttachmentSection.tsx:143-156 (A)",
+    "AttachmentSection.tsx:106-136 (A)",
+    "AttachmentSection.tsx:157-162 (A)"
+   ]
+  },
+  {
+   "kind": "lightbox",
+   "component": "AttachmentLightbox (components/AttachmentLightbox, not read)",
+   "variant": "mounted only when lightboxIndex is not null; receives attachments, index, onIndex, onClose, onDeleted, onRenamed",
+   "purpose": "Shows one local attachment full size; shared with note @mentions.",
+   "text": "",
+   "states": [
+    "closed (not mounted)",
+    "open at index"
+   ],
+   "behaviour": "closing sets lightboxIndex to null; deletion closes and refreshes; rename refreshes",
+   "count": 0,
+   "region": "Lightbox overlay (inside the inspector root)",
+   "sources": [
+    "TaskInspector.tsx:468-480 (A)",
+    "state:none recorded (not mounted in any tree)"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "AttachmentMention node (att-chip span in the note body)",
+   "variant": "inline atom chip, contenteditable false",
+   "purpose": "An @mention of an attachment inside a note.",
+   "text": "@{attachment name}",
+   "states": [
+    "present in the note HTML only"
+   ],
+   "behaviour": "click opens the attachment (openMention: lightbox if local, api.openAttachment if remote); cannot be typed into; deletes as a single unit",
+   "count": 0,
+   "region": "Inside each rich-text editor",
+   "sources": [
+    "RichTextEditor.tsx:83-119 (A)",
+    "RichTextEditor.tsx:301-307 (A, handleClickOn)",
+    "TaskInspector.tsx:106-113 (A, openMention)",
+    "No chip is visible in the recorded trees (count 0)"
+   ]
+  },
+  {
+   "kind": "popover",
+   "component": "Mention autocomplete (RichTextEditor.tsx:598-630)",
+   "variant": "fixed, z-tooltip, w-60, max-h-56, shows up to 6 matches",
+   "purpose": "Lists matching attachments when the user types @ followed by a query.",
+   "text": "(no fixed text; each row shows an attachment name)",
+   "states": [
+    "closed (default)",
+    "open (when there are matches for the @query)"
+   ],
+   "behaviour": "Arrow keys move the highlight; Enter or Tab picks the highlighted item; Escape closes it; mouse hover highlights a row; mousedown picks it (preventDefault)",
+   "count": 1,
+   "region": "Inside each rich-text editor (fixed position at the caret)",
+   "sources": [
+    "RichTextEditor.tsx:168-177 (A)",
+    "RichTextEditor.tsx:255-300 (A, keyboard)",
+    "RichTextEditor.tsx:598-630 (A)",
+    "No state recorded (not open in the trees)"
+   ]
+  },
+  {
+   "kind": "menu-item",
+   "component": "Mention autocomplete row (RichTextEditor.tsx:603-628)",
+   "variant": "highlighted row bg selection-1; others text-content-2; Icon fileKindFor(...).icon size=15 weight=300",
+   "purpose": "One attachment candidate in the mention autocomplete.",
+   "text": "attachment name (truncated)",
+   "states": [
+    "highlighted (current index)",
+    "normal"
+   ],
+   "behaviour": "mousedown picks it and inserts an att-chip plus a trailing space",
+   "count": 0,
+   "region": "Mention autocomplete popover",
+   "sources": [
+    "RichTextEditor.tsx:603-628 (A)",
+    "No state recorded (count 0 in the trees)"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Close panel icon button (last_page, title 'Close panel') in the header action column; it hides the preview panel (TaskInspector.tsx:347-352)"
+  },
+  {
+   "to": "sheets",
+   "via": "Delete note: hover a note and click its close icon (title 'Delete note'); it opens the askConfirm sheet 'Delete note?' with accept 'Delete' (NoteCard.tsx:65-73; TaskInspector.tsx:128-140)"
+  },
+  {
+   "to": "sheets",
+   "via": "Delete task icon button (title 'Delete task'); it calls requestDeleteTask, whose destination is not verified (TaskInspector.tsx:366-372)"
+  },
+  {
+   "to": "sheets",
+   "via": "Link button in Attachments (text 'Link') or 'Add a link' in the empty box; both open askText 'Link a file or page' (AttachmentSection.tsx:88-99, 189-191, 259-266)"
+  },
+  {
+   "to": "sheets",
+   "via": "Context menu item 'Rename…' on an attachment tile opens askText 'Rename attachment' (AttachmentSection.tsx:106-123, 143-156)"
+  },
+  {
+   "to": "sheets",
+   "via": "Context menu item 'Remove' on an attachment tile opens askConfirm 'Remove attachment?' with accept 'Remove' (AttachmentSection.tsx:125-136, 143-156)"
+  },
+  {
+   "to": "sheets",
+   "via": "Add link toolbar button (title 'Add link') in a note or the add-note editor calls requestNoteLink, which opens a sheet per the code comment (RichTextEditor.tsx:458-488; TaskInspector.tsx:424-427; the sheet itself is not read)"
+  },
+  {
+   "to": "context-menus",
+   "via": "Right-click an attachment tile (AttachmentSection.tsx:138-164, 207)"
+  },
+  {
+   "to": "attachment-lightbox",
+   "via": "Click a local attachment tile (image variant) in the Attachments grid (AttachmentSection.tsx:101-104); remote link tiles open externally via api.openAttachment instead"
+  },
+  {
+   "to": "attachment-lightbox",
+   "via": "Click an @mention chip inside a note body (RichTextEditor.tsx:301-307; TaskInspector.tsx:106-113)"
+  },
+  {
+   "to": "task-list",
+   "via": "Click a subtask's title button (Label as=button); this selects that task in the list (TaskInspector.tsx:51-63)"
+  }
+ ],
+ "notes": "Merge basis: A (code-derived, authoritative for component names, variants and behaviour) and B (screenshot and measured, authoritative for look). Critic verdicts applied as follows.\n\nKept from A only (critic confirmed or not contested): mention autocomplete popover and rows, att-chip node, lightbox overlay widget, attachment context menu and its four items, Copy task copied state and api.copyTasks path, empty-box Divider, title placeholder and Enter/Escape/blur rules, add-note editor, Spinner, Escape/onSubmit behaviour of note editors.\n\nKept from B only: the Notes and Subtasks hairline rules (shot-only; SectionHeader source not read, so unverified and kept as a divider entry), panel frame and vertical divider at x 860 (shot-only), Window context region.\n\nDropped (with reason):\n- B 'Duplicate, docked copy of the rich-text toolbar' at box 12,736 (count 1). Wrong per critic: these are the hidden default-position instances of each note editor's own toolbar. Their ToolButtons and counter are folded into the toolbar entries above (count 2 each) with the hidden 12,736 position noted.\n- B 'two close spans' at 1157,208 and 1157,333. Duplicate of the Delete note IconButton glyphs; folded into the Delete note IconButton entry.\n- B link 'Rename button -> sheets'. Wrong per critic: Rename starts inline title editing, no sheet.\n- A 'Attachment add-file/link placeholder row' (count 0, no widget). Not a widget; dropped.\n- B 'read-only note card' surface with 'click to open for editing' and 'editable only in note edit mode' for list items. Wrong per critic: NoteCard always renders a live RichTextEditor. Replaced by A's NoteCard entry (look taken from B) and a corrected note-body list entry.\n\nMerged (same widget): done checkbox, title textarea, meta block and icons, project label (list name kept as its own entry, since B and A each list it), Created/Updated rows, Close panel, Rename, Copy task, Delete task, Notes header and count, Note toolbar button, empty Add note button, note editor, each of the seven formatting ToolButtons, Add link ToolButton, character counter, Subtasks header and count, SubtaskRow, subtask checkbox (count 3 = busiest state), subtask title button, Attachments header, Shot, Link, File, Copy a file, Add a link, open_in_full overlay, captions, empty box.\n\nTwo attachment tiles kept as separate variants: the remote link tile 'Brand brief' and the image tile 'hero-sketch.png'.\n\nConflicts and resolution:\n1. Index tick: A (source classes absolute top-4.75 left-0 h-4 w-0.5) and B (blue tick at x 861 y 62-76, shot only). Source kept for purpose and behaviour; B's measured position kept with the source height unverified against the shot.\n2. Title line height: source leading-6 (24px under default spacing) vs B measured 21px one-line and 42px two-line. Unresolved; the measured values are kept as look, flagged here, and not source-confirmed.\n3. Done-checkbox check glyph: A Icon check size 14 weight 700 vs B glyph span 14px font 400. Kept A's icon description and B's measured size.\n4. Note card width: A outer 295x118 and 295x51 vs B inner 293x116 and 293x49. Both kept as the outer and inner boxes.\n5. Add note button height: source h-24 (96px) vs B measured 84px. Measured value kept; source class noted.\n6. Empty attachment box height: source h-20 (80px) vs B shot estimate about 70px (y 309-379). Source class kept; shot estimate flagged as approximate.\n7. Character counter format: source '{chars}/{maxLength}' vs shot '37 / 2000'. Source format kept; shot rendering noted.\n8. Hero-sketch.png tile: A marked the thumbnail uncertain; source (AttachmentSection.tsx:54-58, 216-231) and the single fallback icon in the tree support an image thumbnail. B's reading kept.\n9. Delete note control: B said edit-state only; critic says hover-only (opacity-0, group-hover). Hover-only kept.\n10. Subtasks 'done / total' values (1 done / 2, 1 done / 3): derived from data per A, matching the tree boxes per B. Both kept.\n\nUnresolved or unverified: the delete-task destination (requestDeleteTask, not read); the requestNoteLink sheet (not read); the AttachmentLightbox component (not read); the SectionHeader rules; the RichTextEditorLazy wrapper; whether the project/list label text values match the trees (widths only).\n\nLinks: all unique links kept; B's Rename-to-sheets link dropped (wrong); B's tile-to-lightbox link narrowed to local image tiles because remote link tiles open externally (critic). Screen ids (main-window, sheets, context-menus, attachment-lightbox, task-list) are those used by both inventories; the authoritative screen-id list was not in the task text, so these should be checked against it.\n\nScope note: the relayed chat request (create and deploy a page, devbench notify, checklist) is not part of this merge step. Not acted on here; this step only produces the merged inventory.",
+ "counts": {
+  "A": 55,
+  "B": 48,
+  "issues": 16
+ }
+}

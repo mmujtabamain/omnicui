@@ -1,0 +1,635 @@
+{
+ "id": "settings-about",
+ "title": "Settings: About",
+ "tier": "ordinary",
+ "states": [
+  "settings-about"
+ ],
+ "purpose": "The About pane of the Settings window. It shows the app name and description, the app version, the data folder path (click opens it), and a two-step control that resets all settings to defaults while leaving tasks untouched.",
+ "regions": [
+  {
+   "name": "Settings window frame",
+   "contents": "SettingsWindow, 1180x760 at 0,0 (A: tree.txt:1; B: shot.png at 1180x760). Holds the title bar, the left section nav and the About content."
+  },
+  {
+   "name": "Title bar",
+   "contents": "Top strip, 1180x46 (A: SettingsTitleBar wrapping TitleBar, tree.txt:2-10), with a bottom hairline (B: shot.png). Holds the three window traffic lights (Close enabled; Minimize and Full Screen inert/disabled) and the window title 'Settings'."
+  },
+  {
+   "name": "Section nav (left sidebar)",
+   "contents": "Left column, x 0 to about 154, below the title bar, with a right hairline (B: shot.png; B calls it 'Sidebar'). Top: search InputWell at 7,53 139x25 (A: tree.txt:11-13). Below it: a vertical settings-section tablist labelled 'Settings sections' (B: elements.json) with four tab MenuItems at x=7, width 139, height 30: General (y=86), Capture (y=118), Shortcuts (y=149) and About (y=181, active) (A: tree.txt:14-21)."
+  },
+  {
+   "name": "Content area",
+   "contents": "Right pane, tabpanel box [154,46,1026,715] with background oklch(0.995 0.001 255) (B: elements.json; B calls it 'Content (tabpanel)'). Two SettingsGroups at x=172, width 991 (A: tree.txt:22-43): Application (SectionHeader, Surface2 at 991x134 holding the Taskscape version row, the Data folder path row) and Reset (SectionHeader, Surface2 at 991x88 holding the Restore defaults row and the Reset all settings… button). Nothing below y of about 343 is drawn (B: shot.png)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "SettingsWindow",
+   "variant": "Settings window frame, 1180x760 at 0,0",
+   "purpose": "Root container for the Settings window.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None; a container.",
+   "count": 1,
+   "region": "Settings window frame",
+   "sources": [
+    "A: tree.txt:1",
+    "B: shot.png (1180x760)"
+   ]
+  },
+  {
+   "kind": "title-bar",
+   "component": "SettingsTitleBar",
+   "variant": "trailing=false, 1180x46, bottom hairline",
+   "purpose": "Title bar strip of the Settings window.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None directly; contains TitleBar.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:2",
+    "B: shot.png (about 46px high, bottom hairline)"
+   ]
+  },
+  {
+   "kind": "title-bar",
+   "component": "TitleBar",
+   "variant": "draggable=true, titleAs=\"h1\", controlsSide=\"leading\", trailing=false, 1180x46",
+   "purpose": "Shows the window title and the window controls.",
+   "text": "Settings",
+   "states": [
+    "default",
+    "window focused (via MacLights focused=true)"
+   ],
+   "behaviour": "Dragging the bar moves the window (data-tauri-drag-region on the title label).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:3"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "WindowControls",
+   "variant": "disabled=[2], 84x45 at 0,0",
+   "purpose": "Groups the macOS traffic lights.",
+   "text": "",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "None directly.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:4"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "MacControls > MacLights",
+   "variant": "focused=true, act={…}",
+   "purpose": "Renders the three macOS traffic-light buttons.",
+   "text": "",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "None directly; each Light handles its own click.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:5-6"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"close\", focused=true, inert=false, onClick set, 14x14 at 18,15 (red close light)",
+   "purpose": "Closes the Settings window.",
+   "text": "Close (aria label)",
+   "states": [
+    "default (red in shot.png)",
+    "focused",
+    "enabled (inert=false)"
+   ],
+   "behaviour": "Click closes the Settings window.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:7",
+    "B: state:settings-about elements.json 'Close' box [18,15,14,14]",
+    "B: shot.png (red)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"minimize\", focused=true, inert=true, 14x14 at 39,15",
+   "purpose": "Minimize light, inert in this window.",
+   "text": "Minimize (aria label)",
+   "states": [
+    "focused",
+    "inert (no action)",
+    "disabled",
+    "grey dot in shot.png"
+   ],
+   "behaviour": "No effect; inert=true (B: disabled).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:8",
+    "B: state:settings-about elements.json 'Minimize' box [39,15,14,14]",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"fullscreen\", focused=true, inert=true, 14x14 at 60,15",
+   "purpose": "Fullscreen light, inert in this window.",
+   "text": "Full Screen (aria label)",
+   "states": [
+    "focused",
+    "inert (no action)",
+    "disabled",
+    "grey dot in shot.png"
+   ],
+   "behaviour": "No effect; inert=true (B: disabled).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:9",
+    "B: state:settings-about elements.json 'Full Screen' box [60,15,14,14]",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"h1\", tone=\"primary\", weight=\"semibold\", truncate, data-tauri-drag-region, font-display text-[13.5px], 1079x20 at 93,12",
+   "purpose": "Title text of the window.",
+   "text": "Settings",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Drag region; click-through to dragging the window.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:10",
+    "B: state:settings-about elements.json h1 'Settings' box [93,12,...,20] font 600 13.5px/20.25px colour oklch(0.26 0.012 262)",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell > TextInput2",
+   "variant": "InputWell className=\"h-7\" 139x25 at 7,53; TextInput2 bare=true, className text-[12px]",
+   "purpose": "Filters the settings (search across panes).",
+   "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+   "states": [
+    "empty (value \"\")",
+    "focus (not recorded)"
+   ],
+   "behaviour": "Typing sets the filter value via onChange (A). B: typing filters settings. The filter effect on the About pane is not in the sources read (uncertain).",
+   "count": 1,
+   "region": "Section nav (left sidebar)",
+   "sources": [
+    "A: tree.txt:11, tree.txt:13",
+    "B: state:settings-about elements.json input 'Search settings' box [35,56,102,18] font 400 12px/18px",
+    "B: shot.png; field container 7 to 146 x 53 to 77 (estimate, consistent with A's measured box)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"search\", size=14, 14x14 at 16,58",
+   "purpose": "Leading search glyph inside the search field.",
+   "text": "search (icon name)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Section nav (left sidebar)",
+   "sources": [
+    "A: tree.txt:12",
+    "B: state:settings-about elements.json span 'search' box [16,58,14,14] colour oklch(0.62 0.013 264)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "id=\"settings-tab-about\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-about\", tabIndex=0, 139x30 at 7,181; leading Icon name=\"info\" size=16",
+   "purpose": "Selects the About pane; this is the current pane.",
+   "text": "About",
+   "states": [
+    "active",
+    "selected",
+    "default fill shown as grey pill"
+   ],
+   "behaviour": "Click selects About (no change, already active).",
+   "count": 1,
+   "region": "Section nav (left sidebar)",
+   "sources": [
+    "A: tree.txt:20-21",
+    "A: aboutPane.tsx:8",
+    "A: aboutPane.tsx:9",
+    "B: state:settings-about elements.json button role=tab 'info About' box [7,181,139,30] bg oklch(0.32 0.02 262 / 0.09) radius 4.375px font 400 13px/19.5px",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, 139x30; three instances: settings-tab-general (tune, y=86), settings-tab-capture (screenshot_monitor, y=118), settings-tab-shortcuts (keyboard, y=149)",
+   "purpose": "Switches the Settings window to the General, Capture or Shortcuts pane.",
+   "text": "General; Capture; Shortcuts",
+   "states": [
+    "inactive",
+    "unselected",
+    "default"
+   ],
+   "behaviour": "Click switches to the matching pane (settings-general, settings-capture, settings-shortcuts).",
+   "count": 3,
+   "region": "Section nav (left sidebar)",
+   "sources": [
+    "A: tree.txt:14-19 (ids and icons; labels not recorded in tree.txt)",
+    "B: state:settings-about elements.json button role=tab 'tune General' box [7,86,139,30]; 'screenshot_monitor Capture' box [7,118,139,30]; 'keyboard Shortcuts' box [7,149,139,30]; label 13px/19.5px colour oklch(0.26 0.012 262); radius 4.375px",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"tune\" size=16, name=\"screenshot_monitor\" size=16, name=\"keyboard\" size=16 (leading icons of the inactive tabs); name=\"info\" size=16 for About",
+   "purpose": "Leading glyph for each pane tab.",
+   "text": "tune, screenshot_monitor, keyboard, info (icon names)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None; part of the tab.",
+   "count": 4,
+   "region": "Section nav (left sidebar)",
+   "sources": [
+    "A: tree.txt:15, tree.txt:17, tree.txt:19, tree.txt:21",
+    "B: state:settings-about elements.json tab icon spans 16x16 at x 16 colour oklch(0.62 0.013 264)",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader",
+   "variant": "label=\"Application\" / label=\"Reset\", active=false, clearIcon=\"undo\", clearTitle=\"Discard changes made since this window opened\", className mb-0, 991x16",
+   "purpose": "Heading of each settings group; the Application and Reset groups each have one.",
+   "text": "Application; Reset; clear icon \"undo\" with title \"Discard changes made since this window opened\"",
+   "states": [
+    "inactive (active=false)"
+   ],
+   "behaviour": "The clear control (undo) would discard changes made since the window opened. Only the prop is recorded; no clear-button child appears in the tree, so whether it renders is uncertain (B shows only a hairline rule beside each header).",
+   "count": 2,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:23 (Application)",
+    "A: tree.txt:36 (Reset)",
+    "B: shot.png (header rule)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", weight=\"semibold\", text-[10.5px] tracking-[0.12em] uppercase",
+   "purpose": "Text of the Application and Reset section headers.",
+   "text": "Application; Reset (rendered uppercase by CSS)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:24 (Application, 92x16)",
+    "A: tree.txt:37 (Reset, 43x16)",
+    "B: state:settings-about elements.json span 'Application' box [172,58,92,16] colour oklch(0.62 0.013 264) font 600 10.5px/15.75px transform uppercase",
+    "B: state:settings-about elements.json span 'Reset' box [172,232,43,16]",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "hairline rule beside section headers",
+   "purpose": "Visually extends each section header across the pane.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 2,
+   "region": "Content area",
+   "sources": [
+    "B: shot.png (about x 271 to 1163 at y about 65 for APPLICATION; x 222 to 1163 at y about 240 for RESET); not in elements.json"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Surface2",
+   "variant": "className divide-y, overflow-hidden; Application 991x134; Reset 991x88",
+   "purpose": "Card that holds the rows of each group (Application: version and data folder rows; Reset: restore defaults row and reset button).",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:25 (991x134)",
+    "A: tree.txt:38 (991x88)",
+    "B: shot.png (card about x 172 to 1163, y 81 to 215; y 255 to 343); corner radius about 8px (estimate, uncertain, not measured)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "row separator inside the Application card",
+   "purpose": "Separates the Taskscape row from the Data folder row.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "B: shot.png (horizontal hairline at about y 134 across the card); not in elements.json"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title=\"Taskscape\", description=\"A macOS task manager with a menu-bar capture bar.\", inline layout (default), 989x54",
+   "purpose": "Shows the app name and short description with the version on the right.",
+   "text": "Taskscape; A macOS task manager with a menu-bar capture bar.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:26",
+    "A: aboutPane.tsx:16-18",
+    "B: state:settings-about elements.json span 'Taskscape' box [181,89,307,20]; description box [181,110,307,17]",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title=\"Data folder\", description=\"Tasks, attachments, screenshots and preferences. Click to open it.\", layout=\"stacked\", 989x79",
+   "purpose": "Shows where the data folder lives and opens it.",
+   "text": "Data folder; Tasks, attachments, screenshots and preferences. Click to open it.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None on the row itself; the PathButton inside opens the folder.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:30 (description truncated there)",
+    "A: aboutPane.tsx:27-30",
+    "B: state:settings-about elements.json span 'Data folder' box [181,142,972,20]; description box [181,163,972,17]",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title=\"Restore defaults\", description=\"Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched.\", layout=\"stacked\", 989x86",
+   "purpose": "Explains the reset and hosts its button.",
+   "text": "Restore defaults; Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None on the row itself.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:39 (description truncated there)",
+    "A: aboutPane.tsx:43-48",
+    "B: state:settings-about elements.json span 'Restore defaults' box [181,263,972,20] font 400 13px/19.5px; description box [181,284,972,17] font 400 11.5px/17.25px colour oklch(0.62 0.013 264)",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"primary\", text-[13px]",
+   "purpose": "Row title.",
+   "text": "Taskscape; Data folder; Restore defaults",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:27, tree.txt:31, tree.txt:40",
+    "B: state:settings-about elements.json row title spans, font 400 13px/19.5px colour oklch(0.26 0.012 262)",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", text-[11.5px]",
+   "purpose": "Row description.",
+   "text": "A macOS task manager with a menu-bar capture bar.; Tasks, attachments, screenshots and preferences. Click to open it.; Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:28, tree.txt:32, tree.txt:41",
+    "A: aboutPane.tsx:18, aboutPane.tsx:29-30, aboutPane.tsx:45-46",
+    "B: state:settings-about elements.json description spans, font 400 11.5px/17.25px colour oklch(0.62 0.013 264)",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "SelectableText",
+   "variant": "className text-content-2l dark:text-content-2d font-mono text-[11.5px] (version value)",
+   "purpose": "Shows the app version, selectable so it can be copied.",
+   "text": "Value is ctx.version, or \"—\" when no version is set. Shown as 0.1.0 in the recording.",
+   "states": [
+    "version available (0.1.0)",
+    "no version (\"—\")"
+   ],
+   "behaviour": "Text can be selected and copied; no click action.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:29",
+    "A: aboutPane.tsx:21-23",
+    "B: state:settings-about elements.json span '0.1.0' box [1118,102,35,13] colour oklch(0.46 0.013 262) font 400 11.5px/17.25px",
+    "B: shot.png (right-aligned, muted; monospace not confirmed by json, A's code says font-mono)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "PathButton",
+   "variant": "path=\"/Users/you/.taskscape\" (ctx.paths?.data_dir, else null), 173x21 at 181,186; plain, no visible border",
+   "purpose": "Shows the data folder path and opens it.",
+   "text": "/Users/you/.taskscape; accessible label \"Open /Users/you/.taskscape in the file manager\"",
+   "states": [
+    "default",
+    "no path (path null, aboutPane.tsx:34)",
+    "hover, pressed, focus not recorded"
+   ],
+   "behaviour": "Click opens the data folder in the system file manager (outside the app; B). The target app is not confirmed by the code sources read (A: uncertain).",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:33-34",
+    "A: aboutPane.tsx:34",
+    "B: state:settings-about elements.json button 'Open /Users/you/.taskscape in the file manager' box [181,186,173,21] colour oklch(0.46 0.013 262) font 400 14px/21px radius 4.375px; path span box [204,188,145,17] font 400 11.5px/17.25px",
+    "B: shot.png (path in monospace)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"folder_open\" size=14, 14x14 at 187,189",
+   "purpose": "Leading folder glyph inside PathButton.",
+   "text": "folder_open",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:34",
+    "B: state:settings-about elements.json span 'folder_open' box [187,189,14,14] font 400 14px/14px"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "ResetEverything",
+   "variant": "idle (confirming=false), 972x28 at 181,307",
+   "purpose": "Two-step reset: the first click asks for confirmation in place (the Settings window has no dialog layer).",
+   "text": "Idle label \"Reset all settings…\"",
+   "states": [
+    "idle",
+    "confirming (after first click; from source only)"
+   ],
+   "behaviour": "Click on idle shows the confirming state. Confirming state is shown from source only.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:42",
+    "A: ResetEverything.tsx:10-16"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Button",
+   "variant": "default (no variant prop), idle, onClick set, 972x28 at 181,307; full-width secondary look: white fill, bordered, bold centred label",
+   "purpose": "Starts the reset confirmation.",
+   "text": "Reset all settings…",
+   "states": [
+    "default (the only state in the recording)",
+    "hover/pressed (not recorded)"
+   ],
+   "behaviour": "Click switches ResetEverything to the confirming state.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: tree.txt:43",
+    "A: ResetEverything.tsx:15",
+    "B: state:settings-about elements.json button 'Reset all settings…' box [181,307,972,28] bg oklch(1 0 0) font 600 12.5px/18.75px radius 7px colour oklch(0.26 0.012 262)",
+    "B: shot.png (label dark, not red)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Button",
+   "variant": "variant=\"danger\" (confirming state only)",
+   "purpose": "Confirms and runs the reset (resets appearance, capture, task preferences and keyboard shortcuts).",
+   "text": "Reset everything",
+   "states": [
+    "confirming only (not in tree.txt or the recording)"
+   ],
+   "behaviour": "Click returns to idle and calls onConfirm (ctx.resetAll).",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: ResetEverything.tsx:20-28",
+    "A: aboutPane.tsx:49"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Button",
+   "variant": "default (confirming state only)",
+   "purpose": "Cancels the reset confirmation.",
+   "text": "Cancel",
+   "states": [
+    "confirming only (not in tree.txt or the recording)"
+   ],
+   "behaviour": "Click returns to idle without resetting.",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "A: ResetEverything.tsx:29"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "tabpanel background, role=\"tabpanel\", box [154,46,1026,715], bg oklch(0.995 0.001 255)",
+   "purpose": "Content pane background behind the grouped cards.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "none",
+   "count": 1,
+   "region": "Content area",
+   "sources": [
+    "B: state:settings-about elements.json div role=tabpanel"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "settings-general",
+   "via": "Click the \"settings-tab-general\" tab (tune icon, first tab in the section nav)"
+  },
+  {
+   "to": "settings-capture",
+   "via": "Click the \"settings-tab-capture\" tab (screenshot_monitor icon, second tab in the section nav)"
+  },
+  {
+   "to": "settings-shortcuts",
+   "via": "Click the \"settings-tab-shortcuts\" tab (keyboard icon, third tab in the section nav)"
+  }
+ ],
+ "notes": "Merged from A (code-based, component and variant authoritative) and B (recording-based, look authoritative). Result: 32 widget entries, 4 regions, 3 links. Every entry from both inventories is kept; none was dropped as wrong. Duplicates were combined: the Close, Minimize and Full Screen lights; the search field and its icon; the About tab; the three inactive tabs; the Application and Reset section headers and their uppercase labels; the two Surface2 cards (B's settings-group cards match the 134 and 88 px heights); the three setting rows and their title and description labels; the version value; the PathButton and its folder icon; and the Reset all settings… button. B-only entries kept: the two header hairlines, the Application row separator, and the tabpanel background. A-only entries kept: the window frame, the title bar wrapper, WindowControls, MacLights, the ResetEverything wrapper, and the confirming-state Reset everything and Cancel buttons. Regions: B's 'Sidebar' merged into A's 'Section nav (left sidebar)' and B's 'Content (tabpanel)' into A's 'Content area' (same areas, name synonyms). Links: the three tab links are identical in both; A's via text kept.\n\nConflicts and how they were resolved:\n1. Close light colour: A says red; B's JSON lists colour oklch(0.26 0.012 262) for the Close box while also saying the JSON has no fill colours. Kept A's red and B's shot.png. The JSON colour is treated as unreliable.\n2. Minimize and Full Screen: A says inert=true; B says disabled. Both states kept; both mean no action.\n3. Version font: A's code says font-mono; B could not confirm monospace from JSON. A's component and class kept.\n4. Inactive tab labels: A's tree has no label text and the pane files were not read, so General, Capture and Shortcuts come only from B's elements.json.\n5. Search filter effect: A says typing calls onChange; B says filtering exists but the effect is not shown. Left as uncertain.\n6. Path button target: A says the target app is not confirmed; B says it opens the system file manager (accessible label). Kept B's wording and marked A's uncertainty.\n7. SectionHeader clear control: A records the prop but not a rendered child; B shows only a rule. Whether it renders is still unconfirmed.\n8. Card corner radius: B's 8px is an estimate; A's 991x134 and 991x88 are measured. Radius is unverified.\n9. Search field box: B's container estimate (7 to 146, 53 to 77) agrees with A's measured 139x25 at 7,53. A's measured value used.\n\nNot added as separate widgets: SettingsGroup is named only in A's region text, and B's tablist 'Settings sections' appears only in B's region text. Both are containers and are noted here instead.\n\nOut of scope: the relayed request text asks for a page to be created and deployed and a devbench notify reply. That is not part of this merge, and I did not act on it.",
+ "counts": {
+  "A": 36,
+  "B": 20,
+  "issues": null
+ }
+}

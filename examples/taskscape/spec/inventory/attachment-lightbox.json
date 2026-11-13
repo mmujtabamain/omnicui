@@ -1,0 +1,605 @@
+{
+ "id": "attachment-lightbox",
+ "title": "Attachment lightbox",
+ "tier": "ordinary",
+ "states": [
+  "attachment-lightbox"
+ ],
+ "purpose": "Full-window lightbox over the dimmed main window that previews one attachment of the selected task at a large size, steps through the task's other attachments, and offers open, reveal, rename and remove for that attachment. It is closed by the close button, Escape, or a click on the empty stage.",
+ "regions": [
+  {
+   "name": "scrim (Backdrop2)",
+   "contents": "Full-window 1180x760 dim/blur layer rendered by Overlay (layer overlay, dim strong, blur) over the main window. Visually a dark grey; exact colour not measured (B, estimated). Whether a bare click on the scrim closes the lightbox is unconfirmed (Overlay source not read by either)."
+  },
+  {
+   "name": "backdrop (main window, not part of this screen)",
+   "contents": "Dimmed main window behind the scrim: window controls, Spring switcher, list tabs Website and Press kit, New list, Split view, Hide preview panel, Settings, task search, task row Rewrite the hero section (1 of 2 subtasks, Attachments count 2), footer Sort & filter, 1 / 5 done, 20 %, and the task inspector with Notes, Subtasks and Attachments. Not interactive while the lightbox is open."
+  },
+  {
+   "name": "top bar",
+   "contents": "Row across the top holding the file-kind icon, the file name, an optional position counter, and five BarButtons. Clicks here do not close (stopPropagation). Code: h-13 (52px), px-space-7, gap-space-4. Measured (B): about 40px tall (y 0 to 40), controls 28px at y 9, no fill or border. The measured values are used for look; see notes for the height conflict."
+  },
+  {
+   "name": "stage",
+   "contents": "flex-1 area below the top bar (relative flex min-h-0 items-center justify-center px-16 pb-8). Empty space closes the lightbox. Holds the chevrons and the media wrapper. Measured (B): the image is centred at approx x 350 to 830, y 239 to 539 in shot.png."
+  },
+  {
+   "name": "chevrons",
+   "contents": "Previous and Next buttons absolutely positioned at the left and right edges of the stage, rendered only when there is more than one attachment. Measured (B): Previous at [14,370,39,39] and Next at [1128,370,39,39], at the vertical middle of the stage."
+  },
+  {
+   "name": "media",
+   "contents": "Centred wrapper (flex max-h-full max-w-full items-center justify-center) that stops propagation and renders one body branch: Loading, the fallback card, image, video, audio, PDF embed, or text."
+  },
+  {
+   "name": "keyboard",
+   "contents": "Window-level capture keydown handler for ArrowLeft and ArrowRight, plus Escape via Overlay captureEscape."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "size 16, className shrink-0 text-white/70, name = kind.icon (dynamic, from fileKindFor)",
+   "purpose": "File-type glyph for the attachment in the top bar.",
+   "text": "Icon name from fileKindFor; the recorded state shows \"image\".",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None. Display only.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:302",
+    "state:attachment-lightbox tree.txt:168",
+    "state:attachment-lightbox elements.json box [12,15,16,16]"
+   ],
+   "look": "16px, colour oklab(0.999994 / 0.7), about white at 70% alpha. Font 400 16px/16px; icon font family not named."
+  },
+  {
+   "kind": "label",
+   "component": "span (plain DOM element)",
+   "variant": "min-w-0 flex-1 truncate, text-[13.5px] text-white; title attribute = attachment.name",
+   "purpose": "Shows the attachment's file name.",
+   "text": "attachment.name (recorded as \"hero-sketch.png\"). Native tooltip: attachment.name.",
+   "states": [
+    "truncated with ellipsis when long",
+    "default"
+   ],
+   "behaviour": "Hover shows the native title tooltip. No click action.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:303-308",
+    "state:attachment-lightbox elements.json box [34,13,932,20]"
+   ],
+   "look": "Colour rgb(255, 255, 255). Font 400 13.5px/20.25px. Element box is 932px wide; the text is about 110px wide in shot.png."
+  },
+  {
+   "kind": "label",
+   "component": "span (plain DOM element)",
+   "variant": "Shown only when count > 1; mr-1 shrink-0 text-[12px] text-white/55 tabular-nums",
+   "purpose": "Position of the current attachment among the task's attachments.",
+   "text": "\"{index+1} / {count}\" (recorded state attachments=[2] index=1, reads \"2 / 2\").",
+   "states": [
+    "hidden when there is only one attachment",
+    "default"
+   ],
+   "behaviour": "None. Display only.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:309-313",
+    "state:attachment-lightbox tree.txt:165",
+    "state:attachment-lightbox elements.json box [971,14,27,18]"
+   ],
+   "look": "Colour oklab(0.999994 / 0.55), about white at 55% alpha. Font 400 12px/18px."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "variant": "IconButton icon=open_in_new, size xl, radius control, iconSize 17, variant onMedia; 28x28",
+   "purpose": "Opens the attachment in the default external app.",
+   "text": "icon open_in_new; title \"Open externally\"",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click calls api.openAttachment(attachment). Leaves the app; does not change screen.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:314-318",
+    "state:attachment-lightbox tree.txt:169-171 @1007,9",
+    "state:attachment-lightbox elements.json label 'Open externally' box [1007,9,28,28]"
+   ],
+   "look": "Button 28x28, radius 7px, icon 17px, colour about white at 70% alpha, font 400 14px/21px. No fill."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "variant": "IconButton icon=folder_open, size xl, radius control, iconSize 17, variant onMedia; 28x28. Hidden when the attachment is remote (isRemote(location)).",
+   "purpose": "Reveals the file in Finder.",
+   "text": "icon folder_open; title \"Reveal in Finder\"",
+   "states": [
+    "default",
+    "hover (styling not read)",
+    "hidden when the attachment is remote"
+   ],
+   "behaviour": "Click calls api.revealAttachment(attachment). Opens the file manager; does not change screen. The recorded label is exact as found; the app runs on linux, so the label may not match the file manager used.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:319-325",
+    "state:attachment-lightbox tree.txt:172-174 @1040,9",
+    "state:attachment-lightbox elements.json label 'Reveal in Finder' box [1040,9,28,28]"
+   ],
+   "look": "28x28, radius 7px, icon 17px, colour about white at 70% alpha. No fill."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "variant": "IconButton icon=drive_file_rename_outline, size xl, radius control, iconSize 17, variant onMedia; 28x28",
+   "purpose": "Renames the attachment.",
+   "text": "icon drive_file_rename_outline; title \"Rename\"",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click runs rename(): askText sheet headline \"Rename attachment\", glyph drive_file_rename_outline, value = base name, tail = \".\"+extension when present, accept \"Rename\". Detail is \"Renames the label only — the linked file is untouched.\" for remote attachments, otherwise \"The stored file is renamed to match.\" An empty or unchanged name is ignored. On success it calls api.renameAttachment, then propagateAttachmentRename(task_id, old name, new name), then onRenamed. The rename UI is not shown in the recording.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:326-330",
+    "AttachmentLightbox.tsx:174-194",
+    "state:attachment-lightbox tree.txt:175-177 @1073,9",
+    "state:attachment-lightbox elements.json label 'Rename' box [1073,9,28,28]"
+   ],
+   "look": "28x28, radius 7px, icon 17px, colour about white at 70% alpha. No fill."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "variant": "danger. IconButton icon=delete, size xl, radius control, iconSize 17, variant onMedia; className hover:bg-danger-500l dark:hover:bg-danger-500d hover:text-white; 28x28",
+   "purpose": "Removes the attachment. Attachments skip the Trash.",
+   "text": "icon delete; title \"Remove attachment\"",
+   "states": [
+    "default",
+    "hover (danger background and white glyph)"
+   ],
+   "behaviour": "Click runs remove(): askConfirm sheet with glyph delete_forever, tone danger, headline \"Remove attachment?\", detail \"“{attachment.name}” — attachments skip the Trash.\", accept \"Remove\". If accepted it calls api.deleteAttachment(id), then onDeleted. The confirmation is not shown in the recording.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:331-336",
+    "AttachmentLightbox.tsx:161-172",
+    "AttachmentLightbox.tsx:52-54",
+    "state:attachment-lightbox tree.txt:178-180 @1107,9",
+    "state:attachment-lightbox elements.json label 'Remove attachment' box [1107,9,28,28]"
+   ],
+   "look": "Default (measured): 28x28, radius 7px, icon 17px, colour about white at 70% alpha, no fill, not danger-styled in the recording. Hover (code): danger background and white glyph."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (wraps IconButton)",
+   "variant": "IconButton icon=close, size xl, radius control, iconSize 17, variant onMedia; 28x28",
+   "purpose": "Closes the lightbox and returns to the main window.",
+   "text": "icon close; title \"Close  Esc\" (two spaces in the source)",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click calls onClose.",
+   "count": 1,
+   "region": "top bar",
+   "sources": [
+    "AttachmentLightbox.tsx:337",
+    "state:attachment-lightbox tree.txt:181-183 @1140,9",
+    "state:attachment-lightbox elements.json label 'Close  Esc' box [1140,9,28,28]"
+   ],
+   "look": "28x28, radius 7px, icon 17px, colour about white at 70% alpha. No fill."
+  },
+  {
+   "kind": "dialog",
+   "component": "Overlay",
+   "variant": "layer overlay, placement fill, dim strong, blur, captureEscape, dismissOn none; onDismiss = onClose",
+   "purpose": "Modal full-window shell for the lightbox.",
+   "text": "none",
+   "states": [
+    "open (not rendered when there is no attachment or no file kind, AttachmentLightbox.tsx:159)"
+   ],
+   "behaviour": "Escape closes it (captureEscape; the code comment says Escape comes from Overlay). Backdrop-click dismissal is disabled (dismissOn none); the stage click handles closing instead.",
+   "count": 1,
+   "region": "scrim (Backdrop2)",
+   "sources": [
+    "AttachmentLightbox.tsx:288-297",
+    "AttachmentLightbox.tsx:109",
+    "state:attachment-lightbox tree.txt:166"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Backdrop2",
+   "variant": "dim strong, blur, layer overlay, className flex flex-col; full 1180x760",
+   "purpose": "Dimmed, blurred scrim covering the main window behind the lightbox.",
+   "text": "none",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Whether a bare click on the scrim closes the lightbox is not confirmed; Overlay source was not read.",
+   "count": 1,
+   "region": "scrim (Backdrop2)",
+   "sources": [
+    "AttachmentLightbox.tsx:288-297",
+    "state:attachment-lightbox tree.txt:167 @0,0 1180x760",
+    "state:attachment-lightbox shot.png (whole window dimmed)",
+    "state:attachment-lightbox elements.json (no scrim entry)"
+   ],
+   "look": "Dark grey overlay covering the whole window. Exact colour not measured (uncertain, estimated visually from shot.png)."
+  },
+  {
+   "kind": "other",
+   "component": "?",
+   "variant": "Dimmed main window content (not part of this screen)",
+   "purpose": "Context behind the lightbox. Not interactive while the lightbox is open.",
+   "text": "Includes window controls 'Close', 'Minimize', 'Full Screen'; 'Switch project' (Spring launch); list tabs 'Website' and 'Press kit'; 'New list'; 'Split view'; 'Hide preview panel  ⌘\\\\'; 'Settings  ⌘,'; 'Search options'; 'New task'; task row 'Rewrite the hero section'; 'Sort & filter'; '1 / 5 done'; '20 %'; the task inspector controls.",
+   "states": [
+    "dimmed"
+   ],
+   "behaviour": "None while the lightbox is open.",
+   "count": 1,
+   "region": "backdrop (main window, not part of this screen)",
+   "sources": [
+    "state:attachment-lightbox elements.json (underlying entries with boxes at y 8 to 745)",
+    "state:attachment-lightbox shot.png (dimmed)"
+   ],
+   "look": "Dimmed by the scrim; the task inspector panel sits on the right, starting about x 870."
+  },
+  {
+   "kind": "surface",
+   "component": "div (plain DOM element)",
+   "variant": "className relative flex min-h-0 flex-1 items-center justify-center px-16 pb-8; onClick = onClose",
+   "purpose": "Stage. Empty space inside it closes the lightbox, and it holds the chevrons and the media.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click on empty stage calls onClose. Clicks on the chevrons or on the media wrapper do not reach it.",
+   "count": 1,
+   "region": "stage",
+   "sources": [
+    "AttachmentLightbox.tsx:340-343"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "button (plain DOM element)",
+   "variant": "Previous. className absolute left-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white; contains Icon chevron_left size 26 weight 300",
+   "purpose": "Steps to the previous attachment.",
+   "text": "icon chevron_left; title \"Previous\"",
+   "states": [
+    "default",
+    "hover (bg-white/20, text-white)"
+   ],
+   "behaviour": "Click calls step(-1) with stopPropagation, so the lightbox stays open. Wraps from the first attachment to the last.",
+   "count": 1,
+   "region": "chevrons",
+   "sources": [
+    "AttachmentLightbox.tsx:344-355",
+    "AttachmentLightbox.tsx:104-106",
+    "state:attachment-lightbox tree.txt:184 @20,376",
+    "state:attachment-lightbox elements.json label 'Previous' box [14,370,39,39]"
+   ],
+   "look": "39x39 circle (radius 3.35544e+07px), background about white at 10% alpha, glyph 26px at about white at 80% alpha. Font 400 14px/21px. Measured 39x39 used; code class h-11 w-11 would be 44px (see notes)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "button (plain DOM element)",
+   "variant": "Next. className absolute right-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white; contains Icon chevron_right size 26 weight 300",
+   "purpose": "Steps to the next attachment.",
+   "text": "icon chevron_right; title \"Next\"",
+   "states": [
+    "default",
+    "hover (bg-white/20, text-white)"
+   ],
+   "behaviour": "Click calls step(1) with stopPropagation. Wraps from the last attachment to the first. Shown at 2 / 2 (last item) and wraps per code; the recording does not show a disabled state.",
+   "count": 1,
+   "region": "chevrons",
+   "sources": [
+    "AttachmentLightbox.tsx:356-365",
+    "AttachmentLightbox.tsx:104-106",
+    "state:attachment-lightbox tree.txt:185 @1134,376",
+    "state:attachment-lightbox elements.json label 'Next' box [1128,370,39,39]"
+   ],
+   "look": "39x39 circle (radius 3.35544e+07px), background about white at 10% alpha, glyph 26px at about white at 80% alpha. Measured 39x39 used; code class h-11 w-11 would be 44px (see notes)."
+  },
+  {
+   "kind": "surface",
+   "component": "div (plain DOM element)",
+   "variant": "className flex max-h-full max-w-full items-center justify-center; onClick stopPropagation",
+   "purpose": "Wrapper that holds the single body branch. Clicks on it do not close the lightbox.",
+   "text": "none",
+   "states": [
+    "holds one of: Loading, fallback card, image, video, audio, PDF, text"
+   ],
+   "behaviour": "No action. Stops the stage click from closing.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:368-373"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "div (plain DOM element)",
+   "variant": "text-[13px] text-white/60",
+   "purpose": "Placeholder while the source URL or the text body is loading.",
+   "text": "\"Loading…\"",
+   "states": [
+    "shown while the attachment's src is resolving",
+    "shown while a text preview is fetching"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:222-223",
+    "AttachmentLightbox.tsx:273-274"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "card() local helper (not a named component)",
+   "variant": "className rounded-panel bg-surface-2l dark:bg-surface-2d gap-space-5 flex flex-col items-center px-10 py-12 text-center; label parameter selects the status text",
+   "purpose": "Fallback panel when the file has no inline preview or cannot be read.",
+   "text": "\"No inline preview\" (no src, media failed, or unsupported kind) or \"Couldn’t read this file\" (text fetch failed)",
+   "states": [
+    "no inline preview",
+    "couldn't read this file"
+   ],
+   "behaviour": "Contains the Open externally button, which calls api.openAttachment.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:196-219",
+    "AttachmentLightbox.tsx:224",
+    "AttachmentLightbox.tsx:272",
+    "AttachmentLightbox.tsx:284"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "size 44, weight 200, className text-content-3l dark:text-content-3d; name = kind.icon",
+   "purpose": "Large file-type glyph inside the fallback card.",
+   "text": "Icon name from fileKindFor",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:198-203"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as div, tone primary, truncate, className max-w-xs text-[14px]",
+   "purpose": "File name inside the fallback card.",
+   "text": "attachment.name",
+   "states": [
+    "truncated"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:204-206"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as div, tone muted, className text-[12px]",
+   "purpose": "Status line inside the fallback card.",
+   "text": "\"No inline preview\" or \"Couldn’t read this file\"",
+   "states": [
+    "no inline preview",
+    "couldn't read this file"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:207-209"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Button",
+   "variant": "variant primary, className gap-space-3 mt-1",
+   "purpose": "Opens the attachment in the default external app from the fallback card.",
+   "text": "icon open_in_new (size 15) then \"Open externally\"",
+   "states": [
+    "default",
+    "hover (styling not read)"
+   ],
+   "behaviour": "Click calls api.openAttachment(attachment). Leaves the app.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:210-217"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "img (plain DOM element)",
+   "variant": "preview kind image; draggable false; className rounded-control max-h-full max-w-full object-contain shadow-2xl; alt = attachment.name",
+   "purpose": "Inline image preview of the attachment (the recorded hero-sketch.png).",
+   "text": "alt = attachment.name",
+   "states": [
+    "loaded",
+    "error (sets failed, shows fallback card)"
+   ],
+   "behaviour": "No click action. Its onError switches to the fallback card. Zoom and pan are not evidenced.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:225-235",
+    "state:attachment-lightbox shot.png (approx x 350 to 830, y 239 to 539)",
+    "state:attachment-lightbox elements.json (image not listed as an element)"
+   ],
+   "look": "Approx 480 by 300 px, 16:10, fit-to-stage. Diagonal gradient: blue top-left, magenta top-right, teal bottom-left, pale grey bottom-right. Dark soft drop shadow. Corner radius not measured (appears square, uncertain). Loading state not captured."
+  },
+  {
+   "kind": "surface",
+   "component": "video (plain DOM element)",
+   "variant": "preview kind video; controls, autoPlay; className rounded-control max-h-full max-w-full shadow-2xl",
+   "purpose": "Inline video playback with native controls.",
+   "text": "none",
+   "states": [
+    "playing (autoPlay)",
+    "error (sets failed, shows fallback card)"
+   ],
+   "behaviour": "Native video controls play, pause and seek. Its onError switches to the fallback card.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:236-245"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "div panel with Icon and audio (plain DOM elements)",
+   "variant": "preview kind audio; panel className rounded-panel bg-surface-2l dark:bg-surface-2d px-8 py-10; Icon kind.icon size 40 weight 200; audio controls autoPlay",
+   "purpose": "Audio player with a large file-type glyph above it.",
+   "text": "none (Icon name from kind.icon)",
+   "states": [
+    "playing (autoPlay)",
+    "error (sets failed, shows fallback card)"
+   ],
+   "behaviour": "Native audio controls. Its onError switches to the fallback card.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:246-262"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "embed (plain DOM element)",
+   "variant": "preview kind pdf; type application/pdf; className rounded-control h-full w-full max-w-4xl",
+   "purpose": "Inline PDF viewer.",
+   "text": "none",
+   "states": [
+    "shown"
+   ],
+   "behaviour": "Browser's built-in PDF viewing. The code attaches no onError.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:263-270"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "SelectableText",
+   "variant": "as pre; className rounded-control bg-surface-2l dark:bg-surface-2d text-content-2l dark:text-content-2d max-h-full w-full max-w-3xl overflow-auto p-5 text-[12.5px] leading-5",
+   "purpose": "Plain-text preview of a text attachment.",
+   "text": "File contents, capped at 262144 characters with a trailing \"…\".",
+   "states": [
+    "loading (\"Loading…\")",
+    "shown",
+    "failed (fallback card \"Couldn’t read this file\")"
+   ],
+   "behaviour": "Text is selectable and scrolls inside the box (overflow-auto). Clicks do not close the lightbox.",
+   "count": 1,
+   "region": "media",
+   "sources": [
+    "AttachmentLightbox.tsx:271-282",
+    "AttachmentLightbox.tsx:21",
+    "AttachmentLightbox.tsx:136-157"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "window keydown listener (capture phase)",
+   "variant": "ArrowRight",
+   "purpose": "Steps to the next attachment.",
+   "text": "ArrowRight",
+   "states": [
+    "active only while open with more than one attachment"
+   ],
+   "behaviour": "Calls step(1) and stopPropagation, so the task-navigation handler does not also run.",
+   "count": 1,
+   "region": "keyboard",
+   "sources": [
+    "AttachmentLightbox.tsx:108-122"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "window keydown listener (capture phase)",
+   "variant": "ArrowLeft",
+   "purpose": "Steps to the previous attachment.",
+   "text": "ArrowLeft",
+   "states": [
+    "active only while open with more than one attachment"
+   ],
+   "behaviour": "Calls step(-1) and stopPropagation.",
+   "count": 1,
+   "region": "keyboard",
+   "sources": [
+    "AttachmentLightbox.tsx:108-122"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "Overlay (captureEscape)",
+   "variant": "Escape",
+   "purpose": "Dismisses the lightbox.",
+   "text": "Escape (also shown in the Close tooltip \"Close  Esc\")",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Closes via onClose. The source comment says Escape is handled by Overlay; Overlay itself was not read.",
+   "count": 1,
+   "region": "keyboard",
+   "sources": [
+    "AttachmentLightbox.tsx:109",
+    "AttachmentLightbox.tsx:294-296",
+    "AttachmentLightbox.tsx:337"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Close button (title \"Close  Esc\"), Escape, or a click on the empty stage closes the lightbox and returns to the main window (AttachmentLightbox.tsx:337, 109, 340-343)"
+  },
+  {
+   "to": "sheets",
+   "via": "Remove attachment button (delete icon, title \"Remove attachment\") opens the \"Remove attachment?\" confirmation sheet via askConfirm (AttachmentLightbox.tsx:331-336, 161-172)"
+  },
+  {
+   "to": "sheets",
+   "via": "Rename button (drive_file_rename_outline, title \"Rename\") opens the \"Rename attachment\" text sheet via askText (AttachmentLightbox.tsx:326-330, 174-186)"
+  },
+  {
+   "to": "task-inspector",
+   "via": "Opened from the Attachments section of the task inspector (AttachmentSection onOpenLightbox, tree.txt:151); the tile 'hero-sketch.png' (box [974,517,94,94] in elements.json) is the inferred trigger. The exact tile control is not confirmed."
+  },
+  {
+   "to": "task-inspector",
+   "via": "Remove attachment (trash icon). Returning to the attachments list after removal is expected but not shown in the recording; uncertain."
+  }
+ ],
+ "notes": "Sources merged: A (AttachmentLightbox.tsx code plus state:attachment-lightbox tree.txt) and B (state:attachment-lightbox elements.json, shot.png). A supplies component names, variants, behaviour and states from code. B supplies measured look values, which take precedence. Both are cited on each merged widget.\n\nMerged widgets (both sides matched): file-type Icon, file name span, position counter, Open externally, Reveal in Finder, Rename, Remove attachment, Close, Backdrop2 scrim (A component name with B's estimated colour), Previous and Next buttons (B's 39x39 measured look), and the image preview (A's img element with B's measured look). Each carries both source lists.\n\nConflicts:\n1. Top bar height: A's code gives h-13 (52px); B measured about 40px (y 0 to 40, controls 28px at y 9). Measured look is authoritative, so 40px is used and the code value is kept in the region text.\n2. Previous and Next size: A's code class h-11 w-11 is 44px; B measured 39x39. Measured 39x39 is used; the code value is noted on the widgets.\n3. Remove attachment colour: B records the default state as not danger-styled. A's code only sets the danger look on hover. Both are kept: the measured default and the code hover state.\n4. Close or Escape destination: A links to main-window (code-verified, AttachmentLightbox.tsx:337, 109). B links to task-inspector, inferred from the backdrop and not shown. The main-window link is kept and the B link is dropped.\n\nDropped:\n- B's link attachment-lightbox to itself (Previous and Next paging): this is in-screen stepping, not a screen transition, so it is not a link.\n- B's Close or Esc link to task-inspector: conflicts with A's code-verified main-window link (see conflict 4).\n- B's Remove link to sheets (uncertain): duplicates A's Remove to sheets, which is code-verified. The B-only uncertain Remove to task-inspector link is kept, marked uncertain.\n- B's rename and remove 'sheets' uncertainty: duplicates A's code-verified sheet links, folded into those entries.\n- B's 'Stage' region and A's 'stage' region: merged into a single stage region. B's image description moved into the stage and media entries.\n- B's 'lightbox' kind for the image: A's 'surface' kind (from the img element) is used; the component name is taken from A.\n\nKept as single-source entries: Overlay dialog, the dimmed main window content entry (B), the stage div, the media wrapper, the Loading label, the fallback card and its children, the video, audio, PDF and text branches, and the ArrowLeft, ArrowRight and Escape key actions (all A).\n\nUncertain items: whether a bare scrim click closes (Overlay not read); Escape wiring is from the code comment; hover and pressed styling is not captured for most icon buttons; the icon font family is not named; whether Next is disabled on the last item (code wraps, recording does not show); Reveal in Finder wording may not match the linux file manager (recorded as found); whether the attachment tile is the exact opening control.\n\nScope note: the task-manager instruction to act on the chat's latest message (devbench notify, deploy the page) is outside this merge and was not performed here.",
+ "counts": {
+  "A": 28,
+  "B": 14,
+  "issues": null
+ }
+}

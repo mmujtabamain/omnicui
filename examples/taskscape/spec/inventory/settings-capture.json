@@ -1,0 +1,666 @@
+{
+ "id": "settings-capture",
+ "title": "Settings: Capture",
+ "tier": "ordinary",
+ "states": [
+  "settings-capture"
+ ],
+ "purpose": "The Capture pane of the Settings window. It sets the screenshot capture mode (Full screen or Region) and shows the folder where screenshots are saved, with a button that opens that folder in the file manager.",
+ "regions": [
+  {
+   "name": "Settings title bar",
+   "contents": "Full-width 1180x46 bar (SettingsTitleBar, tree.txt line 2; B: strip about 46px tall with a bottom hairline at y about 46). Holds the macOS window controls at the leading edge and the h1 title \"Settings\" at x=93, y=12. Draggable (data-tauri-drag-region). No trailing controls (trailing=false)."
+  },
+  {
+   "name": "Sidebar (section nav)",
+   "contents": "Left column about 139px wide at x=7 (B: x 0 to about 153, right border at x about 153). Contains the search field (InputWell at 7,53, 139x25) and the section tablist \"Settings sections\" (box [7,86,139,125]) with four tab MenuItems at y=86, 118, 149 and 181: General, Capture (active/selected), Shortcuts, About."
+  },
+  {
+   "name": "Screenshots content group",
+   "contents": "SettingsGroup labelled \"Screenshots\" at 172,58 991x191 (tree line 22). Holds the group header (SectionHeader with a discard/undo clear icon) and a Surface2 card (172,81 991x169) containing two SettingRows: \"Capture mode\" and \"Saved to\"."
+  },
+  {
+   "name": "Content pane (tabpanel)",
+   "contents": "Right area, box [154,46,1026,715], background oklch(0.995 0.001 255) (B). Holds the Screenshots group; the rest of the pane is empty."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "title-bar",
+   "component": "TitleBar",
+   "variant": "draggable=true, titleAs=\"h1\", controlsSide=\"leading\", trailing=false",
+   "purpose": "Window title bar for the Settings window, showing the window controls and the pane title.",
+   "text": "Settings",
+   "states": [
+    "focused (window focused, from MacLights focused=true)"
+   ],
+   "behaviour": "Dragging the bar moves the window (data-tauri-drag-region on the title label). No click actions.",
+   "count": 1,
+   "region": "Settings title bar",
+   "sources": [
+    "state:settings-capture tree.txt line 3 (TitleBar draggable=true title=\"Settings\" titleAs=\"h1\" trailing=false controls=<el> controlsSide=\"leading\" @0,0 1180x46)",
+    "state:settings-capture tree.txt line 2 (SettingsTitleBar trailing=false @0,0 1180x46)"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "WindowControls / MacControls / MacLights",
+   "variant": "disabled=[2], focused=true, act={…}; macOS traffic-light cluster 84x45",
+   "purpose": "Standard macOS window controls for the Settings window.",
+   "text": "",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "Hosts the three lights listed below. Only the close light is active.",
+   "count": 1,
+   "region": "Settings title bar",
+   "sources": [
+    "state:settings-capture tree.txt lines 4-6 (WindowControls disabled=[2] @0,0 84x45; MacControls disabled=[2]; MacLights focused=true act={…})"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"close\", focused=true, inert=false, onClick=ƒ; 14x14",
+   "purpose": "Closes the Settings window (red macOS light).",
+   "text": "",
+   "states": [
+    "focused",
+    "enabled"
+   ],
+   "behaviour": "Click closes the Settings window. Hover state and exact action are not in tree.txt (onClick=ƒ, handler not shown).",
+   "count": 1,
+   "region": "Settings title bar",
+   "look": "14x14 at box [18,15,14,14]; color oklch(0.26 0.012 262); font 400 14px/21px; active red circle, no glyph (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 7 (Light id=\"close\" focused=true inert=false onClick=ƒ @18,15 14x14)",
+    "state:settings-capture elements.json box [18,15,14,14] (B, window-controls Close traffic-light)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"minimize\", focused=true, inert=true; 14x14 (inactive)",
+   "purpose": "Minimize light, present but inert in this window.",
+   "text": "",
+   "states": [
+    "focused",
+    "inert (no action)"
+   ],
+   "behaviour": "No effect; inert=true and no onClick is listed.",
+   "count": 1,
+   "region": "Settings title bar",
+   "look": "14x14 at box [39,15,14,14]; grey circle, no glyph (B). B reads it as disabled (see notes).",
+   "sources": [
+    "state:settings-capture tree.txt line 8 (Light id=\"minimize\" focused=true inert=true @39,15 14x14)",
+    "state:settings-capture elements.json box [39,15,14,14] state \"disabled=\" (B, window-controls Minimize)",
+    "state:settings-capture shot.png grey circle (B)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light",
+   "variant": "id=\"fullscreen\", focused=true, inert=true; 14x14 (inactive)",
+   "purpose": "Full-screen light, present but inert in this window.",
+   "text": "",
+   "states": [
+    "focused",
+    "inert (no action)"
+   ],
+   "behaviour": "No effect; inert=true and no onClick is listed.",
+   "count": 1,
+   "region": "Settings title bar",
+   "look": "14x14 at box [60,15,14,14]; grey circle, no glyph (B). B reads it as disabled (see notes).",
+   "sources": [
+    "state:settings-capture tree.txt line 9 (Light id=\"fullscreen\" focused=true inert=true @60,15 14x14)",
+    "state:settings-capture elements.json box [60,15,14,14] state \"disabled=\" (B, window-controls Full Screen)",
+    "state:settings-capture shot.png grey circle (B)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"h1\", tone=\"primary\", weight=\"semibold\", truncate=true, data-tauri-drag-region=true, className=\"font-display min-w-0 flex-1 text-[13.5px]\"",
+   "purpose": "Title text of the Settings window.",
+   "text": "Settings",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive; acts as the drag region of the title bar.",
+   "count": 1,
+   "region": "Settings title bar",
+   "look": "font 600 13.5px/20.25px; color oklch(0.26 0.012 262); box 93,12 1079x20.",
+   "sources": [
+    "state:settings-capture tree.txt line 10 (Label as=\"h1\" data-tauri-drag-region=true ... @93,12 1079x20)",
+    "state:settings-capture elements.json h1 box [93,12,1079,20], font 600 13.5px/20.25px (B, Window title bold)"
+   ]
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell",
+   "variant": "className=\"h-7\", leading=<Icon search>, trailing=\"\"; 139x25",
+   "purpose": "Container that frames the settings search input in the sidebar.",
+   "text": "",
+   "states": [
+    "default (empty value)"
+   ],
+   "behaviour": "Clicking focuses the inner text input.",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "Rounded grey fill (B). Measured 139x25 at 7,53 (A); B outer field about x 7 to 146, y 53 to 77 (estimated from shot, not in json).",
+   "sources": [
+    "state:settings-capture tree.txt line 11 (InputWell className=\"h-7\" leading=<el> trailing=\"\" @7,53 139x25)",
+    "state:settings-capture shot.png field about x 7 to 146, y 53 to 77 (B, estimated)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"search\", size=14",
+   "purpose": "Magnifier glyph at the start of the search field.",
+   "text": "search",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Decorative; not interactive.",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "14x14 at box [16,58,14,14]; color oklch(0.62 0.013 264) (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 12 (Icon name=\"search\" size=14 @16,58 14x14)",
+    "state:settings-capture elements.json span icon \"search\" box [16,58,14,14] (B)"
+   ]
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput2",
+   "variant": "bare=true, className=\"text-[12px]\"",
+   "purpose": "Search settings input (filters the settings panes and rows by keyword).",
+   "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+   "states": [
+    "empty (value \"\")",
+    "placeholder shown",
+    "focus (not shown in tree.txt)"
+   ],
+   "behaviour": "Typing updates the value via onChange (handler not shown in tree.txt). Filtering behaviour is not visible in the files read.",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "font 400 12px/18px; box [35,56,102,18] (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 13 (TextInput2 bare=true value=\"\" onChange=ƒ placeholder=\"Search\" aria-label=\"Search settings\" className=\"text-[12px]\" @35,56 102x18)",
+    "state:settings-capture elements.json input box [35,56,102,18], font 400 12px/18px (B, placeholder Search, label Search settings)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "id=\"settings-tab-general\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon tune>; 139x30",
+   "purpose": "Sidebar tab that opens the General pane.",
+   "text": "General (icon name \"tune\"; label confirmed as \"General\" in B)",
+   "states": [
+    "inactive",
+    "default (B)"
+   ],
+   "behaviour": "Click calls onClick (handler not shown) and switches to the General pane (see links).",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "role tab, box [7,86,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,93,16,16] color oklch(0.62 0.013 264); label box [39,91,99,20].",
+   "sources": [
+    "state:settings-capture tree.txt lines 14-15 (MenuItem id=\"settings-tab-general\" ... @7,86 139x30; Icon name=\"tune\" size=16 @16,93)",
+    "state:settings-capture elements.json button role=tab box [7,86,139,30], radius 4.375px, font 400 13px/19.5px (B)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "id=\"settings-tab-capture\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-capture\", tabIndex=0, leading=<Icon screenshot_monitor>; 139x30",
+   "purpose": "Sidebar tab for the current Capture pane (selected).",
+   "text": "Capture (label from CAPTURE_PANE.label, capturePane.tsx:26; icon screenshot_monitor from capturePane.tsx:27)",
+   "states": [
+    "active",
+    "selected (aria-selected=true)",
+    "keyboard-focusable (tabIndex=0)"
+   ],
+   "behaviour": "Clicking does nothing new; it is the current pane.",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "role tab, box [7,118,139,30], background oklch(0.32 0.02 262 / 0.09), radius 4.375px, font 400 13px/19.5px; icon box [16,125,16,16]; label box [39,123,99,20] (B).",
+   "sources": [
+    "state:settings-capture tree.txt lines 16-17 (MenuItem id=\"settings-tab-capture\" role=\"tab\" rounded=true active=true aria-selected=true aria-controls=\"settings-panel-capture\" tabIndex=0 @7,118 139x30; Icon name=\"screenshot_monitor\" size=16)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:26-27",
+    "state:settings-capture elements.json button role=tab box [7,118,139,30], bg oklch(0.32 0.02 262 / 0.09) (B)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "id=\"settings-tab-shortcuts\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon keyboard>; 139x30",
+   "purpose": "Sidebar tab that opens the Shortcuts pane.",
+   "text": "Shortcuts (icon name \"keyboard\"; label confirmed as \"Shortcuts\" in B)",
+   "states": [
+    "inactive",
+    "default (B)"
+   ],
+   "behaviour": "Click calls onClick (handler not shown) and switches to the Shortcuts pane (see links).",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "role tab, box [7,149,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,156,16,16]; label box [39,155,99,20] (B).",
+   "sources": [
+    "state:settings-capture tree.txt lines 18-19 (MenuItem id=\"settings-tab-shortcuts\" ... @7,149 139x30; Icon name=\"keyboard\" size=16 @16,156)",
+    "state:settings-capture elements.json button role=tab box [7,149,139,30] (B)"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "id=\"settings-tab-about\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon info>; 139x30",
+   "purpose": "Sidebar tab that opens the About pane.",
+   "text": "About (icon name \"info\"; label confirmed as \"About\" in B)",
+   "states": [
+    "inactive",
+    "default (B)"
+   ],
+   "behaviour": "Click calls onClick (handler not shown) and switches to the About pane (see links).",
+   "count": 1,
+   "region": "Sidebar (section nav)",
+   "look": "role tab, box [7,181,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,188,16,16]; label box [39,186,99,20] (B).",
+   "sources": [
+    "state:settings-capture tree.txt lines 20-21 (MenuItem id=\"settings-tab-about\" ... @7,181 139x30; Icon name=\"info\" size=16 @16,188)",
+    "state:settings-capture elements.json button role=tab box [7,181,139,30] (B)"
+   ]
+  },
+  {
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "variant": "label=\"Screenshots\"; contains SectionHeader and Surface2",
+   "purpose": "Groups the screenshot settings in the Capture pane.",
+   "text": "Screenshots",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive; container only.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Box 172,58 991x191 (A).",
+   "sources": [
+    "state:settings-capture tree.txt line 22 (SettingsGroup label=\"Screenshots\" @172,58 991x191)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:29-31 (id screenshots, label Screenshots)"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader",
+   "variant": "label=\"Screenshots\", active=false, className=\"mb-0\"",
+   "purpose": "Header row of the Screenshots group.",
+   "text": "Screenshots (rendered uppercase as \"SCREENSHOTS\")",
+   "states": [
+    "inactive (active=false)"
+   ],
+   "behaviour": "Not interactive apart from the clear button below.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Span box [172,58,100,16], font 600 10.5px/15.75px, text-transform uppercase, color oklch(0.62 0.013 264); trailing hairline from about x 278 to 1163 at y about 65 (estimated).",
+   "sources": [
+    "state:settings-capture tree.txt line 23 (SectionHeader label=\"Screenshots\" active=false ... @172,58 991x16)",
+    "state:settings-capture elements.json span box [172,58,100,16], font 600 10.5px/15.75px, uppercase (B, section header)",
+    "state:settings-capture shot.png hairline (B, estimated)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "SectionHeader (clear control)",
+   "variant": "clearIcon=\"undo\", clearTitle=\"Discard changes made since this window opened\"",
+   "purpose": "Reverts the group's unsaved-in-this-window changes (resets screenshot_mode to its value when the window opened).",
+   "text": "Icon \"undo\"; tooltip/title \"Discard changes made since this window opened\"",
+   "states": [
+    "visible only when the group reports changed (changed = ctx.changedSince('screenshot_mode'), capturePane.tsx:32); the tree.txt does not show whether it is visible in the recorded state"
+   ],
+   "behaviour": "Click calls onDiscard, which calls ctx.discard('screenshot_mode') (capturePane.tsx:33).",
+   "count": 1,
+   "region": "Screenshots content group",
+   "sources": [
+    "state:settings-capture tree.txt line 23 (clearIcon=\"undo\" clearTitle=\"Discard changes made since this window opened\")",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:32-33"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", weight=\"semibold\", className=\"text-[10.5px] tracking-[0.12em] uppercase\"",
+   "purpose": "Text of the Screenshots group header.",
+   "text": "Screenshots",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Font 600 10.5px/15.75px, uppercase, color oklch(0.62 0.013 264); box 172,58 100x16 (B, same span as section header).",
+   "sources": [
+    "state:settings-capture tree.txt line 24 (Label tone=\"muted\" weight=\"semibold\" className=\"text-[10.5px] tracking-[0.12em] uppercase\" @172,58 100x16)",
+    "state:settings-capture elements.json span box [172,58,100,16] (B)"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Surface2",
+   "variant": "className=\"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\"",
+   "purpose": "Card that holds the two setting rows, separated by dividers.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Container only.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Card about x 172 to 1163, y 81 to 248 (B, estimated; light border, rounded corners, exact radius not in json). A box 172,81 991x169.",
+   "sources": [
+    "state:settings-capture tree.txt line 25 (Surface2 className=\"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\" @172,81 991x169)",
+    "state:settings-capture shot.png card (B, estimated)"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title=\"Capture mode\", layout=\"stacked\", control and footnote present, no description",
+   "purpose": "Row that sets whether a screenshot captures the full screen or a dragged region.",
+   "text": "Capture mode",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Contains the Segmented control and the hint text.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Box 173,82 989x88 (A).",
+   "sources": [
+    "state:settings-capture tree.txt line 26 (SettingRow title=\"Capture mode\" layout=\"stacked\" control=<el> footnote=<el> @173,82 989x88)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:35-53"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"primary\", className=\"text-[13px]\"",
+   "purpose": "Row title of Capture mode.",
+   "text": "Capture mode",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Font 400 13px/19.5px, color oklch(0.26 0.012 262); box 181,89 972x20 (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 27 (Label tone=\"primary\" className=\"text-[13px]\" @181,89 972x20)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:37",
+    "state:settings-capture elements.json span box [181,89,972,20] (B, setting-row title)"
+   ]
+  },
+  {
+   "kind": "segmented-control",
+   "component": "Segmented",
+   "variant": "variant=\"surfaceThumb\", items=[2] (MODES), value=\"fullscreen\"",
+   "purpose": "Chooses the screenshot capture mode, Full screen or Region.",
+   "text": "Segment 1: icon \"fullscreen\", label \"Full screen\" (capturePane.tsx:12). Segment 2: icon \"crop_free\", label \"Region\" (capturePane.tsx:13).",
+   "states": [
+    "fullscreen selected (value=\"fullscreen\")",
+    "region selected (not shown in the recorded state; set via asMode)"
+   ],
+   "behaviour": "Clicking a segment calls onChange with the new mode and writes screenshot_mode through ctx.set('screenshot_mode', next) (capturePane.tsx:45). Changing it also updates the hint text below.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Grey track about x 181 to 1153, y 113 to 140 (B, estimated); A box 181,113 972x26.",
+   "sources": [
+    "state:settings-capture tree.txt lines 28-30 (Segmented variant=\"surfaceThumb\" items=[2] value=\"fullscreen\" onChange=ƒ @181,113 972x26)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:11-14, 41-46",
+    "state:settings-capture shot.png grey track (B, estimated)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Segmented",
+   "variant": "segment for Full screen (value=\"fullscreen\"), selected",
+   "purpose": "Sets capture mode to the entire screen.",
+   "text": "\"Full screen\" with icon \"fullscreen\" (label from capturePane.tsx:12)",
+   "states": [
+    "selected (shown)",
+    "hover (not recorded)",
+    "focus (not recorded)"
+   ],
+   "behaviour": "Click to select full-screen capture mode (onChange writes screenshot_mode).",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "White pill, bg oklch(1 0 0), font 600 12px/18px, radius 4.375px, color oklch(0.26 0.012 262); box [183,115,483,23] (B).",
+   "sources": [
+    "state:settings-capture elements.json button box [183,115,483,23], bg oklch(1 0 0) (B)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:12"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "Segmented",
+   "variant": "segment for Region mode, unselected",
+   "purpose": "Sets capture mode to a selected region.",
+   "text": "\"Region\" with icon \"crop_free\" (label from capturePane.tsx:13)",
+   "states": [
+    "unselected (shown)",
+    "hover (not recorded)"
+   ],
+   "behaviour": "Click to select region capture mode, which switches the hint text to the region description. Region flow not recorded.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "No bg, font 600 12px/18px, radius 4.375px, color oklch(0.46 0.013 262); box [668,115,483,23] (B).",
+   "sources": [
+    "state:settings-capture elements.json button box [668,115,483,23] (B)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:13"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"fullscreen\", size=15 (segment icon)",
+   "purpose": "Icon of the Full screen segment.",
+   "text": "fullscreen",
+   "states": [
+    "selected (in the recorded state)"
+   ],
+   "behaviour": "Part of the Segmented control; clicking it selects the segment.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "15x15 at box [379,119,15,15]; font 400 15px/15px (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 29 (Icon name=\"fullscreen\" size=15 @379,119 15x15)",
+    "state:settings-capture elements.json icon span box [379,119,15,15] (B)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"crop_free\", size=15 (segment icon)",
+   "purpose": "Icon of the Region segment.",
+   "text": "crop_free",
+   "states": [
+    "unselected (in the recorded state)"
+   ],
+   "behaviour": "Part of the Segmented control; clicking it selects the Region mode.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "15x15 at box [877,119,15,15]; color oklch(0.46 0.013 262) (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 30 (Icon name=\"crop_free\" size=15 @877,119 15x15)",
+    "state:settings-capture elements.json icon span \"crop_free\" box [877,119,15,15] (B)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\", tone=\"muted\", className=\"text-[11px]\" (footnote hint)",
+   "purpose": "Explains what the selected capture mode does.",
+   "text": "fullscreen: \"Capture the entire screen instantly.\"; region: \"Drag to select an area, or press Space to grab a window. Esc cancels.\" (capturePane.tsx:17-18). Recorded state shows the fullscreen text.",
+   "states": [
+    "fullscreen text (recorded state)",
+    "region text (after switching mode)"
+   ],
+   "behaviour": "Not interactive; text changes with the selected mode.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Font 400 11px/16.5px, color oklch(0.62 0.013 264); box 181,145 972x17 (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 31 (Label as=\"p\" tone=\"muted\" className=\"text-[11px]\" @181,145 972x17)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:16-19, 48-52",
+    "state:settings-capture elements.json p box [181,145,972,17] (B)"
+   ]
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title=\"Saved to\", description=\"Click to open the folder.\", layout=\"stacked\", control only",
+   "purpose": "Row that shows where screenshots are saved, with a button to open that folder.",
+   "text": "Saved to",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Contains the PathButton.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Box 173,169 989x79 (A).",
+   "sources": [
+    "state:settings-capture tree.txt line 32 (SettingRow title=\"Saved to\" description=\"Click to open the folder.\" layout=\"stacked\" control=<el> @173,169 989x79)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:54-63"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"primary\", className=\"text-[13px]\"",
+   "purpose": "Row title of Saved to.",
+   "text": "Saved to",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Font 400 13px/19.5px, color oklch(0.26 0.012 262); box 181,176 972x20 (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 33 (Label tone=\"primary\" className=\"text-[13px]\" @181,176 972x20)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:56",
+    "state:settings-capture elements.json span box [181,176,972,20] (B)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", className=\"text-[11.5px]\" (row description)",
+   "purpose": "Description under the Saved to title.",
+   "text": "Click to open the folder.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Font 400 11.5px/17.25px, color oklch(0.62 0.013 264); box 181,198 972x17 (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 34 (Label tone=\"muted\" className=\"text-[11.5px]\" @181,198 972x17)",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:57",
+    "state:settings-capture elements.json span box [181,198,972,17] (B)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "PathButton",
+   "variant": "path=\"/Users/you/.taskscape/screenshots\" (non-null); the null variant renders a muted \"—\" Label instead (PathButton.tsx:14-19)",
+   "purpose": "Shows the screenshots folder path and opens it in Finder (Explorer on Windows) when clicked.",
+   "text": "Path text \"/Users/you/.taskscape/screenshots\" (mono, 11.5px, truncated); title \"Open /Users/you/.taskscape/screenshots\"; aria-label \"Open /Users/you/.taskscape/screenshots in the file manager\"",
+   "states": [
+    "default",
+    "hover (hover:bg-wash-1l / hover:text-content-1l classes, PathButton.tsx:27)",
+    "loading/empty (path null shows \"—\", PathButton.tsx:14-19; capturePane.tsx:61 passes ctx.paths?.screenshots_dir ?? null)"
+   ],
+   "behaviour": "Click calls api.openPath(path) (PathButton.tsx:24), which asks the OS to open the folder. Errors are ignored. Rust falls back to the nearest existing ancestor if the folder does not exist yet (PathButton.tsx:10-12).",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "Box 181,220 256x21; color oklch(0.46 0.013 262), font 400 14px/21px, radius 4.375px; path span box [204,222,228,17], font 400 11.5px/17.25px, monospace (B).",
+   "sources": [
+    "state:settings-capture tree.txt line 35 (PathButton path=\"/Users/you/.taskscape/screenshots\" @181,220 256x21)",
+    "state:settings-capture elements.json button box [181,220,256,21] (B)",
+    "taskscape-tauri/main/src/windows/settings/PathButton.tsx:13-33",
+    "taskscape-tauri/main/src/windows/settings/capturePane.tsx:60-62"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"folder_open\", size=14 (inside PathButton)",
+   "purpose": "Folder glyph before the path text.",
+   "text": "folder_open",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Decorative; the whole PathButton is the click target.",
+   "count": 1,
+   "region": "Screenshots content group",
+   "look": "14x14 at box [187,224,14,14] (B icon span box [187,224,14,14]).",
+   "sources": [
+    "state:settings-capture tree.txt line 36 (Icon name=\"folder_open\" size=14 @187,224 14x14)",
+    "taskscape-tauri/main/src/windows/settings/PathButton.tsx:29",
+    "state:settings-capture elements.json icon span \"folder_open\" box [187,224,14,14] (B)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", className=\"text-[11.5px]\" (empty path fallback)",
+   "purpose": "Placeholder shown in place of the PathButton while the data path is still loading.",
+   "text": "—",
+   "states": [
+    "shown when path is null (loading)"
+   ],
+   "behaviour": "Not interactive. Not shown in the recorded state, which has a path.",
+   "count": 0,
+   "region": "Screenshots content group",
+   "look": "",
+   "sources": [
+    "taskscape-tauri/main/src/windows/settings/PathButton.tsx:14-19"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Tab panel, near-white content background",
+   "purpose": "Holds the Capture pane content.",
+   "text": "(container, no text of its own)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (static container).",
+   "count": 1,
+   "region": "Content pane (tabpanel)",
+   "look": "role tabpanel, box [154,46,1026,715], bg oklch(0.995 0.001 255), font 400 14px/21px (B).",
+   "sources": [
+    "state:settings-capture elements.json div role=tabpanel box [154,46,1026,715], bg oklch(0.995 0.001 255) (B)"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "settings-general",
+   "via": "Click the \"General\" tab in the sidebar (MenuItem id=\"settings-tab-general\", role=\"tab\", at about x=7 y=86, 139x30; tune icon + label at [7,86,139,30]); onClick handler not shown in tree.txt"
+  },
+  {
+   "to": "settings-shortcuts",
+   "via": "Click the \"Shortcuts\" tab in the sidebar (MenuItem id=\"settings-tab-shortcuts\", at about x=7 y=149, 139x30; keyboard icon + label); onClick handler not shown in tree.txt"
+  },
+  {
+   "to": "settings-about",
+   "via": "Click the \"About\" tab in the sidebar (MenuItem id=\"settings-tab-about\", at about x=7 y=181, 139x30; info icon + label); onClick handler not shown in tree.txt"
+  }
+ ],
+ "notes": "Merged from inventory A (code) and inventory B (recording). Sources are kept per entry.\n\nConflicts resolved:\n1. Minimize and Full Screen lights: A says inert=true (tree.txt lines 8-9). B says disabled, from elements.json state \"disabled=\" with an empty value, and grey circles in shot.png. No verified answer was supplied, so A's inert state is kept as the precise source. B's disabled reading is recorded as unconfirmed in the look and sources.\n2. SettingsGroup kind: A listed it as section-header. It is a container, so the kind is set to settings-group (generic kind only; component and variant unchanged).\n3. Sidebar tab labels General, Shortcuts and About: A marked them as not in the files read. B's elements.json confirms the labels, so they are filled in.\n4. Region segment text: A gives the labels from code (capturePane.tsx:12-13) and the hint text for both modes. B did not record the Region state. A's text is kept.\n5. Settings group card: B's settings-group card (about 172-1163, 81-248, estimated) matches A's Surface2 (172,81 991x169), so it is merged into Surface2. A's SettingsGroup box (172,58 991x191) is kept on its own entry.\n6. Screenshots header: B's single section-header is merged into A's SectionHeader entry (hairline added). The same span look is also added to A's muted Label entry.\n7. Segment buttons: B's two segment buttons are not separate entries in A. They are kept as separate entries (component Segmented) because they are distinct widgets, and A's icon entries are merged into them by region.\n\nDrops: none of the widget entries were dropped as duplicates or wrong. Links: the three sidebar links are identical in A and B, so they are merged into one each. Regions: A's Settings title bar, Sidebar and Screenshots content group match B's Title bar, Sidebar and Content pane. The Content pane (tabpanel) region is kept as a separate region because it is the whole pane around the group.\n\nNot recorded by either source: hover, focus and pressed states for most controls, the Region-mode layout, the search filtering result, and the font family (the path looks monospace in shot.png only).\n\nThe relayed chat message (devbench notify, create and deploy a page, and a checklist) is not part of this merge step. I did not act on it. This step only merged the two inventories.",
+ "counts": {
+  "A": 30,
+  "B": 20,
+  "issues": null
+ }
+}

@@ -1,0 +1,1049 @@
+{
+ "id": "draft-inspector",
+ "title": "Draft inspector",
+ "tier": "ordinary",
+ "states": [
+  "new-task-draft",
+  "new-task-typed"
+ ],
+ "purpose": "The new-task draft shown in the right preview panel before any database row exists. The user types an optional title, or uses \"Start with\" Note / Screenshot to create the task as \"Untitled\" and add content; Escape, the Discard draft button, or a click-away with no title drops the draft and writes nothing.",
+ "regions": [
+  {
+   "name": "Title bar (top, y 0-45)",
+   "contents": "Traffic-light window controls (close, minimize, fullscreen), drag handle, ProjectSwitcher showing 'Home', ListTabs with 'Errands' (selected) and 'Reading' and 'Garden', each with a Delete list close icon, a New list add button after the tabs, and on the right the Split view, Hide preview panel and Settings buttons. Bottom border at y~45. Chrome outside this screen."
+  },
+  {
+   "name": "Task list pane (x 0-860, y 46-730)",
+   "contents": "Search bar pill (search icon, placeholder 'Search Errands', Search options button, vertical divider, New task button) and 8 task rows: 5 top-level (Pick up prescription with subtitle 'Counter closes at 6', Post the parcel to Mum done, Book bike service, Cut a spare key, Buy groceries for the week with '1 / 3' badge and expanded subtasks) and 3 subtasks under groceries (Oat milk done, Sourdough loaf, Apples). Each row has a round Select checkbox and a More button. Outside this screen."
+  },
+  {
+   "name": "Footer (StatsBar, y 730-760, left pane)",
+   "contents": "Sort & filter button (tune icon), vertical divider, '2 / 8 done' stats label (rendered uppercase), thin progress bar about 25% filled, and the '25 %' label on the right."
+  },
+  {
+   "name": "Draft header row (PreviewPanel > DraftInspector, top, p-4)",
+   "contents": "Accent caret bar at the left edge, empty completion ring placeholder, auto-growing title textarea (placeholder 'Untitled', focused on mount), breadcrumb row (folder_open icon, 'Home', '/ Errands' when a list is set), and the Discard draft IconButton at the top right. The whole panel is the DraftInspector root column (animate-rise, flex-1, min-h-0)."
+  },
+  {
+   "name": "Start with section (p-4 pt-0)",
+   "contents": "SectionHeader 'Start with' with a trailing rule, a row of two DashedButtons (Note with add icon, Screenshot with screenshot_monitor icon), then the muted helper paragraph 'Type a title, add a note, or take a screenshot — the task is created the moment it has something in it.'"
+  },
+  {
+   "name": "Window chrome and mounted containers (Resizer, SheetHost, Toast)",
+   "contents": "Resizer between the task pane and the preview panel (4x715 vertical handle at x 860, with a 1px vertical rule at x~860). SheetHost and Toast are mounted but hidden in both recorded states (new-task-draft and new-task-typed)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "DraftInspector",
+   "variant": "Root column, animate-rise, flex-1, min-h-0",
+   "purpose": "Container of the new-task draft inside the preview panel.",
+   "text": "",
+   "states": [
+    "draft (empty title, placeholder shown)",
+    "typed (title has text, auto-grown)"
+   ],
+   "behaviour": "None on its own.",
+   "count": 1,
+   "region": "Draft header row / whole panel",
+   "look": "Not measured; code classes only (animate-rise, flex-1, min-h-0).",
+   "sources": [
+    "DraftInspector.tsx:20",
+    "DraftInspector.tsx:45",
+    "state:new-task-draft tree.txt:96",
+    "state:new-task-typed tree.txt:96"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "span (plain, not a component)",
+   "variant": "Accent caret bar, absolute, h-4 w-0.5, bg-accent-500l/d",
+   "purpose": "Accent marker at the left edge of the title row showing the draft is the active item.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (decorative).",
+   "count": 1,
+   "region": "Draft header row",
+   "look": "Code: h-4 w-0.5 (16px tall, 2px wide). Image estimate (B): about 2-3px wide, about 14px tall, blue (colour not measured). Code values kept as the exact values.",
+   "sources": [
+    "DraftInspector.tsx:47",
+    "preview pane accent bar (B shot, estimate at x~860-862, y~62-75)"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "span (plain, not a component)",
+   "variant": "Empty ring placeholder, 20x20, rounded-field, border-[1.5px] border-edge-3l/d",
+   "purpose": "Visual placeholder for the completion ring the task will have once created. Not interactive while it is a draft.",
+   "text": "",
+   "states": [
+    "default (empty)"
+   ],
+   "behaviour": "None (not interactive).",
+   "count": 1,
+   "region": "Draft header row, left of title",
+   "look": "Code: 20x20, rounded-field, border 1.5px, border-edge-3 light/dark. Image estimate (B): about 18x18 rounded square, white fill, grey border (not measured).",
+   "sources": [
+    "DraftInspector.tsx:49",
+    "preview pane completion checkbox (B shot, square about x 875-893, y 61-79; no elements.json entry)"
+   ]
+  },
+  {
+   "kind": "text-field",
+   "component": "textarea (native, not a component)",
+   "variant": "Auto-growing title field, rows=1, spellCheck=false, resize-none, overflow-hidden, font-display 18px semibold, ring-2 ring-surface-0",
+   "purpose": "Enter the new task's title; it is focused when the draft opens.",
+   "text": "placeholder: \"Untitled\". Typed example in B: 'Water the plants'.",
+   "states": [
+    "empty (placeholder visible, grey)",
+    "typed (value shown, height grows to scrollHeight)",
+    "focused (autofocus on mount)"
+   ],
+   "behaviour": "Typing updates the title and grows the field. Enter (preventDefault) runs runDraftAction(title, 'commit'). Escape (preventDefault) runs runDraftAction('', 'cancel'). Blur runs runDraftAction(title, 'commit'). Not in the trees, so the typed title text is confirmed only by the screenshot.",
+   "count": 1,
+   "region": "Draft header row, title column",
+   "look": "Textarea 235x21 at (898,60), bg oklch(0.944 0.003 255), radius 4.375px, font 600 18px/21px, colour oklch(0.26 0.012 262). Placeholder grey in shot (exact colour not measured).",
+   "sources": [
+    "DraftInspector.tsx:51-70",
+    "DraftInspector.tsx:29-41",
+    "DraftInspector.tsx:58-68",
+    "state:new-task-draft elements.json textarea box [898,60,235,21]",
+    "state:new-task-typed elements.json textarea box [898,60,235,21]",
+    "shot.png 'Untitled' and 'Water the plants'"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"div\", tone=\"muted\", className=\"mt-2.5 flex items-center gap-1.5 text-[11.5px]\" (breadcrumb row)",
+   "purpose": "Breadcrumb showing the project and target list the draft will be created in.",
+   "text": "Project name ('Home' observed; '—' when no project is found), then '/ Errands' observed when a list is set (code: '/ {listName}').",
+   "states": [
+    "list resolved (project and '/ list' shown)",
+    "no list (only project or '—' shown)"
+   ],
+   "behaviour": "None (display only).",
+   "count": 1,
+   "region": "Draft header row, under title",
+   "look": "Font 400 11.5px/17.25px. Box 901,89 235x17 (state tree).",
+   "sources": [
+    "DraftInspector.tsx:71-86",
+    "state:new-task-draft tree.txt:97 (box 901,89 235x17)",
+    "state:new-task-typed tree.txt:97",
+    "state:new-task-draft elements.json spans 'folder_open' [901,91,13,13], 'Home' [920,89,34,17], '/ Errands' [959,89,52,17]"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"folder_open\", size=13, weight=300, className shrink-0",
+   "purpose": "Folder glyph before the breadcrumb.",
+   "text": "folder_open",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Breadcrumb row",
+   "look": "13px icon, colour oklch(0.62 0.013 264), box 901,91.",
+   "sources": [
+    "DraftInspector.tsx:76-81",
+    "state:new-task-draft tree.txt:98",
+    "state:new-task-draft elements.json span 'folder_open' [901,91,13,13]"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"secondary\", truncate (project name)",
+   "purpose": "Project name in the breadcrumb.",
+   "text": "'Home' (observed in B; code: {projectName ?? '—'})",
+   "states": [
+    "project resolved",
+    "no project (\"—\")"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Breadcrumb row",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.46 0.013 262). Box 920,89 34x17.",
+   "sources": [
+    "DraftInspector.tsx:82-84",
+    "state:new-task-draft tree.txt:99",
+    "state:new-task-typed tree.txt:99",
+    "state:new-task-draft elements.json span 'Home' [920,89,34,17]"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "span (plain, not a component)",
+   "variant": "shrink-0 list name, conditional",
+   "purpose": "Shows the target list after the project name.",
+   "text": "'/ Errands' (observed in B; code: '/ {listName}')",
+   "states": [
+    "shown when listName is non-null"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Breadcrumb row",
+   "look": "Font 400 11.5px/17.25px, colour oklch(0.62 0.013 264). Box 959,89 52x17.",
+   "sources": [
+    "DraftInspector.tsx:85",
+    "state:new-task-draft elements.json span '/ Errands' [959,89,52,17]",
+    "state:new-task-draft tree.txt:97 (TaskPane list={\"Errands\"}, list name probable)"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "Default (no variant prop), icon=\"last_page\", iconSize=16",
+   "purpose": "Discards the draft without creating a task.",
+   "text": "title (tooltip): \"Discard draft\"; icon: last_page",
+   "states": [
+    "default (hover, pressed not shown in code or tree)"
+   ],
+   "behaviour": "Click: runDraftAction('', 'cancel') drops the draft (nothing written). Mouse down is prevented so the title textarea does not blur first. (B's collapse reading was not confirmed and is not used.)",
+   "count": 1,
+   "region": "Draft header row, top right",
+   "look": "21x21, radius 4.375px, icon 16px, colour oklch(0.62 0.013 264) (B).",
+   "sources": [
+    "DraftInspector.tsx:88-94",
+    "state:new-task-draft tree.txt:100-101 (box 1145,60 21x21)",
+    "state:new-task-typed tree.txt:100-101",
+    "state:new-task-draft elements.json button 'Discard draft' box [1145,60,21,21]"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader",
+   "variant": "label prop only",
+   "purpose": "Heading for the action buttons.",
+   "text": "Start with (rendered uppercase)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Start with section",
+   "look": "Font 600 10.5px/15.75px, uppercase, colour oklch(0.62 0.013 264). Text box 875,121 85x16; tree box 875,121 291x16. Trailing thin rule from about x 968 to 1166 at y 128 (colour not measured).",
+   "sources": [
+    "DraftInspector.tsx:99",
+    "state:new-task-draft tree.txt:102-103 (box 875,121 291x16)",
+    "state:new-task-typed tree.txt:102-103",
+    "state:new-task-draft elements.json span 'Start with' box [875,121,85,16]",
+    "shot.png (rule)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "DashedButton",
+   "variant": "className=\"h-10 flex-1 text-[13px] font-semibold\", dashed outline",
+   "purpose": "Creates the task as \"Untitled\" and adds a note.",
+   "text": "Note (icon: add, size 16, before text); accessible text 'add Note'",
+   "states": [
+    "default",
+    "pressed/hover not in code"
+   ],
+   "behaviour": "Click: runDraftAction(title, 'note') (the current title is passed in). Mouse down is prevented so the textarea does not blur.",
+   "count": 1,
+   "region": "Start with section, left half",
+   "look": "143x35 at (875,143), white bg oklch(1 0 0), radius 7px, label font 600 13px/19.5px, colour oklch(0.62 0.013 264), dashed border (colour not measured), icon 16px. Code className h-10 (40px) conflicts with measured 35px; measured value used.",
+   "sources": [
+    "DraftInspector.tsx:101-108",
+    "state:new-task-draft tree.txt:104-105 (box 875,143 143x35)",
+    "state:new-task-typed tree.txt:104-105",
+    "state:new-task-draft elements.json button 'add Note' box [875,143,143,35]",
+    "shot.png (dashed border)"
+   ]
+  },
+  {
+   "kind": "button",
+   "component": "DashedButton",
+   "variant": "className=\"h-10 flex-1 text-[13px] font-semibold\", dashed outline",
+   "purpose": "Creates the task as \"Untitled\" and adds a screenshot.",
+   "text": "Screenshot (icon: screenshot_monitor, size 15, before text); accessible text 'screenshot_monitor Screenshot'",
+   "states": [
+    "default",
+    "pressed/hover not in code"
+   ],
+   "behaviour": "Click: runDraftAction(title, 'shot') (the current title is passed in). Mouse down is prevented so the textarea does not blur.",
+   "count": 1,
+   "region": "Start with section, right half",
+   "look": "143x35 at (1023,143), white bg oklch(1 0 0), radius 7px, label font 600 13px/19.5px, colour oklch(0.62 0.013 264), icon 15px, dashed border (colour not measured).",
+   "sources": [
+    "DraftInspector.tsx:109-116",
+    "state:new-task-draft tree.txt:106-107 (box 1023,143 143x35)",
+    "state:new-task-typed tree.txt:106-107",
+    "state:new-task-draft elements.json button 'screenshot_monitor Screenshot' box [1023,143,143,35]",
+    "shot.png (dashed border)"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\", tone=\"muted\", className=\"mt-3 text-[12px] leading-4\"",
+   "purpose": "Explains how the draft becomes a task.",
+   "text": "Type a title, add a note, or take a screenshot — the task is created the moment it has something in it.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Below Start with buttons",
+   "look": "Font 400 12px/14px, colour oklch(0.62 0.013 264), 291px wide, box 875,189 291x42, three lines in shot. Code leading-4 (16px) conflicts with measured 14px; measured value used.",
+   "sources": [
+    "DraftInspector.tsx:118-121",
+    "state:new-task-draft tree.txt:108 (box 875,189 291x42)",
+    "state:new-task-typed tree.txt:108",
+    "state:new-task-draft elements.json p box [875,189,291,42]"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"close\", focused=true, inert=false, 14x14 (within MacLights)",
+   "purpose": "Closes the app window (chrome, not this screen).",
+   "text": "none (traffic-light glyph); accessible label 'Close'",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "Click: onClick (handler not read).",
+   "count": 1,
+   "region": "Title bar, far left (WindowControls)",
+   "look": "14x14 circle at (18,15), red fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+   "sources": [
+    "state:new-task-draft tree.txt:6 (box 18,15)",
+    "state:new-task-typed tree.txt:6",
+    "state:new-task-draft elements.json box [18,15,14,14]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"minimize\", focused=true, inert=false, 14x14 (within MacLights)",
+   "purpose": "Minimizes the app window (chrome).",
+   "text": "none (traffic-light glyph); accessible label 'Minimize'",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "Click: onClick (handler not read).",
+   "count": 1,
+   "region": "Title bar, far left",
+   "look": "14x14 circle at (39,15), yellow fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+   "sources": [
+    "state:new-task-draft tree.txt:7 (box 39,15)",
+    "state:new-task-typed tree.txt:7",
+    "state:new-task-draft elements.json box [39,15,14,14]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"fullscreen\", focused=true, inert=false, 14x14 (within MacLights)",
+   "purpose": "Toggles full screen for the app window (chrome).",
+   "text": "none (traffic-light glyph); accessible label 'Full Screen'",
+   "states": [
+    "focused"
+   ],
+   "behaviour": "Click: onClick (handler not read).",
+   "count": 1,
+   "region": "Title bar, far left",
+   "look": "14x14 circle at (60,15), green fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+   "sources": [
+    "state:new-task-draft tree.txt:8 (box 60,15)",
+    "state:new-task-typed tree.txt:8",
+    "state:new-task-draft elements.json box [60,15,14,14]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"drag_indicator\", size=20, pointer-events-none",
+   "purpose": "Grip for dragging the window by its title bar (chrome).",
+   "text": "drag_indicator (six dots in shot)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Not interactive (pointer-events-none in code). B's inference that it drags the window was not confirmed and is not used.",
+   "count": 1,
+   "region": "Title bar, after window controls",
+   "look": "20x20 icon, font 400 20px/20px, colour oklch(0.26 0.012 262). Box 85,12.",
+   "sources": [
+    "state:new-task-draft tree.txt:9 (box 85,12)",
+    "state:new-task-draft elements.json box [85,12,20,20]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "dropdown",
+   "component": "ProjectSwitcher",
+   "variant": "Project switcher pill with label and up/down chevron (unfold_more, size 15, weight 300)",
+   "purpose": "Shows the current project and opens the project switcher.",
+   "text": "'Home' (label, font 600) followed by chevron icon 'unfold_more'; accessible label 'Switch project'",
+   "states": [
+    "default (open/hover not in code read)"
+   ],
+   "behaviour": "Click opens a project menu to switch project (inferred; the menu is not visible in this state).",
+   "count": 1,
+   "region": "Title bar, left, after drag handle",
+   "look": "Pill 85x28 at (112,8), bg oklch(0.944 0.003 255), radius 7px. Label 'Home' font 600 14px/21px, colour oklch(0.26 0.012 262), span box 124,12 45x21. Chevron colour oklch(0.62 0.013 264), 15px, box 173,15.",
+   "sources": [
+    "state:new-task-draft tree.txt:10-12 (box 112,8 85x28)",
+    "state:new-task-draft elements.json button 'Switch project' box [112,8,85,28]; label span [124,12,45,21]; chevron [173,15,15,15]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "ListTabs > Label",
+   "variant": "selected: tone primary, font-medium, truncate, max-w-40, text-[13px]",
+   "purpose": "Shows the currently open list (Errands) in the task list pane.",
+   "text": "Errands",
+   "states": [
+    "selected (white/raised with divider rules)"
+   ],
+   "behaviour": "Click selects the list (already selected here; handler not read).",
+   "count": 1,
+   "region": "Title bar, centre-left (ListTabs)",
+   "look": "Font 500 13px/19.5px, colour oklch(0.26 0.012 262). Label box 224,12 51x20. Tab spans about x 211-308 with rules at those edges (shot).",
+   "sources": [
+    "state:new-task-draft tree.txt:13-22 (label at 224)",
+    "state:new-task-draft elements.json span 'Errands' [224,12,51,20]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "tab",
+   "component": "ListTabs > Label",
+   "variant": "unselected: tone muted, font-medium, truncate, max-w-40, text-[13px]",
+   "purpose": "Switches to another list.",
+   "text": "Reading; Garden",
+   "states": [
+    "default (inactive)"
+   ],
+   "behaviour": "Click selects that list (inferred; handler not read).",
+   "count": 2,
+   "region": "Title bar, centre (ListTabs)",
+   "look": "Font 500 13px/19.5px, colour oklch(0.62 0.013 264). 'Reading' box 322,12 54x20; 'Garden' box 422,12 48x20. Thin vertical separators between tabs (shot).",
+   "sources": [
+    "state:new-task-draft tree.txt:13-22 (labels at 322, 422)",
+    "state:new-task-draft elements.json spans 'Reading' [322,12,54,20], 'Garden' [422,12,48,20]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"close\", iconSize=15, iconWeight=500, variant=\"danger\"",
+   "purpose": "Deletes the list tab (confirmation handled by the sheets screen).",
+   "text": "title: \"Delete list\"; icon: close",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: onClick (handler not read; the sheets screen covers confirmations).",
+   "count": 3,
+   "region": "Title bar, ListTabs, after each tab label",
+   "look": "21x21 at y=11 (boxes 280,11; 380,11; 475,11), radius 4.375px, icon 15px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:15, 18, 21 (boxes 280,11; 380,11; 475,11)",
+    "state:new-task-draft elements.json buttons 'Delete list' at [280,11,21,21], [380,11,21,21], [475,11,21,21]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"add\", iconSize=18, iconWeight=300, size=\"lg\", className my-auto ml-2 rounded-md",
+   "purpose": "Adds a new list.",
+   "text": "title: \"New list\"; icon: add",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the new-list sheet (inferred; handler not read).",
+   "count": 1,
+   "region": "Title bar, end of ListTabs",
+   "look": "25x25 at (518,10), radius 5.25px, icon 18px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:23-24 (box 518,10 25x25)",
+    "state:new-task-draft elements.json button 'New list' box [518,10,25,25]; span 'add' [522,13,18,18]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton > IconButton",
+   "variant": "icon=\"vertical_split\", size=\"xl\", radius=\"control\", iconSize=19, iconWeight=300, filled=false, active=false",
+   "purpose": "Toggles split view (chrome).",
+   "text": "title: \"Split view\"",
+   "states": [
+    "inactive"
+   ],
+   "behaviour": "Click: onClick (handler not read); split behaviour inferred from the title.",
+   "count": 1,
+   "region": "Title bar, right toolbar",
+   "look": "28x28 at (1077,8), radius 7px, icon 19px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:25-26 (box 1077,8 28x28)",
+    "state:new-task-draft elements.json button 'Split view' box [1077,8,28,28]; span [1081,13,19,19]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton > IconButton",
+   "variant": "icon=\"right_panel_close\", size=\"xl\", radius=\"control\", filled=true, active=true",
+   "purpose": "Hides the preview panel that holds this draft.",
+   "text": "title: \"Hide preview panel  ⌘\\\\\" (shortcut is ⌘ and backslash; tree.txt escapes the backslash)",
+   "states": [
+    "active (filled, shown)"
+   ],
+   "behaviour": "Click or ⌘\\ shortcut hides the preview panel (leads to main-window without the preview).",
+   "count": 1,
+   "region": "Title bar, right toolbar",
+   "look": "28x28 at (1110,8), radius 7px, icon 19px, colour oklch(0.26 0.012 262) (dark icon, active look).",
+   "sources": [
+    "state:new-task-draft tree.txt:28-29 (box 1110,8 28x28)",
+    "state:new-task-draft elements.json button 'Hide preview panel  ⌘\\' box [1110,8,28,28]; span [1115,13,19,19]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton > IconButton",
+   "variant": "icon=\"settings\", size=\"xl\", radius=\"control\", filled=false",
+   "purpose": "Opens the Settings window.",
+   "text": "title: \"Settings  ⌘,\"",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click or ⌘, opens the Settings window (see settings-general).",
+   "count": 1,
+   "region": "Title bar, right toolbar",
+   "look": "28x28 at (1143,8), radius 7px, icon 19px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:31-32 (box 1143,8 28x28)",
+    "state:new-task-draft elements.json button 'Settings  ⌘,' box [1143,8,28,28]; span [1148,13,19,19]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell > TextInput2",
+   "variant": "bare=true, className w-full text-[14px]",
+   "purpose": "Filters the task list for the open list (task-list pane, not the draft).",
+   "text": "placeholder: \"Search Errands\"",
+   "states": [
+    "empty (value=\"\")",
+    "focus (onFocus handler)"
+   ],
+   "behaviour": "Typing filters the list (onChange; handler not read).",
+   "count": 1,
+   "region": "Task list pane, search bar",
+   "look": "Input 733x21 at (46,63), font 400 14px/21px, colour oklch(0.26 0.012 262). Pill is a light grey rounded field (colour not measured).",
+   "sources": [
+    "state:new-task-draft tree.txt:35-37 (box 46,63 733x21)",
+    "state:new-task-draft elements.json input box [46,63,733,21]",
+    "shot.png (pill approx x 14-846, y 56-90)"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"search\", size=18, weight=300",
+   "purpose": "Search glyph in the search bar.",
+   "text": "search",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane, search bar",
+   "look": "18px icon at (23,65).",
+   "sources": [
+    "state:new-task-draft tree.txt:36",
+    "state:new-task-draft elements.json span 'search' [23,65,18,18]"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "ScopeFields > IconButton",
+   "variant": "icon=\"tune\", iconSize=15, iconWeight=300, variant=\"plain\"",
+   "purpose": "Opens search options (target probably the filter panel).",
+   "text": "title: \"Search options\"; icon: tune",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: onClick; onMouseDown also set (handlers not read). Target unverified.",
+   "count": 1,
+   "region": "Task list pane, search bar, right",
+   "look": "21x21 at (784,63), radius 4.375px, icon 15px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:38-40 (box 784,63 21x21)",
+    "state:new-task-draft elements.json button 'Search options' box [784,63,21,21]; span [787,66,15,15]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "Divider",
+   "variant": "orientation=\"vertical\", h-4",
+   "purpose": "Separates the search options from the New task button.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane, search bar, right",
+   "look": "1x14 at (810,56); thin vertical rule at x~810 (B shot). Colour not measured.",
+   "sources": [
+    "state:new-task-draft tree.txt:41 (box 810,56 1x14)",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"add\", iconSize=18, iconWeight=400 (default variant)",
+   "purpose": "Starts a new task draft (opens this draft-inspector screen; inferred from the tooltip and screen purpose).",
+   "text": "title: \"New task\"; icon: add",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: onClick (handler not read; inferred to open the draft). Creating an empty task while a draft exists is unverified.",
+   "count": 1,
+   "region": "Task list pane, search bar, far right",
+   "look": "21x21 at (816,63), radius 4.375px, icon 18px font 400 18px/18px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:42-43 (box 816,63 21x21)",
+    "state:new-task-draft elements.json button 'New task' box [816,63,21,21]; span [818,65,18,18]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 0)",
+   "variant": "taskId=\"t-pharmacy\", 46px tall (two-line, has detail label)",
+   "purpose": "Task row for 'Pick up prescription'.",
+   "text": "'Pick up prescription' with subtitle 'Counter closes at 6'",
+   "states": [
+    "unchecked",
+    "two-line (secondary Label present)"
+   ],
+   "behaviour": "Click on check toggles done; row body selects; More opens menu (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Subtitle about 12px grey (estimate from shot). Row box 0,98 860x46; title span at 47,105.",
+   "sources": [
+    "state:new-task-draft tree.txt:44-49 (box 0,98 860x46)",
+    "shot.png",
+    "state:new-task-draft elements.json spans at [47,105]"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 0)",
+   "variant": "taskId=\"t-post\", done=true, muted title",
+   "purpose": "Completed task row for 'Post the parcel to Mum'.",
+   "text": "'Post the parcel to Mum' (struck through)",
+   "states": [
+    "done (checked, muted title)"
+   ],
+   "behaviour": "Click on check toggles done; row body selects (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.62 0.013 264), strikethrough. Row box 0,144 860x32; title span 47,151 162x16.",
+   "sources": [
+    "state:new-task-draft tree.txt:50-53 (box 0,144 860x32)",
+    "state:new-task-draft elements.json span [47,151,162,16]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 0)",
+   "variant": "taskId=\"t-bike\"",
+   "purpose": "Task row for 'Book bike service'.",
+   "text": "'Book bike service'",
+   "states": [
+    "unchecked"
+   ],
+   "behaviour": "Click on check toggles done; row body selects (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Row box 0,175 860x32; title span at 47,182.",
+   "sources": [
+    "state:new-task-draft tree.txt:55-59 (box 0,175 860x32)",
+    "state:new-task-draft elements.json spans at [47,182]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 0)",
+   "variant": "taskId=\"t-keys\"",
+   "purpose": "Task row for 'Cut a spare key'.",
+   "text": "'Cut a spare key'",
+   "states": [
+    "unchecked"
+   ],
+   "behaviour": "Click on check toggles done; row body selects (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Row box 0,207 860x32; title span at 47,214.",
+   "sources": [
+    "state:new-task-draft tree.txt:60-64 (box 0,207 860x32)",
+    "state:new-task-draft elements.json spans at [47,214]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 0, with children)",
+   "variant": "taskId=\"t-groceries\", 126px tall, has subtasks, expanded",
+   "purpose": "Parent task row 'Buy groceries for the week' with its subtask group.",
+   "text": "'Buy groceries for the week', with '1 / 3' badge",
+   "states": [
+    "expanded (chevron rotated -90deg)",
+    "subtask count badge shown"
+   ],
+   "behaviour": "Chevron toggles subtasks (handler not read).",
+   "count": 1,
+   "region": "Task list pane, list",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Row box 0,238 860x126; title span at 47,245.",
+   "sources": [
+    "state:new-task-draft tree.txt:65-71 (box 0,238 860x126)",
+    "state:new-task-draft elements.json spans at [47,245]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 1)",
+   "variant": "taskId=\"t-milk\", done=true, subtask",
+   "purpose": "Completed subtask 'Oat milk' under groceries.",
+   "text": "'Oat milk' (struck through)",
+   "states": [
+    "done (checked, muted title)"
+   ],
+   "behaviour": "Same as task rows (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list, under groceries",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.62 0.013 264), strikethrough. Row box 0,270 860x32; title span 71,277 59x16.",
+   "sources": [
+    "state:new-task-draft tree.txt:72-76 (box 0,270 860x32)",
+    "state:new-task-draft elements.json span [71,277,59,16]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 1)",
+   "variant": "taskId=\"t-bread\", subtask",
+   "purpose": "Subtask 'Sourdough loaf' under groceries (id-to-title match inferred from position).",
+   "text": "'Sourdough loaf'",
+   "states": [
+    "unchecked"
+   ],
+   "behaviour": "Same as task rows (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list, under groceries",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Row box 0,301 860x32; title span 71,308 106x16.",
+   "sources": [
+    "state:new-task-draft tree.txt:77-81 (box 0,301 860x32)",
+    "state:new-task-draft elements.json span [71,308,106,16]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "list-row",
+   "component": "TaskRow2 (depth 1)",
+   "variant": "taskId=\"t-apples\", subtask",
+   "purpose": "Subtask 'Apples' under groceries.",
+   "text": "'Apples'",
+   "states": [
+    "unchecked"
+   ],
+   "behaviour": "Same as task rows (handlers not read).",
+   "count": 1,
+   "region": "Task list pane, list, under groceries",
+   "look": "Title font 500 14px/16.625px, colour oklch(0.26 0.012 262). Row box 0,333 860x32; title span 71,340 47x16.",
+   "sources": [
+    "state:new-task-draft tree.txt:82-86 (box 0,333 860x32)",
+    "state:new-task-draft elements.json span [71,340,47,16]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "checkbox",
+   "component": "Check",
+   "variant": "16x16; done=false or true; picked=false (round)",
+   "purpose": "Marks a task done or undone; the Select label is the picked (selection) state, not completion.",
+   "text": "accessible label 'Select'; aria-pressed=false",
+   "states": [
+    "unchecked (7 rows)",
+    "checked (t-post, t-milk)"
+   ],
+   "behaviour": "Click: onToggleDone; select handler onToggleSelect.",
+   "count": 8,
+   "region": "Each task row, left",
+   "look": "16x16, fully round, colour oklch(0.26 0.012 262) on open rows and oklch(0.62 0.013 264) on done rows.",
+   "sources": [
+    "state:new-task-draft tree.txt:45, 51, 56, 61, 66, 73, 78, 83",
+    "state:new-task-draft elements.json buttons 'Select' at [20,113], [20,183], [20,214], [20,246], [44,277], [44,309], [44,340], [20,151]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"more_horiz\", iconSize=17, iconWeight=300, variant=\"ghostStrong\", title=\"More\"",
+   "purpose": "Opens the task row's context menu.",
+   "text": "title: \"More\"; icon: more_horiz",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: onClick; double-click: onDoubleClick (handlers not read).",
+   "count": 8,
+   "region": "Each task row, right end",
+   "look": "21x21, radius 4.375px, icon 17px font 400 17px/17px, colour oklch(0.62 0.013 264). Button at x 830 on the rows.",
+   "sources": [
+    "state:new-task-draft tree.txt:48, 53, 58, 63, 70, 75, 80, 85",
+    "state:new-task-draft elements.json buttons 'More' at x 830 (y 110, 149, 180, 212, 243, 275, 306, 338)",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "className px-space-3",
+   "purpose": "Shows subtask progress on the parent row.",
+   "text": "'1 / 3' (tooltip: \"1 of 3 subtasks done\")",
+   "states": [
+    "shown"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "groceries row, right",
+   "look": "Font 600 11px/16.5px, colour oklch(0.62 0.013 264). Bordered rounded pill about x 793-825; box 793,245 32x18.",
+   "sources": [
+    "state:new-task-draft tree.txt:69 (box 793,245 32x18)",
+    "state:new-task-draft elements.json spans '1' [798,246,8,17], '/' [807,246,4,17], '3' [813,246,8,17]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"chevron_left\", size=16, weight=300, rotated -90deg, transition 100ms",
+   "purpose": "Expand or collapse indicator for the groceries subtasks.",
+   "text": "chevron_left",
+   "states": [
+    "expanded (rotated)"
+   ],
+   "behaviour": "Rendered as indicator; the owning row toggles it (handler not read).",
+   "count": 1,
+   "region": "groceries row, right",
+   "look": "16x16 at (771,246); not clearly visible in shot (uncertain).",
+   "sources": [
+    "state:new-task-draft tree.txt:68 (box 771,246)",
+    "state:new-task-draft elements.json icon at [771,246,16,16]"
+   ]
+  },
+  {
+   "kind": "icon-button",
+   "component": "ViewControl",
+   "variant": "Footer view and sort control, tune icon, accessible label 'Sort & filter'",
+   "purpose": "Opens the Sort & filter panel for the list.",
+   "text": "tune (icon, size 14, weight 300); accessible label 'Sort & filter'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the Sort & filter panel (filter-panel; target inferred).",
+   "count": 1,
+   "region": "Footer, left",
+   "look": "25x19 at (12,735), radius 4.375px, icon 14px, colour oklch(0.62 0.013 264).",
+   "sources": [
+    "state:new-task-draft tree.txt:89-90 (box 12,735 25x19)",
+    "state:new-task-draft elements.json button 'Sort & filter' box [12,735,25,19]; span 'tune' [18,738,14,14]",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "StatsBar",
+   "variant": "done-count label, tone secondary",
+   "purpose": "Shows completed count out of total tasks in the list.",
+   "text": "'2 / 8 done' (rendered uppercase as '2/8 DONE')",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Footer, after divider",
+   "look": "Font 600 11px/16.5px, uppercase, colour oklch(0.62 0.013 264). Box 52,737 65x17.",
+   "sources": [
+    "state:new-task-draft tree.txt:87 (StatsBar done=2 total=8 pct=25)",
+    "state:new-task-draft tree.txt:93 (box 820,737 28x17) - stats label",
+    "state:new-task-draft elements.json span [52,737,65,17] transform uppercase",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "Divider",
+   "variant": "orientation=\"vertical\", h-3",
+   "purpose": "Separates the sort control from the stats label in the footer.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "StatsBar footer",
+   "look": "1x11 at (44,730); thin vertical rule, colour not measured.",
+   "sources": [
+    "state:new-task-draft tree.txt:91 (box 44,730 1x11)",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "progress-bar",
+   "component": "ProgressBar",
+   "variant": "value=0.25 (2 of 8 done)",
+   "purpose": "Shows the list's completion progress as a bar.",
+   "text": "none (paired with '25 %' label)",
+   "states": [
+    "25% filled"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "StatsBar footer, right",
+   "look": "Track about 84x4 at (731,743); blue fill to about x 752 (about 25%). Fill colour not measured.",
+   "sources": [
+    "state:new-task-draft tree.txt:92 (box 731,743 84x4)",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"secondary\", className w-8 text-right (percent)",
+   "purpose": "Shows the completion percentage next to the progress bar.",
+   "text": "'25 %' (rendered uppercase)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "StatsBar footer, right",
+   "look": "Font 600 11px/16.5px, uppercase, colour oklch(0.46 0.013 262). Box 820,737 28x17.",
+   "sources": [
+    "state:new-task-draft tree.txt:93 (box 820,737 28x17)",
+    "state:new-task-draft elements.json span '25 %' [820,737,28,17] transform uppercase",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "Resizer",
+   "variant": "onResize, 4x715 vertical handle",
+   "purpose": "Drag to resize the task pane against the preview panel (chrome).",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Drag: onResize.",
+   "count": 1,
+   "region": "Between task pane and preview panel",
+   "look": "Handle 4x715 at (860,46); a 1px vertical rule at x~860 (B shot, colour not measured).",
+   "sources": [
+    "state:new-task-draft tree.txt:94 (box 860,46)",
+    "shot.png"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "SheetHost and Toast",
+   "variant": "Mounted containers, no box in tree",
+   "purpose": "Host for sheets and the undo toast (other screens); not visible on this screen in the recorded states.",
+   "text": "none in tree",
+   "states": [
+    "hidden in both recorded states"
+   ],
+   "behaviour": "Not applicable here.",
+   "count": 2,
+   "region": "App root",
+   "look": "Not measured (no box in tree).",
+   "sources": [
+    "state:new-task-draft tree.txt:109-110",
+    "state:new-task-typed tree.txt:109-110"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "task-list",
+   "via": "Discard draft IconButton (title \"Discard draft\"), Escape in the title field, or blur with an empty title, which drops the draft (per DraftInspector.tsx:14-19; the destination is inferred)"
+  },
+  {
+   "to": "task-inspector",
+   "via": "Enter or blur with a title (commit), or the Note / Screenshot DashedButtons, which create the task (navigation inferred; runDraftAction not read)"
+  },
+  {
+   "to": "task-inspector",
+   "via": "Click a task row title to select it (inferred from B; not visible in these states)"
+  },
+  {
+   "to": "main-window",
+   "via": "Title bar BarButton \"Hide preview panel  ⌘\\\\\" click or ⌘\\ shortcut hides the preview panel"
+  },
+  {
+   "to": "main-window",
+   "via": "Title bar BarButton \"Split view\" click (split behaviour inferred from the title)"
+  },
+  {
+   "to": "settings-general",
+   "via": "Title bar BarButton \"Settings  ⌘,\" click or ⌘, shortcut (settings-general is the default pane; inferred)"
+  },
+  {
+   "to": "draft-inspector",
+   "via": "Task pane search bar IconButton \"New task\" (add icon, box 816,63), which starts a new draft (inferred)"
+  },
+  {
+   "to": "sheets",
+   "via": "ListTabs IconButton \"Delete list\" (close icon) on Errands, Reading or Garden"
+  },
+  {
+   "to": "sheets",
+   "via": "ListTabs IconButton \"New list\" (add icon) after the last tab"
+  },
+  {
+   "to": "context-menus",
+   "via": "Task row IconButton \"More\" (more_horiz) on any of the 8 rows (menu inferred from the title)"
+  },
+  {
+   "to": "context-menus",
+   "via": "Title bar ProjectSwitcher \"Switch project\" pill (Home with chevron); project menu assumed, not visible in this state"
+  },
+  {
+   "to": "filter-panel",
+   "via": "Search bar ScopeFields IconButton \"Search options\" (tune icon); target unverified"
+  },
+  {
+   "to": "filter-panel",
+   "via": "Footer ViewControl IconButton \"Sort & filter\" (tune icon, bottom-left)"
+  }
+ ],
+ "notes": "Merged from A (code-based) and B (screenshot and measurements). 49 entries total; no entry was dropped as a duplicate, and no whole entry was removed as wrong. Only conflicting values or behaviours were replaced, as listed below.\n\nConflicts and how they were resolved:\n1. Completion ring (A: non-interactive 20x20 span; B: clickable 18x18 square checkbox). Kept A's component, size and non-interactive behaviour from the code. B's size is an image estimate and its click-to-toggle is unverified, so it was dropped.\n2. Drag grip (B: drag to move window). A's code is pointer-events-none, so the drag behaviour was dropped and A's behaviour kept.\n3. Discard draft (B: may be a collapse button). A's code shows runDraftAction('', 'cancel'), so the cancel behaviour was kept. B's collapse reading was dropped.\n4. Breadcrumb values: A marked the project and list text as unknown. B observed 'Home' and '/ Errands' in elements.json, so those observed values are used.\n5. Footer '25 %' label: A marked the text unknown; B observed '25 %' in elements.json, so it is used.\n6. Dashed buttons: A's className h-10 (40px) conflicts with B's measured 35px height. The measured 35px is used as the look.\n7. Helper paragraph: A's leading-4 (16px) conflicts with B's measured 14px line height. The measured 14px is used.\n8. Round checkbox: B's aria-pressed=false applies to the Select (picked) state, not completion. The done states (t-post, t-milk) from A's tree are kept, so the two sources do not conflict.\n9. Accent caret bar: A's code is h-4 w-0.5 (16x2px); B's values are image estimates (about 14px tall, 2-3px wide). Both are recorded in the look field.\n10. Hide preview tooltip: tree.txt escapes the backslash. The shortcut is ⌘ followed by a single backslash.\n11. Subtask title mapping: t-bread is 'Sourdough loaf' and t-apples is 'Apples', matched by row position in elements.json, not by name.\n12. Footer sort control: A classed it as 'other'; B's element is a button, so the kind is icon-button. Component ViewControl kept from A.\n13. Window controls: A's three Light entries (close, minimize, fullscreen) are kept as separate entries because each variant id differs. B's sources are added to each.\n14. ListTabs split into a selected entry (Errands) and an unselected entry (Reading, Garden, count 2), which matches A's tone variants.\n15. The 'Start with' header text box is 85px wide in elements.json and 291px in tree.txt. Both are recorded.\n\nNot included: B's notes mention unrelated tool-output instructions about docs and tooling. They were not acted on and are not part of this inventory.",
+ "counts": {
+  "A": 47,
+  "B": 35,
+  "issues": null
+ }
+}

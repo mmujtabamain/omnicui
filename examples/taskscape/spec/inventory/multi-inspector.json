@@ -1,0 +1,1012 @@
+{
+ "id": "multi-inspector",
+ "title": "Multi-select inspector",
+ "tier": "ordinary",
+ "states": [
+  "multi-select-shift",
+  "multi-select-cmd-two"
+ ],
+ "purpose": "Multi-select inspector body in the preview panel, shown when the focused pane has more than one task selected. It shows a combined tally, bulk verbs (Done, Undone, Move, Copy, Delete), and a list of the selected tasks, where each row has a done checkbox, a title that peeks the task, a list-name badge, and an Open button that narrows the selection to that one task.",
+ "regions": [
+  {
+   "name": "Preview panel container",
+   "contents": "PreviewPanel, 319 px wide, full height, at 861,46 (A tree box 319x715). Hosts MultiInspector as its only child. The Resizer sits on its left edge (tree.txt:102). B: the multi-select inspector pane spans x 860-1180, y 46-760 (light grey fill with a left hairline separating it from the list) and holds the header, the 2-row action grid, the SELECTED label with hairline, and one row per selected task."
+  },
+  {
+   "name": "Summary header",
+   "contents": "Root div p-space-7 shrink-0 (MultiInspector.tsx:67). Holds the count Badge, the title Label and tally Label, and the Clear selection IconButton in one row (flex items-center gap-space-5, MultiInspector.tsx:68). Tree boxes: row at y 64-92 (tree.txt:105-108)."
+  },
+  {
+   "name": "Bulk verb grid",
+   "contents": "div mt-space-6 gap-space-2 grid grid-cols-3 (MultiInspector.tsx:99). Holds five ToolbarButtons in order: Done, Undone, Move, Copy (2 rows of 3 columns with 96x28 cells at y 108 and y 138), and Delete which spans 2 columns (195x28 at 972,138) (tree.txt:110-119). B describes the same grid as the 2-row action grid of the inspector pane."
+  },
+  {
+   "name": "Selected list",
+   "contents": "div p-space-7 flex min-h-0 flex-1 flex-col overflow-y-auto pt-0 (MultiInspector.tsx:150). Contains a SectionHeader labelled Selected, then a div -mx-1.5 flex flex-col (MultiInspector.tsx:152) with one row per selected task (tree.txt:120-142). Scrolls vertically when rows overflow."
+  },
+  {
+   "name": "Split resizer",
+   "contents": "Resizer, 4x715 at 860,46 (tree.txt:102). Sits between the task pane and the preview panel. Not in MultiInspector.tsx; its owner is the main-window screen."
+  },
+  {
+   "name": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "contents": "Window controls (Close, Minimize, Full Screen), drag grip icon, project switcher 'Home', list tabs Errands (active), Reading, Garden, New list (+), Split view, Hide preview panel (active), Settings. Tab bar hairline and tab borders visible in shot only."
+  },
+  {
+   "name": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)",
+   "contents": "Search field with leading search icon and placeholder 'Search Errands' (placeholder from shot only), Search options (tune) button, hairline divider, New task (add) button."
+  },
+  {
+   "name": "Task list pane (x 0-860, y 46-730)",
+   "contents": "Rows for Errands. Top-level rows at x 20 (select circle) and subtasks indented to x 44 (circle) and x 71 (title). Selected rows have a light blue background. Done rows are struck through and greyed. Each row has a More (more_horiz) button at x 830. Row 'Buy groceries for the week' has a '1 / 3' subtask counter. In the shift state, four rows are selected; in cmd-two, two rows are selected."
+  },
+  {
+   "name": "Bulk bar (x 0-860, y 730-760)",
+   "contents": "Selection count label ('4 SELECTED' or '2 SELECTED'), then text-icon buttons Done, Undone, Move to…, Copy, Delete, and Clear on the right. Separate BulkBar widget from the inspector actions; its Clear is not the same control as the header Clear selection button."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "PreviewPanel",
+   "variant": "Preview side panel, 319 px wide, full height",
+   "purpose": "Container that displays the multi-inspector when more than one task is selected.",
+   "text": "none",
+   "states": [
+    "visible (multi-select-shift, multi-select-cmd-two)"
+   ],
+   "behaviour": "None. Width is changed by dragging the Resizer.",
+   "count": 1,
+   "region": "Preview panel container",
+   "sources": [
+    "state:multi-select-shift (tree.txt:103)",
+    "state:multi-select-cmd-two (tree.txt:103)",
+    "B: Multi-select inspector pane surface (shift and cmd-two)"
+   ],
+   "look": "x 860-1180, y 46-760 (B bounds, includes the Resizer at 860); light grey fill with a left hairline separating it from the list (shot only; colour not measured). A tree box: 319x715 at 861,46."
+  },
+  {
+   "kind": "surface",
+   "component": "MultiInspector",
+   "variant": "Root: flex column, min-h-0 flex-1, class animate-rise (enter animation)",
+   "purpose": "Multi-select inspector body. Takes the tasks prop (the focused pane's selected tasks).",
+   "text": "none",
+   "states": [
+    "tasks=[4] (multi-select-shift)",
+    "tasks=[2] (multi-select-cmd-two)"
+   ],
+   "behaviour": "None on its own. All child controls act on the focused pane's live selection in the stores.",
+   "count": 1,
+   "region": "Preview panel container",
+   "sources": [
+    "MultiInspector.tsx:29",
+    "MultiInspector.tsx:66",
+    "state:multi-select-shift (tree.txt:104)",
+    "state:multi-select-cmd-two (tree.txt:104)"
+   ]
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "tone=\"accent\" shape=\"round\", className px-space-5 h-8 min-w-8 text-[13px] font-bold",
+   "purpose": "Shows the number of selected tasks as a large round count.",
+   "text": "{tasks.length}: \"4\" in multi-select-shift, \"2\" in multi-select-cmd-two",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None (display only).",
+   "count": 1,
+   "region": "Summary header",
+   "sources": [
+    "MultiInspector.tsx:69-75",
+    "state:multi-select-shift (tree.txt:105, 28x28 at 873,64)",
+    "state:multi-select-cmd-two (tree.txt:105)",
+    "B: Count badge (blue disc), shift and cmd-two"
+   ],
+   "look": "28x28 circle at 873,64; bg oklch(0.6 0.2 255); text oklch(0.99 0.005 255); 700 13px/19.5px."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\" tone=\"primary\" weight=\"semibold\", className font-display text-[16px]",
+   "purpose": "Headline stating how many tasks are selected.",
+   "text": "\"{tasks.length} tasks selected\": \"4 tasks selected\" (multi-select-shift), \"2 tasks selected\" (multi-select-cmd-two)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None (display only).",
+   "count": 1,
+   "region": "Summary header",
+   "sources": [
+    "MultiInspector.tsx:77-84",
+    "state:multi-select-shift (tree.txt:106, 232x24 at 908,58)",
+    "state:multi-select-cmd-two (tree.txt:106)",
+    "B: Header title"
+   ],
+   "look": "600 16px/24px; colour oklch(0.26 0.012 262); box 908,58 232x24."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\" tone=\"muted\", className text-[11.5px] tabular-nums",
+   "purpose": "Tally of completed tasks against the selection size.",
+   "text": "\"{done} done / {tasks.length}\": \"1 done / 4\" (multi-select-shift, the Post the parcel to Mum task is done), \"0 done / 2\" (multi-select-cmd-two)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None (display only). Updates live as Checkbox rows toggle done.",
+   "count": 1,
+   "region": "Summary header",
+   "sources": [
+    "MultiInspector.tsx:39",
+    "MultiInspector.tsx:85-87",
+    "state:multi-select-shift (tree.txt:107, 232x17 at 908,82)",
+    "state:multi-select-cmd-two (tree.txt:107)",
+    "B: Header subtitle, done progress"
+   ],
+   "look": "400 11.5px/17.25px; colour oklch(0.62 0.013 264); box 908,82 232x17."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"close\" iconSize=16, default variant (no variant prop), no size prop",
+   "purpose": "Clears the focused pane's selection, which leaves this screen.",
+   "text": "icon \"close\"; title \"Clear selection\"",
+   "states": [
+    "enabled"
+   ],
+   "behaviour": "Click: clears the selection of the focused list (useSelectionStore.clear(focusedListId)). No-op when there is no focused list.",
+   "count": 1,
+   "region": "Summary header",
+   "sources": [
+    "MultiInspector.tsx:89-96",
+    "state:multi-select-shift (tree.txt:108-109, Icon close size 16 at 1149,70)",
+    "state:multi-select-cmd-two (tree.txt:108-109)",
+    "B: Header close (×) button"
+   ],
+   "look": "21x21 at 1147,68; radius 4.375px; icon 16px at 1149,70; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size=\"lg\", default variant, className justify-center; icon task_alt, iconWeight 300",
+   "purpose": "Marks every selected task done.",
+   "text": "\"Done\" with icon \"task_alt\"",
+   "states": [
+    "enabled"
+   ],
+   "behaviour": "Click: bulkSetDone(focusedListId, true). No-op when there is no focused list.",
+   "count": 1,
+   "region": "Bulk verb grid",
+   "sources": [
+    "MultiInspector.tsx:100-108",
+    "state:multi-select-shift (tree.txt:110-111, 96x28 at 873,108; Icon size 15 weight 300)",
+    "state:multi-select-cmd-two (tree.txt:110-111)",
+    "B: Inspector action Done (no aria label recorded)"
+   ],
+   "look": "96x28 at 873,108; 600 12px/18px; colour oklch(0.62 0.013 264); no fill; radius 4.375px; icon 15px at 895,114."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size=\"lg\", default variant, className justify-center; icon radio_button_unchecked, iconWeight 300",
+   "purpose": "Marks every selected task not done.",
+   "text": "\"Undone\" with icon \"radio_button_unchecked\"",
+   "states": [
+    "enabled"
+   ],
+   "behaviour": "Click: bulkSetDone(focusedListId, false). No-op when there is no focused list.",
+   "count": 1,
+   "region": "Bulk verb grid",
+   "sources": [
+    "MultiInspector.tsx:109-117",
+    "state:multi-select-shift (tree.txt:112-113, 96x28 at 972,108)",
+    "state:multi-select-cmd-two (tree.txt:112-113)",
+    "B: Inspector action Undone (no aria label recorded)"
+   ],
+   "look": "96x28 at 972,108; 600 12px/18px; colour oklch(0.62 0.013 264); no fill; radius 4.375px; icon 15px at 985,114."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size=\"lg\", default variant, className justify-center; icon arrow_forward, iconWeight 300; disabled when no move targets",
+   "purpose": "Moves every selected task to another list in the active project.",
+   "text": "\"Move\" with icon \"arrow_forward\"",
+   "states": [
+    "enabled (disabled=false in both recorded states)",
+    "disabled when moveTargets.length === 0 (not recorded)"
+   ],
+   "behaviour": "Click: openMoveMenu. Opens a context menu at the button's left edge, 4 px below its bottom edge, with one item per list in the active project (id = list id, label = list name). Picking an item calls bulkMove(focusedListId, id). Returns early when there are no targets or no focused list.",
+   "count": 1,
+   "region": "Bulk verb grid",
+   "sources": [
+    "MultiInspector.tsx:118-127",
+    "MultiInspector.tsx:54-63",
+    "state:multi-select-shift (tree.txt:114-115, 96x28 at 1071,108, disabled=false)",
+    "state:multi-select-cmd-two (tree.txt:114-115)",
+    "B: Inspector action Move (no ellipsis, unlike the bulk bar's Move to…)"
+   ],
+   "look": "96x28 at 1071,108; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 1092,114."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size=\"lg\", default variant, className justify-center; icon content_copy, iconWeight 300 (icon becomes check while copied)",
+   "purpose": "Copies the selected tasks as a checklist.",
+   "text": "\"Copy\" (icon content_copy), changes to \"Copied\" (icon check) for 1200 ms after a click",
+   "states": [
+    "idle: Copy",
+    "copied: Copied with check icon, reverts after 1200 ms"
+   ],
+   "behaviour": "Click: if a focused list exists, calls bulkCopy(focusedListId), sets copied to true, and resets it after 1200 ms via window.setTimeout.",
+   "count": 1,
+   "region": "Bulk verb grid",
+   "sources": [
+    "MultiInspector.tsx:41-47",
+    "MultiInspector.tsx:128-136",
+    "state:multi-select-shift (tree.txt:116-117, 96x28 at 873,138)",
+    "state:multi-select-cmd-two (tree.txt:116-117)",
+    "B: Inspector action Copy (no aria label recorded)"
+   ],
+   "look": "96x28 at 873,138; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 895,145."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "variant=\"danger\", size=\"lg\", className col-span-2 justify-center; icon delete, iconWeight 300",
+   "purpose": "Deletes every selected task. This is the destructive verb in the grid.",
+   "text": "\"Delete\" with icon \"delete\"",
+   "states": [
+    "enabled"
+   ],
+   "behaviour": "Click: bulkDelete(focusedListId). No-op when there is no focused list. Whether a confirmation sheet appears is not visible in these files (unverified).",
+   "count": 1,
+   "region": "Bulk verb grid",
+   "sources": [
+    "MultiInspector.tsx:137-146",
+    "state:multi-select-shift (tree.txt:118-119, 195x28 at 972,138)",
+    "state:multi-select-cmd-two (tree.txt:118-119)",
+    "B: Inspector action Delete (spans the right column, no aria label recorded)"
+   ],
+   "look": "195x28 at 972,138; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 1039,145. Danger tone colour not recorded in either inventory."
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader",
+   "variant": "label prop only",
+   "purpose": "Heading above the selected-task list.",
+   "text": "\"Selected\"",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:151",
+    "state:multi-select-shift (tree.txt:120-121, Label tone muted weight semibold text-[10.5px] tracking-[0.12em] uppercase, 295x16 container at 873,179)",
+    "state:multi-select-cmd-two (tree.txt:120-121)",
+    "B: 'SELECTED' section label with hairline (text box 69x16 at 873,179)"
+   ],
+   "look": "600 10.5px/15.75px, uppercase (CSS), tracking 0.12em, colour oklch(0.62 0.013 264); text box 873,179 69x16 (A container 295x16); hairline runs to about x 1168 at y 186 (shot only)."
+  },
+  {
+   "kind": "surface",
+   "component": "div (plain styled row, not a named component; class group/sel)",
+   "variant": "rounded-field, px-space-4, gap-space-5, flex h-9 items-center. Active row (t.id === activeId): bg-selection-1l dark:bg-selection-1d. Other rows: hover:bg-wash-1l dark:hover:bg-wash-1d",
+   "purpose": "One row per selected task. The row that is the single active task is highlighted, and hover reveals the Open button.",
+   "text": "none",
+   "states": [
+    "active (selection background)",
+    "hover (wash background, reveals Open)",
+    "idle",
+    "highlighted (B: last row, 'Cut a spare key', shot only; reason not known, probably the active row)"
+   ],
+   "behaviour": "Hover reveals the row's Open button. The row itself has no click handler; its children do.",
+   "count": 4,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:153-162",
+    "MultiInspector.tsx:191",
+    "state:multi-select-shift (tree.txt:44-... rows at y 207, 239, 270, 302, rendered children only; row boxes not recorded)",
+    "state:multi-select-cmd-two (tree.txt:123-131; count 2)",
+    "B: Highlighted selected-task row (shot only)"
+   ],
+   "look": "Light blue row fill (shot only; colour not measured). Row tops at y 207, 239, 270, 302 (shift). Whether the highlight is the active row is unverified."
+  },
+  {
+   "kind": "checkbox",
+   "component": "Checkbox",
+   "variant": "size=\"sm\"; checked = task.done",
+   "purpose": "Toggles one selected task done or not done, in place.",
+   "text": "title \"Mark done\" when unchecked, \"Mark not done\" when checked; checked state shows an Icon check size 12 weight 700 inside",
+   "states": [
+    "unchecked (Mark done)",
+    "checked (Mark not done, with check icon)"
+   ],
+   "behaviour": "Click: actToggleDone(task) (toggleDone action from stores/actions). The row's done tally and the label style update with the store.",
+   "count": 4,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:163-168",
+    "state:multi-select-shift (tree.txt:122 unchecked, 127 checked, 16x16; 133 and 138 unchecked)",
+    "state:multi-select-cmd-two (tree.txt:122, 127 unchecked)",
+    "B: Selected-task done checkbox, unchecked (3 in shift, 2 in cmd-two)",
+    "B: Selected-task done checkbox, checked (1 in shift)"
+   ],
+   "look": "16x16 at x 873; unchecked at y 209, 272, 304 (shift) and 209, 241 (cmd-two); checked at y 241 (shift); radius 4.375px; checked bg oklch(0.62 0.13 255) with check icon 12px/12px in oklch(0.99 0.005 255); unchecked border colour not recorded."
+  },
+  {
+   "kind": "button",
+   "component": "Label",
+   "variant": "as=\"button\", truncate, className min-w-0 flex-1 text-left text-[13.5px]; tone primary when open, muted when done, plus line-through when done",
+   "purpose": "Title of a selected task. Clicking it focuses the task (peeks it) without collapsing the multi-selection.",
+   "text": "The task title (t.title), also set as the title tooltip. Shift state: \"Pick up prescription\", \"Post the parcel to Mum\" (done, line-through), \"Book bike service\", \"Cut a spare key\". Cmd-two state: \"Book bike service\", \"Cut a spare key\".",
+   "states": [
+    "open (tone primary)",
+    "done (tone muted, line-through)"
+   ],
+   "behaviour": "Click: useSelectionStore.focus(task.id). The row becomes the active one and the selection of all tasks stays. Does not navigate.",
+   "count": 4,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:169-181",
+    "state:multi-select-shift (tree.txt:123, 129, 134, 139; widths 178x20)",
+    "state:multi-select-cmd-two (tree.txt:123, 128)",
+    "B: Selected-task title (open) and Selected-task title (done, struck through)"
+   ],
+   "look": "400 13.5px/20.25px; open colour oklch(0.26 0.012 262); done colour oklch(0.62 0.013 264) with line-through; box 896, width 178, height 20."
+  },
+  {
+   "kind": "badge",
+   "component": "Badge",
+   "variant": "tone=\"outline\" size=\"sm\", className px-space-4 shrink-0",
+   "purpose": "Shows the list a selected task belongs to. Rendered only when the task's list id resolves to a name.",
+   "text": "The name of the task's list (listNameById(t.list_id)). The shot reads 'Errands' on each selected row in both states; the tree does not record the text.",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None (display only).",
+   "count": 4,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:182-186",
+    "state:multi-select-shift (tree.txt:124, 130, 135, 140; 58x18)",
+    "state:multi-select-cmd-two (tree.txt:124, 129)",
+    "B: List tag 'Errands' pill (4 in shift, 2 in cmd-two)"
+   ],
+   "look": "600 10.5px/15.75px; colour oklch(0.62 0.013 264); box x 1081, 58x18; radius 4.375px; grey bordered pill (shot)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"open_in_full\" iconSize=13 variant=\"ghostStrong\", className opacity-0 group-hover/sel:opacity-100 (hidden until row hover)",
+   "purpose": "Opens the task on its own. It narrows the selection from many tasks to this one.",
+   "text": "icon \"open_in_full\"; title \"Open\"",
+   "states": [
+    "hidden (opacity 0) until the row is hovered",
+    "visible on row hover"
+   ],
+   "behaviour": "Click: openOne(task.id). Calls setPane(focusedListId, empty set, id) and then focus(id), so the selection becomes this one task.",
+   "count": 4,
+   "region": "Selected list",
+   "sources": [
+    "MultiInspector.tsx:187-194",
+    "MultiInspector.tsx:49-53",
+    "state:multi-select-shift (tree.txt:125, 131, 136, 141; 21x21 at 1147,207)",
+    "state:multi-select-cmd-two (tree.txt:125, 130)",
+    "B: Row expand icon 'open_in_full' (not visible in shot)"
+   ],
+   "look": "21x21 button at x 1147 on each row (y 207, 239, 270, 302 in shift); 13px icon at x 1151; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "other",
+   "component": "Resizer",
+   "variant": "onResize prop; 4x715 vertical divider",
+   "purpose": "Drag handle between the task pane and the preview panel. It sits on the screen, but the owning screen is main-window.",
+   "text": "none",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "Drag: calls onResize to change the preview panel width.",
+   "count": 1,
+   "region": "Split resizer",
+   "sources": [
+    "state:multi-select-shift (tree.txt:102, 4x715 at 860,46)",
+    "state:multi-select-cmd-two (tree.txt:102)"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "?",
+   "variant": "Traffic-light group of three round buttons",
+   "purpose": "Standard window close, minimise and full-screen controls.",
+   "text": "Labels: 'Close', 'Minimize', 'Full Screen'. Shot shows red, yellow and green dots.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: standard window action (close, minimise, full screen).",
+   "count": 3,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Each 14x14 at x 18, 39, 60; y 15; colour oklch(0.26 0.012 262) in elements.json (dots coloured in shot)."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "Drag grip (six-dot) icon, decorative span",
+   "purpose": "Window drag handle beside the project switcher.",
+   "text": "drag_indicator icon (no label)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Drag to move the window (inferred from the grip icon; not confirmed).",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "20x20 box at 85,12; 20px/20px; colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "dropdown",
+   "component": "?",
+   "variant": "Project switcher pill with label and chevron",
+   "purpose": "Shows the current project and opens the project switcher.",
+   "text": "Label 'Switch project'; text 'Home' plus icon 'unfold_more'",
+   "states": [
+    "default",
+    "open (not recorded)"
+   ],
+   "behaviour": "Click: opens the project menu (inferred; not confirmed).",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "85x28 at 112,8; bg oklch(0.944 0.003 255); radius 7px; 'Home' 600 14px/21px colour oklch(0.26 0.012 262); chevron 15px/15px colour oklch(0.62 0.013 264) at 173,15."
+  },
+  {
+   "kind": "tab",
+   "component": "?",
+   "variant": "Active list tab, 'Errands'",
+   "purpose": "Shows the open list that the selection belongs to.",
+   "text": "'Errands' (tab close button follows; see close entry)",
+   "states": [
+    "active",
+    "default"
+   ],
+   "behaviour": "Click: keeps this list open (switching not recorded). Close via its × button.",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Text 500 13px/19.5px colour oklch(0.26 0.012 262) at 224,12, 51x20. Tab sits in a bordered cell about x 211-308 (shot only)."
+  },
+  {
+   "kind": "tab",
+   "component": "?",
+   "variant": "Inactive list tabs, 'Reading' and 'Garden'",
+   "purpose": "Other open lists.",
+   "text": "'Reading' and 'Garden'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: switch to that list (inferred).",
+   "count": 2,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Text 500 13px/19.5px colour oklch(0.62 0.013 264); 'Reading' at 322,12, 'Garden' at 422,12. Thin separators between tabs (shot only)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Tab close button ('Delete list' label), one per tab",
+   "purpose": "Closes or deletes the list tab.",
+   "text": "Label 'Delete list'; icon 'close' (15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens a delete-list confirmation (inferred from the label; not confirmed).",
+   "count": 3,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "21x21 at x 280, 380, 475 (y 11); radius 4.375px; icon at +3,+3, 15px/15px; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "New list button (add icon)",
+   "purpose": "Creates a new list.",
+   "text": "Label 'New list'; icon 'add' (18px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens the new-list sheet (inferred).",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "25x25 at 518,10; radius 5.25px; icon 18px/18px at 522,13; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Split view toggle",
+   "purpose": "Changes the window to split view.",
+   "text": "Label 'Split view'; icon 'vertical_split' (19px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: toggles split view (inferred).",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "28x28 at 1077,8; radius 7px; icon 19px/19px at 1081,13; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Hide preview panel toggle, on state",
+   "purpose": "Hides the right-hand preview pane, which is this inspector.",
+   "text": "Label 'Hide preview panel  ⌘\\' (keyboard shortcut ⌘\\); icon 'right_panel_close' (19px)",
+   "states": [
+    "active (pane visible)",
+    "default"
+   ],
+   "behaviour": "Click or ⌘\\: hides the preview panel, returning to the main layout.",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "28x28 at 1110,8; radius 7px; icon 19px/19px at 1115,13; colour oklch(0.26 0.012 262) (the other toolbar icons use oklch(0.62 0.013 264))."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Settings button",
+   "purpose": "Opens the Settings window.",
+   "text": "Label 'Settings  ⌘,' (shortcut ⌘,); icon 'settings' (19px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click or ⌘,: opens Settings.",
+   "count": 1,
+   "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "28x28 at 1143,8; radius 7px; icon 19px/19px at 1148,13; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "search-field",
+   "component": "?",
+   "variant": "Search field with leading search icon, empty",
+   "purpose": "Filters tasks in the current list.",
+   "text": "Placeholder 'Search Errands' (shot only; elements.json has no placeholder). Leading icon 'search' (18px).",
+   "states": [
+    "empty (placeholder shown)",
+    "focus (not recorded)"
+   ],
+   "behaviour": "Typing: filters the task list (inferred).",
+   "count": 1,
+   "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Input 733x21 at 46,63; font 400 14px/21px colour oklch(0.26 0.012 262); icon 18px at 23,65 colour oklch(0.62 0.013 264). Container is a grey rounded field spanning x 14-846, y 56-91 (shot)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Search options button",
+   "purpose": "Opens search and sort options.",
+   "text": "Label 'Search options'; icon 'tune' (15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens the Filter & Sort panel (inferred).",
+   "count": 1,
+   "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "21x21 at 784,63; radius 4.375px; icon at 787,66, 15px/15px; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "Vertical hairline between tune and add buttons",
+   "purpose": "Separates the two search-bar buttons.",
+   "text": "No text",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Around x 810, spanning the search bar height (shot only; not in elements.json)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "New task button (add icon)",
+   "purpose": "Starts a new task in the list.",
+   "text": "Label 'New task'; icon 'add' (18px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens a draft task in the draft inspector (inferred).",
+   "count": 1,
+   "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "21x21 at 816,63; radius 4.375px; icon at 818,65, 18px/18px; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "checkbox",
+   "component": "?",
+   "variant": "Row select toggle, selected (aria-pressed=true), shows 'Deselect'",
+   "purpose": "Removes the task from the selection.",
+   "text": "Label 'Deselect'; no visible text",
+   "states": [
+    "selected",
+    "default"
+   ],
+   "behaviour": "Click: deselects that row; the inspector and count update. If one task remains, the inspector would change to task-inspector (inferred).",
+   "count": 4,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two (2 of these in that state)"
+   ],
+   "look": "16x16 circle at x 20 (top-level) with radius 50%; fill oklch(0.62 0.13 255); shot shows a white centre dot."
+  },
+  {
+   "kind": "checkbox",
+   "component": "?",
+   "variant": "Row select toggle, unselected (aria-pressed=false), shows 'Select'",
+   "purpose": "Adds the task to the selection.",
+   "text": "Label 'Select'; no visible text",
+   "states": [
+    "unselected",
+    "hover (not recorded)"
+   ],
+   "behaviour": "Click: adds the row to the selection; the inspector updates to list the selected tasks.",
+   "count": 6,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift (4 of these)",
+    "state:multi-select-cmd-two (6 of these)"
+   ],
+   "look": "16x16 circle, radius 50%; no fill; grey outline (colour not recorded); at x 20 for top-level rows and x 44 for subtasks."
+  },
+  {
+   "kind": "list-row",
+   "component": "?",
+   "variant": "Open task title (not done)",
+   "purpose": "Task name in the row.",
+   "text": "'Pick up prescription', 'Book bike service', 'Cut a spare key', 'Buy groceries for the week', 'Sourdough loaf', 'Apples' (the first two states show different subsets of selection, not text)",
+   "states": [
+    "open",
+    "selected (in shift and cmd-two)"
+   ],
+   "behaviour": "Click: opens the task (inferred; not confirmed).",
+   "count": 6,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "500 14px/16.625px; colour oklch(0.26 0.012 262); Pick up at x 47 (top-level), Sourdough and Apples at x 71 (subtasks)."
+  },
+  {
+   "kind": "list-row",
+   "component": "?",
+   "variant": "Done task title (struck through)",
+   "purpose": "Shows a completed task.",
+   "text": "'Post the parcel to Mum' (shift and cmd-two), 'Oat milk' (subtask)",
+   "states": [
+    "done",
+    "struck through (shot)"
+   ],
+   "behaviour": "Click: opens the task (inferred).",
+   "count": 2,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "500 14px/16.625px; colour oklch(0.62 0.013 264); strikethrough visible in shot only."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "Task subtitle",
+   "purpose": "Extra note under a task title.",
+   "text": "'Counter closes at 6' (under 'Pick up prescription')",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift (shot only)",
+    "state:multi-select-cmd-two (shot only)"
+   ],
+   "look": "Smaller grey text in shot; not in elements.json, so font and colour are not measured."
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Selected row background",
+   "purpose": "Marks rows that are part of the selection.",
+   "text": "No text",
+   "states": [
+    "selected"
+   ],
+   "behaviour": "None.",
+   "count": 4,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift (shot only; 4 rows)",
+    "state:multi-select-cmd-two (shot only; 2 rows)"
+   ],
+   "look": "Light blue full-width row fill, spanning x 0-860 (shot only; colour not measured)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Row More (ellipsis) button",
+   "purpose": "Opens task row actions.",
+   "text": "Label 'More'; icon 'more_horiz' (17px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens the task row context menu (inferred).",
+   "count": 8,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "21x21 at x 830; radius 4.375px; icon 17px/17px at +2,+2; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "badge",
+   "component": "?",
+   "variant": "Subtask progress counter '1 / 3'",
+   "purpose": "Shows how many subtasks are done.",
+   "text": "'1', '/', '3' (shown together as '1 / 3')",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None confirmed (likely shows subtask progress).",
+   "count": 1,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "Font 600 11px/16.5px colour oklch(0.62 0.013 264); bordered pill about x 793-825, y 245-262 (shot)."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "Chevron icon 'chevron_left' beside the counter (not visible in shot)",
+   "purpose": "Likely a subtask expand or collapse toggle for the parent row (inferred).",
+   "text": "icon 'chevron_left' (16px)",
+   "states": [
+    "present in elements.json, not visible in shot"
+   ],
+   "behaviour": "Unknown; not confirmed.",
+   "count": 1,
+   "region": "Task list pane (x 0-860, y 46-730)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "16x16 at 771,246; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "Selection count label, bulk bar",
+   "purpose": "Shows how many tasks are selected.",
+   "text": "'4 SELECTED' (shift), '2 SELECTED' (cmd-two); the source text is '4 selected' uppercased by CSS",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "600 11px/16.5px, uppercase, colour oklch(0.26 0.012 262); box 9,737 86x17. A vertical divider follows it (shot only)."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Done (text with icon)",
+   "purpose": "Marks all selected tasks done.",
+   "text": "Label 'Mark done'; text 'task_alt Done' (icon 'task_alt' 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: marks the selected tasks done (inferred).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "64x21 at 104,734; 600 12px/18px; colour oklch(0.62 0.013 264); radius 4.375px; no fill; icon 15px at 110,737."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Undone (text with icon)",
+   "purpose": "Marks all selected tasks not done.",
+   "text": "Label 'Mark not done'; text 'radio_button_unchecked Undone' (icon 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: marks the selected tasks not done (inferred).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "81x21 at 171,734; 600 12px/18px; colour oklch(0.62 0.013 264); radius 4.375px; icon at 176,737."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Move (text with icon)",
+   "purpose": "Moves the selected tasks to another list.",
+   "text": "Label 'Move to another list'; text 'arrow_forward Move to…' (icon 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: opens a list picker (inferred; the picker could be a dropdown or sheet).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "95x21 at 254,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 260,737."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Copy (text with icon)",
+   "purpose": "Copies the selected tasks as a checklist.",
+   "text": "Label 'Copy as checklist'; text 'content_copy Copy' (icon 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: copies the selected tasks to the clipboard as a checklist (inferred).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "62x21 at 352,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 358,737."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Delete (text with icon)",
+   "purpose": "Deletes the selected tasks.",
+   "text": "Label 'Delete selection'; text 'delete Delete' (icon 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: deletes the selection, probably after a confirmation (inferred).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "73x21 at 417,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 423,737."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "Bulk Clear (text with icon, right-aligned)",
+   "purpose": "Clears the selection.",
+   "text": "Label 'Clear selection'; text 'close Clear' (icon 'close' 15px)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click: clears the selection and leaves this inspector (inferred landing screen).",
+   "count": 1,
+   "region": "Bulk bar (x 0-860, y 730-760)",
+   "sources": [
+    "state:multi-select-shift",
+    "state:multi-select-cmd-two"
+   ],
+   "look": "64x21 at 787,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 792,737."
+  }
+ ],
+ "links": [
+  {
+   "to": "task-inspector",
+   "via": "Open icon button (open_in_full, title \"Open\") on a selected-task row, shown on row hover. It narrows the selection to that single task (destination inferred: the code sets a single selection but does not name the component). Also the row Deselect toggle, once one task remains (inferred)."
+  },
+  {
+   "to": "context-menus",
+   "via": "Move ToolbarButton (arrow_forward, label \"Move\") in the bulk verb grid opens a list-picker menu via menu.open, one item per list in the active project. Also the row More button (inferred), the Switch project pill (inferred), and the bulk bar Move to… (inferred)."
+  },
+  {
+   "to": "task-list",
+   "via": "Clear selection IconButton (close icon, title \"Clear selection\") in the summary header clears the selection and this screen leaves (landing screen inferred). The bulk bar Clear (787,734) is a separate BulkBar control and also clears the selection."
+  },
+  {
+   "to": "sheets",
+   "via": "Delete ToolbarButton (delete, label \"Delete\") in the bulk verb grid and the bulk bar Delete selection (417,734). Whether a confirmation sheet appears is unverified (inferred). Tab close 'Delete list' and New list '+' also inferred."
+  },
+  {
+   "to": "toast",
+   "via": "Undoable actions Done, Undone and Delete from the bulk verb grid or the bulk bar (inferred; the toast is not visible in the recordings)."
+  },
+  {
+   "to": "filter-panel",
+   "via": "Search options 'tune' button (784,63) in the search bar."
+  },
+  {
+   "to": "draft-inspector",
+   "via": "New task 'add' button (816,63) in the search bar."
+  },
+  {
+   "to": "settings-general",
+   "via": "Settings toolbar button (1143,8) or ⌘, (the default pane is inferred)."
+  },
+  {
+   "to": "main-window",
+   "via": "Hide preview panel 'right_panel_close' button (1110,8) or ⌘\\ hides this pane. The Resizer drag handle (4x715 at 860,46) is owned by main-window. Split view 'vertical_split' button (1077,8) (inferred)."
+  }
+ ],
+ "notes": "Merged A (code: component and variant) with B (measurements: look). Merged pairs: PreviewPanel (A surface plus B 'Multi-select inspector pane'), count Badge, title and tally Labels, header Clear selection IconButton, the five inspector ToolbarButtons (Done, Undone, Move, Copy, Delete), SELECTED SectionHeader, the selected-row surface (B's highlighted last row folded in as a probable active-row state), Checkbox (B's checked and unchecked entries folded in as states), selected-task title Label (open and done states), list-name Badge, and the open_in_full IconButton. No entry was dropped as a duplicate. Kept from one source only: Resizer (A), and the title bar, search bar, task list pane and bulk bar entries (B). A's notes place those under other screens (title-bar, task-list, bulk bar); they are kept under the union rule and can be removed in a later pass. The BulkBar Clear and Done/Move/Copy/Delete are kept separate from the inspector equivalents, as A requires. No critique was supplied, so conflicts were resolved as follows. (1) Title click: A's code focuses the task without navigating; B's inferred 'opens the task' is wrong, so that part of B's behaviour and the task-inspector link via title click was dropped. (2) Preview panel size: A records 319x715 at 861,46; B's bounds are x 860-1180, y 46-760 (about 320x714). B's look is used as the authority, and A's box is recorded in the look. (3) List badge text: A could not verify it (listNameById); B's screenshot reads 'Errands' on every row, which is recorded. (4) Section label width: A's 295x16 is the container and B's 69x16 is the text box; both are recorded. (5) The row highlight in B has no stated reason; merging it with A's active-row state is inferred and unverified. Unverified in both: whether Delete opens a confirmation sheet, the toast on undoable actions, the Move disabled state (no move targets), the Copy clipboard effect, the landing screen after Clear selection, and the Delete danger colour (not recorded). Links are union of both inventories; the task gave no screen-id list, so the ids used are the ones both inventories use.",
+ "counts": {
+  "A": 18,
+  "B": 48,
+  "issues": null
+ }
+}

@@ -1,0 +1,1526 @@
+[
+ {
+  "screen": "main-window",
+  "kind": "toolbar-button",
+  "component": "BarButton (split view)",
+  "variant": "icon vertical_split; wraps IconButton size xl radius control, iconSize 19, iconWeight 300; icon-only ghost toggle, radius 7px",
+  "purpose": "Turns split view on and off for the active list.",
+  "text": "title 'Split view' (inactive) / 'Close split view' (active); icon vertical_split",
+  "states": [
+   "inactive: active=false, filled=false (main-default, main-dark, preview-hidden, narrow-window)",
+   "active: active=true, filled=true, icon darker oklch(0.26 0.012 262) (split-view)",
+   "disabled: disabled=true (no-lists)"
+  ],
+  "behaviour": "click toggles split view (App.tsx:28 splitListId)",
+  "look": "box 28x28 at 1077,8 (717,8 in narrow-window); radius 7px; glyph 19px at +4,+5; colour oklch(0.62 0.013 264) default",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "toolbar-button",
+  "component": "BarButton (swap panes)",
+  "variant": "icon swap_horiz; IconButton filled=false active=false",
+  "purpose": "Swaps the two split panes.",
+  "text": "title / label 'Swap panes'; icon swap_horiz",
+  "states": [
+   "split-view only"
+  ],
+  "behaviour": "click swaps panes (handler not in these files)",
+  "look": "box 28x28 at 1044,8; glyph 19px at 1048,13; colour oklch(0.62 0.013 264)",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "toolbar-button",
+  "component": "BarButton (preview toggle)",
+  "variant": "shown: icon right_panel_close, active=true, filled=true; hidden: icon right_panel_open, active=false, filled=false; IconButton size xl radius control, iconSize 19, iconWeight 300",
+  "purpose": "Shows or hides the right aside (previewOpen).",
+  "text": "'Hide preview panel  ⌘\\\\' (preview open) or 'Show preview panel  ⌘\\\\' (preview hidden)",
+  "states": [
+   "preview open: main-default, main-dark, split-view, narrow-window, no-lists (hide variant, darker icon)",
+   "preview hidden: preview-hidden (show variant, grey icon)"
+  ],
+  "behaviour": "click or the shortcut toggles previewOpen (App.tsx:29, 108)",
+  "look": "box 28x28 at 1110,8 (750,8 in narrow-window); radius 7px; glyph 19px at +5,+5; hide variant icon oklch(0.26 0.012 262); show variant icon oklch(0.62 0.013 264)",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "toolbar-button",
+  "component": "BarButton (settings)",
+  "variant": "icon settings; IconButton size xl radius control, iconSize 19, iconWeight 300, filled=false, active=false",
+  "purpose": "Opens the Settings window.",
+  "text": "title 'Settings  ⌘,'; icon settings",
+  "states": [
+   "all states"
+  ],
+  "behaviour": "click or ⌘, opens the Settings window (panels.tsx:25 routes the settings window; which pane opens first not confirmed)",
+  "look": "box 28x28 at 1143,8 (783,8 in narrow-window); radius 7px; glyph 19px at +5,+5; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "button",
+  "component": "ProjectSwitcher trigger (plain button)",
+  "variant": "recessed pill; rounded-control bg-surface-0l dark:bg-surface-0d; h-8; radius 7px",
+  "purpose": "Opens and closes the project dropdown and shows the active project name.",
+  "text": "Visible text: the active project's name (Home in the recordings), or \"Taskscape\" when there is no selected project (ProjectSwitcher.tsx:41). Tooltip (title): \"Switch project\".",
+  "states": [
+   "default (resting background oklch(0.944 0.003 255))",
+   "hover (hover:bg-wash-2l / hover:bg-wash-2d)",
+   "open (menu shown; the code has no separate open style. The background oklch(0.32 0.02 262 / 0.09) seen in project-menu is most likely the hover wash under the pointer)"
+  ],
+  "behaviour": "Click toggles the project menu open or closed (ProjectSwitcher.tsx:31). Pressing it again closes the menu because the anchor ref covers the pill (ProjectSwitcher.tsx:120-123).",
+  "look": "Classes: rounded-control bg-surface-0l dark:bg-surface-0d hover:bg-wash-2l dark:hover:bg-wash-2d gap-space-3 py-space-3 pr-space-6 pl-space-7 flex h-8 items-center. Measured box 85x28 at 112,8, radius 7px, resting background oklch(0.944 0.003 255).",
+  "count": 1,
+  "region": "project switcher"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "button",
+  "component": "New project action (plain button)",
+  "variant": "full-width menu row; hover:bg-wash-2; w-full; text-left",
+  "purpose": "Starts creating a new project.",
+  "text": "\"New project…\" label with an add icon; accessible text \"add New project…\".",
+  "states": [
+   "default",
+   "hover"
+  ],
+  "behaviour": "Click closes the menu and calls createProject() (ProjectSwitcher.tsx:99-103).",
+  "look": "gap-space-4 px-space-6 flex h-9 w-full items-center in source. Measured button 208x32 at 113,119 (32px used over h-9). Label font 400 13.5px/20.25px, colour oklch(0.26 0.012 262). Add icon 15px, colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "project switcher (menu, bottom)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "button",
+  "component": "ViewControl (raw button)",
+  "variant": "Icon tune size 14 weight 300, rounded-field, h-5.5; inactive text content-3 with hover content-1; active text accent-500 with a 'Filtered' label",
+  "purpose": "Opens or closes the Filter and Sort panel for the list.",
+  "text": "title 'Sort & filter'; icon name 'tune'; 'Filtered' text only when the pane view is non-default; accessible label 'Sort & filter'",
+  "states": [
+   "default",
+   "hover",
+   "active (accent colour, 'Filtered' label; TaskPane.tsx:548-551)",
+   "hidden in multi-select-shift (BulkBar replaces the footer)"
+  ],
+  "behaviour": "Click toggles uiStore.filterOpen (the Filter and Sort panel in the preview column).",
+  "look": "Button [12,735,25,19], radius 4.375px, font 600 11px/16.5px, colour oklch(0.62 0.013 264). Icon span [18,738,14,14] font 400 14px/14px.",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=task_alt, iconWeight 300, size sm",
+  "purpose": "Marks every selected task done.",
+  "text": "label 'Done'; title 'Mark done'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click calls bulkSetDone(listId, true).",
+  "look": "Button [104,734,64,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [110,737,15,15] font 400 15px/15px.",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=radio_button_unchecked, size sm",
+  "purpose": "Marks every selected task not done.",
+  "text": "label 'Undone'; title 'Mark not done'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click calls bulkSetDone(listId, false).",
+  "look": "Button [171,734,81,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [176,737,15,15].",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=arrow_forward, size sm; disabled when there are no other lists in the active project",
+  "purpose": "Moves the selection to another list.",
+  "text": "label 'Move to…'; title 'Move to another list'",
+  "states": [
+   "default",
+   "disabled (no other lists)"
+  ],
+  "behaviour": "Click opens a menu of the other lists in the active project (items are list names, ids are list ids). Picking one calls bulkMove(listId, id).",
+  "look": "Button [254,734,95,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [260,737,15,15].",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=content_copy, size sm",
+  "purpose": "Copies the selection as a checklist.",
+  "text": "label 'Copy'; title 'Copy as checklist'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click calls bulkCopy(listId).",
+  "look": "Button [352,734,62,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [358,737,15,15].",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=delete, size sm, variant danger",
+  "purpose": "Deletes the selected tasks.",
+  "text": "label 'Delete'; title 'Delete selection'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click calls bulkDelete(listId). Whether a confirmation sheet appears is not verified in the files read.",
+  "look": "Button [417,734,73,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [423,737,15,15].",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=close, size sm, className ml-auto",
+  "purpose": "Clears the selection and returns the footer to StatsBar.",
+  "text": "label 'Clear'; title 'Clear selection'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click clears the pane selection, so the footer returns to StatsBar.",
+  "look": "Button [787,734,64,21], radius 4.375px, font 600 12px/18px, colour oklch(0.62 0.013 264). Icon span [792,737,15,15].",
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton (common-ui/components)",
+  "variant": "icon=add iconSize=14; text child 'Note'",
+  "purpose": "Opens a new add-note editor on a task that already has notes.",
+  "text": "Note (visible label; title='Add note'; icon add)",
+  "states": [
+   "default",
+   "hover from ToolbarButton"
+  ],
+  "behaviour": "click calls setAddingNote(true), which mounts the add-note RichTextEditor at the end of the notes list",
+  "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 64x25; icon 14px at 1111,185.",
+  "count": 1,
+  "region": "Notes section (trailing)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "button",
+  "component": "DashedButton (common-ui/components)",
+  "variant": "className h-24 w-full font-semibold; shown only when there are no notes and no add editor",
+  "purpose": "Empty-state call to add the first note.",
+  "text": "Add note (Icon add size 16 before it; accessible label 'Add note'; shown as '+ Add note')",
+  "states": [
+   "default",
+   "hover from DashedButton"
+  ],
+  "behaviour": "click calls setAddingNote(true); the add-note editor opens",
+  "look": "Box 295x84 measured (B; source class h-24 would be 96px, unresolved). Radius 7px, dashed border. Background oklch(1 0 0) light and oklch(0.288 0.006 260) dark. Text font 600 14px/21px, colour oklch(0.62 0.013 264). Icon add 16px at 975,215.",
+  "count": 1,
+  "region": "Notes section"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=format_bold; title='Bold  ⌘B' (two spaces); active when bold mark is active",
+  "purpose": "Toggles bold on the selection.",
+  "text": "Bold  ⌘B (tooltip)",
+  "states": [
+   "inactive (text-content-2)",
+   "active (bg wash-1, text-content-1)",
+   "hover (bg wash-1, text-content-1)"
+  ],
+  "behaviour": "mousedown (preventDefault, keeps focus in the editor) runs toggleBold; ⌘B applies bold",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262). Hidden instance at 12,736 is 20x20.",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=format_italic; title='Italic  ⌘I'",
+  "purpose": "Toggles italic on the selection.",
+  "text": "Italic  ⌘I (tooltip)",
+  "states": [
+   "inactive",
+   "active",
+   "hover"
+  ],
+  "behaviour": "mousedown runs toggleItalic; ⌘I applies italic",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=format_underlined; title='Underline  ⌘U'",
+  "purpose": "Toggles underline on the selection.",
+  "text": "Underline  ⌘U (tooltip)",
+  "states": [
+   "inactive",
+   "active",
+   "hover"
+  ],
+  "behaviour": "mousedown runs toggleUnderline; ⌘U applies underline",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=strikethrough_s; title='Strikethrough'",
+  "purpose": "Toggles strikethrough on the selection.",
+  "text": "Strikethrough (tooltip)",
+  "states": [
+   "inactive",
+   "active",
+   "hover"
+  ],
+  "behaviour": "mousedown runs toggleStrike",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=format_list_bulleted; title='Bulleted list'",
+  "purpose": "Toggles a bulleted list.",
+  "text": "Bulleted list (tooltip)",
+  "states": [
+   "inactive",
+   "active (bulletList active)",
+   "hover"
+  ],
+  "behaviour": "mousedown runs toggleBulletList",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=format_list_numbered; title='Numbered list'",
+  "purpose": "Toggles a numbered list.",
+  "text": "Numbered list (tooltip)",
+  "states": [
+   "inactive",
+   "active (orderedList active)",
+   "hover"
+  ],
+  "behaviour": "mousedown runs toggleOrderedList",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolButton (RichTextEditor.tsx:636-664)",
+  "variant": "icon=link; title='Add link' (rendered only when onRequestLink is set, which note and add-note editors do)",
+  "purpose": "Adds or edits a link on the selection; the URL comes from the host.",
+  "text": "Add link (tooltip)",
+  "states": [
+   "inactive",
+   "active (link mark active)",
+   "hover"
+  ],
+  "behaviour": "mousedown runs addLink: awaits onRequestLink (a sheet, per the comment at TaskInspector.tsx:424-427), then sets the link on the selection or inserts the URL as a link",
+  "look": "21x21, radius 4.375px, glyph 16px/16px, colour oklch(0.46 0.013 262).",
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "button",
+  "component": "Label as=\"button\" (common-ui/components)",
+  "variant": "tone primary (open) or muted with line-through (done), text-[13.5px], truncate, flex-1 text-left",
+  "purpose": "The subtask title; clicking it selects that subtask.",
+  "text": "task.title (also the title attribute)",
+  "states": [
+   "default (tone primary, font 400 13.5px/20.25px, colour oklch(0.26 0.012 262))",
+   "done (tone muted, colour oklch(0.62 0.013 264), line-through)",
+   "hover"
+  ],
+  "behaviour": "click calls selectTask(id), which focuses that task in the selection store",
+  "look": "271x20 box (B).",
+  "count": 3,
+  "region": "Subtasks section (one per subtask row)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton (common-ui/components)",
+  "variant": "no icon prop; children: Spinner size 12 while capturing, else Icon screenshot_monitor size 14; text 'Shot' (idle) or 'Capturing …' (busy); disabled when capturing",
+  "purpose": "Captures the full screen and attaches it to the task.",
+  "text": "Shot (idle) / Capturing … (busy); title='Capture the full screen and attach it' (idle) / 'Capturing …' (busy); accessible label 'Capture the full screen and attach it'",
+  "states": [
+   "idle",
+   "capturing (disabled, spinner shown)"
+  ],
+  "behaviour": "click calls addScreenshot: api.attachScreenshot(task.id), then refresh; disabled while capturing",
+  "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 63x25; icon 14px at 997,490.",
+  "count": 1,
+  "region": "Attachments section (trailing)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton (common-ui/components)",
+  "variant": "icon=add_link iconSize=14; text 'Link'; no title",
+  "purpose": "Links a file or URL without copying it into the task.",
+  "text": "Link (icon add_link); no accessible label recorded",
+  "states": [
+   "default",
+   "hover from ToolbarButton"
+  ],
+  "behaviour": "click calls addLink: askText sheet 'Link a file or page' (placeholder https://..., accept 'Link'), then api.addReference(task.id, name, value)",
+  "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 60x25; icon 14px at 1061,490.",
+  "count": 1,
+  "region": "Attachments section (trailing)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton (common-ui/components)",
+  "variant": "icon=note_add iconSize=14; text 'File'",
+  "purpose": "Copies a file into the task.",
+  "text": "File (icon note_add)",
+  "states": [
+   "default",
+   "hover from ToolbarButton"
+  ],
+  "behaviour": "click calls addFile: native open dialog (title 'Choose a file to copy', single file), then api.addCopy(task.id, path)",
+  "look": "Font 600 12px/18px, colour oklch(0.62 0.013 264), radius 4.375px, box 56x25; icon 14px at 1123,490.",
+  "count": 1,
+  "region": "Attachments section (trailing)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "button",
+  "component": "button (plain element in the empty box)",
+  "variant": "flex-1 column, icon note_add size 18 above the text, text-[12.5px] font-semibold; 139x63",
+  "purpose": "Quick action to copy a file into the task.",
+  "text": "Copy a file (title='Copy a file into this task')",
+  "states": [
+   "default (text-content-3)",
+   "hover (bg wash-1, text-content-2)",
+   "dark theme"
+  ],
+  "behaviour": "click calls addFile (native open dialog, then api.addCopy)",
+  "look": "139x63 box at 879,313 (B); font 600 12.5px/18.75px, colour oklch(0.62 0.013 264); icon note_add 18px at 939,324.",
+  "count": 1,
+  "region": "Attachments section (empty box)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "button",
+  "component": "button (plain element in the empty box)",
+  "variant": "flex-1 column, icon add_link size 18 above the text, text-[12.5px] font-semibold; 139x63",
+  "purpose": "Quick action to link a file or URL without copying it.",
+  "text": "Add a link (title='Link a file or URL without copying')",
+  "states": [
+   "default (text-content-3)",
+   "hover (bg wash-1, text-content-2)",
+   "dark theme"
+  ],
+  "behaviour": "click calls addLink (askText sheet, then api.addReference)",
+  "look": "139x63 box at 1024,313 (B); font 600 12.5px/18.75px, colour oklch(0.62 0.013 264); icon add_link 18px at 1084,324.",
+  "count": 1,
+  "region": "Attachments section (empty box)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "button",
+  "component": "DashedButton",
+  "variant": "className=\"h-10 flex-1 text-[13px] font-semibold\", dashed outline",
+  "purpose": "Creates the task as \"Untitled\" and adds a note.",
+  "text": "Note (icon: add, size 16, before text); accessible text 'add Note'",
+  "states": [
+   "default",
+   "pressed/hover not in code"
+  ],
+  "behaviour": "Click: runDraftAction(title, 'note') (the current title is passed in). Mouse down is prevented so the textarea does not blur.",
+  "look": "143x35 at (875,143), white bg oklch(1 0 0), radius 7px, label font 600 13px/19.5px, colour oklch(0.62 0.013 264), dashed border (colour not measured), icon 16px. Code className h-10 (40px) conflicts with measured 35px; measured value used.",
+  "count": 1,
+  "region": "Start with section, left half"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "button",
+  "component": "DashedButton",
+  "variant": "className=\"h-10 flex-1 text-[13px] font-semibold\", dashed outline",
+  "purpose": "Creates the task as \"Untitled\" and adds a screenshot.",
+  "text": "Screenshot (icon: screenshot_monitor, size 15, before text); accessible text 'screenshot_monitor Screenshot'",
+  "states": [
+   "default",
+   "pressed/hover not in code"
+  ],
+  "behaviour": "Click: runDraftAction(title, 'shot') (the current title is passed in). Mouse down is prevented so the textarea does not blur.",
+  "look": "143x35 at (1023,143), white bg oklch(1 0 0), radius 7px, label font 600 13px/19.5px, colour oklch(0.62 0.013 264), icon 15px, dashed border (colour not measured).",
+  "count": 1,
+  "region": "Start with section, right half"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size=\"lg\", default variant, className justify-center; icon task_alt, iconWeight 300",
+  "purpose": "Marks every selected task done.",
+  "text": "\"Done\" with icon \"task_alt\"",
+  "states": [
+   "enabled"
+  ],
+  "behaviour": "Click: bulkSetDone(focusedListId, true). No-op when there is no focused list.",
+  "look": "96x28 at 873,108; 600 12px/18px; colour oklch(0.62 0.013 264); no fill; radius 4.375px; icon 15px at 895,114.",
+  "count": 1,
+  "region": "Bulk verb grid"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size=\"lg\", default variant, className justify-center; icon radio_button_unchecked, iconWeight 300",
+  "purpose": "Marks every selected task not done.",
+  "text": "\"Undone\" with icon \"radio_button_unchecked\"",
+  "states": [
+   "enabled"
+  ],
+  "behaviour": "Click: bulkSetDone(focusedListId, false). No-op when there is no focused list.",
+  "look": "96x28 at 972,108; 600 12px/18px; colour oklch(0.62 0.013 264); no fill; radius 4.375px; icon 15px at 985,114.",
+  "count": 1,
+  "region": "Bulk verb grid"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size=\"lg\", default variant, className justify-center; icon arrow_forward, iconWeight 300; disabled when no move targets",
+  "purpose": "Moves every selected task to another list in the active project.",
+  "text": "\"Move\" with icon \"arrow_forward\"",
+  "states": [
+   "enabled (disabled=false in both recorded states)",
+   "disabled when moveTargets.length === 0 (not recorded)"
+  ],
+  "behaviour": "Click: openMoveMenu. Opens a context menu at the button's left edge, 4 px below its bottom edge, with one item per list in the active project (id = list id, label = list name). Picking an item calls bulkMove(focusedListId, id). Returns early when there are no targets or no focused list.",
+  "look": "96x28 at 1071,108; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 1092,114.",
+  "count": 1,
+  "region": "Bulk verb grid"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size=\"lg\", default variant, className justify-center; icon content_copy, iconWeight 300 (icon becomes check while copied)",
+  "purpose": "Copies the selected tasks as a checklist.",
+  "text": "\"Copy\" (icon content_copy), changes to \"Copied\" (icon check) for 1200 ms after a click",
+  "states": [
+   "idle: Copy",
+   "copied: Copied with check icon, reverts after 1200 ms"
+  ],
+  "behaviour": "Click: if a focused list exists, calls bulkCopy(focusedListId), sets copied to true, and resets it after 1200 ms via window.setTimeout.",
+  "look": "96x28 at 873,138; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 895,145.",
+  "count": 1,
+  "region": "Bulk verb grid"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "variant=\"danger\", size=\"lg\", className col-span-2 justify-center; icon delete, iconWeight 300",
+  "purpose": "Deletes every selected task. This is the destructive verb in the grid.",
+  "text": "\"Delete\" with icon \"delete\"",
+  "states": [
+   "enabled"
+  ],
+  "behaviour": "Click: bulkDelete(focusedListId). No-op when there is no focused list. Whether a confirmation sheet appears is not visible in these files (unverified).",
+  "look": "195x28 at 972,138; 600 12px/18px; colour oklch(0.62 0.013 264); icon 15px at 1039,145. Danger tone colour not recorded in either inventory.",
+  "count": 1,
+  "region": "Bulk verb grid"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "Label",
+  "variant": "as=\"button\", truncate, className min-w-0 flex-1 text-left text-[13.5px]; tone primary when open, muted when done, plus line-through when done",
+  "purpose": "Title of a selected task. Clicking it focuses the task (peeks it) without collapsing the multi-selection.",
+  "text": "The task title (t.title), also set as the title tooltip. Shift state: \"Pick up prescription\", \"Post the parcel to Mum\" (done, line-through), \"Book bike service\", \"Cut a spare key\". Cmd-two state: \"Book bike service\", \"Cut a spare key\".",
+  "states": [
+   "open (tone primary)",
+   "done (tone muted, line-through)"
+  ],
+  "behaviour": "Click: useSelectionStore.focus(task.id). The row becomes the active one and the selection of all tasks stays. Does not navigate.",
+  "look": "400 13.5px/20.25px; open colour oklch(0.26 0.012 262); done colour oklch(0.62 0.013 264) with line-through; box 896, width 178, height 20.",
+  "count": 4,
+  "region": "Selected list"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Split view toggle",
+  "purpose": "Changes the window to split view.",
+  "text": "Label 'Split view'; icon 'vertical_split' (19px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: toggles split view (inferred).",
+  "look": "28x28 at 1077,8; radius 7px; icon 19px/19px at 1081,13; colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Hide preview panel toggle, on state",
+  "purpose": "Hides the right-hand preview pane, which is this inspector.",
+  "text": "Label 'Hide preview panel  ⌘\\' (keyboard shortcut ⌘\\); icon 'right_panel_close' (19px)",
+  "states": [
+   "active (pane visible)",
+   "default"
+  ],
+  "behaviour": "Click or ⌘\\: hides the preview panel, returning to the main layout.",
+  "look": "28x28 at 1110,8; radius 7px; icon 19px/19px at 1115,13; colour oklch(0.26 0.012 262) (the other toolbar icons use oklch(0.62 0.013 264)).",
+  "count": 1,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Settings button",
+  "purpose": "Opens the Settings window.",
+  "text": "Label 'Settings  ⌘,' (shortcut ⌘,); icon 'settings' (19px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click or ⌘,: opens Settings.",
+  "look": "28x28 at 1143,8; radius 7px; icon 19px/19px at 1148,13; colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Done (text with icon)",
+  "purpose": "Marks all selected tasks done.",
+  "text": "Label 'Mark done'; text 'task_alt Done' (icon 'task_alt' 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: marks the selected tasks done (inferred).",
+  "look": "64x21 at 104,734; 600 12px/18px; colour oklch(0.62 0.013 264); radius 4.375px; no fill; icon 15px at 110,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Undone (text with icon)",
+  "purpose": "Marks all selected tasks not done.",
+  "text": "Label 'Mark not done'; text 'radio_button_unchecked Undone' (icon 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: marks the selected tasks not done (inferred).",
+  "look": "81x21 at 171,734; 600 12px/18px; colour oklch(0.62 0.013 264); radius 4.375px; icon at 176,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Move (text with icon)",
+  "purpose": "Moves the selected tasks to another list.",
+  "text": "Label 'Move to another list'; text 'arrow_forward Move to…' (icon 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: opens a list picker (inferred; the picker could be a dropdown or sheet).",
+  "look": "95x21 at 254,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 260,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Copy (text with icon)",
+  "purpose": "Copies the selected tasks as a checklist.",
+  "text": "Label 'Copy as checklist'; text 'content_copy Copy' (icon 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: copies the selected tasks to the clipboard as a checklist (inferred).",
+  "look": "62x21 at 352,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 358,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Delete (text with icon)",
+  "purpose": "Deletes the selected tasks.",
+  "text": "Label 'Delete selection'; text 'delete Delete' (icon 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: deletes the selection, probably after a confirmation (inferred).",
+  "look": "73x21 at 417,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 423,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "button",
+  "component": "?",
+  "variant": "Bulk Clear (text with icon, right-aligned)",
+  "purpose": "Clears the selection.",
+  "text": "Label 'Clear selection'; text 'close Clear' (icon 'close' 15px)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: clears the selection and leaves this inspector (inferred landing screen).",
+  "look": "64x21 at 787,734; 600 12px/18px; colour oklch(0.62 0.013 264); icon at 792,737.",
+  "count": 1,
+  "region": "Bulk bar (x 0-860, y 730-760)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "MenuButton (local)",
+  "variant": "Sort dropdown. className min-w-0 flex-1. icon=drag_indicator (default when manual). Label = current sort label, default \"Manual\". Kind recorded as dropdown by B.",
+  "purpose": "Chooses the sort mode.",
+  "text": "drag_indicator Manual unfold_more. Label \"Manual\" (current). Menu items: \"Manual\", \"Date created\", \"Date updated\", \"Alphabetical\", \"Done last\".",
+  "states": [
+   "closed (label Manual)",
+   "open (context menu below the button at x=left, y=bottom+4)",
+   "hover (hover:bg-wash-1)"
+  ],
+  "behaviour": "Click opens a context menu of the 5 sort modes. Picking one calls update({sort: id}) and keeps the current dir.",
+  "look": "237x26 at 873,119; background oklch(0.944 0.003 255); radius 4.375px; value Manual 500 12.5px/18.75px oklch(0.26 0.012 262); leading drag_indicator 15px at 882,125; trailing unfold_more 14px at 1087,125, oklch(0.62 0.013 264) (B).",
+  "count": 1,
+  "region": "Body (scroll region), Sort section, left of the direction toggle"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "Plain <button> (direction toggle, 2 buttons in one group)",
+  "variant": "Ascending (dir=asc, title \"Ascending\", icon arrow_upward) and Descending (dir=desc, title \"Descending\", icon arrow_downward). Group container bg-surface-0, rounded-field, p-space-1, flex, shrink-0. Each button rounded-field, grid, h-6.5 w-7. Recorded as icon-button by B.",
+  "purpose": "Sets sort direction.",
+  "text": "Icon only: arrow_upward (asc, accessible label Ascending), arrow_downward (desc, accessible label Descending). Size 14.",
+  "states": [
+   "disabled while sort is manual (opacity-40, pointer-events none; tree shows both disabled; B: disabled attribute)",
+   "selected (dir matches and sort is not manual): bg-accent-500, text-on-accent, shadow-lift",
+   "unselected: text-content-2, hover bg-wash-1"
+  ],
+  "behaviour": "Click calls update({dir}).",
+  "look": "25x23 each, radius 4.375px; icons 14px at 1121,125 and 1147,125, oklch(0.46 0.013 262) (B measured). A's classes h-6.5 w-7 (26px high, 28px wide) differ; B's measured values used.",
+  "count": 2,
+  "region": "Body (scroll region), Sort section, right of the sort MenuButton"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "MenuButton (local)",
+  "variant": "Date range dropdown. icon=schedule. Label = RANGES label for view.dateRange, default \"Any time\". Recorded as dropdown by B.",
+  "purpose": "Chooses the date range.",
+  "text": "schedule Any time unfold_more. Label \"Any time\" (current). Menu items: \"Any time\", \"Last 24 hours\", \"Last 7 days\", \"Last 30 days\", \"Custom…\".",
+  "states": [
+   "closed (label Any time)",
+   "open (context menu)",
+   "hover"
+  ],
+  "behaviour": "Click opens a context menu of the 5 ranges. Picking one calls update({dateRange}). The check icon marks the current range.",
+  "look": "295x26 at 873,415; background oklch(0.944 0.003 255); radius 4.375px; value Any time 500 12.5px/18.75px oklch(0.26 0.012 262); leading schedule icon 15px at 882,420; trailing unfold_more 14px at 1145,421, oklch(0.62 0.013 264) (B).",
+  "count": 1,
+  "region": "Body (scroll region), Date section, below the field Segmented"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton (common-ui)",
+  "variant": "size=lg, icon=restart_alt, disabled while nothing is active. Recorded as button by B.",
+  "purpose": "Resets all filter, sort and refine settings for every target list.",
+  "text": "restart_alt Reset (label \"Reset\"; icon size 15).",
+  "states": [
+   "disabled (tree disabled=true; B disabled attribute, shown muted)",
+   "enabled when anyActive"
+  ],
+  "behaviour": "Click calls resetAll, which calls the view store reset for each target list.",
+  "look": "71x28 at 870,723; text oklch(0.62 0.013 264); 600 12px/18px; radius 4.375px; icon restart_alt 15px at 877,730 (B).",
+  "count": 1,
+  "region": "Action footer, left"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "Button (common-ui)",
+  "variant": "variant=primary, className ml-auto",
+  "purpose": "Closes the panel.",
+  "text": "\"Done\"",
+  "states": [
+   "default",
+   "hover/focus (common-ui defaults, not verified)"
+  ],
+  "behaviour": "Click calls onClose. Same handler as the header close button.",
+  "look": "61x28 at 1110,723; background oklch(0.6 0.2 255); text oklch(0.99 0.005 255); 600 12.5px/18.75px; radius 7px (differs from the 4.375px of other buttons) (B).",
+  "count": 1,
+  "region": "Action footer, right"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "?",
+  "variant": "pill with label, value and chevron",
+  "purpose": "Shows the current project (Home) and opens the project switcher.",
+  "text": "Home unfold_more (accessible label: Switch project)",
+  "states": [
+   "no hover, focus or open state recorded"
+  ],
+  "behaviour": "Click opens the project menu (context menus).",
+  "look": "85x28 at 112,8. Background oklch(0.944 0.003 255). Radius 7px. Label Home 600 14px/21px oklch(0.26 0.012 262). Chevron unfold_more 15px oklch(0.62 0.013 264) at 173,15.",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "icon-only, 28x28",
+  "purpose": "Toggles split view of the list.",
+  "text": "vertical_split (accessible label: Split view)",
+  "states": [
+   "no active state recorded"
+  ],
+  "behaviour": "Click toggles split view (inferred from label).",
+  "look": "28x28 at 1077,8, radius 7px. Icon 19px at 1081,13, oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "toolbar-button",
+  "component": "BarButton",
+  "variant": "icon-only, 28x28, dark icon, active while the panel is open",
+  "purpose": "Hides the right pane, which holds this Filter & Sort panel.",
+  "text": "right_panel_close (accessible label: Hide preview panel  ⌘\\)",
+  "states": [
+   "active while the panel is open (A)",
+   "icon dark (oklch 0.26) in state:filter-panel and in state:completed-hidden (B)"
+  ],
+  "behaviour": "Click hides the whole preview column, including this panel.",
+  "look": "28x28 at 1110,8, radius 7px. Icon 19px at 1115,13, oklch(0.26 0.012 262).",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "icon-only, 28x28",
+  "purpose": "Opens the Settings window.",
+  "text": "settings (accessible label: Settings  ⌘,)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click opens the Settings window.",
+  "look": "28x28 at 1143,8, radius 7px. Icon 19px at 1148,13, oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "button",
+  "component": "ViewControl",
+  "variant": "icon-only tune button with label, 25x19. Tune icon size 14 (A); title none, accessible label Sort & filter (B).",
+  "purpose": "Opens the Filter & Sort panel for the current list.",
+  "text": "tune (accessible label: Sort & filter)",
+  "states": [
+   "icon dark oklch(0.26) when the panel is open",
+   "icon grey oklch(0.62) when the panel is closed (completed-hidden)"
+  ],
+  "behaviour": "Click opens or closes the Filter & Sort panel (inferred from the open and closed states).",
+  "look": "Box 25x19 at 12,735. Radius 4.375px. Font 600 11px/16.5px. Icon 14px at 18,738.",
+  "count": 1,
+  "region": "Task list pane, footer"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "button",
+  "component": "Label (tone muted, className \"flex w-4 items-center\") with Icon add, and Label (tone primary, className \"text-[13.5px]\")",
+  "variant": "footer row styled as a menu row, not a MenuItem; DOM element is a button",
+  "purpose": "Starts creating a new project from the dropdown.",
+  "text": "add icon; New project…",
+  "states": [
+   "normal (shown)"
+  ],
+  "behaviour": "Click opens the New project sheet (label; sheet not captured). Click handler not recorded in the tree.",
+  "look": "Box 208x32 at (113,119). Icon add 15px oklch(0.62 0.013 264). Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,124).",
+  "count": 1,
+  "region": "project-dropdown"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "button",
+  "component": "ProjectSwitcher",
+  "variant": "closed in the four task and tab recordings; open in project-menu (open background)",
+  "purpose": "Opens the project dropdown.",
+  "text": "Home (label); unfold_more icon; aria-label \"Switch project\"",
+  "states": [
+   "closed",
+   "open (project-menu)"
+  ],
+  "behaviour": "Click opens the project-menu dropdown (ProjectMenu anchored under this button).",
+  "look": "Box 85x28 at (112,8), radius 7px. Closed bg oklch(0.944 0.003 255); open bg oklch(0.32 0.02 262 / 0.09). Home label 600 14px/21px oklch(0.26 0.012 262) at (124,12). unfold_more icon 15px oklch(0.62 0.013 264) at (173,15).",
+  "count": 1,
+  "region": "openers"
+ },
+ {
+  "screen": "sheets",
+  "kind": "key-action",
+  "component": "KeyAction (Cancel)",
+  "variant": "no variant prop passed (default)",
+  "purpose": "Always-present way out. Closes the sheet without acting.",
+  "text": "\"Cancel\"",
+  "states": [
+   "default (captured)",
+   "present in all five states",
+   "hover, pressed, focus not captured"
+  ],
+  "behaviour": "Click calls onDismiss, which resolves { action: 'dismiss' } and closes the sheet. Escape does the same (Overlay captureEscape).",
+  "look": "bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px. Measured 84x28 at 589,413 (name sheets) or 589,403 (delete-confirm); 100x28 at 556,403 on delete-list. Code sets min-w-24 (96px) on grid buttons, which conflicts with the 84px measurement (unresolved).",
+  "count": 1,
+  "region": "Action row (footer), right grid"
+ },
+ {
+  "screen": "sheets",
+  "kind": "key-action",
+  "component": "KeyAction (accept)",
+  "variant": "tone accent gives variant=\"accept\"; disabled when there is an ask and the trimmed text is empty",
+  "purpose": "The one forward action. Confirms, creates, renames or moves.",
+  "text": "\"Create\" (new-list, new-project); \"Rename\" (rename-list); \"Move\" (delete-confirm).",
+  "states": [
+   "enabled in all recorded states (disabled=false)",
+   "disabled when the field is empty (code, not in any recording)",
+   "disabled look not captured"
+  ],
+  "behaviour": "Click or Enter runs accept: if the field is empty, focuses the field and does nothing; otherwise resolves { action: 'accept', text } with the trimmed text plus any tail, or empty text when there is no ask. Create makes the new list or project, Rename renames the list, Move sends the task to Trash (outcomes not captured).",
+  "look": "Same neutral fill as Cancel: bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px. Measured 84x28 at 678,413 (create, rename) or 678,403 (Move). Same min-w-24 conflict as Cancel.",
+  "count": 1,
+  "region": "Action row (footer), right grid"
+ },
+ {
+  "screen": "sheets",
+  "kind": "key-action",
+  "component": "KeyAction (accept)",
+  "variant": "tone danger gives variant=\"danger\" (delete-list only)",
+  "purpose": "Commits deletion of the list and its tasks.",
+  "text": "\"Delete list\"",
+  "states": [
+   "default (captured)",
+   "disabled prop false in captures; disabled look not captured"
+  ],
+  "behaviour": "Click or Enter runs accept. There is no ask on this sheet, so there is no field guard and Enter confirms the deletion immediately. The copy says its tasks go too and there is no undo.",
+  "look": "bg oklch(0.55 0.2 27), text oklch(0.99 0.005 255), 600 12.5px/18.75px, radius 7px, box 662,403 100x28, solid red.",
+  "count": 1,
+  "region": "Action row (footer), right grid"
+ },
+ {
+  "screen": "sheets",
+  "kind": "key-action",
+  "component": "KeyAction (instead)",
+  "variant": "no variant prop passed",
+  "purpose": "Third way out, shown in the footer's left corner.",
+  "text": "\"Import JSON…\" (new-list only)",
+  "states": [
+   "shown in new-list only",
+   "default (captured)",
+   "hover and pressed not captured"
+  ],
+  "behaviour": "Click resolves { action: 'instead', id } with the spec's instead.id and closes the sheet. Where the instead path leads beyond closing is not shown in the code read (uncertain).",
+  "look": "127x28 at 418,413, bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px.",
+  "count": 1,
+  "region": "Action row (footer), left slot"
+ },
+ {
+  "screen": "toast",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "icon=\"undo\" iconSize={14} variant=\"accent\"; rendered only when toast.action is set",
+  "purpose": "Reverses the action that produced the toast. Runs the stored callback, then dismisses the toast.",
+  "text": "Label: toast.actionLabel ?? 'Undo' (default text \"Undo\"). Icon: undo (Material Symbols ligature, size 14).",
+  "states": [
+   "shown only when toast has an action",
+   "default (blue text, blue undo icon) as seen in both states",
+   "hover, pressed, focus and disabled not defined in Toast.tsx (inherited from ToolbarButton, not verified) and not shown in either recording"
+  ],
+  "behaviour": "Click: calls toast.action(), then useToastStore.getState().dismiss(). Undo is not run if no action was supplied (button absent). In the recordings, the click restores the trashed task (after-undo shows 8 tasks, 2 / 8 done).",
+  "look": "Box [596,710,67,25] including the icon. Text colour oklch(0.6 0.2 255) (blue). Font 600 12px/18px. Corner radius 4.375 px. Gap of about 6 px from the message text and about 7 px to the Dismiss button.",
+  "count": 1,
+  "region": "Toast pill"
+ },
+ {
+  "screen": "trash",
+  "kind": "button",
+  "component": "ToolbarButton",
+  "variant": "default, icon restore, iconSize 14",
+  "purpose": "Restores every root item in the trash in one action.",
+  "text": "Restore all",
+  "states": [
+   "default (no hover, pressed or disabled state captured)"
+  ],
+  "behaviour": "Click calls restoreAll, which calls trashStore.restore with all root ids (TrashPane.tsx:35-36). No confirmation.",
+  "look": "105x25 at 870,98. Font 600 12px/18px. Colour oklch(0.62 0.013 264). Radius 4.375px. Icon span 'restore' 14x14 at 877,103, font 400 14px/14px.",
+  "count": 1,
+  "region": "Action strip"
+ },
+ {
+  "screen": "trash",
+  "kind": "button",
+  "component": "ToolbarButton",
+  "variant": "variant=danger, icon delete_forever, iconSize 14, className ml-auto (pushed to the right)",
+  "purpose": "Permanently deletes every trashed item after confirmation.",
+  "text": "Empty",
+  "states": [
+   "default (no hover, pressed or disabled state captured)"
+  ],
+  "behaviour": "Click calls emptyTrash, which opens the askConfirm sheet 'Empty Trash?' (see the sheets screen). If accepted it calls trashStore.empty() (TrashPane.tsx:37-45, 72-80).",
+  "look": "74x25 at 1097,98. Font 600 12px/18px. Colour oklch(0.62 0.013 264), the same grey as Restore all in the shot, not red. Radius 4.375px. Icon span 14x14 at 1104,103. Conflicts with variant=danger; see notes.",
+  "count": 1,
+  "region": "Action strip"
+ },
+ {
+  "screen": "trash",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Icon toolbar button",
+  "purpose": "Toggle split view.",
+  "text": "icon 'vertical_split'; aria label 'Split view'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Toggles split view in the main window (inferred from label).",
+  "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "main title bar (full width, y 0-45)"
+ },
+ {
+  "screen": "trash",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Icon toolbar button, shown in the on (dark glyph) state while the right panel is open",
+  "purpose": "Show or hide the right-hand panel (the Trash pane sits there in this recording).",
+  "text": "icon 'right_panel_close'; aria label 'Hide preview panel  ⌘\\' (shortcut ⌘\\)",
+  "states": [
+   "on/active: glyph oklch(0.26 0.012 262), darker than its neighbours"
+  ],
+  "behaviour": "Click or ⌘\\ hides the right-hand panel (inferred; not captured).",
+  "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.26 0.012 262).",
+  "count": 1,
+  "region": "main title bar (full width, y 0-45)"
+ },
+ {
+  "screen": "trash",
+  "kind": "toolbar-button",
+  "component": "?",
+  "variant": "Icon toolbar button",
+  "purpose": "Open the Settings window.",
+  "text": "icon 'settings'; aria label 'Settings  ⌘,'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click or ⌘, opens the Settings window (inferred from label).",
+  "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "main title bar (full width, y 0-45)"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "button",
+  "component": "Button",
+  "variant": "variant primary, className gap-space-3 mt-1",
+  "purpose": "Opens the attachment in the default external app from the fallback card.",
+  "text": "icon open_in_new (size 15) then \"Open externally\"",
+  "states": [
+   "default",
+   "hover (styling not read)"
+  ],
+  "behaviour": "Click calls api.openAttachment(attachment). Leaves the app.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "key-action",
+  "component": "window keydown listener (capture phase)",
+  "variant": "ArrowRight",
+  "purpose": "Steps to the next attachment.",
+  "text": "ArrowRight",
+  "states": [
+   "active only while open with more than one attachment"
+  ],
+  "behaviour": "Calls step(1) and stopPropagation, so the task-navigation handler does not also run.",
+  "look": null,
+  "count": 1,
+  "region": "keyboard"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "key-action",
+  "component": "window keydown listener (capture phase)",
+  "variant": "ArrowLeft",
+  "purpose": "Steps to the previous attachment.",
+  "text": "ArrowLeft",
+  "states": [
+   "active only while open with more than one attachment"
+  ],
+  "behaviour": "Calls step(-1) and stopPropagation.",
+  "look": null,
+  "count": 1,
+  "region": "keyboard"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "key-action",
+  "component": "Overlay (captureEscape)",
+  "variant": "Escape",
+  "purpose": "Dismisses the lightbox.",
+  "text": "Escape (also shown in the Close tooltip \"Close  Esc\")",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Closes via onClose. The source comment says Escape is handled by Overlay; Overlay itself was not read.",
+  "look": null,
+  "count": 1,
+  "region": "keyboard"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "key-action",
+  "component": "HotkeyControl",
+  "variant": "recording=false (idle). 34 rows idle in default state; 33 idle in recording state.",
+  "purpose": "Trailing control of a shortcut row. It holds the Keycap and the optional reset IconButton (HotkeyControl.tsx:13-42).",
+  "text": "None (the combo is inside the Keycap).",
+  "states": [
+   "idle",
+   "recording (New task row only)",
+   "custom (reset control shown)",
+   "unbound (shows None)"
+  ],
+  "behaviour": "Clicking it calls editor.beginRecording(binding.id) through the Keycap.",
+  "look": "Not measured separately; contains the Keycap (see the Keycap entries).",
+  "count": 34,
+  "region": "Scope groups (content)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "button",
+  "component": "Segmented",
+  "variant": "segment for Full screen (value=\"fullscreen\"), selected",
+  "purpose": "Sets capture mode to the entire screen.",
+  "text": "\"Full screen\" with icon \"fullscreen\" (label from capturePane.tsx:12)",
+  "states": [
+   "selected (shown)",
+   "hover (not recorded)",
+   "focus (not recorded)"
+  ],
+  "behaviour": "Click to select full-screen capture mode (onChange writes screenshot_mode).",
+  "look": "White pill, bg oklch(1 0 0), font 600 12px/18px, radius 4.375px, color oklch(0.26 0.012 262); box [183,115,483,23] (B).",
+  "count": 1,
+  "region": "Screenshots content group"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "button",
+  "component": "Segmented",
+  "variant": "segment for Region mode, unselected",
+  "purpose": "Sets capture mode to a selected region.",
+  "text": "\"Region\" with icon \"crop_free\" (label from capturePane.tsx:13)",
+  "states": [
+   "unselected (shown)",
+   "hover (not recorded)"
+  ],
+  "behaviour": "Click to select region capture mode, which switches the hint text to the region description. Region flow not recorded.",
+  "look": "No bg, font 600 12px/18px, radius 4.375px, color oklch(0.46 0.013 262); box [668,115,483,23] (B).",
+  "count": 1,
+  "region": "Screenshots content group"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "button",
+  "component": "PathButton",
+  "variant": "path=\"/Users/you/.taskscape/screenshots\" (non-null); the null variant renders a muted \"—\" Label instead (PathButton.tsx:14-19)",
+  "purpose": "Shows the screenshots folder path and opens it in Finder (Explorer on Windows) when clicked.",
+  "text": "Path text \"/Users/you/.taskscape/screenshots\" (mono, 11.5px, truncated); title \"Open /Users/you/.taskscape/screenshots\"; aria-label \"Open /Users/you/.taskscape/screenshots in the file manager\"",
+  "states": [
+   "default",
+   "hover (hover:bg-wash-1l / hover:text-content-1l classes, PathButton.tsx:27)",
+   "loading/empty (path null shows \"—\", PathButton.tsx:14-19; capturePane.tsx:61 passes ctx.paths?.screenshots_dir ?? null)"
+  ],
+  "behaviour": "Click calls api.openPath(path) (PathButton.tsx:24), which asks the OS to open the folder. Errors are ignored. Rust falls back to the nearest existing ancestor if the folder does not exist yet (PathButton.tsx:10-12).",
+  "look": "Box 181,220 256x21; color oklch(0.46 0.013 262), font 400 14px/21px, radius 4.375px; path span box [204,222,228,17], font 400 11.5px/17.25px, monospace (B).",
+  "count": 1,
+  "region": "Screenshots content group"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "button",
+  "component": "PathButton",
+  "variant": "path=\"/Users/you/.taskscape\" (ctx.paths?.data_dir, else null), 173x21 at 181,186; plain, no visible border",
+  "purpose": "Shows the data folder path and opens it.",
+  "text": "/Users/you/.taskscape; accessible label \"Open /Users/you/.taskscape in the file manager\"",
+  "states": [
+   "default",
+   "no path (path null, aboutPane.tsx:34)",
+   "hover, pressed, focus not recorded"
+  ],
+  "behaviour": "Click opens the data folder in the system file manager (outside the app; B). The target app is not confirmed by the code sources read (A: uncertain).",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "button",
+  "component": "Button",
+  "variant": "default (no variant prop), idle, onClick set, 972x28 at 181,307; full-width secondary look: white fill, bordered, bold centred label",
+  "purpose": "Starts the reset confirmation.",
+  "text": "Reset all settings…",
+  "states": [
+   "default (the only state in the recording)",
+   "hover/pressed (not recorded)"
+  ],
+  "behaviour": "Click switches ResetEverything to the confirming state.",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "button",
+  "component": "Button",
+  "variant": "variant=\"danger\" (confirming state only)",
+  "purpose": "Confirms and runs the reset (resets appearance, capture, task preferences and keyboard shortcuts).",
+  "text": "Reset everything",
+  "states": [
+   "confirming only (not in tree.txt or the recording)"
+  ],
+  "behaviour": "Click returns to idle and calls onConfirm (ctx.resetAll).",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "button",
+  "component": "Button",
+  "variant": "default (confirming state only)",
+  "purpose": "Cancels the reset confirmation.",
+  "text": "Cancel",
+  "states": [
+   "confirming only (not in tree.txt or the recording)"
+  ],
+  "behaviour": "Click returns to idle without resetting.",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size xs, variant well, icon delete_sweep, iconSize 16, tabIndex -1, className shrink-0 gap-0 text-[11px] with text-content-2l/2d and hover:text-content-1l/1d",
+  "purpose": "Clears the current draft (title, notes, screenshots).",
+  "text": "Visible label \"Clear\" (inside <p className=\"px-1\">). Title tooltip \"Clear the draft (⌘⇧⌫)\" built from formatAccel(clearAccel) when clearAccel is set, else \"Clear the draft\".",
+  "states": [
+   "hidden when hasDraft is false (state:capture-bar, state:capture-bar-dark)",
+   "shown when hasDraft is true (state:capture-bar-typed, state:capture-bar-notes)",
+   "hover: text colour goes from content-2 to content-1"
+  ],
+  "behaviour": "Click calls draft.clearDraft (App.tsx:70). The clear_draft hotkey does the same thing (App.tsx:35-37). Whether it also clears notes is not evidenced in the recordings (B), but the code clears the whole draft.",
+  "look": "Box x642 y9 w105 h25, radius 8px. Label 'Clear' p x666 y13 w37 h17, font 400 11px/16.5px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Title row, right edge"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "button",
+  "component": "button (plain element, not a common-ui component)",
+  "variant": "Text-only hint button, text-xs, px-3 py-2, text-content-3l / text-content-3d",
+  "purpose": "Collapsed notes affordance; opens the notes editor.",
+  "text": "\"Press Tab to add a note\"",
+  "states": [
+   "default (state:capture-bar NotesSection @1,42 758x33)",
+   "shown only when notes are closed",
+   "replaced by the notes editor when open",
+   "no hover or focus style set in code"
+  ],
+  "behaviour": "Click calls draft.setNotesOpen(true) via onOpen, which opens the RichTextEditor. Tab from the title field does the same.",
+  "look": "Hint text box x1 y42 w164 h32, text starts x13 (elements.json). Notes section tree box @1,42 758x33. Font 400 12px/16px. Colour oklch(0.62 0.013 264) light, oklch(0.57 0.011 262) dark.",
+  "count": 1,
+  "region": "Notes section (collapsed)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon format_bold, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles bold in the notes editor.",
+  "text": "title \"Bold  ⌘B\" (two spaces before the shortcut)",
+  "states": [
+   "inactive (active=false)",
+   "active possible (active prop)",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (applies bold). Its blur is prevented so the notes stay open.",
+  "look": "Button x9 y113 24x24, radius 5px. Glyph box x13 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon format_italic, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles italic in the notes editor.",
+  "text": "title \"Italic  ⌘I\" (two spaces before the shortcut)",
+  "states": [
+   "inactive (active=false)",
+   "active possible",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (applies italic).",
+  "look": "Button x37 y113 24x24, radius 5px. Glyph box x41 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon format_underlined, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles underline in the notes editor.",
+  "text": "title \"Underline  ⌘U\" (two spaces before the shortcut)",
+  "states": [
+   "inactive (active=false)",
+   "active possible",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (applies underline).",
+  "look": "Button x65 y113 24x24, radius 5px. Glyph box x69 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon strikethrough_s, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles strikethrough in the notes editor.",
+  "text": "title \"Strikethrough\"",
+  "states": [
+   "inactive (active=false)",
+   "active possible",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (applies strikethrough).",
+  "look": "Button x93 y113 24x24, radius 5px. Glyph box x97 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon format_list_bulleted, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles a bulleted list in the notes editor.",
+  "text": "title \"Bulleted list\"",
+  "states": [
+   "inactive (active=false)",
+   "active possible",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (toggles bullet list).",
+  "look": "Button x134 y113 24x24, radius 5px. Glyph box x138 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolButton (common-ui, tree name; source not read)",
+  "variant": "icon format_list_numbered, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+  "purpose": "Toggles a numbered list in the notes editor.",
+  "text": "title \"Numbered list\"",
+  "states": [
+   "inactive (active=false)",
+   "active possible",
+   "no hover state captured"
+  ],
+  "behaviour": "Click runs onRun (toggles numbered list).",
+  "look": "Button x162 y113 24x24, radius 5px. Glyph box x166 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262).",
+  "count": 1,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "button",
+  "component": "button (plain element in Footer)",
+  "variant": "tabIndex -1, flex, min-w-0, gap-1.5, text-xs, text-content-2l/2d with hover:text-content-1l/1d, truncate label",
+  "purpose": "Shows the capture target (project / list) and opens the main Taskscape window.",
+  "text": "title tooltip \"Open the main Taskscape window\". Label when target is set: project + span \"/\" (px-1 opacity-60) + list, shown as \"Home / Errands\" in the screenshot. When target is null: \"Taskscape\". Exact target values are not in the tree (target={…}).",
+  "states": [
+   "target set (project/list text)",
+   "no target (\"Taskscape\")",
+   "hover: text colour goes from content-2 to content-1",
+   "dark colour variant (state:capture-bar-dark)",
+   "hover not captured in B"
+  ],
+  "behaviour": "Click calls api.openMain() and opens the main window.",
+  "look": "Button x13 y87 w114 h16. Home x33 y88 w47 h14; '/' x68 y88 w12 h14; Errands x33 y87 w94 h16 (the Home and Errands boxes overlap in x in the recording). Font 400 12px/16px. Colour oklch(0.46 0.013 262) light, oklch(0.74 0.008 260) dark. B notes the footer moves to y156 when notes open, which conflicts with its own y143 region bound.",
+  "count": 1,
+  "region": "Footer, left"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "toolbar-button",
+  "component": "ToolbarButton",
+  "variant": "size xs, variant well, iconSize 15, tabIndex -1, className shrink-0 disabled:pointer-events-auto disabled:opacity-100 plus a text colour class",
+  "purpose": "Attaches a full-screen screenshot to the draft. Shows the count of attached shots.",
+  "text": "Idle, count 0: label \"Screenshot\", title \"Attach a full-screen screenshot (⌘⇧↩)\". Idle, count N: label \"N shot\" or \"N shots\", title \"N screenshot(s) attached — add another (⌘⇧↩)\". Capturing: label \"Capturing …\", title \"Capturing screenshot …\". Error: label \"Capture failed\", title is the error message.",
+  "states": [
+   "idle, count 0 (state:capture-bar @601,83 146x24, filled=false, text-content-2)",
+   "idle with screenshots (filled=true, accent colour)",
+   "capturing (disabled=true, Spinner shown, icon undefined)",
+   "error (red text, icon 'error')",
+   "hover: text colour to content-1 (code)",
+   "default in all four recordings (B)"
+  ],
+  "behaviour": "Click calls draft.addScreenshot (App.tsx:89). Disabled while capturing; the disabled state keeps its contrast and tooltip. Whether it also saves the task is not captured in B.",
+  "look": "Box x601 y83 w146 h24, radius 8px (footer at y152 when notes open, per B). Label 'Screenshot' x630 y87 w67 h16, font 400 12px/16px. Colour oklch(0.46 0.013 262) light, oklch(0.74 0.008 260) dark.",
+  "count": 1,
+  "region": "Footer, right"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "App onKeyDown (card keydown)",
+  "variant": "Enter without Shift",
+  "purpose": "Saves the draft from the title field.",
+  "text": "Enter",
+  "states": [
+   "title field focused"
+  ],
+  "behaviour": "Calls draft.save (preventDefault). Not shown in any recording (B).",
+  "look": null,
+  "count": 1,
+  "region": "Card (root frame)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "App onKeyDown (card keydown)",
+  "variant": "Escape",
+  "purpose": "Hides the capture bar.",
+  "text": "Escape",
+  "states": [
+   "title field focused, or editor focused (editor onEscape also calls api.hideMini)"
+  ],
+  "behaviour": "Calls api.hideMini(). Hides the bar; it is not a navigation to another screen. Not captured in B.",
+  "look": null,
+  "count": 1,
+  "region": "Card (root frame)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "App onKeyDown (card keydown)",
+  "variant": "Tab without Shift, only while notes are closed",
+  "purpose": "Opens the notes editor from the title field.",
+  "text": "Tab (hint text \"Press Tab to add a note\")",
+  "states": [
+   "notes closed"
+  ],
+  "behaviour": "preventDefault and draft.setNotesOpen(true). Does nothing when notes are already open.",
+  "look": null,
+  "count": 1,
+  "region": "Card (root frame)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "RichTextEditor submitOnModEnter",
+  "variant": "Cmd+Enter inside the notes editor",
+  "purpose": "Saves the draft from the notes editor.",
+  "text": "none (no visible label)",
+  "states": [
+   "notes open"
+  ],
+  "behaviour": "Calls draft.save.",
+  "look": null,
+  "count": 1,
+  "region": "Notes section (open)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "useClearDraftHotkey (hook, source not read)",
+  "variant": "clear_draft accelerator, shown as Cmd+Shift+Backspace",
+  "purpose": "Clears the draft from the keyboard.",
+  "text": "⌘⇧⌫ (from clearAccel)",
+  "states": [
+   "active whenever the bar is shown and the accelerator is set"
+  ],
+  "behaviour": "Calls draft.clearDraft.",
+  "look": null,
+  "count": 1,
+  "region": "Card (root frame)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "key-action",
+  "component": "hotkey screenshot_capture (value read in App, binding not in files read)",
+  "variant": "Cmd+Shift+Enter, shown as ⌘⇧↩",
+  "purpose": "Shortcut shown on the screenshot button; intended to take a screenshot.",
+  "text": "⌘⇧↩ (from screenshotAccel)",
+  "states": [
+   "displayed in idle state only"
+  ],
+  "behaviour": "Uncertain. App.tsx passes screenshotAccel to Footer for display; the file that binds it was not read, so the key's effect on this screen is not verified.",
+  "look": null,
+  "count": 1,
+  "region": "Footer, right"
+ }
+]

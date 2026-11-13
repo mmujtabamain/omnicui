@@ -1,0 +1,825 @@
+{
+ "id": "title-bar",
+ "title": "Title bar",
+ "tier": "high",
+ "states": [
+  "main-default",
+  "cmd-held",
+  "project-menu",
+  "tab-hover",
+  "list-switch-3",
+  "no-lists",
+  "narrow-window"
+ ],
+ "purpose": "The title bar is the 46px chrome band across the top of the main window. It holds the macOS window controls (leading), a drag grip, the project switcher pill (showing Home in the recordings), the per-project list tabs with a New list button, and a right-side toolbar with Split view, preview toggle and Settings. On Windows and Linux the window controls move to the trailing edge.",
+ "regions": [
+  {
+   "name": "window-controls (macOS, leading)",
+   "contents": "MacControls cluster of three 14px traffic-light discs at x 18 to 74, y 15 to 29 (close, minimize, full screen), followed by the drag grip at x 85. Rendered by TitleBar.tsx:49 when isMac. Tree main-default:3-8."
+  },
+  {
+   "name": "drag grip",
+   "contents": "Non-interactive drag_indicator icon in a drag-region div. TitleBar.tsx:51-56. Tree main-default:9 (box 85,12 20x20)."
+  },
+  {
+   "name": "project switcher",
+   "contents": "Wrapper div (TitleBar.tsx:58-60) around the ProjectSwitcher pill (x 112 to 197, y 8 to 36) and its dropdown menu (open only; screenshot box about x 113 to 321, y 44 to 154). Tree main-default:10-12; project-menu:10-31."
+  },
+  {
+   "name": "list tabs",
+   "contents": "ListTabs strip: one tab per list in the active project (Errands, Reading, Garden in the recordings, at about x 211 to 543), then the New list button and a drag filler. ListTabs.tsx:95-304. Tree main-default:13-24."
+  },
+  {
+   "name": "toolbar (right)",
+   "contents": "Reduced-motion indicator (conditional), Swap panes (conditional), Split view, preview toggle, Settings. TitleBar.tsx:64-103. Tree main-default:25-32. Measured x 1077 to 1171 in the 1180px window, y 8 to 36; in narrow-window (820px) the buttons sit at x 717, 750 and 783."
+  },
+  {
+   "name": "window-controls (Windows/Linux, trailing)",
+   "contents": "WinControls minimize, maximize/restore and close buttons. TitleBar.tsx:105; WindowControls.tsx:149-192. Not present in any recorded state, which are all macOS."
+  },
+  {
+   "name": "title-bar rule",
+   "contents": "Horizontal hairline at about y 45 along the bottom edge of the bar (border-b), separating it from the content below; content starts at y 46. Screenshot estimate; not in any tree."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "title-bar",
+   "component": "TitleBar (header element)",
+   "variant": "draggable window title bar; data-tauri-drag-region; h-13 shrink-0 items-stretch border-b",
+   "purpose": "Frame of the chrome. Dragging its empty area moves the window; double-click on a drag-region target toggles maximize.",
+   "text": "",
+   "states": [
+    "default",
+    "project-menu open",
+    "narrow window (820 wide)"
+   ],
+   "behaviour": "Drag moves window. Double-click on a target with data-tauri-drag-region calls getCurrentWindow().toggleMaximize() (TitleBar.tsx:43-46).",
+   "count": 1,
+   "region": "whole bar",
+   "sources": [
+    "TitleBar.tsx:41-48",
+    "state:main-default tree.txt:2 (TitleBar @0,0 1180x46)",
+    "state:main-default shot.png (hairline rule at about y 45)"
+   ],
+   "look": "Classes: border-edge-2l dark:border-edge-2d bg-surface-1l dark:bg-surface-1d relative flex h-13 shrink-0 items-stretch border-b. Measured 1180x46 at 0,0 (tree), so the rule is at about y 45 and content starts at y 46. The h-13 class does not obviously map to 46px under default Tailwind spacing; the project scale may differ. The measured 46px is recorded and the h-13 mapping is unresolved."
+  },
+  {
+   "kind": "other",
+   "component": "MacLights (div.group)",
+   "variant": "macOS traffic-light cluster, red first; data-no-drag",
+   "purpose": "Groups the three discs. The group hover reveals the glyphs on every disc.",
+   "text": "",
+   "states": [
+    "focused (discs lit)",
+    "blurred (discs gray, from useWindowFocused)",
+    "hover (glyphs shown on all discs)"
+   ],
+   "behaviour": "Hovering anywhere on the cluster shows the glyphs (group-hover). Clicking a disc runs its action.",
+   "count": 1,
+   "region": "window-controls (macOS, leading)",
+   "sources": [
+    "WindowControls.tsx:95-118",
+    "WindowControls.tsx:105 (group flex items-center gap-2 pr-3 pl-5 data-no-drag)",
+    "state:main-default tree.txt:5 (MacLights focused=true, box 84x45 at 0,0)"
+   ],
+   "look": "flex items-center gap-2 pr-3 pl-5; tree box 84x45 at 0,0."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (button)",
+   "variant": "id=\"close\" (first disc); title \"Close\"",
+   "purpose": "Closes this window.",
+   "text": "Tooltip \"Close\" (title falls back to LIGHTS.close.label). No visible text; the glyph is the close X path, shown on hover.",
+   "states": [
+    "lit (focused; ring #e24b41, fill #ed6a5f, glyph #460804)",
+    "unlit (window blurred; var(--tl-inactive-ring) / var(--tl-inactive-fill), no glyph)",
+    "hover (glyph fades in via group-hover)"
+   ],
+   "behaviour": "Click calls win.close() (WindowControls.tsx:139). Disabled only if the action is missing.",
+   "count": 1,
+   "region": "window-controls (macOS, leading)",
+   "sources": [
+    "WindowControls.tsx:22-28 (LIGHTS.close)",
+    "WindowControls.tsx:48-90 (Light)",
+    "WindowControls.tsx:139",
+    "state:main-default tree.txt:6 (Light id=\"close\" @18,15 14x14)",
+    "state:main-default elements.json 'Close' box [18,15,14,14]"
+   ],
+   "look": "button size-4 (16px) containing an svg viewBox 85.4. Measured disc box 14x14 at 18,15."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (button)",
+   "variant": "id=\"minimize\" (second disc); title \"Minimize\"",
+   "purpose": "Minimizes this window.",
+   "text": "Tooltip \"Minimize\". Glyph is the minus mark, shown on hover.",
+   "states": [
+    "lit (ring #e1a73e, fill #f6be50, glyph #90591d)",
+    "unlit (gray inactive colours)",
+    "hover (glyph fades in)"
+   ],
+   "behaviour": "Click calls win.minimize() (WindowControls.tsx:140).",
+   "count": 1,
+   "region": "window-controls (macOS, leading)",
+   "sources": [
+    "WindowControls.tsx:29-35",
+    "WindowControls.tsx:140",
+    "state:main-default tree.txt:7 (Light id=\"minimize\" @39,15 14x14)",
+    "state:main-default elements.json 'Minimize' box [39,15,14,14]"
+   ],
+   "look": "button size-4; svg viewBox 85.4. Measured disc box 14x14 at 39,15."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (button)",
+   "variant": "id=\"fullscreen\" (third disc); title \"Full Screen\"",
+   "purpose": "Toggles full screen for this window.",
+   "text": "Tooltip \"Full Screen\". Glyph is the diagonal arrows, shown on hover.",
+   "states": [
+    "lit (ring #2dac2f, fill #61c555, glyph #2a6218)",
+    "unlit (gray inactive colours)",
+    "hover (glyph fades in)"
+   ],
+   "behaviour": "Click calls win.isFullscreen() then win.setFullscreen(!f) (WindowControls.tsx:141-142).",
+   "count": 1,
+   "region": "window-controls (macOS, leading)",
+   "sources": [
+    "WindowControls.tsx:36-42",
+    "WindowControls.tsx:141-142",
+    "state:main-default tree.txt:8 (Light id=\"fullscreen\" @60,15 14x14)",
+    "state:main-default elements.json 'Full Screen' box [60,15,14,14]"
+   ],
+   "look": "button size-4; svg viewBox 85.4. Measured disc box 14x14 at 60,15."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (name drag_indicator) in a drag-region div",
+   "variant": "size 20; className pointer-events-none; wrapper div pointer-events-none mr-2 flex h-full w-6 items-center justify-center",
+   "purpose": "Visual grip. Not a control; clicks fall through to the header drag region.",
+   "text": "icon name drag_indicator (renders as a six-dot grip)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None. Pointer events are disabled, so a press drags the window.",
+   "count": 1,
+   "region": "drag grip",
+   "sources": [
+    "TitleBar.tsx:51-56",
+    "state:main-default tree.txt:9 (Icon drag_indicator @85,12 20x20)",
+    "state:main-default elements.json span 'drag_indicator' box [85,12,20,20]"
+   ],
+   "look": "20x20 icon; wrapper w-6 (24px) h-full with mr-2. Measured colour oklch(0.26 0.012 262), font 400 20px/20px."
+  },
+  {
+   "kind": "button",
+   "component": "ProjectSwitcher trigger (plain button)",
+   "variant": "recessed pill; rounded-control bg-surface-0l dark:bg-surface-0d; h-8; radius 7px",
+   "purpose": "Opens and closes the project dropdown and shows the active project name.",
+   "text": "Visible text: the active project's name (Home in the recordings), or \"Taskscape\" when there is no selected project (ProjectSwitcher.tsx:41). Tooltip (title): \"Switch project\".",
+   "states": [
+    "default (resting background oklch(0.944 0.003 255))",
+    "hover (hover:bg-wash-2l / hover:bg-wash-2d)",
+    "open (menu shown; the code has no separate open style. The background oklch(0.32 0.02 262 / 0.09) seen in project-menu is most likely the hover wash under the pointer)"
+   ],
+   "behaviour": "Click toggles the project menu open or closed (ProjectSwitcher.tsx:31). Pressing it again closes the menu because the anchor ref covers the pill (ProjectSwitcher.tsx:120-123).",
+   "count": 1,
+   "region": "project switcher",
+   "sources": [
+    "ProjectSwitcher.tsx:28-34",
+    "ProjectSwitcher.tsx:41",
+    "state:main-default tree.txt:10 (ProjectSwitcher @112,8 85x28)",
+    "state:main-default elements.json button 'Switch project' box [112,8,85,28] bg oklch(0.944 0.003 255)",
+    "state:project-menu elements.json button 'Switch project' bg oklch(0.32 0.02 262 / 0.09)"
+   ],
+   "look": "Classes: rounded-control bg-surface-0l dark:bg-surface-0d hover:bg-wash-2l dark:hover:bg-wash-2d gap-space-3 py-space-3 pr-space-6 pl-space-7 flex h-8 items-center. Measured box 85x28 at 112,8, radius 7px, resting background oklch(0.944 0.003 255)."
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone primary, weight semibold, truncate)",
+   "variant": "project name in the pill",
+   "purpose": "Shows the active project name.",
+   "text": "selected?.name, else \"Taskscape\". Home in the recordings.",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (part of the trigger).",
+   "count": 1,
+   "region": "project switcher",
+   "sources": [
+    "ProjectSwitcher.tsx:35-42",
+    "state:main-default tree.txt:11 (Label tone=primary weight=semibold truncate=true @124,12 45x21)",
+    "state:main-default elements.json span 'Home' box [124,12,45,21]"
+   ],
+   "look": "className font-display max-w-44 text-[14px]. Measured font 600 14px/21px, colour oklch(0.26 0.012 262), box 45x21 at 124,12."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (name unfold_more)",
+   "variant": "size 15 in the pill; text-content-3 colours",
+   "purpose": "Up/down affordance showing the pill opens a menu.",
+   "text": "icon name unfold_more",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (part of the trigger).",
+   "count": 1,
+   "region": "project switcher",
+   "sources": [
+    "ProjectSwitcher.tsx:43-48",
+    "state:main-default tree.txt:12 (Icon unfold_more @173,15 15x15)",
+    "state:main-default elements.json span 'unfold_more' box [173,15,15,15]"
+   ],
+   "look": "Measured 15x15 at 173,15, font 400 15px/15px, colour oklch(0.62 0.013 264). Source classes are text-content-3l dark:text-content-3d with weight 300; the measured weight 400 is kept because look values come from the measurement."
+  },
+  {
+   "kind": "popover",
+   "component": "ProjectMenu (wraps Surface; tree shows Surface2)",
+   "variant": "anchored dropdown; Surface elevation=menu surface=3 radius=panel; absolute top-10 left-0 min-w-60 origin-top-left; z-dropdown animate-sheet-in; white surface, rounded corners, soft shadow",
+   "purpose": "Lists projects and gives project actions: switch, rename, delete, new.",
+   "text": "none (container)",
+   "states": [
+    "open (only when the trigger toggles open)",
+    "closed (not rendered)"
+   ],
+   "behaviour": "Escape or a press outside the switcher closes it (useDismissable, ProjectSwitcher.tsx:133). Pressing the pill again toggles it closed.",
+   "count": 1,
+   "region": "project switcher (anchored under the pill)",
+   "sources": [
+    "ProjectSwitcher.tsx:51-52",
+    "ProjectSwitcher.tsx:124-144",
+    "state:project-menu tree.txt:13-14 (ProjectMenu @112,43 210x112; Surface2 elevation=menu surface=3 radius=panel)",
+    "state:project-menu shot.png",
+    "state:project-menu elements.json (menu box about x 113 to 321, y 44 to 154)"
+   ],
+   "look": "py-space-3; min-w-60. Tree box 210x112 at 112,43; screenshot estimate about x 113 to 321, y 44 to 154."
+  },
+  {
+   "kind": "list-row",
+   "component": "Project row (plain div, group)",
+   "variant": "selected (blue check icon shown) or unselected; hover bg-wash-2; h-9 px-space-6 in source, measured row pitch about 32px",
+   "purpose": "One project. Click switches to it.",
+   "text": "Project name (p.name): Home (selected) and Spring launch (unselected) in the recordings. No tooltip on the row.",
+   "states": [
+    "selected (check shown)",
+    "unselected",
+    "hover (reveals edit and delete icons)"
+   ],
+   "behaviour": "Click calls selectProject(p.id) and closes the menu (ProjectSwitcher.tsx:57-60).",
+   "count": 2,
+   "region": "project switcher (menu)",
+   "sources": [
+    "ProjectSwitcher.tsx:53-66",
+    "state:project-menu tree.txt:15-27 (two project rows at y=53 and y=85)",
+    "state:project-menu elements.json span 'Home' box [141,53,119,20], 'Spring launch' box [141,85,119,20]",
+    "state:project-menu elements.json span 'check' box [122,56,15,15]",
+    "state:project-menu shot.png"
+   ],
+   "look": "gap-space-4 px-space-6 flex h-9 cursor-default items-center in source. Measured row pitch about 32px (y 53 and 85), so the measured pitch is used. Selected check: Icon check in Label tone=accent (ProjectSwitcher.tsx:62-66), 15x15 at 122,56, colour oklch(0.6 0.2 255)."
+  },
+  {
+   "kind": "label",
+   "component": "Label (tone primary, truncate)",
+   "variant": "project name in a menu row",
+   "purpose": "Shows the project name.",
+   "text": "p.name (Home and Spring launch in the recordings).",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (click on the row selects the project).",
+   "count": 2,
+   "region": "project switcher (menu)",
+   "sources": [
+    "ProjectSwitcher.tsx:67-69",
+    "state:project-menu tree.txt:17 and 23 (Label tone=primary truncate=true flex-1 text-[13.5px])",
+    "state:project-menu elements.json spans 'Home' and 'Spring launch' (font 400 13.5px/20.25px)"
+   ],
+   "look": "className flex-1 text-[13.5px]. Measured font 400 13.5px/20.25px, colour oklch(0.26 0.012 262), label boxes 119x20."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (icon edit)",
+   "variant": "variant plain; iconSize 16; iconWeight 500; hidden until row hover",
+   "purpose": "Renames the project.",
+   "text": "Tooltip \"Rename project\"; icon edit",
+   "states": [
+    "hidden until row hover (opacity-0 group-hover:opacity-100)",
+    "hover"
+   ],
+   "behaviour": "Click stops propagation, closes the menu, then calls renameProject(p) (ProjectSwitcher.tsx:76-80).",
+   "count": 2,
+   "region": "project switcher (menu, right of each row)",
+   "sources": [
+    "ProjectSwitcher.tsx:70-82",
+    "state:project-menu tree.txt:18 and 24 (IconButton icon=edit @265,53 and @265,85 21x21)",
+    "state:project-menu elements.json icon 'edit' boxes [268,56,16,16] and [268,87,16,16]"
+   ],
+   "look": "21x21 box; icon 16x16, colour oklch(0.62 0.013 264) (measured)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (icon delete)",
+   "variant": "variant plain; iconSize 16; iconWeight 500; hidden until row hover",
+   "purpose": "Deletes the project.",
+   "text": "Tooltip \"Delete project\"; icon delete",
+   "states": [
+    "hidden until row hover (opacity-0 group-hover:opacity-100)",
+    "hover (text-danger-500)"
+   ],
+   "behaviour": "Click stops propagation, closes the menu, then calls deleteProject(p) (ProjectSwitcher.tsx:89-93).",
+   "count": 2,
+   "region": "project switcher (menu, right of each row)",
+   "sources": [
+    "ProjectSwitcher.tsx:83-95",
+    "state:project-menu tree.txt:20 and 26 (IconButton icon=delete @291,53 and @291,85 21x21)",
+    "state:project-menu elements.json icon 'delete' boxes [294,56,16,16] and [294,87,16,16]"
+   ],
+   "look": "21x21 box; icon 16x16, colour oklch(0.62 0.013 264) (measured); hover:text-danger-500l dark:hover:text-danger-500d."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (level 1)",
+   "variant": "horizontal divider inside the menu",
+   "purpose": "Separates project rows from the New project action.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "project switcher (menu)",
+   "sources": [
+    "ProjectSwitcher.tsx:98",
+    "state:project-menu tree.txt:28 (Divider level=1 @120,114 194x1)",
+    "state:project-menu shot.png (about y 114)"
+   ],
+   "look": "className mx-space-5 my-space-3; 194x1 at 120,114."
+  },
+  {
+   "kind": "button",
+   "component": "New project action (plain button)",
+   "variant": "full-width menu row; hover:bg-wash-2; w-full; text-left",
+   "purpose": "Starts creating a new project.",
+   "text": "\"New project…\" label with an add icon; accessible text \"add New project…\".",
+   "states": [
+    "default",
+    "hover"
+   ],
+   "behaviour": "Click closes the menu and calls createProject() (ProjectSwitcher.tsx:99-103).",
+   "count": 1,
+   "region": "project switcher (menu, bottom)",
+   "sources": [
+    "ProjectSwitcher.tsx:99-112",
+    "state:project-menu tree.txt:29-31 (Label muted w-4 with Icon add; Label primary \"New project…\" @141,124 94x20)",
+    "state:project-menu elements.json button 'add New project…' box [113,119,208,32]",
+    "state:project-menu elements.json span 'add' box [122,127,15,15] colour oklch(0.62 0.013 264)"
+   ],
+   "look": "gap-space-4 px-space-6 flex h-9 w-full items-center in source. Measured button 208x32 at 113,119 (32px used over h-9). Label font 400 13.5px/20.25px, colour oklch(0.26 0.012 262). Add icon 15px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "surface",
+   "component": "ListTabs (root div, data-no-drag)",
+   "variant": "horizontal scrolling strip; overflow-x-auto with hidden scrollbar; flex-1 min-w-0",
+   "purpose": "Holds the tabs for the active project's lists.",
+   "text": "",
+   "states": [
+    "default",
+    "narrow (scrolls)",
+    "empty (no tabs)"
+   ],
+   "behaviour": "Horizontal scroll when tabs overflow.",
+   "count": 1,
+   "region": "list tabs",
+   "sources": [
+    "ListTabs.tsx:95-99",
+    "state:main-default tree.txt:13 (ListTabs @211,0 857x45)",
+    "state:narrow-window tree.txt:13 (ListTabs @211,0 497x45)"
+   ],
+   "look": "flex h-full min-w-0 flex-1 items-stretch overflow-x-auto. Measured 857x45 at 211,0 (497x45 in narrow-window); strip spans about x 211 to 543 in the screenshot."
+  },
+  {
+   "kind": "tab",
+   "component": "List tab (plain div per list)",
+   "variant": "focused (bg-surface-2, active list); unfocused; hover (bg-wash-1); drop target (bg-selection-1); dragging (opacity-40); editing (inline rename, see TextInput entry); split (pane dot shown)",
+   "purpose": "One list. Click opens it in the Task list pane; the right side has a delete button.",
+   "text": "list.name (Errands, Reading, Garden in the recordings; names from elements.json, not in the trees).",
+   "states": [
+    "focused (Errands in main-default, project-menu, tab-hover, narrow-window; Garden in list-switch-3)",
+    "unfocused (inactive)",
+    "hover (grey container behind Reading in tab-hover)",
+    "drop target",
+    "dragging",
+    "editing",
+    "split (pane dot shown; not in any recorded state)"
+   ],
+   "behaviour": "Click selects the list (selectList). Double-click starts inline rename. Right-click opens the list context menu. Middle-click deletes the list (aux button 1). Drag reorders tabs, and dropping a task row on a tab moves it there.",
+   "count": 3,
+   "region": "list tabs",
+   "sources": [
+    "ListTabs.tsx:118-248",
+    "ListTabs.tsx:129-135 (draggable, onClick, onDoubleClick, onAuxClick, onContextMenu)",
+    "ListTabs.tsx:190-196 (className variants)",
+    "state:main-default tree.txt:14-22 (3 tabs at 224, 322, 422)",
+    "state:main-default elements.json spans 'Errands' box [224,12,51,20], 'Reading' box [322,12,54,20], 'Garden' box [422,12,48,20]",
+    "state:tab-hover elements.json span 'Reading'; state:tab-hover tree.txt:14 (Errands primary)",
+    "state:list-switch-3 tree.txt:20 (Garden primary)"
+   ],
+   "look": "group hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-4 pr-space-5 pl-space-7 relative flex cursor-default items-center border-b border-transparent. Focused container about x 211 to 308 (Errands) or x 408 to 503 (Garden), with hairline edges. Count is 3 in every recorded state with tabs; 0 in no-lists."
+  },
+  {
+   "kind": "label",
+   "component": "Label (truncate, weight medium)",
+   "variant": "tab name; tone primary when focused, muted when not",
+   "purpose": "Shows the list name.",
+   "text": "list.name (Errands, Reading, Garden in the recordings).",
+   "states": [
+    "focused (tone primary)",
+    "unfocused (tone muted)"
+   ],
+   "behaviour": "None (part of the tab).",
+   "count": 3,
+   "region": "list tabs",
+   "sources": [
+    "ListTabs.tsx:226-233",
+    "state:main-default tree.txt:14 (primary), :17 (muted), :20 (muted)",
+    "state:tab-hover tree.txt:14 (primary), :17 and :20 (muted)",
+    "state:list-switch-3 tree.txt:20 (primary)"
+   ],
+   "look": "className max-w-40 text-[13px] tracking-[0.01em]. Measured font 500 13px/19.5px; primary colour oklch(0.26 0.012 262) when focused, muted colour oklch(0.62 0.013 264) when not; label boxes 51x20, 54x20, 48x20."
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (inline rename, autoFocus, bare)",
+   "variant": "replaces the tab name while editing; ring-focus-1 ring; h-6 max-w-40 py-0 font-medium ring-1",
+   "purpose": "Renames a list in place.",
+   "text": "defaultValue = list.name; no placeholder.",
+   "states": [
+    "editing (only after double-click)"
+   ],
+   "behaviour": "Enter commits the trimmed name if non-empty and changed. Escape cancels. Blur commits the same way. Key events stop propagation.",
+   "count": 0,
+   "region": "list tabs",
+   "sources": [
+    "ListTabs.tsx:203-224"
+   ],
+   "look": "ring-focus-1l dark:ring-focus-1d px-space-4 h-6 max-w-40 py-0 font-medium ring-1. Not in any recorded state."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (line_start_circle or line_end_circle)",
+   "variant": "text-accent-500; shown on the active-list tab (line_start_circle) and the split-list tab (line_end_circle) only while split view is on",
+   "purpose": "Marks which tabs are the two panes in split view.",
+   "text": "icon name line_start_circle or line_end_circle",
+   "states": [
+    "shown only in split view (not in any recorded state)"
+   ],
+   "behaviour": "None.",
+   "count": 0,
+   "region": "list tabs",
+   "sources": [
+    "ListTabs.tsx:108",
+    "ListTabs.tsx:197-202"
+   ],
+   "look": "text-accent-500l dark:text-accent-500d; no size given."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (icon close, delete list)",
+   "variant": "danger; iconSize 15; iconWeight 500; title \"Delete list\"",
+   "purpose": "Deletes that list.",
+   "text": "Tooltip \"Delete list\"; icon close.",
+   "states": [
+    "default",
+    "hover (danger tint from variant)"
+   ],
+   "behaviour": "Click stops propagation and calls deleteList(list) (ListTabs.tsx:241-244).",
+   "count": 3,
+   "region": "list tabs (right end of each tab)",
+   "sources": [
+    "ListTabs.tsx:235-247",
+    "state:main-default tree.txt:15, 18, 21 (IconButton icon=close variant=danger @280,11, @380,11, @475,11 21x21)",
+    "state:main-default elements.json 'Delete list' boxes [280,11,21,21], [380,11,21,21], [475,11,21,21] radius 4.375px"
+   ],
+   "look": "21x21 box, radius 4.375px; icon 15x15, colour oklch(0.62 0.013 264) in the default state (measured). Shown on every tab, including the focused one; absent in no-lists."
+  },
+  {
+   "kind": "other",
+   "component": "Tab separator (plain span)",
+   "variant": "default (bg-edge-1, h-4 w-px); adjacent to focused tab (bg-edge-2, h-full); drop indicator (bg-accent-500, h-6 w-1 rounded-full)",
+   "purpose": "Vertical divider before each tab; marks the drop point during tab drag.",
+   "text": "",
+   "states": [
+    "default",
+    "adjacent to focused",
+    "drop indicator"
+   ],
+   "behaviour": "None (drop target handled by the tab).",
+   "count": 3,
+   "region": "list tabs (before each tab)",
+   "sources": [
+    "ListTabs.tsx:119-127",
+    "state:main-default shot.png (hairlines at about x 211, 308, 408)"
+   ],
+   "look": "my-auto h-4 w-px shrink-0. Plain span, so no tree entry. Hairline positions are estimates from the screenshot."
+  },
+  {
+   "kind": "other",
+   "component": "Trailing separator (plain span in drop-zone div)",
+   "variant": "default; adjacent to last tab when it is focused (h-full); drop indicator at end (accent)",
+   "purpose": "Divider after the last tab, and a drop zone that moves a dragged tab to the end.",
+   "text": "",
+   "states": [
+    "default",
+    "focused-adjacent",
+    "drop indicator"
+   ],
+   "behaviour": "Drop reorders the dragged tab to the last position (reorder(tabId, last.id, false)).",
+   "count": 1,
+   "region": "list tabs (after last tab)",
+   "sources": [
+    "ListTabs.tsx:252-292",
+    "state:main-default shot.png (hairline at about x 503)"
+   ],
+   "look": "Plain span; not in any tree. Rendered only when lists.length > 0. Together with the three tab separators this gives the four hairlines in the screenshot."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (icon add, New list)",
+   "variant": "size lg (default variant); iconSize 18; iconWeight 300; className my-auto ml-2 rounded-md; radius 5.25px measured",
+   "purpose": "Creates a new list in the active project.",
+   "text": "Tooltip \"New list\"; icon add.",
+   "states": [
+    "default",
+    "hover",
+    "moved (no-lists: at x 218 when there are no tabs)"
+   ],
+   "behaviour": "Click calls createList() (ListTabs.tsx:298).",
+   "count": 1,
+   "region": "list tabs (after the last tab)",
+   "sources": [
+    "ListTabs.tsx:293-301",
+    "state:main-default tree.txt:23-24 (IconButton icon=add size=lg @518,10 25x25; Icon add 18x18)",
+    "state:no-lists tree.txt:14-15 (@218,10 25x25)",
+    "state:main-default elements.json button 'New list' box [518,10,25,25] radius 5.25px; span 'add' box [522,13,18,18] font 400 18px/18px"
+   ],
+   "look": "25x25 box; icon 18x18, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "other",
+   "component": "Tab-strip drag filler (plain span, data-tauri-drag-region)",
+   "variant": "min-w-6 flex-1 self-stretch",
+   "purpose": "Empty space after the New list button. Drags the window.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Drag moves the window.",
+   "count": 1,
+   "region": "list tabs (end of strip)",
+   "sources": [
+    "ListTabs.tsx:302-303"
+   ],
+   "look": "Not in any tree."
+  },
+  {
+   "kind": "other",
+   "component": "Toolbar wrapper div",
+   "variant": "gap-space-4 pr-space-6 pl-space-6 flex items-center",
+   "purpose": "Groups the right-side toolbar buttons.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "toolbar (right)",
+   "sources": [
+    "TitleBar.tsx:64"
+   ],
+   "look": "Plain div; not in any tree."
+  },
+  {
+   "kind": "icon",
+   "component": "Reduced-motion indicator (div with title + Icon motion_photos_off)",
+   "variant": "shown only when reducedMotion is on; tooltip text differs for Low Power Mode",
+   "purpose": "Shows that reduced motion is active. It is a hover tooltip only.",
+   "text": "Tooltip: \"Reduced motion active on Low Power Mode\" when lowPower, else \"Reduced motion is on (Settings > General)\". Icon name motion_photos_off.",
+   "states": [
+    "shown when reducedMotion is true (not in any recorded state)"
+   ],
+   "behaviour": "Hover tooltip only; not clickable.",
+   "count": 0,
+   "region": "toolbar (right, before Swap panes)",
+   "sources": [
+    "TitleBar.tsx:65-76",
+    "state:main-default tree.txt (absent: reducedMotion off in all recorded states)"
+   ],
+   "look": "text-content-3l dark:text-content-3d grid h-8 w-8 shrink-0 place-items-center; Icon size 19 weight 300."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (local) → IconButton (icon swap_horiz)",
+   "variant": "size xl; radius control; iconSize 19; iconWeight 300",
+   "purpose": "Swaps the left and right panes in split view.",
+   "text": "Tooltip \"Swap panes\"; icon swap_horiz.",
+   "states": [
+    "default (only when split is on; not in any recorded state)"
+   ],
+   "behaviour": "Click calls swapPanes() (TitleBar.tsx:82).",
+   "count": 0,
+   "region": "toolbar (right, before Split view)",
+   "sources": [
+    "TitleBar.tsx:78-84"
+   ],
+   "look": "28x28 box."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (local) → IconButton (icon vertical_split), Split view toggle",
+   "variant": "default (filled=false, active=false); active (split on: filled, title \"Close split view\"; not in any recorded state); disabled (no split target)",
+   "purpose": "Opens or closes split view for the active list.",
+   "text": "Tooltip \"Split view\" (or \"Close split view\" when split is on); icon vertical_split.",
+   "states": [
+    "default (main-default, cmd-held, project-menu, tab-hover, list-switch-3, narrow-window)",
+    "disabled (no-lists: disabled=true; shown faded in the screenshot)",
+    "active (split on; not in any recorded state)"
+   ],
+   "behaviour": "Click calls toggleSplit(splitTarget) when a target exists (TitleBar.tsx:36-38, 90). Disabled when splitTarget is null (TitleBar.tsx:88).",
+   "count": 1,
+   "region": "toolbar (right)",
+   "sources": [
+    "TitleBar.tsx:85-91",
+    "TitleBar.tsx:110-137 (BarButton)",
+    "state:main-default tree.txt:25-26 (IconButton icon=vertical_split filled=false active=false @1077,8 28x28)",
+    "state:no-lists tree.txt:16-17 (disabled=true)",
+    "state:main-default elements.json button 'Split view' box [1077,8,28,28] radius 7px; span 'vertical_split' box [1081,13,19,19] font 400 19px/19px"
+   ],
+   "look": "size xl, radius control (7px), iconSize 19, iconWeight 300; 28x28 box at 1077,8 (717,8 in narrow-window). Colour oklch(0.62 0.013 264) (muted) in the default state."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (local) → IconButton (icon right_panel_close / right_panel_open), preview toggle",
+   "variant": "active (filled, shows right_panel_close when the preview is open); inactive (right_panel_open; not in any recorded state)",
+   "purpose": "Shows or hides the preview panel on the right of the main window.",
+   "text": "Tooltip and accessible label: \"Hide preview panel  ⌘\\\\\" (from elements.json; the code builds `${previewOpen ? 'Hide' : 'Show'} preview panel${hint('toggle_preview')}`, so the show form is not recorded).",
+   "states": [
+    "active (filled; dark icon oklch(0.26 0.012 262); in every recorded state)",
+    "inactive (not recorded)"
+   ],
+   "behaviour": "Click calls togglePreview() (TitleBar.tsx:96). Pressing ⌘\\\\ toggles it (hotkey id toggle_preview; the binding is not in these files).",
+   "count": 1,
+   "region": "toolbar (right)",
+   "sources": [
+    "TitleBar.tsx:92-97",
+    "TitleBar.tsx:23 (hotkeys)",
+    "TitleBar.tsx:110-137",
+    "state:main-default tree.txt:28-29 (IconButton icon=right_panel_close filled=true active=true @1110,8 28x28)",
+    "state:main-default elements.json button 'Hide preview panel  ⌘\\\\' box [1110,8,28,28] radius 7px",
+    "state:narrow-window elements.json box [750,8,28,28]"
+   ],
+   "look": "size xl, radius control (7px); 28x28 box at 1110,8 (750,8 in narrow-window). Icon 19px, colour oklch(0.26 0.012 262) when active."
+  },
+  {
+   "kind": "icon-button",
+   "component": "BarButton (local) → IconButton (icon settings)",
+   "variant": "default (filled=false, active=false)",
+   "purpose": "Opens the Settings window.",
+   "text": "Tooltip and accessible label: \"Settings  ⌘,\" (two spaces before the shortcut; hint from hotkey id open_settings).",
+   "states": [
+    "default (every recorded state)"
+   ],
+   "behaviour": "Click calls api.openSettings() (TitleBar.tsx:98-102). Pressing ⌘, opens the Settings window (hotkey).",
+   "count": 1,
+   "region": "toolbar (right, last)",
+   "sources": [
+    "TitleBar.tsx:98-102",
+    "state:main-default tree.txt:31-32 (IconButton icon=settings @1143,8 28x28)",
+    "state:main-default elements.json button 'Settings  ⌘,' box [1143,8,28,28] radius 7px; span 'settings' box [1148,13,19,19]",
+    "state:narrow-window elements.json box [783,8,28,28]"
+   ],
+   "look": "size xl, radius control (7px), iconSize 19, iconWeight 300; 28x28 box at 1143,8 (783,8 in narrow-window). Colour oklch(0.62 0.013 264) (muted)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "WinControls minimize button (plain button)",
+   "variant": "Windows/Linux only; w-[46px] h-full; hover:bg-wash-2",
+   "purpose": "Minimizes the window.",
+   "text": "Tooltip \"Minimize\"; icon remove size 20.",
+   "states": [
+    "default",
+    "hover"
+   ],
+   "behaviour": "Click calls win.minimize().",
+   "count": 0,
+   "region": "window-controls (Windows/Linux, trailing)",
+   "sources": [
+    "WindowControls.tsx:149-173",
+    "TitleBar.tsx:105"
+   ],
+   "look": "Not in any recorded state (all recorded states are macOS)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "WinControls maximize/restore button (plain button)",
+   "variant": "Windows/Linux only; icon crop_square size 14 when not maximized, filter_none when maximized",
+   "purpose": "Maximizes or restores the window.",
+   "text": "Tooltip \"Maximize\" or \"Restore\" (depends on maximized state).",
+   "states": [
+    "maximize",
+    "restore",
+    "hover"
+   ],
+   "behaviour": "Click calls win.toggleMaximize().",
+   "count": 0,
+   "region": "window-controls (Windows/Linux, trailing)",
+   "sources": [
+    "WindowControls.tsx:174-182",
+    "WindowControls.tsx:150-161"
+   ],
+   "look": "Not in any recorded state."
+  },
+  {
+   "kind": "icon-button",
+   "component": "WinControls close button (plain button)",
+   "variant": "Windows/Linux only; hover bg #e81123 with white text (WIN_CLOSE)",
+   "purpose": "Closes the window.",
+   "text": "Tooltip \"Close\"; icon close size 20.",
+   "states": [
+    "default",
+    "hover (red)"
+   ],
+   "behaviour": "Click calls win.close().",
+   "count": 0,
+   "region": "window-controls (Windows/Linux, trailing)",
+   "sources": [
+    "WindowControls.tsx:183-189",
+    "WindowControls.tsx:122"
+   ],
+   "look": "Not in any recorded state."
+  }
+ ],
+ "links": [
+  {
+   "to": "settings-general",
+   "via": "Click the Settings button (tooltip \"Settings  ⌘,\") at the right of the toolbar, or press ⌘,. Calls api.openSettings() (TitleBar.tsx:98-102). Which pane opens was not determined from these files."
+  },
+  {
+   "to": "main-window",
+   "via": "Click the preview toggle (tooltip \"Hide preview panel  ⌘\\\\\"). Calls togglePreview() (TitleBar.tsx:92-97)."
+  },
+  {
+   "to": "main-window",
+   "via": "Click the Split view button (tooltip \"Split view\"). Calls toggleSplit(splitTarget) when a target exists (TitleBar.tsx:36-38, 85-91). Disabled with no target (no-lists state)."
+  },
+  {
+   "to": "main-window",
+   "via": "Click Swap panes (tooltip \"Swap panes\"). Shown only while split view is on (TitleBar.tsx:78-84)."
+  },
+  {
+   "to": "main-window",
+   "via": "Click a project row in the project menu (opened from the project pill). Calls selectProject(p.id) and closes the menu, which changes the active project and so the tabs and Task list (ProjectSwitcher.tsx:57-60)."
+  },
+  {
+   "to": "task-list",
+   "via": "Click a list tab. Calls selectList(list.id) (ListTabs.tsx:130, 48); the Task list pane then shows that list."
+  },
+  {
+   "to": "task-list",
+   "via": "Drag one or more task rows from the Task list onto a list tab. The drop calls actMove or dropSetOnRoot, moving the task into that list (ListTabs.tsx:146-189)."
+  },
+  {
+   "to": "context-menus",
+   "via": "Right-click (contextmenu) a list tab. Opens the list context menu with Rename, Open in split view or Close split, Export list…, Delete list… (ListTabs.tsx:59-93, 135)."
+  },
+  {
+   "to": "sheets",
+   "via": "Click the New list button (tooltip \"New list\"). Calls createList() (ListTabs.tsx:298). The target sheet is not confirmed; commands/lists was not read."
+  },
+  {
+   "to": "sheets",
+   "via": "Click New project… at the bottom of the project menu. Calls createProject() (ProjectSwitcher.tsx:99-103). The target sheet is not confirmed; commands/projects was not read."
+  },
+  {
+   "to": "sheets",
+   "via": "Click the rename (edit) icon on a project row in the project menu. Calls renameProject(p) (ProjectSwitcher.tsx:76-80). Sheet target not confirmed."
+  },
+  {
+   "to": "sheets",
+   "via": "Click the delete icon on a project row in the project menu. Calls deleteProject(p) (ProjectSwitcher.tsx:89-93). Sheet target not confirmed."
+  },
+  {
+   "to": "sheets",
+   "via": "Click the × Delete list button on a tab, middle-click a tab, or pick Delete list… from the tab context menu. Calls deleteList(list) (ListTabs.tsx:133, 241-244, 90). Sheet target not confirmed."
+  },
+  {
+   "to": "sheets",
+   "via": "Pick Rename from the list tab context menu. Calls renameList(list) (ListTabs.tsx:87). Sheet target not confirmed. The double-click inline rename stays on this screen."
+  }
+ ],
+ "notes": "Merged from A (code-based) and B (measured), with the critique applied. Only the title-bar inventory was produced. The other requests in the relayed message (page creation and deploy, devbench notify, the done/remaining checklist) are outside this merge and were not acted on.\n\nConflicts resolved per the critique:\n1. tab-hover: Errands stays focused (tree.txt:14 tone primary). A's claim that Garden is primary there is wrong; Garden is primary only in list-switch-3 (tree.txt:20).\n2. List tabs: one entry, count 3. B's split into selected (1), inactive (2) and hover (1) is folded into one tab entry with states; hover is a state of Reading.\n3. Traffic-light glyphs reveal on group hover (WindowControls.tsx:78-86, group-hover on MacLights). B's cmd-held attribution is dropped; the cmd-held tree matches main-default.\n4. Project pill open background oklch(0.32 0.02 262 / 0.09) is not a separate open style in code (ProjectSwitcher.tsx:31-33 has only hover:bg-wash-2). It is kept as a measured observation under the open state, not as a distinct state.\n5. Close, minimize, full screen, drag grip and project-row edit/delete behaviours are confirmed by code (WindowControls.tsx:139-142; TitleBar.tsx:51-56; ProjectSwitcher.tsx:76-93) and are no longer marked inferred.\n6. Project-row edit and delete icons are opacity-0 until row hover, which explains why they are absent from the screenshot.\n7. B's link from the project pill to context-menus is dropped. The pill opens the in-place ProjectMenu popover.\n8. B's \"aria label\" wording is replaced by title tooltip (WindowControls.tsx:67 title attribute; ProjectSwitcher, ListTabs and TitleBar titles).\n9. B's divider count of 4 is the three tab separators plus the trailing separator; kept as A's two entries.\n10. A's malformed 'Icon (name check)' entry is removed; the check icon is described in the project row variant (ProjectSwitcher.tsx:62-66).\n\nDrops (union otherwise kept):\n- A's 'Icon (name check)' entry: merged into the project row.\n- B's project-menu-popover region: merged into the project switcher region (same geometry).\n- B's divider entry (count 4): merged into the tab separator and trailing separator entries.\n- B's list tab entries (selected, inactive, hover): merged into one tab entry (count 3).\n- B's cmd-held glyph claim, the open-state background as a separate state, and the pill-to-context-menus link: dropped.\n- Duplicate entries and links across A and B (traffic lights, project row icons, project menu items, New project, split, preview, settings, tab click, tab right-click, delete list, New list): kept once, with both sources.\n\nValue conflicts (measured look used, per the rules):\n- Project row height: source h-9 (36px); measured pitch about 32px and New project button 208x32. Measured used.\n- Chevron icon: source weight 300; measured font 400 15px/15px. Measured used.\n- New project add icon: source weight 900; measured 15px at colour oklch(0.62). Measured used.\n- Title bar: measured 46px kept; the h-13 mapping is unresolved.\n\nNot in any recorded state (count 0 or unrecorded variant): inline rename TextInput, split pane dot icons, Swap panes, reduced-motion indicator, Windows/Linux window controls, split-on active Split view state, preview inactive state, and the no-lists glyph state.\n\nUncertain: list and project names (Errands, Reading, Garden, Home, Spring launch) come from elements.json; their source values are data-driven. Sheet targets for create, rename and delete were not verified (commands/projects and commands/lists were not read). The Settings pane that opens was not determined. The preview tooltip backslash escaping may differ from the source. The project menu surface is Surface2 in the tree and Surface in the source.",
+ "counts": {
+  "A": 36,
+  "B": 21,
+  "issues": 19
+ }
+}

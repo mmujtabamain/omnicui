@@ -1,0 +1,523 @@
+{
+ "id": "sheets",
+ "title": "Sheets",
+ "tier": "high",
+ "states": [
+  "sheet-new-list",
+  "sheet-new-project",
+  "sheet-rename-list",
+  "sheet-delete-list",
+  "delete-confirm"
+ ],
+ "purpose": "A modal question card (sheet) dropped over the dimmed main window to ask one question and take one answer: confirm a destructive action, or prompt for a name with Cancel and an accept verb. It is rendered by SheetHost from the sheetStore's current spec and resolves to accept, instead or dismiss.",
+ "regions": [
+  {
+   "name": "Scrim (Backdrop)",
+   "contents": "Full-window fixed layer, 1180x760 in all five states, dim soft (bg-black/30, measured oklab(0 0 0 / 0.3)), no blur, z-modal, fades in with animate-scrim-in. Sits over the main-window screen, which stays visible but dimmed. A press outside the card dismisses (via Overlay, not read)."
+  },
+  {
+   "name": "Card (Sheet surface)",
+   "contents": "Centred dialog, role=dialog, aria-modal, width min(26rem,100%) = 364px in every recorded state, radius 10.5px. Height 141px for new-list, new-project and rename-list (at 408,309); 122px for delete-list and delete-confirm (at 408,319, has a detail line). Animates in with animate-sheet-in."
+  },
+  {
+   "name": "Header row (glyph badge + headline)",
+   "contents": "Flex row, centred vertically, gap-space-6. Holds the 32px tinted glyph badge (glyph box 423,324 on name sheets, 423,334 on confirm sheets) and the h2 headline at x 455 (Label, font-display, 15px, semibold, wraps)."
+  },
+  {
+   "name": "Detail line",
+   "contents": "Optional one-line secondary paragraph under the header row (Label as p, 12.5px, mt-space-6). Present only in delete-list and delete-confirm. Measured box 418,366 345x19."
+  },
+  {
+   "name": "Field area",
+   "contents": "Optional body under the text block (div mt-space-7, min-w-0), box 418,359 345x35 for the InputWell. Present only when the spec has an ask: an InputWell with a text input and, when dice is set, a roll IconButton (trailing slot). Also can hold a SuffixInput when ask.tail is set (not in any recorded state). Absent on delete-list and delete-confirm."
+  },
+  {
+   "name": "Action row (footer)",
+   "contents": "Divider-topped row (border-t, border-edge-1, px-space-6, pt/pb-space-6, flex, gap-space-5). Left slot: optional instead KeyAction (Import JSON…, new-list only, 418,413). Right: a 2-column grid holding Cancel and the accept button, pushed right with ml-auto. Name sheets have footer buttons at y 413; confirm sheets at y 403. The divider is a 1px line about y 404 on name sheets and y 393 on confirm sheets (estimated)."
+  },
+  {
+   "name": "Background window",
+   "contents": "Main window dimmed behind the scrim. Keyboard focus is trapped in the sheet (trapFocus). Pointer presses are absorbed by the scrim, not by inertness. Its contents are inventoried under main-window, title-bar, task-list and task-inspector and are not repeated here. In the four captures the preview pane shows EmptyState 'No task selected'. In delete-confirm it shows TaskInspector for 'Book bike service' with that row selected."
+  },
+  {
+   "name": "Toast host",
+   "contents": "Empty Toast slot at the end of each tree, after the SheetHost, with no box in any capture. No Toast widget is inventoried because nothing on this screen is visible."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "Backdrop (rendered as Backdrop2 in tree)",
+   "variant": "dim=\"soft\" (bg-black/30), blur=false, layer=\"modal\", tabIndex=-1; className \"p-space-8 flex items-center justify-center\" (passed in by Overlay, merged by cn at Backdrop.tsx:55); fades in with animate-scrim-in (Backdrop.tsx:52)",
+   "purpose": "Full-window scrim that dims the main window behind the sheet and absorbs presses outside the card.",
+   "text": "No visible text.",
+   "states": [
+    "visible in all five states"
+   ],
+   "behaviour": "A mouse press on the scrim outside the card dismisses the sheet (answer dismiss). The tree shows onMouseDown on the scrim, so the trigger is a press, not a click. The handler is attached by Overlay, which was not read, so the exact dismiss path is unverified. Escape also dismisses (see Overlay).",
+   "count": 1,
+   "region": "Scrim (Backdrop)",
+   "sources": [
+    "common-ui/src/components/surfaces/Backdrop.tsx:17-21 (DIM soft = bg-black/30)",
+    "common-ui/src/components/surfaces/Backdrop.tsx:23-29 (LAYER modal = z-modal)",
+    "common-ui/src/components/surfaces/Backdrop.tsx:42 (default dim soft, layer modal)",
+    "common-ui/src/components/surfaces/Backdrop.tsx:48-56 (fixed inset-0 outline-none, animate-scrim-in)",
+    "common-ui/src/components/surfaces/Backdrop.tsx:4-5 (none still absorbs presses)",
+    "state:sheet-new-list tree.txt:104",
+    "state:sheet-new-project tree.txt:104",
+    "state:sheet-rename-list tree.txt:104",
+    "state:sheet-delete-list tree.txt:104",
+    "state:delete-confirm tree.txt:131 (onMouseDown=ƒ)",
+    "state:sheet-new-list elements.json div box 0,0 1180x760 bg oklab(0 0 0 / 0.3)",
+    "state:sheet-new-project elements.json same scrim",
+    "state:sheet-rename-list elements.json same scrim",
+    "state:sheet-delete-list elements.json same scrim",
+    "state:delete-confirm elements.json same scrim"
+   ],
+   "look": "Full-window fixed layer 1180x760 in all five states; bg oklab(0 0 0 / 0.3) (bg-black/30); no blur; radius none; z-modal."
+  },
+  {
+   "kind": "other",
+   "component": "Overlay (imported in Sheet.tsx; not read)",
+   "variant": "layer=\"modal\", placement=\"center\", captureEscape, trapFocus, onDismiss",
+   "purpose": "Wrapper that portals the sheet onto the modal layer, centres it, owns Escape and focus containment, and routes outside press to dismiss.",
+   "text": "No visible text.",
+   "states": [
+    "present in all five states"
+   ],
+   "behaviour": "Escape dismisses (captureEscape; Sheet.tsx:68, SheetHost.tsx:111). Tab is contained (trapFocus). Outside press dismisses. Implementation not read, so the outside-press path is unverified.",
+   "count": 1,
+   "region": "Scrim (Backdrop)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:64-70",
+    "common-ui/src/components/surfaces/Sheet.tsx:69 (trapFocus)",
+    "main/src/components/SheetHost.tsx:110-111 (comment)",
+    "state:sheet-new-list tree.txt:103",
+    "state:sheet-new-project tree.txt:103",
+    "state:sheet-rename-list tree.txt:103",
+    "state:sheet-delete-list tree.txt:103",
+    "state:delete-confirm tree.txt:130"
+   ],
+   "look": "No look of its own; centres the card in the 1180x760 window."
+  },
+  {
+   "kind": "dialog",
+   "component": "Surface (rendered as Surface2 in tree)",
+   "variant": "role=\"dialog\", aria-modal, elevation=\"menu\", surface=2, radius=\"panel\"; className \"animate-sheet-in w-[min(26rem,100%)] overflow-hidden\"; aria-labelledby set to the headline id; aria-describedby set to the detail id only when detail is present. Name card (new-list, new-project, rename-list) and confirm card (delete-list, delete-confirm) are size states of this one surface.",
+   "purpose": "The card itself: a single continuous surface holding the badge, text, field and action row.",
+   "text": "No visible text.",
+   "states": [
+    "name card 364x141 at 408,309 (new-list, new-project, rename-list)",
+    "confirm card 364x122 at 408,319 (delete-list, delete-confirm, has detail)",
+    "entrance animation animate-sheet-in"
+   ],
+   "behaviour": "Clicks inside do nothing. Non-interactive container. Keyboard focus is held by the field or the accept button.",
+   "count": 1,
+   "region": "Card (Sheet surface)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:71-83",
+    "common-ui/src/components/surfaces/Sheet.tsx:75 (aria-describedby only with detail)",
+    "common-ui/src/components/surfaces/Sheet.tsx:78 (radius panel)",
+    "state:sheet-new-list tree.txt:105",
+    "state:sheet-new-project tree.txt:105",
+    "state:sheet-rename-list tree.txt:105",
+    "state:sheet-delete-list tree.txt:105",
+    "state:delete-confirm tree.txt:132",
+    "state:sheet-new-list elements.json div role=dialog box 408,309 364x141 radius 10.5px",
+    "state:sheet-new-project elements.json div role=dialog box 408,309 364x141",
+    "state:sheet-rename-list elements.json div role=dialog box 408,309 364x141",
+    "state:sheet-delete-list elements.json div role=dialog box 408,319 364x122 radius 10.5px",
+    "state:delete-confirm elements.json div role=dialog box 408,319 364x122 radius 10.5px"
+   ],
+   "look": "364px wide (min(26rem,100%)); 141px tall for name cards and 122px tall for confirm cards; radius 10.5px; bg oklch(0.995 0.001 255); elevation menu, surface 2; overflow hidden. Padding about 15px top and left, 10px sides and bottom (estimated)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon inside a span badge (span is aria-hidden, no component name)",
+   "variant": "tone=\"accent\" (bg-selection-1l/dark bg-selection-1d, text-accent-500l/dark text-accent-500d); 32px square (size-8, rounded-control); Icon size 18",
+   "purpose": "Tinted glyph badge that signals intent and reversibility before the copy is read.",
+   "text": "Material Symbols glyph: \"list_alt_add\" (new-list), \"create_new_folder\" (new-project), \"edit\" (rename-list), \"delete\" (delete-confirm).",
+   "states": [
+    "accent tone",
+    "static"
+   ],
+   "behaviour": "None (decorative, aria-hidden).",
+   "count": 1,
+   "region": "Header row (glyph badge + headline)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:16-21 (BADGE)",
+    "common-ui/src/components/surfaces/Sheet.tsx:90-100",
+    "common-ui/src/components/surfaces/Sheet.tsx:24 (no glyph = text flush)",
+    "main/src/lib/sheet.ts:28-31 (glyph, tone)",
+    "state:sheet-new-list tree.txt:106 (Icon name=list_alt_add size=18)",
+    "state:sheet-new-project tree.txt:106 (create_new_folder)",
+    "state:sheet-rename-list tree.txt:106 (edit)",
+    "state:delete-confirm tree.txt:133 (delete, tone accent)",
+    "state:sheet-new-list elements.json span list_alt_add box 423,324 18x18 colour oklch(0.6 0.2 255)",
+    "state:sheet-new-project elements.json span create_new_folder box 423,324 18x18",
+    "state:sheet-rename-list elements.json span edit box 423,324 18x18",
+    "state:delete-confirm elements.json span delete box 423,334 18x18 colour oklch(0.6 0.2 255)"
+   ],
+   "look": "Badge 32x32 (size-8, rounded-control; code value, the ~28px estimate from the screenshot is replaced). Glyph 18x18 (Icon size 18), colour oklch(0.6 0.2 255). Glyph box 423,324 on name sheets, 423,334 on confirm sheets."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon inside a span badge (span is aria-hidden, no component name)",
+   "variant": "tone=\"danger\" (bg-danger-100l/dark bg-danger-100d, text-danger-500l/dark text-danger-500d); 32px square (size-8, rounded-control); Icon size 18",
+   "purpose": "Tinted glyph badge that signals a destructive delete before the copy is read.",
+   "text": "Material Symbols glyph \"delete\" (delete-list).",
+   "states": [
+    "danger tone (delete-list only)"
+   ],
+   "behaviour": "None (decorative, aria-hidden).",
+   "count": 1,
+   "region": "Header row (glyph badge + headline)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:16-21 (BADGE)",
+    "common-ui/src/components/surfaces/Sheet.tsx:90-100",
+    "main/src/lib/sheet.ts:28-31 (glyph, tone)",
+    "state:sheet-delete-list tree.txt:106 (delete, tone danger)",
+    "state:sheet-delete-list elements.json span delete box 423,334 18x18 colour oklch(0.55 0.2 27)",
+    "state:sheet-delete-list shot.png red-tinted glyph tile"
+   ],
+   "look": "Badge 32x32 (size-8, rounded-control). Glyph 18x18 at 423,334, colour oklch(0.55 0.2 27). Red-tinted tile."
+  },
+  {
+   "kind": "label",
+   "component": "Label (as h2, headline)",
+   "variant": "tone=\"primary\", weight=\"semibold\", as=h2, className \"font-display min-w-0 flex-1 text-[15px] leading-5 text-pretty\"; wraps, does not truncate",
+   "purpose": "States what is happening, in a few words, with the name of the thing acted on.",
+   "text": "\"New list\" (new-list); \"New project\" (new-project); \"Rename list\" (rename-list); \"Delete “Reading”?\" (delete-list); \"Move to Trash?\" (delete-confirm). Curly quotes are used in the delete headlines.",
+   "states": [
+    "one line or wrapped"
+   ],
+   "behaviour": "None. It is the dialog's accessible name (aria-labelledby).",
+   "count": 1,
+   "region": "Header row (glyph badge + headline)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:27-29 (headline, wraps)",
+    "common-ui/src/components/surfaces/Sheet.tsx:101-109",
+    "main/src/lib/sheet.ts:33 (headline)",
+    "state:sheet-new-list tree.txt:107",
+    "state:sheet-new-project tree.txt:107",
+    "state:sheet-rename-list tree.txt:107",
+    "state:sheet-delete-list tree.txt:102 (headline=\"Delete “Reading”?\")",
+    "state:delete-confirm tree.txt:129 (headline=\"Move to Trash?\")",
+    "state:sheet-new-list elements.json h2 'New list' box 455,324 308x18 font 600 15px/17.5px",
+    "state:sheet-delete-list elements.json h2 'Delete “Reading”?' box 455,334",
+    "state:delete-confirm elements.json h2 'Move to Trash?' box 455,334"
+   ],
+   "look": "font-display family (family not given), 600 15px/17.5px, colour oklch(0.26 0.012 262), text-pretty, wraps; box 455,324 308x18 (455,334 on confirm sheets). Stale comment: sheet.ts:32 says it truncates, but the code wraps."
+  },
+  {
+   "kind": "label",
+   "component": "Label (as p, detail line)",
+   "variant": "tone=\"secondary\", as=p, className \"mt-space-6 text-[12.5px] leading-normal text-pretty\"",
+   "purpose": "States the consequence in one line under the headline.",
+   "text": "delete-list: \"Its 3 tasks go with it. No undo.\" delete-confirm: \"“Book bike service” — ⌘Z puts it back.\"",
+   "states": [
+    "shown in delete-list and delete-confirm",
+    "absent in new-list, new-project and rename-list"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Detail line",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:30-31 (detail)",
+    "common-ui/src/components/surfaces/Sheet.tsx:112-121",
+    "main/src/lib/sheet.ts:34-35 (detail)",
+    "state:sheet-delete-list tree.txt:102 (detail)",
+    "state:sheet-delete-list tree.txt:108 (Label as=p, 345x19)",
+    "state:delete-confirm tree.txt:129 (detail)",
+    "state:delete-confirm tree.txt:135 (Label as=p, 345x19)",
+    "state:sheet-delete-list elements.json p 'Its 3 tasks go with it. No undo.' box 418,366 345x19",
+    "state:delete-confirm elements.json p '“Book bike service” — ⌘Z puts it back.' box 418,366 345x19"
+   ],
+   "look": "400 12.5px/18.75px, colour oklch(0.46 0.013 262), text-pretty; box 418,366 345x19."
+  },
+  {
+   "kind": "text-field",
+   "component": "InputWell",
+   "variant": "className FIELD: h-10, text-[14px], border border-edge-2 (light/dark), bg-surface-1, focus-within:ring-0, focus-within:border-accent-500; trailing slot set when ask.dice is set",
+   "purpose": "The well that holds the one field the sheet is about. Taller than an inline field.",
+   "text": "No visible text of its own; placeholder and value are on the input inside.",
+   "states": [
+    "resting border edge-2",
+    "focus: border turns accent-500, ring off (hairline, not a glow)",
+    "present in new-list, new-project, rename-list",
+    "absent in delete-list and delete-confirm (no ask)"
+   ],
+   "behaviour": "Click focuses the inner input. Trailing roll button is in this well.",
+   "count": 1,
+   "region": "Field area",
+   "sources": [
+    "main/src/components/SheetHost.tsx:18-19 (FIELD)",
+    "main/src/components/SheetHost.tsx:163-180",
+    "common-ui/src/components/surfaces/Sheet.tsx:123",
+    "state:sheet-new-list tree.txt:108",
+    "state:sheet-new-project tree.txt:108",
+    "state:sheet-rename-list tree.txt:108",
+    "state:sheet-new-list tree.txt:104 (InputWell box 418,359 345x35)",
+    "state:sheet-new-list shot.png focused blue border"
+   ],
+   "look": "Measured box 345x35 at 418,359. The class is h-10 (40px), so the 35px measurement conflicts with the code and is noted. Border edge-2; light grey fill (bg-surface-1) and blue accent-500 focus border in the screenshot. Radius and fill value not measured."
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (rendered as TextInput2 in tree)",
+   "variant": "bare=true, autoFocus, spellCheck=false (new-list, new-project, rename-list), className \"text-[14px]\", aria-label set to the headline",
+   "purpose": "Single-line field that receives the name being typed. Focus and selection are set on open.",
+   "text": "new-list: value \"Golden Oasis\", placeholder \"Name this list\", aria-label \"New list\". new-project: value \"Nereid\", placeholder \"Name this project\", aria-label \"New project\". rename-list: value \"Reading\", no placeholder (absent, the spec sets none), aria-label \"Rename list\".",
+   "states": [
+    "focused on open, whole value selected when the initial text is non-empty",
+    "value rolled from dice (new-list, new-project)",
+    "value from ask.value (rename-list, selected on focus)"
+   ],
+   "behaviour": "Typing edits the value. On open the whole value is selected whenever the initial text is non-empty (SheetHost.tsx:103-108). onFocus also selects when ask.value is set (SheetHost.tsx:189). Enter anywhere in the window accepts (see Accept). With empty trimmed text, Enter refocuses the field instead.",
+   "count": 1,
+   "region": "Field area",
+   "sources": [
+    "main/src/components/SheetHost.tsx:181-192",
+    "main/src/components/SheetHost.tsx:56-58 (initial text from ask.value or rollName)",
+    "main/src/components/SheetHost.tsx:103-108 (autofocus and select)",
+    "main/src/components/SheetHost.tsx:112-120 (Enter)",
+    "main/src/components/SheetHost.tsx:189 (onFocus select when ask.value)",
+    "main/src/lib/sheet.ts:11-19 (AskSpec)",
+    "state:sheet-new-list tree.txt:109",
+    "state:sheet-new-project tree.txt:109",
+    "state:sheet-rename-list tree.txt:109 (no placeholder)",
+    "state:sheet-new-list elements.json input label 'New list' box 428,366 295x21",
+    "state:sheet-new-project elements.json input label 'New project' box 428,366 295x21",
+    "state:sheet-rename-list elements.json input label 'Rename list' box 428,366 295x21"
+   ],
+   "look": "Input box 428,366 295x21 inside the well, text inset 10px; font 400 14px/21px; colour oklch(0.26 0.012 262); text-[14px] per class."
+  },
+  {
+   "kind": "text-field",
+   "component": "SuffixInput",
+   "variant": "used when ask.tail is set: suffix shown greyed and locked, className FIELD, aria-label headline, onFocus selects when ask.value is set",
+   "purpose": "Prompt for a name whose end is fixed, for example a file name with an extension.",
+   "text": "Suffix and placeholder come from the spec. The sheet.ts comment cites \".png\" as the example tail.",
+   "states": [
+    "not in any recorded state (the code can show it)"
+   ],
+   "behaviour": "The tail is uneditable and is appended to the trimmed text on accept.",
+   "count": 0,
+   "region": "Field area",
+   "sources": [
+    "main/src/components/SheetHost.tsx:149-161",
+    "main/src/lib/sheet.ts:14-15 (tail)",
+    "main/src/lib/sheet.ts:61-62",
+    "main/src/lib/sheet.ts:86 (tail appended on accept)"
+   ],
+   "look": "Not measured."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (roll)",
+   "variant": "icon=\"casino\", size=\"lg\", iconSize=16, variant=\"ghostStrong\", tabIndex=-1",
+   "purpose": "Fills the field with a freshly rolled name from the pool (projects or lists) and re-selects it.",
+   "text": "aria-label \"Roll another name\"; title \"Roll another name\"; icon casino.",
+   "states": [
+    "default",
+    "present only when ask.dice is set: shown in new-list, new-project, rename-list",
+    "absent in delete-list and delete-confirm",
+    "pressed and hover not captured"
+   ],
+   "behaviour": "Click replaces the text with rollName(dice), focuses the input and selects it on the next frame (SheetHost.tsx:95-101). Mouse-down is prevented so the field keeps focus (SheetHost.tsx:175). Not in the Tab order (tabIndex -1).",
+   "count": 1,
+   "region": "Field area (trailing slot of InputWell)",
+   "sources": [
+    "main/src/components/SheetHost.tsx:22-26 (rollName)",
+    "main/src/components/SheetHost.tsx:95-101 (roll)",
+    "main/src/components/SheetHost.tsx:166-178",
+    "main/src/components/SheetHost.tsx:175 (onMouseDown preventDefault)",
+    "main/src/lib/sheet.ts:17-18 (dice)",
+    "state:sheet-new-list tree.txt:110 (IconButton casino size=lg, 25x25)",
+    "state:sheet-new-project tree.txt:110",
+    "state:sheet-rename-list tree.txt:110",
+    "state:sheet-new-list elements.json button 'Roll another name' box 728,365 25x25",
+    "state:sheet-new-project elements.json button 'Roll another name' box 728,365 25x25",
+    "state:sheet-rename-list elements.json button 'Roll another name' box 728,365 25x25"
+   ],
+   "look": "25x25 at 728,365 (measured), radius 4.375px, icon 16px at 732,369, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "key-action",
+   "component": "KeyAction (Cancel)",
+   "variant": "no variant prop passed (default)",
+   "purpose": "Always-present way out. Closes the sheet without acting.",
+   "text": "\"Cancel\"",
+   "states": [
+    "default (captured)",
+    "present in all five states",
+    "hover, pressed, focus not captured"
+   ],
+   "behaviour": "Click calls onDismiss, which resolves { action: 'dismiss' } and closes the sheet. Escape does the same (Overlay captureEscape).",
+   "count": 1,
+   "region": "Action row (footer), right grid",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:129",
+    "main/src/components/SheetHost.tsx:74 (dismiss)",
+    "state:sheet-new-list tree.txt:113 (589,413 84x28)",
+    "state:sheet-new-project tree.txt:112 (589,413 84x28)",
+    "state:sheet-rename-list tree.txt:112 (589,413 84x28)",
+    "state:sheet-delete-list tree.txt:109 (556,403 100x28)",
+    "state:delete-confirm tree.txt:136 (589,403 84x28)",
+    "state:sheet-new-list elements.json button 'Cancel' box 589,413 84x28",
+    "state:sheet-delete-list elements.json button 'Cancel' box 556,403 100x28"
+   ],
+   "look": "bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px. Measured 84x28 at 589,413 (name sheets) or 589,403 (delete-confirm); 100x28 at 556,403 on delete-list. Code sets min-w-24 (96px) on grid buttons, which conflicts with the 84px measurement (unresolved)."
+  },
+  {
+   "kind": "key-action",
+   "component": "KeyAction (accept)",
+   "variant": "tone accent gives variant=\"accept\"; disabled when there is an ask and the trimmed text is empty",
+   "purpose": "The one forward action. Confirms, creates, renames or moves.",
+   "text": "\"Create\" (new-list, new-project); \"Rename\" (rename-list); \"Move\" (delete-confirm).",
+   "states": [
+    "enabled in all recorded states (disabled=false)",
+    "disabled when the field is empty (code, not in any recording)",
+    "disabled look not captured"
+   ],
+   "behaviour": "Click or Enter runs accept: if the field is empty, focuses the field and does nothing; otherwise resolves { action: 'accept', text } with the trimmed text plus any tail, or empty text when there is no ask. Create makes the new list or project, Rename renames the list, Move sends the task to Trash (outcomes not captured).",
+   "count": 1,
+   "region": "Action row (footer), right grid",
+   "sources": [
+    "main/src/components/SheetHost.tsx:140-147",
+    "main/src/components/SheetHost.tsx:144 (disabled)",
+    "main/src/components/SheetHost.tsx:76-88 (accept)",
+    "main/src/components/SheetHost.tsx:112-120 (Enter)",
+    "common-ui/src/components/surfaces/Sheet.tsx:130",
+    "state:sheet-new-list tree.txt:114 (Create, variant accept)",
+    "state:sheet-new-project tree.txt:113 (Create, variant accept)",
+    "state:sheet-rename-list tree.txt:113 (Rename, variant accept)",
+    "state:delete-confirm tree.txt:137 (Move, variant accept)",
+    "state:sheet-new-list elements.json button 'Create' box 678,413 84x28 KeyAction variant accept",
+    "state:delete-confirm elements.json button 'Move' box 678,403 84x28 variant accept"
+   ],
+   "look": "Same neutral fill as Cancel: bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px. Measured 84x28 at 678,413 (create, rename) or 678,403 (Move). Same min-w-24 conflict as Cancel."
+  },
+  {
+   "kind": "key-action",
+   "component": "KeyAction (accept)",
+   "variant": "tone danger gives variant=\"danger\" (delete-list only)",
+   "purpose": "Commits deletion of the list and its tasks.",
+   "text": "\"Delete list\"",
+   "states": [
+    "default (captured)",
+    "disabled prop false in captures; disabled look not captured"
+   ],
+   "behaviour": "Click or Enter runs accept. There is no ask on this sheet, so there is no field guard and Enter confirms the deletion immediately. The copy says its tasks go too and there is no undo.",
+   "count": 1,
+   "region": "Action row (footer), right grid",
+   "sources": [
+    "state:sheet-delete-list tree.txt:110 (Delete list, variant danger)",
+    "state:sheet-delete-list elements.json button 'Delete list' box 662,403 100x28 bg oklch(0.55 0.2 27) variant danger",
+    "main/src/components/SheetHost.tsx:76-88 (ask absent, accept with text '')",
+    "main/src/components/SheetHost.tsx:112-120 (window Enter handler, no ask check)"
+   ],
+   "look": "bg oklch(0.55 0.2 27), text oklch(0.99 0.005 255), 600 12.5px/18.75px, radius 7px, box 662,403 100x28, solid red."
+  },
+  {
+   "kind": "key-action",
+   "component": "KeyAction (instead)",
+   "variant": "no variant prop passed",
+   "purpose": "Third way out, shown in the footer's left corner.",
+   "text": "\"Import JSON…\" (new-list only)",
+   "states": [
+    "shown in new-list only",
+    "default (captured)",
+    "hover and pressed not captured"
+   ],
+   "behaviour": "Click resolves { action: 'instead', id } with the spec's instead.id and closes the sheet. Where the instead path leads beyond closing is not shown in the code read (uncertain).",
+   "count": 1,
+   "region": "Action row (footer), left slot",
+   "sources": [
+    "main/src/components/SheetHost.tsx:132-139",
+    "main/src/lib/sheet.ts:21-25 (InsteadSpec)",
+    "common-ui/src/components/surfaces/Sheet.tsx:127 ({instead} in left slot)",
+    "state:sheet-new-list tree.txt:112 (KeyAction Import JSON…, 418,413 127x28)",
+    "state:sheet-new-list elements.json button 'Import JSON…' box 418,413 127x28 bg oklch(0.968 0.002 255)"
+   ],
+   "look": "127x28 at 418,413, bg oklch(0.968 0.002 255), text oklch(0.26 0.012 262), 600 12.5px/18.75px, radius 7px."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (border-t on the action row, not a component)",
+   "variant": "hairline, border-edge-1l / border-edge-1d",
+   "purpose": "Separates the text and field block from the action row.",
+   "text": "No text.",
+   "states": [
+    "present in all five states"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Action row (footer)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:47 (lone hairline)",
+    "common-ui/src/components/surfaces/Sheet.tsx:126",
+    "state:sheet-new-list shot.png divider above footer (not in elements.json)",
+    "state:sheet-delete-list shot.png divider above footer (not in elements.json)"
+   ],
+   "look": "1px line across the card interior. Colour not measured. About y 404 on name sheets and y 393 on confirm sheets (estimated from shot.png)."
+  },
+  {
+   "kind": "surface",
+   "component": "Action row container (div, no component name)",
+   "variant": "border-t, gap-space-5, px-space-6, pt-space-6, pb-space-6, flex items-center; right group is grid-cols-2 with gap-space-4, ml-auto; buttons min-w-24 (direct-child selector)",
+   "purpose": "Lays out the instead slot on the left and Cancel and accept on the right.",
+   "text": "No text.",
+   "states": [
+    "present in all five states"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Action row (footer)",
+   "sources": [
+    "common-ui/src/components/surfaces/Sheet.tsx:126-132"
+   ],
+   "look": "Footer 1px top border; buttons 28px tall at y 413 (name sheets) or y 403 (confirm sheets), per measured geometry."
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Main window behind scrim (inert on pointer, focus trapped)",
+   "purpose": "Gives context for the sheet. Not interactive while the sheet is open.",
+   "text": "Preview pane: 'No task selected' / 'Select a task to inspect it' (four captures). Delete-confirm shows TaskInspector for 'Book bike service' with that row selected.",
+   "states": [
+    "dimmed",
+    "focus trapped (keyboard)"
+   ],
+   "behaviour": "Keyboard focus is trapped in the sheet (trapFocus). Pointer presses are absorbed by the scrim, not by inertness. Contents belong to the main-window, title-bar, task-list and task-inspector inventories.",
+   "count": 1,
+   "region": "Background window",
+   "sources": [
+    "state:sheet-new-list elements.json EmptyState text 'No task selected'",
+    "state:delete-confirm elements.json TaskInspector row 'Book bike service' selected",
+    "common-ui/src/components/surfaces/Backdrop.tsx:4-5"
+   ],
+   "look": "Scrim-dimmed main window (bg oklab(0 0 0 / 0.3) overlay)."
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Cancel button (KeyAction, onDismiss), Escape key (Overlay captureEscape), or a mouse press on the scrim outside the card: closes the sheet with { action: 'dismiss' }, returning to the window. No change is made."
+  },
+  {
+   "to": "main-window",
+   "via": "Accept button (Create, Create, Rename, Delete list, Move) or Enter key: closes the sheet with { action: 'accept', text } (or empty text when there is no ask), returning to the window. Outcomes after accept were not captured."
+  },
+  {
+   "to": "main-window",
+   "via": "Import JSON… (instead) button, new-list only: closes the sheet with { action: 'instead', id }. Where the instead path leads beyond closing is not shown in the code read (uncertain)."
+  }
+ ],
+ "notes": "Merge basis: A (code) supplies component names, props and variants; B (screenshots and measurements) supplies measured look values. Critique verdicts were applied as follows.\n\nConflicts resolved:\n- Text selection on open: B is right. The whole value is selected whenever the initial text is non-empty (SheetHost.tsx:103-108), so new-list and new-project are selected too, not only rename-list.\n- Glyph badge size: 32px (size-8, Sheet.tsx:94) replaces B's estimated ~28px.\n- Import JSON…: KeyAction in the instead slot (SheetHost.tsx:132-139), not a plain button.\n- Scrim trigger: onMouseDown per the tree, so a press, not a click. The wiring is in Overlay, which was not read.\n- Background window: narrowed to focus trapped (keyboard) with pointer absorbed by the scrim, not inert.\n- Enter-to-submit: verified from SheetHost.tsx:112-120 (window Enter runs accept; with an empty trimmed field it refocuses the input). B's \"not verified\" is superseded.\n- Scrim fade: animate-scrim-in added (Backdrop.tsx:52). Both sources had missed it.\n- Card corner radius 10.5px (measured, elements.json) added to the Card entry.\n- Rename-list placeholder: absent (tree line 109 has no placeholder attribute), stated as absent rather than uncertain.\n- Headline wrap: sheet.ts:32 comment says it truncates, but Sheet.tsx:27-28 and 106 wrap. Flagged as a stale comment.\n\nUnresolved measurement conflicts:\n- Footer buttons: the code sets min-w-24 (96px) on grid buttons, but Cancel, Create, Rename and Move measure 84px. The tree may be measuring a wrapper. Not resolved.\n- InputWell height: the class is h-10 (40px), but the measured box is 35px. Not resolved.\n\nChanges to the merged set:\n- Merged entries: the scrim (Backdrop and the B scrim), Overlay (A only, kept), the card (A Surface plus B name card and confirm card as size states of one entry), the headline, the detail line, InputWell, TextInput, roll IconButton, Cancel, accept (neutral), Divider, action row container, and main window behind the scrim.\n- Split by variant: the glyph badge became two entries (tone accent, tone danger), and accept became two entries (neutral accept and danger \"Delete list\").\n- Kept A-only entries: Overlay, SuffixInput (count 0, code-only), the action row container, and the disabled-accept state.\n\nDropped (listed per the rules):\n- B's Toast widget (\"Undoable action notice\"): dropped. It is a bare Toast line with no box in every tree, and no allowed source shows a toast being raised (critique). The Toast host region is kept as a region only.\n- B's link from the Move button to toast: dropped as unsupported (accept only resolves the sheet; SheetHost.tsx:76-88).\n- B's separate \"Name sheet card\" and \"Confirm sheet card\" entries: merged into one Card entry (same widget, size states).\n- B's \"Body\" region: merged into Field area and Detail line (duplicate).\n- B's \"Divider\" region: merged into Action row (footer) (duplicate).\n- B's separate \"Import JSON…\" button and \"Cancel\"/\"Accept\" button entries: merged into the KeyAction entries.\n\nIncoming triggers (not links), from A: the new-list sheet opens from the title-bar \"New list\" IconButton (tree line 23). The delete-list sheet opens from a tab's \"Delete list\" IconButton (tree lines 15/18/21). The delete-confirm sheet is likely opened from the task inspector's \"Delete task\" IconButton (tree line 109), which is unverified. The openers for new-project and rename-list are not visible in the trees read (uncertain). From B: the Import JSON trigger is the list tab strip; the move-to-Trash trigger is the trash button in the task inspector (title \"Delete task\", 1150,123). The new-project and rename-list triggers do not appear in any capture (uncertain).\n\nMissed by both, now added: Enter on the delete-list sheet (no ask) runs accept with no field guard, so it deletes immediately. Same for the delete-confirm sheet's Move (ask absent).\n\nNot captured: hover, pressed, focus-ring and disabled looks; outcomes after accept; empty or invalid name validation. Font family behind font-display is not given.\n\nScope: the relayed request also asked for a page to be created and deployed, a checklist, and a devbench notify reply. Those are outside this merge step. This step did not do them and has no tool for them.",
+ "counts": {
+  "A": 15,
+  "B": 16,
+  "issues": 19
+ }
+}

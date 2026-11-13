@@ -1,0 +1,915 @@
+{
+ "id": "trash",
+ "title": "Trash pane",
+ "tier": "ordinary",
+ "states": [
+  "trash",
+  "trash-selected"
+ ],
+ "purpose": "The Trash pane sits in the preview-pane slot to the right of the task list. It lists soft-deleted root tasks with per-item Restore and Delete permanently, plus Restore all and Empty, and Empty asks for confirmation before clearing the trash.",
+ "regions": [
+  {
+   "name": "Pane root",
+   "contents": "Outer div bg-surface-1l dark:bg-surface-1d, flex column, h-full w-full (TrashPane.tsx:49). Sits at x=861, y=46, 319x715 in both trees (tree.txt line 95)."
+  },
+  {
+   "name": "Title bar",
+   "contents": "TitleBar with title 'Trash', border edge-1, DialogControls on the leading side, Icon delete as leading (TrashPane.tsx:50-65; tree line 96). Measured by B as the trash pane header at x 861-1180, y 46-90, with pane traffic lights at y 61 and the title beside them."
+  },
+  {
+   "name": "Action strip",
+   "contents": "Plain div with bottom border, flex row, gap-space-3, px-space-6 py-space-5, shrink-0. Rendered only when roots.length > 0 (TrashPane.tsx:67-82). Holds Restore all on the left and Empty pushed right with ml-auto. Tree boxes at y=98, 25px high. B measured it as the toolbar strip at y ~91-130, separated from the list by a hairline."
+  },
+  {
+   "name": "List body",
+   "contents": "Scroll container p-space-5, min-h-0, flex-1, overflow-y-auto (TrashPane.tsx:84). Holds the EmptyState when there are no roots, otherwise one row per root (TrashPane.tsx:85-126). B measured the row area at y ~131-760, empty below the rows."
+  },
+  {
+   "name": "Trash rows",
+   "contents": "One div per root, group/trash, rounded-field, hover bg-wash-1, h-9 (36px), px-space-5, gap-space-5, flex items-center (TrashPane.tsx:93-97). Each row has a text column (title and meta label) and two icon buttons at its right end. Tree: rows at y=131 and y=162. B measured the two rows at y ~138-202 with titles about 31px apart."
+  },
+  {
+   "name": "main title bar (full width, y 0-45)",
+   "contents": "Owned by title-bar, not by the Trash pane. Left cluster: Close, Minimize, Full Screen traffic lights, drag_indicator grip, Home project switcher, list tabs Errands / Reading / Garden with their close buttons, New list add button. Right cluster: Split view, Hide preview panel, Settings. Source: state:trash elements.json and shot.png."
+  },
+  {
+   "name": "task list pane (left, x 0-860, y 46-760)",
+   "contents": "Owned by task-list, visible behind the Trash pane. Search row (y ~56-91), task rows y ~97-365 for Errands (8 rows incl. 3 subtasks), footer y ~730-760 with Sort & filter, done counter, percentage and progress bar. Source: state:trash elements.json and shot.png."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "div (plain)",
+   "variant": "pane root",
+   "purpose": "Container that holds the whole Trash pane.",
+   "text": "",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Pane root",
+   "sources": [
+    "A: TrashPane.tsx:49",
+    "A: tree.txt:95 (trash)",
+    "A: trash-selected/tree.txt:95",
+    "B: not a separate widget; pane bounds from state:trash elements.json"
+   ],
+   "look": "bg-surface-1l dark:bg-surface-1d, flex column, h-full w-full (code). 319x715 at 861,46 (tree)."
+  },
+  {
+   "kind": "title-bar",
+   "component": "TitleBar (@taskscape/common-ui/components)",
+   "variant": "border=\"edge-1\", controlsSide=leading (tree shows controlsSide=\"leading\"), with leading and controls elements",
+   "purpose": "Header showing the pane name and the window close control.",
+   "text": "Trash (title prop)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None on its own. Its children are the close control and the title label.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: TrashPane.tsx:50-65",
+    "A: tree.txt:96",
+    "A: trash-selected/tree.txt:96",
+    "B: trash pane header, state:trash elements.json and shot.png"
+   ],
+   "look": "319x46 at 861,46 (tree). B measured the header band at y 46-90 (44px), a 2px difference from the tree height; see notes."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=delete, size 18, weight 300, className text-content-2l dark:text-content-2d shrink-0 (leading slot)",
+   "purpose": "Glyph before the title.",
+   "text": "delete (Material Symbols icon name)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (decorative).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: TrashPane.tsx:54-59",
+    "A: tree.txt:102",
+    "B: state:trash elements.json span 'delete' box [954,59,18,18]"
+   ],
+   "look": "Icon 18px/18px, font 400 18px (B measured), colour oklch(0.46 0.013 262). Weight 300 from code; B measured 400. See notes."
+  },
+  {
+   "kind": "window-controls",
+   "component": "DialogControls (./WindowControls) containing MacLights",
+   "variant": "onClose and closeTitle=\"Close Trash\"",
+   "purpose": "Traffic-light cluster for this pane. Only the close light is active.",
+   "text": "closeTitle: 'Close Trash'",
+   "states": [
+    "default",
+    "focused=true"
+   ],
+   "behaviour": "Clicking the close light calls the pane onClose prop.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: TrashPane.tsx:61-63",
+    "A: tree.txt:97-98",
+    "B: pane-level trio, state:trash elements.json (Close Trash, Minimize, Full Screen)"
+   ],
+   "look": "Three 14x14 circles at x 879, 900, 921 and y 61 (21px pitch). Glyph colour oklch(0.26 0.012 262), font 400 14px/21px (B)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (MacLights), id=\"close\"",
+   "variant": "red traffic light, 14x14, title=\"Close Trash\", focused=true, inert=false",
+   "purpose": "Closes the Trash pane.",
+   "text": "title: Close Trash",
+   "states": [
+    "default",
+    "focused"
+   ],
+   "behaviour": "Click calls onClose and closes the Trash pane (close target not confirmed; the handler is supplied by the parent).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:99 @879,61 14x14",
+    "A: trash-selected/tree.txt:99",
+    "A: TrashPane.tsx:62",
+    "B: state:trash elements.json Close Trash box [879,61,14,14]"
+   ],
+   "look": "14x14 at 879,61, red in shot. Glyph colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (MacLights), id=\"minimize\"",
+   "variant": "yellow traffic light, 14x14, inert=true",
+   "purpose": "Shown but inactive in this pane.",
+   "text": "none (no title in tree)",
+   "states": [
+    "inert (disabled)"
+   ],
+   "behaviour": "No effect (inert, no onClick in tree).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:100 @900,61 14x14",
+    "A: trash-selected/tree.txt:100",
+    "B: state:trash elements.json Minimize box [900,61,14,14] disabled"
+   ],
+   "look": "14x14 at 900,61, grey in shot (disabled). Glyph colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "Light (MacLights), id=\"fullscreen\"",
+   "variant": "green traffic light, 14x14, inert=true",
+   "purpose": "Shown but inactive in this pane.",
+   "text": "none (no title in tree)",
+   "states": [
+    "inert (disabled)"
+   ],
+   "behaviour": "No effect (inert, no onClick in tree).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: tree.txt:101 @921,61 14x14",
+    "A: trash-selected/tree.txt:101",
+    "B: state:trash elements.json Full Screen box [921,61,14,14] disabled"
+   ],
+   "look": "14x14 at 921,61, grey in shot (disabled). Glyph colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "label",
+   "component": "Label as=\"div\"",
+   "variant": "tone=primary, weight=semibold, truncate, className font-display min-w-0 flex-1 text-[13.5px]",
+   "purpose": "Title text of the pane.",
+   "text": "Trash",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: TitleBar title prop, TrashPane.tsx:51",
+    "A: tree.txt:103",
+    "B: 'Trash' text at about x 977, y 61-75 (estimated from shot.png)"
+   ],
+   "look": "Code: font-display 13.5px, semibold. B estimate: bold, about 14px, dark, not measured from elements.json."
+  },
+  {
+   "kind": "surface",
+   "component": "div (plain)",
+   "variant": "action strip, rendered only when roots.length > 0",
+   "purpose": "Holds the two bulk actions.",
+   "text": "",
+   "states": [
+    "shown when at least one root",
+    "hidden when empty"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Action strip",
+   "sources": [
+    "A: TrashPane.tsx:67-82",
+    "A: tree.txt:104-106",
+    "B: trash pane toolbar, state:trash elements.json and shot.png (y ~91-130)"
+   ],
+   "look": "Code: flex row, gap-space-3, px-space-6 py-space-5, shrink-0, bottom border. Tree: 25px high at y=98."
+  },
+  {
+   "kind": "button",
+   "component": "ToolbarButton",
+   "variant": "default, icon restore, iconSize 14",
+   "purpose": "Restores every root item in the trash in one action.",
+   "text": "Restore all",
+   "states": [
+    "default (no hover, pressed or disabled state captured)"
+   ],
+   "behaviour": "Click calls restoreAll, which calls trashStore.restore with all root ids (TrashPane.tsx:35-36). No confirmation.",
+   "count": 1,
+   "region": "Action strip",
+   "sources": [
+    "A: TrashPane.tsx:69-71",
+    "A: tree.txt:104-105 @870,98 105x25",
+    "B: state:trash elements.json button 'Restore all' box [870,98,105,25]",
+    "B: state:trash shot.png"
+   ],
+   "look": "105x25 at 870,98. Font 600 12px/18px. Colour oklch(0.62 0.013 264). Radius 4.375px. Icon span 'restore' 14x14 at 877,103, font 400 14px/14px."
+  },
+  {
+   "kind": "button",
+   "component": "ToolbarButton",
+   "variant": "variant=danger, icon delete_forever, iconSize 14, className ml-auto (pushed to the right)",
+   "purpose": "Permanently deletes every trashed item after confirmation.",
+   "text": "Empty",
+   "states": [
+    "default (no hover, pressed or disabled state captured)"
+   ],
+   "behaviour": "Click calls emptyTrash, which opens the askConfirm sheet 'Empty Trash?' (see the sheets screen). If accepted it calls trashStore.empty() (TrashPane.tsx:37-45, 72-80).",
+   "count": 1,
+   "region": "Action strip",
+   "sources": [
+    "A: TrashPane.tsx:72-80",
+    "A: tree.txt:106-107 @1097,98 74x25",
+    "B: state:trash elements.json button 'delete_forever Empty' box [1097,98,74,25]",
+    "B: state:trash shot.png"
+   ],
+   "look": "74x25 at 1097,98. Font 600 12px/18px. Colour oklch(0.62 0.013 264), the same grey as Restore all in the shot, not red. Radius 4.375px. Icon span 14x14 at 1104,103. Conflicts with variant=danger; see notes."
+  },
+  {
+   "kind": "surface",
+   "component": "div (plain)",
+   "variant": "scrollable list body",
+   "purpose": "Container for the row list, scrolls vertically.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolls when rows overflow"
+   ],
+   "behaviour": "Mouse wheel or trackpad scrolls the list.",
+   "count": 1,
+   "region": "List body",
+   "sources": [
+    "A: TrashPane.tsx:84",
+    "B: trash pane list, state:trash elements.json and shot.png (y ~131-760)"
+   ],
+   "look": "Code: p-space-5, min-h-0, flex-1, overflow-y-auto. Region y ~131-760 (B estimate)."
+  },
+  {
+   "kind": "empty-state",
+   "component": "EmptyState",
+   "variant": "icon delete, iconSize 28, className py-16; title depends on loading",
+   "purpose": "Shown in place of the list when there are no roots.",
+   "text": "'Loading…' while the store is loading, otherwise 'Trash is empty' (no icon text)",
+   "states": [
+    "loading (title Loading…)",
+    "empty (title Trash is empty)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "List body",
+   "sources": [
+    "A: TrashPane.tsx:85-92",
+    "B: not captured (empty state not recorded)"
+   ],
+   "look": "Code: icon delete at 28px, py-16. Not measured."
+  },
+  {
+   "kind": "list-row",
+   "component": "div (plain), class group/trash",
+   "variant": "one per root item, h-9 (36px), rounded-field, px-space-5, gap-space-5",
+   "purpose": "One deleted root task with its restore and delete actions.",
+   "text": "Example rows from B: 'Call the printer about samples' / 'Website · deleted 3d ago'; 'Print the old flyer' / 'Errands · deleted 5d ago'. Otherwise data-driven.",
+   "states": [
+    "default (at rest)",
+    "hover (wash-1 background, the row buttons become visible)",
+    "selected/highlighted (row 2 in trash-selected, per B)"
+   ],
+   "behaviour": "Hover reveals the two icon buttons. Clicking the row body is not captured in either recording.",
+   "count": 2,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:93-97",
+    "A: tree.txt:108-119 (two rows)",
+    "A: trash-selected/tree.txt:108-119",
+    "B: state:trash shot.png and state:trash-selected shot.png",
+    "B: state:trash elements.json (row action spans)"
+   ],
+   "look": "Code: h-9 (36px), px-space-5, gap-space-5, rounded-field. Measured: rows at y 131 and 162 in the tree (31px pitch), and about 31px apart in B's shot. Row 1 title at about y 138-152, row 2 title at about y 169-183."
+  },
+  {
+   "kind": "label",
+   "component": "Label as=\"div\"",
+   "variant": "tone=primary, truncate, className text-[13.5px]",
+   "purpose": "Task title of the deleted row.",
+   "text": "{t.title} (data value; example 'Call the printer about samples', 'Print the old flyer')",
+   "states": [
+    "default",
+    "truncated with ellipsis when long"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:98-101",
+    "A: tree.txt:108 @875,135 228x20",
+    "A: tree.txt:114 @875,166 228x20",
+    "B: state:trash shot.png (title text not in elements.json)"
+   ],
+   "look": "Code: 13.5px, tone primary. Box 228x20 at 875,135 and 875,166 (tree). B estimate: about 14px regular, dark. Conflict on size; see notes."
+  },
+  {
+   "kind": "label",
+   "component": "Label as=\"div\"",
+   "variant": "tone=muted, truncate, className text-[11px]",
+   "purpose": "Meta line: list name and deletion time.",
+   "text": "'<list name> · ' when the list is found, then 'deleted <relativeTime>' (TrashPane.tsx:103-104). Example 'Website · deleted 3d ago', 'Errands · deleted 5d ago'.",
+   "states": [
+    "default",
+    "truncated with ellipsis when long"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:102-105",
+    "A: tree.txt:109 @875,155 228x17",
+    "A: tree.txt:115 @875,187 228x17",
+    "B: state:trash shot.png (meta lines about y 157-168 and 188-199)"
+   ],
+   "look": "Code: 11px, tone muted. Box 228x17 at 875,155 and 875,187 (tree). B estimate: about 11px, grey."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "variant=ghostStrong, size lg, iconSize 16, icon restore, className opacity-0 group-hover/trash:opacity-100; aria label 'Restore'",
+   "purpose": "Restores this one item.",
+   "text": "title: Restore (icon: restore)",
+   "states": [
+    "hidden by default (opacity 0)",
+    "visible on row hover",
+    "visible on the selected row (row 2 in trash-selected, per B)",
+    "hover"
+   ],
+   "behaviour": "Click calls restore([t.id]) (TrashPane.tsx:113).",
+   "count": 2,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:107-115",
+    "A: tree.txt:110-111 @1110,141 25x25",
+    "A: tree.txt:116-117 @1110,173 25x25",
+    "B: state:trash-selected elements.json button 'Restore' box [1110,173,25,25]",
+    "B: state:trash-selected shot.png"
+   ],
+   "look": "25x25 at 1110,141 and 1110,173. Radius 4.375px. Icon 16px/16px, font 400, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "variant=danger, size lg, iconSize 16, icon delete_forever, className opacity-0 group-hover/trash:opacity-100; aria label 'Delete permanently'",
+   "purpose": "Permanently deletes this one item.",
+   "text": "title: Delete permanently (icon: delete_forever)",
+   "states": [
+    "hidden by default (opacity 0)",
+    "visible on row hover",
+    "visible on the selected row (row 2 in trash-selected, per B)",
+    "hover"
+   ],
+   "behaviour": "Click calls purge([t.id]) immediately, with no confirmation in this file (TrashPane.tsx:122).",
+   "count": 2,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:116-124",
+    "A: tree.txt:112-113 @1142,141 25x25",
+    "A: tree.txt:118-119 @1142,173 25x25",
+    "B: state:trash-selected elements.json button 'Delete permanently' box [1142,173,25,25]",
+    "B: state:trash-selected shot.png"
+   ],
+   "look": "25x25 at 1142,141 and 1142,173. Radius 4.375px. Icon 16px/16px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Hover or selected row highlight (background behind a trashed row)",
+   "purpose": "Shows which trashed row is under the pointer or selected.",
+   "text": "none",
+   "states": [
+    "hover (wash-1 per code)",
+    "shown on row 2 in trash-selected (per B only)",
+    "absent in trash"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Trash rows",
+   "sources": [
+    "A: TrashPane.tsx:93-97 (hover bg-wash-1)",
+    "B: state:trash-selected shot.png (highlight about x 869-1173, y 169-201, estimated)"
+   ],
+   "look": "Code: bg-wash-1 on hover. B: subtle grey-tinted rounded band, about x 869-1173, y 169-201 (estimated); exact fill and radius not measured."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "Hairline separators in the Trash pane (one vertical at the pane edge, two horizontal under the header and under the toolbar)",
+   "purpose": "Separate the pane from the list, and the header from the toolbar.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Title bar",
+   "sources": [
+    "B: state:trash shot.png (vertical at x ~860; horizontal at y ~90 and y ~130, estimated)"
+   ],
+   "look": "1px hairlines, colour not measured. Positions estimated from the shot."
+  },
+  {
+   "kind": "window-controls",
+   "component": "?",
+   "variant": "Main window traffic-light trio (Close, Minimize, Full Screen), all enabled",
+   "purpose": "Main window close, minimise and full-screen controls.",
+   "text": "Close / Minimize / Full Screen (aria labels; no visible text)",
+   "states": [
+    "default (all enabled, not disabled)"
+   ],
+   "behaviour": "Close, minimise and toggle full screen for the main window.",
+   "count": 3,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json Close [18,15,14,14], Minimize [39,15,14,14], Full Screen [60,15,14,14]",
+    "B: state:trash shot.png"
+   ],
+   "look": "14x14 circles at x 18, 39, 60 and y 15 (21px pitch). Glyph colour oklch(0.26 0.012 262). Font 400 14px/21px."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "Window drag grip (six-dot handle)",
+   "purpose": "Grab area to move the window.",
+   "text": "icon 'drag_indicator'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Drag to move the window (inferred).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json span 'drag_indicator' box [85,12,20,20]",
+    "B: state:trash shot.png"
+   ],
+   "look": "Icon 20px/20px, font 400 20px/20px, colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "dropdown",
+   "component": "?",
+   "variant": "Project switcher, filled pill with label and up/down chevron",
+   "purpose": "Switch the current project (Home).",
+   "text": "'Home' with icon 'unfold_more'; aria label 'Switch project'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the project list (inferred from the chevron and label; not captured).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json button 'Switch project' box [112,8,85,28]; span 'Home' box [124,12,45,21]; span 'unfold_more' box [173,15,15,15]",
+    "B: state:trash shot.png"
+   ],
+   "look": "Box 85x28 at 112,8. Background oklch(0.944 0.003 255). Radius 7px. 'Home' font 600 14px/21px, colour oklch(0.26 0.012 262). Chevron 15px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "tab",
+   "component": "?",
+   "variant": "List tab; active (Errands) versus inactive (Reading, Garden)",
+   "purpose": "Switch between the project's lists.",
+   "text": "'Errands' (active), 'Reading', 'Garden'",
+   "states": [
+    "active: Errands, dark text, bordered tab in shot",
+    "inactive: Reading and Garden, grey text"
+   ],
+   "behaviour": "Click switches to that list (inferred from tab style; not captured).",
+   "count": 3,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json spans 'Errands' [224,12,51,20]; 'Reading' [322,12,54,20]; 'Garden' [422,12,48,20]",
+    "B: state:trash shot.png (Errands tab borders at x ~211 and ~308)"
+   ],
+   "look": "Font 500 13px/19.5px. Active text oklch(0.26 0.012 262), inactive oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Small close control on each list tab, 21x21",
+   "purpose": "Delete the list shown on that tab.",
+   "text": "icon 'close'; aria label 'Delete list'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click deletes that list (inferred from label; a confirmation sheet is likely but not captured).",
+   "count": 3,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json buttons 'Delete list' at [280,11,21,21], [380,11,21,21], [475,11,21,21]; icon spans 'close' size 15px"
+   ],
+   "look": "21x21, radius 4.375px. Icon 15px/15px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Plus icon button at the end of the tab strip, 25x25",
+   "purpose": "Create a new list.",
+   "text": "icon 'add'; aria label 'New list'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the new list sheet (inferred).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json button 'New list' box [518,10,25,25]; span 'add' box [522,13,18,18]"
+   ],
+   "look": "25x25, radius 5.25px. Icon 18px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Icon toolbar button",
+   "purpose": "Toggle split view.",
+   "text": "icon 'vertical_split'; aria label 'Split view'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Toggles split view in the main window (inferred from label).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json button 'Split view' box [1077,8,28,28]; span 'vertical_split' box [1081,13,19,19]"
+   ],
+   "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Icon toolbar button, shown in the on (dark glyph) state while the right panel is open",
+   "purpose": "Show or hide the right-hand panel (the Trash pane sits there in this recording).",
+   "text": "icon 'right_panel_close'; aria label 'Hide preview panel  ⌘\\' (shortcut ⌘\\)",
+   "states": [
+    "on/active: glyph oklch(0.26 0.012 262), darker than its neighbours"
+   ],
+   "behaviour": "Click or ⌘\\ hides the right-hand panel (inferred; not captured).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json button 'Hide preview panel  ⌘\\' box [1110,8,28,28]; span 'right_panel_close' box [1115,13,19,19]"
+   ],
+   "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "Icon toolbar button",
+   "purpose": "Open the Settings window.",
+   "text": "icon 'settings'; aria label 'Settings  ⌘,'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click or ⌘, opens the Settings window (inferred from label).",
+   "count": 1,
+   "region": "main title bar (full width, y 0-45)",
+   "sources": [
+    "B: state:trash elements.json button 'Settings  ⌘,' box [1143,8,28,28]; span 'settings' box [1148,13,19,19]"
+   ],
+   "look": "28x28, radius 7px. Icon 19px/19px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "search-field",
+   "component": "?",
+   "variant": "Search bar with leading icon and trailing options and add buttons",
+   "purpose": "Filter tasks in the current list.",
+   "text": "placeholder 'Search Errands' (visible in shot; not in elements.json)",
+   "states": [
+    "empty (placeholder shown)"
+   ],
+   "behaviour": "Typing filters the task rows (inferred).",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json input box [46,63,733,21]; span 'search' box [23,65,18,18]",
+    "B: state:trash shot.png (field about x 14-846, y 56-91)"
+   ],
+   "look": "Input font 400 14px/21px, colour oklch(0.26 0.012 262). Leading icon 18px, colour oklch(0.62 0.013 264). Field fill and radius estimated from shot."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Quiet icon button inside the search field, 21x21",
+   "purpose": "Open search options.",
+   "text": "icon 'tune'; aria label 'Search options'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens search options (inferred from label).",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json button 'Search options' box [784,63,21,21]; span 'tune' box [787,66,15,15]"
+   ],
+   "look": "21x21, radius 4.375px. Icon 15px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Quiet icon button inside the search field, 21x21 (plus glyph)",
+   "purpose": "Start a new task.",
+   "text": "icon 'add'; aria label 'New task'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the draft inspector for a new task (inferred from label).",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json button 'New task' box [816,63,21,21]; span 'add' box [818,65,18,18]"
+   ],
+   "look": "21x21, radius 4.375px. Icon 18px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "round-check",
+   "component": "?",
+   "variant": "Round task checkbox, unchecked, top-level rows (5 rows) and subtask rows (3 rows)",
+   "purpose": "Mark a task done or open.",
+   "text": "label 'Select'; aria-pressed=false",
+   "states": [
+    "unchecked (aria-pressed=false) on all 8 rows in both states"
+   ],
+   "behaviour": "Click toggles completion (inferred from label; not captured).",
+   "count": 8,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json buttons 'Select' at [20,113,16,16], [20,151,16,16], [20,183,16,16], [20,214,16,16], [20,246,16,16]; subtasks [44,277,16,16], [44,309,16,16], [44,340,16,16]"
+   ],
+   "look": "16x16, circle. Outline colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "list-row",
+   "component": "?",
+   "variant": "Task row title, open (not done), 6 rows",
+   "purpose": "Name of an open task (subtasks are indented to x 71).",
+   "text": "'Pick up prescription' (note 'Counter closes at 6' below), 'Book bike service', 'Cut a spare key', 'Buy groceries for the week', 'Sourdough loaf' (subtask), 'Apples' (subtask)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the task inspector (inferred from the task-list design; not captured).",
+   "count": 6,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json spans at [47,105,138,16], [47,182,123,16], [47,214,109,16], [47,245,188,16], [71,308,106,16], [71,340,47,16]"
+   ],
+   "look": "Font 500 14px/16.625px, colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "list-row",
+   "component": "?",
+   "variant": "Task row title, completed (struck through), 2 rows",
+   "purpose": "Name of a done task or subtask.",
+   "text": "'Post the parcel to Mum' (top level), 'Oat milk' (subtask)",
+   "states": [
+    "completed: strikethrough line (shot), grey text"
+   ],
+   "behaviour": "Click opens the task inspector (inferred; not captured).",
+   "count": 2,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json spans 'Post the parcel to Mum' [47,151,162,16]; 'Oat milk' [71,277,59,16]",
+    "B: state:trash shot.png (strikethrough)"
+   ],
+   "look": "Font 500 14px/16.625px, colour oklch(0.62 0.013 264), strikethrough."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "Secondary note under a task title",
+   "purpose": "Short note for the task.",
+   "text": "'Counter closes at 6' (under 'Pick up prescription')",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash shot.png (no text node in elements.json; position and size estimated)"
+   ],
+   "look": "About 12px, grey, regular (estimated from shot)."
+  },
+  {
+   "kind": "badge",
+   "component": "?",
+   "variant": "Subtask progress chip with bordered box",
+   "purpose": "Shows how many subtasks are done on the parent task.",
+   "text": "'1 / 3'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None (display only, inferred).",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json spans '1' [798,246,8,17], '/' [807,246,4,17], '3' [813,246,8,17], font 600 11px/16.5px",
+    "B: state:trash shot.png (chip about x 793-825, y 245-262)"
+   ],
+   "look": "Font 600 11px/16.5px, colour oklch(0.62 0.013 264). Chip border and radius estimated from shot."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "Chevron left, hidden in both recordings (present in DOM)",
+   "purpose": "Likely the expand or collapse control for the subtask group on the parent row (inferred; not visible).",
+   "text": "icon 'chevron_left'",
+   "states": [
+    "hidden in both shots"
+   ],
+   "behaviour": "Unknown; not captured.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json span 'chevron_left' box [771,246,16,16]"
+   ],
+   "look": "Icon 16px/16px, font 400 16px/16px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Row menu button, 21x21, one per task row",
+   "purpose": "Open the menu for that task.",
+   "text": "icon 'more_horiz'; aria label 'More'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the task row context menu (inferred from label).",
+   "count": 8,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json buttons 'More' at x 830, y 110, 149, 180, 212, 243, 275, 306, 338; icon spans 'more_horiz' 17px"
+   ],
+   "look": "21x21, radius 4.375px. Icon 17px/17px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "Quiet icon button in the footer, 25x19",
+   "purpose": "Open the Sort and filter panel.",
+   "text": "icon 'tune'; aria label 'Sort & filter'",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the Filter & Sort panel (inferred from label).",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json button 'Sort & filter' box [12,735,25,19]; span 'tune' box [18,738,14,14]"
+   ],
+   "look": "25x19 box, radius 4.375px. Icon 14px/14px. Button font 600 11px/16.5px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "Footer done counter (uppercase)",
+   "purpose": "Shows how many tasks in the list are done.",
+   "text": "'2 / 8 done' (rendered uppercase)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json span '2 / 8 done' box [52,737,65,17] transform uppercase"
+   ],
+   "look": "Font 600 11px/16.5px, colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "Footer percentage (uppercase)",
+   "purpose": "Shows completion percentage.",
+   "text": "'25 %' (rendered uppercase)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash elements.json span '25 %' box [820,737,28,17] transform uppercase"
+   ],
+   "look": "Font 600 11px/16.5px, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "progress-bar",
+   "component": "?",
+   "variant": "Thin footer progress bar, blue fill about a quarter of the track",
+   "purpose": "Visual completion for the list (25%).",
+   "text": "none",
+   "states": [
+    "default, about 25% filled"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash shot.png (track about x 731-815, fill about x 731-752, y ~744; estimated)"
+   ],
+   "look": "Track about 84px wide, about 4-5px tall (estimated). Fill blue, colour not measured."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "Vertical hairline in the footer",
+   "purpose": "Separates the Sort & filter button from the counters.",
+   "text": "none",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "task list pane (left, x 0-860, y 46-760)",
+   "sources": [
+    "B: state:trash shot.png (about x 44, y 730-760; estimated)"
+   ],
+   "look": "1px, colour not measured."
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Click the red close light (Light id=\"close\", title \"Close Trash\") at 879,61 in the Trash title bar, which calls the onClose prop (TrashPane.tsx:62; tree.txt:99). Target not confirmed: the handler is supplied by the parent. Merged from A and B, which gave the same control."
+  },
+  {
+   "to": "main-window",
+   "via": "Click 'Hide preview panel  ⌘\\' (box 1110,8) or press ⌘\\ to hide the right-hand panel where the Trash pane sits. Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "sheets",
+   "via": "Click the Empty button (ToolbarButton, icon delete_forever, text Empty). It opens the askConfirm sheet with glyph delete_forever, tone danger, headline 'Empty Trash?', detail '<n> task(s) deleted for good. No undo.' (n is items.length, all trashed items, not roots), accept button 'Empty Trash' (TrashPane.tsx:37-45, 72-80). B also notes a confirmation is likely but not captured."
+  },
+  {
+   "to": "sheets",
+   "via": "Click 'New list' (box 518,10). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "sheets",
+   "via": "Click a list tab's 'Delete list' close button (boxes 280,11 / 380,11 / 475,11). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "settings-general",
+   "via": "Click the 'Settings  ⌘,' toolbar button (box 1143,8) or press ⌘, in the title bar. Which Settings pane opens is not shown in the recordings (from B)."
+  },
+  {
+   "to": "filter-panel",
+   "via": "Click the 'Sort & filter' footer button (box 12,735). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "filter-panel",
+   "via": "Click 'Search options' (box 784,63). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "draft-inspector",
+   "via": "Click 'New task' (box 816,63). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "context-menus",
+   "via": "Click a row's 'More' button (box 830, y 110-338). Inferred from label, not captured (from B)."
+  },
+  {
+   "to": "toast",
+   "via": "Click 'Restore all', a row 'Restore' button, or 'Delete permanently' (undoable action notice). Inferred, not captured (from B). A found no toast trigger in TrashPane.tsx, so this link is unconfirmed."
+  }
+ ],
+ "notes": "Sources: A is code-derived (TrashPane.tsx read in full, both tree.txt files); B is measured from state:trash and state:trash-selected elements.json, shot.png and the trash-selected state.\n\nMerged entries: pane root, title bar, title icon, the pane traffic lights (A's DialogControls and Light close/minimize/fullscreen, with B's measured pane trio as their look), title label, action strip, Restore all, Empty, list body, empty state, trash rows, row title and meta labels, row Restore and Delete permanently IconButtons, and the row hover/selected highlight.\n\nDropped as duplicates: B's pane-level window-controls trio (its three lights are the Light widgets above, and its look is merged into them). B's four row-action icon entries (restore and delete_forever spans at 1114/1146, y 145 and 177) duplicate the icons inside the row IconButtons, so their 16px look is merged into those buttons. B's regions 'trash pane header', 'trash pane toolbar' and 'trash pane list' are duplicates of A's Title bar, Action strip and List body regions. B's Restore all and Empty kind 'button' is replaced by A's component ToolbarButton. Duplicate links to main-window via the close light (A and B) are merged into one.\n\nKept from only one source: B's row-highlight surface, three dividers, and the main-window and task-list entries (main title bar and task list pane, owned by other screens and listed under their own regions); A's empty state, action strip, list body and pane root.\n\nConflicts:\n1. Empty: A says ToolbarButton variant=danger (code). B measured its colour as the same grey as Restore all, not red. Variant follows A; look follows B. Either the danger colour does not show in the recording or the token differs.\n2. trash-selected: A says the tree is identical line for line and the state is not visibly different. B's elements.json and screenshot show row 2 highlighted with its Restore and Delete permanently buttons visible. B's evidence is kept.\n3. Icon weight: A says weight 300 (code). B measured font 400. Look shows B's measured value; the code value is kept in the variant.\n4. Title label and row title size: code gives 13.5px; B estimates about 14px from the screenshot. Code value is kept in the variant; B's estimate is in the look.\n5. Row pitch: code gives h-9 (36px), but the tree places rows 31px apart (y 131 and 162) and B also measures about 31px. Both are recorded.\n6. Title bar height: A 46px (tree box 319x46); B header band y 46-90 (44px).\n7. Restore/Delete row buttons: B records count 1 each (only row 2 visible in trash-selected); A's structure has 2 rows, so count is 2.\n8. Links: the screen ids (main-window, sheets, settings-general, filter-panel, draft-inspector, context-menus, toast) are used as given by A and B. No screen id list was supplied with the task, so they could not be checked against it.\n9. Several B values are estimated from screenshots (dividers, highlight, footer bar, note, title position). These are marked as estimates in their look text.\n\nNot captured by either source: the empty and loading states, the Empty confirmation sheet, the results of restore and purge, and any hover state of Restore all and Empty.",
+ "counts": {
+  "A": 18,
+  "B": 34,
+  "issues": null
+ }
+}

@@ -1,0 +1,686 @@
+{
+ "id": "context-menus",
+ "title": "Menus",
+ "tier": "high",
+ "states": [
+  "row-context-menu",
+  "row-more-menu",
+  "multi-context-menu",
+  "tab-context-menu",
+  "project-menu"
+ ],
+ "purpose": "Context and dropdown menus for the Taskscape desktop task manager: a single app-wide menu layer (ContextMenu with a ContextMenuProvider) that opens anchored at a pointer or button position for task rows, the list tab strip, and a project dropdown under the project switcher. Menu items are plain rows with an icon, a label, an optional shortcut and an optional submenu chevron, and the caller decides what each item id does.",
+ "regions": [
+  {
+   "name": "menu-layer",
+   "contents": "Overlay (layer=\"menu\", placement=\"anchored\", dim=\"none\", captureEscape, dismissOnWindowChange) covering the full window 1180x760 (state boxes @0,0). Contains Backdrop2 (full-window, transparent, dismisses on mousedown and right-click) and, when a menu is open, one MenuPanel. Sits above the sheet layer (ContextMenu.tsx:30-32). Only rendered when a menu is open. Not present in the project-menu state."
+  },
+  {
+   "name": "task-context-menu",
+   "contents": "Surface2 154x175 at the anchor point, rendered in states row-context-menu (@108,190), row-more-menu (@830,135) and multi-context-menu (@101,221). Rows, top to bottom: Copy (content_copy); divider; Add subtask (subdirectory_arrow_right); Rename (edit); Move to list (arrow_forward, submenu chevron_right); divider; Delete task… (delete, danger). Each row 152x30. Anchor variants: pointer (row-context-menu), More button (row-more-menu), and a single-row menu on Cut a spare key (multi-context-menu). No multi-selection is evidenced in the recording or in ContextMenu.tsx."
+  },
+  {
+   "name": "tab-context-menu",
+   "contents": "Surface2 158x145 at @348,21 in state tab-context-menu, under the Reading list tab (x 322-376) in the ListTabs strip. Rows, top to bottom: Rename (edit); Open in split view (vertical_split, disabled=false); divider; Export list… (ios_share); divider; Delete list… (delete, danger). Each row 156x30. The menu covers only the top part (y 21-32) of the Reading tab close button (21x21 at 380,11). Its preview shows no task selected."
+  },
+  {
+   "name": "project-dropdown",
+   "contents": "ProjectMenu Surface2 210x112 at @112,43 in state project-menu, anchored under the ProjectSwitcher (anchorRef). It is an anchored dropdown, not an Overlay and not a MenuPanel. Rows: Home (check icon, current project), Spring launch (no check), a divider, then New project… with an add icon. Per-row rename and delete icon buttons are hover-revealed."
+  },
+  {
+   "name": "submenu",
+   "contents": "Submenu wrapper plus a nested MenuPanel (nested=true) that opens beside a hovered row that has a submenu, flipping to the left when it would overflow the window (ContextMenu.tsx:123-133, 142-165). No recorded state shows it open; its contents are not recorded."
+  },
+  {
+   "name": "openers",
+   "contents": "Controls outside the menu layer that open these menus: the ProjectSwitcher button (85x28 at 112,8) opens project-dropdown; the row More buttons (21x21, eight of them) open task-context-menu. Right-click on task rows and list tabs is inferred only (no onContextMenu in the trees)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "other",
+   "component": "Overlay",
+   "variant": "layer=\"menu\", placement=\"anchored\", dim=\"none\", captureEscape, dismissOnWindowChange; onContextMenu prevents default and closes",
+   "purpose": "Dismissable layer that hosts the open menu; closes on outside click, Escape, window blur or resize, and right-click.",
+   "text": "none",
+   "states": [
+    "open (only while a menu is set)",
+    "closed (not rendered)"
+   ],
+   "behaviour": "Escape closes (captureEscape). Outside mousedown closes via onDismiss=close. Window blur or resize closes (dismissOnWindowChange). Right-click on it prevents the native menu and closes the current menu. Picking an item closes first, then calls menu.onPick(id).",
+   "count": 1,
+   "region": "menu-layer",
+   "sources": [
+    "ContextMenu.tsx:33-44 (props and handlers)",
+    "ContextMenu.tsx:30-32 (comment on window-change dismissal and layering)",
+    "ContextMenu.tsx:49-52 (close then onPick)",
+    "state:row-context-menu tree.txt:129",
+    "state:row-more-menu tree.txt:129",
+    "state:multi-context-menu tree.txt:129",
+    "state:tab-context-menu tree.txt:102",
+    "state:project-menu: no Overlay line present"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "Backdrop2",
+   "variant": "dim=\"none\", blur=false, layer=\"menu\", className=\"\"; full-window 1180x760 at @0,0",
+   "purpose": "Invisible full-window hit area under the menu panel that catches clicks and right-clicks outside the menu.",
+   "text": "none",
+   "states": [
+    "present while a menu is open"
+   ],
+   "behaviour": "Mousedown outside the panel dismisses the menu. Right-click on it dismisses the menu and suppresses the native context menu.",
+   "count": 1,
+   "region": "menu-layer",
+   "sources": [
+    "state:row-context-menu tree.txt:130 (onContextMenu=ƒ, onMouseDown=ƒ)",
+    "state:row-more-menu tree.txt:130",
+    "state:multi-context-menu tree.txt:130",
+    "state:tab-context-menu tree.txt:103"
+   ]
+  },
+  {
+   "kind": "context-menu",
+   "component": "MenuPanel",
+   "variant": "top-level (nested=false): absolute, position clamped to a 4px inset of the viewport (ContextMenu.tsx:79-88); nested=true for submenus (no clamp)",
+   "purpose": "Renders the list of menu rows for a menu or submenu.",
+   "text": "none",
+   "states": [
+    "open",
+    "measuring (position set after first layout)"
+   ],
+   "behaviour": "Each row sets the open submenu on mouse enter (or clears it). Clicking a row without a submenu calls onPick(id) (ContextMenu.tsx:99-107).",
+   "count": 1,
+   "region": "task-context-menu; tab-context-menu",
+   "sources": [
+    "ContextMenu.tsx:60-98",
+    "ContextMenu.tsx:45-53 (instantiation)",
+    "state:row-context-menu tree.txt:131 items=[5] x=108 y=190",
+    "state:row-more-menu tree.txt:131 items=[5] x=830.25 y=135.25",
+    "state:multi-context-menu tree.txt:131 items=[5] x=101 y=221",
+    "state:tab-context-menu tree.txt:104 items=[4] x=348 y=21",
+    "screenshot read (B): panel approx 154x175 at x108-262, y190-365"
+   ]
+  },
+  {
+   "kind": "surface",
+   "component": "Surface (rendered as Surface2 in tree)",
+   "variant": "elevation=\"menu\", surface={3}, radius=\"panel\", className \"absolute py-space-3 min-w-44\" (top level only); 154x175 for task menus, 158x145 for tab menu",
+   "purpose": "Menu card background that holds the rows and dividers.",
+   "text": "none",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Not interactive itself.",
+   "count": 1,
+   "region": "task-context-menu; tab-context-menu",
+   "sources": [
+    "ContextMenu.tsx:91-98",
+    "state:row-context-menu tree.txt:132 @108,190 154x175",
+    "state:row-more-menu tree.txt:132 @830,135 154x175",
+    "state:multi-context-menu tree.txt:132 @101,221 154x175",
+    "state:tab-context-menu tree.txt:105 @348,21 158x145",
+    "screenshot read (B): white fill, soft drop shadow, rounded corners"
+   ],
+   "look": "Measured box 154x175 (task menus) and 158x145 (tab menu). White fill, soft drop shadow, rounded corners; exact radius and shadow not recorded in elements.json."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (imported as MenuRow from common-ui components)",
+   "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+   "purpose": "Copies the task from the task-row menu.",
+   "text": "Copy (icon content_copy)",
+   "states": [
+    "default (shown)",
+    "hover (bg wash-2l)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. Mouse enter clears any open submenu.",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "common-ui/src/components/menus/MenuItem.tsx:24-65 (tone default colours at :6-8, base classes at :39, leading and label wrappers at :47-57)",
+    "ContextMenu.tsx:102-109, 121",
+    "state:row-context-menu elements.json box [109,195,152,30]",
+    "state:row-more-menu elements.json box [831,140,152,30]",
+    "state:multi-context-menu elements.json box [102,226,152,30]",
+    "state:row-context-menu tree.txt:133",
+    "state:row-more-menu tree.txt:133",
+    "state:multi-context-menu tree.txt:133"
+   ],
+   "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9. Code classes: text-[13px], px-space-6 py-space-4, gap-space-5, full width; hover bg wash-2l; leading icon in grid span coloured content-3l."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (imported as MenuRow from common-ui components)",
+   "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+   "purpose": "Adds a subtask under the task.",
+   "text": "Add subtask (icon subdirectory_arrow_right)",
+   "states": [
+    "default (shown)",
+    "hover (bg wash-2l)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. Target of the action not captured.",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "common-ui/src/components/menus/MenuItem.tsx:24-65",
+    "ContextMenu.tsx:102-109, 121",
+    "state:row-context-menu elements.json box [109,233,152,30]",
+    "state:row-more-menu elements.json box [831,178,152,30]",
+    "state:multi-context-menu elements.json box [102,264,152,30]",
+    "state:row-context-menu tree.txt:136",
+    "state:row-more-menu tree.txt:136",
+    "state:multi-context-menu tree.txt:136"
+   ],
+   "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (imported as MenuRow from common-ui components)",
+   "variant": "tone=\"default\"; leading icon only, no trailing, no disabled prop",
+   "purpose": "Starts renaming the task.",
+   "text": "Rename (icon edit)",
+   "states": [
+    "default (shown)",
+    "hover (bg wash-2l)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click starts renaming the task (rename UI not captured). Mouse enter clears any open submenu.",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "common-ui/src/components/menus/MenuItem.tsx:24-65",
+    "ContextMenu.tsx:102-109, 121",
+    "state:row-context-menu elements.json box [109,263,152,30]",
+    "state:row-more-menu elements.json box [831,208,152,30]",
+    "state:multi-context-menu elements.json box [102,294,152,30]",
+    "state:row-context-menu tree.txt:138",
+    "state:row-more-menu tree.txt:138",
+    "state:multi-context-menu tree.txt:138"
+   ],
+   "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264) at x+9."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"default\"; disabled=false; has submenu, so trailing shows a chevron_right icon",
+   "purpose": "Opens the list submenu to move the task to another list; submenu contents are not recorded.",
+   "text": "Move to list (icon arrow_forward; trailing chevron_right)",
+   "states": [
+    "default (shown)",
+    "hover (opens submenu)",
+    "submenu open (not recorded)"
+   ],
+   "behaviour": "Hover opens the submenu (ContextMenu.tsx:105, 123-133). Click does nothing (onClick only calls onPick when there is no submenu, ContextMenu.tsx:107).",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "ContextMenu.tsx:105-107, 110-119, 123-133",
+    "state:row-context-menu tree.txt:140-142 @109,293 152x30",
+    "state:row-more-menu tree.txt:140-142 @831,238",
+    "state:multi-context-menu tree.txt:140-142 @102,324",
+    "state:row-context-menu elements.json box [109,293,152,30] chevron at [238,301,14,14]"
+   ],
+   "look": "Row 152x30 (B measured). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+31. Leading icon 15px oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"danger\" (text colour danger-500l, hover bg danger-100l); leading icon; no trailing",
+   "purpose": "Destructive action at the bottom of the task menu that starts deleting the task.",
+   "text": "Delete task… (icon delete, size 15)",
+   "states": [
+    "default (shown)",
+    "hover (danger background)",
+    "focus (native button)"
+   ],
+   "behaviour": "Click calls onPick(item.id) and closes the menu. The ellipsis implies a confirmation step, not captured.",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "ContextMenu.tsx:103",
+    "common-ui/src/components/menus/MenuItem.tsx:9-10 (danger tone)",
+    "state:row-context-menu tree.txt:144",
+    "state:row-more-menu tree.txt:144",
+    "state:multi-context-menu tree.txt:144",
+    "state:row-context-menu elements.json box [109,331,152,30]",
+    "state:row-more-menu elements.json box [831,276,152,30]",
+    "state:multi-context-menu elements.json box [102,362,152,30]"
+   ],
+   "look": "Row 152x30 (B measured). Icon delete and label both oklch(0.55 0.2 27) (red); label 400 13px/19.5px. Code tokens: danger-500l text, danger-100l hover bg."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"default\"; leading icon; no trailing; disabled=false not set on Rename",
+   "purpose": "Renames the list from its tab menu.",
+   "text": "Rename (icon edit)",
+   "states": [
+    "default (shown)",
+    "hover",
+    "disabled (not recorded; would show opacity-40 and no pointer events)"
+   ],
+   "behaviour": "Click renames the list (rename sheet or field not captured). Click calls onPick(item.id) and closes the menu.",
+   "count": 1,
+   "region": "tab-context-menu",
+   "sources": [
+    "state:tab-context-menu tree.txt:106",
+    "state:tab-context-menu elements.json box [349,26,156,30], icon at [358,33], label at [380,31]",
+    "ContextMenu.tsx:102-109",
+    "common-ui/src/components/menus/MenuItem.tsx:39",
+    "state:tab-context-menu shot.png"
+   ],
+   "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"default\"; leading icon; no trailing; disabled=false",
+   "purpose": "Opens the list in the split view.",
+   "text": "Open in split view (icon vertical_split)",
+   "states": [
+    "default (shown)",
+    "hover",
+    "disabled (not recorded; would show opacity-40 and no pointer events)"
+   ],
+   "behaviour": "Click opens the list in split view (inferred from label) and closes the menu.",
+   "count": 1,
+   "region": "tab-context-menu",
+   "sources": [
+    "state:tab-context-menu tree.txt:108",
+    "state:tab-context-menu elements.json box [349,56,156,30], icon at [358,63], label at [380,61]",
+    "state:tab-context-menu shot.png",
+    "ContextMenu.tsx:102-109"
+   ],
+   "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"default\"; leading icon; no trailing",
+   "purpose": "Exports the list.",
+   "text": "Export list… (icon ios_share)",
+   "states": [
+    "default (shown)",
+    "hover",
+    "disabled (not recorded)"
+   ],
+   "behaviour": "Click exports the list (ellipsis implies a save step, not captured) and closes the menu.",
+   "count": 1,
+   "region": "tab-context-menu",
+   "sources": [
+    "state:tab-context-menu tree.txt:111",
+    "state:tab-context-menu elements.json box [349,94,156,30], icon at [358,101], label at [380,99]",
+    "state:tab-context-menu shot.png",
+    "ContextMenu.tsx:102-109"
+   ],
+   "look": "Row 156x30 (A measured box). Label 400 13px/19.5px oklch(0.26 0.012 262) at x+32. Leading icon 15px oklch(0.62 0.013 264) at x+9."
+  },
+  {
+   "kind": "menu-item",
+   "component": "MenuItem (common-ui)",
+   "variant": "tone=\"danger\"; leading icon delete; no trailing",
+   "purpose": "Deletes the list from its tab menu.",
+   "text": "Delete list… (icon delete, size 15)",
+   "states": [
+    "default (shown)",
+    "hover (danger background)"
+   ],
+   "behaviour": "Click starts list deletion and closes the menu. The ellipsis implies a confirmation, not captured.",
+   "count": 1,
+   "region": "tab-context-menu",
+   "sources": [
+    "state:tab-context-menu tree.txt:114 @349,132 156x30",
+    "state:tab-context-menu tree.txt:115 Icon delete",
+    "state:tab-context-menu elements.json box [349,132,156,30], icon at [358,139], label at [380,137]",
+    "state:tab-context-menu shot.png",
+    "common-ui/src/components/menus/MenuItem.tsx:9-10 (danger tone)"
+   ],
+   "look": "Row 156x30. Icon delete and label both oklch(0.55 0.2 27) (red); label 400 13px/19.5px."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (leading slot of MenuItem)",
+   "variant": "size=15 (ContextMenu.tsx:109); name varies per row. Task menu uses 5 (content_copy, subdirectory_arrow_right, edit, arrow_forward, delete); tab menu uses 4 (edit, vertical_split, ios_share, delete)",
+   "purpose": "Leading glyph identifying each menu action.",
+   "text": "Material Symbols names as recorded: content_copy, subdirectory_arrow_right, edit, arrow_forward, delete (task menu); edit, vertical_split, ios_share, delete (tab menu).",
+   "states": [
+    "default",
+    "danger (tone changes glyph colour only through the row)"
+   ],
+   "behaviour": "Decorative. Clicking the row runs the action.",
+   "count": 5,
+   "region": "task-context-menu",
+   "sources": [
+    "ContextMenu.tsx:109",
+    "state:row-context-menu tree.txt:134, 137, 139, 141, 145",
+    "state:tab-context-menu tree.txt:107, 109, 112, 115",
+    "state:row-context-menu elements.json (icon colour oklch(0.62 0.013 264))"
+   ],
+   "look": "Glyph 15px/15px, colour oklch(0.62 0.013 264), at box x+9 (B measured)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (trailing submenu indicator)",
+   "variant": "name=\"chevron_right\" size=14",
+   "purpose": "Shows that the Move to list row opens a submenu.",
+   "text": "chevron_right",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Decorative.",
+   "count": 1,
+   "region": "task-context-menu",
+   "sources": [
+    "ContextMenu.tsx:110-119",
+    "state:row-context-menu tree.txt:142 @238,301 14x14",
+    "state:row-context-menu elements.json chevron at [238,301,14,14]",
+    "state:row-more-menu tree.txt:142",
+    "state:multi-context-menu tree.txt:142"
+   ],
+   "look": "14x14, colour oklch(0.62 0.013 264), at the right inside the row (B measured)."
+  },
+  {
+   "kind": "label",
+   "component": "span (shortcut text in trailing wrapper)",
+   "variant": "class text-[11px] inside a gap-space-4 flex wrapper; only rendered when item.shortcut is set",
+   "purpose": "Keyboard shortcut hint for a menu row (can show; not in any recorded state).",
+   "text": "Shortcut string supplied by the caller; none recorded.",
+   "states": [
+    "not shown in recorded states"
+   ],
+   "behaviour": "Display only.",
+   "count": 0,
+   "region": "task-context-menu; tab-context-menu",
+   "sources": [
+    "ContextMenu.tsx:111-115"
+   ]
+  },
+  {
+   "kind": "context-menu",
+   "component": "Submenu wrapper plus nested MenuPanel",
+   "variant": "nested=true (no clamp); flips to the left when it would overflow the window",
+   "purpose": "Opens beside a hovered row that has a submenu.",
+   "text": "none recorded",
+   "states": [
+    "not recorded in any state"
+   ],
+   "behaviour": "Opens on hover of a row with a submenu; flips left on overflow (ContextMenu.tsx:142-165).",
+   "count": 0,
+   "region": "submenu",
+   "sources": [
+    "ContextMenu.tsx:123-133 (subFor render and Submenu wrapper)",
+    "ContextMenu.tsx:142-165 (flip to left on overflow)"
+   ]
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (common-ui components)",
+   "variant": "className \"mx-space-5 my-space-3\"; rendered above rows with dividerAbove",
+   "purpose": "Separates groups of rows in the task menu.",
+   "text": "none",
+   "states": [
+    "visible"
+   ],
+   "behaviour": "Display only.",
+   "count": 2,
+   "region": "task-context-menu",
+   "sources": [
+    "ContextMenu.tsx:101",
+    "state:row-context-menu tree.txt:135, 143",
+    "state:row-context-menu shot.png (rules at about y228 and y326; read from shot)"
+   ],
+   "look": "Thin grey rule inset about 8px from each panel edge (B, from screenshot)."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (common-ui components)",
+   "variant": "className \"mx-space-5 my-space-3\"; rendered above rows with dividerAbove",
+   "purpose": "Separates groups of rows in the tab menu.",
+   "text": "none",
+   "states": [
+    "visible"
+   ],
+   "behaviour": "Display only.",
+   "count": 2,
+   "region": "tab-context-menu",
+   "sources": [
+    "ContextMenu.tsx:101",
+    "state:tab-context-menu tree.txt:110, 113",
+    "state:tab-context-menu shot.png (rules at about y89 and y127; read from shot)"
+   ],
+   "look": "Thin grey rule inset from the panel edges (B, from screenshot)."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider",
+   "variant": "level=1 className \"mx-space-5 my-space-3\"",
+   "purpose": "Separates the project list from the New project row.",
+   "text": "none",
+   "states": [
+    "visible"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:28 @120,114 194x1",
+    "state:project-menu shot.png (rule at about y114; read from shot)"
+   ],
+   "look": "194x1 rule, thin grey, inset from the panel edges (B, from screenshot)."
+  },
+  {
+   "kind": "dropdown",
+   "component": "ProjectMenu",
+   "variant": "anchored dropdown with anchorRef and onDismiss; Surface2 classes \"z-dropdown animate-sheet-in py-space-3 absolute top-10 left-…\" (truncated in tree); not an Overlay and not a MenuPanel",
+   "purpose": "Lists projects so the user can switch project, rename or delete one, or add a new one.",
+   "text": "No labels recorded in tree.txt; project names come from elements.json and the screenshot.",
+   "states": [
+    "open (project-menu state)"
+   ],
+   "behaviour": "Dismissed via onDismiss. Opened from the ProjectSwitcher.",
+   "count": 1,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:10-14 (ProjectSwitcher > ProjectMenu anchorRef onDismiss)",
+    "state:project-menu tree.txt:14 className",
+    "state:project-menu elements.json",
+    "state:project-menu shot.png",
+    "note: ContextMenu.tsx MenuPanel is not used here"
+   ],
+   "look": "Surface2 210x112 at @112,43; elevation menu, surface 3, radius panel. Row labels 400 13.5px/20.25px oklch(0.26 0.012 262) (B)."
+  },
+  {
+   "kind": "menu-item",
+   "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\") with leading Label (tone accent, className \"flex w-4 items-center\") holding Icon check",
+   "variant": "current project row (checked); Icon check size=15 weight=900",
+   "purpose": "Shows the active project (Home) and switches to it.",
+   "text": "Home (check icon)",
+   "states": [
+    "checked (active)",
+    "default",
+    "hover (reveals rename and delete)"
+   ],
+   "behaviour": "Click expected to switch to Home (inferred; not verifiable from the tree). Rename and delete icons appear on hover.",
+   "count": 1,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:15-17 @122,56 and @141,53 119x20",
+    "state:project-menu elements.json check at [122,56,15,15], label at [141,53,119,20]",
+    "state:project-menu shot.png"
+   ],
+   "look": "Check icon 15px oklch(0.6 0.2 255) (blue). Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,53), 119x20."
+  },
+  {
+   "kind": "menu-item",
+   "component": "Label (tone primary, truncate, className \"flex-1 text-[13.5px]\")",
+   "variant": "inactive project row (no check; empty 14x0 check slot)",
+   "purpose": "Switches to the Spring launch project.",
+   "text": "Spring launch",
+   "states": [
+    "default (shown)",
+    "hover (reveals rename and delete)"
+   ],
+   "behaviour": "Click expected to switch to Spring launch (inferred; not verifiable from the tree).",
+   "count": 1,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:22 @122,95 14x0",
+    "state:project-menu tree.txt:23 @141,85 119x20",
+    "state:project-menu elements.json box [141,85,119,20]",
+    "state:project-menu shot.png"
+   ],
+   "look": "Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,85), 119x20. No check icon."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"edit\" iconSize=16 iconWeight=500 variant=\"plain\"; title \"Rename project\"; className \"opacity-0 group-hover:opacity-100\"",
+   "purpose": "Starts renaming a project from its dropdown row. Hidden until its row is hovered.",
+   "text": "edit icon; title \"Rename project\"",
+   "states": [
+    "hidden (opacity-0)",
+    "visible on row hover (group-hover)",
+    "hover",
+    "focus"
+   ],
+   "behaviour": "Click runs the rename handler (handler not recorded). Not verifiable from the tree.",
+   "count": 2,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:18 title=\"Rename project\" @265,53 21x21",
+    "state:project-menu tree.txt:24 @265,85 21x21",
+    "state:project-menu elements.json edit at [268,56,16,16] and [268,87,16,16]"
+   ],
+   "look": "Button 21x21; icon 16px/16px, glyph weight 400 (B measured; A lists iconWeight=500 prop). Colour oklch(0.62 0.013 264). Hidden in the screenshot."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"delete\" iconSize=16 iconWeight=500 variant=\"plain\"; title \"Delete project\"; className \"hover:text-danger-500l dark:hover:text-danger-500d opacity-0…\" (truncated in tree)",
+   "purpose": "Deletes a project from its dropdown row. Hidden until its row is hovered; turns danger-coloured on hover.",
+   "text": "delete icon; title \"Delete project\"",
+   "states": [
+    "hidden (opacity-0)",
+    "visible on row hover",
+    "hover (danger colour)"
+   ],
+   "behaviour": "Click runs the delete handler (handler not recorded; likely confirmed, not captured).",
+   "count": 2,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:20 title=\"Delete project\" @291,53 21x21",
+    "state:project-menu tree.txt:26 @291,85 21x21",
+    "state:project-menu elements.json delete at [294,56,16,16] and [294,87,16,16]"
+   ],
+   "look": "Button 21x21; icon 16px/16px, glyph weight 400 (B measured). Colour oklch(0.62 0.013 264), turns danger on hover. Hidden in the screenshot."
+  },
+  {
+   "kind": "button",
+   "component": "Label (tone muted, className \"flex w-4 items-center\") with Icon add, and Label (tone primary, className \"text-[13.5px]\")",
+   "variant": "footer row styled as a menu row, not a MenuItem; DOM element is a button",
+   "purpose": "Starts creating a new project from the dropdown.",
+   "text": "add icon; New project…",
+   "states": [
+    "normal (shown)"
+   ],
+   "behaviour": "Click opens the New project sheet (label; sheet not captured). Click handler not recorded in the tree.",
+   "count": 1,
+   "region": "project-dropdown",
+   "sources": [
+    "state:project-menu tree.txt:29-31 @122,127 and @141,124 94x20",
+    "state:project-menu elements.json box [113,119,208,32], icon at [122,127,15,15], label at [141,124,94,20]",
+    "state:project-menu shot.png"
+   ],
+   "look": "Box 208x32 at (113,119). Icon add 15px oklch(0.62 0.013 264). Label 400 13.5px/20.25px oklch(0.26 0.012 262) at (141,124)."
+  },
+  {
+   "kind": "button",
+   "component": "ProjectSwitcher",
+   "variant": "closed in the four task and tab recordings; open in project-menu (open background)",
+   "purpose": "Opens the project dropdown.",
+   "text": "Home (label); unfold_more icon; aria-label \"Switch project\"",
+   "states": [
+    "closed",
+    "open (project-menu)"
+   ],
+   "behaviour": "Click opens the project-menu dropdown (ProjectMenu anchored under this button).",
+   "count": 1,
+   "region": "openers",
+   "sources": [
+    "state:project-menu tree.txt:10 ProjectSwitcher @112,8 85x28",
+    "state:row-context-menu elements.json box [112,8,85,28], bg oklch(0.944 0.003 255)",
+    "state:project-menu elements.json bg oklch(0.32 0.02 262 / 0.09)",
+    "state:project-menu shot.png"
+   ],
+   "look": "Box 85x28 at (112,8), radius 7px. Closed bg oklch(0.944 0.003 255); open bg oklch(0.32 0.02 262 / 0.09). Home label 600 14px/21px oklch(0.26 0.012 262) at (124,12). unfold_more icon 15px oklch(0.62 0.013 264) at (173,15)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"more_horiz\", title \"More\", onClick (on each task row; eight of them)",
+   "purpose": "Opens the task-context-menu for its row, anchored under the button.",
+   "text": "more_horiz icon; title \"More\"",
+   "states": [
+    "default (shown)",
+    "opened for Pick up prescription (row-more-menu)"
+   ],
+   "behaviour": "Click opens the row menu (row-more-menu) anchored under this button.",
+   "count": 8,
+   "region": "openers",
+   "sources": [
+    "state:row-context-menu tree.txt:48, 53, 58, 63, 69, 75, 80, 85 (IconButton more_horiz title=More onClick=ƒ)",
+    "state:row-more-menu elements.json boxes [830,110,21,21] and others",
+    "state:row-more-menu tree.txt:48, 58"
+   ],
+   "look": "21x21, radius 4.375px, icon 17px/17px oklch(0.62 0.013 264) (B measured)."
+  },
+  {
+   "kind": "other",
+   "component": "? (task row right-click handler not present in TaskRow2 props)",
+   "variant": "unverified opener: right-click on a task row inferred to open task-context-menu (row-context-menu)",
+   "purpose": "Possible pointer trigger for the task row menu; not confirmed by code or trees.",
+   "text": "none",
+   "states": [
+    "not captured"
+   ],
+   "behaviour": "Inferred from the recording name and anchor position only. TaskRow2 props show onToggleDone, onToggleSelect and onDoubleClick, with no onContextMenu.",
+   "count": 0,
+   "region": "openers",
+   "sources": [
+    "state:row-context-menu tree.txt:44-86 (TaskRow2 props)",
+    "state:row-context-menu elements.json (anchor inside t-bike row)",
+    "screenshot read (B): inferred trigger"
+   ]
+  },
+  {
+   "kind": "other",
+   "component": "? (ListTabs label has no context-menu handler in the tree)",
+   "variant": "unverified opener: right-click on a list tab inferred to open tab-context-menu",
+   "purpose": "Possible trigger for the list tab menu; not confirmed by code or trees.",
+   "text": "none",
+   "states": [
+    "not captured"
+   ],
+   "behaviour": "Inferred from the Reading tab case and the anchor under the Reading label only. No context handler is shown on the ListTabs labels.",
+   "count": 0,
+   "region": "openers",
+   "sources": [
+    "state:row-context-menu tree.txt:14-22 (ListTabs labels, no context handler)",
+    "state:tab-context-menu tree.txt:104 (anchor x=348 y=21)",
+    "screenshot read (B): inferred trigger"
+   ]
+  }
+ ],
+ "links": [],
+ "notes": "Sources: A (code-based inventory, with ContextMenu.tsx, MenuItem.tsx and the five tree.txt files) merged with B (screenshot and elements.json measurements). The critique's verdicts were applied as follows.\n\nLabels: the menu row labels and project names come from the elements.json references (verified by the critique), not from the trees. Row menu: Copy, Add subtask, Rename, Move to list, Delete task…. Tab menu: Rename, Open in split view, Export list…, Delete list…. Project menu: Home, Spring launch, New project…. A's statement that labels are \"not recorded\" is superseded.\n\nNaming: \"multi-context-menu\" is kept only as the recording name. It is a single-row task menu on Cut a spare key; no multi-select variant is evidenced.\n\nLinks: B's 10 links were dropped. Their destinations (sheets, filter-panel, settings-general, main-window) are not in any allowed source, and the Escape and outside-click link to main-window is wrong (dismissal is a local close). No screen ids are supplied, so links is empty.\n\nConflicts resolved:\n- Project row edit and delete buttons: titles \"Rename project\" and \"Delete project\" come from project-menu/tree.txt (critique). B's \"no accessible label\" claim was dropped.\n- Add-project row: kind is button (DOM) with the component of A's Label plus Icon add. Text is \"New project…\".\n- Icon weight: A lists iconWeight=500 as a prop; B measured a 400 glyph weight. The look uses B's measured value; the prop is kept in variant.\n- Look values: B's measured values were used for look. A's class names are kept in the look text for reference.\n- Dismissal behaviour: taken from ContextMenu.tsx (captureEscape, onDismiss=close, dismissOnWindowChange), which the critique says B understated.\n- Right-click triggers: kept as two count-0 unverified opener entries, not as confirmed triggers.\n\nDropped entries and reasons:\n- B region \"Menu overlay: project menu\": wrong; the project dropdown is not an Overlay (critique). Its contents were moved into project-dropdown.\n- B regions Title bar, Task list pane, Footer, Task inspector pane: host-screen chrome outside the menu inventory (critique; A's notes exclude the host shell).\n- B host-chrome widgets, all dropped as out of scope: window controls, drag handle, Errands/Reading/Garden tabs, tab close buttons (also partly covered by the tab menu, per critique), New list, Split view toggle, Hide preview panel, Settings, search glyph, search field, Search options, New task, round Select checks, task-row titles and subtitle, subtask badge and pager, Sort & filter, footer done count and percent, progress bar, Mark done, title textarea, breadcrumb, Created and Updated lines, inspector Close panel, Rename, Copy task and Delete task buttons (they repeat menu actions but are not part of the menu layer), Notes, Add note, Attachments, Shot, Link, File chips, drop tiles, and the empty states.\n- B menu-item \"Delete task…\" and similar duplicates: merged into the single entries above, not dropped.\n- B's Escape and outside-click \"inferred\" behaviour text: replaced by the code-verified behaviour on Overlay.\n\nCounts: per-menu counts are used (for example each of Copy, Add subtask and Rename appears once in each of the three task-menu recordings). Divider counts are per menu: 2 task, 2 tab, 1 project.\n\nNot evidenced: the Reading list tab is a candidate opener only (anchor under its label at x 322-376) with no handler in the tree, so it is not listed as an entry. The Move to list submenu contents, the shortcut label, and the disabled state of the tab items are not in any recorded state.",
+ "widgets_count": "0",
+ "counts": {
+  "A": 20,
+  "B": 63,
+  "issues": 13
+ }
+}

@@ -1,0 +1,182 @@
+{
+ "id": "toast",
+ "title": "Toast",
+ "tier": "ordinary",
+ "states": [
+  "toast-after-delete",
+  "after-undo"
+ ],
+ "purpose": "Transient, single-slot notice pinned bottom-centre of the main window that confirms an undoable action (for example a delete) and offers an Undo button and a Dismiss button. It renders nothing when the toast store is empty.",
+ "regions": [
+  {
+   "name": "Overlay (bottom-centre)",
+   "contents": "Full-width fixed strip at the bottom of the window (inset-x-0, bottom-5, flex justify-center, z-overlay, pointer-events-none). Only the pill inside it accepts pointer events. Tree bounds: Toast @0,702 1180x41 (toast-after-delete tree.txt:96; after-undo tree.txt:101). Sources: Toast.tsx:10-14, Toast.tsx:47, state:toast-after-delete, state:after-undo."
+  },
+  {
+   "name": "Toast pill",
+   "contents": "Floating, single-line rounded bordered notice bar at x 477, y 702, measured 225x41 in the tree (B's visual estimate ~226x41). Holds, left to right: the message label, the optional Undo ToolbarButton, and the Dismiss IconButton. Vertically centred at about y 722. It sits over the footer row and the empty area of the task list in the task-list pane. Tree: toast-after-delete tree.txt:97-102; after-undo tree.txt:102-107. Sources: Toast.tsx:15-43, state:toast-after-delete, state:after-undo. Identical in both states."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "Toast (div wrapper)",
+   "variant": "Fixed overlay wrapper: z-overlay, fixed inset-x-0 bottom-5, flex justify-center, pointer-events-none; returns null when no toast is set",
+   "purpose": "Positions the notice at bottom-centre above other content and lets clicks pass through everywhere except the pill.",
+   "text": "none",
+   "states": [
+    "hidden (store toast is null, component returns null)",
+    "shown (single toast in store)"
+   ],
+   "behaviour": "None directly; passes clicks through except over the pill.",
+   "count": 1,
+   "region": "Overlay (bottom-centre)",
+   "sources": [
+    "Toast.tsx:10-14",
+    "Toast.tsx:47",
+    "state:toast-after-delete tree.txt:96 (Toast @0,702 1180x41)",
+    "state:after-undo tree.txt:101 (Toast @0,702 1180x41)"
+   ],
+   "look": "Full-width strip 1180x41 at 0,702 (tree bounds). Fixed inset-x-0 bottom-5, z-overlay, pointer-events none."
+  },
+  {
+   "kind": "surface",
+   "component": "Surface",
+   "variant": "elevation=\"lift\" surface={3} radius=\"control\"; className adds animate-rise, gap-space-5, py-space-5, pr-space-5, pl-space-7, pointer-events-auto, flex, items-center. Tree names it Surface2.",
+   "purpose": "The visible pill that holds the message and actions.",
+   "text": "none",
+   "states": [
+    "entering (animate-rise)",
+    "shown"
+   ],
+   "behaviour": "None on its own; it receives pointer events so its buttons are clickable.",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:15-20",
+    "state:toast-after-delete tree.txt:97 (Surface2 @477,702 225x41)",
+    "state:after-undo tree.txt:102 (Surface2 @477,702 225x41)",
+    "state:toast-after-delete (B: toast container, shot.png)",
+    "state:after-undo (B: toast container, shot.png)"
+   ],
+   "look": "225x41 at x 477, y 702 (tree measurement; B estimated ~226x41 from shot.png). Background looks white or near-white, with a thin light border and a soft drop shadow (visual estimate). Corner radius about 6 to 8 px (estimate from image, not measured; no value in elements.json)."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"primary\" weight=\"medium\" className text-[13px]",
+   "purpose": "Shows the notice text for the action just taken.",
+   "text": "{toast.message} (dynamic, supplied by the caller; observed as \"Moved to Trash\" in both states)",
+   "states": [
+    "shown with message"
+   ],
+   "behaviour": "Display only; not interactive.",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:21-23",
+    "state:toast-after-delete tree.txt:98 (Label @491,713 99x20)",
+    "state:after-undo tree.txt:103 (Label @491,713 99x20)",
+    "state:toast-after-delete (B: label \"Moved to Trash\")",
+    "state:after-undo (B: label \"Moved to Trash\")"
+   ],
+   "look": "Box [491,713,99,20]. Text colour oklch(0.26 0.012 262). Font 500 13px/19.5px. Sits about 14 px from the pill's left edge. Font family not recorded."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "icon=\"undo\" iconSize={14} variant=\"accent\"; rendered only when toast.action is set",
+   "purpose": "Reverses the action that produced the toast. Runs the stored callback, then dismisses the toast.",
+   "text": "Label: toast.actionLabel ?? 'Undo' (default text \"Undo\"). Icon: undo (Material Symbols ligature, size 14).",
+   "states": [
+    "shown only when toast has an action",
+    "default (blue text, blue undo icon) as seen in both states",
+    "hover, pressed, focus and disabled not defined in Toast.tsx (inherited from ToolbarButton, not verified) and not shown in either recording"
+   ],
+   "behaviour": "Click: calls toast.action(), then useToastStore.getState().dismiss(). Undo is not run if no action was supplied (button absent). In the recordings, the click restores the trashed task (after-undo shows 8 tasks, 2 / 8 done).",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:24-36",
+    "Toast.tsx:34 (label)",
+    "state:toast-after-delete tree.txt:99 (ToolbarButton @596,710 67x25)",
+    "state:after-undo tree.txt:104 (ToolbarButton @596,710 67x25)",
+    "state:toast-after-delete (B: button \"Undo\")",
+    "state:after-undo (B: button \"Undo\")"
+   ],
+   "look": "Box [596,710,67,25] including the icon. Text colour oklch(0.6 0.2 255) (blue). Font 600 12px/18px. Corner radius 4.375 px. Gap of about 6 px from the message text and about 7 px to the Dismiss button."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"undo\" size={14} (inside Undo ToolbarButton)",
+   "purpose": "Leading glyph on the Undo button.",
+   "text": "undo",
+   "states": [
+    "shown"
+   ],
+   "behaviour": "None; part of the Undo button.",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:26-27",
+    "state:toast-after-delete tree.txt:100 (Icon name=\"undo\" size=14 @603,715 14x14)",
+    "state:after-undo tree.txt:105 (Icon name=\"undo\" size=14 @603,715 14x14)",
+    "state:toast-after-delete (B: icon span within Undo button)",
+    "state:after-undo (B: icon span within Undo button)"
+   ],
+   "look": "Icon span [603,715,14,14], font 400 14px/14px, same blue as the Undo text (oklch(0.6 0.2 255))."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"close\" size=\"lg\" iconSize={14}; no variant prop (default style); tooltip title=\"Dismiss\"",
+   "purpose": "Closes the toast without running its action.",
+   "text": "Icon close (size 14); title/tooltip \"Dismiss\" in code; aria label \"Dismiss\"; no visible tooltip recorded in the screenshots",
+   "states": [
+    "default (muted grey icon) as seen in both states",
+    "hover, pressed and focus not defined in Toast.tsx and not shown in either recording",
+    "shown"
+   ],
+   "behaviour": "Click: useToastStore.getState().dismiss() only. The undo action is not executed. The task stays in Trash and nothing is restored.",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:37-43",
+    "state:toast-after-delete tree.txt:101 (IconButton @670,710 25x25)",
+    "state:after-undo tree.txt:106 (IconButton @670,710 25x25)",
+    "state:toast-after-delete (B: icon-button \"Dismiss\")",
+    "state:after-undo (B: icon-button \"Dismiss\")"
+   ],
+   "look": "Box [670,710,25,25]. About 8 px from the pill's right edge. Corner radius 4.375 px."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"close\" size={14} (inside Dismiss IconButton)",
+   "purpose": "Glyph for the Dismiss button.",
+   "text": "close",
+   "states": [
+    "shown"
+   ],
+   "behaviour": "None; part of the Dismiss button.",
+   "count": 1,
+   "region": "Toast pill",
+   "sources": [
+    "Toast.tsx:38-40",
+    "state:toast-after-delete tree.txt:102 (Icon name=\"close\" size=14 @675,715 14x14)",
+    "state:after-undo tree.txt:107 (Icon name=\"close\" size=14 @675,715 14x14)",
+    "state:toast-after-delete (B: icon span within Dismiss button)",
+    "state:after-undo (B: icon span within Dismiss button)"
+   ],
+   "look": "Icon span [675,715,14,14], font 400 14px/14px, colour oklch(0.62 0.013 264) (muted grey)."
+  }
+ ],
+ "links": [],
+ "notes": "Merge basis: A (code) supplies component names, variants, props and the state of each element. B (screenshots and measurements) supplies look values. Duplicates were combined as follows.\n- Dropped as duplicates: B's region \"Toast (floating notice, bottom-centre of the task-list pane)\" was merged into the \"Toast pill\" region, since it describes the same 225x41 pill; the pill's position is kept from the tree. B's \"toast\" container widget was merged into A's Surface pill entry. B's \"button\" was merged into A's ToolbarButton entry. B's \"icon-button\" was merged into A's IconButton entry. B's two icon spans (undo and close) were merged into A's two Icon entries, with B's look values added.\n- Name conflict: the tree names the pill \"Surface2\" and Toast.tsx imports \"Surface\". They are treated as the same element, as in A.\n- Tooltip conflict: A reads title=\"Dismiss\" from code. B recorded no visible tooltip in the screenshots. Code is authoritative for the prop; the tooltip is simply not captured in the screenshots, so both are kept.\n- Message text: A's label is dynamic. B observed \"Moved to Trash\" in both states. Both are kept, with the observed text noted in the Label text field.\n- Box size: A's tree measurement (225x41) is used over B's visual estimate (~226x41). B's background, border, shadow and corner-radius values are visual estimates, not measurements, and are labelled as such.\n- Open question (both inventories agree): in state after-undo the toast is still visible with the same text, although Toast.tsx:31 dismisses it on Undo. The snapshot may have been taken before dismissal, but this is not confirmed.\n- Not verified: hover, pressed, focus and disabled states for Undo and Dismiss are not defined in Toast.tsx and are not shown in either recording. The auto-dismiss duration and other message variants are not shown in the evidence.\n- Undo destination: toast.action is supplied by the caller, so the Undo behaviour beyond the recordings is not in this file. No links to other screens exist; links is empty.\n- Scope: the page deploy, the devbench notify reply and the checklist requested in the parent message were not part of this toast inventory step. They were not attempted, because this worker has no tools for them.",
+ "counts": {
+  "A": 7,
+  "B": 4,
+  "issues": null
+ }
+}

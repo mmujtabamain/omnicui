@@ -1,0 +1,797 @@
+{
+ "id": "settings-shortcuts",
+ "title": "Settings: Shortcuts",
+ "tier": "ordinary",
+ "states": [
+  "settings-shortcuts",
+  "settings-shortcuts-scrolled",
+  "settings-shortcut-recording"
+ ],
+ "purpose": "The Settings window's Shortcuts pane. It lists every hotkey binding grouped by scope (Global, Main window, Capture bar), with each row showing a keycap that the user clicks to record a new key combo. A per-row reset control appears when a binding differs from its default.",
+ "regions": [
+  {
+   "name": "Window",
+   "contents": "Whole Settings window, 1180x760 at 0,0 (A). Hosts the title bar, the sidebar and the scrolling content pane."
+  },
+  {
+   "name": "Title bar",
+   "contents": "Full-width 1180x46 strip at y 0 with a 1px bottom rule (B, shot.png). Holds the macOS traffic lights (WindowControls > MacControls > MacLights, A) at [18,15], [39,15], [60,15] and the draggable h1 Label \"Settings\" at [93,12,1079,20] (A and B). Close is enabled and active; Minimize and Full Screen are inert or disabled."
+  },
+  {
+   "name": "Sidebar",
+   "contents": "Left column, light grey with a 1px right border (B, estimated box [0,46,153,714] from shot.png, about 153px wide). Control extent (A) runs x 7 to about 146, y 53 to 211. Holds the search InputWell at 7,53 (139x25) and the four settings tab MenuItems at y 86, 118, 149 and 181 (each 139x30). The Shortcuts tab is active. Tab labels General, Capture, Shortcuts and About come from the screenshot (B); the tree gives icons only (A)."
+  },
+  {
+   "name": "Pane intro",
+   "contents": "Label as=\"p\" tone=\"muted\" at 172,58, 991x18 (A and B). Text is \"Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.\" (B, shot.png). This matches the presumed text at shortcutsPane.tsx:31-32 (A). It scrolls out of view in the scrolled state (y -618)."
+  },
+  {
+   "name": "Scope groups (content)",
+   "contents": "Pane content column at x 172, width 991 (A). Scroll container box [154,46,1026,715], background oklch(0.995 0.001 255), role tabpanel (B). Three SettingsGroup blocks in the default state: Global (y 93, h 97, 2 rows; card about [172,117,991,73]), Main window (y 207, h 1140, 31 rows; card about [172,230,991,1117]) and Capture bar (y 1365, h 60, 1 row; card about [172,1387,991,37]). Each group is a SectionHeader plus a Surface2 card of SettingRow items. Scrolled state: content offset 676px (Global moves from y 93 to y -583; 'Previous list tab' moves from y 743 to y 67; 'Clear capture draft' moves from y 1395 to y 719). Title bar and sidebar stay fixed. Scroll height and card bounds are measured from shot.png and are estimates where marked."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "SettingsWindow",
+   "variant": "Settings window frame, 1180x760 at 0,0",
+   "purpose": "Outer frame of the Settings window that hosts this pane.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None. Container only.",
+   "count": 1,
+   "region": "Window",
+   "sources": [
+    "A: state:settings-shortcuts line 1",
+    "A: state:settings-shortcuts-scrolled line 1",
+    "A: state:settings-shortcut-recording line 1"
+   ]
+  },
+  {
+   "kind": "title-bar",
+   "component": "SettingsTitleBar",
+   "variant": "Title bar of the Settings window, 1180x46. trailing=false",
+   "purpose": "Title bar of the Settings window that contains the window lights and the title.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "Drags the window (via child TitleBar draggable=true).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 2",
+    "B: shot.png (strip 1180x46, 1px bottom rule)"
+   ]
+  },
+  {
+   "kind": "title-bar",
+   "component": "TitleBar",
+   "variant": "draggable=true, titleAs=\"h1\", trailing=false, controlsSide=\"leading\"",
+   "purpose": "Title bar content that places the window controls on the leading side and the title after them.",
+   "text": "Settings",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "Dragging moves the window. Double-click behaviour is not in the tree.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 3"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "WindowControls > MacControls > MacLights",
+   "variant": "disabled=[2], focused=true, act={…}",
+   "purpose": "macOS traffic lights of the Settings window. A group of three lights.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "Per-light behaviour is listed under the Light entries.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts lines 4-6",
+    "B: state:settings-shortcuts elements.json lights at [18,15], [39,15], [60,15]"
+   ]
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"close\", focused=true, inert=false, onClick=ƒ",
+   "purpose": "Red close light. It is the only active light and closes the Settings window.",
+   "text": "Close (aria label)",
+   "states": [
+    "default",
+    "scrolled",
+    "recording",
+    "hover and pressed not recorded"
+   ],
+   "behaviour": "Click calls its onClick handler. The handler target is not in the tree. Destination not shown in the recordings.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 7",
+    "B: state:settings-shortcuts elements.json",
+    "B: shot.png"
+   ],
+   "look": "14x14 circle at [18,15]; red fill as seen in shot.png; glyph colour oklch(0.26 0.012 262) per elements.json; font 400 14px/21px (not visible)."
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"minimize\", focused=true, inert=true",
+   "purpose": "Yellow minimize light. It is inert and disabled in the recorded state.",
+   "text": "Minimize (aria label)",
+   "states": [
+    "default",
+    "scrolled",
+    "recording",
+    "disabled"
+   ],
+   "behaviour": "Inert. No action in the tree.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 8",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "14x14 circle at [39,15]; grey in shot.png."
+  },
+  {
+   "kind": "window-controls",
+   "component": "Light",
+   "variant": "id=\"fullscreen\", focused=true, inert=true",
+   "purpose": "Green full-screen light. It is inert and disabled in the recorded state.",
+   "text": "Full Screen (aria label)",
+   "states": [
+    "default",
+    "scrolled",
+    "recording",
+    "disabled"
+   ],
+   "behaviour": "Inert. No action in the tree.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 9",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "14x14 circle at [60,15]; grey in shot.png."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"h1\", data-tauri-drag-region=true, tone=\"primary\", weight=\"semibold\", truncate=true, className=\"font-display min-w-0 flex-1 text-[13.5px]\"",
+   "purpose": "Window title text that names the Settings window.",
+   "text": "Settings",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "Drag region. Not clickable.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "A: state:settings-shortcuts line 10",
+    "B: state:settings-shortcuts elements.json title at [93,12,1079,20]"
+   ],
+   "look": "font 600 13.5px/20.25px; colour oklch(0.26 0.012 262); box [93,12,1079,20]."
+  },
+  {
+   "kind": "search-field",
+   "component": "InputWell (with Icon search and TextInput2)",
+   "variant": "className=\"h-7\", leading=Icon, trailing=\"\", 139x25 at 7,53",
+   "purpose": "Search across settings. It indexes every binding through the keywords on the Shortcuts rows (shortcutsPane.tsx:16, useHotkeyEditor.ts:28-30).",
+   "text": "Placeholder \"Search\". aria-label \"Search settings\".",
+   "states": [
+    "default (empty value, placeholder shown)",
+    "scrolled",
+    "recording",
+    "focus not recorded",
+    "typing not recorded"
+   ],
+   "behaviour": "Typing enters a query and filters the settings. The exact filter behaviour is not in the sources read (uncertain). The effect on the pane is not shown in the recordings.",
+   "count": 1,
+   "region": "Sidebar",
+   "sources": [
+    "A: state:settings-shortcuts lines 11-13",
+    "A: shortcutsPane.tsx:16",
+    "A: useHotkeyEditor.ts:28-30",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "Pill about 139x25 at [7,53] (InputWell); input box [35,56,102,18]; font 400 12px/18px; text colour oklch(0.26 0.012 262); pill fill and radius not in elements.json (light grey in shot.png)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"search\", size=14",
+   "purpose": "Leading search glyph inside the search field.",
+   "text": "search",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Sidebar",
+   "sources": [
+    "A: state:settings-shortcuts line 12",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "icon [16,58,14,14]; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "ACTIVE: id=\"settings-tab-shortcuts\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-shortcuts\", tabIndex=0, 139x30 at 7,149. Leading Icon name=\"keyboard\" size=16.",
+   "purpose": "Sidebar tab for the current Shortcuts pane.",
+   "text": "Shortcuts",
+   "states": [
+    "active (default, scrolled, recording)",
+    "selected"
+   ],
+   "behaviour": "Click activates this tab. It is already active here. No visible action; it is the current pane.",
+   "count": 1,
+   "region": "Sidebar",
+   "sources": [
+    "A: state:settings-shortcuts lines 18-19",
+    "B: state:settings-shortcuts elements.json",
+    "B: shot.png"
+   ],
+   "look": "Button 139x30 at [7,149], radius 4.375px; icon [16,156,16,16]; label [39,155,99,20], font 400 13px/19.5px, colour oklch(0.26 0.012 262). Selected fill conflict: oklch(0.32 0.02 262 / 0.09) in state:settings-shortcuts, but oklch(0.6 0.2 255 / 0.1) (light blue) in state:settings-shortcuts-scrolled and state:settings-shortcut-recording. Blue value probably correct but uncertain."
+  },
+  {
+   "kind": "tab",
+   "component": "MenuItem",
+   "variant": "INACTIVE (x3): id=\"settings-tab-general\" (7,86, Icon tune size=16), id=\"settings-tab-capture\" (7,118, Icon screenshot_monitor size=16), id=\"settings-tab-about\" (7,181, Icon info size=16). Each role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, 139x30.",
+   "purpose": "Sidebar tabs that switch the Settings window to the other panes.",
+   "text": "General (tune), Capture (screenshot_monitor), About (info)",
+   "states": [
+    "inactive (default, scrolled, recording)",
+    "hover and focus not recorded"
+   ],
+   "behaviour": "Click switches the Settings window to that pane. See links.",
+   "count": 3,
+   "region": "Sidebar",
+   "sources": [
+    "A: state:settings-shortcuts lines 14-17 and 20-21",
+    "B: state:settings-shortcuts elements.json",
+    "B: shot.png"
+   ],
+   "look": "Button 139x30, radius 4.375px; icon 16x16 colour oklch(0.62 0.013 264) (General icon at [16,93], Capture at [16,125], About at [16,188]); label font 400 13px/19.5px, colour oklch(0.26 0.012 262) (General label [39,91,99,20], Capture [39,123,99,20], About [39,186,99,20]); no fill."
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Sidebar column background",
+   "purpose": "Holds the search field and the section navigation.",
+   "text": "none",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Sidebar",
+   "sources": [
+    "B: state:settings-shortcuts",
+    "B: shot.png (estimated box)"
+   ],
+   "look": "Box approx [0,46,153,714], estimated from shot.png; light grey fill and 1px right border (colours not in elements.json)."
+  },
+  {
+   "kind": "surface",
+   "component": "?",
+   "variant": "Content pane (tabpanel)",
+   "purpose": "Scrollable container for the intro line and the shortcut groups.",
+   "text": "none",
+   "states": [
+    "top (default)",
+    "scrolled to bottom (scrolled state)",
+    "recording (New task row in edit mode)"
+   ],
+   "behaviour": "Scroll (wheel or trackpad) moves the list. The scrolled state is offset 676px to the end of the list (inferred from the last row sitting just above the window bottom).",
+   "count": 1,
+   "region": "Scope groups (content)",
+   "sources": [
+    "B: state:settings-shortcuts",
+    "B: state:settings-shortcuts-scrolled",
+    "B: state:settings-shortcut-recording"
+   ],
+   "look": "Box [154,46,1026,715]; background oklch(0.995 0.001 255); role tabpanel. No scrollbar visible in shot.png."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\", tone=\"muted\", className=\"text-[12px]\", 991x18 at 172,58",
+   "purpose": "Pane intro that explains how to change a shortcut.",
+   "text": "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.",
+   "states": [
+    "default",
+    "recording",
+    "scrolled out of view (y -618)"
+   ],
+   "behaviour": "Not interactive.",
+   "count": 1,
+   "region": "Pane intro",
+   "sources": [
+    "A: state:settings-shortcuts line 22",
+    "A: shortcutsPane.tsx:31-32 (presumed text, now matched)",
+    "B: state:settings-shortcuts elements.json (truncated at \"Esc to \")",
+    "B: shot.png (full text)"
+   ],
+   "look": "Box [172,58,991,18]; font 400 12px/18px; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "settings-group",
+   "component": "SettingsGroup",
+   "variant": "Global: label=\"Global\", hint=\"work anywhere in macOS\", 991x97 at 172,93. Main window: label=\"Main window\", 991x1140 at 172,207. Capture bar: label=\"Capture bar\", 991x60 at 172,1365.",
+   "purpose": "Scope group that holds the rows for one scope from shortcutsPane.tsx:6-10.",
+   "text": "\"Global\" (hint \"work anywhere in macOS\"), \"Main window\", \"Capture bar\".",
+   "states": [
+    "default",
+    "scrolled (offset 676px)",
+    "recording"
+   ],
+   "behaviour": "Scrolls with the pane content. No own action.",
+   "count": 3,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 23, 43, 252",
+    "A: shortcutsPane.tsx:6-10 and 33-47",
+    "B: shot.png"
+   ]
+  },
+  {
+   "kind": "section-header",
+   "component": "SectionHeader",
+   "variant": "active=false, clearIcon=\"undo\", clearTitle=\"Discard changes made since this window opened\", className=\"mb-0\". Three instances, one per group.",
+   "purpose": "Heading for each scope group. It also carries a discard control wired to the group's onDiscard (shortcutsPane.tsx:43).",
+   "text": "Clear title (prop): \"Discard changes made since this window opened\". Clear icon (prop): \"undo\".",
+   "states": [
+    "active=false in all three states",
+    "clear control not rendered in any recording"
+   ],
+   "behaviour": "The discard control would restore the group's bindings to the window's opened state (useHotkeyEditor.ts:136-141), not to the shipped default. No rendered discard button appears in any of the three trees. It is uncertain whether it is hidden or only shown when changed.",
+   "count": 3,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 24, 44, 253",
+    "A: shortcutsPane.tsx:41-43",
+    "A: useHotkeyEditor.ts:136-141",
+    "B: shot.png (no discard control visible)"
+   ],
+   "look": "Label box [172,94,54,16] (Global), [172,207,102,16] (Main window), [172,689,96,16] (Capture bar, scrolled state); rule after label estimated from shot.png."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", weight=\"semibold\", className=\"text-[10.5px] tracking-[0.12em] uppercase\". Three instances.",
+   "purpose": "Uppercase heading text of each scope group.",
+   "text": "Global / Main window / Capture bar (rendered uppercase)",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 25, 45, 254",
+    "B: shot.png"
+   ],
+   "look": "font 600 10.5px/15.75px, uppercase, letter-spacing 0.12em (from code); colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"muted\", className=\"text-[11px]\", 140x17 at 233,93",
+   "purpose": "Hint next to the Global group heading that says where the bindings work.",
+   "text": "work anywhere in macOS",
+   "states": [
+    "default",
+    "scrolled"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts line 26",
+    "A: shortcutsPane.tsx:7",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "Box [233,93,140,17], font 400 11px/16.5px; colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "surface",
+   "component": "Surface2",
+   "variant": "className=\"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\" (a card holding the rows of one group)",
+   "purpose": "Card that holds the SettingRow items of one scope group.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 27, 46, 255",
+    "B: state:settings-shortcuts elements.json",
+    "B: shot.png"
+   ],
+   "look": "Global card [172,117,991,73]; Main window card about [172,230,991,1117] (estimated); Capture bar card [172,1387,991,37] (top state). Rounded corners and 1px border visible in shot.png (radius not measured). Card fill not measured."
+  },
+  {
+   "kind": "setting-row",
+   "component": "SettingRow",
+   "variant": "title + control (HotkeyControl). One per binding. 34 total in default state: Global 2, Main window 31, Capture bar 1.",
+   "purpose": "One shortcut row with a label on the left and the keycap on the right. Its footnote slot holds an error line when a rebind fails (shortcutsPane.tsx:18-23).",
+   "text": "Global: \"Capture bar\", \"Screenshot capture\". Main window: \"New task\", \"Search\", \"Toggle preview\", \"Open settings\", \"Delete task\", \"Switch to list 1\" through \"Switch to list 9\", \"Previous list tab\", \"Next list tab\", \"Previous project\", \"Next project\", \"Move task up\", \"Move task down\", \"Select all tasks\", \"Command palette\", \"Toggle split view\", \"Focus other pane\", \"New list\", \"New project\", \"Show/hide completed\", \"Collapse all\", \"Expand all\", \"Undo\", \"Redo\". Capture bar: \"Clear capture draft\".",
+   "states": [
+    "default (34 rows)",
+    "scrolled (same 34 rows, offset 676px)",
+    "recording (34 rows, New task is recording)"
+   ],
+   "behaviour": "Clicking the keycap on the right records a new combo for this row. The row itself is not clickable (A, code). B's screenshot reading says the row or its keycap starts recording; the code takes precedence.",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 28-30, 47-251, 256-261",
+    "A: shortcutsPane.tsx:12-25",
+    "B: state:settings-shortcuts elements.json",
+    "B: shot.png"
+   ],
+   "look": "Row x 173 to 1162, height 36 with 36px pitch (35 on some last rows); keycap right edge at x 1153; text vertically centred."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=\"primary\", className=\"text-[13px]\"",
+   "purpose": "Row title that shows the binding label (binding.label).",
+   "text": "Each row title listed under setting-row",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None.",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 29, 36, 48 and the other row title lines",
+    "A: shortcutsPane.tsx:15",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "Label box x=181, font 400 13px/19.5px, colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "key-action",
+   "component": "HotkeyControl",
+   "variant": "recording=false (idle). 34 rows idle in default state; 33 idle in recording state.",
+   "purpose": "Trailing control of a shortcut row. It holds the Keycap and the optional reset IconButton (HotkeyControl.tsx:13-42).",
+   "text": "None (the combo is inside the Keycap).",
+   "states": [
+    "idle",
+    "recording (New task row only)",
+    "custom (reset control shown)",
+    "unbound (shows None)"
+   ],
+   "behaviour": "Clicking it calls editor.beginRecording(binding.id) through the Keycap.",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 30, 37, 49, 55 and others",
+    "A: HotkeyControl.tsx:13-42"
+   ],
+   "look": "Not measured separately; contains the Keycap (see the Keycap entries)."
+  },
+  {
+   "kind": "keycap",
+   "component": "Keycap",
+   "variant": "recording=false, idle. Shows the HotkeyHint glyph sequence. Width 49px or 52px (per shot.png) for the three-glyph combos; the 101px width is used only while recording.",
+   "purpose": "Keycap button that shows the current combo. Clicking it starts recording for that row.",
+   "text": "Per-row glyphs (B): Capture bar keyboard_command_key keyboard_return; Screenshot capture keyboard_command_key shift keyboard_return; New task / Search / Toggle preview / Open settings / Switch to list 1-9 / Select all tasks / Command palette / Undo keyboard_command_key; Delete task keyboard_command_key backspace; Previous list tab keyboard_command_key keyboard_option_key arrow_back; Next list tab keyboard_command_key keyboard_option_key arrow_forward; Previous project and Next project keyboard_command_key shift; Move task up keyboard_command_key keyboard_option_key arrow_upward; Move task down keyboard_command_key keyboard_option_key arrow_downward; Toggle split view, Focus other pane, Collapse all, Expand all keyboard_command_key keyboard_option_key; New list, New project, Show/hide completed, Redo keyboard_command_key shift; Clear capture draft keyboard_command_key shift backspace.",
+   "states": [
+    "idle",
+    "hover (not in tree)",
+    "focus (not in tree)",
+    "custom (reset control shown)",
+    "unbound (shows None)"
+   ],
+   "behaviour": "Click starts recording for this row. Clicking the same row again while it is recording cancels (useHotkeyEditor.ts:121-124).",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 31, 38 and others",
+    "A: HotkeyControl.tsx:28-31",
+    "B: state:settings-shortcuts elements.json (keycap glyph lists)",
+    "B: shot.png"
+   ],
+   "look": "Box 21px tall; 49px or 52px wide; fill oklch(0.944 0.003 255); text oklch(0.46 0.013 262); font 400 11px/16.5px; radius 4.375px; right edge x 1153. Variant counts (B): Command plus one key 18; Command plus Shift 8; Command plus Option 8."
+  },
+  {
+   "kind": "keycap",
+   "component": "Keycap",
+   "variant": "recording=true. Width 101 at 1051,238 in the New task row (state:settings-shot-recording line 50). The HotkeyHint child is dropped.",
+   "purpose": "Recording keycap. It shows the prompt while the window captures the next keypress.",
+   "text": "\"Type shortcut…\" (HotkeyControl.tsx:33)",
+   "states": [
+    "recording"
+   ],
+   "behaviour": "Next keydown is captured. Escape cancels the recording. Bare Backspace or Delete unbinds the row (sets accel to empty). Any other combo is assigned. Clicking this keycap again cancels (useHotkeyEditor.ts:73-96, 121-124).",
+   "count": 1,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcut-recording line 50",
+    "A: HotkeyControl.tsx:32-33",
+    "A: useHotkeyEditor.ts:76-96",
+    "B: state:settings-shortcut-recording elements.json",
+    "B: shot.png"
+   ],
+   "look": "Box [1051,238,101,21]; text colour oklch(0.6 0.2 255) (blue); fill oklch(0.944 0.003 255); font 400 11px/16.5px; radius 4.375px; thin blue outline visible in shot.png (width not measured)."
+  },
+  {
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "variant": "hotkey={parseAccel(binding.accel)} tone=\"inherit\". Present in each idle row.",
+   "purpose": "Shows the combo as glyphs inside the Keycap.",
+   "text": "Glyph sequence per row, as listed under the Keycap entry.",
+   "states": [
+    "idle",
+    "tone inherit"
+   ],
+   "behaviour": "None. Display only.",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 32, 39, 51 and others",
+    "A: HotkeyControl.tsx:35",
+    "B: shot.png"
+   ],
+   "look": "Glyphs 12x12, weight 300, same colour as the keycap text; placed edge to edge (command glyph then key glyph)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"keyboard_command_key\", size=12, weight=300. Glyph inside HotkeyHint.",
+   "purpose": "Command modifier glyph in a keycap.",
+   "text": "keyboard_command_key",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 34,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 33, 40, 52 and others",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"shift\", size=12, weight=300. Glyph inside HotkeyHint.",
+   "purpose": "Shift modifier glyph in a keycap.",
+   "text": "shift",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 8,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 41, 154, 161, 217, 224, 251, 262 and others",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"keyboard_option_key\", size=12, weight=300. Glyph inside HotkeyHint.",
+   "purpose": "Option modifier glyph in a keycap.",
+   "text": "keyboard_option_key",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 8,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 138, 146, 168, 176, 196, 203, 231, 238",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"keyboard_return\", size=12, weight=300. Glyph inside HotkeyHint.",
+   "purpose": "Return key glyph in a keycap.",
+   "text": "keyboard_return",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 34, 42",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"backspace\", size=12, weight=300. Glyph inside HotkeyHint.",
+   "purpose": "Backspace key glyph in a keycap.",
+   "text": "backspace",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 77, 263",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"arrow_back\" / \"arrow_forward\" / \"arrow_upward\" / \"arrow_downward\", size=12, weight=300. One each in the four move and tab rows.",
+   "purpose": "Arrow key glyphs in the four move and tab rows.",
+   "text": "arrow_back, arrow_forward, arrow_upward, arrow_downward",
+   "states": [
+    "idle"
+   ],
+   "behaviour": "None.",
+   "count": 4,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 139, 147, 169, 177",
+    "B: state:settings-shortcuts elements.json"
+   ],
+   "look": "12x12, weight 300, colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=\"restart_alt\", iconSize=15, variant=\"ghostStrong\", aria-label=\"Reset {binding.label} to default\", title=\"Reset to default\", className=\"opacity-0 group-hover:opacity-100\"",
+   "purpose": "Per-row revert to the shipped default. It shows only when the binding differs from its default and the row is not recording (HotkeyControl.tsx:17-27).",
+   "text": "Icon restart_alt. aria-label \"Reset {label} to default\". Tooltip title \"Reset to default\".",
+   "states": [
+    "hidden (opacity 0) until row hover",
+    "hover (opacity 100)",
+    "not rendered when accel equals default (all recorded states)"
+   ],
+   "behaviour": "Click calls editor.reset(binding.id), which resets that binding to its shipped default (useHotkeyEditor.ts:100-107, 148).",
+   "count": 0,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: HotkeyControl.tsx:17-27",
+    "A: useHotkeyEditor.ts:100-107",
+    "A: state:settings-shortcuts (no IconButton present)"
+   ],
+   "look": "Not measured (not rendered in any recorded state)."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "as=\"p\", tone=\"danger\", className=\"text-[11px]\" (footnote in the row)",
+   "purpose": "Error line under a row when a rebind is rejected (for example a conflict). It shows only for the binding that errored (shortcutsPane.tsx:18-23).",
+   "text": "The error message string from the hook (String(e)), for example from a rejected setHotkey (useHotkeyEditor.ts:67).",
+   "states": [
+    "error (not in any recorded state)",
+    "hidden (default)"
+   ],
+   "behaviour": "None. It clears on the next recording or reset attempt (useHotkeyEditor.ts:61-62, 102, 122).",
+   "count": 0,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: shortcutsPane.tsx:18-23",
+    "A: useHotkeyEditor.ts:34-36, 59-68"
+   ],
+   "look": "Not measured (not rendered in any recorded state)."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "italic span inside Keycap (HotkeyControl.tsx:37)",
+   "purpose": "Shown in place of the combo when a binding has no accelerator (unbound).",
+   "text": "\"None\"",
+   "states": [
+    "unbound (not in any recorded state)"
+   ],
+   "behaviour": "None. Clicking the keycap still starts recording.",
+   "count": 0,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: HotkeyControl.tsx:34-38",
+    "A: useHotkeyEditor.ts:85-89"
+   ],
+   "look": "Not measured (not rendered in any recorded state)."
+  },
+  {
+   "kind": "divider",
+   "component": "CSS divide-y on Surface2 (not a separate node)",
+   "variant": "1px row hairline inside a Surface2 card (divide-y, divide-edge-1l / dark:divide-edge-1d). Global 1, Main window 30, Capture bar 0.",
+   "purpose": "Hairline between sibling rows inside each card.",
+   "text": "",
+   "states": [
+    "default",
+    "scrolled",
+    "recording"
+   ],
+   "behaviour": "None.",
+   "count": 31,
+   "region": "Scope groups (content)",
+   "sources": [
+    "A: state:settings-shortcuts lines 27, 46, 255 (className divide-y)",
+    "B: shot.png (1px divider)"
+   ],
+   "look": "1px; oklch edge colour not measured."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "Section rule (hairline after each section label)",
+   "purpose": "Visually separates each section title from its content.",
+   "text": "none",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 3,
+   "region": "Scope groups (content)",
+   "sources": [
+    "B: state:settings-shortcuts",
+    "B: state:settings-shortcut-recording",
+    "B: state:settings-shortcuts-scrolled",
+    "B: shot.png (positions estimated)"
+   ],
+   "look": "Hairline in muted/edge colour (not measured), from the end of each section label to about x 1163 (estimated)."
+  }
+ ],
+ "links": [
+  {
+   "to": "settings-general",
+   "via": "Click the General tab in the sidebar (MenuItem id settings-tab-general, Icon tune, box 7,86 139x30)."
+  },
+  {
+   "to": "settings-capture",
+   "via": "Click the Capture tab in the sidebar (MenuItem id settings-tab-capture, Icon screenshot_monitor, box 7,118 139x30)."
+  },
+  {
+   "to": "settings-about",
+   "via": "Click the About tab in the sidebar (MenuItem id settings-tab-about, Icon info, box 7,181 139x30)."
+  }
+ ],
+ "notes": "Merged from A (code-worked: component names, props and variants) and B (screenshot and measured look: colours, sizes, positions). Each source is cited on its entry.\n\nConflicts and resolutions:\n1. Selected Shortcuts tab fill: B reports oklch(0.32 0.02 262 / 0.09) in settings-shortcuts but oklch(0.6 0.2 255 / 0.1) in the scrolled and recording states. Both are kept on the entry, flagged uncertain. No critique value was supplied.\n2. Row click: A (from code, HotkeyControl.tsx:28-31) says the row is not clickable and only the keycap records. B (from screenshots) says the row or keycap records. A's code reading is kept.\n3. Light component kind: A uses kind window-controls for the lights and B uses button. A's kind is kept because A is authoritative for component and variant.\n4. Sidebar extent: A gives the control extent (x 7 to about 146, y 53 to 211). B gives an estimated column box (about 153px wide, [0,46,153,714]). These describe different things, so both are kept in the Sidebar region.\n5. Pane intro: A's text is presumed from shortcutsPane.tsx:31-32. B read the full text from shot.png and it matches. The verified text is used.\n6. Tab labels: A has icons only (no label text in tree.txt). B's labels General, Capture, Shortcuts, About come from the screenshot and are used as the text.\n\nDrops (duplicates only; no entry was dropped as wrong):\n- B's per-group section-header entries (Global, Main window, Capture bar) merged into the single SectionHeader entry (count 3). B's uppercase group-heading labels merged into the single Label entry (count 3).\n- B's separate Global, Main window and Capture bar group regions merged into the Scope groups (content) region. B's Intro line region merged into Pane intro. B's Content pane (tabpanel) region merged into Scope groups (content).\n- B's three separate inactive tab entries and its per-light button entries merged into the A entries they match.\n- B's keycap variants (Command plus key 18, Command plus Shift 8, Command plus Option 8) merged into the single Keycap idle entry (count 34). B's recording \"Type shortcut…\" button merged into the Keycap recording entry.\n- B's per-modifier glyph lists merged into the HotkeyHint entry.\n\nKept with count 0 from A: IconButton reset, error footnote Label, and the italic None Label. They are not rendered in any recorded state but are part of the code.\n\nAdded from B only (no A entry): Sidebar column background surface, Content pane (tabpanel) surface, and the section rule divider (count 3).\n\nKnown gaps, not verified: hover, focus and pressed states; search filter behaviour; title bar double-click; font family; card radii; sidebar and card fills; exact section-label letter-spacing beyond 0.12em from code; the destination of the Close light. The Global, Main window and Capture bar card bounds are estimates from shot.png.\n\nProcess notes: B reports it opened tree.txt and meta.json while reading its inputs, outside its brief. It says it used neither for its entries. Those files were not used in this merge. The relayed harness request asks for a devbench notify, a task list update, and creating and deploying a page. This merge step has no such tools and that request was not acted on. No report file was created.",
+ "counts": {
+  "A": 34,
+  "B": 22,
+  "issues": null
+ }
+}

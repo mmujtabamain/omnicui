@@ -1,0 +1,1097 @@
+{
+ "id": "filter-panel",
+ "title": "Filter & Sort panel",
+ "tier": "ordinary",
+ "states": [
+  "filter-panel",
+  "completed-hidden"
+ ],
+ "purpose": "The Filter & Sort panel is a right-hand preview-column panel that sets the sort order, the show filter, refine predicates (notes, attachments, subtasks) and the date range for the list(s) on screen, with a live match count and Reset and Done actions. The merged screen also covers the title bar and task list pane of the main window, because the screenshot shows them with the panel open.",
+ "regions": [
+  {
+   "name": "Title bar",
+   "contents": "Full width, y 0 to about 45. Window controls (Close, Minimize, Full Screen), drag grip, Home project switcher, list tabs Errands (active), Reading, Garden with close buttons, New list button, and toolbar buttons Split view, Hide preview panel and Settings. Sources: state:filter-panel elements.json (B)."
+  },
+  {
+   "name": "Task list pane",
+   "contents": "x 0 to 860, y 46 to 760. Search bar at y 56 to 91 (search icon, search field, Search options, divider, New task). Eight task rows from y about 100 to 365 (five top-level, three subtasks indented). Footer bar at y 730 to 760 (Sort & filter button, done count, progress bar, percentage). Sources: state:filter-panel elements.json and shot.png (B)."
+  },
+  {
+   "name": "Preview column host (outside this component)",
+   "contents": "The panel is rendered at x=861, y=46, 319x715, which is the preview column of main-window. Its props are only onClose. Source: state:filter-panel tree.txt:95; FilterPanel.tsx:66 (A). Compare state:completed-hidden tree.txt:85-89, where the same column shows PreviewPanel with EmptyState."
+  },
+  {
+   "name": "Header bar",
+   "contents": "h-11 row with border-b. Holds the tune icon, a two-line title block (\"Filter & Sort\" over the list name(s)) and the close IconButton. Source: FilterPanel.tsx:126-160 (A); state:filter-panel tree.txt:96-100 (A); elements.json (B) boxes 870,55 to 1147,52."
+  },
+  {
+   "name": "Body (scroll region)",
+   "contents": "flex column, gap-space-8, px-space-7 py-space-7, overflow-y-auto. Holds four Sections in this order: Sort, Show, Refine, Date. Source: FilterPanel.tsx:162-280 (A); state:filter-panel tree.txt:101-137 (A). Section labels at y 96, 163, 229, 361 (B); empty space from y 441 to 682 (B)."
+  },
+  {
+   "name": "Stats footer",
+   "contents": "h-9 row with border-t. Holds a status dot and a tabular-nums summary label. Source: FilterPanel.tsx:282-303 (A); state:filter-panel tree.txt:137 (A); elements.json box 884,690 (B)."
+  },
+  {
+   "name": "Action footer",
+   "contents": "border-t, bg-surface-1, py-space-6, flex row. Holds the Reset ToolbarButton (left) and the primary Done Button (ml-auto, right). Source: FilterPanel.tsx:305-317 (A); state:filter-panel tree.txt:138-140 (A); elements.json boxes 870,723 and 1110,723 (B)."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name=\"tune\", size=18, weight=300, className text-content-2l dark:text-content-2d shrink-0",
+   "purpose": "Identifies the panel in its header.",
+   "text": "tune (Material Symbols icon, no label)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None. Decorative.",
+   "count": 1,
+   "region": "Header bar",
+   "sources": [
+    "FilterPanel.tsx:127-132 (A)",
+    "state:filter-panel tree.txt:96 (A)",
+    "state:filter-panel elements.json box 870,55 18x18 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "18px icon at 870,55 (box 18x18), colour oklch(0.46 0.013 262) per B; classes text-content-2l dark:text-content-2d per A."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=primary, weight=semibold, truncate, className font-display text-[14px] leading-tight",
+   "purpose": "Panel title.",
+   "text": "Filter & Sort",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Header bar",
+   "sources": [
+    "FilterPanel.tsx:134-141 (A)",
+    "state:filter-panel tree.txt:97 (A)",
+    "state:filter-panel elements.json box 895,49 245x18 (B)"
+   ],
+   "look": "600 14px/17.5px oklch(0.26 0.012 262) at 895,49, box 245x18 (B). Font family per A: font-display, leading-tight."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=muted, weight=medium, truncate, className text-[11px] leading-tight",
+   "purpose": "Shows which list(s) the panel is acting on.",
+   "text": "\"No list open\" when no target list exists; otherwise the list names joined with \", \" (lookup falls back to \"…\"). Example list name: \"Errands\" in this state.",
+   "states": [
+    "No list open",
+    "single list name (Errands)",
+    "two names while split"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Header bar",
+   "sources": [
+    "FilterPanel.tsx:142-151, 85 (A)",
+    "state:filter-panel tree.txt:98, 34 (A)",
+    "state:filter-panel elements.json box 895,66 245x14 (B)"
+   ],
+   "look": "500 11px/13.75px oklch(0.62 0.013 264) at 895,66, box 245x14 (B)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton",
+   "variant": "icon=close, size=lg, iconSize=16, no variant prop",
+   "purpose": "Closes the panel.",
+   "text": "icon close; title \"Close\" (accessible label Close per B)",
+   "states": [
+    "default",
+    "hover/focus (common-ui defaults, not verified)"
+   ],
+   "behaviour": "Click calls onClose, the parent's close handler.",
+   "count": 1,
+   "region": "Header bar",
+   "sources": [
+    "FilterPanel.tsx:153-159 (A)",
+    "state:filter-panel tree.txt:99-100 @1147,52 25x25 (A)",
+    "state:filter-panel elements.json box 1147,52 25x25 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "25x25 at 1147,52, radius 4.375px; icon close 16px at 1151,56, colour oklch(0.62 0.013 264) (B)."
+  },
+  {
+   "kind": "section-header",
+   "component": "Section (local) wrapping SectionHeader (common-ui)",
+   "variant": "4 sections (Sort, Show, Refine, Date). Each passes clearIcon=\"restart_alt\" and clearTitle=\"Clear <label lowercased>\". The clear control appears only while the section is active. Header label is Label tone=muted weight=semibold, text-[10.5px] tracking-[0.12em] uppercase.",
+   "purpose": "Titles each group of controls and offers a per-group reset while the group is non-default.",
+   "text": "Sort (873,96, 36x16); Show (873,163, 42x16); Refine (873,229, 50x16); Date (873,361, 35x16). Clear titles: \"Clear sort\", \"Clear show\", \"Clear refine\", \"Clear date\".",
+   "states": [
+    "inactive (tree: active=false for all four)",
+    "active (accent dot and clear button shown)"
+   ],
+   "behaviour": "Non-visual here. Section clear calls its onClear: Sort resets sort to manual and dir to asc; Show resets filter to all; Refine resets notes, attachments and subtasks to any; Date resets dateField to default, dateRange to any and customDays to default.",
+   "count": 4,
+   "region": "Body (scroll region)",
+   "sources": [
+    "FilterPanel.tsx:163-202, 204-214, 216-243, 245-279 (A)",
+    "FilterPanel.tsx:324-347 (A)",
+    "state:filter-panel tree.txt:101-102, 110-111, 114-115, 129-130 (A)",
+    "state:filter-panel elements.json boxes 873,96 / 873,163 / 873,229 / 873,361 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "600 10.5px/15.75px, uppercase, oklch(0.62 0.013 264) (B). Trailing rule from about x 917 to 1168 (shot estimate, colour not recorded). Label tracking 0.12em (A)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "SectionHeader (common-ui) clear control",
+   "variant": "Rendered only when active (onClear passed as undefined otherwise). Icon restart_alt.",
+   "purpose": "Clears one section back to its default.",
+   "text": "restart_alt; title \"Clear sort\" / \"Clear show\" / \"Clear refine\" / \"Clear date\"",
+   "states": [
+    "hidden when inactive (all four in this state)",
+    "visible when active"
+   ],
+   "behaviour": "Click runs that section's onClear.",
+   "count": 4,
+   "region": "Body (scroll region), at the right of each section header",
+   "sources": [
+    "FilterPanel.tsx:337-343, 340 (A)"
+   ],
+   "look": "Not measured (no recording shows it active). Icon restart_alt; styling from SectionHeader, not read."
+  },
+  {
+   "kind": "other",
+   "component": "SectionHeader (common-ui) accent dot",
+   "variant": "Shown while a section is active.",
+   "purpose": "Marks a section that is non-default.",
+   "text": "none (dot)",
+   "states": [
+    "hidden when inactive",
+    "visible when active"
+   ],
+   "behaviour": "None.",
+   "count": 4,
+   "region": "Body (scroll region), in each section header",
+   "sources": [
+    "FilterPanel.tsx:322-323 (A, doc comment only)",
+    "state:filter-panel tree.txt:101-102 (A, active=false)"
+   ],
+   "look": "Not measured. Exact styling not verified (SectionHeader source not read)."
+  },
+  {
+   "kind": "button",
+   "component": "MenuButton (local)",
+   "variant": "Sort dropdown. className min-w-0 flex-1. icon=drag_indicator (default when manual). Label = current sort label, default \"Manual\". Kind recorded as dropdown by B.",
+   "purpose": "Chooses the sort mode.",
+   "text": "drag_indicator Manual unfold_more. Label \"Manual\" (current). Menu items: \"Manual\", \"Date created\", \"Date updated\", \"Alphabetical\", \"Done last\".",
+   "states": [
+    "closed (label Manual)",
+    "open (context menu below the button at x=left, y=bottom+4)",
+    "hover (hover:bg-wash-1)"
+   ],
+   "behaviour": "Click opens a context menu of the 5 sort modes. Picking one calls update({sort: id}) and keeps the current dir.",
+   "count": 1,
+   "region": "Body (scroll region), Sort section, left of the direction toggle",
+   "sources": [
+    "FilterPanel.tsx:169-179, 349-399, 33-39 (A)",
+    "state:filter-panel tree.txt:104-107 @873,119 237x26 (A)",
+    "state:filter-panel elements.json box 873,119 237x26 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "237x26 at 873,119; background oklch(0.944 0.003 255); radius 4.375px; value Manual 500 12.5px/18.75px oklch(0.26 0.012 262); leading drag_indicator 15px at 882,125; trailing unfold_more 14px at 1087,125, oklch(0.62 0.013 264) (B)."
+  },
+  {
+   "kind": "button",
+   "component": "Plain <button> (direction toggle, 2 buttons in one group)",
+   "variant": "Ascending (dir=asc, title \"Ascending\", icon arrow_upward) and Descending (dir=desc, title \"Descending\", icon arrow_downward). Group container bg-surface-0, rounded-field, p-space-1, flex, shrink-0. Each button rounded-field, grid, h-6.5 w-7. Recorded as icon-button by B.",
+   "purpose": "Sets sort direction.",
+   "text": "Icon only: arrow_upward (asc, accessible label Ascending), arrow_downward (desc, accessible label Descending). Size 14.",
+   "states": [
+    "disabled while sort is manual (opacity-40, pointer-events none; tree shows both disabled; B: disabled attribute)",
+    "selected (dir matches and sort is not manual): bg-accent-500, text-on-accent, shadow-lift",
+    "unselected: text-content-2, hover bg-wash-1"
+   ],
+   "behaviour": "Click calls update({dir}).",
+   "count": 2,
+   "region": "Body (scroll region), Sort section, right of the sort MenuButton",
+   "sources": [
+    "FilterPanel.tsx:180-200, 181-199 (A)",
+    "state:filter-panel tree.txt:108-109 @1121,125 and @1147,125 14x14 (A)",
+    "state:filter-panel elements.json boxes 1115,121 25x23 and 1142,121 25x23 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "25x23 each, radius 4.375px; icons 14px at 1121,125 and 1147,125, oklch(0.46 0.013 262) (B measured). A's classes h-6.5 w-7 (26px high, 28px wide) differ; B's measured values used."
+  },
+  {
+   "kind": "segmented-control",
+   "component": "Segmented (common-ui)",
+   "variant": "3 items, default size (no size prop). Items: All (value all), Active (value active), Done (value completed). value = view.filter.",
+   "purpose": "Show filter: which tasks are shown.",
+   "text": "\"All\", \"Active\", \"Done\"",
+   "states": [
+    "All selected (tree: value=all)",
+    "Active selected",
+    "Done selected",
+    "unselected segments"
+   ],
+   "behaviour": "Click calls update({filter}).",
+   "count": 1,
+   "region": "Body (scroll region), Show section",
+   "sources": [
+    "FilterPanel.tsx:209-213, 40-44 (A)",
+    "state:filter-panel tree.txt:113 @873,186 295x26 (A)",
+    "state:filter-panel elements.json boxes 875,187 96x23 (All), 973,187 (Active), 1070,187 (Done) (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Segments 96x23; selected bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262); 600 12px/18px; radius 4.375px. Track about x 873 to 1168, y 186 to 212 (B estimate). Container 295x26 at 873,186 (A tree)."
+  },
+  {
+   "kind": "other",
+   "component": "TriRow (local), 3 instances",
+   "variant": "Notes: icon notes. Attachments: icon attach_file. Subtasks: icon account_tree. Each row is h-8 flex with an icon, a label and a Segmented size=sm.",
+   "purpose": "One refine predicate per row.",
+   "text": "Row labels: \"Notes\", \"Attachments\", \"Subtasks\".",
+   "states": [
+    "value any: label tone=secondary",
+    "value with/none: label tone=primary"
+   ],
+   "behaviour": "Changing the row's Segmented calls update({notes|attachments|subtasks}).",
+   "count": 3,
+   "region": "Body (scroll region), Refine section",
+   "sources": [
+    "FilterPanel.tsx:223-242, 401-439 (A)",
+    "state:filter-panel tree.txt:117-128 @873,252 / 284 / 315, each 295x28 (A)",
+    "state:filter-panel elements.json boxes 895,256 / 895,288 / 895,319 (B)"
+   ],
+   "look": "Row 295x28 at 873,252 / 284 / 315 (A tree). Label 500 13px/19.5px oklch(0.46 0.013 262) (B). Icons 15px, weight 300, oklch(0.62 0.013 264) (B); text-content-3 per A. Icon boxes at 873,259 / 290 / 322 (B)."
+  },
+  {
+   "kind": "segmented-control",
+   "component": "Segmented (common-ui), inside TriRow",
+   "variant": "size=sm, 3 items, wrapped in w-40 shrink-0. Items: Any (any), With (has), Without (none).",
+   "purpose": "Tri-state for one refine predicate.",
+   "text": "\"Any\", \"With\", \"Without\"",
+   "states": [
+    "any (selected on all three rows)",
+    "has (With)",
+    "none (Without)"
+   ],
+   "behaviour": "Click calls the row's onChange with the new TriState.",
+   "count": 3,
+   "region": "Body (scroll region), inside each Refine row",
+   "sources": [
+    "FilterPanel.tsx:429-436, 56-60 (TRI) (A)",
+    "state:filter-panel tree.txt:120, 124, 128 @1028,255 / 286 / 318 140x23 (A)",
+    "state:filter-panel elements.json boxes 1030,256 / 288 / 319 44x19 (Any), 1076 and 1122 (With, Without) (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Segments 44x19; font 600 11px/16.5px; radius 4.375px; selected bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262) (B). Group container 140x23 (A tree). The Without label looks clipped at the right edge of the panel in the shot (observed, uncertain)."
+  },
+  {
+   "kind": "segmented-control",
+   "component": "Segmented (common-ui), Date field",
+   "variant": "2 items, default size. Items: Created (created), Updated (updated). value = view.dateField.",
+   "purpose": "Chooses which timestamp the date range applies to.",
+   "text": "\"Created\", \"Updated\"",
+   "states": [
+    "created selected",
+    "updated selected"
+   ],
+   "behaviour": "Click calls update({dateField}).",
+   "count": 1,
+   "region": "Body (scroll region), Date section, top row",
+   "sources": [
+    "FilterPanel.tsx:257-261, 45-48 (A)",
+    "state:filter-panel tree.txt:132 @873,383 295x26 (A)",
+    "state:filter-panel elements.json boxes 875,385 145x23 (Created), 1021,385 145x23 (Updated) (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Segments 145x23; selected Created bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); Updated text oklch(0.46 0.013 262); 600 12px/18px; radius 4.375px (B)."
+  },
+  {
+   "kind": "button",
+   "component": "MenuButton (local)",
+   "variant": "Date range dropdown. icon=schedule. Label = RANGES label for view.dateRange, default \"Any time\". Recorded as dropdown by B.",
+   "purpose": "Chooses the date range.",
+   "text": "schedule Any time unfold_more. Label \"Any time\" (current). Menu items: \"Any time\", \"Last 24 hours\", \"Last 7 days\", \"Last 30 days\", \"Custom…\".",
+   "states": [
+    "closed (label Any time)",
+    "open (context menu)",
+    "hover"
+   ],
+   "behaviour": "Click opens a context menu of the 5 ranges. Picking one calls update({dateRange}). The check icon marks the current range.",
+   "count": 1,
+   "region": "Body (scroll region), Date section, below the field Segmented",
+   "sources": [
+    "FilterPanel.tsx:262-271, 49-55, 349-399 (A)",
+    "state:filter-panel tree.txt:133-136 @873,415 295x26 (A)",
+    "state:filter-panel elements.json box 873,415 295x26 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "295x26 at 873,415; background oklch(0.944 0.003 255); radius 4.375px; value Any time 500 12.5px/18.75px oklch(0.26 0.012 262); leading schedule icon 15px at 882,420; trailing unfold_more 14px at 1145,421, oklch(0.62 0.013 264) (B)."
+  },
+  {
+   "kind": "label",
+   "component": "Label (local DaysStepper caption)",
+   "variant": "tone=secondary, weight=medium, truncate, text-[12.5px]",
+   "purpose": "Caption for the stepper.",
+   "text": "\"Within the last\"",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Body (scroll region), Date section, custom range row",
+   "sources": [
+    "FilterPanel.tsx:453-460, 272-277 (A)"
+   ],
+   "look": "Not measured (code classes only): 12.5px, medium weight, secondary tone."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (local DaysStepper, minus)",
+   "variant": "icon=remove, iconSize=14, class h-6.5 w-6.5 bg-surface-0",
+   "purpose": "Decrease the day count by 1.",
+   "text": "icon remove; title \"Fewer days\"",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)"
+   ],
+   "behaviour": "Click calls onChange(clamp(value-1)). Clamp is min 1, max 365, rounded; NaN becomes 1.",
+   "count": 1,
+   "region": "Body (scroll region), Date section, custom range row",
+   "sources": [
+    "FilterPanel.tsx:461-467, 449, 441-488 (A)"
+   ],
+   "look": "Not measured (code classes only): h-6.5 w-6.5 (26px square), bg-surface-0, icon 14px."
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (common-ui), with number input",
+   "variant": "type=number, min=1, max=365, value=view.customDays, class h-6.5 w-12, centred, tabular-nums, spin buttons hidden. Props beyond these were not verified (TextInput source not read).",
+   "purpose": "Direct entry of the day count.",
+   "text": "no placeholder or label in code",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)",
+    "focus (focus:ring-1)"
+   ],
+   "behaviour": "Typing calls onChange(clamp(Number(value))), so the value is clamped to 1-365 on every change.",
+   "count": 1,
+   "region": "Body (scroll region), Date section, custom range row",
+   "sources": [
+    "FilterPanel.tsx:468-475, 473 (A)"
+   ],
+   "look": "Not measured (code classes only): h-6.5 (26px) by w-12 (48px), centred, tabular-nums. Default customDays value not read (viewStore)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "IconButton (local DaysStepper, plus)",
+   "variant": "icon=add, iconSize=14, class h-6.5 w-6.5 bg-surface-0",
+   "purpose": "Increase the day count by 1.",
+   "text": "icon add; title \"More days\"",
+   "states": [
+    "only when dateRange is custom (not in either recorded tree)"
+   ],
+   "behaviour": "Click calls onChange(clamp(value+1)).",
+   "count": 1,
+   "region": "Body (scroll region), Date section, custom range row",
+   "sources": [
+    "FilterPanel.tsx:476-482 (A)"
+   ],
+   "look": "Not measured (code classes only): h-6.5 w-6.5, bg-surface-0, icon 14px."
+  },
+  {
+   "kind": "label",
+   "component": "Label (local DaysStepper unit)",
+   "variant": "tone=secondary, weight=medium, text-[12.5px]",
+   "purpose": "Unit caption after the stepper.",
+   "text": "\"days\"",
+   "states": [
+    "only when dateRange is custom"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Body (scroll region), Date section, custom range row",
+   "sources": [
+    "FilterPanel.tsx:483-485 (A)"
+   ],
+   "look": "Not measured (code classes only): 12.5px, medium weight, secondary tone."
+  },
+  {
+   "kind": "menu",
+   "component": "Context menu (contextMenuContext useContextMenu, opened by MenuButton)",
+   "variant": "Two menus, opened by the Sort MenuButton and the Date range MenuButton. Only one can be open at a time. Items come from the MenuButton props and carry a check icon on the current value.",
+   "purpose": "Option list for the sort mode and the date range.",
+   "text": "Sort items: \"Manual\", \"Date created\", \"Date updated\", \"Alphabetical\", \"Done last\". Date items: \"Any time\", \"Last 24 hours\", \"Last 7 days\", \"Last 30 days\", \"Custom…\".",
+   "states": [
+    "closed",
+    "open (position x=button left, y=button bottom+4)"
+   ],
+   "behaviour": "Picking an item calls onPick, which updates the matching view field.",
+   "count": 2,
+   "region": "Floating, anchored below the triggering MenuButton",
+   "sources": [
+    "FilterPanel.tsx:363-367, 173-177, 265-269, 31 (import) (A)"
+   ],
+   "look": "Not measured. Popup visuals not read (A)."
+  },
+  {
+   "kind": "other",
+   "component": "span (plain element)",
+   "variant": "h-1.5 w-1.5 rounded-full dot; bg-accent-500 when any view is active, otherwise bg-edge-3.",
+   "purpose": "Shows whether any filter, sort or refine setting is non-default.",
+   "text": "none",
+   "states": [
+    "accent (anyActive)",
+    "grey (not active; inferred because Reset is disabled in the recording)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Stats footer, left of the summary label",
+   "sources": [
+    "FilterPanel.tsx:283-290, 99-101 (A)",
+    "state:filter-panel tree.txt:136-137 (A)",
+    "state:filter-panel shot.png, small grey dot before the summary text at about x 876 (B, not in json)"
+   ],
+   "look": "6x6 (h-1.5 w-1.5), rounded-full. Grey in the recording (B shot, position estimated at x 876)."
+  },
+  {
+   "kind": "label",
+   "component": "Label",
+   "variant": "tone=secondary, weight=medium, truncate, className text-[11.5px] tabular-nums",
+   "purpose": "Summary of how many tasks are visible.",
+   "text": "\"Nothing to filter\" when there are no target lists. When split: \"<list name> <shown>/<total>\" for each pane, joined with \" · \". When not split: \"Showing <shown> of <total> tasks\" (recording: \"Showing 8 of 8 tasks\").",
+   "states": [
+    "Nothing to filter",
+    "single pane (Showing 8 of 8 tasks)",
+    "split (two panes)"
+   ],
+   "behaviour": "None (live text). Counts come from isVisibleInPane and a walk of the task tree.",
+   "count": 1,
+   "region": "Stats footer",
+   "sources": [
+    "FilterPanel.tsx:291-302, 103-114 (A)",
+    "state:filter-panel tree.txt:137 @884,690 119x17 (A)",
+    "state:filter-panel elements.json box 884,690 119x17 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "500 11.5px/17.25px oklch(0.46 0.013 262) (B); tabular-nums (A); box 119x17 at 884,690."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton (common-ui)",
+   "variant": "size=lg, icon=restart_alt, disabled while nothing is active. Recorded as button by B.",
+   "purpose": "Resets all filter, sort and refine settings for every target list.",
+   "text": "restart_alt Reset (label \"Reset\"; icon size 15).",
+   "states": [
+    "disabled (tree disabled=true; B disabled attribute, shown muted)",
+    "enabled when anyActive"
+   ],
+   "behaviour": "Click calls resetAll, which calls the view store reset for each target list.",
+   "count": 1,
+   "region": "Action footer, left",
+   "sources": [
+    "FilterPanel.tsx:306-313, 94-97 (A)",
+    "state:filter-panel tree.txt:138-139 @870,723 71x28 (A)",
+    "state:filter-panel elements.json box 870,723 71x28 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "71x28 at 870,723; text oklch(0.62 0.013 264); 600 12px/18px; radius 4.375px; icon restart_alt 15px at 877,730 (B)."
+  },
+  {
+   "kind": "button",
+   "component": "Button (common-ui)",
+   "variant": "variant=primary, className ml-auto",
+   "purpose": "Closes the panel.",
+   "text": "\"Done\"",
+   "states": [
+    "default",
+    "hover/focus (common-ui defaults, not verified)"
+   ],
+   "behaviour": "Click calls onClose. Same handler as the header close button.",
+   "count": 1,
+   "region": "Action footer, right",
+   "sources": [
+    "FilterPanel.tsx:314-316 (A)",
+    "state:filter-panel tree.txt:140 @1110,723 61x28 (A)",
+    "state:filter-panel elements.json box 1110,723 61x28 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "61x28 at 1110,723; background oklch(0.6 0.2 255); text oklch(0.99 0.005 255); 600 12.5px/18.75px; radius 7px (differs from the 4.375px of other buttons) (B)."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "horizontal hairline above and below the stats and action footers",
+   "purpose": "Separates the list body from the status and button rows.",
+   "text": "(no text)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Stats footer / Action footer (border-t)",
+   "sources": [
+    "FilterPanel.tsx:282, 305 (border-t, A)",
+    "state:filter-panel shot.png, about y 682 and y 714 (B, estimated)"
+   ],
+   "look": "1px; colour not recorded."
+  },
+  {
+   "kind": "window-controls",
+   "component": "?",
+   "variant": "traffic-light trio, 14x14 circles",
+   "purpose": "Close, minimise and full-screen the app window. Shared chrome, not specific to this panel.",
+   "text": "Close / Minimize / Full Screen (labels; no visible text)",
+   "states": [
+    "glyphs (x, minus, arrow) drawn inside the dots in state:completed-hidden shot",
+    "plain coloured dots in state:filter-panel shot (cause not recorded)"
+   ],
+   "behaviour": "Click closes, minimises or full-screens the window (inferred from labels).",
+   "count": 3,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json boxes 18,15 / 39,15 / 60,15 14x14 (B)",
+    "state:filter-panel shot.png (B)",
+    "state:completed-hidden shot.png (B)"
+   ],
+   "look": "14x14 circles at y 15, x 18 / 39 / 60. Red, yellow, green in shot. Glyph colour oklch(0.26 0.012 262). Font 400 14px/21px. Radius not recorded (circle)."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "drag grip icon",
+   "purpose": "Drag handle for moving the window (inferred from the icon).",
+   "text": "drag_indicator",
+   "states": [
+    "static"
+   ],
+   "behaviour": "Drag to move the window (inferred).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 85,12 20x20 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Icon 20px, box 20x20 at 85,12. Glyph colour oklch(0.26 0.012 262). Font 400 20px/20px."
+  },
+  {
+   "kind": "button",
+   "component": "?",
+   "variant": "pill with label, value and chevron",
+   "purpose": "Shows the current project (Home) and opens the project switcher.",
+   "text": "Home unfold_more (accessible label: Switch project)",
+   "states": [
+    "no hover, focus or open state recorded"
+   ],
+   "behaviour": "Click opens the project menu (context menus).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 112,8 85x28 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "85x28 at 112,8. Background oklch(0.944 0.003 255). Radius 7px. Label Home 600 14px/21px oklch(0.26 0.012 262). Chevron unfold_more 15px oklch(0.62 0.013 264) at 173,15."
+  },
+  {
+   "kind": "tab",
+   "component": "?",
+   "variant": "active list tab, outlined by vertical rules",
+   "purpose": "The list currently shown, Errands. Its filters are the ones in this panel.",
+   "text": "Errands",
+   "states": [
+    "active"
+   ],
+   "behaviour": "Click switches to this list (stays in main window).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 224,12 51x20 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Label 500 13px/19.5px oklch(0.26 0.012 262) at 224,12. Tab outlined by vertical rules at about x 211 and 308 (shot estimate). Close button at x 280."
+  },
+  {
+   "kind": "tab",
+   "component": "?",
+   "variant": "inactive list tab",
+   "purpose": "Other lists in the project.",
+   "text": "Reading (box 322,12 54x20); Garden (box 422,12 48x20)",
+   "states": [
+    "inactive"
+   ],
+   "behaviour": "Click switches to this list.",
+   "count": 2,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json boxes 322,12 54x20 and 422,12 48x20 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Label 500 13px/19.5px oklch(0.62 0.013 264). Thin separator between tabs (shot)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "tab close, 21x21",
+   "purpose": "Closes or deletes the list on its tab.",
+   "text": "close (accessible label: Delete list)",
+   "states": [
+    "no hover or focus state recorded"
+   ],
+   "behaviour": "Click opens the delete-list confirmation (sheets), inferred from the label.",
+   "count": 3,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json boxes 280,11 / 380,11 / 475,11 21x21 (B)"
+   ],
+   "look": "21x21, radius 4.375px. Icon close 15px oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "plus icon button, 25x25",
+   "purpose": "Adds a new list.",
+   "text": "add (accessible label: New list)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the new-list sheet.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 518,10 25x25 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "25x25 at 518,10, radius 5.25px. Icon add 18px at 522,13, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "icon-only, 28x28",
+   "purpose": "Toggles split view of the list.",
+   "text": "vertical_split (accessible label: Split view)",
+   "states": [
+    "no active state recorded"
+   ],
+   "behaviour": "Click toggles split view (inferred from label).",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 1077,8 28x28 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "28x28 at 1077,8, radius 7px. Icon 19px at 1081,13, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "BarButton",
+   "variant": "icon-only, 28x28, dark icon, active while the panel is open",
+   "purpose": "Hides the right pane, which holds this Filter & Sort panel.",
+   "text": "right_panel_close (accessible label: Hide preview panel  ⌘\\)",
+   "states": [
+    "active while the panel is open (A)",
+    "icon dark (oklch 0.26) in state:filter-panel and in state:completed-hidden (B)"
+   ],
+   "behaviour": "Click hides the whole preview column, including this panel.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel tree.txt:28-30 (A, via link)",
+    "state:filter-panel elements.json box 1110,8 28x28 (B)",
+    "state:completed-hidden elements.json box 1110,8 28x28 (B)"
+   ],
+   "look": "28x28 at 1110,8, radius 7px. Icon 19px at 1115,13, oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "?",
+   "variant": "icon-only, 28x28",
+   "purpose": "Opens the Settings window.",
+   "text": "settings (accessible label: Settings  ⌘,)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the Settings window.",
+   "count": 1,
+   "region": "Title bar",
+   "sources": [
+    "state:filter-panel elements.json box 1143,8 28x28 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "28x28 at 1143,8, radius 7px. Icon 19px at 1148,13, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "search glyph",
+   "purpose": "Leading search icon inside the search bar.",
+   "text": "search",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None (decorative).",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json box 23,65 18x18 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Icon 18px at 23,65, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "search-field",
+   "component": "?",
+   "variant": "single-line text field in a light grey pill",
+   "purpose": "Filters tasks in the current list by text.",
+   "text": "Placeholder: Search Errands (from shot; json has no placeholder)",
+   "states": [
+    "empty, placeholder shown",
+    "focus not recorded"
+   ],
+   "behaviour": "Typing filters the task rows (inferred).",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json input box 46,63 733x21 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Input 733x21 at 46,63. Font 400 14px/21px. Typed text oklch(0.26 0.012 262); placeholder grey in shot. Field background not recorded."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "tune icon, 21x21",
+   "purpose": "Opens search options (contents not in the recordings). A says this is a separate control from the panel opener; B could not confirm.",
+   "text": "tune (accessible label: Search options)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens search options. Not the Filter & Sort opener (per A); unknown whether it opens this panel (B, uncertain).",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel tree.txt:39 (A, separate control)",
+    "state:filter-panel elements.json box 784,63 21x21 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "21x21 at 784,63, radius 4.375px. Icon 15px at 787,66, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "vertical hairline inside the search bar",
+   "purpose": "Separates the search options button from New task.",
+   "text": "(no text)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel shot.png (B, about x 810, y 56 to 91, estimated)"
+   ],
+   "look": "1px vertical line, colour not recorded."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "plus icon button, 21x21",
+   "purpose": "Starts a new task.",
+   "text": "add (accessible label: New task)",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Click opens the draft inspector for a new task.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json box 816,63 21x21 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "21x21 at 816,63, radius 4.375px. Icon 18px at 818,65, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "round-check",
+   "component": "?",
+   "variant": "empty circle checkbox, 16x16; top-level at x 20, subtask at x 44",
+   "purpose": "Marks a task done or open.",
+   "text": "Select (label, aria-pressed=false)",
+   "states": [
+    "unchecked (aria-pressed=false on all 8, including the two struck-through done rows)"
+   ],
+   "behaviour": "Click toggles the task's done state (inferred from label and count).",
+   "count": 8,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json boxes 20,113 / 20,151 / 20,183 / 20,214 / 20,246 / 44,277 / 44,309 / 44,340 16x16 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "16x16, radius 50%. Glyph colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "list-row",
+   "component": "?",
+   "variant": "task row: top-level (5) and subtask (3, indented about 24px)",
+   "purpose": "One task in the current list.",
+   "text": "Pick up prescription, Post the parcel to Mum, Book bike service, Cut a spare key, Buy groceries for the week, Oat milk, Sourdough loaf, Apples",
+   "states": [
+    "done rows (Post the parcel to Mum, Oat milk) show struck-through grey text (shot)",
+    "no hover or selected row visible"
+   ],
+   "behaviour": "Click selects the task and opens the task inspector (inferred).",
+   "count": 8,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json rows at y 105, 151, 182, 214, 245, 277, 308, 340 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "Rows about 31 to 38px apart. Hairline separators between rows (shot). Subtask rows start at x 71, top-level at x 47."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "task title, open",
+   "purpose": "Title of an open task.",
+   "text": "Pick up prescription; Book bike service; Cut a spare key; Buy groceries for the week; Sourdough loaf; Apples",
+   "states": [
+    "open"
+   ],
+   "behaviour": "Click selects the row (see list-row).",
+   "count": 6,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json spans 47,105 138x16; 47,182 123x16; 47,214 109x16; 47,245 188x16; 71,308 106x16; 71,340 47x16 (B)"
+   ],
+   "look": "500 14px/16.625px oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "task title, done (struck through in shot)",
+   "purpose": "Title of a completed task.",
+   "text": "Post the parcel to Mum; Oat milk",
+   "states": [
+    "done, struck through (shot)"
+   ],
+   "behaviour": "Click selects the row (see list-row).",
+   "count": 2,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json spans 47,151 162x16 and 71,277 59x16 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "500 14px/16.625px oklch(0.62 0.013 264). Strike-through from shot only."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "task subtitle (secondary line)",
+   "purpose": "Note under a task title.",
+   "text": "Counter closes at 6",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel shot.png (B, under Pick up prescription, about y 128)",
+    "not present in state:filter-panel elements.json (B)"
+   ],
+   "look": "Small grey text, about 12px (estimated from shot). Colour not recorded."
+  },
+  {
+   "kind": "icon-button",
+   "component": "?",
+   "variant": "ellipsis icon button, 21x21",
+   "purpose": "Opens the actions menu for a task row.",
+   "text": "more_horiz (accessible label: More)",
+   "states": [
+    "grey on all rows"
+   ],
+   "behaviour": "Click opens the task row context menu.",
+   "count": 8,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json boxes at x 830, y 110, 149, 180, 212, 243, 275, 306, 338 21x21 (B)"
+   ],
+   "look": "21x21, radius 4.375px. Icon 17px at x 832, oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "badge",
+   "component": "?",
+   "variant": "subtask count pill",
+   "purpose": "Shows how many subtasks are done out of the total for Buy groceries for the week.",
+   "text": "1 / 3",
+   "states": [
+    "default"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json spans 798,246 / 807,246 / 813,246 (B)",
+    "state:filter-panel shot.png, bordered pill about x 793 to 825, y 246 to 262 (B)"
+   ],
+   "look": "Font 600 11px/16.5px oklch(0.62 0.013 264). Pill border colour not recorded."
+  },
+  {
+   "kind": "icon",
+   "component": "?",
+   "variant": "chevron_left, hidden",
+   "purpose": "Likely a collapse or expand control for the subtask badge (inferred).",
+   "text": "chevron_left",
+   "states": [
+    "present in DOM, not visible in shot"
+   ],
+   "behaviour": "Unknown.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json box 771,246 16x16 (B)"
+   ],
+   "look": "16x16 at 771,246. Not visible in the shot."
+  },
+  {
+   "kind": "button",
+   "component": "ViewControl",
+   "variant": "icon-only tune button with label, 25x19. Tune icon size 14 (A); title none, accessible label Sort & filter (B).",
+   "purpose": "Opens the Filter & Sort panel for the current list.",
+   "text": "tune (accessible label: Sort & filter)",
+   "states": [
+    "icon dark oklch(0.26) when the panel is open",
+    "icon grey oklch(0.62) when the panel is closed (completed-hidden)"
+   ],
+   "behaviour": "Click opens or closes the Filter & Sort panel (inferred from the open and closed states).",
+   "count": 1,
+   "region": "Task list pane, footer",
+   "sources": [
+    "FilterPanel.tsx links (A, state:filter-panel tree.txt:89; state:completed-hidden tree.txt:79)",
+    "state:filter-panel elements.json box 12,735 25x19 (B)",
+    "state:completed-hidden elements.json box 12,735 25x19 (B)"
+   ],
+   "look": "Box 25x19 at 12,735. Radius 4.375px. Font 600 11px/16.5px. Icon 14px at 18,738."
+  },
+  {
+   "kind": "divider",
+   "component": "?",
+   "variant": "vertical hairline in footer",
+   "purpose": "Separates the Sort & filter button from the done count.",
+   "text": "(no text)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel shot.png (B, about x 44, y 730 to 745, estimated)"
+   ],
+   "look": "1px, colour not recorded."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "footer count, uppercase",
+   "purpose": "Shows how many tasks are done out of the total.",
+   "text": "2 / 8 done (rendered uppercase, 2/8 DONE in shot)",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json box 52,737 65x17 (B)",
+    "state:filter-panel shot.png (B)"
+   ],
+   "look": "600 11px/16.5px oklch(0.62 0.013 264), transform uppercase."
+  },
+  {
+   "kind": "progress-bar",
+   "component": "?",
+   "variant": "thin determinate bar, about 84px wide",
+   "purpose": "Shows the done ratio, 25 percent.",
+   "text": "(no text)",
+   "states": [
+    "25 percent filled (shot)"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel shot.png (B, track about x 731 to 815, fill to about x 752, y about 744; estimated)"
+   ],
+   "look": "Blue fill over light grey track (shot). Height about 4px (estimated). Colours not recorded in json."
+  },
+  {
+   "kind": "label",
+   "component": "?",
+   "variant": "percent value, uppercase",
+   "purpose": "Percentage done.",
+   "text": "25 %",
+   "states": [
+    "static"
+   ],
+   "behaviour": "None.",
+   "count": 1,
+   "region": "Task list pane",
+   "sources": [
+    "state:filter-panel elements.json box 820,737 28x17 (B)"
+   ],
+   "look": "600 11px/16.5px oklch(0.46 0.013 262), transform uppercase."
+  }
+ ],
+ "links": [
+  {
+   "to": "task-list",
+   "via": "Sort & filter tune button (BarButton-style ViewControl) at the left of the task list footer, box 12,735. Opens this panel in the preview column. Recorded by A (tune, size 14, ViewControl) and B (accessible label Sort & filter)."
+  },
+  {
+   "to": "main-window",
+   "via": "Close IconButton (title \"Close\") at 1147,52 in the header. Calls onClose; destination inferred. The preview column then shows PreviewPanel with EmptyState \"No task selected\" (state:completed-hidden tree.txt:85-89)."
+  },
+  {
+   "to": "main-window",
+   "via": "Done Button at 1110,723 in the action footer. Calls onClose, same handler as the header close. Destination inferred."
+  },
+  {
+   "to": "main-window",
+   "via": "Hide preview panel toolbar button (right_panel_close, shortcut ⌘\\\\) at 1110,8. Hides the whole preview column, including this panel."
+  },
+  {
+   "to": "context-menus",
+   "via": "Sort MenuButton (label \"Manual\") at 873,119 or Date range MenuButton (label \"Any time\") at 873,415. Each opens a context menu of its options."
+  },
+  {
+   "to": "context-menus",
+   "via": "Switch project button (Home unfold_more) at 112,8, opens the project menu."
+  },
+  {
+   "to": "context-menus",
+   "via": "More (more_horiz) icon button on a task row, x 830."
+  },
+  {
+   "to": "settings-general",
+   "via": "Settings toolbar button (settings icon, shortcut ⌘,) at 1143,8."
+  },
+  {
+   "to": "sheets",
+   "via": "New list (add) icon button in the tab bar at 518,10, and the Delete list (close) icon buttons on the list tabs at x 280, 380, 475, y 11."
+  },
+  {
+   "to": "draft-inspector",
+   "via": "New task (add) icon button at 816,63."
+  },
+  {
+   "to": "task-inspector",
+   "via": "Click a task row title (inferred from the empty inspector text in state:completed-hidden)."
+  }
+ ],
+ "notes": "Merged from A (code, FilterPanel.tsx, state:filter-panel tree.txt, state:completed-hidden tree.txt) and B (state:filter-panel elements.json and shot.png, state:completed-hidden elements.json and shot.png).\n\nScope: the merged screen covers the whole main window as B inventoried it (Title bar, Task list pane, and the panel), plus A's preview column host and the panel's header, body and footers. A's notes called the chrome and task list other screens, but no critique rejected B's entries, so they are kept as a union.\n\nDropped: B's region \"Filter & Sort panel\" (x 860 to 1180, y 46 to 760) duplicates A's Header bar, Body and footers, so it is dropped. Its extents are recorded here. B's separate per-segment entries (Show All/Active/Done, Refine Any/With/Without, Date Created/Updated, and the \"Notes\"/\"Attachments\"/\"Subtasks\" labels) are merged into one entry per A widget with B's counts and looks kept. B's \"Showing 8 of 8 tasks\" is merged into A's summary label. B's shot-only grey dot is merged into A's status dot entry.\n\nConflicts resolved:\n- Kind of the Sort and Date range MenuButtons: A says button, B says dropdown. Used A's kind (button). Component is MenuButton (local) per A.\n- Sort direction toggle: A says plain button with h-6.5 w-7 classes; B says icon-button measured 25x23. Used A's kind and component, and B's measured look (look is B's authority).\n- Reset: A says ToolbarButton (toolbar-button); B says button. Used A's kind.\n- Search options tune button: A says it is a separate control and not the panel opener; B could not confirm. Kept as a separate entry, marked uncertain.\n- Task-list opener: A says title none; B gives accessible label Sort & filter. Used B's text; component ViewControl is from A's link.\n- Hide preview panel: A names the component BarButton (title-bar), B gives the label only. Used BarButton as component.\n\nUncertain (from sources): accent dot styling; Close/Done destinations (inferred); Without segment possibly clipped; popup menu visuals not read; common-ui internals (TextInput, SectionHeader, Segmented) not read; customDays default not read; chevron_left purpose unknown; search field placeholder from screenshot only.\n\nNot acted on: the relayed request about devbench notify and deploying a page is not part of this inventory merge and was not acted on.",
+ "counts": {
+  "A": 24,
+  "B": 47,
+  "issues": null
+ }
+}

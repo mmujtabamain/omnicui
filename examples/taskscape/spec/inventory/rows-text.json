@@ -1,0 +1,418 @@
+[
+ {
+  "screen": "main-window",
+  "kind": "search-field",
+  "component": "InputWell + TextInput2 (search bar)",
+  "variant": "InputWell className mx-4 mt-3 mb-2 h-10 shrink-0; TextInput2 bare=true value='' className w-full text-[14px]; handlers onFocus, onChange, onKeyDown",
+  "purpose": "Filters the task pane's list.",
+  "text": "placeholder 'Search Errands' (split right pane: 'Search Reading')",
+  "states": [
+   "all states with a pane (focus and typed text not captured)"
+  ],
+  "behaviour": "typing filters the rows (handler body not in these files; inferred)",
+  "look": "InputWell 832x35 at 14,56; TextInput2 at 46,63, 733x21; font 400 14px/21px; text colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; placeholder grey; width 373 in narrow-window, 1053 in preview-hidden, 303 split left, 279 split right",
+  "count": 1,
+  "region": "search bar"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "text-field",
+  "component": "TextInput (inline rename, autoFocus, bare)",
+  "variant": "replaces the tab name while editing; ring-focus-1 ring; h-6 max-w-40 py-0 font-medium ring-1",
+  "purpose": "Renames a list in place.",
+  "text": "defaultValue = list.name; no placeholder.",
+  "states": [
+   "editing (only after double-click)"
+  ],
+  "behaviour": "Enter commits the trimmed name if non-empty and changed. Escape cancels. Blur commits the same way. Key events stop propagation.",
+  "look": "ring-focus-1l dark:ring-focus-1d px-space-4 h-6 max-w-40 py-0 font-medium ring-1. Not in any recorded state.",
+  "count": 0,
+  "region": "list tabs"
+ },
+ {
+  "screen": "task-list",
+  "kind": "search-field",
+  "component": "TextInput (bare, ref=searchRef)",
+  "variant": "bare, className w-full text-[14px], value bound to pane query; input box [46,63,733,21]",
+  "purpose": "Filters this list's tasks by title and/or notes.",
+  "text": "Placeholder 'Search ' + list name: 'Search Errands' (state:main-default, visible in shot.png), 'Search Inbox' (state:empty-list). Typed value 'b' in state:search-typed.",
+  "states": [
+   "empty (placeholder)",
+   "typed (value 'b' in search-typed; rows filter to matches and flatten)",
+   "focused (onFocus focuses pane; blue 1px border visible in search-typed, visual)"
+  ],
+  "behaviour": "Typing calls setQuery and filters rows to matching titles, flattening them (subtasks and the subtask counter disappear). Enter cycles matches forward and Shift+Enter backward, focusing and scrolling each into view. Escape clears the query and blurs. Keydown propagation is stopped. Cmd+F or a typed letter from anywhere focuses the field (registerSearchFocus; call sites outside the files read, so partly unverified).",
+  "look": "Input box [46,63,733,21], text colour oklch(0.26 0.012 262), font 400 14px/21px.",
+  "count": 1,
+  "region": "Search bar (InputWell)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "text-field",
+  "component": "textarea (plain element, styled as the title field)",
+  "variant": "readonly display vs editing (editing adds bg-surface-0 fill and ring-2 ring-surface-0); rows=1, spellCheck=false",
+  "purpose": "Shows the task title and edits it in place; one field serves display and edit so the height does not change.",
+  "text": "placeholder='Untitled'. Shown values: 'Rewrite the hero section' (two lines), 'Book bike service', 'Buy groceries for the week' (two lines), 'Post the parcel to Mum'.",
+  "states": [
+   "readonly (default)",
+   "editing (focused, text selected on open)",
+   "empty (placeholder Untitled)",
+   "two-line wrap",
+   "dark theme"
+  ],
+  "behaviour": "click while readonly starts editing; typing edits the draft; Enter commits (preventDefault); Escape reverts the draft and exits editing; blur commits. Commit trims the draft; an empty or unchanged value reverts to the saved title, otherwise calls updateTask(task.id, {title}). Rename is requested from a row or F2/Enter via uiStore titleEditReq.",
+  "look": "Font 600 18px/21px measured (B; shot-measured line height). Source class text-[18px] leading-6 font-semibold font-display (leading-6 would be 24px under default spacing; unresolved). Colour oklch(0.26 0.012 262) (dark oklch(0.94 0.004 260)). Radius 4.375px. Box x 894, width 246; height 42px when wrapped to two lines, 21px for one line (measured).",
+  "count": 1,
+  "region": "Header"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "rich-text-editor",
+  "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+  "variant": "note body: minHeightClass min-h-14, default floatingToolbar=true, onRequestLink set, no placeholder, default maxLength 2000; onSubmit not set",
+  "purpose": "The rich-text body of one note (bold, italic, underline, strikethrough, lists, links, @mention attachments).",
+  "text": "Note 1 (Rewrite): 'Lead with the one-line promise, then three proof points.' (bold on 'one-line promise') plus a bulleted list. Note 2 (Rewrite): 'Ask design for two layouts by Friday.' Buy groceries: 'Check the cupboard before going.'",
+  "states": [
+   "idle",
+   "focused (floating toolbar shown: opacity 100, scale 100, pointer-events auto); blue focus border about 2px (B shot, colour not in elements.json)",
+   "mention autocomplete open (while typing @query)"
+  ],
+  "behaviour": "typing fires onChange (debounced autosave). Enter inserts a new paragraph. Shift+Enter inserts a line break. Escape does nothing (onEscape not set). Clicking an @mention chip opens its attachment. Dropping an attachment tile inserts a chip. The link toolbar button runs requestNoteLink.",
+  "look": "Font 400 13.5px/17.5px, colour oklch(0.26 0.012 262). Focused paragraph (note 2) at [885,346,272,18] (B).",
+  "count": 2,
+  "region": "Notes section (inside each NoteCard)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "rich-text-editor",
+  "component": "RichTextEditor (common-ui/RichTextEditor.tsx:135) via RichTextEditorLazy",
+  "variant": "add-note editor: autoFocus, placeholder set, minHeightClass min-h-24",
+  "purpose": "Draft editor for a new note; the note is created on the first debounced save and then updated.",
+  "text": "placeholder='Write a note ... (drop an attachment to @mention it)'",
+  "states": [
+   "focused on open (autoFocus)",
+   "empty (placeholder shown)",
+   "filled"
+  ],
+  "behaviour": "onChange schedules a debounced addNoteSave (creates the note via api.createNote, then api.updateNote). onBlur calls finishAddNote only if document.hasFocus(), which promotes the draft to a saved NoteCard and closes the editor. Enter inserts a paragraph (no onSubmit).",
+  "look": null,
+  "count": 1,
+  "region": "Notes section (appears only while adding)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "text-field",
+  "component": "textarea (native, not a component)",
+  "variant": "Auto-growing title field, rows=1, spellCheck=false, resize-none, overflow-hidden, font-display 18px semibold, ring-2 ring-surface-0",
+  "purpose": "Enter the new task's title; it is focused when the draft opens.",
+  "text": "placeholder: \"Untitled\". Typed example in B: 'Water the plants'.",
+  "states": [
+   "empty (placeholder visible, grey)",
+   "typed (value shown, height grows to scrollHeight)",
+   "focused (autofocus on mount)"
+  ],
+  "behaviour": "Typing updates the title and grows the field. Enter (preventDefault) runs runDraftAction(title, 'commit'). Escape (preventDefault) runs runDraftAction('', 'cancel'). Blur runs runDraftAction(title, 'commit'). Not in the trees, so the typed title text is confirmed only by the screenshot.",
+  "look": "Textarea 235x21 at (898,60), bg oklch(0.944 0.003 255), radius 4.375px, font 600 18px/21px, colour oklch(0.26 0.012 262). Placeholder grey in shot (exact colour not measured).",
+  "count": 1,
+  "region": "Draft header row, title column"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "search-field",
+  "component": "InputWell > TextInput2",
+  "variant": "bare=true, className w-full text-[14px]",
+  "purpose": "Filters the task list for the open list (task-list pane, not the draft).",
+  "text": "placeholder: \"Search Errands\"",
+  "states": [
+   "empty (value=\"\")",
+   "focus (onFocus handler)"
+  ],
+  "behaviour": "Typing filters the list (onChange; handler not read).",
+  "look": "Input 733x21 at (46,63), font 400 14px/21px, colour oklch(0.26 0.012 262). Pill is a light grey rounded field (colour not measured).",
+  "count": 1,
+  "region": "Task list pane, search bar"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "search-field",
+  "component": "?",
+  "variant": "Search field with leading search icon, empty",
+  "purpose": "Filters tasks in the current list.",
+  "text": "Placeholder 'Search Errands' (shot only; elements.json has no placeholder). Leading icon 'search' (18px).",
+  "states": [
+   "empty (placeholder shown)",
+   "focus (not recorded)"
+  ],
+  "behaviour": "Typing: filters the task list (inferred).",
+  "look": "Input 733x21 at 46,63; font 400 14px/21px colour oklch(0.26 0.012 262); icon 18px at 23,65 colour oklch(0.62 0.013 264). Container is a grey rounded field spanning x 14-846, y 56-91 (shot).",
+  "count": 1,
+  "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "text-field",
+  "component": "TextInput (common-ui), with number input",
+  "variant": "type=number, min=1, max=365, value=view.customDays, class h-6.5 w-12, centred, tabular-nums, spin buttons hidden. Props beyond these were not verified (TextInput source not read).",
+  "purpose": "Direct entry of the day count.",
+  "text": "no placeholder or label in code",
+  "states": [
+   "only when dateRange is custom (not in either recorded tree)",
+   "focus (focus:ring-1)"
+  ],
+  "behaviour": "Typing calls onChange(clamp(Number(value))), so the value is clamped to 1-365 on every change.",
+  "look": "Not measured (code classes only): h-6.5 (26px) by w-12 (48px), centred, tabular-nums. Default customDays value not read (viewStore).",
+  "count": 1,
+  "region": "Body (scroll region), Date section, custom range row"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "search-field",
+  "component": "?",
+  "variant": "single-line text field in a light grey pill",
+  "purpose": "Filters tasks in the current list by text.",
+  "text": "Placeholder: Search Errands (from shot; json has no placeholder)",
+  "states": [
+   "empty, placeholder shown",
+   "focus not recorded"
+  ],
+  "behaviour": "Typing filters the task rows (inferred).",
+  "look": "Input 733x21 at 46,63. Font 400 14px/21px. Typed text oklch(0.26 0.012 262); placeholder grey in shot. Field background not recorded.",
+  "count": 1,
+  "region": "Task list pane"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "text-field",
+  "component": "TextInput (tree name TextInput2)",
+  "variant": "bare=true; className \"w-full text-[14px]\"; ref inputRef; value bound to q",
+  "purpose": "Filter query for the command list. It is focused automatically on open.",
+  "text": "Placeholder \"Run a command or jump to…\" (single ellipsis character). Typed values in reference states: \"\" (palette), \"new\" (palette-search), \"zzzz\" (palette-no-match).",
+  "states": [
+   "empty (placeholder shown)",
+   "typed (value filters the list)",
+   "focused on open (useEffect focus)"
+  ],
+  "behaviour": "Typing sets q and resets the active row to 0. The list is filtered by case-insensitive substring match on the label (not fuzzy) and ranked by match index, earlier matches first, stable. ArrowDown moves active down, capped at results.length-1; with zero results it becomes -1 and nothing is highlighted. ArrowUp moves active up, floored at 0. Enter runs the active row; the default key is prevented for these keys. Enter with no results does nothing.",
+  "look": "Input box at [380,100,446,21]; font 400 14px/21px; text colour oklch(0.26 0.012 262); placeholder grey (exact colour not captured).",
+  "count": 1,
+  "region": "Input row"
+ },
+ {
+  "screen": "sheets",
+  "kind": "text-field",
+  "component": "InputWell",
+  "variant": "className FIELD: h-10, text-[14px], border border-edge-2 (light/dark), bg-surface-1, focus-within:ring-0, focus-within:border-accent-500; trailing slot set when ask.dice is set",
+  "purpose": "The well that holds the one field the sheet is about. Taller than an inline field.",
+  "text": "No visible text of its own; placeholder and value are on the input inside.",
+  "states": [
+   "resting border edge-2",
+   "focus: border turns accent-500, ring off (hairline, not a glow)",
+   "present in new-list, new-project, rename-list",
+   "absent in delete-list and delete-confirm (no ask)"
+  ],
+  "behaviour": "Click focuses the inner input. Trailing roll button is in this well.",
+  "look": "Measured box 345x35 at 418,359. The class is h-10 (40px), so the 35px measurement conflicts with the code and is noted. Border edge-2; light grey fill (bg-surface-1) and blue accent-500 focus border in the screenshot. Radius and fill value not measured.",
+  "count": 1,
+  "region": "Field area"
+ },
+ {
+  "screen": "sheets",
+  "kind": "text-field",
+  "component": "TextInput (rendered as TextInput2 in tree)",
+  "variant": "bare=true, autoFocus, spellCheck=false (new-list, new-project, rename-list), className \"text-[14px]\", aria-label set to the headline",
+  "purpose": "Single-line field that receives the name being typed. Focus and selection are set on open.",
+  "text": "new-list: value \"Golden Oasis\", placeholder \"Name this list\", aria-label \"New list\". new-project: value \"Nereid\", placeholder \"Name this project\", aria-label \"New project\". rename-list: value \"Reading\", no placeholder (absent, the spec sets none), aria-label \"Rename list\".",
+  "states": [
+   "focused on open, whole value selected when the initial text is non-empty",
+   "value rolled from dice (new-list, new-project)",
+   "value from ask.value (rename-list, selected on focus)"
+  ],
+  "behaviour": "Typing edits the value. On open the whole value is selected whenever the initial text is non-empty (SheetHost.tsx:103-108). onFocus also selects when ask.value is set (SheetHost.tsx:189). Enter anywhere in the window accepts (see Accept). With empty trimmed text, Enter refocuses the field instead.",
+  "look": "Input box 428,366 295x21 inside the well, text inset 10px; font 400 14px/21px; colour oklch(0.26 0.012 262); text-[14px] per class.",
+  "count": 1,
+  "region": "Field area"
+ },
+ {
+  "screen": "sheets",
+  "kind": "text-field",
+  "component": "SuffixInput",
+  "variant": "used when ask.tail is set: suffix shown greyed and locked, className FIELD, aria-label headline, onFocus selects when ask.value is set",
+  "purpose": "Prompt for a name whose end is fixed, for example a file name with an extension.",
+  "text": "Suffix and placeholder come from the spec. The sheet.ts comment cites \".png\" as the example tail.",
+  "states": [
+   "not in any recorded state (the code can show it)"
+  ],
+  "behaviour": "The tail is uneditable and is appended to the trimmed text on accept.",
+  "look": "Not measured.",
+  "count": 0,
+  "region": "Field area"
+ },
+ {
+  "screen": "trash",
+  "kind": "search-field",
+  "component": "?",
+  "variant": "Search bar with leading icon and trailing options and add buttons",
+  "purpose": "Filter tasks in the current list.",
+  "text": "placeholder 'Search Errands' (visible in shot; not in elements.json)",
+  "states": [
+   "empty (placeholder shown)"
+  ],
+  "behaviour": "Typing filters the task rows (inferred).",
+  "look": "Input font 400 14px/21px, colour oklch(0.26 0.012 262). Leading icon 18px, colour oklch(0.62 0.013 264). Field fill and radius estimated from shot.",
+  "count": 1,
+  "region": "task list pane (left, x 0-860, y 46-760)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "search-field",
+  "component": "InputWell (className \"h-7\")",
+  "variant": "Container well with leading search icon; trailing clear button when query is non-empty",
+  "purpose": "Container well for the search input with leading search icon and optional clear button.",
+  "text": "none (container)",
+  "states": [
+   "empty (trailing empty in settings-general)",
+   "filled with trailing clear button (settings-search, query 'motion')"
+  ],
+  "behaviour": "Clicking the well focuses the input (InputWell internals not read; uncertain).",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, top, 139x25 at [7,53]"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "text-field",
+  "component": "TextInput (bare, ref searchRef)",
+  "variant": "bare, className \"text-[12px]\"",
+  "purpose": "Type to search every settings pane by label, description and keywords.",
+  "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+  "states": [
+   "empty: placeholder \"Search\"",
+   "filled: query 'motion' (settings-search)",
+   "focused: blue focus outline (screenshot, settings-search); selectable via Cmd/Ctrl+F (SettingsWindow.tsx:128-131)"
+  ],
+  "behaviour": "Typing sets the query on every change and clears the scoped flag. Cmd+F / Ctrl+F selects the text. Escape clears a non-empty query; with an empty query, Escape closes the window (SettingsWindow.tsx:119-135).",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, search field inside InputWell"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "search-field",
+  "component": "InputWell (with Icon search and TextInput2)",
+  "variant": "className=\"h-7\", leading=Icon, trailing=\"\", 139x25 at 7,53",
+  "purpose": "Search across settings. It indexes every binding through the keywords on the Shortcuts rows (shortcutsPane.tsx:16, useHotkeyEditor.ts:28-30).",
+  "text": "Placeholder \"Search\". aria-label \"Search settings\".",
+  "states": [
+   "default (empty value, placeholder shown)",
+   "scrolled",
+   "recording",
+   "focus not recorded",
+   "typing not recorded"
+  ],
+  "behaviour": "Typing enters a query and filters the settings. The exact filter behaviour is not in the sources read (uncertain). The effect on the pane is not shown in the recordings.",
+  "look": "Pill about 139x25 at [7,53] (InputWell); input box [35,56,102,18]; font 400 12px/18px; text colour oklch(0.26 0.012 262); pill fill and radius not in elements.json (light grey in shot.png).",
+  "count": 1,
+  "region": "Sidebar"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "search-field",
+  "component": "InputWell",
+  "variant": "className=\"h-7\", leading=<Icon search>, trailing=\"\"; 139x25",
+  "purpose": "Container that frames the settings search input in the sidebar.",
+  "text": "",
+  "states": [
+   "default (empty value)"
+  ],
+  "behaviour": "Clicking focuses the inner text input.",
+  "look": "Rounded grey fill (B). Measured 139x25 at 7,53 (A); B outer field about x 7 to 146, y 53 to 77 (estimated from shot, not in json).",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "text-field",
+  "component": "TextInput2",
+  "variant": "bare=true, className=\"text-[12px]\"",
+  "purpose": "Search settings input (filters the settings panes and rows by keyword).",
+  "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+  "states": [
+   "empty (value \"\")",
+   "placeholder shown",
+   "focus (not shown in tree.txt)"
+  ],
+  "behaviour": "Typing updates the value via onChange (handler not shown in tree.txt). Filtering behaviour is not visible in the files read.",
+  "look": "font 400 12px/18px; box [35,56,102,18] (B).",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "search-field",
+  "component": "InputWell > TextInput2",
+  "variant": "InputWell className=\"h-7\" 139x25 at 7,53; TextInput2 bare=true, className text-[12px]",
+  "purpose": "Filters the settings (search across panes).",
+  "text": "placeholder \"Search\"; aria-label \"Search settings\"",
+  "states": [
+   "empty (value \"\")",
+   "focus (not recorded)"
+  ],
+  "behaviour": "Typing sets the filter value via onChange (A). B: typing filters settings. The filter effect on the About pane is not in the sources read (uncertain).",
+  "look": null,
+  "count": 1,
+  "region": "Section nav (left sidebar)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "text-field",
+  "component": "TextInput (tree name TextInput2)",
+  "variant": "bare, autoFocus, className text-sm, ref=titleRef; single-line, no own border, 14px text",
+  "purpose": "The task title input. Focused automatically when the bar appears (autoFocus).",
+  "text": "placeholder \"Capture a task ...\" (code; the screenshot shows \"Capture a task …\"); value bound to draft.title (empty in state:capture-bar, \"Call the plumber\" in state:capture-bar-typed)",
+  "states": [
+   "empty (placeholder shown) state:capture-bar @13,11 734x20",
+   "typed (value shown) state:capture-bar-typed @13,11 629x20 (width shrinks to make room for Clear)",
+   "focused (autoFocus)",
+   "empty with placeholder in state:capture-bar-dark",
+   "focus and error not captured"
+  ],
+  "behaviour": "Typing calls draft.setTitle (TitleRow.tsx:39). Enter (no Shift) saves the draft (App.tsx:42-44). Escape hides the bar (App.tsx:45-47). Tab opens notes when they are closed (App.tsx:48-50). No recording shows Enter, so the submit result is unverified from B.",
+  "look": "Box x13 y11 w734 h20 when empty, w629 when Clear is shown. Font 400 14px/20px. Text colour oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark. Placeholder colour not measured.",
+  "count": 1,
+  "region": "Title row"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "rich-text-editor",
+  "component": "RichTextEditor (tree name RichTextEditor2)",
+  "variant": "autoFocus, attachments [] (tree attachments=[0]), placeholder \"Notes ...\", minHeightClass min-h-16, maxHeightClass max-h-40, floatingToolbar false, wrapperClassName \"\", submitOnModEnter, toolbarClassName \"border-edge-1l dark:border-edge-1d gap-1 border-t px-2 py-1.5\"",
+  "purpose": "Notes editor for the draft. Shown only when notes are open.",
+  "text": "placeholder \"Notes ...\"",
+  "states": [
+   "open (state:capture-bar-notes @1,42 758x101)",
+   "closed (not rendered; collapsed button shown instead)",
+   "empty (placeholder shown; blurring while empty collapses it)"
+  ],
+  "behaviour": "Typing edits notes. Cmd+Enter submits (submitOnModEnter, onSubmit=draft.save). Escape hides the bar (onEscape=api.hideMini). Blur while empty collapses back to the Tab hint (onBlur). Toolbar clicks preventDefault their blur so they don't collapse.",
+  "look": "Tree @1,42 758x101 with notes open. Toolbar top edge (border-t) at about y106 (B estimate from shot.png).",
+  "count": 1,
+  "region": "Notes section (open)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "rich-text-editor",
+  "component": "PureEditorContent (inside RichTextEditor, common-ui, source not read)",
+  "variant": "editable content area, 758x64; multi-line rich notes area (B)",
+  "purpose": "The editable text region of the notes editor, where the note is written.",
+  "text": "Placeholder \"Notes ...\" comes from the RichTextEditor placeholder prop",
+  "states": [
+   "empty (placeholder)",
+   "with content",
+   "typed content not captured in B"
+  ],
+  "behaviour": "Typing edits the rich text. Keyboard shortcuts as for RichTextEditor: ⌘B, ⌘I, ⌘U per toolbar labels. The character counter reflects length (inferred, B).",
+  "look": "Box x1 y42 w758 h64. Font 400 13.5px/20px. Text colour oklch(0.26 0.012 262).",
+  "count": 1,
+  "region": "Notes section (open)"
+ }
+]

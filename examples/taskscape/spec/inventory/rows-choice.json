@@ -1,0 +1,636 @@
+[
+ {
+  "screen": "main-window",
+  "kind": "tab",
+  "component": "Label (list tab name, active)",
+  "variant": "active tab: tone primary; truncate; weight medium; className max-w-40 text-[13px] tracking-[0.01em]",
+  "purpose": "Name of the active list tab; marks the list shown in the left pane.",
+  "text": "'Errands'",
+  "states": [
+   "active (main-default, main-dark, preview-hidden, narrow-window)",
+   "split-view: blue pane marker before the name; text moves to x 249"
+  ],
+  "behaviour": "click selects the list tab (handler not in these files; inferred)",
+  "look": "box 51x20 at 224,12; font 500 13px/19.5px; colour oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; hairline frame about x 212-309, y 0-45",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "tab",
+  "component": "Label (list tab name, inactive)",
+  "variant": "inactive tabs: tone muted; truncate; weight medium; className max-w-40 text-[13px] tracking-[0.01em]",
+  "purpose": "Other lists in the project; selects them when clicked.",
+  "text": "'Reading' (x 322), 'Garden' (x 422)",
+  "states": [
+   "inactive",
+   "split-view: Reading has a blue marker and sits in the right pane"
+  ],
+  "behaviour": "click selects the list (inferred)",
+  "look": "font 500 13px/19.5px; colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark",
+  "count": 2,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "checkbox",
+  "component": "Check (round-check)",
+  "variant": "done=true or done=false; picked=false; onToggleDone and onToggleSelect handlers; 16x16 circle; x 20 top-level, x 44 subtask, x 451 in split right pane",
+  "purpose": "Marks a task done or open; onToggleSelect handles selection.",
+  "text": "accessible label 'Select'; aria-pressed=false on every row in elements.json",
+  "states": [
+   "unchecked (most rows; aria-pressed=false)",
+   "checked done=true in tree for t-post, t-milk and t-article (visually empty in shot; mismatch unresolved)"
+  ],
+  "behaviour": "click toggles the done state (onToggleDone); selection via onToggleSelect (gesture not confirmed)",
+  "look": "16x16 circle; stroke oklch(0.26 0.012 262) light / oklch(0.94 0.004 260) dark; font 400 14px/21px",
+  "count": 8,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "tab",
+  "component": "List tab (plain div per list)",
+  "variant": "focused (bg-surface-2, active list); unfocused; hover (bg-wash-1); drop target (bg-selection-1); dragging (opacity-40); editing (inline rename, see TextInput entry); split (pane dot shown)",
+  "purpose": "One list. Click opens it in the Task list pane; the right side has a delete button.",
+  "text": "list.name (Errands, Reading, Garden in the recordings; names from elements.json, not in the trees).",
+  "states": [
+   "focused (Errands in main-default, project-menu, tab-hover, narrow-window; Garden in list-switch-3)",
+   "unfocused (inactive)",
+   "hover (grey container behind Reading in tab-hover)",
+   "drop target",
+   "dragging",
+   "editing",
+   "split (pane dot shown; not in any recorded state)"
+  ],
+  "behaviour": "Click selects the list (selectList). Double-click starts inline rename. Right-click opens the list context menu. Middle-click deletes the list (aux button 1). Drag reorders tabs, and dropping a task row on a tab moves it there.",
+  "look": "group hover:bg-wash-1l dark:hover:bg-wash-1d gap-space-4 pr-space-5 pl-space-7 relative flex cursor-default items-center border-b border-transparent. Focused container about x 211 to 308 (Errands) or x 408 to 503 (Garden), with hairline edges. Count is 3 in every recorded state with tabs; 0 in no-lists.",
+  "count": 3,
+  "region": "list tabs"
+ },
+ {
+  "screen": "task-list",
+  "kind": "round-check",
+  "component": "Check (button)",
+  "variant": "Round select handle (rounded-full) by default; when Option is held (useAltPressed) it becomes a square done lamp (rounded-field) showing a check stroke. One button, two modes; the Option-held state is not a separate widget.",
+  "purpose": "Selects the row (default) or toggles done (Option held).",
+  "text": "title 'Select' or 'Deselect' by default; 'Mark done' or 'Mark not done' when Option is held. aria-pressed reflects active.",
+  "states": [
+   "unpicked (empty grey ring)",
+   "picked (filled, inner white dot in select mode)",
+   "done (check stroke filled in done mode)",
+   "hover (border shifts to content-3 on the row group)",
+   "option-held (done mode, square)"
+  ],
+  "behaviour": "Click: if Option (altKey), toggles done; otherwise toggles the row's multi-select membership. Double-click on it is stopped so it does not toggle done.",
+  "look": "Button 16x16. Select mode radius full (round), colour oklch(0.26 0.012 262). Picked fill oklch(0.62 0.13 255). Done-mode lamp radius 4.375px. Top-level boxes at x=20 (y 113, 151, 183, 214, 246); subtask boxes at x=44 (y 277, 309, 340).",
+  "count": 8,
+  "region": "Task list scroll area (row, left)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "checkbox",
+  "component": "Checkbox (common-ui/components)",
+  "variant": "size=md; 18x18 box; checked renders Icon check size 14 weight 700",
+  "purpose": "Marks the whole task done or not done.",
+  "text": "title='Mark done' when not done; title='Mark not done' when done (no visible text)",
+  "states": [
+   "unchecked (outline oklch(0.26 0.012 262); dark oklch(0.94 0.004 260))",
+   "checked (blue fill oklch(0.62 0.13 255), glyph colour oklch(0.99 0.005 255))",
+   "dark theme"
+  ],
+  "behaviour": "click calls actToggleDone(task)",
+  "look": null,
+  "count": 1,
+  "region": "Header"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "checkbox",
+  "component": "Checkbox (common-ui/components)",
+  "variant": "size=sm; Icon check size 12 weight 700 when checked",
+  "purpose": "Toggles a subtask done or not done.",
+  "text": "title='Mark done' when not done; title='Mark not done' when done",
+  "states": [
+   "unchecked (outline oklch(0.26 0.012 262))",
+   "checked (bg oklch(0.62 0.13 255), glyph 12px colour oklch(0.99 0.005 255))"
+  ],
+  "behaviour": "click calls actToggleDone(subtask)",
+  "look": "16x16, radius 4.375px.",
+  "count": 3,
+  "region": "Subtasks section (one per subtask row; 3 in the busiest state)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "tab",
+  "component": "ListTabs > Label",
+  "variant": "selected: tone primary, font-medium, truncate, max-w-40, text-[13px]",
+  "purpose": "Shows the currently open list (Errands) in the task list pane.",
+  "text": "Errands",
+  "states": [
+   "selected (white/raised with divider rules)"
+  ],
+  "behaviour": "Click selects the list (already selected here; handler not read).",
+  "look": "Font 500 13px/19.5px, colour oklch(0.26 0.012 262). Label box 224,12 51x20. Tab spans about x 211-308 with rules at those edges (shot).",
+  "count": 1,
+  "region": "Title bar, centre-left (ListTabs)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "tab",
+  "component": "ListTabs > Label",
+  "variant": "unselected: tone muted, font-medium, truncate, max-w-40, text-[13px]",
+  "purpose": "Switches to another list.",
+  "text": "Reading; Garden",
+  "states": [
+   "default (inactive)"
+  ],
+  "behaviour": "Click selects that list (inferred; handler not read).",
+  "look": "Font 500 13px/19.5px, colour oklch(0.62 0.013 264). 'Reading' box 322,12 54x20; 'Garden' box 422,12 48x20. Thin vertical separators between tabs (shot).",
+  "count": 2,
+  "region": "Title bar, centre (ListTabs)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "checkbox",
+  "component": "Check",
+  "variant": "16x16; done=false or true; picked=false (round)",
+  "purpose": "Marks a task done or undone; the Select label is the picked (selection) state, not completion.",
+  "text": "accessible label 'Select'; aria-pressed=false",
+  "states": [
+   "unchecked (7 rows)",
+   "checked (t-post, t-milk)"
+  ],
+  "behaviour": "Click: onToggleDone; select handler onToggleSelect.",
+  "look": "16x16, fully round, colour oklch(0.26 0.012 262) on open rows and oklch(0.62 0.013 264) on done rows.",
+  "count": 8,
+  "region": "Each task row, left"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "checkbox",
+  "component": "Checkbox",
+  "variant": "size=\"sm\"; checked = task.done",
+  "purpose": "Toggles one selected task done or not done, in place.",
+  "text": "title \"Mark done\" when unchecked, \"Mark not done\" when checked; checked state shows an Icon check size 12 weight 700 inside",
+  "states": [
+   "unchecked (Mark done)",
+   "checked (Mark not done, with check icon)"
+  ],
+  "behaviour": "Click: actToggleDone(task) (toggleDone action from stores/actions). The row's done tally and the label style update with the store.",
+  "look": "16x16 at x 873; unchecked at y 209, 272, 304 (shift) and 209, 241 (cmd-two); checked at y 241 (shift); radius 4.375px; checked bg oklch(0.62 0.13 255) with check icon 12px/12px in oklch(0.99 0.005 255); unchecked border colour not recorded.",
+  "count": 4,
+  "region": "Selected list"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "tab",
+  "component": "?",
+  "variant": "Active list tab, 'Errands'",
+  "purpose": "Shows the open list that the selection belongs to.",
+  "text": "'Errands' (tab close button follows; see close entry)",
+  "states": [
+   "active",
+   "default"
+  ],
+  "behaviour": "Click: keeps this list open (switching not recorded). Close via its × button.",
+  "look": "Text 500 13px/19.5px colour oklch(0.26 0.012 262) at 224,12, 51x20. Tab sits in a bordered cell about x 211-308 (shot only).",
+  "count": 1,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "tab",
+  "component": "?",
+  "variant": "Inactive list tabs, 'Reading' and 'Garden'",
+  "purpose": "Other open lists.",
+  "text": "'Reading' and 'Garden'",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: switch to that list (inferred).",
+  "look": "Text 500 13px/19.5px colour oklch(0.62 0.013 264); 'Reading' at 322,12, 'Garden' at 422,12. Thin separators between tabs (shot only).",
+  "count": 2,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "checkbox",
+  "component": "?",
+  "variant": "Row select toggle, selected (aria-pressed=true), shows 'Deselect'",
+  "purpose": "Removes the task from the selection.",
+  "text": "Label 'Deselect'; no visible text",
+  "states": [
+   "selected",
+   "default"
+  ],
+  "behaviour": "Click: deselects that row; the inspector and count update. If one task remains, the inspector would change to task-inspector (inferred).",
+  "look": "16x16 circle at x 20 (top-level) with radius 50%; fill oklch(0.62 0.13 255); shot shows a white centre dot.",
+  "count": 4,
+  "region": "Task list pane (x 0-860, y 46-730)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "checkbox",
+  "component": "?",
+  "variant": "Row select toggle, unselected (aria-pressed=false), shows 'Select'",
+  "purpose": "Adds the task to the selection.",
+  "text": "Label 'Select'; no visible text",
+  "states": [
+   "unselected",
+   "hover (not recorded)"
+  ],
+  "behaviour": "Click: adds the row to the selection; the inspector updates to list the selected tasks.",
+  "look": "16x16 circle, radius 50%; no fill; grey outline (colour not recorded); at x 20 for top-level rows and x 44 for subtasks.",
+  "count": 6,
+  "region": "Task list pane (x 0-860, y 46-730)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "segmented-control",
+  "component": "Segmented (common-ui)",
+  "variant": "3 items, default size (no size prop). Items: All (value all), Active (value active), Done (value completed). value = view.filter.",
+  "purpose": "Show filter: which tasks are shown.",
+  "text": "\"All\", \"Active\", \"Done\"",
+  "states": [
+   "All selected (tree: value=all)",
+   "Active selected",
+   "Done selected",
+   "unselected segments"
+  ],
+  "behaviour": "Click calls update({filter}).",
+  "look": "Segments 96x23; selected bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262); 600 12px/18px; radius 4.375px. Track about x 873 to 1168, y 186 to 212 (B estimate). Container 295x26 at 873,186 (A tree).",
+  "count": 1,
+  "region": "Body (scroll region), Show section"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "segmented-control",
+  "component": "Segmented (common-ui), inside TriRow",
+  "variant": "size=sm, 3 items, wrapped in w-40 shrink-0. Items: Any (any), With (has), Without (none).",
+  "purpose": "Tri-state for one refine predicate.",
+  "text": "\"Any\", \"With\", \"Without\"",
+  "states": [
+   "any (selected on all three rows)",
+   "has (With)",
+   "none (Without)"
+  ],
+  "behaviour": "Click calls the row's onChange with the new TriState.",
+  "look": "Segments 44x19; font 600 11px/16.5px; radius 4.375px; selected bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); unselected text oklch(0.46 0.013 262) (B). Group container 140x23 (A tree). The Without label looks clipped at the right edge of the panel in the shot (observed, uncertain).",
+  "count": 3,
+  "region": "Body (scroll region), inside each Refine row"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "segmented-control",
+  "component": "Segmented (common-ui), Date field",
+  "variant": "2 items, default size. Items: Created (created), Updated (updated). value = view.dateField.",
+  "purpose": "Chooses which timestamp the date range applies to.",
+  "text": "\"Created\", \"Updated\"",
+  "states": [
+   "created selected",
+   "updated selected"
+  ],
+  "behaviour": "Click calls update({dateField}).",
+  "look": "Segments 145x23; selected Created bg oklch(0.6 0.2 255), text oklch(0.99 0.005 255); Updated text oklch(0.46 0.013 262); 600 12px/18px; radius 4.375px (B).",
+  "count": 1,
+  "region": "Body (scroll region), Date section, top row"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "tab",
+  "component": "?",
+  "variant": "active list tab, outlined by vertical rules",
+  "purpose": "The list currently shown, Errands. Its filters are the ones in this panel.",
+  "text": "Errands",
+  "states": [
+   "active"
+  ],
+  "behaviour": "Click switches to this list (stays in main window).",
+  "look": "Label 500 13px/19.5px oklch(0.26 0.012 262) at 224,12. Tab outlined by vertical rules at about x 211 and 308 (shot estimate). Close button at x 280.",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "tab",
+  "component": "?",
+  "variant": "inactive list tab",
+  "purpose": "Other lists in the project.",
+  "text": "Reading (box 322,12 54x20); Garden (box 422,12 48x20)",
+  "states": [
+   "inactive"
+  ],
+  "behaviour": "Click switches to this list.",
+  "look": "Label 500 13px/19.5px oklch(0.62 0.013 264). Thin separator between tabs (shot).",
+  "count": 2,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "round-check",
+  "component": "?",
+  "variant": "empty circle checkbox, 16x16; top-level at x 20, subtask at x 44",
+  "purpose": "Marks a task done or open.",
+  "text": "Select (label, aria-pressed=false)",
+  "states": [
+   "unchecked (aria-pressed=false on all 8, including the two struck-through done rows)"
+  ],
+  "behaviour": "Click toggles the task's done state (inferred from label and count).",
+  "look": "16x16, radius 50%. Glyph colour oklch(0.26 0.012 262).",
+  "count": 8,
+  "region": "Task list pane"
+ },
+ {
+  "screen": "trash",
+  "kind": "tab",
+  "component": "?",
+  "variant": "List tab; active (Errands) versus inactive (Reading, Garden)",
+  "purpose": "Switch between the project's lists.",
+  "text": "'Errands' (active), 'Reading', 'Garden'",
+  "states": [
+   "active: Errands, dark text, bordered tab in shot",
+   "inactive: Reading and Garden, grey text"
+  ],
+  "behaviour": "Click switches to that list (inferred from tab style; not captured).",
+  "look": "Font 500 13px/19.5px. Active text oklch(0.26 0.012 262), inactive oklch(0.62 0.013 264).",
+  "count": 3,
+  "region": "main title bar (full width, y 0-45)"
+ },
+ {
+  "screen": "trash",
+  "kind": "round-check",
+  "component": "?",
+  "variant": "Round task checkbox, unchecked, top-level rows (5 rows) and subtask rows (3 rows)",
+  "purpose": "Mark a task done or open.",
+  "text": "label 'Select'; aria-pressed=false",
+  "states": [
+   "unchecked (aria-pressed=false) on all 8 rows in both states"
+  ],
+  "behaviour": "Click toggles completion (inferred from label; not captured).",
+  "look": "16x16, circle. Outline colour oklch(0.26 0.012 262).",
+  "count": 8,
+  "region": "task list pane (left, x 0-860, y 46-760)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "tab",
+  "component": "MenuItem (role=\"tab\", rounded)",
+  "variant": "General tab: selected (active when not searching or when scoped); leading icon tune size 16",
+  "purpose": "Opens the General pane (this screen).",
+  "text": "General (icon tune)",
+  "states": [
+   "active: active=true, aria-selected=true, tabIndex=0 (settings-general)",
+   "searching but not scoped: active=false, aria-selected=true, tabIndex=0 (settings-search)",
+   "Badge trailing shown when searching with matches"
+  ],
+  "behaviour": "Click calls selectPane('general'): sets the pane, scrolls content to top, keeps the query only if this pane has matches. Already current here, so no new change.",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, tablist, first item (y=86)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "tab",
+  "component": "MenuItem (role=\"tab\", rounded)",
+  "variant": "Capture tab: inactive; leading icon screenshot_monitor size 16",
+  "purpose": "Opens the Capture settings pane.",
+  "text": "Capture (icon screenshot_monitor)",
+  "states": [
+   "inactive: tabIndex=-1, aria-selected=false",
+   "searching with no matches: className opacity-40 (source; screenshot shows dimmed, json colour conflicts)"
+  ],
+  "behaviour": "Click selects the pane; if the query has no matches here, the search is cleared (SettingsWindow.tsx:179-184).",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, tablist, second item (y=118)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "tab",
+  "component": "MenuItem (role=\"tab\", rounded)",
+  "variant": "Shortcuts tab: inactive; leading icon keyboard size 16",
+  "purpose": "Opens the Shortcuts settings pane.",
+  "text": "Shortcuts (icon keyboard)",
+  "states": [
+   "inactive (settings-general line 18)",
+   "searching with no matches: opacity-40 (settings-search line 21)"
+  ],
+  "behaviour": "Same as the Capture tab.",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, tablist, third item (y=149)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "tab",
+  "component": "MenuItem (role=\"tab\", rounded)",
+  "variant": "About tab: inactive; leading icon info size 16",
+  "purpose": "Opens the About settings pane.",
+  "text": "About (icon info)",
+  "states": [
+   "inactive (settings-general line 20)",
+   "searching with no matches: opacity-40 (settings-search line 23)"
+  ],
+  "behaviour": "Same as the Capture tab.",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, tablist, fourth item (y=181)"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "segmented-control",
+  "component": "Segmented",
+  "variant": "variant=\"surfaceThumb\"; 3 items; value from asTheme(values.theme) (default \"system\")",
+  "purpose": "Pick the appearance: follow the system, or pin light or dark.",
+  "text": "Segments: \"System\" (icon contrast), \"Light\" (icon light_mode), \"Dark\" (icon dark_mode); icons 15px",
+  "states": [
+   "System selected (settings-general and settings-dark, value=\"system\")",
+   "Light or Dark selected (not in any recorded state)"
+  ],
+  "behaviour": "Click a segment calls set('theme', value) with system, light or dark.",
+  "look": null,
+  "count": 1,
+  "region": "Content panel, Theme row, full-width line under the description"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "toggle",
+  "component": "Toggle",
+  "variant": "checked = forcesMotion || reduced_motion === '1'; disabled = forcesMotion (forcesMotion = lowPower || systemPrefers); title=\"Reduced motion\"",
+  "purpose": "Switches reduced motion on or off for the app.",
+  "text": "No visible label; aria label 'Reduced motion' (the row title is the label)",
+  "states": [
+   "off (checked=false, disabled=false; aria-checked=false) at y=182 (settings-general, settings-dark) and y=97 (settings-search)",
+   "on when the preference is set (not in recorded states)",
+   "disabled and forced on when Low Power Mode or macOS Reduce Motion is active (not in recorded states)"
+  ],
+  "behaviour": "Click flips reduced_motion to '1' or '0'. Disabled: no effect.",
+  "look": null,
+  "count": 1,
+  "region": "Content panel, Reduced motion row, right side"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "toggle",
+  "component": "Toggle",
+  "variant": "checked = show_completed !== '0' (on by default); title=\"Show completed tasks\"",
+  "purpose": "Show or hide finished tasks in the task list.",
+  "text": "No visible label; aria label 'Show completed tasks'",
+  "states": [
+   "on (checked=true, aria-checked=true) (settings-general, settings-dark)",
+   "off when show_completed is '0' (not in recorded states)"
+  ],
+  "behaviour": "Click sets show_completed to '1' or '0'. Task-list effect not in recordings.",
+  "look": null,
+  "count": 1,
+  "region": "Content panel, Tasks card row, right side"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "ACTIVE: id=\"settings-tab-shortcuts\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-shortcuts\", tabIndex=0, 139x30 at 7,149. Leading Icon name=\"keyboard\" size=16.",
+  "purpose": "Sidebar tab for the current Shortcuts pane.",
+  "text": "Shortcuts",
+  "states": [
+   "active (default, scrolled, recording)",
+   "selected"
+  ],
+  "behaviour": "Click activates this tab. It is already active here. No visible action; it is the current pane.",
+  "look": "Button 139x30 at [7,149], radius 4.375px; icon [16,156,16,16]; label [39,155,99,20], font 400 13px/19.5px, colour oklch(0.26 0.012 262). Selected fill conflict: oklch(0.32 0.02 262 / 0.09) in state:settings-shortcuts, but oklch(0.6 0.2 255 / 0.1) (light blue) in state:settings-shortcuts-scrolled and state:settings-shortcut-recording. Blue value probably correct but uncertain.",
+  "count": 1,
+  "region": "Sidebar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "INACTIVE (x3): id=\"settings-tab-general\" (7,86, Icon tune size=16), id=\"settings-tab-capture\" (7,118, Icon screenshot_monitor size=16), id=\"settings-tab-about\" (7,181, Icon info size=16). Each role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, 139x30.",
+  "purpose": "Sidebar tabs that switch the Settings window to the other panes.",
+  "text": "General (tune), Capture (screenshot_monitor), About (info)",
+  "states": [
+   "inactive (default, scrolled, recording)",
+   "hover and focus not recorded"
+  ],
+  "behaviour": "Click switches the Settings window to that pane. See links.",
+  "look": "Button 139x30, radius 4.375px; icon 16x16 colour oklch(0.62 0.013 264) (General icon at [16,93], Capture at [16,125], About at [16,188]); label font 400 13px/19.5px, colour oklch(0.26 0.012 262) (General label [39,91,99,20], Capture [39,123,99,20], About [39,186,99,20]); no fill.",
+  "count": 3,
+  "region": "Sidebar"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "id=\"settings-tab-general\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon tune>; 139x30",
+  "purpose": "Sidebar tab that opens the General pane.",
+  "text": "General (icon name \"tune\"; label confirmed as \"General\" in B)",
+  "states": [
+   "inactive",
+   "default (B)"
+  ],
+  "behaviour": "Click calls onClick (handler not shown) and switches to the General pane (see links).",
+  "look": "role tab, box [7,86,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,93,16,16] color oklch(0.62 0.013 264); label box [39,91,99,20].",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "id=\"settings-tab-capture\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-capture\", tabIndex=0, leading=<Icon screenshot_monitor>; 139x30",
+  "purpose": "Sidebar tab for the current Capture pane (selected).",
+  "text": "Capture (label from CAPTURE_PANE.label, capturePane.tsx:26; icon screenshot_monitor from capturePane.tsx:27)",
+  "states": [
+   "active",
+   "selected (aria-selected=true)",
+   "keyboard-focusable (tabIndex=0)"
+  ],
+  "behaviour": "Clicking does nothing new; it is the current pane.",
+  "look": "role tab, box [7,118,139,30], background oklch(0.32 0.02 262 / 0.09), radius 4.375px, font 400 13px/19.5px; icon box [16,125,16,16]; label box [39,123,99,20] (B).",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "id=\"settings-tab-shortcuts\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon keyboard>; 139x30",
+  "purpose": "Sidebar tab that opens the Shortcuts pane.",
+  "text": "Shortcuts (icon name \"keyboard\"; label confirmed as \"Shortcuts\" in B)",
+  "states": [
+   "inactive",
+   "default (B)"
+  ],
+  "behaviour": "Click calls onClick (handler not shown) and switches to the Shortcuts pane (see links).",
+  "look": "role tab, box [7,149,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,156,16,16]; label box [39,155,99,20] (B).",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "id=\"settings-tab-about\", role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, leading=<Icon info>; 139x30",
+  "purpose": "Sidebar tab that opens the About pane.",
+  "text": "About (icon name \"info\"; label confirmed as \"About\" in B)",
+  "states": [
+   "inactive",
+   "default (B)"
+  ],
+  "behaviour": "Click calls onClick (handler not shown) and switches to the About pane (see links).",
+  "look": "role tab, box [7,181,139,30], radius 4.375px, font 400 13px/19.5px; icon box [16,188,16,16]; label box [39,186,99,20] (B).",
+  "count": 1,
+  "region": "Sidebar (section nav)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "segmented-control",
+  "component": "Segmented",
+  "variant": "variant=\"surfaceThumb\", items=[2] (MODES), value=\"fullscreen\"",
+  "purpose": "Chooses the screenshot capture mode, Full screen or Region.",
+  "text": "Segment 1: icon \"fullscreen\", label \"Full screen\" (capturePane.tsx:12). Segment 2: icon \"crop_free\", label \"Region\" (capturePane.tsx:13).",
+  "states": [
+   "fullscreen selected (value=\"fullscreen\")",
+   "region selected (not shown in the recorded state; set via asMode)"
+  ],
+  "behaviour": "Clicking a segment calls onChange with the new mode and writes screenshot_mode through ctx.set('screenshot_mode', next) (capturePane.tsx:45). Changing it also updates the hint text below.",
+  "look": "Grey track about x 181 to 1153, y 113 to 140 (B, estimated); A box 181,113 972x26.",
+  "count": 1,
+  "region": "Screenshots content group"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "id=\"settings-tab-about\", role=\"tab\", rounded=true, active=true, aria-selected=true, aria-controls=\"settings-panel-about\", tabIndex=0, 139x30 at 7,181; leading Icon name=\"info\" size=16",
+  "purpose": "Selects the About pane; this is the current pane.",
+  "text": "About",
+  "states": [
+   "active",
+   "selected",
+   "default fill shown as grey pill"
+  ],
+  "behaviour": "Click selects About (no change, already active).",
+  "look": null,
+  "count": 1,
+  "region": "Section nav (left sidebar)"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "tab",
+  "component": "MenuItem",
+  "variant": "role=\"tab\", rounded=true, active=false, aria-selected=false, tabIndex=-1, 139x30; three instances: settings-tab-general (tune, y=86), settings-tab-capture (screenshot_monitor, y=118), settings-tab-shortcuts (keyboard, y=149)",
+  "purpose": "Switches the Settings window to the General, Capture or Shortcuts pane.",
+  "text": "General; Capture; Shortcuts",
+  "states": [
+   "inactive",
+   "unselected",
+   "default"
+  ],
+  "behaviour": "Click switches to the matching pane (settings-general, settings-capture, settings-shortcuts).",
+  "look": null,
+  "count": 3,
+  "region": "Section nav (left sidebar)"
+ }
+]

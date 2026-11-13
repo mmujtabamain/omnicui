@@ -1,0 +1,2502 @@
+[
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "App (div root)",
+  "variant": "root flex column; bg-surface-1l dark:bg-surface-1d; text-content-1l dark:text-content-1d; h-screen w-screen; overflow-hidden",
+  "purpose": "Window frame for the whole main window.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": "1180x760 default; 820x640 narrow-window",
+  "count": 1,
+  "region": "window root"
+ },
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "div (body row)",
+  "variant": "flex min-h-0 flex-1",
+  "purpose": "Places the task area and the right aside side by side below the title bar.",
+  "text": "none",
+  "states": [
+   "all states"
+  ],
+  "behaviour": "none",
+  "look": "y=46, height 715 in main-default",
+  "count": 1,
+  "region": "body row"
+ },
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "div (task area)",
+  "variant": "flex min-w-0 flex-1; rendered only when activeList is set",
+  "purpose": "Wrapper for the left task pane and any split pane.",
+  "text": "none",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view",
+   "preview-hidden",
+   "narrow-window"
+  ],
+  "behaviour": "none",
+  "look": "not measured separately; left pane is 860x715 at 0,46 in main-default",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "div (left pane slot)",
+  "variant": "min-w-0 flex; style flexBasis 100% when not split, splitRatio*100% when split",
+  "purpose": "Sizes the left pane.",
+  "text": "none",
+  "states": [
+   "all states with an active list"
+  ],
+  "behaviour": "none; width set by splitRatio (clamped 0.25 to 0.75 by the split Resizer)",
+  "look": "split-view left slot 430px of 860px; default 860px of 860px",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "div (split pane slot)",
+  "variant": "border-edge-2l dark:border-edge-2d flex min-w-0 flex-1 border-l",
+  "purpose": "Holds the second, split task pane with a left hairline border.",
+  "text": "none",
+  "states": [
+   "split-view"
+  ],
+  "behaviour": "none",
+  "look": "429x715 at 431,46; border-l hairline between panes",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "TaskPane",
+  "variant": "list={\"Errands\"} isSplit=false (left/primary pane)",
+  "purpose": "Task list for the active list: search bar, task rows, footer stats.",
+  "text": "list name prop 'Errands'",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view (left pane)",
+   "preview-hidden",
+   "narrow-window"
+  ],
+  "behaviour": "Contents are described in the task-list screen; this screen only hosts it.",
+  "look": "860x715 at 0,46 in main-default; 1180x715 in preview-hidden; 430x715 in split-view; 500x595 in narrow-window",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "TaskPane",
+  "variant": "list={\"Reading\"} isSplit=true (second, split pane)",
+  "purpose": "Second task list shown beside the first in split view.",
+  "text": "list name prop 'Reading'",
+  "states": [
+   "split-view"
+  ],
+  "behaviour": "Contents described in task-list screen.",
+  "look": "429x715 at 431,46",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "Resizer (split divider, with onReset)",
+  "variant": "onResize + onReset; 4px grab strip (w-1.25, cursor-col-resize) with 1px hairline span; class z-raised relative -mr-1.25 w-1.25 shrink-0",
+  "purpose": "Drags the split ratio between the two task panes; double-click resets the ratio.",
+  "text": "none (no label or tooltip)",
+  "states": [
+   "idle (hairline transparent)",
+   "hover (hover:bg-edge-2l dark:hover:bg-edge-2d)",
+   "active while dragging (bg-edge-3l dark:bg-edge-3d)"
+  ],
+  "behaviour": "Mouse drag horizontally sets splitRatio clamped 0.25 to 0.75 (App.tsx:78-82); double-click calls resetSplitRatio (App.tsx:84).",
+  "look": "4x715 box at 430,46; 1px hairline span; colour per state classes",
+  "count": 1,
+  "region": "split divider"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "Resizer (right aside edge, onResize only)",
+  "variant": "onResize only; no onReset",
+  "purpose": "Drags the width of the right aside.",
+  "text": "none",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view",
+   "narrow-window",
+   "no-lists"
+  ],
+  "behaviour": "Drag sets previewW clamped 280 to 420 px (App.tsx:110-115). No reset. Not present in preview-hidden.",
+  "look": "4x715 at 860,46 in main-default; 4x595 at 500,46 in narrow-window",
+  "count": 1,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "surface",
+  "component": "aside (right panel)",
+  "variant": "style width previewW; border-edge-2l dark:border-edge-2d shrink-0 border-l; shows TrashPane, FilterPanel or PreviewPanel",
+  "purpose": "Right-hand panel host.",
+  "text": "none",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view",
+   "narrow-window",
+   "no-lists"
+  ],
+  "behaviour": "Hidden when previewOpen, trashOpen and filterOpen are all false (App.tsx:108).",
+  "look": "319px wide in recorded states (861,46 in main-default; 501,46 in narrow-window); width from previewW clamped 280 to 420; surface colour not measured",
+  "count": 1,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "PreviewPanel",
+  "variant": "inspector router; no props; picks MultiInspector, TaskInspector, DraftInspector or EmptyState from store state",
+  "purpose": "Inspector panel for the focused pane's selection.",
+  "text": "none on its own",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view",
+   "narrow-window",
+   "no-lists (empty branch)"
+  ],
+  "behaviour": "Routing only: more than one selected task shows MultiInspector; one task shows TaskInspector; a draft list shows DraftInspector; otherwise the empty state.",
+  "look": "class bg-surface-1l dark:bg-surface-1d flex h-full flex-col overflow-hidden; 319x715 at 861,46 in main-default",
+  "count": 1,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "EmptyState (no task selected, inside PreviewPanel)",
+  "variant": "icon left_click, iconSize 28; title 'No task selected'; subtitle 'Select a task to inspect it'",
+  "purpose": "Shown when nothing is selected in the focused pane.",
+  "text": "icon: left_click; title: 'No task selected'; subtitle: 'Select a task to inspect it'",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view",
+   "narrow-window",
+   "no-lists"
+  ],
+  "behaviour": "None.",
+  "look": "icon box 1007,363 28x28, 28px glyph, colour oklch(0.62 0.013 264) light / oklch(0.57 0.011 262) dark; title box 958,396 125x23 font display 15px medium secondary; subtitle box 941,424 159x19 12.5px muted; centred near x 1020",
+  "count": 1,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "MultiInspector",
+  "variant": "several tasks selected (selectionTasks.length > 1)",
+  "purpose": "Bulk inspector for a multi-selection. Own screen: multi-inspector.",
+  "text": "not in tree",
+  "states": [
+   "none recorded"
+  ],
+  "behaviour": "Shown from PreviewPanel routing.",
+  "look": "not recorded",
+  "count": 0,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "TaskInspector",
+  "variant": "single selected task (key task.id)",
+  "purpose": "Inspector for one task. Own screen: task-inspector.",
+  "text": "not in tree",
+  "states": [
+   "none recorded"
+  ],
+  "behaviour": "Shown from PreviewPanel routing.",
+  "look": "not recorded",
+  "count": 0,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "DraftInspector",
+  "variant": "new task before content (key draftListId)",
+  "purpose": "Inspector for a draft task. Own screen: draft-inspector.",
+  "text": "not in tree",
+  "states": [
+   "none recorded"
+  ],
+  "behaviour": "Shown from PreviewPanel routing when draftListId is set and no task is selected.",
+  "look": "not recorded",
+  "count": 0,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "TrashPane",
+  "variant": "replaces PreviewPanel in the aside when trashOpen; prop onClose -> setTrashOpen(false)",
+  "purpose": "Trash view. Own screen: trash.",
+  "text": "not in tree",
+  "states": [
+   "none recorded"
+  ],
+  "behaviour": "Close calls setTrashOpen(false).",
+  "look": "not recorded",
+  "count": 0,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "FilterPanel",
+  "variant": "replaces PreviewPanel in the aside when filterOpen (and trash not open); prop onClose -> setFilterOpen(false)",
+  "purpose": "Filter and Sort panel. Own screen: filter-panel. Renders in the main window per the comment.",
+  "text": "not in tree",
+  "states": [
+   "none recorded"
+  ],
+  "behaviour": "Close calls setFilterOpen(false).",
+  "look": "not recorded",
+  "count": 0,
+  "region": "right aside"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "CommandPalette",
+  "variant": "overlay; props getCommands=buildCommands, onClose -> setPaletteOpen(false)",
+  "purpose": "Command palette. Own screen: command-palette.",
+  "text": "not in tree",
+  "states": [
+   "none recorded (shown only when paletteOpen)"
+  ],
+  "behaviour": "Closes via onClose. Opening shortcut not confirmed in these files (useAppKeyboard not read).",
+  "look": "not recorded",
+  "count": 0,
+  "region": "overlays"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "SheetHost",
+  "variant": "no props; always mounted; renders sheets when requested",
+  "purpose": "Host for in-app sheets (new list, rename, delete confirmations). Own screen: sheets.",
+  "text": "none in recorded states",
+  "states": [
+   "idle (renders no children in recorded states)"
+  ],
+  "behaviour": "Sheets are opened elsewhere (New list and delete-list buttons); trigger bodies not in these files.",
+  "look": "not visible",
+  "count": 1,
+  "region": "overlays"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "ContextMenuProvider",
+  "variant": "non-visual provider wrapping the whole window",
+  "purpose": "Supplies context-menu state to the window. Own screen: context-menus.",
+  "text": "none",
+  "states": [
+   "not in tree (no visual node)"
+  ],
+  "behaviour": "none directly",
+  "look": "no visual node",
+  "count": 1,
+  "region": "window root"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "TitleBar",
+  "variant": "title bar row, 1180x46 (820x46 in narrow-window)",
+  "purpose": "Hosts the title bar; its content is the title-bar screen.",
+  "text": "none",
+  "states": [
+   "all states"
+  ],
+  "behaviour": "Contents described in the title-bar screen.",
+  "look": "0,0 1180x46 (tree); B read y 0-45 from shot; light grey surface in light theme, dark in main-dark (colour not measured)",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "ListTabs",
+  "variant": "tab strip; 857x45 (main-default), 824x45 (split-view), 497x45 (narrow-window), 857x45 (preview-hidden), 857x45 (no-lists, holds only the New list button)",
+  "purpose": "Shows list tabs for the project and their actions.",
+  "text": "none",
+  "states": [
+   "all states"
+  ],
+  "behaviour": "Contents described below and in title-bar screen.",
+  "look": "at 211,0; 857x45 in main-default",
+  "count": 1,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "divider",
+  "component": "?",
+  "variant": "thin vertical hairline between tabs and before the New list button",
+  "purpose": "Separates the list tabs.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": "thin vertical line, about x 408 and 503; colour not recorded",
+  "count": 2,
+  "region": "title bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "ScopeFields",
+  "variant": "wrapper around the Search options IconButton",
+  "purpose": "Wraps the search-options control in the search bar.",
+  "text": "none",
+  "states": [
+   "all states with a pane"
+  ],
+  "behaviour": "none directly (wraps the Search options button)",
+  "look": "box 784,63 21x21 in main-default",
+  "count": 1,
+  "region": "search bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "divider",
+  "component": "Divider",
+  "variant": "orientation vertical; className h-4 shrink-0",
+  "purpose": "Separates the search controls from the New task button.",
+  "text": "none",
+  "states": [
+   "all states with a pane"
+  ],
+  "behaviour": "none",
+  "look": "1x14 at 810,56; colour not recorded",
+  "count": 1,
+  "region": "search bar"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "Label (task title)",
+  "variant": "tone primary (open) or muted (done); weight medium; text-[14px]; truncate; as=div",
+  "purpose": "Task title.",
+  "text": "title text from the TaskRow2 entries above",
+  "states": [
+   "all rows"
+  ],
+  "behaviour": "none",
+  "look": "font 500 14px/16.625px",
+  "count": 8,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "Label (task subtitle)",
+  "variant": "tone secondary; text-[12.5px] leading-4.25; truncate; as=div",
+  "purpose": "Secondary line under a task title.",
+  "text": "'Counter closes at 6'",
+  "states": [
+   "t-pharmacy only"
+  ],
+  "behaviour": "none",
+  "look": "box 47,122 774x15; font 12.5px secondary, truncated",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "divider",
+  "component": "?",
+  "variant": "thin horizontal hairline between task rows",
+  "purpose": "Separates task rows.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": "thin hairline; colour not recorded",
+  "count": 8,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "other",
+  "component": "StatsBar",
+  "variant": "footer; className border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d; props done=2 total=8 pct=25 (main-default); done=1 total=3 pct=33 (split right pane)",
+  "purpose": "Footer stats for the pane.",
+  "text": "children below (done count, percentage)",
+  "states": [
+   "main-default",
+   "main-dark",
+   "split-view (left: done=2 total=8 pct=25; right: done=1 total=3 pct=33)",
+   "preview-hidden",
+   "narrow-window"
+  ],
+  "behaviour": "none in these files",
+  "look": "box 0,729 860x32 in main-default; 429x32 at 431,729 in split right; surface bg-surface-2l / dark:bg-surface-2d",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "main-window",
+  "kind": "divider",
+  "component": "Divider (in StatsBar)",
+  "variant": "orientation vertical; className h-3",
+  "purpose": "Separator in the footer, between the sort button and the stats.",
+  "text": "none",
+  "states": [
+   "all states with a StatsBar"
+  ],
+  "behaviour": "none",
+  "look": "1x11 at 44,730; colour not recorded",
+  "count": 1,
+  "region": "task area (left)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "title-bar",
+  "component": "TitleBar (header element)",
+  "variant": "draggable window title bar; data-tauri-drag-region; h-13 shrink-0 items-stretch border-b",
+  "purpose": "Frame of the chrome. Dragging its empty area moves the window; double-click on a drag-region target toggles maximize.",
+  "text": "",
+  "states": [
+   "default",
+   "project-menu open",
+   "narrow window (820 wide)"
+  ],
+  "behaviour": "Drag moves window. Double-click on a target with data-tauri-drag-region calls getCurrentWindow().toggleMaximize() (TitleBar.tsx:43-46).",
+  "look": "Classes: border-edge-2l dark:border-edge-2d bg-surface-1l dark:bg-surface-1d relative flex h-13 shrink-0 items-stretch border-b. Measured 1180x46 at 0,0 (tree), so the rule is at about y 45 and content starts at y 46. The h-13 class does not obviously map to 46px under default Tailwind spacing; the project scale may differ. The measured 46px is recorded and the h-13 mapping is unresolved.",
+  "count": 1,
+  "region": "whole bar"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "other",
+  "component": "MacLights (div.group)",
+  "variant": "macOS traffic-light cluster, red first; data-no-drag",
+  "purpose": "Groups the three discs. The group hover reveals the glyphs on every disc.",
+  "text": "",
+  "states": [
+   "focused (discs lit)",
+   "blurred (discs gray, from useWindowFocused)",
+   "hover (glyphs shown on all discs)"
+  ],
+  "behaviour": "Hovering anywhere on the cluster shows the glyphs (group-hover). Clicking a disc runs its action.",
+  "look": "flex items-center gap-2 pr-3 pl-5; tree box 84x45 at 0,0.",
+  "count": 1,
+  "region": "window-controls (macOS, leading)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "divider",
+  "component": "Divider (level 1)",
+  "variant": "horizontal divider inside the menu",
+  "purpose": "Separates project rows from the New project action.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "className mx-space-5 my-space-3; 194x1 at 120,114.",
+  "count": 1,
+  "region": "project switcher (menu)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "surface",
+  "component": "ListTabs (root div, data-no-drag)",
+  "variant": "horizontal scrolling strip; overflow-x-auto with hidden scrollbar; flex-1 min-w-0",
+  "purpose": "Holds the tabs for the active project's lists.",
+  "text": "",
+  "states": [
+   "default",
+   "narrow (scrolls)",
+   "empty (no tabs)"
+  ],
+  "behaviour": "Horizontal scroll when tabs overflow.",
+  "look": "flex h-full min-w-0 flex-1 items-stretch overflow-x-auto. Measured 857x45 at 211,0 (497x45 in narrow-window); strip spans about x 211 to 543 in the screenshot.",
+  "count": 1,
+  "region": "list tabs"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "other",
+  "component": "Tab separator (plain span)",
+  "variant": "default (bg-edge-1, h-4 w-px); adjacent to focused tab (bg-edge-2, h-full); drop indicator (bg-accent-500, h-6 w-1 rounded-full)",
+  "purpose": "Vertical divider before each tab; marks the drop point during tab drag.",
+  "text": "",
+  "states": [
+   "default",
+   "adjacent to focused",
+   "drop indicator"
+  ],
+  "behaviour": "None (drop target handled by the tab).",
+  "look": "my-auto h-4 w-px shrink-0. Plain span, so no tree entry. Hairline positions are estimates from the screenshot.",
+  "count": 3,
+  "region": "list tabs (before each tab)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "other",
+  "component": "Trailing separator (plain span in drop-zone div)",
+  "variant": "default; adjacent to last tab when it is focused (h-full); drop indicator at end (accent)",
+  "purpose": "Divider after the last tab, and a drop zone that moves a dragged tab to the end.",
+  "text": "",
+  "states": [
+   "default",
+   "focused-adjacent",
+   "drop indicator"
+  ],
+  "behaviour": "Drop reorders the dragged tab to the last position (reorder(tabId, last.id, false)).",
+  "look": "Plain span; not in any tree. Rendered only when lists.length > 0. Together with the three tab separators this gives the four hairlines in the screenshot.",
+  "count": 1,
+  "region": "list tabs (after last tab)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "other",
+  "component": "Tab-strip drag filler (plain span, data-tauri-drag-region)",
+  "variant": "min-w-6 flex-1 self-stretch",
+  "purpose": "Empty space after the New list button. Drags the window.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Drag moves the window.",
+  "look": "Not in any tree.",
+  "count": 1,
+  "region": "list tabs (end of strip)"
+ },
+ {
+  "screen": "title-bar",
+  "kind": "other",
+  "component": "Toolbar wrapper div",
+  "variant": "gap-space-4 pr-space-6 pl-space-6 flex items-center",
+  "purpose": "Groups the right-side toolbar buttons.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "Plain div; not in any tree.",
+  "count": 1,
+  "region": "toolbar (right)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "surface",
+  "component": "InputWell",
+  "variant": "search container, leading slot holds the search icon",
+  "purpose": "Frames the search bar.",
+  "text": "(no text)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None; the inner search field takes focus.",
+  "look": "Approx. x 14-846, y 56-91, light grey rounded bar (visual estimate, not measured).",
+  "count": 1,
+  "region": "Search bar (InputWell)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "divider",
+  "component": "Divider",
+  "variant": "orientation vertical, className h-4 shrink-0",
+  "purpose": "Separates the search tools from the New task button.",
+  "text": "(none)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "Visual only, about x 810, y 56-70.",
+  "count": 1,
+  "region": "Search bar (InputWell)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "surface",
+  "component": "div (scroll container)",
+  "variant": "className min-h-0 flex-1 overflow-y-auto overscroll-contain",
+  "purpose": "Scrolls the task tree.",
+  "text": "(none)",
+  "states": [
+   "default",
+   "drop-over (rootDropOver)"
+  ],
+  "behaviour": "Click on blank space (not a [data-task-id] row) clears selection and focus. Dropping a dragged task here moves it to the list root (single drop or multi-id drop set). Edge auto-scroll while dragging.",
+  "look": null,
+  "count": 1,
+  "region": "Task list scroll area"
+ },
+ {
+  "screen": "task-list",
+  "kind": "divider",
+  "component": "div (root drop indicator)",
+  "variant": "accent line h-0.5 with a dot at the left end; shown while rootDropOver and draggingId are set",
+  "purpose": "Shows where a dragged task will land at the root.",
+  "text": "(none)",
+  "states": [
+   "hidden",
+   "shown while dragging over blank space"
+  ],
+  "behaviour": "None.",
+  "look": null,
+  "count": 0,
+  "region": "Task list scroll area"
+ },
+ {
+  "screen": "task-list",
+  "kind": "divider",
+  "component": "span (row separator)",
+  "variant": "absolute, bottom 0, h-px, pointer-events none, left = depth*24+44",
+  "purpose": "Inset line between rows.",
+  "text": "(none)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "About 1px light grey, from x about 44-70 to 860 (visual).",
+  "count": 8,
+  "region": "Task list scroll area"
+ },
+ {
+  "screen": "task-list",
+  "kind": "divider",
+  "component": "span (drop indicator)",
+  "variant": "accent line h-0.5 with dot, placed at top (before) or bottom (after) of the row",
+  "purpose": "Drop position feedback for before or after.",
+  "text": "(none)",
+  "states": [
+   "hidden",
+   "before",
+   "after"
+  ],
+  "behaviour": "None.",
+  "look": null,
+  "count": 0,
+  "region": "Task list scroll area"
+ },
+ {
+  "screen": "task-list",
+  "kind": "other",
+  "component": "SubtaskComposer",
+  "variant": "row-height 36px, indented by depth*24+6; Icon subdirectory_arrow_right size 15 weight 300; TextInput with autofocus",
+  "purpose": "Adds a subtask inline under the parent row.",
+  "text": "placeholder 'Subtask title — Enter to add'",
+  "states": [
+   "shown only after 'Add subtask' sets composeFor for this row (not in any recorded tree)",
+   "focused on mount",
+   "dismissed by empty Enter, Escape or blur"
+  ],
+  "behaviour": "Enter with a title creates the subtask and clears the field. Enter with empty input dismisses. Escape dismisses. Blur dismisses.",
+  "look": null,
+  "count": 0,
+  "region": "Task list scroll area (under a parent row)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "divider",
+  "component": "Divider",
+  "variant": "orientation vertical, className h-3 (in StatsBar: between sort control and done count; in BulkBar: between count and verbs)",
+  "purpose": "Separates footer controls.",
+  "text": "(none)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "Visual; spans the footer height. Divider x about 44 (StatsBar) and about 101 (BulkBar).",
+  "count": 2,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-list",
+  "kind": "other",
+  "component": "BulkBar",
+  "variant": "replaces StatsBar while selCount > 0; h-9, border-t, px-space-6",
+  "purpose": "Bulk actions for the current row selection.",
+  "text": "See children below.",
+  "states": [
+   "shown when one or more rows are selected (state:multi-select-shift, 4 selected)"
+  ],
+  "behaviour": "None on its own; children act on the pane selection.",
+  "look": null,
+  "count": 1,
+  "region": "Footer (StatsBar or BulkBar)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "other",
+  "component": "span (plain element)",
+  "variant": "accent index tick (decorative, absolute left-0)",
+  "purpose": "Decorative accent bar at the left edge of the header that signals the panel received the selection.",
+  "text": "",
+  "states": [
+   "always shown"
+  ],
+  "behaviour": "none (not interactive)",
+  "look": null,
+  "count": 1,
+  "region": "Header"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "surface",
+  "component": "NoteCard (NoteCard.tsx:10)",
+  "variant": "one per saved note; wrapper group/note relative; always a live RichTextEditor (no read or edit mode switch)",
+  "purpose": "Shows and edits one saved note with its own rich-text editor.",
+  "text": "none (the note body is the RichTextEditor)",
+  "states": [
+   "idle",
+   "focused (editor toolbar appears)",
+   "emptied and blurred (discarded without confirmation)"
+  ],
+  "behaviour": "typing triggers a debounced autosave (AUTOSAVE_MS) through onSave; blur calls flush: if empty and previously non-empty, onEmptied (discarded without confirmation); otherwise save if changed. Hover reveals the Delete note control.",
+  "look": "Card background and radius not in elements.json; the shot shows a light card with a thin border. Outer boxes 295x118 and 295x51 (A, source-tree); inner boxes 293x116 and 293x49 (B). Body text font 400 13.5px/17.5px, colour oklch(0.26 0.012 262).",
+  "count": 2,
+  "region": "Notes section"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "divider",
+  "component": "span (plain divider, RichTextEditor.tsx:517)",
+  "variant": "vertical divider, mx-1 h-4 w-px",
+  "purpose": "Separates text marks from list buttons.",
+  "text": "",
+  "states": [
+   "static"
+  ],
+  "behaviour": "none",
+  "look": null,
+  "count": 2,
+  "region": "Floating toolbar of each rich-text editor"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "divider",
+  "component": "? (shot-only hairline rule)",
+  "variant": "hairline after the Notes and Subtasks section labels (Attachments has none)",
+  "purpose": "Visually separates each section label from its count and button.",
+  "text": "",
+  "states": [
+   "with notes",
+   "empty"
+  ],
+  "behaviour": "none",
+  "look": "About x 927-1086 at the label baseline (estimated from the shot).",
+  "count": 2,
+  "region": "Notes section and Subtasks section"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "thumbnail",
+  "component": "Attachment tile (button in AttachmentSection), link variant",
+  "variant": "remote link tile: fallback Icon of fileKindFor(name, location).icon size 22 (link); aspect-square, rounded-control, bordered; remote links open externally",
+  "purpose": "Shows one remote link attachment in the grid; click opens it externally, right-click opens its menu, drag drops it onto a note as a mention.",
+  "text": "Caption 'Brand brief'; title='Brand brief\\nRight-click to rename · drag onto a note to @mention' (tooltip)",
+  "states": [
+   "default (border-edge-2)",
+   "hover (border-edge-3; open_in_full overlay appears)",
+   "dragging (ATTACHMENT_MIME, copy effect)"
+  ],
+  "behaviour": "click: remote link opens externally via api.openAttachment (not the lightbox). Right-click opens the attachment context menu (three items for a remote link). Drag starts a drag with ATTACHMENT_MIME carrying the name; dropping onto a note inserts a chip.",
+  "look": "94x94, radius 7px, bg oklch(1 0 0). Link glyph span 22px, colour oklch(0.62 0.013 264).",
+  "count": 1,
+  "region": "Attachments section (grid, first tile)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "thumbnail",
+  "component": "Attachment tile (button in AttachmentSection), image variant",
+  "variant": "image tile: img alt='' object-cover thumbnail when the file is an image and the thumb has loaded; aspect-square, rounded-control, bordered",
+  "purpose": "Shows one local image attachment in the grid; click opens it in the attachment lightbox, right-click opens its menu, drag drops it onto a note as a mention.",
+  "text": "Caption 'hero-sketch.png'; title='hero-sketch.png\\nRight-click to rename · drag onto a note to @mention' (tooltip)",
+  "states": [
+   "default (border-edge-2)",
+   "hover (border-edge-3; open_in_full overlay appears)",
+   "dragging (ATTACHMENT_MIME, copy effect)"
+  ],
+  "behaviour": "click opens the local file in the attachment lightbox at its index. Right-click opens the four-item attachment context menu. Drag starts a drag with ATTACHMENT_MIME; dropping onto a note inserts a chip.",
+  "look": "94x94, radius 7px, bg oklch(1 0 0). Shows an image thumbnail (blue, violet and teal gradient in the shot); no fallback icon in the tree.",
+  "count": 1,
+  "region": "Attachments section (grid, second tile)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "surface",
+  "component": "Empty attachments box (div in AttachmentSection)",
+  "variant": "rounded-control, bg-surface-3, dashed border, h-20 (source), flex; holds two buttons split by a divider",
+  "purpose": "Empty state for attachments with two quick actions.",
+  "text": "",
+  "states": [
+   "shown when the task has no attachments"
+  ],
+  "behaviour": "none (contains the two buttons)",
+  "look": "Box about x 875-1166, y 309-379 (B, shot estimate; source h-20 is 80px vs about 70px estimated).",
+  "count": 1,
+  "region": "Attachments section (when empty)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "divider",
+  "component": "Divider (common-ui/components)",
+  "variant": "orientation=vertical, level=2, className my-2",
+  "purpose": "Separates the two empty-state buttons.",
+  "text": "",
+  "states": [
+   "static"
+  ],
+  "behaviour": "none",
+  "look": "1x49 px at 1020,320 (A tree); shot shows a vertical rule.",
+  "count": 1,
+  "region": "Attachments section (empty box)"
+ },
+ {
+  "screen": "task-inspector",
+  "kind": "other",
+  "component": "AttachmentMention node (att-chip span in the note body)",
+  "variant": "inline atom chip, contenteditable false",
+  "purpose": "An @mention of an attachment inside a note.",
+  "text": "@{attachment name}",
+  "states": [
+   "present in the note HTML only"
+  ],
+  "behaviour": "click opens the attachment (openMention: lightbox if local, api.openAttachment if remote); cannot be typed into; deletes as a single unit",
+  "look": null,
+  "count": 0,
+  "region": "Inside each rich-text editor"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "surface",
+  "component": "DraftInspector",
+  "variant": "Root column, animate-rise, flex-1, min-h-0",
+  "purpose": "Container of the new-task draft inside the preview panel.",
+  "text": "",
+  "states": [
+   "draft (empty title, placeholder shown)",
+   "typed (title has text, auto-grown)"
+  ],
+  "behaviour": "None on its own.",
+  "look": "Not measured; code classes only (animate-rise, flex-1, min-h-0).",
+  "count": 1,
+  "region": "Draft header row / whole panel"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "span (plain, not a component)",
+  "variant": "Accent caret bar, absolute, h-4 w-0.5, bg-accent-500l/d",
+  "purpose": "Accent marker at the left edge of the title row showing the draft is the active item.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None (decorative).",
+  "look": "Code: h-4 w-0.5 (16px tall, 2px wide). Image estimate (B): about 2-3px wide, about 14px tall, blue (colour not measured). Code values kept as the exact values.",
+  "count": 1,
+  "region": "Draft header row"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "span (plain, not a component)",
+  "variant": "Empty ring placeholder, 20x20, rounded-field, border-[1.5px] border-edge-3l/d",
+  "purpose": "Visual placeholder for the completion ring the task will have once created. Not interactive while it is a draft.",
+  "text": "",
+  "states": [
+   "default (empty)"
+  ],
+  "behaviour": "None (not interactive).",
+  "look": "Code: 20x20, rounded-field, border 1.5px, border-edge-3 light/dark. Image estimate (B): about 18x18 rounded square, white fill, grey border (not measured).",
+  "count": 1,
+  "region": "Draft header row, left of title"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"close\", focused=true, inert=false, 14x14 (within MacLights)",
+  "purpose": "Closes the app window (chrome, not this screen).",
+  "text": "none (traffic-light glyph); accessible label 'Close'",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "Click: onClick (handler not read).",
+  "look": "14x14 circle at (18,15), red fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+  "count": 1,
+  "region": "Title bar, far left (WindowControls)"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"minimize\", focused=true, inert=false, 14x14 (within MacLights)",
+  "purpose": "Minimizes the app window (chrome).",
+  "text": "none (traffic-light glyph); accessible label 'Minimize'",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "Click: onClick (handler not read).",
+  "look": "14x14 circle at (39,15), yellow fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+  "count": 1,
+  "region": "Title bar, far left"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"fullscreen\", focused=true, inert=false, 14x14 (within MacLights)",
+  "purpose": "Toggles full screen for the app window (chrome).",
+  "text": "none (traffic-light glyph); accessible label 'Full Screen'",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "Click: onClick (handler not read).",
+  "look": "14x14 circle at (60,15), green fill in shot; glyph colour oklch(0.26 0.012 262), font 400 14px/21px.",
+  "count": 1,
+  "region": "Title bar, far left"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "Divider",
+  "variant": "orientation=\"vertical\", h-4",
+  "purpose": "Separates the search options from the New task button.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "1x14 at (810,56); thin vertical rule at x~810 (B shot). Colour not measured.",
+  "count": 1,
+  "region": "Task list pane, search bar, right"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "Divider",
+  "variant": "orientation=\"vertical\", h-3",
+  "purpose": "Separates the sort control from the stats label in the footer.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "1x11 at (44,730); thin vertical rule, colour not measured.",
+  "count": 1,
+  "region": "StatsBar footer"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "Resizer",
+  "variant": "onResize, 4x715 vertical handle",
+  "purpose": "Drag to resize the task pane against the preview panel (chrome).",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Drag: onResize.",
+  "look": "Handle 4x715 at (860,46); a 1px vertical rule at x~860 (B shot, colour not measured).",
+  "count": 1,
+  "region": "Between task pane and preview panel"
+ },
+ {
+  "screen": "draft-inspector",
+  "kind": "other",
+  "component": "SheetHost and Toast",
+  "variant": "Mounted containers, no box in tree",
+  "purpose": "Host for sheets and the undo toast (other screens); not visible on this screen in the recorded states.",
+  "text": "none in tree",
+  "states": [
+   "hidden in both recorded states"
+  ],
+  "behaviour": "Not applicable here.",
+  "look": "Not measured (no box in tree).",
+  "count": 2,
+  "region": "App root"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "surface",
+  "component": "PreviewPanel",
+  "variant": "Preview side panel, 319 px wide, full height",
+  "purpose": "Container that displays the multi-inspector when more than one task is selected.",
+  "text": "none",
+  "states": [
+   "visible (multi-select-shift, multi-select-cmd-two)"
+  ],
+  "behaviour": "None. Width is changed by dragging the Resizer.",
+  "look": "x 860-1180, y 46-760 (B bounds, includes the Resizer at 860); light grey fill with a left hairline separating it from the list (shot only; colour not measured). A tree box: 319x715 at 861,46.",
+  "count": 1,
+  "region": "Preview panel container"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "surface",
+  "component": "MultiInspector",
+  "variant": "Root: flex column, min-h-0 flex-1, class animate-rise (enter animation)",
+  "purpose": "Multi-select inspector body. Takes the tasks prop (the focused pane's selected tasks).",
+  "text": "none",
+  "states": [
+   "tasks=[4] (multi-select-shift)",
+   "tasks=[2] (multi-select-cmd-two)"
+  ],
+  "behaviour": "None on its own. All child controls act on the focused pane's live selection in the stores.",
+  "look": null,
+  "count": 1,
+  "region": "Preview panel container"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "surface",
+  "component": "div (plain styled row, not a named component; class group/sel)",
+  "variant": "rounded-field, px-space-4, gap-space-5, flex h-9 items-center. Active row (t.id === activeId): bg-selection-1l dark:bg-selection-1d. Other rows: hover:bg-wash-1l dark:hover:bg-wash-1d",
+  "purpose": "One row per selected task. The row that is the single active task is highlighted, and hover reveals the Open button.",
+  "text": "none",
+  "states": [
+   "active (selection background)",
+   "hover (wash background, reveals Open)",
+   "idle",
+   "highlighted (B: last row, 'Cut a spare key', shot only; reason not known, probably the active row)"
+  ],
+  "behaviour": "Hover reveals the row's Open button. The row itself has no click handler; its children do.",
+  "look": "Light blue row fill (shot only; colour not measured). Row tops at y 207, 239, 270, 302 (shift). Whether the highlight is the active row is unverified.",
+  "count": 4,
+  "region": "Selected list"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "other",
+  "component": "Resizer",
+  "variant": "onResize prop; 4x715 vertical divider",
+  "purpose": "Drag handle between the task pane and the preview panel. It sits on the screen, but the owning screen is main-window.",
+  "text": "none",
+  "states": [
+   "idle"
+  ],
+  "behaviour": "Drag: calls onResize to change the preview panel width.",
+  "look": null,
+  "count": 1,
+  "region": "Split resizer"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "window-controls",
+  "component": "?",
+  "variant": "Traffic-light group of three round buttons",
+  "purpose": "Standard window close, minimise and full-screen controls.",
+  "text": "Labels: 'Close', 'Minimize', 'Full Screen'. Shot shows red, yellow and green dots.",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click: standard window action (close, minimise, full screen).",
+  "look": "Each 14x14 at x 18, 39, 60; y 15; colour oklch(0.26 0.012 262) in elements.json (dots coloured in shot).",
+  "count": 3,
+  "region": "Title bar (y 0-46, full width; belongs to title-bar screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "divider",
+  "component": "?",
+  "variant": "Vertical hairline between tune and add buttons",
+  "purpose": "Separates the two search-bar buttons.",
+  "text": "No text",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "Around x 810, spanning the search bar height (shot only; not in elements.json).",
+  "count": 1,
+  "region": "Search bar (x 14-846, y 56-91; belongs to task-list screen, shown here)"
+ },
+ {
+  "screen": "multi-inspector",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Selected row background",
+  "purpose": "Marks rows that are part of the selection.",
+  "text": "No text",
+  "states": [
+   "selected"
+  ],
+  "behaviour": "None.",
+  "look": "Light blue full-width row fill, spanning x 0-860 (shot only; colour not measured).",
+  "count": 4,
+  "region": "Task list pane (x 0-860, y 46-730)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "other",
+  "component": "SectionHeader (common-ui) accent dot",
+  "variant": "Shown while a section is active.",
+  "purpose": "Marks a section that is non-default.",
+  "text": "none (dot)",
+  "states": [
+   "hidden when inactive",
+   "visible when active"
+  ],
+  "behaviour": "None.",
+  "look": "Not measured. Exact styling not verified (SectionHeader source not read).",
+  "count": 4,
+  "region": "Body (scroll region), in each section header"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "other",
+  "component": "TriRow (local), 3 instances",
+  "variant": "Notes: icon notes. Attachments: icon attach_file. Subtasks: icon account_tree. Each row is h-8 flex with an icon, a label and a Segmented size=sm.",
+  "purpose": "One refine predicate per row.",
+  "text": "Row labels: \"Notes\", \"Attachments\", \"Subtasks\".",
+  "states": [
+   "value any: label tone=secondary",
+   "value with/none: label tone=primary"
+  ],
+  "behaviour": "Changing the row's Segmented calls update({notes|attachments|subtasks}).",
+  "look": "Row 295x28 at 873,252 / 284 / 315 (A tree). Label 500 13px/19.5px oklch(0.46 0.013 262) (B). Icons 15px, weight 300, oklch(0.62 0.013 264) (B); text-content-3 per A. Icon boxes at 873,259 / 290 / 322 (B).",
+  "count": 3,
+  "region": "Body (scroll region), Refine section"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "other",
+  "component": "span (plain element)",
+  "variant": "h-1.5 w-1.5 rounded-full dot; bg-accent-500 when any view is active, otherwise bg-edge-3.",
+  "purpose": "Shows whether any filter, sort or refine setting is non-default.",
+  "text": "none",
+  "states": [
+   "accent (anyActive)",
+   "grey (not active; inferred because Reset is disabled in the recording)"
+  ],
+  "behaviour": "None.",
+  "look": "6x6 (h-1.5 w-1.5), rounded-full. Grey in the recording (B shot, position estimated at x 876).",
+  "count": 1,
+  "region": "Stats footer, left of the summary label"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "divider",
+  "component": "?",
+  "variant": "horizontal hairline above and below the stats and action footers",
+  "purpose": "Separates the list body from the status and button rows.",
+  "text": "(no text)",
+  "states": [
+   "static"
+  ],
+  "behaviour": "None.",
+  "look": "1px; colour not recorded.",
+  "count": 2,
+  "region": "Stats footer / Action footer (border-t)"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "window-controls",
+  "component": "?",
+  "variant": "traffic-light trio, 14x14 circles",
+  "purpose": "Close, minimise and full-screen the app window. Shared chrome, not specific to this panel.",
+  "text": "Close / Minimize / Full Screen (labels; no visible text)",
+  "states": [
+   "glyphs (x, minus, arrow) drawn inside the dots in state:completed-hidden shot",
+   "plain coloured dots in state:filter-panel shot (cause not recorded)"
+  ],
+  "behaviour": "Click closes, minimises or full-screens the window (inferred from labels).",
+  "look": "14x14 circles at y 15, x 18 / 39 / 60. Red, yellow, green in shot. Glyph colour oklch(0.26 0.012 262). Font 400 14px/21px. Radius not recorded (circle).",
+  "count": 3,
+  "region": "Title bar"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "divider",
+  "component": "?",
+  "variant": "vertical hairline inside the search bar",
+  "purpose": "Separates the search options button from New task.",
+  "text": "(no text)",
+  "states": [
+   "static"
+  ],
+  "behaviour": "None.",
+  "look": "1px vertical line, colour not recorded.",
+  "count": 1,
+  "region": "Task list pane"
+ },
+ {
+  "screen": "filter-panel",
+  "kind": "divider",
+  "component": "?",
+  "variant": "vertical hairline in footer",
+  "purpose": "Separates the Sort & filter button from the done count.",
+  "text": "(no text)",
+  "states": [
+   "static"
+  ],
+  "behaviour": "None.",
+  "look": "1px, colour not recorded.",
+  "count": 1,
+  "region": "Task list pane"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "surface",
+  "component": "Backdrop2 (tree name; not imported in CommandPalette.tsx)",
+  "variant": "dim=\"soft\", blur=false, layer=\"overlay\", tabIndex=-1; className starts \"px-space-8 flex items-start justify-center pt-[12vh] pb-[8vh…\"",
+  "purpose": "Dimming scrim behind the palette panel; an outside mousedown on it dismisses the palette.",
+  "text": "No visible text.",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Mousedown on the scrim outside the panel dismisses the palette (onMouseDown on Backdrop2, with onDismiss on the Overlay).",
+  "look": "div at [0,0,1180,760]; background oklab(0 0 0 / 0.3); no border; covers the whole window.",
+  "count": 1,
+  "region": "Scrim"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "surface",
+  "component": "Surface (tree name Surface2)",
+  "variant": "elevation=\"menu\", surface=2, radius=\"panel\"; className \"animate-sheet-in flex max-h-[60vh] w-[min(35rem,100%)] flex-col overflow-hidden\"",
+  "purpose": "The palette panel container: the visual card that holds the input row and the results list or empty message.",
+  "text": "No visible text.",
+  "states": [
+   "palette: 490x456 at 345,91",
+   "palette-search: 490x184 at 345,91",
+   "palette-no-match: 490x109 at 345,91",
+   "open"
+  ],
+  "behaviour": "Display only. Its height changes with the number of results. Does not take input itself.",
+  "look": "Menu-elevation surface 2 with panel radius; 490 px wide; top edge at y=91; white background; soft drop shadow visible in the shot; exact radius and shadow not captured.",
+  "count": 1,
+  "region": "Palette panel"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "other",
+  "component": "div (plain element; no component)",
+  "variant": "className \"border-edge-1l dark:border-edge-1d gap-space-5 px-space-6 flex h-11 shrink-0 items-center border-b\"",
+  "purpose": "Header row that holds the search glyph, the search input and the bottom divider rule.",
+  "text": "No visible text.",
+  "states": [
+   "always shown"
+  ],
+  "behaviour": "Display only.",
+  "look": "44 px tall (h-11), top at y=91 (about 92 in the shot); 1px bottom border (hairline, colour not captured); bolt at 355,102; input at 380,100.",
+  "count": 1,
+  "region": "Input row"
+ },
+ {
+  "screen": "command-palette",
+  "kind": "other",
+  "component": "div (plain element; no component)",
+  "variant": "className \"py-space-3 min-h-0 flex-1 overflow-y-auto\"; ref listRef",
+  "purpose": "Scrolling container for group headings and command rows; keeps the active row in view.",
+  "text": "No visible text.",
+  "states": [
+   "populated (palette, palette-search)",
+   "empty, shows the empty message (palette-no-match)",
+   "scrolls when content exceeds the 60vh cap"
+  ],
+  "behaviour": "Mouse wheel and trackpad scroll. When active changes, scrolls the row with data-idx equal to active into view (block nearest).",
+  "look": "py-space-3 vertical padding; palette-state content taller than the 60vh cap, so it scrolls at some window sizes.",
+  "count": 1,
+  "region": "Results list"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "other",
+  "component": "Overlay",
+  "variant": "layer=\"menu\", placement=\"anchored\", dim=\"none\", captureEscape, dismissOnWindowChange; onContextMenu prevents default and closes",
+  "purpose": "Dismissable layer that hosts the open menu; closes on outside click, Escape, window blur or resize, and right-click.",
+  "text": "none",
+  "states": [
+   "open (only while a menu is set)",
+   "closed (not rendered)"
+  ],
+  "behaviour": "Escape closes (captureEscape). Outside mousedown closes via onDismiss=close. Window blur or resize closes (dismissOnWindowChange). Right-click on it prevents the native menu and closes the current menu. Picking an item closes first, then calls menu.onPick(id).",
+  "look": null,
+  "count": 1,
+  "region": "menu-layer"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "other",
+  "component": "Backdrop2",
+  "variant": "dim=\"none\", blur=false, layer=\"menu\", className=\"\"; full-window 1180x760 at @0,0",
+  "purpose": "Invisible full-window hit area under the menu panel that catches clicks and right-clicks outside the menu.",
+  "text": "none",
+  "states": [
+   "present while a menu is open"
+  ],
+  "behaviour": "Mousedown outside the panel dismisses the menu. Right-click on it dismisses the menu and suppresses the native context menu.",
+  "look": null,
+  "count": 1,
+  "region": "menu-layer"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "surface",
+  "component": "Surface (rendered as Surface2 in tree)",
+  "variant": "elevation=\"menu\", surface={3}, radius=\"panel\", className \"absolute py-space-3 min-w-44\" (top level only); 154x175 for task menus, 158x145 for tab menu",
+  "purpose": "Menu card background that holds the rows and dividers.",
+  "text": "none",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Not interactive itself.",
+  "look": "Measured box 154x175 (task menus) and 158x145 (tab menu). White fill, soft drop shadow, rounded corners; exact radius and shadow not recorded in elements.json.",
+  "count": 1,
+  "region": "task-context-menu; tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "divider",
+  "component": "Divider (common-ui components)",
+  "variant": "className \"mx-space-5 my-space-3\"; rendered above rows with dividerAbove",
+  "purpose": "Separates groups of rows in the task menu.",
+  "text": "none",
+  "states": [
+   "visible"
+  ],
+  "behaviour": "Display only.",
+  "look": "Thin grey rule inset about 8px from each panel edge (B, from screenshot).",
+  "count": 2,
+  "region": "task-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "divider",
+  "component": "Divider (common-ui components)",
+  "variant": "className \"mx-space-5 my-space-3\"; rendered above rows with dividerAbove",
+  "purpose": "Separates groups of rows in the tab menu.",
+  "text": "none",
+  "states": [
+   "visible"
+  ],
+  "behaviour": "Display only.",
+  "look": "Thin grey rule inset from the panel edges (B, from screenshot).",
+  "count": 2,
+  "region": "tab-context-menu"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "divider",
+  "component": "Divider",
+  "variant": "level=1 className \"mx-space-5 my-space-3\"",
+  "purpose": "Separates the project list from the New project row.",
+  "text": "none",
+  "states": [
+   "visible"
+  ],
+  "behaviour": "Display only.",
+  "look": "194x1 rule, thin grey, inset from the panel edges (B, from screenshot).",
+  "count": 1,
+  "region": "project-dropdown"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "other",
+  "component": "? (task row right-click handler not present in TaskRow2 props)",
+  "variant": "unverified opener: right-click on a task row inferred to open task-context-menu (row-context-menu)",
+  "purpose": "Possible pointer trigger for the task row menu; not confirmed by code or trees.",
+  "text": "none",
+  "states": [
+   "not captured"
+  ],
+  "behaviour": "Inferred from the recording name and anchor position only. TaskRow2 props show onToggleDone, onToggleSelect and onDoubleClick, with no onContextMenu.",
+  "look": null,
+  "count": 0,
+  "region": "openers"
+ },
+ {
+  "screen": "context-menus",
+  "kind": "other",
+  "component": "? (ListTabs label has no context-menu handler in the tree)",
+  "variant": "unverified opener: right-click on a list tab inferred to open tab-context-menu",
+  "purpose": "Possible trigger for the list tab menu; not confirmed by code or trees.",
+  "text": "none",
+  "states": [
+   "not captured"
+  ],
+  "behaviour": "Inferred from the Reading tab case and the anchor under the Reading label only. No context handler is shown on the ListTabs labels.",
+  "look": null,
+  "count": 0,
+  "region": "openers"
+ },
+ {
+  "screen": "sheets",
+  "kind": "surface",
+  "component": "Backdrop (rendered as Backdrop2 in tree)",
+  "variant": "dim=\"soft\" (bg-black/30), blur=false, layer=\"modal\", tabIndex=-1; className \"p-space-8 flex items-center justify-center\" (passed in by Overlay, merged by cn at Backdrop.tsx:55); fades in with animate-scrim-in (Backdrop.tsx:52)",
+  "purpose": "Full-window scrim that dims the main window behind the sheet and absorbs presses outside the card.",
+  "text": "No visible text.",
+  "states": [
+   "visible in all five states"
+  ],
+  "behaviour": "A mouse press on the scrim outside the card dismisses the sheet (answer dismiss). The tree shows onMouseDown on the scrim, so the trigger is a press, not a click. The handler is attached by Overlay, which was not read, so the exact dismiss path is unverified. Escape also dismisses (see Overlay).",
+  "look": "Full-window fixed layer 1180x760 in all five states; bg oklab(0 0 0 / 0.3) (bg-black/30); no blur; radius none; z-modal.",
+  "count": 1,
+  "region": "Scrim (Backdrop)"
+ },
+ {
+  "screen": "sheets",
+  "kind": "other",
+  "component": "Overlay (imported in Sheet.tsx; not read)",
+  "variant": "layer=\"modal\", placement=\"center\", captureEscape, trapFocus, onDismiss",
+  "purpose": "Wrapper that portals the sheet onto the modal layer, centres it, owns Escape and focus containment, and routes outside press to dismiss.",
+  "text": "No visible text.",
+  "states": [
+   "present in all five states"
+  ],
+  "behaviour": "Escape dismisses (captureEscape; Sheet.tsx:68, SheetHost.tsx:111). Tab is contained (trapFocus). Outside press dismisses. Implementation not read, so the outside-press path is unverified.",
+  "look": "No look of its own; centres the card in the 1180x760 window.",
+  "count": 1,
+  "region": "Scrim (Backdrop)"
+ },
+ {
+  "screen": "sheets",
+  "kind": "divider",
+  "component": "Divider (border-t on the action row, not a component)",
+  "variant": "hairline, border-edge-1l / border-edge-1d",
+  "purpose": "Separates the text and field block from the action row.",
+  "text": "No text.",
+  "states": [
+   "present in all five states"
+  ],
+  "behaviour": "None.",
+  "look": "1px line across the card interior. Colour not measured. About y 404 on name sheets and y 393 on confirm sheets (estimated from shot.png).",
+  "count": 1,
+  "region": "Action row (footer)"
+ },
+ {
+  "screen": "sheets",
+  "kind": "surface",
+  "component": "Action row container (div, no component name)",
+  "variant": "border-t, gap-space-5, px-space-6, pt-space-6, pb-space-6, flex items-center; right group is grid-cols-2 with gap-space-4, ml-auto; buttons min-w-24 (direct-child selector)",
+  "purpose": "Lays out the instead slot on the left and Cancel and accept on the right.",
+  "text": "No text.",
+  "states": [
+   "present in all five states"
+  ],
+  "behaviour": "None.",
+  "look": "Footer 1px top border; buttons 28px tall at y 413 (name sheets) or y 403 (confirm sheets), per measured geometry.",
+  "count": 1,
+  "region": "Action row (footer)"
+ },
+ {
+  "screen": "sheets",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Main window behind scrim (inert on pointer, focus trapped)",
+  "purpose": "Gives context for the sheet. Not interactive while the sheet is open.",
+  "text": "Preview pane: 'No task selected' / 'Select a task to inspect it' (four captures). Delete-confirm shows TaskInspector for 'Book bike service' with that row selected.",
+  "states": [
+   "dimmed",
+   "focus trapped (keyboard)"
+  ],
+  "behaviour": "Keyboard focus is trapped in the sheet (trapFocus). Pointer presses are absorbed by the scrim, not by inertness. Contents belong to the main-window, title-bar, task-list and task-inspector inventories.",
+  "look": "Scrim-dimmed main window (bg oklab(0 0 0 / 0.3) overlay).",
+  "count": 1,
+  "region": "Background window"
+ },
+ {
+  "screen": "toast",
+  "kind": "surface",
+  "component": "Toast (div wrapper)",
+  "variant": "Fixed overlay wrapper: z-overlay, fixed inset-x-0 bottom-5, flex justify-center, pointer-events-none; returns null when no toast is set",
+  "purpose": "Positions the notice at bottom-centre above other content and lets clicks pass through everywhere except the pill.",
+  "text": "none",
+  "states": [
+   "hidden (store toast is null, component returns null)",
+   "shown (single toast in store)"
+  ],
+  "behaviour": "None directly; passes clicks through except over the pill.",
+  "look": "Full-width strip 1180x41 at 0,702 (tree bounds). Fixed inset-x-0 bottom-5, z-overlay, pointer-events none.",
+  "count": 1,
+  "region": "Overlay (bottom-centre)"
+ },
+ {
+  "screen": "toast",
+  "kind": "surface",
+  "component": "Surface",
+  "variant": "elevation=\"lift\" surface={3} radius=\"control\"; className adds animate-rise, gap-space-5, py-space-5, pr-space-5, pl-space-7, pointer-events-auto, flex, items-center. Tree names it Surface2.",
+  "purpose": "The visible pill that holds the message and actions.",
+  "text": "none",
+  "states": [
+   "entering (animate-rise)",
+   "shown"
+  ],
+  "behaviour": "None on its own; it receives pointer events so its buttons are clickable.",
+  "look": "225x41 at x 477, y 702 (tree measurement; B estimated ~226x41 from shot.png). Background looks white or near-white, with a thin light border and a soft drop shadow (visual estimate). Corner radius about 6 to 8 px (estimate from image, not measured; no value in elements.json).",
+  "count": 1,
+  "region": "Toast pill"
+ },
+ {
+  "screen": "trash",
+  "kind": "surface",
+  "component": "div (plain)",
+  "variant": "pane root",
+  "purpose": "Container that holds the whole Trash pane.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "bg-surface-1l dark:bg-surface-1d, flex column, h-full w-full (code). 319x715 at 861,46 (tree).",
+  "count": 1,
+  "region": "Pane root"
+ },
+ {
+  "screen": "trash",
+  "kind": "title-bar",
+  "component": "TitleBar (@taskscape/common-ui/components)",
+  "variant": "border=\"edge-1\", controlsSide=leading (tree shows controlsSide=\"leading\"), with leading and controls elements",
+  "purpose": "Header showing the pane name and the window close control.",
+  "text": "Trash (title prop)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None on its own. Its children are the close control and the title label.",
+  "look": "319x46 at 861,46 (tree). B measured the header band at y 46-90 (44px), a 2px difference from the tree height; see notes.",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "trash",
+  "kind": "window-controls",
+  "component": "DialogControls (./WindowControls) containing MacLights",
+  "variant": "onClose and closeTitle=\"Close Trash\"",
+  "purpose": "Traffic-light cluster for this pane. Only the close light is active.",
+  "text": "closeTitle: 'Close Trash'",
+  "states": [
+   "default",
+   "focused=true"
+  ],
+  "behaviour": "Clicking the close light calls the pane onClose prop.",
+  "look": "Three 14x14 circles at x 879, 900, 921 and y 61 (21px pitch). Glyph colour oklch(0.26 0.012 262), font 400 14px/21px (B).",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "trash",
+  "kind": "surface",
+  "component": "div (plain)",
+  "variant": "action strip, rendered only when roots.length > 0",
+  "purpose": "Holds the two bulk actions.",
+  "text": "",
+  "states": [
+   "shown when at least one root",
+   "hidden when empty"
+  ],
+  "behaviour": "None.",
+  "look": "Code: flex row, gap-space-3, px-space-6 py-space-5, shrink-0, bottom border. Tree: 25px high at y=98.",
+  "count": 1,
+  "region": "Action strip"
+ },
+ {
+  "screen": "trash",
+  "kind": "surface",
+  "component": "div (plain)",
+  "variant": "scrollable list body",
+  "purpose": "Container for the row list, scrolls vertically.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolls when rows overflow"
+  ],
+  "behaviour": "Mouse wheel or trackpad scrolls the list.",
+  "look": "Code: p-space-5, min-h-0, flex-1, overflow-y-auto. Region y ~131-760 (B estimate).",
+  "count": 1,
+  "region": "List body"
+ },
+ {
+  "screen": "trash",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Hover or selected row highlight (background behind a trashed row)",
+  "purpose": "Shows which trashed row is under the pointer or selected.",
+  "text": "none",
+  "states": [
+   "hover (wash-1 per code)",
+   "shown on row 2 in trash-selected (per B only)",
+   "absent in trash"
+  ],
+  "behaviour": "None.",
+  "look": "Code: bg-wash-1 on hover. B: subtle grey-tinted rounded band, about x 869-1173, y 169-201 (estimated); exact fill and radius not measured.",
+  "count": 1,
+  "region": "Trash rows"
+ },
+ {
+  "screen": "trash",
+  "kind": "divider",
+  "component": "?",
+  "variant": "Hairline separators in the Trash pane (one vertical at the pane edge, two horizontal under the header and under the toolbar)",
+  "purpose": "Separate the pane from the list, and the header from the toolbar.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "1px hairlines, colour not measured. Positions estimated from the shot.",
+  "count": 3,
+  "region": "Title bar"
+ },
+ {
+  "screen": "trash",
+  "kind": "window-controls",
+  "component": "?",
+  "variant": "Main window traffic-light trio (Close, Minimize, Full Screen), all enabled",
+  "purpose": "Main window close, minimise and full-screen controls.",
+  "text": "Close / Minimize / Full Screen (aria labels; no visible text)",
+  "states": [
+   "default (all enabled, not disabled)"
+  ],
+  "behaviour": "Close, minimise and toggle full screen for the main window.",
+  "look": "14x14 circles at x 18, 39, 60 and y 15 (21px pitch). Glyph colour oklch(0.26 0.012 262). Font 400 14px/21px.",
+  "count": 3,
+  "region": "main title bar (full width, y 0-45)"
+ },
+ {
+  "screen": "trash",
+  "kind": "divider",
+  "component": "?",
+  "variant": "Vertical hairline in the footer",
+  "purpose": "Separates the Sort & filter button from the counters.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": "1px, colour not measured.",
+  "count": 1,
+  "region": "task list pane (left, x 0-860, y 46-760)"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "Backdrop2",
+  "variant": "dim strong, blur, layer overlay, className flex flex-col; full 1180x760",
+  "purpose": "Dimmed, blurred scrim covering the main window behind the lightbox.",
+  "text": "none",
+  "states": [
+   "open"
+  ],
+  "behaviour": "Whether a bare click on the scrim closes the lightbox is not confirmed; Overlay source was not read.",
+  "look": "Dark grey overlay covering the whole window. Exact colour not measured (uncertain, estimated visually from shot.png).",
+  "count": 1,
+  "region": "scrim (Backdrop2)"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "other",
+  "component": "?",
+  "variant": "Dimmed main window content (not part of this screen)",
+  "purpose": "Context behind the lightbox. Not interactive while the lightbox is open.",
+  "text": "Includes window controls 'Close', 'Minimize', 'Full Screen'; 'Switch project' (Spring launch); list tabs 'Website' and 'Press kit'; 'New list'; 'Split view'; 'Hide preview panel  ⌘\\\\'; 'Settings  ⌘,'; 'Search options'; 'New task'; task row 'Rewrite the hero section'; 'Sort & filter'; '1 / 5 done'; '20 %'; the task inspector controls.",
+  "states": [
+   "dimmed"
+  ],
+  "behaviour": "None while the lightbox is open.",
+  "look": "Dimmed by the scrim; the task inspector panel sits on the right, starting about x 870.",
+  "count": 1,
+  "region": "backdrop (main window, not part of this screen)"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "div (plain DOM element)",
+  "variant": "className relative flex min-h-0 flex-1 items-center justify-center px-16 pb-8; onClick = onClose",
+  "purpose": "Stage. Empty space inside it closes the lightbox, and it holds the chevrons and the media.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Click on empty stage calls onClose. Clicks on the chevrons or on the media wrapper do not reach it.",
+  "look": null,
+  "count": 1,
+  "region": "stage"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "div (plain DOM element)",
+  "variant": "className flex max-h-full max-w-full items-center justify-center; onClick stopPropagation",
+  "purpose": "Wrapper that holds the single body branch. Clicks on it do not close the lightbox.",
+  "text": "none",
+  "states": [
+   "holds one of: Loading, fallback card, image, video, audio, PDF, text"
+  ],
+  "behaviour": "No action. Stops the stage click from closing.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "card() local helper (not a named component)",
+  "variant": "className rounded-panel bg-surface-2l dark:bg-surface-2d gap-space-5 flex flex-col items-center px-10 py-12 text-center; label parameter selects the status text",
+  "purpose": "Fallback panel when the file has no inline preview or cannot be read.",
+  "text": "\"No inline preview\" (no src, media failed, or unsupported kind) or \"Couldn’t read this file\" (text fetch failed)",
+  "states": [
+   "no inline preview",
+   "couldn't read this file"
+  ],
+  "behaviour": "Contains the Open externally button, which calls api.openAttachment.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "img (plain DOM element)",
+  "variant": "preview kind image; draggable false; className rounded-control max-h-full max-w-full object-contain shadow-2xl; alt = attachment.name",
+  "purpose": "Inline image preview of the attachment (the recorded hero-sketch.png).",
+  "text": "alt = attachment.name",
+  "states": [
+   "loaded",
+   "error (sets failed, shows fallback card)"
+  ],
+  "behaviour": "No click action. Its onError switches to the fallback card. Zoom and pan are not evidenced.",
+  "look": "Approx 480 by 300 px, 16:10, fit-to-stage. Diagonal gradient: blue top-left, magenta top-right, teal bottom-left, pale grey bottom-right. Dark soft drop shadow. Corner radius not measured (appears square, uncertain). Loading state not captured.",
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "video (plain DOM element)",
+  "variant": "preview kind video; controls, autoPlay; className rounded-control max-h-full max-w-full shadow-2xl",
+  "purpose": "Inline video playback with native controls.",
+  "text": "none",
+  "states": [
+   "playing (autoPlay)",
+   "error (sets failed, shows fallback card)"
+  ],
+  "behaviour": "Native video controls play, pause and seek. Its onError switches to the fallback card.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "div panel with Icon and audio (plain DOM elements)",
+  "variant": "preview kind audio; panel className rounded-panel bg-surface-2l dark:bg-surface-2d px-8 py-10; Icon kind.icon size 40 weight 200; audio controls autoPlay",
+  "purpose": "Audio player with a large file-type glyph above it.",
+  "text": "none (Icon name from kind.icon)",
+  "states": [
+   "playing (autoPlay)",
+   "error (sets failed, shows fallback card)"
+  ],
+  "behaviour": "Native audio controls. Its onError switches to the fallback card.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "surface",
+  "component": "embed (plain DOM element)",
+  "variant": "preview kind pdf; type application/pdf; className rounded-control h-full w-full max-w-4xl",
+  "purpose": "Inline PDF viewer.",
+  "text": "none",
+  "states": [
+   "shown"
+  ],
+  "behaviour": "Browser's built-in PDF viewing. The code attaches no onError.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "attachment-lightbox",
+  "kind": "other",
+  "component": "SelectableText",
+  "variant": "as pre; className rounded-control bg-surface-2l dark:bg-surface-2d text-content-2l dark:text-content-2d max-h-full w-full max-w-3xl overflow-auto p-5 text-[12.5px] leading-5",
+  "purpose": "Plain-text preview of a text attachment.",
+  "text": "File contents, capped at 262144 characters with a trailing \"…\".",
+  "states": [
+   "loading (\"Loading…\")",
+   "shown",
+   "failed (fallback card \"Couldn’t read this file\")"
+  ],
+  "behaviour": "Text is selectable and scrolls inside the box (overflow-auto). Clicks do not close the lightbox.",
+  "look": null,
+  "count": 1,
+  "region": "media"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "window-controls",
+  "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+  "variant": "macOS traffic light id=\"close\", enabled (inert=false); focused=true",
+  "purpose": "Closes the Settings window.",
+  "text": "No visible label; aria label 'Close'. 14x14 circle.",
+  "states": [
+   "default (red disc in screenshot)",
+   "focused=true (window focused)",
+   "hover x glyph shown in settings-search screenshot (not in source; uncertain)"
+  ],
+  "behaviour": "Click closes the window. Close logic is in WindowControls, which was not read. Destination after closing is not recorded.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar, leading edge"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "window-controls",
+  "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+  "variant": "macOS traffic light id=\"minimize\", inert (Settings built with minimizable(false))",
+  "purpose": "Shown but disabled; does nothing.",
+  "text": "No visible label; aria label 'Minimize'. 14x14 grey circle.",
+  "states": [
+   "inert=true, always (disabled)"
+  ],
+  "behaviour": "No effect.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar, leading edge"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "window-controls",
+  "component": "Light (inside MacLights, inside MacControls, inside WindowControls)",
+  "variant": "macOS traffic light id=\"fullscreen\", inert (Settings built with maximizable(false))",
+  "purpose": "Shown but disabled; does nothing.",
+  "text": "No visible label; aria label 'Full Screen'. 14x14 grey circle.",
+  "states": [
+   "inert=true, always (disabled)"
+  ],
+  "behaviour": "No effect.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar, leading edge"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "title-bar",
+  "component": "SettingsTitleBar",
+  "variant": "Draggable title strip with leading window controls and optional trailing discard button",
+  "purpose": "Carries the window title and traffic lights, and lets the user drag the window.",
+  "text": "Settings",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Dragging the bar moves the window (data-tauri-drag-region).",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "surface",
+  "component": "? (nav element)",
+  "variant": "Sidebar background: w-44, shrink-0, border-r, bg-surface-1l dark:bg-surface-1d",
+  "purpose": "Background of the section nav column, with a right-hand edge.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Not interactive.",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "other",
+  "component": "div role=\"tablist\" (navRef)",
+  "variant": "aria-orientation=\"vertical\", aria-label=\"Settings sections\", flex column with gap-space-1",
+  "purpose": "Container of the section tabs.",
+  "text": "aria-label \"Settings sections\" (not visible)",
+  "states": [
+   "n/a"
+  ],
+  "behaviour": "Keyboard: ArrowDown and ArrowUp move to the next or previous pane with wrap-around, selecting it and focusing its tab (SettingsWindow.tsx:186-196, onKeyDown at :265).",
+  "look": null,
+  "count": 1,
+  "region": "Sidebar nav, below search field"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "surface",
+  "component": "Surface (className \"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\")",
+  "variant": "Card surface inside each SettingsGroup; hairline dividers between rows",
+  "purpose": "Background card holding each group's rows.",
+  "text": "none",
+  "states": [
+   "idle"
+  ],
+  "behaviour": "Container only.",
+  "look": null,
+  "count": 2,
+  "region": "Content panel, under each group header"
+ },
+ {
+  "screen": "settings-general",
+  "kind": "surface",
+  "component": "? (div role=\"tabpanel\" id=\"settings-panel-general\")",
+  "variant": "Content tabpanel background: bg-surface-2l dark:bg-surface-2d, px-space-8 py-space-7, overflow-y-auto",
+  "purpose": "Background of the General pane content, which scrolls when taller than the window.",
+  "text": "none",
+  "states": [
+   "default (light)",
+   "dark variant recorded in settings-dark"
+  ],
+  "behaviour": "Scrolls vertically when content overflows. Not otherwise interactive.",
+  "look": null,
+  "count": 1,
+  "region": "Content panel"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "surface",
+  "component": "SettingsWindow",
+  "variant": "Settings window frame, 1180x760 at 0,0",
+  "purpose": "Outer frame of the Settings window that hosts this pane.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "None. Container only.",
+  "look": null,
+  "count": 1,
+  "region": "Window"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "title-bar",
+  "component": "SettingsTitleBar",
+  "variant": "Title bar of the Settings window, 1180x46. trailing=false",
+  "purpose": "Title bar of the Settings window that contains the window lights and the title.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "Drags the window (via child TitleBar draggable=true).",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "title-bar",
+  "component": "TitleBar",
+  "variant": "draggable=true, titleAs=\"h1\", trailing=false, controlsSide=\"leading\"",
+  "purpose": "Title bar content that places the window controls on the leading side and the title after them.",
+  "text": "Settings",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "Dragging moves the window. Double-click behaviour is not in the tree.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "window-controls",
+  "component": "WindowControls > MacControls > MacLights",
+  "variant": "disabled=[2], focused=true, act={…}",
+  "purpose": "macOS traffic lights of the Settings window. A group of three lights.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "Per-light behaviour is listed under the Light entries.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"close\", focused=true, inert=false, onClick=ƒ",
+  "purpose": "Red close light. It is the only active light and closes the Settings window.",
+  "text": "Close (aria label)",
+  "states": [
+   "default",
+   "scrolled",
+   "recording",
+   "hover and pressed not recorded"
+  ],
+  "behaviour": "Click calls its onClick handler. The handler target is not in the tree. Destination not shown in the recordings.",
+  "look": "14x14 circle at [18,15]; red fill as seen in shot.png; glyph colour oklch(0.26 0.012 262) per elements.json; font 400 14px/21px (not visible).",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"minimize\", focused=true, inert=true",
+  "purpose": "Yellow minimize light. It is inert and disabled in the recorded state.",
+  "text": "Minimize (aria label)",
+  "states": [
+   "default",
+   "scrolled",
+   "recording",
+   "disabled"
+  ],
+  "behaviour": "Inert. No action in the tree.",
+  "look": "14x14 circle at [39,15]; grey in shot.png.",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "window-controls",
+  "component": "Light",
+  "variant": "id=\"fullscreen\", focused=true, inert=true",
+  "purpose": "Green full-screen light. It is inert and disabled in the recorded state.",
+  "text": "Full Screen (aria label)",
+  "states": [
+   "default",
+   "scrolled",
+   "recording",
+   "disabled"
+  ],
+  "behaviour": "Inert. No action in the tree.",
+  "look": "14x14 circle at [60,15]; grey in shot.png.",
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Sidebar column background",
+  "purpose": "Holds the search field and the section navigation.",
+  "text": "none",
+  "states": [
+   "static"
+  ],
+  "behaviour": "None.",
+  "look": "Box approx [0,46,153,714], estimated from shot.png; light grey fill and 1px right border (colours not in elements.json).",
+  "count": 1,
+  "region": "Sidebar"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Content pane (tabpanel)",
+  "purpose": "Scrollable container for the intro line and the shortcut groups.",
+  "text": "none",
+  "states": [
+   "top (default)",
+   "scrolled to bottom (scrolled state)",
+   "recording (New task row in edit mode)"
+  ],
+  "behaviour": "Scroll (wheel or trackpad) moves the list. The scrolled state is offset 676px to the end of the list (inferred from the last row sitting just above the window bottom).",
+  "look": "Box [154,46,1026,715]; background oklch(0.995 0.001 255); role tabpanel. No scrollbar visible in shot.png.",
+  "count": 1,
+  "region": "Scope groups (content)"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "surface",
+  "component": "Surface2",
+  "variant": "className=\"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\" (a card holding the rows of one group)",
+  "purpose": "Card that holds the SettingRow items of one scope group.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "None.",
+  "look": "Global card [172,117,991,73]; Main window card about [172,230,991,1117] (estimated); Capture bar card [172,1387,991,37] (top state). Rounded corners and 1px border visible in shot.png (radius not measured). Card fill not measured.",
+  "count": 3,
+  "region": "Scope groups (content)"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "divider",
+  "component": "CSS divide-y on Surface2 (not a separate node)",
+  "variant": "1px row hairline inside a Surface2 card (divide-y, divide-edge-1l / dark:divide-edge-1d). Global 1, Main window 30, Capture bar 0.",
+  "purpose": "Hairline between sibling rows inside each card.",
+  "text": "",
+  "states": [
+   "default",
+   "scrolled",
+   "recording"
+  ],
+  "behaviour": "None.",
+  "look": "1px; oklch edge colour not measured.",
+  "count": 31,
+  "region": "Scope groups (content)"
+ },
+ {
+  "screen": "settings-shortcuts",
+  "kind": "divider",
+  "component": "?",
+  "variant": "Section rule (hairline after each section label)",
+  "purpose": "Visually separates each section title from its content.",
+  "text": "none",
+  "states": [
+   "static"
+  ],
+  "behaviour": "None.",
+  "look": "Hairline in muted/edge colour (not measured), from the end of each section label to about x 1163 (estimated).",
+  "count": 3,
+  "region": "Scope groups (content)"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "title-bar",
+  "component": "TitleBar",
+  "variant": "draggable=true, titleAs=\"h1\", controlsSide=\"leading\", trailing=false",
+  "purpose": "Window title bar for the Settings window, showing the window controls and the pane title.",
+  "text": "Settings",
+  "states": [
+   "focused (window focused, from MacLights focused=true)"
+  ],
+  "behaviour": "Dragging the bar moves the window (data-tauri-drag-region on the title label). No click actions.",
+  "look": null,
+  "count": 1,
+  "region": "Settings title bar"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "other",
+  "component": "WindowControls / MacControls / MacLights",
+  "variant": "disabled=[2], focused=true, act={…}; macOS traffic-light cluster 84x45",
+  "purpose": "Standard macOS window controls for the Settings window.",
+  "text": "",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "Hosts the three lights listed below. Only the close light is active.",
+  "look": null,
+  "count": 1,
+  "region": "Settings title bar"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "surface",
+  "component": "Surface2",
+  "variant": "className=\"divide-edge-1l dark:divide-edge-1d divide-y overflow-hidden\"",
+  "purpose": "Card that holds the two setting rows, separated by dividers.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "Container only.",
+  "look": "Card about x 172 to 1163, y 81 to 248 (B, estimated; light border, rounded corners, exact radius not in json). A box 172,81 991x169.",
+  "count": 1,
+  "region": "Screenshots content group"
+ },
+ {
+  "screen": "settings-capture",
+  "kind": "surface",
+  "component": "?",
+  "variant": "Tab panel, near-white content background",
+  "purpose": "Holds the Capture pane content.",
+  "text": "(container, no text of its own)",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None (static container).",
+  "look": "role tabpanel, box [154,46,1026,715], bg oklch(0.995 0.001 255), font 400 14px/21px (B).",
+  "count": 1,
+  "region": "Content pane (tabpanel)"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "surface",
+  "component": "SettingsWindow",
+  "variant": "Settings window frame, 1180x760 at 0,0",
+  "purpose": "Root container for the Settings window.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None; a container.",
+  "look": null,
+  "count": 1,
+  "region": "Settings window frame"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "title-bar",
+  "component": "SettingsTitleBar",
+  "variant": "trailing=false, 1180x46, bottom hairline",
+  "purpose": "Title bar strip of the Settings window.",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None directly; contains TitleBar.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "title-bar",
+  "component": "TitleBar",
+  "variant": "draggable=true, titleAs=\"h1\", controlsSide=\"leading\", trailing=false, 1180x46",
+  "purpose": "Shows the window title and the window controls.",
+  "text": "Settings",
+  "states": [
+   "default",
+   "window focused (via MacLights focused=true)"
+  ],
+  "behaviour": "Dragging the bar moves the window (data-tauri-drag-region on the title label).",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "window-controls",
+  "component": "WindowControls",
+  "variant": "disabled=[2], 84x45 at 0,0",
+  "purpose": "Groups the macOS traffic lights.",
+  "text": "",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "None directly.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "window-controls",
+  "component": "MacControls > MacLights",
+  "variant": "focused=true, act={…}",
+  "purpose": "Renders the three macOS traffic-light buttons.",
+  "text": "",
+  "states": [
+   "focused"
+  ],
+  "behaviour": "None directly; each Light handles its own click.",
+  "look": null,
+  "count": 1,
+  "region": "Title bar"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "divider",
+  "component": "?",
+  "variant": "hairline rule beside section headers",
+  "purpose": "Visually extends each section header across the pane.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": null,
+  "count": 2,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "surface",
+  "component": "Surface2",
+  "variant": "className divide-y, overflow-hidden; Application 991x134; Reset 991x88",
+  "purpose": "Card that holds the rows of each group (Application: version and data folder rows; Reset: restore defaults row and reset button).",
+  "text": "",
+  "states": [
+   "default"
+  ],
+  "behaviour": "None.",
+  "look": null,
+  "count": 2,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "divider",
+  "component": "?",
+  "variant": "row separator inside the Application card",
+  "purpose": "Separates the Taskscape row from the Data folder row.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "other",
+  "component": "ResetEverything",
+  "variant": "idle (confirming=false), 972x28 at 181,307",
+  "purpose": "Two-step reset: the first click asks for confirmation in place (the Settings window has no dialog layer).",
+  "text": "Idle label \"Reset all settings…\"",
+  "states": [
+   "idle",
+   "confirming (after first click; from source only)"
+  ],
+  "behaviour": "Click on idle shows the confirming state. Confirming state is shown from source only.",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "settings-about",
+  "kind": "surface",
+  "component": "?",
+  "variant": "tabpanel background, role=\"tabpanel\", box [154,46,1026,715], bg oklch(0.995 0.001 255)",
+  "purpose": "Content pane background behind the grouped cards.",
+  "text": "none",
+  "states": [
+   "default"
+  ],
+  "behaviour": "none",
+  "look": null,
+  "count": 1,
+  "region": "Content area"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "surface",
+  "component": "App (root div)",
+  "variant": "Frameless card, flex column, w-screen, rounded-panel, 1px border, light (bg-surface-2l, text-content-1l, border-edge-2l) and dark (dark:bg-surface-2d etc.) classes, shrink-0, overflow-hidden, data-tauri-drag-region, onKeyDown",
+  "purpose": "Root container of the quick-add bar. It also receives the keyboard handler for Enter, Escape and Tab for the whole bar.",
+  "text": "none",
+  "states": [
+   "default (tree state:capture-bar 760x116)",
+   "notes open (tree state:capture-bar-notes 760x185)",
+   "dark appearance via dark: classes (tree state:capture-bar-dark has identical boxes)"
+  ],
+  "behaviour": "Drag: data-tauri-drag-region moves the window. Keys: handled by onKeyDown (see the key-action entries).",
+  "look": "Tree 760x116 collapsed, 760x185 with notes open (measured in tree). Corner radius and background approximate from shot.png, not measured. Light surface near white with a 1px light grey border. Dark surface is a dark grey.",
+  "count": 1,
+  "region": "Card (root frame)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "surface",
+  "component": "TitleRow (div)",
+  "variant": "Drag-region row, h-10 shrink-0, items-center, px-3 py-2",
+  "purpose": "Container for the title field and the conditional Clear button.",
+  "text": "none",
+  "states": [
+   "default",
+   "with draft (Clear button shown)"
+  ],
+  "behaviour": "Drag the bar by this row (data-tauri-drag-region).",
+  "look": "Tree @1,1 758x40; h-10 (40px), px-3 py-2, items centred.",
+  "count": 1,
+  "region": "Title row"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "divider",
+  "component": "Divider (App)",
+  "variant": "className shrink-0",
+  "purpose": "Separates the title row from the notes section.",
+  "text": "none",
+  "states": [
+   "always shown"
+  ],
+  "behaviour": "Display only.",
+  "look": "Tree @1,41 758x1. 1px horizontal rule, positions estimated from shot.png (B), not measured.",
+  "count": 1,
+  "region": "Divider (between title and notes)"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "divider",
+  "component": "Divider (NotesSection)",
+  "variant": "default",
+  "purpose": "Bottom edge of the notes section, below the Tab hint or below the editor toolbar.",
+  "text": "none",
+  "states": [
+   "collapsed: state:capture-bar line 6 @1,74 758x1",
+   "open: state:capture-bar-notes line 27 @1,143 758x1"
+  ],
+  "behaviour": "Display only.",
+  "look": "Tree @1,74 758x1 collapsed and @1,143 758x1 open. 1px horizontal rules; positions from the tree, rule positions from shot.png are estimates.",
+  "count": 1,
+  "region": "Notes section"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "divider",
+  "component": "? (drawn, not in code read)",
+  "variant": "Vertical toolbar separator, drawn",
+  "purpose": "Groups the toolbar buttons in the formatting toolbar.",
+  "text": "none",
+  "states": [
+   "notes open only"
+  ],
+  "behaviour": "None.",
+  "look": "Positions estimated from shot.png, not measured: one between Strikethrough and Bulleted list at about x125; one before the counter at about x701. The gap may come from the common-ui toolbar; source not read.",
+  "count": 2,
+  "region": "Formatting toolbar"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "surface",
+  "component": "Footer (div)",
+  "variant": "Drag-region row, flex justify-between, gap-2, px-3 py-2, shrink-0",
+  "purpose": "Container for the target button and the screenshot control.",
+  "text": "none",
+  "states": [
+   "default (state:capture-bar @1,75 758x40)",
+   "notes open (state:capture-bar-notes @1,144 758x40)"
+  ],
+  "behaviour": "Drag the bar by this row.",
+  "look": "Tree @1,75 758x40 collapsed and @1,144 758x40 notes open (measured in tree). B region bounds y74-116 and y143-185 are estimates.",
+  "count": 1,
+  "region": "Footer"
+ },
+ {
+  "screen": "capture-bar",
+  "kind": "other",
+  "component": "Spinner",
+  "variant": "size 13",
+  "purpose": "Busy indicator while a screenshot is being captured.",
+  "text": "text \"Capturing …\" next to it",
+  "states": [
+   "capturing only (no capturing state tree was recorded)"
+  ],
+  "behaviour": "Display only.",
+  "look": "Size 13. Not measured.",
+  "count": 1,
+  "region": "Footer, right (inside screenshot button)"
+ }
+]

@@ -1,0 +1,709 @@
+{
+ "id": "capture-bar",
+ "title": "Capture bar",
+ "tier": "ordinary",
+ "states": [
+  "capture-bar",
+  "capture-bar-typed",
+  "capture-bar-notes",
+  "capture-bar-dark"
+ ],
+ "purpose": "Desktop-only frameless quick-add window that captures a task title, optional rich-text notes and full-screen screenshots into the target project/list, without opening the main window. Its footer target button opens the main Taskscape window when clicked.",
+ "regions": [
+  {
+   "name": "Card (root frame)",
+   "contents": "App.tsx:58-63 div: rounded panel, flex column, w-screen, shrink-0, overflow-hidden, 1px border, light/dark surface and text classes, data-tauri-drag-region, onKeyDown. Tree state:capture-bar App @0,0 760x116 (state:capture-bar-notes 760x185). Hosts the title row, the top Divider, the notes section and the footer. Corner radius and background are approximate from shot.png (B), not measured."
+  },
+  {
+   "name": "Title row",
+   "contents": "TitleRow.tsx:29-63. Drag region, h-10 (40px), px-3 py-2, items centred. Tree @1,1 758x40 (B region y 0-42). Holds the title TextInput and the conditional Clear ToolbarButton at the right edge."
+  },
+  {
+   "name": "Divider (between title and notes)",
+   "contents": "App.tsx:73, className shrink-0. Tree @1,41 758x1. Present in every state."
+  },
+  {
+   "name": "Notes section",
+   "contents": "NotesSection.tsx:24-59. Either the collapsed Tab-hint button (tree @1,42 758x33 in state:capture-bar, hint text box x1 y42 w164 h32 per elements.json) or the open RichTextEditor with its toolbar (tree @1,42 758x101 in state:capture-bar-notes). Ends with a Divider (collapsed at y74, open at y143)."
+  },
+  {
+   "name": "Formatting toolbar",
+   "contents": "Open notes only, inside the RichTextEditor (toolbarClassName border-t, top edge about y106). Bold, Italic, Underline, Strikethrough, Bulleted list and Numbered list ToolButtons at y113 (24x24 each), two drawn vertical separators (about x125 and x701, estimated), and the '0 / 2000' character counter at the right (box x710 y117 w41 h16)."
+  },
+  {
+   "name": "Footer",
+   "contents": "Footer.tsx:38-111. Drag region, flex row justify-between, gap-2, px-3 py-2, shrink-0. Tree @1,75 758x40 in state:capture-bar and @1,144 758x40 in state:capture-bar-notes (B estimated y74-116 and y143-185). Left: target button (open_in_new icon, project / list label or Taskscape). Right: screenshot ToolbarButton with its screenshot_monitor icon and HotkeyHint."
+  }
+ ],
+ "widgets": [
+  {
+   "kind": "surface",
+   "component": "App (root div)",
+   "variant": "Frameless card, flex column, w-screen, rounded-panel, 1px border, light (bg-surface-2l, text-content-1l, border-edge-2l) and dark (dark:bg-surface-2d etc.) classes, shrink-0, overflow-hidden, data-tauri-drag-region, onKeyDown",
+   "purpose": "Root container of the quick-add bar. It also receives the keyboard handler for Enter, Escape and Tab for the whole bar.",
+   "text": "none",
+   "states": [
+    "default (tree state:capture-bar 760x116)",
+    "notes open (tree state:capture-bar-notes 760x185)",
+    "dark appearance via dark: classes (tree state:capture-bar-dark has identical boxes)"
+   ],
+   "behaviour": "Drag: data-tauri-drag-region moves the window. Keys: handled by onKeyDown (see the key-action entries).",
+   "count": 1,
+   "region": "Card (root frame)",
+   "sources": [
+    "App.tsx:58-63",
+    "App.tsx:41-52",
+    "state:capture-bar App @0,0 760x116",
+    "state:capture-bar-notes",
+    "state:capture-bar-dark",
+    "shot.png (B: corner radius and background, approximate)"
+   ],
+   "look": "Tree 760x116 collapsed, 760x185 with notes open (measured in tree). Corner radius and background approximate from shot.png, not measured. Light surface near white with a 1px light grey border. Dark surface is a dark grey."
+  },
+  {
+   "kind": "surface",
+   "component": "TitleRow (div)",
+   "variant": "Drag-region row, h-10 shrink-0, items-center, px-3 py-2",
+   "purpose": "Container for the title field and the conditional Clear button.",
+   "text": "none",
+   "states": [
+    "default",
+    "with draft (Clear button shown)"
+   ],
+   "behaviour": "Drag the bar by this row (data-tauri-drag-region).",
+   "count": 1,
+   "region": "Title row",
+   "sources": [
+    "TitleRow.tsx:29-33",
+    "state:capture-bar TitleRow @1,1 758x40"
+   ],
+   "look": "Tree @1,1 758x40; h-10 (40px), px-3 py-2, items centred."
+  },
+  {
+   "kind": "text-field",
+   "component": "TextInput (tree name TextInput2)",
+   "variant": "bare, autoFocus, className text-sm, ref=titleRef; single-line, no own border, 14px text",
+   "purpose": "The task title input. Focused automatically when the bar appears (autoFocus).",
+   "text": "placeholder \"Capture a task ...\" (code; the screenshot shows \"Capture a task …\"); value bound to draft.title (empty in state:capture-bar, \"Call the plumber\" in state:capture-bar-typed)",
+   "states": [
+    "empty (placeholder shown) state:capture-bar @13,11 734x20",
+    "typed (value shown) state:capture-bar-typed @13,11 629x20 (width shrinks to make room for Clear)",
+    "focused (autoFocus)",
+    "empty with placeholder in state:capture-bar-dark",
+    "focus and error not captured"
+   ],
+   "behaviour": "Typing calls draft.setTitle (TitleRow.tsx:39). Enter (no Shift) saves the draft (App.tsx:42-44). Escape hides the bar (App.tsx:45-47). Tab opens notes when they are closed (App.tsx:48-50). No recording shows Enter, so the submit result is unverified from B.",
+   "count": 1,
+   "region": "Title row",
+   "sources": [
+    "TitleRow.tsx:34-42",
+    "App.tsx:65-67",
+    "state:capture-bar line 3",
+    "state:capture-bar-typed line 3",
+    "state:capture-bar (B)",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-dark (B)"
+   ],
+   "look": "Box x13 y11 w734 h20 when empty, w629 when Clear is shown. Font 400 14px/20px. Text colour oklch(0.26 0.012 262) light, oklch(0.94 0.004 260) dark. Placeholder colour not measured."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size xs, variant well, icon delete_sweep, iconSize 16, tabIndex -1, className shrink-0 gap-0 text-[11px] with text-content-2l/2d and hover:text-content-1l/1d",
+   "purpose": "Clears the current draft (title, notes, screenshots).",
+   "text": "Visible label \"Clear\" (inside <p className=\"px-1\">). Title tooltip \"Clear the draft (⌘⇧⌫)\" built from formatAccel(clearAccel) when clearAccel is set, else \"Clear the draft\".",
+   "states": [
+    "hidden when hasDraft is false (state:capture-bar, state:capture-bar-dark)",
+    "shown when hasDraft is true (state:capture-bar-typed, state:capture-bar-notes)",
+    "hover: text colour goes from content-2 to content-1"
+   ],
+   "behaviour": "Click calls draft.clearDraft (App.tsx:70). The clear_draft hotkey does the same thing (App.tsx:35-37). Whether it also clears notes is not evidenced in the recordings (B), but the code clears the whole draft.",
+   "count": 1,
+   "region": "Title row, right edge",
+   "sources": [
+    "TitleRow.tsx:44-62",
+    "TitleRow.tsx:45-61",
+    "App.tsx:35",
+    "App.tsx:37",
+    "App.tsx:69-70",
+    "state:capture-bar-typed lines 4-9",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Box x642 y9 w105 h25, radius 8px. Label 'Clear' p x666 y13 w37 h17, font 400 11px/16.5px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name delete_sweep, size 16",
+   "purpose": "Glyph inside the Clear button.",
+   "text": "icon name \"delete_sweep\"",
+   "states": [
+    "shown with Clear button only"
+   ],
+   "behaviour": "Part of the Clear button; clicking it clears the draft.",
+   "count": 1,
+   "region": "Title row, right edge (inside Clear)",
+   "sources": [
+    "TitleRow.tsx:48",
+    "state:capture-bar-typed line 5 @650,13 16x16"
+   ],
+   "look": "Span x650 y13 16x16, font 400 16px/16px."
+  },
+  {
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "variant": "hotkey parsed from clearAccel \"Cmd+Shift+Backspace\"; icons size 12, weight 300",
+   "purpose": "Shows the Clear shortcut inside the Clear button.",
+   "text": "icons keyboard_command_key, shift, backspace",
+   "states": [
+    "shown with Clear button only"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Title row, right edge (inside Clear)",
+   "sources": [
+    "TitleRow.tsx:60",
+    "state:capture-bar-typed lines 6-9 @703,15 36x12",
+    "state:capture-bar-typed (B)"
+   ],
+   "look": "Glyphs at x703, x715, x727, y15, each 12x12. Font 400 12px/12px. Colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (App)",
+   "variant": "className shrink-0",
+   "purpose": "Separates the title row from the notes section.",
+   "text": "none",
+   "states": [
+    "always shown"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Divider (between title and notes)",
+   "sources": [
+    "App.tsx:73",
+    "state:capture-bar line 4 @1,41 758x1",
+    "shot.png (B: rule near y42)"
+   ],
+   "look": "Tree @1,41 758x1. 1px horizontal rule, positions estimated from shot.png (B), not measured."
+  },
+  {
+   "kind": "divider",
+   "component": "Divider (NotesSection)",
+   "variant": "default",
+   "purpose": "Bottom edge of the notes section, below the Tab hint or below the editor toolbar.",
+   "text": "none",
+   "states": [
+    "collapsed: state:capture-bar line 6 @1,74 758x1",
+    "open: state:capture-bar-notes line 27 @1,143 758x1"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Notes section",
+   "sources": [
+    "NotesSection.tsx:46",
+    "NotesSection.tsx:58",
+    "state:capture-bar line 6",
+    "state:capture-bar-notes line 27",
+    "shot.png (B: rules near y74 collapsed, y143 open)"
+   ],
+   "look": "Tree @1,74 758x1 collapsed and @1,143 758x1 open. 1px horizontal rules; positions from the tree, rule positions from shot.png are estimates."
+  },
+  {
+   "kind": "divider",
+   "component": "? (drawn, not in code read)",
+   "variant": "Vertical toolbar separator, drawn",
+   "purpose": "Groups the toolbar buttons in the formatting toolbar.",
+   "text": "none",
+   "states": [
+    "notes open only"
+   ],
+   "behaviour": "None.",
+   "count": 2,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes (shot.png only)"
+   ],
+   "look": "Positions estimated from shot.png, not measured: one between Strikethrough and Bulleted list at about x125; one before the counter at about x701. The gap may come from the common-ui toolbar; source not read."
+  },
+  {
+   "kind": "button",
+   "component": "button (plain element, not a common-ui component)",
+   "variant": "Text-only hint button, text-xs, px-3 py-2, text-content-3l / text-content-3d",
+   "purpose": "Collapsed notes affordance; opens the notes editor.",
+   "text": "\"Press Tab to add a note\"",
+   "states": [
+    "default (state:capture-bar NotesSection @1,42 758x33)",
+    "shown only when notes are closed",
+    "replaced by the notes editor when open",
+    "no hover or focus style set in code"
+   ],
+   "behaviour": "Click calls draft.setNotesOpen(true) via onOpen, which opens the RichTextEditor. Tab from the title field does the same.",
+   "count": 1,
+   "region": "Notes section (collapsed)",
+   "sources": [
+    "NotesSection.tsx:50-57",
+    "App.tsx:78",
+    "App.tsx:48-50",
+    "state:capture-bar line 5",
+    "state:capture-bar NotesSection @1,42 758x33",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-dark (B)",
+    "elements.json (B hint text box)"
+   ],
+   "look": "Hint text box x1 y42 w164 h32, text starts x13 (elements.json). Notes section tree box @1,42 758x33. Font 400 12px/16px. Colour oklch(0.62 0.013 264) light, oklch(0.57 0.011 262) dark."
+  },
+  {
+   "kind": "rich-text-editor",
+   "component": "RichTextEditor (tree name RichTextEditor2)",
+   "variant": "autoFocus, attachments [] (tree attachments=[0]), placeholder \"Notes ...\", minHeightClass min-h-16, maxHeightClass max-h-40, floatingToolbar false, wrapperClassName \"\", submitOnModEnter, toolbarClassName \"border-edge-1l dark:border-edge-1d gap-1 border-t px-2 py-1.5\"",
+   "purpose": "Notes editor for the draft. Shown only when notes are open.",
+   "text": "placeholder \"Notes ...\"",
+   "states": [
+    "open (state:capture-bar-notes @1,42 758x101)",
+    "closed (not rendered; collapsed button shown instead)",
+    "empty (placeholder shown; blurring while empty collapses it)"
+   ],
+   "behaviour": "Typing edits notes. Cmd+Enter submits (submitOnModEnter, onSubmit=draft.save). Escape hides the bar (onEscape=api.hideMini). Blur while empty collapses back to the Tab hint (onBlur). Toolbar clicks preventDefault their blur so they don't collapse.",
+   "count": 1,
+   "region": "Notes section (open)",
+   "sources": [
+    "NotesSection.tsx:27-45",
+    "NotesSection.tsx:42-44",
+    "NotesSection.tsx:24-48",
+    "App.tsx:76-80",
+    "state:capture-bar-notes line 12"
+   ],
+   "look": "Tree @1,42 758x101 with notes open. Toolbar top edge (border-t) at about y106 (B estimate from shot.png)."
+  },
+  {
+   "kind": "rich-text-editor",
+   "component": "PureEditorContent (inside RichTextEditor, common-ui, source not read)",
+   "variant": "editable content area, 758x64; multi-line rich notes area (B)",
+   "purpose": "The editable text region of the notes editor, where the note is written.",
+   "text": "Placeholder \"Notes ...\" comes from the RichTextEditor placeholder prop",
+   "states": [
+    "empty (placeholder)",
+    "with content",
+    "typed content not captured in B"
+   ],
+   "behaviour": "Typing edits the rich text. Keyboard shortcuts as for RichTextEditor: ⌘B, ⌘I, ⌘U per toolbar labels. The character counter reflects length (inferred, B).",
+   "count": 1,
+   "region": "Notes section (open)",
+   "sources": [
+    "state:capture-bar-notes line 13 @1,42 758x64",
+    "state:capture-bar-notes (B rich-text-editor entry, Box x1 y42 w758 h64)"
+   ],
+   "look": "Box x1 y42 w758 h64. Font 400 13.5px/20px. Text colour oklch(0.26 0.012 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon format_bold, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles bold in the notes editor.",
+   "text": "title \"Bold  ⌘B\" (two spaces before the shortcut)",
+   "states": [
+    "inactive (active=false)",
+    "active possible (active prop)",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (applies bold). Its blur is prevented so the notes stay open.",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 15-16 @9,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x9 y113 24x24, radius 5px. Glyph box x13 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon format_italic, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles italic in the notes editor.",
+   "text": "title \"Italic  ⌘I\" (two spaces before the shortcut)",
+   "states": [
+    "inactive (active=false)",
+    "active possible",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (applies italic).",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 17-18 @37,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x37 y113 24x24, radius 5px. Glyph box x41 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon format_underlined, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles underline in the notes editor.",
+   "text": "title \"Underline  ⌘U\" (two spaces before the shortcut)",
+   "states": [
+    "inactive (active=false)",
+    "active possible",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (applies underline).",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 19-20 @65,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x65 y113 24x24, radius 5px. Glyph box x69 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon strikethrough_s, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles strikethrough in the notes editor.",
+   "text": "title \"Strikethrough\"",
+   "states": [
+    "inactive (active=false)",
+    "active possible",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (applies strikethrough).",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 21-22 @93,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x93 y113 24x24, radius 5px. Glyph box x97 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon format_list_bulleted, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles a bulleted list in the notes editor.",
+   "text": "title \"Bulleted list\"",
+   "states": [
+    "inactive (active=false)",
+    "active possible",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (toggles bullet list).",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 23-24 @134,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x134 y113 24x24, radius 5px. Glyph box x138 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolButton (common-ui, tree name; source not read)",
+   "variant": "icon format_list_numbered, 24x24, icon size 16 weight 400, active=false; 5px radius, 16px glyph",
+   "purpose": "Toggles a numbered list in the notes editor.",
+   "text": "title \"Numbered list\"",
+   "states": [
+    "inactive (active=false)",
+    "active possible",
+    "no hover state captured"
+   ],
+   "behaviour": "Click runs onRun (toggles numbered list).",
+   "count": 1,
+   "region": "Formatting toolbar",
+   "sources": [
+    "state:capture-bar-notes lines 25-26 @162,113 24x24",
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Button x162 y113 24x24, radius 5px. Glyph box x166 y117 16x16, font 400 16px/16px. Colour oklch(0.46 0.013 262)."
+  },
+  {
+   "kind": "label",
+   "component": "? (plain text in formatting toolbar, not in code read)",
+   "variant": "Character counter, plain text",
+   "purpose": "Shows note length against the 2000 limit.",
+   "text": "\"0 / 2000\" (elements.json; the screenshot shows the tighter \"0/2000\")",
+   "states": [
+    "0 / 2000 with empty note (state:capture-bar-notes)"
+   ],
+   "behaviour": "Display only (inferred from it being plain text).",
+   "count": 1,
+   "region": "Formatting toolbar, right",
+   "sources": [
+    "state:capture-bar-notes (B)"
+   ],
+   "look": "Box x710 y117 w41 h16. Font 400 10.5px/15.75px. Colour oklch(0.62 0.013 264)."
+  },
+  {
+   "kind": "surface",
+   "component": "Footer (div)",
+   "variant": "Drag-region row, flex justify-between, gap-2, px-3 py-2, shrink-0",
+   "purpose": "Container for the target button and the screenshot control.",
+   "text": "none",
+   "states": [
+    "default (state:capture-bar @1,75 758x40)",
+    "notes open (state:capture-bar-notes @1,144 758x40)"
+   ],
+   "behaviour": "Drag the bar by this row.",
+   "count": 1,
+   "region": "Footer",
+   "sources": [
+    "Footer.tsx:38-42",
+    "state:capture-bar line 7"
+   ],
+   "look": "Tree @1,75 758x40 collapsed and @1,144 758x40 notes open (measured in tree). B region bounds y74-116 and y143-185 are estimates."
+  },
+  {
+   "kind": "button",
+   "component": "button (plain element in Footer)",
+   "variant": "tabIndex -1, flex, min-w-0, gap-1.5, text-xs, text-content-2l/2d with hover:text-content-1l/1d, truncate label",
+   "purpose": "Shows the capture target (project / list) and opens the main Taskscape window.",
+   "text": "title tooltip \"Open the main Taskscape window\". Label when target is set: project + span \"/\" (px-1 opacity-60) + list, shown as \"Home / Errands\" in the screenshot. When target is null: \"Taskscape\". Exact target values are not in the tree (target={…}).",
+   "states": [
+    "target set (project/list text)",
+    "no target (\"Taskscape\")",
+    "hover: text colour goes from content-2 to content-1",
+    "dark colour variant (state:capture-bar-dark)",
+    "hover not captured in B"
+   ],
+   "behaviour": "Click calls api.openMain() and opens the main window.",
+   "count": 1,
+   "region": "Footer, left",
+   "sources": [
+    "Footer.tsx:43-65",
+    "Footer.tsx:46-47",
+    "Footer.tsx:51-63",
+    "state:capture-bar line 7 target={…}",
+    "state:capture-bar (B link entry)",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-notes (B)",
+    "state:capture-bar-dark (B)"
+   ],
+   "look": "Button x13 y87 w114 h16. Home x33 y88 w47 h14; '/' x68 y88 w12 h14; Errands x33 y87 w94 h16 (the Home and Errands boxes overlap in x in the recording). Font 400 12px/16px. Colour oklch(0.46 0.013 262) light, oklch(0.74 0.008 260) dark. B notes the footer moves to y156 when notes open, which conflicts with its own y143 region bound."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon",
+   "variant": "name open_in_new, size 14",
+   "purpose": "Glyph inside the target button.",
+   "text": "icon name \"open_in_new\"",
+   "states": [
+    "default"
+   ],
+   "behaviour": "Part of the target button.",
+   "count": 1,
+   "region": "Footer, left (inside target button)",
+   "sources": [
+    "Footer.tsx:49",
+    "state:capture-bar line 8 @13,88 14x14",
+    "state:capture-bar (B)"
+   ],
+   "look": "Icon x13 y88 14x14, font 400 14px/14px."
+  },
+  {
+   "kind": "toolbar-button",
+   "component": "ToolbarButton",
+   "variant": "size xs, variant well, iconSize 15, tabIndex -1, className shrink-0 disabled:pointer-events-auto disabled:opacity-100 plus a text colour class",
+   "purpose": "Attaches a full-screen screenshot to the draft. Shows the count of attached shots.",
+   "text": "Idle, count 0: label \"Screenshot\", title \"Attach a full-screen screenshot (⌘⇧↩)\". Idle, count N: label \"N shot\" or \"N shots\", title \"N screenshot(s) attached — add another (⌘⇧↩)\". Capturing: label \"Capturing …\", title \"Capturing screenshot …\". Error: label \"Capture failed\", title is the error message.",
+   "states": [
+    "idle, count 0 (state:capture-bar @601,83 146x24, filled=false, text-content-2)",
+    "idle with screenshots (filled=true, accent colour)",
+    "capturing (disabled=true, Spinner shown, icon undefined)",
+    "error (red text, icon 'error')",
+    "hover: text colour to content-1 (code)",
+    "default in all four recordings (B)"
+   ],
+   "behaviour": "Click calls draft.addScreenshot (App.tsx:89). Disabled while capturing; the disabled state keeps its contrast and tooltip. Whether it also saves the task is not captured in B.",
+   "count": 1,
+   "region": "Footer, right",
+   "sources": [
+    "Footer.tsx:68-108",
+    "Footer.tsx:71-91",
+    "Footer.tsx:93-107",
+    "App.tsx:83-90",
+    "state:capture-bar line 9 @601,83 146x24",
+    "state:capture-bar (B button entry)",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-notes (B)",
+    "state:capture-bar-dark (B)"
+   ],
+   "look": "Box x601 y83 w146 h24, radius 8px (footer at y152 when notes open, per B). Label 'Screenshot' x630 y87 w67 h16, font 400 12px/16px. Colour oklch(0.46 0.013 262) light, oklch(0.74 0.008 260) dark."
+  },
+  {
+   "kind": "icon",
+   "component": "Icon (rendered by ToolbarButton)",
+   "variant": "name screenshot_monitor, size 15, filled=false (also 'error' in error state)",
+   "purpose": "Glyph on the screenshot button in the idle and error states.",
+   "text": "icon name \"screenshot_monitor\" (idle); \"error\" (error state)",
+   "states": [
+    "idle",
+    "error",
+    "hidden while capturing (Spinner replaces it)"
+   ],
+   "behaviour": "Part of the screenshot button.",
+   "count": 1,
+   "region": "Footer, right (inside screenshot button)",
+   "sources": [
+    "Footer.tsx:71",
+    "state:capture-bar line 10 @609,88 15x15",
+    "state:capture-bar (B)"
+   ],
+   "look": "Icon x609 y88 15x15, font 400 15px/15px."
+  },
+  {
+   "kind": "other",
+   "component": "Spinner",
+   "variant": "size 13",
+   "purpose": "Busy indicator while a screenshot is being captured.",
+   "text": "text \"Capturing …\" next to it",
+   "states": [
+    "capturing only (no capturing state tree was recorded)"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Footer, right (inside screenshot button)",
+   "sources": [
+    "Footer.tsx:93-96"
+   ],
+   "look": "Size 13. Not measured."
+  },
+  {
+   "kind": "hotkey-hint",
+   "component": "HotkeyHint",
+   "variant": "hotkey parsed from screenshotAccel \"Cmd+Shift+Enter\"; icons size 12, weight 300",
+   "purpose": "Shows the screenshot shortcut inside the screenshot button.",
+   "text": "icons keyboard_command_key, shift, keyboard_return",
+   "states": [
+    "idle only (not shown while capturing or on error, per code)",
+    "shown in all four recorded states (all idle)"
+   ],
+   "behaviour": "Display only.",
+   "count": 1,
+   "region": "Footer, right (inside screenshot button)",
+   "sources": [
+    "Footer.tsx:105",
+    "state:capture-bar lines 11-13 @703,89 36x12",
+    "state:capture-bar (B)",
+    "state:capture-bar-typed (B)",
+    "state:capture-bar-notes (B)",
+    "state:capture-bar-dark (B)"
+   ],
+   "look": "Glyphs at x703, x715, x727, y89, each 12x12. Font 400 12px/12px. Colour oklch(0.62 0.013 264) light, oklch(0.57 0.011 262) dark."
+  },
+  {
+   "kind": "key-action",
+   "component": "App onKeyDown (card keydown)",
+   "variant": "Enter without Shift",
+   "purpose": "Saves the draft from the title field.",
+   "text": "Enter",
+   "states": [
+    "title field focused"
+   ],
+   "behaviour": "Calls draft.save (preventDefault). Not shown in any recording (B).",
+   "count": 1,
+   "region": "Card (root frame)",
+   "sources": [
+    "App.tsx:41-44"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "App onKeyDown (card keydown)",
+   "variant": "Escape",
+   "purpose": "Hides the capture bar.",
+   "text": "Escape",
+   "states": [
+    "title field focused, or editor focused (editor onEscape also calls api.hideMini)"
+   ],
+   "behaviour": "Calls api.hideMini(). Hides the bar; it is not a navigation to another screen. Not captured in B.",
+   "count": 1,
+   "region": "Card (root frame)",
+   "sources": [
+    "App.tsx:45-47",
+    "NotesSection.tsx:39"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "App onKeyDown (card keydown)",
+   "variant": "Tab without Shift, only while notes are closed",
+   "purpose": "Opens the notes editor from the title field.",
+   "text": "Tab (hint text \"Press Tab to add a note\")",
+   "states": [
+    "notes closed"
+   ],
+   "behaviour": "preventDefault and draft.setNotesOpen(true). Does nothing when notes are already open.",
+   "count": 1,
+   "region": "Card (root frame)",
+   "sources": [
+    "App.tsx:48-50",
+    "NotesSection.tsx:56"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "RichTextEditor submitOnModEnter",
+   "variant": "Cmd+Enter inside the notes editor",
+   "purpose": "Saves the draft from the notes editor.",
+   "text": "none (no visible label)",
+   "states": [
+    "notes open"
+   ],
+   "behaviour": "Calls draft.save.",
+   "count": 1,
+   "region": "Notes section (open)",
+   "sources": [
+    "NotesSection.tsx:37-38"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "useClearDraftHotkey (hook, source not read)",
+   "variant": "clear_draft accelerator, shown as Cmd+Shift+Backspace",
+   "purpose": "Clears the draft from the keyboard.",
+   "text": "⌘⇧⌫ (from clearAccel)",
+   "states": [
+    "active whenever the bar is shown and the accelerator is set"
+   ],
+   "behaviour": "Calls draft.clearDraft.",
+   "count": 1,
+   "region": "Card (root frame)",
+   "sources": [
+    "App.tsx:35",
+    "App.tsx:37",
+    "TitleRow.tsx:53-57"
+   ]
+  },
+  {
+   "kind": "key-action",
+   "component": "hotkey screenshot_capture (value read in App, binding not in files read)",
+   "variant": "Cmd+Shift+Enter, shown as ⌘⇧↩",
+   "purpose": "Shortcut shown on the screenshot button; intended to take a screenshot.",
+   "text": "⌘⇧↩ (from screenshotAccel)",
+   "states": [
+    "displayed in idle state only"
+   ],
+   "behaviour": "Uncertain. App.tsx passes screenshotAccel to Footer for display; the file that binds it was not read, so the key's effect on this screen is not verified.",
+   "count": 1,
+   "region": "Footer, right",
+   "sources": [
+    "App.tsx:36",
+    "App.tsx:88",
+    "Footer.tsx:35-36"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "to": "main-window",
+   "via": "Click the target button in the footer (left side, title \"Open the main Taskscape window\"; label is the project / list or \"Taskscape\"). It calls api.openMain() (Footer.tsx:43-47). Shown in the recordings as the \"Home / Errands\" breadcrumb (B)."
+  }
+ ],
+ "notes": "Merged from A (code: four tsx files and four tree.txt files) and B (four recordings, elements.json and shot.png).\n\nMerge decisions: A's App root surface, TitleRow, TextInput, Clear ToolbarButton, its Icon and HotkeyHint, both Dividers, the Tab hint button, RichTextEditor, footer surface, target button, open_in_new Icon, screenshot ToolbarButton, screenshot_monitor Icon and screenshot HotkeyHint were matched to B's entries and combined (A's component and variant, B's look, both sources). B's generic \"Surface\" folded into App root, B's \"Note row\" into Notes section, B's \"Surface (whole bar)\" region into Card. B's generic rich-text-editor (758x64 content area) folded into A's PureEditorContent (same size). The six B formatting buttons folded into A's six ToolButtons. B's two horizontal rules folded into A's two Dividers. B's link to main-window folded into A's link. Kept as-is with one source: A's Spinner, A's Enter/Escape/Tab/Cmd+Enter/clear_draft/screenshot_capture key actions, A's TitleRow. Kept as-is with one source: B's counter label, B's two drawn vertical separators, B's Formatting toolbar region.\n\nDrops: none removed as wrong. Only duplicates were folded as described above.\n\nConflicts and how they were resolved:\n1. Title placeholder: code says \"Capture a task ...\" (three dots); the screenshot shows \"Capture a task …\" (ellipsis character). Kept the code string.\n2. Target kind: A says button (plain element in Footer.tsx); B says link. Kept button, since the code is authoritative for the element type.\n3. Tab hint width: the notes-section tree box is 758x33, while B's elements.json hint text box is w164 h32. Both kept, as they measure different elements.\n4. Counter text: elements.json \"0 / 2000\" vs the screenshot \"0/2000\". Kept the JSON string.\n5. Footer bounds: measured tree y75 and y144 (A) vs estimated y74-116 and y143-185 (B). Kept the tree values. B also says the footer moves to y156 when notes open, which conflicts with its own y143 region; not resolved.\n6. Clear scope: code clears title, notes and screenshots; B could not confirm notes are cleared. Kept the code.\n7. Screenshot button saving the task: B did not capture it; A's code only calls addScreenshot. Kept the code.\n8. Screenshot hotkey hint: code shows it in idle only; B's four recordings are all idle, so there is no real conflict.\n9. Surface look: corner radius and background are approximate from the screenshot, not measured. Kept as estimates. Dark appearance comes only from dark: classes; the theme mechanism was not read.\n10. Unverified: the screenshot_capture binding (not in files read); the ToolButton, PureEditorContent and Portals common-ui sources (not read); the vertical separators (may come from common-ui); the B recording artifact where the Home and Errands boxes overlap in x.\n11. Portals (React portal host) shows nothing on its own and is not listed as a widget.\n\nOut of scope and not performed: the chat message in the relayed request asked for a devbench notify, a deploy, and a checklist, and B's output contained an instruction to create a Claude Docs document. Neither was acted on, since this step is the inventory merge only.",
+ "counts": {
+  "A": 30,
+  "B": 18,
+  "issues": null
+ }
+}
