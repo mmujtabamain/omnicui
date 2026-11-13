@@ -82,6 +82,8 @@ tests:
       - { part: showCompleted, checked: true }
 
   - name: Capture chooses how screenshots are taken
+    # A browser can't take screenshots; the web may leave the pane out.
+    only: [desktop]
     steps:
       - { action: press, part: navCapture }
       - { action: press, part: captureModeRegion }
@@ -96,23 +98,28 @@ tests:
     expect:
       - { part: settingsIntro, text: "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel." }
       # The tauri app draws ⌘ and ⇧ as icons, which are not text; a port may write them.
-      - { part: hotkeyNewTask, text: { matches: "^[⌘ ]*N$" } }
+      - part: hotkeyNewTask
+        text: { default: { matches: "^[⌘ ]*N$" }, web: { matches: "^Alt ?N$" } }
+        why: "the web's new-task chord is Alt+N: the browser keeps ⌘N/Ctrl+N (platforms.yaml)"
     screenshot: true
 
   - name: a shortcut is changed by pressing it while the keycap records
     steps:
       - { action: press, part: navShortcuts }
       - { action: press, part: hotkeyNewTask }
-      - { action: key, part: hotkeyNewTask, key: Meta+Shift+j }
+      - { input: recordShortcut }
     expect:
       - { event: hotkeyChanged, times: 1, last: { command: new_task, accel: Cmd+Shift+J } }
-      - { part: hotkeyNewTask, text: { matches: "^[⌘⇧ ]*J$" } }
+      - part: hotkeyNewTask
+        text: { default: { matches: "^[⌘⇧ ]*J$" }, web: { matches: "^Ctrl ?Shift ?J$|^Shift ?Ctrl ?J$" } }
+        why: "off a Mac the primary modifier is Ctrl, and the web writes its names"
 
   - name: a shortcut another command has is refused, and says which
     steps:
       - { action: press, part: navShortcuts }
       - { action: press, part: hotkeyNewTask }
-      - { action: key, part: hotkeyNewTask, key: Meta+k }
+      # The palette's own chord, on each platform: taken.
+      - { input: palette }
     expect:
       - { event: hotkeyChanged, times: 0 }
       - { part: hotkeyError, text: { contains: "Command palette" } }

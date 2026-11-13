@@ -111,7 +111,9 @@ tests:
     props: { seed: empty, list: inbox }
     expect:
       - { part: paneEmptyTitle, text: "Nothing here yet" }
-      - { part: paneEmptySubtitle, text: "Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one" }
+      - part: paneEmptySubtitle
+        text: { default: "Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one", web: "Press + or Alt+N to add a task, or Ctrl+↩ anywhere to capture one" }
+        why: "the web's shortcuts: Alt+N for a new task (the browser keeps ⌘N/Ctrl+N), Ctrl as the primary modifier off a Mac"
       - { part: doneCount, text: "0/0 DONE" }
       - { part: donePercent, text: "0%" }
     screenshot: true
@@ -169,8 +171,9 @@ tests:
     steps:
       - { action: press, part: row1Check }
     expect:
-      - { event: taskCompleted, times: 1, last: { id: brief, done: true } }
-      - { part: doneCount, text: "4/8 DONE" }
+      # The brief, then its two open subtasks (completing a task completes its subtree).
+      - { event: taskCompleted, times: 3, last: { id: review, done: true } }
+      - { part: doneCount, text: "6/8 DONE" }
 
   - name: collapsing a task hides its subtasks, and they count all the same
     steps:

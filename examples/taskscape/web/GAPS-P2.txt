@@ -1,0 +1,168 @@
+P2's report: Taskscape for the web (examples/taskscape/web) and its omnicui target
+(examples/taskscape/omnicui/targets/web).
+
+Each gap: what happened, and what I would have wanted to write. "OWN" marks my own mistakes; "APP"
+something in the Tauri app; "CONTRACT" something in P0's contracts or platforms.yaml, which P0
+decides; "OMNICUI" something in omnicui itself.
+
+== The last full check ==
+
+  Full check 1, `omnicui check web tauri` (both targets, every contract, the comparisons):
+
+  334 pass · 5 fail · 0 broken · 0 not advertised · 24 not measured · 17 not applicable · 0 warnings
+
+  web: 157 pass · 5 fail · 12 not measured · 16 not applicable (the 11 capture tests and the
+  window-control and Settings-title-bar tests are `only: [desktop]`). tauri: 177 pass, as P0 left
+  it. The 79 comparisons between them (30 layout, 37 colours, 11 motion and 1 direction) all
+  stay under their thresholds: no warnings. The five fails are 1 and 2 below, all in the contracts.
+
+== Start-up and total time ==
+
+  web start-up: 1.3 s in the check (launching the adapter to its reply to advertise: the server
+  and Chromium; nothing is built per check), 1.1–1.6 s in setup.sh. setup.sh from scratch with
+  warm caches: 45 s (npm ci, the icon subset, the Vite build, the server's cargo build).
+  web total: 13 min 19 s for the eleven contracts, alongside tauri's 15 min 07 s on the same
+  machine (load average near 38: P1 was building and checking at the same time). A plain test
+  is 2.5–4.5 s; the slowest record clips (the sheet and palette over the window, 9–12 s).
+  Measured by hand, not by omnicui (it doesn't measure a press to the dialog's first frame,
+  WHY.md): the app's first rows are on screen 0.53 s after navigation to it on a local server,
+  and Settings, from Ctrl+, to the first frame with its panel, takes 25–56 ms (5 opens). The
+  desktop app builds a new webview for it every time.
+
+== What omnicui or the contracts got in the way of ==
+
+1. CONTRACT: four tests that run on the web expect the Mac's ⌘.
+   platforms.yaml gives the web its own chords (Alt+N for a new task, Ctrl for the rest), but four
+   tests that aren't `only: [desktop]` read or send the Mac's:
+   - pane "an empty list says so": the subtitle must be "Press + or ⌘N to add a task, or ⌘↩
+     anywhere to capture one". The web shows "Press + or Alt+N to add a task, or Ctrl+↩ anywhere
+     to capture one", which is what its shortcuts are.
+   - settings "Shortcuts lists every binding": `hotkeyNewTask` must match `^[⌘ ]*N$` (the tauri
+     app draws ⌘ as an icon, which isn't text). The web's keycap reads "Alt N".
+   - settings "a shortcut is changed by pressing it while the keycap records" and "a shortcut
+     another command has is refused" send `Meta+Shift+j` and `Meta+k` as literal keys. Off a Mac
+     the primary modifier is Ctrl (common-ui/src/hotkeys.ts, as the Tauri app has it on Windows),
+     and Meta is the system's key, not the app's: the web records "Shift+J" and refuses it for
+     having no modifier.
+   All four fail on web, honestly. I didn't make the web treat Meta as Ctrl, or draw Alt as an
+   icon, to pass them. Wanted (P0 decides):
+   - two named inputs in platforms.yaml, e.g. `recordShortcut` (default Meta+Shift+j, web
+     Control+Shift+j) and `takenShortcut` (default Meta+k, web Control+k). The expected accel stays
+     `Cmd+Shift+J` on both: in the catalog "Cmd" is the primary modifier (⌘ or Ctrl);
+   - per-platform expected text with a `why:`, e.g. for the empty list
+     `text: { default: "Press + or ⌘N …", web: "Press + or Alt+N to add a task, or Ctrl+↩ anywhere to capture one" }`,
+     `why: "the web's new-task chord is Alt+N (platforms.yaml), and off a Mac ⌘ is Ctrl"`; and for
+     the keycaps `matches: { default: "^[⌘ ]*N$", web: "^Alt ?N$" }` and `^Ctrl ?Shift ?J$`.
+
+2. CONTRACT: "pressing a row's round check marks the task done" (pane, `except: [tauri]`, so it
+   has never run on a target that passes it) presses row 1's check, the launch brief, and expects
+   one `taskCompleted` and "4/8 DONE". But the brief has two open subtasks, and completing a task
+   completes its subtree (SPEC-PRODUCT.md, and the inspector's own test expects three events for
+   the brief's check). The web does what the spec says: three events (brief, summary, review), and
+   "6/8 DONE". Wanted: the test on a task with no subtasks (row6Check, the banners: one event,
+   "4/8 DONE"), or the brief's three events, `last: { id: review }`, and "6/8 DONE".
+
+3. APP: the empty list's sentence hardcodes "⌘N" (TaskPane.tsx), whatever New task is bound to;
+   only the capture shortcut is read from the bindings. The web patches that one line to name the
+   binding (vite.config.ts, PATCHES), since on the web it is Alt+N.
+
+4. CONTRACT: the narrow layout has no width under contract.
+   SPEC-PRODUCT.md says the web is a desktop layout at the window's size; the prompt asked for a
+   narrower width agreed with P0. I built it: under 960 px the details drawer is an overlay at the
+   pane's right edge (a scrim behind it closes it) instead of a column, and it comes up only when
+   it has something to show (a task, a draft, a selection, the Trash or the filter). The
+   screenshot is in the team's thread. Proposed for P0:
+   - width: 820×700 (narrower than the Tauri app's 880 minimum, wide enough for the pane and a
+     320 px drawer over it);
+   - a component of its own, `taskscape.narrow` (the window at 820×700, `only: [web]`), with
+     `same: [colours, motion]` (nothing to compare its layout with), and tests:
+       "with nothing selected the drawer stays out of the way" (the pane's `doneCount` and
+       `donePercent` both visible: the footer spans the width);
+       "pressing a row brings the drawer over the pane" (press row5; `inspectorTitle` "Book the
+       venue", `inspector` visible; a trace of `inspector` opacity: the rise);
+       "the scrim closes it" (a part `drawerScrim`, press; `previewToggled {open: false}`).
+
+5. CONTRACT: Settings' and the title bar's events are a window's. On the web Settings is a dialog
+   in the page; the registry reports opening it as `settingsOpened` and closing it (Escape, its ×,
+   a press outside) as `windowAction {action: close}`, which is the contract's word for it but not
+   what happens. Wanted: `settingsClosed {}` for every platform.
+
+6. CONTRACT: "Capture chooses how screenshots are taken" isn't `only: [desktop]`. A browser can't
+   take screenshots, so the web has no Shot, no draft Screenshot and no quick-capture shot. I kept
+   the Capture pane (its setting is in the data the desktop apps share, and the desktop capture bar
+   uses it), so the test passes, but on the web it is a setting with no effect there. Wanted: the
+   test `only: [desktop]`, and the web free to leave the pane out.
+
+7. CONTRACT: nothing checks the web's own idioms. The contracts mount surfaces, so the address
+   bar, history (Back and Forward between lists), the document title, Settings as a dialog over the
+   window, quick capture in the page, uploads and drops are untested. The target advertises
+   `do.back` (the browser's back), which no contract uses. Wanted, `only: [web]`: a window test that
+   presses tab2 then does `back` and expects `search` named "Search Launch plan"; and a part for
+   the document title (omnicui has no field for it; a hidden status mirroring it would be a faked
+   part, so I didn't add one).
+
+8. CONTRACT: the capture contract is desktop only, so the web's quick-capture bar (the same
+   rules, in the page) is under no contract. Its parts carry the capture contract's names
+   (captureBar, captureTitle, captureNotes, captureClear, captureTarget, captureNotesHint), so
+   most of `taskscape.capture` could run on the web if the tests that need the window mechanics
+   or a screenshot were `only: [desktop]` and the rest weren't.
+
+9. OMNICUI/CONTRACT: the title bar region. The tauri target reports its app-drawn bar across the
+   top of the main window and of Settings as a `titlebar` region (GAPS-P0 6), which omnicui cuts
+   off; the web reports its page header and its Settings dialog header the same way, so the two
+   are compared below the bar alike. Neither bar is the platform's. Wanted: P0's
+   `windowcontrols` region kind, after which neither target would report a bar.
+
+10. Generated keyboard tests: Settings has the 12 "not measured" that P0 has (GAPS-P0 11): a pane
+   other than General, the search's clear button and the shortcut keycaps appear only after a
+   press. Same for the web.
+
+11. Events come from two places on the web: the server reports what was written to the store
+   (its test hooks read the API's requests and answers, server/src/hooks.rs) and the page what
+   was only on screen (taskFocused, confirmAsked, draftOpened, …). `events` returns the page's
+   first, then the server's; their order between the two is lost. No contract depends on it
+   (they check one event name at a time), but `last:` across names couldn't be written.
+
+== Decisions I made that someone may want to revisit ==
+
+- The web app is the Tauri frontend compiled where it is. vite.config.ts swaps the modules that
+  talk to Tauri or draw desktop chrome for src/app/ versions (OVERRIDES: api, App, TitleBar,
+  WindowControls, windowChrome, PathButton, the list commands, AttachmentSection,
+  DraftInspector, fileKind; SettingsWindow becomes SettingsDialog) and patches two shared files
+  with exact hunks (PATCHES: the round check marks done, the empty list names New task's
+  binding). Tauri's event API is a page-local bus that also reaches the app's other tabs.
+  Everything else (the stores, the pane, rows, inspector, palette, sheets, toast, Trash, filter,
+  the Settings panes) is the shared code as it is.
+- The round check marks the task done (the design review's direction, as SPEC-PRODUCT.md asks);
+  ⌘/⇧ press and the keyboard still select.
+- Shortcuts: the catalog's, with "Cmd" as the primary modifier (Ctrl off a Mac); the web's
+  defaults use Alt where the browser keeps the chord (new task, new list, list 1–9); the global
+  screenshot shortcut isn't offered (server/src/hotkeys.rs). Overrides are stored in the same
+  setting the desktop apps read.
+- History: a list or project change is a new entry; another task in the same list replaces the
+  entry, so walking rows with the arrows doesn't fill Back.
+- Settings is a 640×520 dialog over the dimmed window, focus kept inside; Escape backs out of
+  the search first, as in the desktop app.
+- The narrow breakpoint is 960 px (the pane keeps about 640 px beside a 320 px drawer above it).
+- No boot veil: the header paints at once and the panes fill in when the data lands.
+- The server's API is under /api; data_router's routes are used as they are (its hard
+  `DELETE /tasks/{id}` isn't: the app only ever moves tasks to the Trash). A refused shortcut is a
+  422 (the user's to change), every other failure a 500 with its message; failures are logged, and
+  a 500 is posted to `TASKSCAPE_ALERT_URL` when that is set.
+- Test hooks are a cargo feature (`test-hooks`) and a flag: a normal build can't load fixtures
+  or report events. The target's setup builds with the feature.
+
+== OWN: my mistakes ==
+
+1. The API router behind `/api/{*rest}` got the outer route's path parameter too, so every route
+   with one parameter failed ("Wrong number of path arguments") and the first page loaded without
+   settings. `forward` now passes a fresh request.
+2. A missing comma in one of my own replacement texts for AttachmentSection broke the first build.
+3. I moved Settings' Escape into the dialog's own key handler; Escape with nothing focused (which
+   a press on the dialog's background leaves) then did nothing. The contract's "Escape closes
+   Settings" caught it; the window listener is back for that case.
+4. A refused shortcut first came back as a 500, which my own failure alerts would have reported
+   as a server error.
+5. I wrote PROGRESS.md's first times from memory, ahead of the clock, and corrected them.
+6. After patching the round check I didn't run the pane contract again, so its one disagreement
+   with the spec (2 above) showed up only in the full check.
