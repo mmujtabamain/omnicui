@@ -7,23 +7,28 @@ decides; "OMNICUI" something in omnicui itself.
 
 == The last full check ==
 
-  Full check 1, `omnicui check web tauri` (both targets, every contract, the comparisons):
+  Full check 3 (the last), `omnicui check web tauri`, after P0's 1662f38:
 
-  334 pass · 5 fail · 0 broken · 0 not advertised · 24 not measured · 17 not applicable · 0 warnings
+  351 pass · 0 fail · 0 broken · 0 not advertised · 24 not measured · 13 not applicable · 3 platform exceptions · 1 warnings
 
-  web: 157 pass · 5 fail · 12 not measured · 16 not applicable (the 11 capture tests and the
-  window-control and Settings-title-bar tests are `only: [desktop]`). tauri: 177 pass, as P0 left
-  it. The 79 comparisons between them (30 layout, 37 colours, 11 motion and 1 direction) all
-  stay under their thresholds: no warnings. The five fails are 1 and 2 below, all in the contracts.
+  web: 174 pass, 12 not measured (Settings' generated keyboard tests, 10 below), 8 not applicable
+  (desktop only). tauri: 177 pass, 12 not measured, 5 not applicable. web took 14 min 41 s,
+  tauri 14 min 52 s; both started in 1.1 s.
+  The one warning (15 below): capture's first test at dark, colours 100%, because the two
+  screenshots' backgrounds differ outside the card (the tauri tray page is white there).
+  Earlier: full check 1 was 334 pass · 5 fail · 0 warnings (the five fails were 1 and 2, fixed by
+  P0 in the contracts); full check 2 was 350 pass · 0 fail · 5 warnings (12, 14 and OWN 7, all
+  since fixed).
 
 == Start-up and total time ==
 
-  web start-up: 1.3 s in the check (launching the adapter to its reply to advertise: the server
-  and Chromium; nothing is built per check), 1.1–1.6 s in setup.sh. setup.sh from scratch with
-  warm caches: 45 s (npm ci, the icon subset, the Vite build, the server's cargo build).
-  web total: 13 min 19 s for the eleven contracts, alongside tauri's 15 min 07 s on the same
-  machine (load average near 38: P1 was building and checking at the same time). A plain test
-  is 2.5–4.5 s; the slowest record clips (the sheet and palette over the window, 9–12 s).
+  web start-up: 1.1–1.7 s in the checks (launching the adapter to its reply to advertise: the
+  server and Chromium; nothing is built per check), 1.1–1.6 s in setup.sh. setup.sh from scratch
+  with warm caches: 45 s (npm ci, the icon subset, the Vite build, the server's cargo build).
+  web total: 14 min 41 s for the thirteen contracts in full check 3, alongside tauri's 14 min 52 s
+  on the same machine (14 min 20 s in full check 2; 13 min 19 s for eleven in full check 1; P1
+  was loading the machine). A
+  plain test is 2.5–4.5 s; the slowest record clips (the sheet and palette over the window, 9–12 s).
   Measured by hand, not by omnicui (it doesn't measure a press to the dialog's first frame,
   WHY.md): the app's first rows are on screen 0.53 s after navigation to it on a local server,
   and Settings, from Ctrl+, to the first frame with its panel, takes 25–56 ms (5 opens). The
@@ -123,6 +128,60 @@ decides; "OMNICUI" something in omnicui itself.
    first, then the server's; their order between the two is lost. No contract depends on it
    (they check one event name at a time), but `last:` across names couldn't be written.
 
+== Second round: after P0 adopted 4, 7 and 8 (b73e6e8) ==
+
+P0 fixed 1, 2 and 6 (as numbered above) in the contracts, adopted 4 (`taskscape.narrow`), 7 (the
+browser's back) and 8 (the capture contract on the web's bar), and kept `windowAction {action:
+close}` for closing Settings (5). The web now mounts both new components: `taskscape.narrow` is
+the web App at 820×700, with `drawerScrim` on the scrim (a button, out of the tab order: Escape is
+the keyboard's way out); `taskscape.capture` is the in-page quick-capture bar alone, its card at
+the top of the 480×240 box. To hold the bar to the tray's layout and rules it now follows the
+tray's card: the title row with Clear, the "Press Tab to add a note" button under it, the notes in
+the rich-text editor (the tray's, submitOnModEnter), and the footer with where the task goes,
+which, pressed, shows that list. It is kept alive between uses (hidden, not unmounted), as the
+tray keeps its window, and stays open after filing with the draft emptied, as the tray does.
+
+12. CONTRACT: "Escape hides the bar and keeps the draft for next time" passes on web with a
+   visibility warning (at both schemes): it reads `captureTitle` after Escape has hidden the bar.
+   On the desktop the hidden window's page still has its size, so the read looks visible there; on
+   the web the hidden bar has none, and omnicui says so, rightly. I didn't keep the bar on screen
+   or summon it again in the registry to silence it. Wanted: a named input `summonCapture` (desktop
+   Meta+Enter, the global shortcut; web Control+Enter, the page's), a step `{ input:
+   summonCapture }` after the Escape, and then the read: the draft is back when the bar is.
+
+13. The clear-draft input is `none` on the web (platforms.yaml), so that test is not applicable,
+   but the web's bar does take the catalog's clear-draft chord (Ctrl+Shift+Backspace off a Mac),
+   which no browser keeps for itself. P0 may give the web that chord.
+
+14. P0's tauri target (not mine; reported for P0): its `taskscape.capture` screenshots are blank
+   white at both schemes, the card isn't in them, though its tests pass. So the web's bar is
+   compared with nothing: colours 100% at dark (white against the web's dark surface; at light the
+   web's pale surface stays within the tolerance). The palette warning is the only sign; it is
+   the todo example's "a blank screenshot passes unnoticed". Wanted: the tray's card visible in
+   the tauri target's screenshots (it may be held transparent until a reveal the harness doesn't
+   wait for), then the comparison means something.
+
+== Third round: after P0's 1662f38 (summonCapture, the tauri tray fixed) ==
+
+P0 adopted 12 (`summonCapture`: web Control+Enter) and 13 (clearDraft Control+Shift+Backspace on
+the web), and fixed 14 in its target. The web's bar mounted alone didn't answer the capture
+shortcut: App listened for it, and the registry mounts the bar without App. The bar now answers
+the shortcut itself, wherever it is mounted (CaptureBar.tsx, useCaptureShortcut).
+
+15. CONTRACT (for P0): "the bar opens empty…" warns at dark, colours 100%: the tauri tray page is
+   white outside the card (its window is the card; the harness page beyond it is the browser's
+   default), the web's mount is the page's dark surface there, and the background is the largest
+   colour of each. The card itself is the same colours (light passes, and so does "Tab opens the
+   notes" at dark, where the card fills more of the box). I didn't paint the web's page white to
+   match. Wanted: the capture tests' screenshots cropped to the card, `screenshot: { part:
+   captureBar }`, or the tray harness page in the window's surface colour.
+
+16. DESIGN.md (for P0): its motion table says the capture bar's notes grow open with "a
+   grid-row transition"; the tray's code has none (NotesSection swaps the hint for the editor, and
+   useBarAutoResize has Rust fit the window to the card). My bar animated grid rows for 150 ms,
+   which the clip comparison flagged (94 ms apart); the notes now open at once, as the tray's do.
+   DESIGN.md's row should say so, or the tray should animate.
+
 == Decisions I made that someone may want to revisit ==
 
 - The web app is the Tauri frontend compiled where it is. vite.config.ts swaps the modules that
@@ -166,3 +225,8 @@ decides; "OMNICUI" something in omnicui itself.
 5. I wrote PROGRESS.md's first times from memory, ahead of the clock, and corrected them.
 6. After patching the round check I didn't run the pane contract again, so its one disagreement
    with the spec (2 above) showed up only in the full check.
+7. The quick-capture bar's new icons (delete_sweep, arrow_outward) weren't in the icon subset: I
+   rebuilt the frontend with Vite alone, not with scripts/build.sh, which runs the subset first.
+   They were drawn as words in full check 2's capture screenshots (a layout warning). Fixed.
+8. The bar's capture shortcut lived in App, so the bar mounted alone (the capture contract) didn't
+   answer it; P0's new summon step found it.

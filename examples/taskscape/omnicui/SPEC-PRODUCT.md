@@ -287,7 +287,7 @@ rules; the tests that need the desktop's window (opening the main window) or a s
 - Enter with a title files the task there (`taskCreated`), with its notes as its first note
   (`noteAdded`) and its screenshots as attachments, then empties the draft. A blank title files
   nothing.
-- Tab opens the notes below the title (the panel grows open); ⌘↩ in the notes files the task.
+- Tab opens the notes below the title, at once (no animation); ⌘↩ in the notes files the task.
   Emptied and left, the notes close again.
 - **The draft survives dismissal**: Escape or a click elsewhere hides the bar and keeps it. Only
   filing it, "Clear" (shown when there is a draft) or `clearDraft` (⌘⇧⌫) empties it.

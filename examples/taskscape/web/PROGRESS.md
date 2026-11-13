@@ -32,3 +32,17 @@ Times are UTC, 13 Nov 2026.
   screenshot posted. Settings opens in 25–56 ms (by hand).
 - 07:25 GAPS-P2.txt written. Not done: the narrow layout and the web's idioms (URLs, history,
   quick capture, uploads) are under no contract; proposals in GAPS-P2.txt 4, 7, 8.
+- 07:40 P0 adopted proposals 4, 7, 8 (b73e6e8). Mounted `taskscape.narrow` (the App at 820×700,
+  `drawerScrim` on the scrim) and `taskscape.capture` (the in-page bar alone; it now follows the
+  tray's card and is kept alive while hidden). narrow 3/3; capture 8 pass, 3 n/a, 2 visibility
+  warnings (GAPS-P2.txt 12).
+- 07:58 Full check 2, web and tauri: 350 pass · 0 fail · 0 broken · 0 not advertised · 24 not
+  measured · 14 not applicable · 3 platform exceptions · 5 warnings, all in capture: the hidden
+  bar's read (12), tauri's blank capture screenshots (14), and my missing icons (OWN 7, fixed;
+  `check web tauri capture` then: layout 0.6% / 3.0%).
+- 08:20 After P0's 1662f38: the bar answers the capture shortcut itself (the standalone mount
+  didn't), and the notes open at once, as the tray's (GAPS-P2.txt 16). capture vs tauri: 20 pass,
+  2 n/a, 1 warning (GAPS-P2.txt 15, for P0).
+- 08:37 Full check 3 (the last), web and tauri: 351 pass · 0 fail · 0 broken · 0 not advertised ·
+  24 not measured · 13 not applicable · 3 platform exceptions · 1 warnings. web 14 min 41 s,
+  start-up 1.1 s.

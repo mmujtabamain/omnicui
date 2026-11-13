@@ -32,7 +32,9 @@ tests:
       - { part: captureTitle, text: "", focused: true, name: "Capture a task ..." }
       - { part: captureNotesHint, text: "Press Tab to add a note" }
       - { part: captureTarget, text: { matches: "^Atlas ?/ ?Launch plan$" } }
-    screenshot: true
+    # The card only: around it a desktop window is transparent (it is as tall as the card), and
+    # a page is the page.
+    screenshot: { part: captureBar }
 
   - name: Enter files the task in the last list the main window had open
     steps:
@@ -64,8 +66,10 @@ tests:
     expect:
       - { part: captureNotes, focused: true }
       - { part: captureClear, text: { contains: "Clear" } }
-    screenshot: true
-    # The notes panel grows open (grid-template-rows 0fr → 1fr).
+    # The card only: around it a desktop window is transparent (it is as tall as the card), and
+    # a page is the page.
+    screenshot: { part: captureBar }
+    # The notes replace the Tab hint at once: the clip holds the targets to the same instant change.
     record: { part: captureBar }
 
   - name: a capture with notes keeps them as the task's first note

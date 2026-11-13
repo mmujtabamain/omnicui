@@ -1,42 +1,39 @@
 // Quick capture, the web's version of the tray's capture bar
-// (tauri/tray/src/App.tsx): a page has no menu bar to live in and can't be
-// summoned over other apps, so it is a bar in the page, summoned anywhere in
-// it with the capture shortcut (⌘↩ / Ctrl+↩) or the header's bolt. It keeps
-// the bar's rules: it files into the list in use (the focused list, else the
-// first), Tab opens the notes, Enter (⌘↩ in the notes) files the task with the
-// notes as its first note, and the draft survives Escape or a click outside;
-// only filing it or Clear empties it. There are no screenshots in a browser.
+// (tauri/tray/src/App.tsx, its components and its draft hook): a page has no
+// menu bar to live in and can't be summoned over other apps, so it is a bar in
+// the page, summoned anywhere in it with the capture shortcut (⌘↩ / Ctrl+↩) or
+// the header's bolt. Like the tray's window it is kept alive between uses
+// (hidden, not unmounted), so it is ready at once and the draft is still in
+// it. It keeps the bar's rules: it files into the list in use (the focused
+// list, else the first), Tab opens the notes (the rich-text editor), Enter
+// (⌘↩ in the notes) files the task with the notes as its first note and
+// empties the draft, and the draft survives Escape or a press outside; only
+// filing it or Clear empties it. Pressing where the task will go shows that
+// list. There are no screenshots in a browser.
 import { cn } from '@taskscape/common-ui/cn';
+import { Divider, HotkeyHint, ToolbarButton } from '@taskscape/common-ui/components';
 import { Icon } from '@taskscape/common-ui/Icon';
-import { matchesEvent } from '@taskscape/common-ui/hotkeys';
+import { formatAccel, matchesEvent, parseAccel } from '@taskscape/common-ui/hotkeys';
 import { useDismissable } from '@taskscape/common-ui/overlay';
+import { RichTextEditor, type RichTextHandle } from '@shared/components/preview/RichTextEditorLazy';
 import { useHotkeyStore } from '@shared/stores/hotkeyStore';
 import { useLayoutStore } from '@shared/stores/layoutStore';
 import { useListStore } from '@shared/stores/listStore';
 import { useProjectStore } from '@shared/stores/projectStore';
 import { useTaskStore } from '@shared/stores/taskStore';
-import { useToastStore } from '@shared/stores/toastStore';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { create } from 'zustand';
 import { api } from './api';
+import { go } from './url';
 import { useWebUi } from './webUi';
 
-/** The draft outlives the bar being shown. */
-const useDraft = create<{ title: string; notes: string; notesOpen: boolean }>(() => ({
+/** The draft outlives the bar being shown. The notes' HTML lives in the
+ *  editor, which stays mounted while the bar is hidden. */
+const useDraft = create<{ title: string; notesOpen: boolean; hasNotes: boolean }>(() => ({
   title: '',
-  notes: '',
   notesOpen: false,
+  hasNotes: false,
 }));
-
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-/** Plain notes as the note editor's HTML: a paragraph per line. */
-const notesHtml = (text: string) =>
-  text
-    .split('\n')
-    .map((l) => `<p>${escapeHtml(l)}</p>`)
-    .join('');
 
 function useTarget() {
   const lists = useListStore((s) => s.lists);
@@ -47,38 +44,66 @@ function useTarget() {
   return { list, project };
 }
 
-export function CaptureBar() {
-  const { title, notes, notesOpen } = useDraft();
+/** Escape and a press outside hide the bar; mounted only while it shows, so
+ *  the page's own keys aren't held off while it is hidden. */
+function WhileShown({ card, onHide }: { card: RefObject<HTMLDivElement | null>; onHide: () => void }) {
+  useDismissable({ onDismiss: onHide, ref: card, capture: true });
+  return null;
+}
+
+/** The capture shortcut (the catalog's global ⌘↩, Ctrl+↩ off a Mac) summons
+ *  the bar from anywhere in the page, a field included, and hides it again.
+ *  The bar answers it itself, wherever it is mounted. */
+function useCaptureShortcut() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const accel = useHotkeyStore.getState().map['toggle_capture_bar'] ?? '';
+      if (!matchesEvent(accel, e)) return;
+      e.preventDefault();
+      const ui = useWebUi.getState();
+      ui.setCaptureOpen(!ui.captureOpen);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+}
+
+/** `page`: at the top of the window, over it. `fill`: the card alone at the
+ *  top of its box (how the omnicui registry mounts it, as the tray's window is
+ *  the card). */
+export function CaptureBar({ placement = 'page' }: { placement?: 'page' | 'fill' }) {
+  const open = useWebUi((s) => s.captureOpen);
+  const { title, notesOpen, hasNotes } = useDraft();
   const { list, project } = useTarget();
-  const close = () => useWebUi.getState().setCaptureOpen(false);
   const card = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
-  const notesRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextHandle>(null);
   const [filing, setFiling] = useState(false);
   const clearAccel = useHotkeyStore((s) => s.map['clear_draft'] ?? '');
-  useDismissable({ onDismiss: close, ref: card, capture: true });
+  const hide = () => useWebUi.getState().setCaptureOpen(false);
+  const hasDraft = title.length > 0 || hasNotes;
+  useCaptureShortcut();
 
-  useEffect(() => titleRef.current?.focus(), []);
   useEffect(() => {
-    if (notesOpen) notesRef.current?.focus();
-  }, [notesOpen]);
+    if (open) titleRef.current?.focus();
+  }, [open]);
 
   const clear = () => {
-    useDraft.setState({ title: '', notes: '', notesOpen: false });
+    editorRef.current?.clear?.();
+    useDraft.setState({ title: '', notesOpen: false, hasNotes: false });
     titleRef.current?.focus();
   };
 
   const file = async () => {
-    const name = title.trim();
+    const name = useDraft.getState().title.trim();
     if (!name || !list || filing) return;
     setFiling(true);
     try {
+      const notes = editorRef.current && !editorRef.current.isEmpty() ? editorRef.current.getHtml() : null;
       const task = await api.createTask(list.id, name);
-      if (notes.trim()) await api.createNote(task.id, notesHtml(notes.trim()));
+      if (notes) await api.createNote(task.id, notes);
       await useTaskStore.getState().load();
-      useDraft.setState({ title: '', notes: '', notesOpen: false });
-      close();
-      useToastStore.getState().show(`Added to ${list.name}`);
+      clear();
     } finally {
       setFiling(false);
     }
@@ -94,17 +119,26 @@ export function CaptureBar() {
   };
 
   return (
-    <div className="z-overlay pointer-events-none fixed inset-x-0 top-[12vh] flex justify-center px-4">
+    <div
+      hidden={!open}
+      className={cn(
+        'pointer-events-none flex justify-center',
+        placement === 'page' ? 'z-overlay fixed inset-x-0 top-[12vh] px-4' : 'w-full'
+      )}
+    >
+      {open && <WhileShown card={card} onHide={hide} />}
       <div
         ref={card}
         role="dialog"
         aria-label="Quick capture"
         data-part="captureBar"
         onKeyDown={onKeyDown}
-        className="animate-sheet-in rounded-panel border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d shadow-menu pointer-events-auto w-[min(480px,100%)] overflow-hidden border"
+        className={cn(
+          'rounded-panel border-edge-2l dark:border-edge-2d bg-surface-2l dark:bg-surface-2d text-content-1l dark:text-content-1d pointer-events-auto flex w-[min(480px,100%)] flex-col overflow-hidden border',
+          placement === 'page' && 'shadow-menu animate-sheet-in'
+        )}
       >
-        <div className="flex h-10 items-center gap-2 px-3">
-          <Icon name="bolt" size={18} className="text-accent-500l dark:text-accent-500d shrink-0" />
+        <div className="flex h-10 shrink-0 items-center px-3 py-2">
           <input
             ref={titleRef}
             data-part="captureTitle"
@@ -114,7 +148,7 @@ export function CaptureBar() {
             spellCheck={false}
             onChange={(e) => useDraft.setState({ title: e.target.value })}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 void file();
               } else if (e.key === 'Tab' && !e.shiftKey && !notesOpen) {
@@ -122,53 +156,85 @@ export function CaptureBar() {
                 useDraft.setState({ notesOpen: true });
               }
             }}
-            className="text-content-1l dark:text-content-1d placeholder:text-content-3l dark:placeholder:text-content-3d min-w-0 flex-1 bg-transparent text-[15px] font-medium outline-none"
+            className="text-content-1l dark:text-content-1d placeholder:text-content-3l dark:placeholder:text-content-3d min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
-          {(title || notes) && (
-            <button
-              type="button"
+          {hasDraft && (
+            <ToolbarButton
               data-part="captureClear"
+              size="xs"
+              variant="well"
+              icon="delete_sweep"
+              iconSize={16}
               onClick={clear}
-              className="rounded-field text-content-3l dark:text-content-3d hover:bg-wash-2l dark:hover:bg-wash-2d hover:text-content-1l dark:hover:text-content-1d px-2 py-0.5 text-[12px] font-medium"
+              tabIndex={-1}
+              className="text-content-2l hover:text-content-1l dark:text-content-2d dark:hover:text-content-1d shrink-0 gap-0 text-[11px]"
+              title={clearAccel ? `Clear the draft (${formatAccel(clearAccel)})` : 'Clear the draft'}
             >
-              Clear
-            </button>
+              <p className="px-1">Clear</p>
+              <HotkeyHint hotkey={parseAccel(clearAccel)} />
+            </ToolbarButton>
           )}
         </div>
-        <div className={cn('grid transition-[grid-template-rows] duration-150', notesOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-          <div className="overflow-hidden">
-            <textarea
-              ref={notesRef}
-              data-part="captureNotes"
-              value={notes}
-              rows={3}
-              aria-label="Notes"
-              placeholder="Notes ..."
-              tabIndex={notesOpen ? 0 : -1}
-              onChange={(e) => useDraft.setState({ notes: e.target.value })}
-              onBlur={() => {
-                if (!notes.trim()) useDraft.setState({ notesOpen: false, notes: '' });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  void file();
-                }
-              }}
-              className="text-content-1l dark:text-content-1d placeholder:text-content-3l dark:placeholder:text-content-3d block w-full resize-none bg-transparent px-10 pb-2 text-[13px] leading-5 outline-none"
-            />
+
+        <Divider className="shrink-0" />
+
+        {/* The notes open at once, as the tray's do (its window then fits the
+            card); there is no transition to match. */}
+        <div className="grid">
+          <div className="min-h-0 overflow-hidden">
+            {notesOpen && (
+              <RichTextEditor
+                ref={editorRef}
+                part="captureNotes"
+                autoFocus
+                attachments={[]}
+                placeholder="Notes ..."
+                minHeightClass="min-h-16"
+                maxHeightClass="max-h-40"
+                floatingToolbar={false}
+                wrapperClassName=""
+                toolbarClassName="border-edge-1l dark:border-edge-1d gap-1 border-t px-2 py-1.5"
+                submitOnModEnter
+                onSubmit={() => void file()}
+                onEscape={hide}
+                onChange={() => useDraft.setState({ hasNotes: !editorRef.current?.isEmpty() })}
+                // Emptied and left, the notes close again.
+                onBlur={() => {
+                  if (editorRef.current?.isEmpty()) useDraft.setState({ notesOpen: false, hasNotes: false });
+                }}
+              />
+            )}
           </div>
         </div>
-        <div className="border-edge-1l dark:border-edge-1d text-content-3l dark:text-content-3d flex h-8 items-center gap-1.5 border-t px-3 text-[11.5px]">
-          <Icon name="folder_open" size={13} weight={300} />
-          <span data-part="captureTarget" className="truncate">
-            {project && list ? `${project.name} / ${list.name}` : 'No list yet'}
-          </span>
-          {!notesOpen && (
-            <span data-part="captureNotesHint" className="ml-auto shrink-0">
-              Press Tab to add a note
-            </span>
-          )}
+        {!notesOpen && (
+          <button
+            type="button"
+            data-part="captureNotesHint"
+            onClick={() => useDraft.setState({ notesOpen: true })}
+            className="text-content-3l dark:text-content-3d self-start px-3 py-2 text-xs"
+          >
+            Press Tab to add a note
+          </button>
+        )}
+        <Divider />
+
+        <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+          <button
+            type="button"
+            data-part="captureTarget"
+            tabIndex={-1}
+            disabled={!list}
+            onClick={() => {
+              if (!list) return;
+              go({ project: null, list: list.id, task: null });
+              hide();
+            }}
+            title="Show this list"
+            className="text-content-2l hover:text-content-1l dark:text-content-2d dark:hover:text-content-1d flex min-w-0 items-center gap-1.5 text-xs"
+          >
+            <Icon name="arrow_outward" size={14} />
+            <span className="truncate">{project && list ? `${project.name} / ${list.name}` : 'No list yet'}</span>
+          </button>
         </div>
       </div>
     </div>

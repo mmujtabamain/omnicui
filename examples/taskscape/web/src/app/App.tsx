@@ -9,12 +9,14 @@
 //   CaptureBar), never in a window of their own (WHY.md);
 // - no boot veil: the page paints its shell at once and the panes fill in
 //   when the data lands;
-// - below 960 px the drawer is an overlay at the right edge, over the pane,
-//   instead of a column beside it, so the pane keeps a usable width;
+// - below 960 px the drawer is an overlay at the right edge, over the pane and
+//   a scrim that closes it, instead of a column beside it, so the pane keeps a
+//   usable width;
+// - quick capture is kept alive between uses (hidden), as the tray keeps its
+//   window, so it shows at once with its draft;
 // - there is no menu bar or tray to route events from.
 import { cn } from '@taskscape/common-ui/cn';
 import { EmptyState } from '@taskscape/common-ui/components';
-import { matchesEvent } from '@taskscape/common-ui/hotkeys';
 import { buildCommands } from '@shared/commands/palette';
 import { CommandPalette } from '@shared/components/CommandPalette';
 import { ContextMenuProvider } from '@shared/components/ContextMenu';
@@ -26,7 +28,6 @@ import { Toast } from '@shared/components/Toast';
 import { TrashPane } from '@shared/components/TrashPane';
 import { useAppKeyboard } from '@shared/hooks/useAppKeyboard';
 import { initialLoad, startBootstrap } from '@shared/stores/bootstrap';
-import { useHotkeyStore } from '@shared/stores/hotkeyStore';
 import { useLayoutStore } from '@shared/stores/layoutStore';
 import { useListStore } from '@shared/stores/listStore';
 import { useProjectStore } from '@shared/stores/projectStore';
@@ -76,22 +77,6 @@ function useDocumentTitle() {
   }, [task, activeListId, lists, projects, projectId]);
 }
 
-/** The capture shortcut (the catalog's global ⌘↩) summons quick capture from
- *  anywhere in the page, a field included. */
-function useCaptureShortcut() {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const accel = useHotkeyStore.getState().map['toggle_capture_bar'] ?? '';
-      if (!matchesEvent(accel, e)) return;
-      e.preventDefault();
-      const ui = useWebUi.getState();
-      ui.setCaptureOpen(!ui.captureOpen);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-}
-
 function App() {
   const activeProjectId = useProjectStore((s) => s.activeId);
   const lists = useListStore((s) => s.lists);
@@ -106,7 +91,6 @@ function App() {
   const draftListId = useUiStore((s) => s.draftListId);
   const selectedTaskId = useSelectionStore((s) => s.selectedTaskId);
   const settingsOpen = useWebUi((s) => s.settingsOpen);
-  const captureOpen = useWebUi((s) => s.captureOpen);
   const narrow = useMedia(NARROW);
   const [loaded, setLoaded] = useState(false);
 
@@ -134,7 +118,6 @@ function App() {
   }, []);
 
   useAppKeyboard();
-  useCaptureShortcut();
   useDocumentTitle();
 
   const railOpen = previewOpen || trashOpen || filterOpen;
@@ -221,10 +204,13 @@ function App() {
           {narrow ? (
             overlay && (
               <>
-                <div
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  data-part="drawerScrim"
+                  aria-label="Close the details"
+                  tabIndex={-1}
                   onMouseDown={closeOverlay}
-                  className="z-dropdown animate-scrim-in absolute inset-0 bg-black/20"
+                  className="z-dropdown animate-scrim-in absolute inset-0 cursor-default bg-black/20"
                 />
                 {rail}
               </>
@@ -251,7 +237,7 @@ function App() {
         />
       )}
       {settingsOpen && <SettingsDialog onClose={() => useWebUi.getState().setSettingsOpen(false)} />}
-      {captureOpen && <CaptureBar />}
+      <CaptureBar />
       <SheetHost />
       <Toast />
     </ContextMenuProvider>

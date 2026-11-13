@@ -5,8 +5,8 @@
 // did that writes nothing to the store, in the contracts' terms (`emit`); what
 // is written, the server reports. It follows the Tauri app's registry
 // (tauri/main/src/omnicui/registry.tsx), surface for surface, with the web's
-// own window, title bar and Settings. The capture bar's contract is desktop
-// only (a menu-bar agent), so it has no entry here.
+// own window, title bar and Settings, and its quick-capture bar for the
+// capture bar's contract.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { buildCommands } from '@shared/commands/palette';
@@ -42,6 +42,7 @@ import { useUiStore } from '@shared/stores/uiStore';
 import { DEFAULT_VIEW, useViewStore } from '@shared/stores/viewStore';
 import { api } from '../app/api';
 import App from '../app/App';
+import { CaptureBar } from '../app/CaptureBar';
 import { createList, deleteList, renameList } from '../app/lists';
 import { SettingsPanel } from '../app/SettingsDialog';
 import { TitleBar } from '../app/TitleBar';
@@ -113,6 +114,8 @@ function watch(host: Host) {
   useWebUi.subscribe((s, prev) => {
     // Settings opens in the page (the desktop app asks Rust for a window).
     if (s.settingsOpen && !prev.settingsOpen) host.emit('settingsOpened');
+    // Quick capture hidden (Escape, a press outside): the tray's `hide_mini`.
+    if (!s.captureOpen && prev.captureOpen) host.emit('dismissed');
   });
   useLayoutStore.subscribe((s, prev) => {
     if (s.previewOpen !== prev.previewOpen)
@@ -190,6 +193,18 @@ const SURFACES: Record<string, Surface> = {
     // App runs its own bootstrap and first load, as at launch.
     queueMicrotask(() => watch(host));
     return <App />;
+  },
+  // The same window, mounted at the narrow contract's 820×700.
+  'taskscape.narrow': async (_props, host) => {
+    queueMicrotask(() => watch(host));
+    return <App />;
+  },
+  // Quick capture alone, shown as the capture shortcut shows it, the card at
+  // the top of its 480 px box as the tray's window is the card.
+  'taskscape.capture': async (props, host) => {
+    await loadApp(props, host);
+    useWebUi.getState().setCaptureOpen(true);
+    return <CaptureBar placement="fill" />;
   },
   'taskscape.titlebar': async (props, host) => {
     await loadApp(props, host);
@@ -326,7 +341,7 @@ function MainWindowKeys({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const OWN_KEYBOARD = new Set(['taskscape.window', 'taskscape.settings']);
+const OWN_KEYBOARD = new Set(['taskscape.window', 'taskscape.narrow', 'taskscape.settings']);
 
 /** The note editor is a React.lazy chunk, and React reveals a suspended lazy
  *  component up to 300 ms after it resolves: a note would appear well after the

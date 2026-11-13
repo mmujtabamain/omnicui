@@ -116,7 +116,7 @@ Durations and easings, from tokens.css:
 | sheet-in | 140 ms | `cubic-bezier(0.2, 0, 0, 1)` (`--ease-standard`) | scale 0.96 → 1, from transparent | sheets, the palette, the project menu |
 | scale-in | 280 ms | `cubic-bezier(0.22, 1, 0.36, 1)` (`--ease-out`) | scale 0.97 → 1, from transparent | the Settings window |
 | check draw | 160 ms after 80 ms | `cubic-bezier(0.2, 0, 0, 1)` | the tick's stroke drawn in | the done check |
-| notes open | (a grid-row transition) | | the capture bar's notes panel grows open | the capture bar |
+| notes open | none | | the capture bar's notes replace the Tab hint at once, and the window fits the card | the capture bar (`.llm/tray-app.md` describes a grid-row transition the code no longer has) |
 
 Also defined: `--duration-fast` 180 ms, `--duration-base` 280 ms, `--duration-slow` 500 ms,
 `--ease-exit` `cubic-bezier(0.3, 0, 1, 1)`.
