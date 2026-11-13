@@ -525,7 +525,13 @@ async fn dispatch(s: &Session, cmd: &str, args: &Value, out: &mut Vec<Value>) ->
             }
             Ok(Value::Null)
         }
-        "get_dark" => Ok(json!(store.get_setting("theme").await?.as_deref() == Some("dark"))),
+        // The tray's get_dark: the saved theme, else the system appearance, which only the page
+        // knows here (null: the harness answers from prefers-color-scheme).
+        "get_dark" => Ok(match store.get_setting("theme").await?.as_deref() {
+            Some("dark") => json!(true),
+            Some("light") => json!(false),
+            _ => Value::Null,
+        }),
 
         other => bail!("command {other} not found"),
     }

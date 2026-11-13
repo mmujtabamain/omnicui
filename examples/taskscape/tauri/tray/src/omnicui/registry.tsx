@@ -28,9 +28,22 @@ export async function mount(
       <App />
     </React.StrictMode>
   );
-  // Rust emits this on every reveal, once the window is at the cursor.
-  await new Promise((r) => requestAnimationFrame(r));
-  await emit('mini-shown', 'top');
+  // Rust emits this on every reveal, once the window is at the cursor. The bar
+  // listens from an effect, so emit until it has heard it: it marks the page
+  // `bar-ready` (lib/anchor.ts), which is what makes the card paint.
+  await reveal();
+}
+
+/** What the tray's global shortcut does to a hidden bar (`toggle_mini`). */
+export async function reveal(): Promise<void> {
+  const root = document.documentElement;
+  const until = performance.now() + 3000;
+  while (!root.classList.contains('bar-ready') && performance.now() < until) {
+    await emit('mini-shown', 'top');
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  if (!root.classList.contains('bar-ready'))
+    throw new Error('the capture bar never took its reveal (mini-shown)');
 }
 
 export const COMPONENTS = ['taskscape.capture'];

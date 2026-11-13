@@ -213,7 +213,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     log(`ready in ${Math.round(performance.now() - started)} ms (store server on port ${port}, Chromium)`);
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected"],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.summon"],
       cannot: {
         "do.back": "a desktop window has no system back",
         "do.scroll": "not implemented in this target",
@@ -248,6 +248,14 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     mounted = p.component;
     const err = await page.evaluate(([c, props]) => (window as any).omnicuiMount(c, props), [p.component, p.props ?? {}] as const);
     if (err) throw new RpcError(NO_COMPONENT, err);
+    await settle();
+    return null;
+  },
+  // protocol: do. `summon` is the tray's global shortcut (⌘↩), which the OS delivers to the tray
+  // process, not the page: what Rust does then, the reveal, is done here instead.
+  async do(p) {
+    if (p.name !== "summon") throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
+    await page.evaluate((n) => (window as any).omnicuiDo(n), p.name);
     await settle();
     return null;
   },

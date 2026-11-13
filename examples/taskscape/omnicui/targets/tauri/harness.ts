@@ -35,11 +35,14 @@ function local(cmd: string, args: Record<string, unknown>): { value: unknown } |
     case 'open_settings':
       record('settingsOpened');
       return { value: null };
+    // The tray's `dismiss` (window.rs): it tells the card to hide, then hides the window.
     case 'hide_mini':
       record('dismissed');
+      void emit('mini-hidden');
       return { value: null };
     case 'open_main':
       record('mainOpened');
+      void emit('mini-hidden');
       return { value: null };
     case 'capture_and_attach':
       // The tray's background capture: pending, then the macOS screenshot tool's outcome.
@@ -102,6 +105,10 @@ mockIPC(
       for (const e of body.events ?? []) events.push(e);
       // Tauri rejects with the command's error string.
       if ('error' in body) throw body.error;
+      // Filing a capture dismisses the bar (task.rs: submit_capture).
+      if (cmd === 'submit_capture') void emit('mini-hidden');
+      if (cmd === 'get_dark' && body.ok === null)
+        return matchMedia('(prefers-color-scheme: dark)').matches;
       return body.ok;
     } finally {
       pending--;
@@ -118,6 +125,12 @@ Object.assign(window, {
   /** The adapter waits while this is true: a command in flight, or a mount loading. */
   omnicuiBusy: () => mounting || pending > 0,
   omnicuiEvents: () => events.splice(0),
+  /** A target-defined action (`do`): `summon` is the tray's global shortcut on a hidden bar. */
+  async omnicuiDo(name: string) {
+    const registry = await import('@omnicui-registry');
+    if (name === 'summon' && 'reveal' in registry) return void (await registry.reveal());
+    throw new Error(`do.${name} is not something this target does`);
+  },
   async omnicuiMount(component: string, props: Record<string, string | number | boolean>) {
     mounting = true;
     try {
