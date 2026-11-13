@@ -168,7 +168,8 @@ def cmd_markdown():
         parts.append(area_markdown(n))
     head = ["# Taskscape: the feature list", "",
             f"{total} features of the reference app in {len(all_areas())} areas. Each was found independently from the code (A) "
-            "and from recordings of the running app or its docs (B), merged, then checked for exactness against both.", ""]
+            "and from recordings of the running app or its docs (B), merged, then checked for exactness against both.", "",
+            "Pixel sizes: the reference sets the root font size to 14px, so 1rem = 14px and a Tailwind class like h-8 is 28px.", ""]
     open(os.path.join(FEAT, "..", "features.md"), "w").write("\n".join(head + parts))
     print(total, "features")
 

@@ -324,7 +324,8 @@
    "sources": [
     "main/src-tauri/src/lib.rs:285-290",
     "Checker A: lib.rs:285-290 list_trashed calls store.list_trashed(); the only ordering evidence is the doc comment at 285 \"most-recently-deleted first\". The ordering implementation is in the common crate, which is outside the allowed scope.",
-    "Checker B: list_trashed is not in main-app.md:22-24. No doc gives the trash ordering."
+    "Checker B: list_trashed is not in main-app.md:22-24. No doc gives the trash ordering.",
+    "common/src/storage.rs (fn list_trashed)"
    ],
    "system": false,
    "uncertain": true,
@@ -332,8 +333,8 @@
     "A"
    ],
    "id": "F15-011",
-   "check": "unverified",
-   "check_notes": "Checker A could only confirm the call and a doc comment, and the ordering implementation is in the common crate, outside its scope. Checker B could not check because list_trashed is not documented. The most-recently-deleted-first ordering is unverified."
+   "check": "confirmed_in_code",
+   "check_notes": "Verified in code by the orchestrator: common/src/storage.rs list_trashed filters deleted_at IS NOT NULL and orders by deleted_at descending, so the most recently deleted task is first. Equal timestamps have no further ordering. Earlier check: Checker A could only confirm the call and a doc comment, and the ordering implementation is in the common crate, outside its scope. Checker B could not check because list_trashed is not documented. The most-recently-deleted-first ordering is unverified."
   },
   {
    "title": "Empty Trash permanently",
