@@ -32,7 +32,7 @@ By how much of the product each carries. The contracts cover the top of the list
 |---|---|---|---|
 | 1 | task pane | `taskscape.pane` | one list's tasks: read, complete, nest, search, act on |
 | 2 | preview rail | `taskscape.inspector` | the focused task (title, notes, subtasks, attachments), a draft, or the selection |
-| 3 | capture bar | `taskscape.capture` | the hero: file a task from anywhere (desktop only) |
+| 3 | capture bar | `taskscape.capture` | the hero: file a task from anywhere (on the web, a bar in the page) |
 | 4 | title bar | `taskscape.titlebar` | projects, list tabs, the view buttons, the window controls |
 | 5 | the window | `taskscape.window` | the surfaces together at 1180×760, and the flows between them |
 | 6 | sheets | `taskscape.sheet` | every question the app asks |
@@ -41,6 +41,7 @@ By how much of the product each carries. The contracts cover the top of the list
 | 9 | filter panel | `taskscape.filter` | how the pane sorts and filters |
 | 10 | Trash | `taskscape.trash` | restore or purge deleted tasks |
 | 11 | toast | `taskscape.toast` | "Moved to Trash · Undo" |
+| — | the narrow window (web) | `taskscape.narrow` | the window under 960 px: the drawer as an overlay |
 | 12 | attachment lightbox | none | full-size image and text previews; not under contract (GAPS-P0.txt) |
 | — | context menus | in the pane | a row's actions (in `taskscape.pane`) |
 
@@ -266,9 +267,11 @@ something in it." Several: "N tasks selected", "N done / M", "Done", "Undone", "
 (layout only). **Motion**: the inspector, draft and multi inspector rise in (110 ms, 3 px, fade)
 when they appear or change task.
 
-### `taskscape.capture`: the capture bar (desktop)
+### `taskscape.capture`: the capture bar
 
-The tray agent's only window, 480 px wide. Desktop only: every test says `only: [desktop]`.
+The tray agent's only window, 480 px wide. On the web it is a bar in the page, with the same
+rules; the tests that need the desktop's window (opening the main window) or a screenshot say
+`only: [desktop]`, and the clear-draft shortcut has no web chord.
 
 **Props.** `seed`. **Events.** `taskCreated`, `noteAdded`, `dismissed`, `mainOpened`,
 `screenshotRequested`.
@@ -291,6 +294,8 @@ The tray agent's only window, 480 px wide. Desktop only: every test says `only: 
 - The screenshot button captures the screen and attaches it (`screenshotRequested`): a spinner
   while it runs ("Capturing …"), then the count ("1 shot"), or "Capture failed" for 4 s. Each
   press adds another. The bar itself is left out of its own capture.
+
+Notes are filed with the `submitNotes` input (⌘↩; Ctrl+↩ on the web).
 
 **Texts.** "Capture a task ...", "Press Tab to add a note", "Notes ...", "Clear", "Screenshot",
 "N shot(s)", "Capturing …", "Capture failed".
@@ -478,6 +483,21 @@ holds what it shows, not where.
 **Props.** `seed`, `trashed` (the task just deleted). **Events.** `taskRestored`. **Parts.**
 `toastMessage`, `toastAction`, `toastDismiss`. **Rules.** One at a time, bottom centre, for 6 s:
 "Moved to Trash" (or "N moved to Trash") with Undo, and ×. Undo restores. It rises in.
+
+### `taskscape.narrow`: the narrow window (web)
+
+The web's window at 820×700 (P2's proposal, adopted): every test is `only: [web]`, and it is
+compared by colours and motion only, since no other target has the width. **Props.** `seed`.
+**Events.** `previewToggled`. **Parts.** `doneCount`, `donePercent`, `row1Title`, `row5`,
+`inspector`, `inspectorTitle`, `drawerScrim` (the scrim behind the overlaid drawer).
+
+**Rules.** Under 960 px the drawer is an overlay at the pane's right edge, over a scrim; it is
+shown only when it has something to show (a task, a draft, a selection, the Trash or the
+filter), so with nothing selected the pane takes the whole width. Pressing a row brings it in
+(it rises in); a press on the scrim closes it.
+
+**The web's history** is under contract too: `taskscape.window`'s "the browser's back returns
+to the list shown before" (`only: [web]`, `do: back`).
 
 ## Keyboard
 

@@ -2,7 +2,9 @@
 # The capture bar (SPEC-PRODUCT.md, "taskscape.capture"): the menu-bar agent's one window,
 # summoned anywhere with ⌘↩. A title, notes behind Tab, screenshots, and where the task will land;
 # Enter files it in the last list the main window had open. The product's hero (the design
-# review's direction). Desktop only: a browser has no menu bar to live in.
+# review's direction). On the web it is a bar in the page (a browser has no menu bar to live in,
+# and can't take screenshots): the tests that need the desktop's window or a screenshot say
+# `only: [desktop]`, and the rest hold the web's bar to the same rules.
 id: taskscape.capture
 
 props:
@@ -26,16 +28,13 @@ parts:
 
 tests:
   - name: the bar opens empty, focused, and says where the task will go
-    only: [desktop]
     expect:
       - { part: captureTitle, text: "", focused: true, name: "Capture a task ..." }
       - { part: captureNotesHint, text: "Press Tab to add a note" }
       - { part: captureTarget, text: { matches: "^Atlas ?/ ?Launch plan$" } }
-      - { part: captureShot, text: { contains: "Screenshot" } }
     screenshot: true
 
   - name: Enter files the task in the last list the main window had open
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Ring the printer" }
       - { action: key, part: captureTitle, key: Enter }
@@ -44,7 +43,6 @@ tests:
       - { part: captureTitle, text: "" }
 
   - name: with no lists yet, a capture lands in the first list
-    only: [desktop]
     props: { seed: empty }
     steps:
       - { action: type, part: captureTitle, text: "First thought" }
@@ -53,7 +51,6 @@ tests:
       - { event: taskCreated, times: 1, last: { title: "First thought", listId: inbox } }
 
   - name: a blank title files nothing
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "   " }
       - { action: key, part: captureTitle, key: Enter }
@@ -61,7 +58,6 @@ tests:
       - { event: taskCreated, times: 0 }
 
   - name: Tab opens the notes under the title
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Ring the printer" }
       - { action: key, part: captureTitle, key: Tab }
@@ -73,19 +69,17 @@ tests:
     record: { part: captureBar }
 
   - name: a capture with notes keeps them as the task's first note
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Ring the printer" }
       - { action: key, part: captureTitle, key: Tab }
       - { action: type, part: captureNotes, text: "Ask for the matte paper" }
-      - { action: key, part: captureNotes, key: Meta+Enter }
+      - { input: submitNotes }
     expect:
       - { event: taskCreated, times: 1, last: { title: "Ring the printer", listId: launch } }
       - { event: noteAdded, times: 1, last: { text: "Ask for the matte paper" } }
       - { part: captureTitle, text: "" }
 
   - name: Clear empties the draft and files nothing
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Never mind" }
       - { action: press, part: captureClear }
@@ -94,7 +88,6 @@ tests:
       - { event: taskCreated, times: 0 }
 
   - name: the clear-draft input does the same
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Never mind" }
       - { input: clearDraft }
@@ -103,7 +96,6 @@ tests:
       - { event: taskCreated, times: 0 }
 
   - name: Escape hides the bar and keeps the draft for next time
-    only: [desktop]
     steps:
       - { action: type, part: captureTitle, text: "Half a thought" }
       - { action: key, part: captureTitle, key: Escape }

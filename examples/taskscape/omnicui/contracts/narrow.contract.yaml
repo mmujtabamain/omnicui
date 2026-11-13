@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=../../../../tools/omnicui/schema/contract.schema.json
+# The main window at a narrow width, on the web only (SPEC-PRODUCT.md, "taskscape.narrow"; from
+# P2's proposal, web/GAPS-P2.txt 4). A browser window can be narrower than the desktop app's
+# 880 px minimum; under 960 px the web's details drawer is an overlay at the pane's right edge,
+# shown only when it has something to show, over a scrim that closes it. The desktop windows
+# have no such width, so every test is `only: [web]`, and nothing compares this layout with
+# another target's.
+id: taskscape.narrow
+
+props:
+  seed: { type: string, enum: [standard], default: standard }
+
+events:
+  previewToggled: { open: { type: boolean } }
+
+parts:
+  doneCount:      { role: status }
+  donePercent:    { role: status }
+  row1Title:      { role: generic }
+  row5:           { role: button }
+  inspector:      { role: generic }
+  inspectorTitle: { role: textbox, same: [layout] }
+  # The scrim behind the overlaid drawer: a press on it closes the drawer.
+  drawerScrim:    { role: button }
+
+tests:
+  - name: with nothing selected the drawer stays out of the way and the pane takes the width
+    only: [web]
+    expect:
+      - { part: row1Title, text: "Write the launch brief" }
+      - { part: doneCount, text: "3/8 DONE", visible: true }
+      - { part: donePercent, text: "38%", visible: true }
+    screenshot: true
+
+  - name: pressing a row brings the drawer over the pane, and it rises in
+    only: [web]
+    steps:
+      - { action: press, part: row5 }
+    expect:
+      - { part: inspectorTitle, text: "Book the venue" }
+      - { part: inspector, visible: true }
+    screenshot: true
+    trace:
+      - { part: inspector, property: opacity }
+
+  - name: a press on the scrim closes the drawer
+    only: [web]
+    steps:
+      - { action: press, part: row5 }
+      - { action: press, part: drawerScrim }
+    expect:
+      - { event: previewToggled, last: { open: false } }
+      - { part: doneCount, visible: true }
+
+viewports: [{ width: 820, height: 700 }]
+colorSchemes: [light, dark]
+same: [colours, motion]
