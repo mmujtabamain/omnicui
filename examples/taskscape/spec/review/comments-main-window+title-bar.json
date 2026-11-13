@@ -1,0 +1,121 @@
+[
+ {
+  "id": "seed-o9",
+  "node": "screen:main-window",
+  "author": "Opus (orchestrator)",
+  "tag": "desktop",
+  "text": "Desktop windows open as real windows where a desktop app would open one (Settings, sheets, the lightbox), not as layers inside the main window."
+ },
+ {
+  "id": "seed-main-window-0",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "No widget in the main window opens the Trash, although the TrashPane is in the aside (App.tsx:121-124) and the features list soft delete, restore and Empty Trash (F15-008 to F15-012). The title bar, search bar and footer have no Trash control, and the inventory says the opening control is not in its files. Add an explicit entry point, such as a Trash button in the title bar or a footer item, so both rebuilds have a defined route to restore and empty deleted tasks."
+ },
+ {
+  "id": "seed-main-window-1",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Show completed tasks toggle (F11-053, with shortcut F08-015) has no widget on this screen. The footer holds only the ViewControl, which opens the filter panel, and the search bar has no completed-task toggle. Decide where the toggle lives, because done tasks stay in place (F09-090) and the reference shows them struck through."
+ },
+ {
+  "id": "seed-main-window-2",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The same tune glyph opens the same Filter and Sort panel from two places with different labels: the search-bar IconButton titled 'Search options' (iconSize 15) and the footer ViewControl titled 'Sort & filter' (size 14). Pick one name and one icon size, or document why the search-field entry and the footer entry differ."
+ },
+ {
+  "id": "seed-main-window-3",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The same add glyph has different variants for no clear reason: the New list IconButton uses iconWeight 300 and a 5.25 px radius at size lg, while the New task IconButton uses iconWeight 400 and a 4.375 px radius at small size. Likewise, the delete-list close icon uses iconWeight 500 but the split-close close icon uses iconWeight 300. Unify the icon weight and radius per button size in the rebuild."
+ },
+ {
+  "id": "seed-main-window-4",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The window-control spec conflicts. The MacLights widget (Close, Minimize, Full Screen) is listed on the main window, and F09-058 and F11-060 say it is present there, but F15-037 says traffic-light buttons are hidden on the main window. The web build should not draw macOS-style dots over the browser chrome, and the desktop build should use the native OS window controls, so resolve which one the reference actually shows before the rebuild."
+ },
+ {
+  "id": "seed-main-window-5",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The SheetHost overlay, mounted at App.tsx:144, renders the New list, rename and delete-list sheets inside the main window, and these dim the window behind them. In the desktop build each sheet should open as its own window with no backdrop dimming, as the Settings window already does (F15-023). The New list and delete-list buttons in the title bar and tabs should open those windows instead of an in-window sheet."
+ },
+ {
+  "id": "seed-main-window-6",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The toolbar tooltips advertise shortcuts such as 'Settings ⌘,' and 'Hide preview panel ⌘\\' (F08-041), and the command palette and other global bindings are also defined. In the web build browser shortcuts take precedence and there are no global hotkeys, so these hints must be re-checked against the browser and the bindings that survive should be listed, or the hints dropped. The Settings button should route to a settings page rather than opening a separate window."
+ },
+ {
+  "id": "seed-main-window-7",
+  "node": "screen:main-window",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The main window starts hidden and reveals in stages, with a boot veil that fades out after the data loads (F15-033, F09-036, F09-037). The inventory has no loading widget and the boot overlay is unconfirmed in App.tsx. The web build fetches data from the server, so it needs a defined loading state for the task area and the list tabs, with an error state when a request fails."
+ },
+ {
+  "id": "seed-o4",
+  "node": "screen:title-bar",
+  "author": "Opus (orchestrator)",
+  "tag": "web",
+  "text": "The web has no window controls (traffic lights) and no drag region; the browser owns the window. The project switcher and list tabs stay."
+ },
+ {
+  "id": "seed-title-bar-0",
+  "node": "screen:title-bar",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The drag grip (drag_indicator in a drag-region div) and the header's double-click toggleMaximize behaviour only make sense for a desktop window. In the browser build the grip should be removed, and the bar should not act as a window drag area (F02-001, F02-059, F02-060)."
+ },
+ {
+  "id": "seed-title-bar-1",
+  "node": "screen:title-bar",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The macOS traffic-light cluster (MacLights, close, minimize, full screen) and the Windows/Linux WinControls cluster both control a native window. Neither has a web equivalent, so both regions should be dropped on web, along with the blur and focus-driven disc states (F02-023 to F02-028, F02-029 to F02-031)."
+ },
+ {
+  "id": "seed-title-bar-2",
+  "node": "link:title-bar>settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Settings button calls api.openSettings() and the inventory says the Settings window opens. On web this should navigate to a settings page or route, since a separate window is a desktop pattern; the ⌘, hint should also be dropped or checked against browser shortcut precedence."
+ },
+ {
+  "id": "seed-title-bar-3",
+  "node": "link:title-bar>sheets",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The New list, New project, rename and delete actions are all documented as opening sheets. Under the desktop rebuild each of these must open as its own window, so the inventory should name a separate-window target for each action instead of an unconfirmed sheet."
+ },
+ {
+  "id": "seed-title-bar-4",
+  "node": "link:title-bar>sheets",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The list context menu entry Export list… (F02-048, F09-003) writes a JSON file, and Import JSON… exists on the New list sheet (F09-001). On web, export is a browser download and import is a file upload to the server, and neither path is shown in the title-bar inventory."
+ },
+ {
+  "id": "seed-title-bar-5",
+  "node": "screen:title-bar",
+  "author": "Haiku critic",
+  "tag": "general",
+  "text": "Delete affordances are inconsistent. Each list tab shows a × delete button at all times, but each project row's delete icon is hidden until hover (opacity-0), and lists can also be deleted by middle-click. Hover-only controls will not be reachable on touch screens in the web build, so project delete should get a consistent, always-available form."
+ },
+ {
+  "id": "seed-title-bar-6",
+  "node": "screen:title-bar",
+  "author": "Haiku critic",
+  "tag": "general",
+  "text": "The Split view button's active state (filled, title \"Close split view\") and the Swap panes button are not in any recorded state. F02-022 requires filled and inactive-greyed variants by state, so the inventory has no visual reference for the split-on toolbar state."
+ }
+]

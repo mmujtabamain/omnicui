@@ -15,7 +15,7 @@ const key = {
 
 function ScreenNode({ data }) {
   return (
-    <div className={`node screen ${data.tier} ${data.focus ? 'focus' : ''}`}>
+    <div className={`node screen ${data.tier} ${data.focus ? 'focus' : ''}`} title={`${data.label}: click for details, double-click to open`}>
       <Handle type="target" position={Position.Left} />
       {data.thumb && <img src={data.thumb} alt="" />}
       <div className="node-body">
@@ -45,7 +45,7 @@ function RegionNode({ data }) {
 const nodeTypes = { screen: ScreenNode, widget: WidgetNode, region: RegionNode };
 
 const edge = (id, source, target, label, opts = {}) => ({
-  id, source, target, label, type: 'default',
+  id, source, target, label, type: 'default', interactionWidth: 6, zIndex: 0,
   markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
   labelBgPadding: [4, 2], labelBgBorderRadius: 4, ...opts,
 });
@@ -150,7 +150,7 @@ function Canvas({ data, view, setView, select, counts, filter, focusId }) {
       nodes={graph.nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      onNodeClick={(_, n) => select({ node: n.data.node, data: n.data })}
+      onNodeClick={(_, n) => n.data.node && select({ node: n.data.node, data: n.data })}
       onNodeDoubleClick={(_, n) => {
         if (n.type === 'screen') setView({ kind: 'screen', id: n.data.go ?? n.id });
         else if (n.data.widget) setView({ kind: 'widget', id: data.familyOf[n.data.widget.kind] ?? 'structure' });
@@ -168,7 +168,7 @@ function Canvas({ data, view, setView, select, counts, filter, focusId }) {
 }
 
 function Details({ data, sel, view, setView }) {
-  if (!sel) return <p className="muted">Click a screen, widget or link to see it here and comment on it. Double-click a screen to open it.</p>;
+  if (!sel?.node) return <p className="muted">Click a screen, widget or link to see it here and comment on it. Double-click a screen to open it.</p>;
   const [kind, rest] = sel.node.split(/:(.*)/s);
   if (kind === 'screen') {
     const s = data.byId[rest];
@@ -261,7 +261,10 @@ export default function App() {
     <div className="shell">
       <header>
         <strong>Taskscape map</strong>
-        <nav>{crumbs.map((c, i) => <button key={i} className={i === crumbs.length - 1 ? 'crumb on' : 'crumb'} onClick={() => setView(c.v)}>{c.label}</button>)}</nav>
+        <nav aria-label="Where you are">{crumbs.map((c, i) => {
+          const here = i === crumbs.length - 1;
+          return <button key={i} className={here ? 'crumb on' : 'crumb'} disabled={here} aria-current={here ? 'page' : undefined} onClick={() => { setSel(null); setView(c.v); }}>{c.label}</button>;
+        })}</nav>
         <select value={view.kind === 'widget' ? view.id : ''} onChange={(e) => e.target.value && setView({ kind: 'widget', id: e.target.value })}>
           <option value="">Widgets…</option>
           {data.catalogue.map((f) => <option key={f.kind} value={f.kind}>{f.title} ({f.variants.length})</option>)}

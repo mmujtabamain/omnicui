@@ -1,0 +1,922 @@
+[
+ {
+  "id": "seed-o9",
+  "outcome": "decided",
+  "reply": "Agreed by both reviewers: on desktop, Settings, the New list, New project, rename and delete sheets, and the attachment lightbox each open as their own window with no backdrop, under the brief's rule that new windows open where a desktop app would. Settings is already a singleton window (F15-023), while the reference's sheets go through the in-window SheetHost and the lightbox is drawn inside TaskInspector, so these are rebuild changes. The web build is not covered by this rule.",
+  "evidence": "/home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:660 (F15-023); /home/coder/project/taskscape-tauri/main/src/lib/sheet.ts:51-71; /home/coder/project/taskscape-tauri/main/src/components/preview/TaskInspector.tsx:468-475; /home/coder/project/taskscape-tauri/main/src/components/AttachmentLightbox.tsx:162,176; /home/coder/project/taskscape-tauri/main/src/lib/zLayers.ts:15; brief"
+ },
+ {
+  "id": "seed-main-window-0",
+  "outcome": "needs_mujtaba",
+  "question": "Where should Trash be reachable on the main window: (a) the command palette only on both builds, as in the reference; (b) a Trash icon button in the title bar on web only, with the palette on desktop; or (c) a Trash icon button in the title bar on both builds?",
+  "reply": "The reference's only route to Trash is the command palette's Open Trash command, since palette.ts:146 is the only setTrashOpen(true) call, so the inventory's 'not in these files' misses it. Reviewer B adds a web-only title-bar Trash button because browser shortcuts take precedence over the palette shortcut (F08-010), while Reviewer A treats any on-screen Trash control as a product call the brief does not settle.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/commands/palette.ts:142-147; /home/coder/project/taskscape-tauri/main/src/stores/uiStore.ts:83-85; /home/coder/project/taskscape-tauri/main/src/App.tsx:121-124; /home/coder/project/taskscape-tauri/main/src/components/TrashPane.tsx:19-62; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:274-358 (F15-008, F15-012); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-main-window.txt:109 (F08-010)"
+ },
+ {
+  "id": "seed-main-window-1",
+  "outcome": "answered",
+  "reply": "The reference has no main-window control for the global show-completed toggle: it is the Show completed tasks row in Settings > General, the 'Show / hide completed' palette command, and the toggle_completed shortcut (Cmd+Shift+H, F08-015). The filter panel's All / Active / Done segment is a per-pane filter, not this toggle, and done tasks keep their place (F09-090). The rebuild keeps these three placements and adds no title-bar or footer control.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/windows/settings/generalPane.tsx:83-91; /home/coder/project/taskscape-tauri/main/src/commands/palette.ts:66-72; /home/coder/project/taskscape-tauri/common/src/hotkeys.rs:498-499; /home/coder/project/taskscape-tauri/main/src/hooks/useAppKeyboard.ts:122-124; /home/coder/project/taskscape-tauri/main/src/components/preview/FilterPanel.tsx:40-44,209-213; /home/coder/project/taskscape-tauri/main/src/stores/visibility.ts:125-127; /home/coder/project/omnicui/examples/taskscape/spec/features/area-11.json:2038 (F11-053); /home/coder/project/omnicui/examples/taskscape/spec/features/area-08.json:759 (F08-015); /home/coder/project/omnicui/examples/taskscape/spec/features/area-09.json (F09-090)"
+ },
+ {
+  "id": "seed-main-window-2",
+  "outcome": "invalid",
+  "reply": "The search-bar tune button does not open the Filter & Sort panel: it opens the scope and fields menu through ScopeFields, titled 'Search options', and only the footer ViewControl titled 'Sort & filter' toggles the panel. The inventory entries that say the search button opens filter-panel (main-window.json:868 and :1322) should be corrected, so the proposal to give both buttons one name and size does not apply.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:340-402 (ScopeFields, tune 'Search options' at 392-400); /home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:525-555 (ViewControl, 'Sort & filter'); /home/coder/project/omnicui/examples/taskscape/spec/inventory/main-window.json:868 and :1322"
+ },
+ {
+  "id": "seed-main-window-3",
+  "outcome": "decided",
+  "reply": "The variance is real in the source: New list is size lg with icon weight 300 and a rounded-md class, New task is the default md with weight 400, delete-list close is weight 500, and split close is weight 300. The radius difference is a Tailwind rounded-md override (5.25px), not a token, so the rebuild removes per-call weight and radius overrides. Each IconButton size gets one icon size, one optical weight from the theme, and one radius token (4.375px for sm, md and lg; 7px for xl), and the F11-099 note that no weight-500 close icon exists is wrong.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:236-240 (delete, weight 500), 293-301 (New list, lg, weight 300, rounded-md); /home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:247-262 (New task weight 400; split close weight 300); /home/coder/project/taskscape-tauri/common-ui/src/components/buttons/IconButton.tsx:9-50; /home/coder/project/taskscape-tauri/common-ui/styles/tokens.css:198-202; /home/coder/project/taskscape-tauri/common-ui/src/Icon.tsx:12,27; /home/coder/project/omnicui/examples/taskscape/spec/features/area-11.json:3721 (F11-099)"
+ },
+ {
+  "id": "seed-main-window-4",
+  "outcome": "needs_mujtaba",
+  "question": "For the desktop main window, should the window controls be (a) drawn controls on every desktop platform with native buttons hidden, as the reference does; (b) native OS controls on every platform; or (c) drawn macOS controls with native controls on Windows and Linux?",
+  "reply": "This is not a true conflict: the reference hides the native traffic lights on the main window (lib.rs:1001-1005) and draws the MacLights on macOS and the WinControls cluster elsewhere (TitleBar.tsx:49,105), so F09-058, F11-060 and F15-037 agree. Reviewer B's option (c) misdescribes the reference split, since the reference also draws Windows controls. Web draws no window controls because the browser owns the window, and the desktop choice is a product call the brief does not settle.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:49,105; /home/coder/project/taskscape-tauri/main/src-tauri/src/lib.rs:1001-1005, 1004; /home/coder/project/taskscape-tauri/main/src-tauri/src/panels.rs:4-7; /home/coder/project/taskscape-tauri/main/src/components/WindowControls.tsx:95-118, 131-134, 149-189; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:1077-1097 (F15-037); /home/coder/project/omnicui/examples/taskscape/spec/features/area-09.json:2258 (F09-058); /home/coder/project/omnicui/examples/taskscape/spec/features/area-11.json:2318 (F11-060)"
+ },
+ {
+  "id": "seed-main-window-5",
+  "outcome": "decided",
+  "reply": "Agreed by both reviewers: in the desktop build the New list, New project, rename and delete actions each open as their own window with no backdrop dimming, following the brief's rule and the Settings window model (F15-023). The reference routes these through openSheet, askText and askConfirm into the in-window SheetHost with a scrim (F11-027), so the New list, per-tab delete and rename paths all need window targets.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/lib/sheet.ts:51-71; /home/coder/project/taskscape-tauri/main/src/App.tsx:144; /home/coder/project/taskscape-tauri/main/src/commands/lists.ts:35-49, 51-61, 63-90; /home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:236-246; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:660 (F15-023); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-main-window.txt:211 (F11-027); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:67, 69, 129"
+ },
+ {
+  "id": "seed-main-window-6",
+  "outcome": "decided",
+  "reply": "The hints come from the hotkey map: the preview tooltip shows Cmd+Backslash and the Settings tooltip shows Cmd+Comma. Per the brief, the web build registers no global hotkeys and browser shortcuts take precedence, so each in-page hint is kept only if the browser does not reserve its binding (checked during web setup), and the Cmd+Comma hint is dropped with the web Settings route. The palette accelerators follow the same rule, and the web Settings button routes to a settings page instead of calling the desktop window command.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:95, 98-102; /home/coder/project/taskscape-tauri/common/src/hotkeys.rs:353-364; /home/coder/project/taskscape-tauri/main/src/commands/palette.ts:44, 70, 153; /home/coder/project/taskscape-tauri/main/src-tauri/src/lib.rs:876; /home/coder/project/omnicui/examples/taskscape/spec/features/area-08.json:1643 (F08-041); brief"
+ },
+ {
+  "id": "seed-main-window-7",
+  "outcome": "decided",
+  "reply": "The boot veil is an in-page overlay (index.html:137, faded by boot.ts after initialLoad), so the web build keeps it fading after the first load, as in the reference, and the reference's missing error state (dismissBoot runs in finally with no catch) is filled in. Later requests show a loading state in the task area and tabs, a failed request shows an inline error with a Retry action, and the desktop staged reveal (F15-033) is dropped for web. Reviewer B's view that web drops the veil is not followed, because the veil is not a native-only mechanism.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/index.html:137; /home/coder/project/taskscape-tauri/main/src/lib/boot.ts:3-27; /home/coder/project/taskscape-tauri/main/src/App.tsx:43-47; /home/coder/project/taskscape-tauri/main/src/stores/bootstrap.ts:47-53; /home/coder/project/taskscape-tauri/main/src/components/TrashPane.tsx:89; /home/coder/project/taskscape-tauri/main/src-tauri/src/lib.rs:1004-1026; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:987 (F15-033); /home/coder/project/omnicui/examples/taskscape/spec/features/area-09.json:1633, 1674 (F09-036, F09-037)"
+ },
+ {
+  "id": "seed-o4",
+  "outcome": "decided",
+  "reply": "Agreed by both reviewers: on web the browser owns the window, so the title bar has no window controls and no drag region. The project switcher and the list tabs stay, since they are app navigation that does not depend on a native window. The desktop title bar keeps the drag region and the tab-row drag strip, and the reference already splits window controls by platform, with MacLights on macOS and WinControls elsewhere.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:42, 49, 52, 105; /home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:302-303; /home/coder/project/taskscape-tauri/main/src/components/ProjectSwitcher.tsx:20-49; /home/coder/project/omnicui/examples/taskscape/spec/features/area-02.json (F02-059, F02-060); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:4 (F02-004), 35 (F02-035)"
+ },
+ {
+  "id": "seed-title-bar-0",
+  "outcome": "decided",
+  "reply": "Agreed: the grip is decorative (pointer-events disabled, not a control), and the header double-click calls toggleMaximize, which only makes sense for a native window. The web title bar drops both, and desktop keeps them (F02-001, F02-003), with F02-059 and F02-060 covering window dragging only and going with the desktop build.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:41-56; /home/coder/project/omnicui/examples/taskscape/spec/features/area-02.json:112 (F02-001), 2257 (F02-059), 2287 (F02-060); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:1, 3, 59, 60"
+ },
+ {
+  "id": "seed-title-bar-1",
+  "outcome": "decided",
+  "reply": "Agreed by both reviewers: web drops both the MacLights and WinControls clusters, along with their focus-driven disc states, since they call native window methods (close, minimize, fullscreen, toggleMaximize). Desktop keeps them in the form chosen in the seed-main-window-4 question, and the blur and focus states go with the native window. F02-023 to F02-028 are macOS-only and F02-029 to F02-031 are Windows-only.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/WindowControls.tsx:139-142, 149-189; /home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:49, 105; /home/coder/project/omnicui/examples/taskscape/spec/features/area-02.json:1038-1296 (F02-023 to F02-031); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:23-31"
+ },
+ {
+  "id": "seed-title-bar-2",
+  "outcome": "decided",
+  "reply": "On web the Settings button navigates to a settings page, since a separate window is a desktop pattern, and the Cmd+Comma hint is dropped under the browser-precedence rule. Desktop keeps the Settings window, a singleton (F15-023), so the web route replaces api.openSettings on web only. This duplicates seed-main-window-6 and is resolved with that decision.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:98-102; /home/coder/project/taskscape-tauri/main/src/api.ts:165; /home/coder/project/taskscape-tauri/main/src-tauri/src/lib.rs:876; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json:660 (F15-023)"
+ },
+ {
+  "id": "seed-title-bar-3",
+  "outcome": "decided",
+  "reply": "Agreed by both reviewers: on desktop each action opens its own window, and the inventory should name the window target instead of an unconfirmed sheet. New list (createList, with its Import JSON option), rename and delete, and New project, rename and delete project all go through the in-window sheet helpers today, and each becomes a window with the same confirm and text content.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/commands/lists.ts:35-90; /home/coder/project/taskscape-tauri/main/src/commands/projects.ts:12-13, 24-25, 35-43; /home/coder/project/taskscape-tauri/main/src/lib/sheet.ts:51-71; /home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:87, 241-244, 298; /home/coder/project/taskscape-tauri/main/src/components/ProjectSwitcher.tsx:76-103; /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:67, 69, 129; F09-094"
+ },
+ {
+  "id": "seed-title-bar-4",
+  "outcome": "decided",
+  "reply": "Desktop keeps the native dialogs: Export list writes the schema-version-1 JSON through a save dialog, and import uses an open dialog, reached from the New list sheet's Import JSON option and the menu bar's Import List item. On web, export is a browser download of the same JSON, and import is a file picker on the New list sheet whose file is uploaded to the server. The title-bar inventory already lists Export list in the tab context-menu links, so the missing piece is the Import path with its web variant.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/commands/lists.ts:11-33, 43; /home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:59-93; /home/coder/project/taskscape-tauri/main/src-tauri/src/lib.rs:965; /home/coder/project/omnicui/examples/taskscape/spec/features/area-15.json (F15-001, F15-002, F15-004); /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-title-bar.txt:48, 64, 66; /home/coder/project/omnicui/examples/taskscape/spec/inventory/features-main-window.txt:289; brief (files uploaded to the server)"
+ },
+ {
+  "id": "seed-title-bar-5",
+  "outcome": "decided",
+  "reply": "The reference is inconsistent: list tab delete is always visible, while project row rename and delete are hidden until hover (opacity-0 group-hover), and middle-click also deletes a list. Both builds make project rename and delete always-visible IconButtons, with the danger variant on delete, matching the list tab, and middle-click stays as a mouse accelerator on both with every delete still confirmed.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/ProjectSwitcher.tsx:70-95; /home/coder/project/taskscape-tauri/main/src/components/ListTabs.tsx:132-134, 235-247; /home/coder/project/taskscape-tauri/main/src/commands/lists.ts:63-90; /home/coder/project/omnicui/examples/taskscape/spec/features/area-02.json:497 (F02-010, hover reveal unverified), 1893 (F02-048 area), 1981 (F02-051)"
+ },
+ {
+  "id": "seed-title-bar-6",
+  "outcome": "answered",
+  "reply": "The split-on state is recorded in the existing split-view recording: the Split view button is active with a filled icon and primary text tone, its title becomes 'Close split view', and Swap panes appears (shown at 1044,8), so the title-bar inventory's 'not in any recorded state' is stale. The rebuild uses the shared IconButton filled and active variant bound to one flag (F02-022), so the behaviour and variant are answered by the code and the recording.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:78-91, 110-131; /home/coder/project/taskscape-tauri/common-ui/src/components/buttons/IconButton.tsx:59-60, 75; /home/coder/project/omnicui/examples/taskscape/spec/features/area-02.json:951-953 (F02-022); /home/coder/project/omnicui/examples/taskscape/spec/inventory/main-window.json (BarButton split view, swap panes; state:split-view tree.txt:27-31)"
+ },
+ {
+  "id": "seed-o8",
+  "outcome": "decided",
+  "reply": "Agreed. Option switches the round check from select to done on both versions, Control or Command selects rows, and the hint names the platform key: 'Option' on macOS, 'Alt' on Windows and the web. The reference already keys the done toggle on altKey, so this mode is kept and the reference's Control wording (F01-085) is overridden by the brief.",
+  "evidence": "TaskRow.tsx:535 (if (e.altKey) return onToggleDone()); features area-08.json F08-034; area-01.json F01-066, F01-068, F01-085; features F07-057 (reviewer A)."
+ },
+ {
+  "id": "seed-task-list-0",
+  "outcome": "needs_mujtaba",
+  "question": "When the scope is Whole project or All projects, how should matches in other lists appear? Options: (a) keep the reference, where the scope changes only the match count and rows stay in this list; (b) add a cross-list results section to the pane; (c) keep the count but drop Whole project and All projects from the menu.",
+  "reply": "Both reviewers agree the gap is real: the pane renders only the active list's roots, so the wider scopes change the direct-match count but no row from another list can appear. The brief does not say whether cross-list matches should show, so the owner needs to choose one of the three options before the inventory can name a widget for them.",
+  "evidence": "TaskPane.tsx:60, 78-81, 164-172, 355-364 (reviewer A); visibility.ts:22-32, 115-117; searchStore.ts:108-122, 140-166 (reviewer B); task-list.json:123, :138; features area-01.json F01-011."
+ },
+ {
+  "id": "seed-task-list-1",
+  "outcome": "decided",
+  "reply": "Decided: every popover anchored to a button uses bottom + 4, set once in the shared popover component. The reference already uses +4 for the row More menu, the bulk Move menu, the Filter panel and the multi-inspector, so only the Search options menu changes from +6 to +4.",
+  "evidence": "TaskRow.tsx:468 (+4); TaskPane.tsx:417 (bulk Move, +4); TaskPane.tsx:353 (Search options, +6); preview/FilterPanel.tsx:366 (+4); preview/MultiInspector.tsx:59 (+4); task-list.json:107 (search options bottom + 6), :511 (More menu bottom + 4)."
+ },
+ {
+  "id": "seed-task-list-2",
+  "outcome": "decided",
+  "reply": "Decided: one verb per job across menus, the bulk bar and titles. Moving is 'Move to list' to match the existing row-menu label (the bulk 'Move to…' becomes 'Move to list' with the same title), marking done is 'Mark done' and 'Mark not done', and deletion is 'Delete', with the trash confirmation's accept button reading 'Delete' while its 'Move to Trash?' headline stays. Reviewer B's 'Done'/'Undone' and 'Move to…' wording is not adopted because it would change the existing row-menu and count labels.",
+  "evidence": "TaskRow.tsx:192, 216 ('Move to list'); TaskPane.tsx:458 ('Move to…'), 437, 446 ('Mark done', 'Mark not done'), 475 ('Delete selection'); features F07-028 (accept 'Move', headline 'Move to Trash?'); task-list.json:523 (row menu 'Move to list', 'Delete task…', 'Mark {n} done'), :691, :709, :727, :764; features area-01.json F01-028, F01-030."
+ },
+ {
+  "id": "seed-task-list-3",
+  "outcome": "answered",
+  "reply": "The bulk delete confirmation exists in the reference: F07-033 opens a sheet headlined 'Move N task(s) to Trash?' with a detail line and accept 'Move', and single delete is F07-028 with 'Move to Trash?'. Add both to the inventory under the BulkBar Delete and row-menu Delete entries with their headline and buttons, and on desktop they open as separate windows rather than sheets.",
+  "evidence": "features/area-07.json F07-033 (:1105 per reviewer B; ~1075 per reviewer A, so the exact line needs checking), F07-028 (:949); commands/tasks.ts:106-121; task-list.json:768 (bulk delete marked 'not verified'), :827."
+ },
+ {
+  "id": "seed-task-list-4",
+  "outcome": "decided",
+  "reply": "Decided: remove Cmd+F from the web search field, because browser shortcuts take precedence on the web. The field stays clickable and the plain typed-letter seed stays because it is not a browser shortcut; no '/' key is added because the reference has no such binding.",
+  "evidence": "common/src/hotkeys.rs:347-352 (search, default Cmd+F); main/src/hooks/useAppKeyboard.ts:66-70 and 299-307 (typed-letter seed, F08-033); features area-08.json F08-002 (:295); area-01.json F01-013 (:600-603); task-list.json:85 (registerSearchFocus)."
+ },
+ {
+  "id": "seed-task-list-5",
+  "outcome": "decided",
+  "reply": "Decided: the web uses the no-capture-hint empty state with the subtitle 'Press + to add a task', dropping the Cmd+N part too because browser Cmd+N opens a new window and the web has no global hotkeys. The desktop keeps the capture-hint variant (F01-017).",
+  "evidence": "features area-01.json F01-017 (:738), F01-018 (:811), F01-014; TaskPane.tsx:247-253 (New task button); TaskPane.tsx:318-320 (reference text 'Press + or ⌘N to add a task'); task-list.json:268 (empty-state variants); brief (no capture window or global hotkeys on web)."
+ },
+ {
+  "id": "seed-task-list-6",
+  "outcome": "decided",
+  "reply": "Decided: keep the reference behaviour, where the title and notes highlight regardless of the fields setting, and record it on the inventory. Rows and the match count follow the fields setting through the search set, but reviewer B did not read isVisibleInPane, so the inventory should mark that link as unverified until it is read.",
+  "evidence": "features area-01.json F01-040 (:1657-1676); TaskRow.tsx:393, 406 (highlight, no field check); visibility.ts:115-117; TaskPane.tsx:164-172; task-list.json:85."
+ },
+ {
+  "id": "seed-o5",
+  "outcome": "decided",
+  "reply": "Agreed. The web has no screen capture, so the Shot button, which captures the full screen, is desktop only, and web attachments are server uploads and links.",
+  "evidence": "preview/AttachmentSection.tsx:172-188 (Shot button, screenshot_monitor icon); features area-03.json F03-063 (:2157); area-04.json F04-034 (cited by reviewer B); brief (no screen capture on web; files uploaded to the server)."
+ },
+ {
+  "id": "seed-task-inspector-0",
+  "outcome": "decided",
+  "reply": "Agreed. Both Link entry points get the tooltip and accessible name 'Add a link'. The header Link button keeps its short visible text 'Link' to save space, and the empty-box button keeps its visible 'Add a link' text.",
+  "evidence": "preview/AttachmentSection.tsx:189-191 (header Link, no title); :259-266 (empty box, title 'Link a file or URL without copying'); task-inspector.json:931-933, :1117; features area-03.json F03-064 (:2202-2205), F03-066 (:2266)."
+ },
+ {
+  "id": "seed-task-inspector-1",
+  "outcome": "needs_mujtaba",
+  "question": "Should the dashed empty-state 'Add note' box stay as a separate widget? Options: (a) keep it as a documented dashed variant of the shared 'Add note' button, recording the exception; (b) drop it and show the header 'Add note' button in the empty state too, which drops F03-026 and F04-074; (c) keep both as in the reference and document the empty state as a separate control.",
+  "reply": "Both controls call setAddingNote(true), but the labels differ: the header button shows 'Note' with an add icon and the dashed box shows 'Add note'. The label 'Add note' is decided for both, but the brief's one-widget-per-job rule conflicts with keeping a dashed variant, and dropping a reference feature is a product call for the owner to make.",
+  "evidence": "preview/TaskInspector.tsx:387-394 (ToolbarButton, text 'Note', title 'Add note'), :396 and :416 (setAddingNote), :431-438 (DashedButton 'Add note'); features area-03.json F03-025, F03-026 (:976-1020); area-04.json F04-074 (:2936); task-inspector.json:389-394, :407-411."
+ },
+ {
+  "id": "seed-task-inspector-2",
+  "outcome": "decided",
+  "reply": "Agreed, and this duplicates seed-o5 for the Attachments header. On the web, remove the Shot ToolbarButton, its Spinner state and the 'Capture the full screen and attach it' tooltip, so the header keeps File and Link only.",
+  "evidence": "preview/AttachmentSection.tsx:172-188 (Shot with Spinner); features area-03.json F03-063 (:2157), F03-064 (:2202), F03-065 (:2206); task-inspector.json:890-927; brief (no screen capture on web)."
+ },
+ {
+  "id": "seed-task-inspector-3",
+  "outcome": "decided",
+  "reply": "Agreed. On the web, File and Copy a file open a browser file picker that uploads to the server instead of the native dialog and api.addCopy path, and Reveal in Finder becomes a Download action. The Link flow accepts URLs only, because the reference prompt's 'absolute path to a file on this Mac' cannot be resolved on the server, and Download is recorded as a web-only addition with no reference feature.",
+  "evidence": "preview/AttachmentSection.tsx:88-99 (addLink), :91-93 (prompt text), :66-75 and :192-194 (addFile, native dialog), :148 (Reveal in Finder); AttachmentLightbox.tsx:322; task-inspector.json:949-959 (File, addCopy), :1138; features area-04.json F04-036 (:1482), F04-037 (:1535), F04-048 (:1923)."
+ },
+ {
+  "id": "seed-task-inspector-4",
+  "outcome": "answered",
+  "reply": "The reference does record the lightbox, so the inventory's 'state none recorded' is wrong: F04-052 to F04-058 and F04-065 cover the backdrop, chevrons, position counter, top-bar name and kind, top-bar buttons, and rename and remove. The mention chip and autocomplete entries already exist at count 0, so reviewer A's view that they are missing is not followed; the inventory needs the lightbox entries filled from these features and the mention counts updated from F03-040 to F03-044, and F04-065 says remove confirms while F04-058 records none.",
+  "evidence": "features area-04.json F04-052 (:2111), F04-053 (:2156), F04-055 (:2221), F04-056 (:2249, ~2254 per reviewer A), F04-057 (:2290), F04-058 (:2331, :2345), F04-065 (:2551-2583); features area-03.json F03-040 to F03-044, F03-044 (:1566), F03-046 (:1612); AttachmentLightbox.tsx:316-337, :351-364; task-inspector.json:1170-1185 (lightbox, state none recorded), :1187-1243 (chip and autocomplete at count 0)."
+ },
+ {
+  "id": "seed-task-inspector-5",
+  "outcome": "answered",
+  "reply": "The reference answers the destination: Delete task calls requestDeleteTask, which opens the 'Move to Trash?' confirmation with Cancel and the accept button, then shows the 'Moved to Trash' toast with Undo. Both versions keep this confirmation, with the desktop version as a separate window, and the accept label becomes 'Delete' per the vocabulary decision in seed-task-list-2, replacing 'not verified' on the widget.",
+  "evidence": "features area-07.json F07-028 (:949, commands/tasks.ts:67-80), F07-029 (:998) and F07-030 (Undo toast), F07-072 (:2179-2183); preview/TaskInspector.tsx:366-372; task-inspector.json:336 (requestDeleteTask, destination not verified); brief (desktop dialogs are separate windows)."
+ },
+ {
+  "id": "seed-task-inspector-6",
+  "outcome": "decided",
+  "reply": "Decided: one done-checkbox size, sm at 16px, for the header, the subtask rows and the list round check, so every done toggle matches. Reviewer A's md at 18px for the header and subtasks is not adopted because it would leave the list check at a different size, and the 28px subtask pitch fits either size.",
+  "evidence": "preview/TaskInspector.tsx:267 (header Checkbox md, 18px), :47 (subtask sm, 16px); task-list.json:387 (round check 16x16); task-inspector.json:69 (header md, 18x18), :810 (subtask sm, 16x16); task-inspector inventory subtask pitch 28-30px."
+ },
+ {
+  "id": "seed-task-inspector-7",
+  "outcome": "decided",
+  "reply": "Agreed for desktop: the lightbox opens as its own window with no dimmed backdrop in place of the reference's full-window overlay, and each rename, link and remove askText or askConfirm flow opens as a separate window. Escape closes the lightbox window, the backdrop-click close has no window equivalent and is dropped, and the web keeps the overlay.",
+  "evidence": "features area-04.json F04-052 (:2111, dimmed backdrop), F04-053 (:2156, backdrop close), F04-036 and F04-037 (:1482-1537), F04-065 (:2551); AttachmentSection.tsx:88-99, 106-123 (askText sheets); AttachmentLightbox.tsx:162 (askConfirm), :176 (askText); task-inspector.json:1264-1269; brief (dialogs and sheets are separate windows, no dimming)."
+ },
+ {
+  "id": "seed-draft-inspector-0",
+  "outcome": "needs_mujtaba",
+  "question": "On web, what should the Screenshot slot in Start with become: (a) removed, with the helper copy changed to match; (b) an image upload that creates an Untitled task with the file through the server upload, reusing the Attachments file picker (Reviewer A's proposal); or (c) no new control, with Attachments as the only web file route?",
+  "reply": "Both reviewers agree the desktop Screenshot stays a native capture, since F04-034 is flagged system and F04-012 notes the same conflict. They differ on the web slot: Reviewer A proposes an image picker on the existing Attachments file path that creates the task as Untitled only after a file is picked, while Reviewer B says the brief rules out capture but does not settle what the slot becomes. The F04-012 retitle and the helper copy in F04-013 wait on that product call.",
+  "evidence": "main/src/components/preview/DraftInspector.tsx:109-116 and :118-121; main/src/components/preview/AttachmentSection.tsx:66-75; main/src/commands/tasks.ts:185-196; spec/inventory/features-draft-inspector.txt:12; spec/features/area-04.json F04-012, F04-013, F04-034; brief (web: no screen capture, files uploaded to server)"
+ },
+ {
+  "id": "seed-draft-inspector-1",
+  "outcome": "decided",
+  "reply": "Both reviewers agree that web drops the traffic-light controls and the drag grip, and desktop keeps both. The reference already renders the three window controls only when isMac and otherwise shows a spacer, so web follows that pattern. The traffic lights are native window controls (F07-085), and the grip is pointer-events-none with no action (F07-086).",
+  "evidence": "main/src/components/TitleBar.tsx:49 (isMac ? WindowControls : spacer); TitleBar.tsx:51-56 (drag_indicator grip, pointer-events-none); spec/features/area-07.json F07-085, F07-086"
+ },
+ {
+  "id": "seed-draft-inspector-2",
+  "outcome": "answered",
+  "reply": "The reference writes no row until a commit: the draft lives in uiStore.draftListId, cancel and empty-title commit only clear it, and a row is written only by the commit, Note, or Screenshot paths. A click-away with a title commits (F04-005), so the no-write rule covers only an untitled draft with nothing added (F04-118). The double-row guard is draftBusy, set before the first await and cleared in finally, so on web the flag must stay set until the network response returns (F04-119).",
+  "evidence": "main/src/commands/tasks.ts:152-165 (startNewTask, no row); :167-169 (draftBusy comment); :173-206 (runDraftAction; cancel :180, empty commit :182, create :192-196, finally reset :204); spec/features/area-04.json F04-005, F04-118, F04-119; spec/features/area-07.json F07-046, F07-047"
+ },
+ {
+  "id": "seed-draft-inspector-3",
+  "outcome": "decided",
+  "reply": "Use the close glyph with the Discard draft tooltip in both builds, at the default IconButton variant with iconSize 16, because discard writes nothing and is not destructive. The reference already uses close for neutral dismissal (Clear selection), and the Delete list close stays distinct through its danger variant. last_page is dropped because it reads as next page.",
+  "evidence": "main/src/components/preview/DraftInspector.tsx:88-94 (last_page at :89); main/src/components/preview/MultiInspector.tsx:89-96; main/src/components/ListTabs.tsx:236-245; spec/features/area-04.json F04-006, F04-019; spec/features/area-07.json F07-089"
+ },
+ {
+  "id": "seed-draft-inspector-4",
+  "outcome": "decided",
+  "reply": "Both Start with buttons use icon size 16. Note's add icon is already 16 and the Discard button is 16, so the Screenshot glyph moves from 15 to 16 and only the glyph differs between the two. This holds whichever way the web Screenshot slot is resolved.",
+  "evidence": "main/src/components/preview/DraftInspector.tsx:106 (add, size 16) and :114 (screenshot_monitor, size 15); spec/features/area-04.json F04-006, F04-011, F04-012"
+ },
+ {
+  "id": "seed-draft-inspector-5",
+  "outcome": "invalid",
+  "reply": "The comment's 40px and 16px readings assume a 16px root, but the reference sets html font-size to 14px, so 1rem is 14px. h-10 is 2.5rem (35px) and leading-4 is 1rem (14px), so record 35px for the Start with buttons and 14px for the helper line. F04-013 also lists text-[10.5px] where the source is text-[12px], so the source value is the one to record.",
+  "evidence": "main/src/index.css:45 (html font-size 14px); main/src/components/preview/DraftInspector.tsx:104 (h-10), :118-121 (leading-4, text-[12px]); common-ui/styles/tokens.css:211-218; spec/features/area-04.json F04-013 (check notes, 1rem = 14px)"
+ },
+ {
+  "id": "seed-draft-inspector-6",
+  "outcome": "decided",
+  "reply": "Both reviewers agree to remove the empty ring placeholder from both builds. It is an empty h-5 w-5 rounded-field box with no state or handler, and its checkbox role is only inferred (F04-009, corrected by check). The round check is the picked state (F07-056) and the done toggle is the row checkbox (F04-027), so removing the placeholder removes a lookalike control.",
+  "evidence": "main/src/components/preview/DraftInspector.tsx:49 (empty span, rounded-field, h-5 w-5); spec/features/area-04.json F04-009, F04-027; spec/features/area-07.json F07-056; spec/inventory/draft-inspector.json widget 'Empty ring placeholder'"
+ },
+ {
+  "id": "seed-draft-inspector-7",
+  "outcome": "decided",
+  "reply": "Desktop sheets and dialogs become separate windows that do not dim the main window, as the brief requires. This departs from the reference, which renders sheets in-app (api.ts:162 says sheets are not windows), so the Delete list modal (dim soft, F07-073) and New list sheet (F07-090) both become windows. Settings already opens through open_settings (F07-093), and the draft stays in the preview panel.",
+  "evidence": "main/src/api.ts:162 (\"Sheets aren't windows\"), :165 (openSettings to open_settings); main/src/components/SheetHost.tsx; main/src/commands/lists.ts:38, :75; main/src/components/ListTabs.tsx:241-245, :300; main/src/windows/SettingsWindow.tsx; spec/features/area-07.json F07-073, F07-089, F07-090, F07-093; brief (desktop sheets as separate windows)"
+ },
+ {
+  "id": "seed-multi-inspector-0",
+  "outcome": "needs_mujtaba",
+  "question": "When several tasks are selected, should the bulk verbs (a) keep both the inspector verb grid and the bulk bar with one label and one widget per verb, (b) keep only the bulk bar and move Open and Clear selection into the inspector, or (c) keep only the inspector grid and drop the bulk bar while the inspector is open?",
+  "reply": "Both reviewers agree the duplication is real, since the inspector verb grid and the bulk bar are on screen together and both use ToolbarButton. The visible labels match except Move versus Move to…, and the Copy and Delete wording differences are tooltip text only. Inspector Copy shows Copied feedback (F04-023) while bulk Copy shows none (F07-062), so whether both surfaces stay is a product call; Reviewer A recommends the bulk bar labels in both places if both stay.",
+  "evidence": "main/src/components/preview/MultiInspector.tsx:100-146; main/src/components/TaskPane.tsx:432-478 (labels Move to…, titles Copy as checklist :465, Delete selection :475); spec/features/area-04.json F04-020 to F04-024, F04-103 to F04-109; spec/features/area-07.json F07-062, F07-063"
+ },
+ {
+  "id": "seed-multi-inspector-7",
+  "outcome": "decided",
+  "reply": "The ⌘\\ and ⌘, hints are title-bar tooltips for Hide preview panel and Settings, not footer hints, and the reference builds each from the live binding so an unbound command shows none. The brief says browser shortcuts take precedence on web, so the web build does not promise these keys and shows a hint only where a key is actually bound, which drops both by default. Desktop keeps both hints, since the hide toggle and the Settings window run from these keys there.",
+  "evidence": "main/src/components/TitleBar.tsx:30-34 (hint from live map, empty when unbound) and :100 (Settings hint); common/src/hotkeys.rs:354-364 (toggle_preview, open_settings, Scope::Main); spec/features/area-07.json F07-092, F07-093; spec/inventory/multi-inspector.json title bar entries; brief (browser shortcuts take precedence on web)"
+ },
+ {
+  "id": "seed-filter-panel-0",
+  "outcome": "answered",
+  "reply": "The three features exist in the reference and stay as conditional entries, not new widgets. Clear search (F05-032) is a plain IconButton, close icon at size 15, titled \"Clear search\", shown only while the trimmed query is non-blank; it clears the query and keeps scope and fields. The result count (F05-059) is a muted semibold 11px label shown only when query.trim() is non-empty, and the no-match EmptyState (F05-061) uses search_off at size 30 with title \"No matches in <list name>\" when a search is active and no root task is visible.",
+  "evidence": "spec/features/area-05.json F05-032, F05-059, F05-060, F05-061; taskscape-tauri/main/src/components/TaskPane.tsx:227-243, 308-324 and 226-245 (layout order); taskscape-tauri/main/src/stores/searchStore.ts:40-46; spec/inventory/filter-panel.json widgets (no entry for these, expected for empty query)"
+ },
+ {
+  "id": "seed-filter-panel-1",
+  "outcome": "decided",
+  "reply": "Decided: the Sort & filter opener keeps the tune glyph, and the Search options button gets a different Material Symbols glyph (for example manage_search). Search options is not a panel opener; its menu sets search scope (This list, Whole project, All projects) and fields (Title & notes, Title only, Notes only), which settles the inventory's uncertain note as not opening this panel. Record Search options as the scope and fields menu in the inventory.",
+  "evidence": "taskscape-tauri/main/src/components/TaskPane.tsx:355-389 (scope and fields items), 391-400 (tune IconButton titled 'Search options'), 531-553 (ViewControl toggles filterOpen); taskscape-tauri/main/src/components/preview/FilterPanel.tsx:128-130; spec/features F05-060, F05-062, F05-063"
+ },
+ {
+  "id": "seed-filter-panel-2",
+  "outcome": "answered",
+  "reply": "The hidden chevron_left is the expand/collapse control for a parent task. It is a button whose click calls toggleCollapsed(task.id), titled \"Expand\" when collapsed and \"Collapse\" when expanded. Collapsed, the chevron is unrotated and always visible; expanded, it is rotated -90 degrees at opacity 0 until the row is hovered, which is why it is absent from the screenshot where Buy groceries is expanded. Update the inventory's Unknown behaviour to this.",
+  "evidence": "taskscape-tauri/main/src/components/TaskRow.tsx:411-440; spec/features F05-066; spec/inventory/filter-panel.json widget chevron_left, hidden (771,246)"
+ },
+ {
+  "id": "seed-filter-panel-3",
+  "outcome": "answered",
+  "reply": "No change is needed: the radius difference comes from the shared widget, not from a one-off value. The primary Done button is the shared Button with base class rounded-control (7px, F05-025), while Reset is a ToolbarButton with rounded-field (4.375px), as are the sort, date and direction menus and the segmented controls. Keep the shared widget radii rather than overriding the Done button.",
+  "evidence": "taskscape-tauri/common-ui/src/components/buttons/Button.tsx:7; taskscape-tauri/common-ui/src/components/buttons/ToolbarButton.tsx:60; taskscape-tauri/common-ui/src/components/menus/Segmented.tsx:57; spec/features F05-025; spec/inventory/filter-panel.json Done and Reset entries"
+ },
+ {
+  "id": "seed-filter-panel-4",
+  "outcome": "answered",
+  "reply": "The Reset description is wrong: Reset removes the stored view entry for every visible target list or pane (both panes while split), which covers sort, show, refine, date field, date range and day count; a pane with no stored view is unchanged. It is enabled while sort, show, refine or date range is non-default, but not when only date field or day count differs. Replace the description with: \"Resets the stored view for every visible target list (sort, show, refine, date field, date range, day count). Enabled while sort, show, refine or date range is non-default.\"",
+  "evidence": "taskscape-tauri/main/src/stores/viewStore.ts:40-53 (isViewActive, dateRange check at :51) and 77-83; taskscape-tauri/main/src/components/preview/FilterPanel.tsx:94-97, 121, 310; spec/features F05-050, F05-051; spec/inventory/filter-panel.json Reset entry"
+ },
+ {
+  "id": "seed-filter-panel-5",
+  "outcome": "decided",
+  "reply": "Decided for the web build: remove the ⌘\\ hint from the Hide preview panel tooltip and the ⌘, hint from the Settings tooltip. The web build has no global hotkeys and browser shortcuts take precedence, so it must not advertise chords it does not receive. The desktop build keeps both hints because the reference binds them.",
+  "evidence": "taskscape-tauri/main/src/components/TitleBar.tsx:96-101 and 100; common/src/hotkeys.rs:360 (open_settings); spec/features F08-041 (tooltip strings); spec/inventory/filter-panel.json BarButton and toolbar Settings labels"
+ },
+ {
+  "id": "seed-filter-panel-6",
+  "outcome": "decided",
+  "reply": "Decided: on desktop, New list and Delete list open as separate windows with no backdrop dimming, as the brief requires for dialogs and sheets. The New list add button calls createList (sheet headline \"New list\"), and the tab close button titled \"Delete list\" calls deleteList (accept \"Delete list\", danger colour), so both tab-bar links target new windows with the same sheet content. The web build keeps the in-page dialog.",
+  "evidence": "taskscape-tauri/main/src/components/ListTabs.tsx:243-245, 298-300; taskscape-tauri/main/src/commands/lists.ts:35-40, 63-75; spec/features F06-056, F06-058, F06-059; spec/inventory/filter-panel.json links and widgets (New list 518,10; Delete list 280,11 / 380,11 / 475,11)"
+ },
+ {
+  "id": "seed-filter-panel-7",
+  "outcome": "decided",
+  "reply": "Decided: every choice group in the panel uses the shared Segmented default size (md, h-6.5, 12px), so the Refine Any/With/Without control changes from sm (h-5.5, 11px) to md. Widen the Refine control rather than shrinking its text, since the inventory already records the Without label as clipped at the current size. If the width cannot fit, a label-above-control row layout (raised by the second reviewer) is the fallback.",
+  "evidence": "taskscape-tauri/common-ui/src/components/menus/Segmented.tsx:31-32 (sizes), 51 (default md), 57 (rounded-field); spec/inventory/filter-panel.json Refine TriRow Segmented entry (size sm, w-40 wrapper, Without clipped observed)"
+ },
+ {
+  "id": "seed-command-palette-0",
+  "outcome": "decided",
+  "reply": "Decided: on desktop the palette is its own borderless window with no scrim, because dialogs are separate windows with no backdrop dimming. It dismisses on Escape, on window blur (the focus-loss pattern the reference uses for menus), and after a command runs; scrim-press dismissal does not apply on desktop. Keep the reference geometry: 490px wide (35rem at 14px), the 60vh list cap, and the 12vh top offset, placed top-centre of the main window.",
+  "evidence": "taskscape-tauri/main/src/components/CommandPalette.tsx:82, 117 (w-[min(35rem,100%)], max-h-[60vh]); taskscape-tauri/common-ui/src/components/surfaces/Overlay.tsx:18 (pt-[12vh]); spec/features F06-018, F06-085, F06-090"
+ },
+ {
+  "id": "seed-command-palette-1",
+  "outcome": "needs_mujtaba",
+  "question": "How should the web build open the command palette, given ⌘K is browser-reserved and its opener binding was never captured: (a) a visible in-page toolbar control only, (b) an in-app chord that browsers do not reserve, documented in the web spec, or (c) both?",
+  "reply": "The opener needs a product decision: one reviewer decided a visible in-page control with no dependency on ⌘K, the other says the opener is open, and the brief does not settle it. The hint decisions are settled: ⌘F, ⌘N, ⌘⇧N are browser-reserved and are not shown on web rows, ⌘⇧P should be treated the same unless checked, and ⌘Z and ⌘⇧Z stay because the page receives them outside text fields. The remaining hints (⌘\\, ⌘,, ⌘⌥S, ⌘⇧H, ⌘⌥-, ⌘⌥=) must be checked against the browser before the web spec ships.",
+  "evidence": "spec/features F08-010 (⌘K bound at hotkeys.rs:467-472, opener never captured), F08-016 (undo/redo outside text fields), F08-043, F08-044, F08-047; spec/inventory/command-palette.json HotkeyHint entries"
+ },
+ {
+  "id": "seed-command-palette-2",
+  "outcome": "answered",
+  "reply": "Desktop already opens Settings in its own window: api.openSettings invokes open_settings, which builds a singleton 640x520 window or focuses the existing one, and it opens on the first pane (PANES[0]). The web build's routing to a settings page is a web-only choice that the brief leaves to the web spec, so it is not decided here.",
+  "evidence": "taskscape-tauri/main/src/commands/palette.ts:154; taskscape-tauri/main/src/api.ts:165; taskscape-tauri/main/src-tauri/src/lib.rs:876-893; taskscape-tauri/main/src/windows/SettingsWindow.tsx:61 (PANES[0])"
+ },
+ {
+  "id": "seed-command-palette-3",
+  "outcome": "needs_mujtaba",
+  "question": "Should desktop Trash open (a) as the preview-column view in the main window, as in the reference, which one reviewer reads as the outcome since the brief's separate-window rule covers only dialogs and sheets; (b) as its own window on desktop only, with web keeping the preview-column view; or (c) as its own window on both builds, which the other reviewer says the brief does not settle?",
+  "reply": "The Trash view itself is settled: Open Trash calls setTrashOpen(true), and TrashPane renders in the main window's preview column with Restore all, Empty trash, and per-row restore and purge. Whether desktop moves Trash into its own window is not settled: one reviewer reads the brief's separate-window rule as covering only dialogs and sheets, so Trash stays a view, while the other says the brief does not settle it.",
+  "evidence": "taskscape-tauri/main/src/commands/palette.ts:146; taskscape-tauri/main/src/stores/uiStore.ts:84-85; taskscape-tauri/main/src/App.tsx:108-125 (TrashPane in the preview aside); taskscape-tauri/main/src/components/TrashPane.tsx:69-122"
+ },
+ {
+  "id": "seed-command-palette-4",
+  "outcome": "decided",
+  "reply": "Decided: every MenuItem uses one row height of 32px, the measured height of the hotkey row (box 488x32). MenuItem sets only padding, so the no-hotkey rows, recorded at 30px with no measured box, grow to 32px so mixed lists align. The palette rows get one min height so the two variants match.",
+  "evidence": "taskscape-tauri/common-ui/src/components/menus/MenuItem.tsx:39 (padding only); taskscape-tauri/common-ui/src/components/content/HotkeyHint.tsx:9-16; spec/inventory/command-palette.json MenuItem entries; spec/inventory/elements.json box 346,155 488x32"
+ },
+ {
+  "id": "seed-command-palette-5",
+  "outcome": "answered",
+  "reply": "The Delete row is already specified by the source. It is pushed only when a task is selected, after the Manage rows under a repeated Task heading, with label Delete “<task title>” in curly quotes, group Task and no accelerator, so it uses the no-hotkey MenuItem with no hint. One reviewer reads the source as icon delete while F08-044 lists delete against Open Trash, so confirm the icon at palette.ts:157-164 before building; a selected-task recording would verify the row but is not needed to build it.",
+  "evidence": "taskscape-tauri/main/src/commands/palette.ts:157-164 (requestDeleteTask, conditional push); taskscape-tauri/main/src/components/CommandPalette.tsx:142-165; spec/features F06-034, F08-044; spec/inventory/command-palette.json no-hotkey MenuItem"
+ },
+ {
+  "id": "seed-command-palette-6",
+  "outcome": "answered",
+  "reply": "The scroll is intended and the clipping is an inference. The results list is overflow-y-auto inside a flex column capped at 60vh, and the palette state's 456px panel is exactly 60% of the 760px window, so rows past the cap scroll rather than clip. Keep the 60vh cap and overflow scroll in both builds, and drop the word clipped from the inventory since F08-049 records it only as inferred.",
+  "evidence": "taskscape-tauri/main/src/components/CommandPalette.tsx:82, 117; spec/features F08-049 (check_notes), F06-013; spec/inventory/command-palette.json Palette panel and Results list region"
+ },
+ {
+  "id": "seed-command-palette-7",
+  "outcome": "answered",
+  "reply": "All three gaps are real and covered by the features. Add focus return to the opener on close (F06-088; overlay.ts:104-107, 146-149) and focus parking on the scrim when nothing inside asks for focus (F06-089; overlay.ts:109-114), where the palette input autofocuses so this is only a fallback. The depth counter (F06-087; overlay.ts:11-25) gates only Escape and printable keys, so arrows, Tab, Space and Enter still reach the app map (F08-061; useAppKeyboard.ts:185-309); CommandPalette.tsx imports no Backdrop2, so map the web scrim to the Backdrop rendered inside Overlay (Overlay.tsx:99-111) at dim soft, and note the desktop build has no scrim.",
+  "evidence": "spec/features F06-083, F06-087, F06-088, F06-089, F08-061; taskscape-tauri/common-ui/src/components/surfaces/Overlay.tsx:99-111; taskscape-tauri/common-ui/src/components/surfaces/Backdrop.tsx:23-29; taskscape-tauri/main/src/components/CommandPalette.tsx:1-11, 40-42; taskscape-tauri/common-ui/src/overlay.ts:11-25, 104-114, 146-149"
+ },
+ {
+  "id": "seed-context-menus-0",
+  "outcome": "decided",
+  "reply": "Both reviewers agree the reference has right-click on task rows and list tabs, so the 'inferred only' note is stale. There are eight More buttons in total, one per task row in the recording. On web the brief gives browser precedence, so the native menu is not suppressed and More is the opener there; each list tab also gets a More IconButton because the reference tab menu has no visible opener. Desktop keeps right-click, and the other review's suppression of the native menu on web was not followed.",
+  "evidence": "main/src/components/TaskRow.tsx:155-160, 339-342, 457-471; main/src/components/ListTabs.tsx:59-60, 135; features F07-065, F06-052, F09-095; features F06-020 to F06-033 (no rename or export list in palette); inventory context-menus.json openers entry; brief (browser precedence on web)"
+ },
+ {
+  "id": "seed-context-menus-1",
+  "outcome": "decided",
+  "reply": "The reference submenu lists every list in the active project with no filter, so the task's own list appears there. Decision: the submenu omits the task's own list because moving there is a no-op, and the row is disabled when no other list exists. Clicking Move to list, or pressing ArrowRight or Enter on it, opens the submenu; ArrowRight focuses the first list, Enter on a list moves the task (or the whole selection in bulk), and Escape or ArrowLeft returns to the parent menu. This applies to web and desktop alike.",
+  "evidence": "main/src/components/TaskRow.tsx:169-175, 194-195, 218-219, 254-258; main/src/components/ContextMenu.tsx:105-108; features F07-069, F06-046, F06-047"
+ },
+ {
+  "id": "seed-context-menus-2",
+  "outcome": "decided",
+  "reply": "The reference's project Rename and Delete controls are icon buttons at opacity-0 that show only on group-hover, so they stay in the tab order but are invisible unless hovered. Decision: each project row gets a More button that is visible at rest and opens the shared menu with 'Rename project' and 'Delete project' as text items, matching the always-visible text rows of the task and tab menus. The hover-only icon buttons are dropped.",
+  "evidence": "main/src/components/ProjectSwitcher.tsx:70-95; main/src/components/TaskRow.tsx:213, 231; main/src/components/ListTabs.tsx:65, 79; features F09-013, F09-014; inventory context-menus.json project-dropdown icon-button entries"
+ },
+ {
+  "id": "seed-context-menus-3",
+  "outcome": "decided",
+  "reply": "Both reviews agree on one menu component. Task, tab and project menus all use the MenuPanel pattern with the 4px viewport clamp, submenu flip, Overlay dismissal and Escape handling, and ProjectMenu is rebuilt on it instead of its own useDismissable surface. The inventory also missed five menus on the same layer, which join the same component: Search options, the bulk Move menu, the attachment tile menu, the filter menu and the multi-inspector menu.",
+  "evidence": "main/src/components/ContextMenu.tsx:60-165; main/src/components/ProjectSwitcher.tsx:124-144; common-ui/src/overlay.ts:44-81; main/src/components/TaskPane.tsx:340-421; main/src/components/preview/AttachmentSection.tsx:140; main/src/components/preview/FilterPanel.tsx:363-366; main/src/components/preview/MultiInspector.tsx:57; inventory context-menus.json ProjectMenu and MenuPanel entries"
+ },
+ {
+  "id": "seed-context-menus-4",
+  "outcome": "decided",
+  "reply": "Desktop menus stay in-window as anchored panels from the shared menu widget, not native OS popups, because the brief gives one widget per job. Each sheet is its own window, so F06-044 (menus above sheets) no longer applies on desktop and the main window never shows a menu over a sheet. The transparent Backdrop2 stays only as an invisible hit area with no dimming.",
+  "evidence": "main/src/components/ContextMenu.tsx:30-44; features F06-044 (area-06.json); brief decisions (separate sheet windows, one shared widget library)"
+ },
+ {
+  "id": "seed-context-menus-5",
+  "outcome": "answered",
+  "reply": "The source answers it: a single-row Copy passes only that task to copyToClipboard, and the bulk 'Copy N tasks' passes the whole selection. The backend renders a Markdown checklist of exactly the given tasks in tree order, indented by selected ancestors only, with notes as '>' lines, so an unselected subtask is left out as F07-053 records. Copy changes no state and an empty selection copies nothing, so the inventory purpose should read 'Copies the task(s) as Markdown to the clipboard'.",
+  "evidence": "main/src/components/TaskRow.tsx:178, 206, 243-244; main/src/commands/tasks.ts:140-148; main/src-tauri/src/lib.rs:336-387 (render_markdown, copy_tasks); features F07-053, F07-066"
+ },
+ {
+  "id": "seed-context-menus-6",
+  "outcome": "needs_mujtaba",
+  "question": "Who may delete or rename a shared project in the multi-user web build: (a) only its owner, (b) any member, or (c) the owner and admins?",
+  "reply": "The reference already has the deletion confirmation: a danger sheet counts the project's lists and tasks before removing it. The reference is single-user with no permission check, and the brief does not settle who may delete or rename a shared project. Both reviews agree this needs a product decision.",
+  "evidence": "main/src/commands/projects.ts:24-33, 35-52; main/src/components/ProjectSwitcher.tsx:91-93; features F09-013, F09-014; brief (multi-user cloud app)"
+ },
+ {
+  "id": "seed-context-menus-7",
+  "outcome": "answered",
+  "reply": "The reference has a bulk menu that the inventory missed. Right-clicking a row inside a selection of two or more shows Copy N tasks, Mark N done, Mark N not done, Move to list (submenu) and Delete N tasks, and keeps the selection; right-clicking an unselected row selects it alone and shows the single-row menu. Bulk delete asks one 'Move N tasks to Trash?' sheet. Add a bulk state to the inventory and drop the 'no multi-selection evidenced' note.",
+  "evidence": "main/src/components/TaskRow.tsx:155-167, 176-204, 238-242; main/src/commands/tasks.ts:106-121; features F07-058 to F07-065"
+ },
+ {
+  "id": "seed-o1",
+  "outcome": "decided",
+  "reply": "On desktop every sheet is its own window with no backdrop dimming the main window, so the Scrim and Background window regions drop out for desktop. The reference Sheet is one card over a soft Overlay, so the Sheet content moves into its window unchanged.",
+  "evidence": "common-ui/src/components/surfaces/Sheet.tsx:64-70; common-ui/src/components/surfaces/Overlay.tsx:62; brief decision on desktop windows"
+ },
+ {
+  "id": "seed-o2",
+  "outcome": "decided",
+  "reply": "On web, sheets stay as in-page dialogs over a soft scrim, as the reference does. The brief makes separate windows a desktop rule, and the same Sheet widget serves both builds, so only the desktop wrapper differs.",
+  "evidence": "common-ui/src/components/surfaces/Sheet.tsx:64-70; common-ui/src/components/surfaces/Overlay.tsx:62; inventory sheets.json Scrim and Card regions; brief (shared widget library, desktop-only windows)"
+ },
+ {
+  "id": "seed-sheets-0",
+  "outcome": "decided",
+  "reply": "Both destructive confirmations take the danger tone. Delete-confirm drops its accent badge and gets a danger accept button labelled 'Move to Trash' instead of 'Move', and the bulk Trash sheet gets the same treatment. Delete list keeps its 'Delete list' label, and accent blue stays for primary actions and selection only.",
+  "evidence": "main/src/lib/sheet.ts:30; common-ui/src/components/surfaces/Sheet.tsx:9-11; main/src/commands/tasks.ts:67-83, 111-116; main/src/components/SheetHost.tsx:143; features F07-028, F09-009"
+ },
+ {
+  "id": "seed-sheets-1",
+  "outcome": "answered",
+  "reply": "The root font size is 14px, so 1rem is 14px and min-w-24 (6rem) is 84px, which matches the name-sheet and delete-confirm Cancel widths. Use one 6rem minimum for every footer button with equal grid columns. The 100px Cancel on delete-list most likely comes from the column stretching to its wider 'Delete list' label, and the 96px in the inventory is wrong; check this during the rebuild.",
+  "evidence": "main/src/index.css:39-45; common-ui/src/components/surfaces/Sheet.tsx:128; inventory sheets.json Cancel measurements (84px and 100px)"
+ },
+ {
+  "id": "seed-sheets-2",
+  "outcome": "answered",
+  "reply": "The instead path opens the system file-open dialog, filtered to .json with single selection. Choosing a file imports it into the active project and reloads lists and tasks; cancelling does nothing, since the sheet has already closed before the picker opens. The trigger is the Import JSON button on the New list sheet (F09-001), and the inventory should cite F09-002.",
+  "evidence": "main/src/components/SheetHost.tsx:132-139; main/src/commands/lists.ts:11-24, 43-45; features F09-001, F09-002"
+ },
+ {
+  "id": "seed-sheets-3",
+  "outcome": "answered",
+  "reply": "The reference has both project sheets and the inventory missed them. Rename project prefills the current name and accepts 'Rename'; Delete project counts the lists and tasks and asks a danger sheet 'Its N lists and M tasks go with it. No undo.' with accept 'Delete project'. Add sheet-rename-project and sheet-delete-project states to the inventory, with singular, plural and empty count variants.",
+  "evidence": "main/src/commands/projects.ts:24-33, 35-52; features F09-013, F09-014, F09-009 detail templates"
+ },
+ {
+  "id": "seed-sheets-4",
+  "outcome": "needs_mujtaba",
+  "question": "On destructive confirmations (Delete list, Delete project, Move to Trash), should Enter (a) run the destructive action as the reference does, (b) move initial focus to Cancel so Enter cancels and the danger button needs a deliberate Tab or click, or (c) be ignored so only a click confirms? Prompt sheets keep Enter-to-accept under (b).",
+  "reply": "In the reference, the window Enter handler runs accept and delete-list has no ask step, so Enter deletes the list at once. One review treats the behaviour as an open product choice, while the other treats it as settled by the reference's danger and focus rules, so the product owner needs to choose.",
+  "evidence": "main/src/components/SheetHost.tsx:76-88, 112-120; main/src/commands/lists.ts:67-78; features F06-070, F06-073; inventory sheets.json accept danger KeyAction Enter note"
+ },
+ {
+  "id": "seed-sheets-5",
+  "outcome": "decided",
+  "reply": "On desktop each sheet opens as its own window, modal to its parent so the main window is blocked while it is open. Escape and Cancel close it, and an outside press has no meaning because there is no scrim. The Scrim (Backdrop) and Background window regions are dropped for desktop.",
+  "evidence": "common-ui/src/components/surfaces/Sheet.tsx:64-70; main/src/components/SheetHost.tsx:74; features F06-059, F06-067; inventory sheets.json Scrim and Background window regions; brief decision on desktop windows"
+ },
+ {
+  "id": "seed-sheets-6",
+  "outcome": "decided",
+  "reply": "On web the detail line drops the '⌘Z puts it back' hint, because browser shortcuts take precedence and there are no global hotkeys. Recovery is the toast's on-screen Undo button, which calls history undo directly and needs no shortcut. Desktop keeps ⌘Z.",
+  "evidence": "main/src/commands/tasks.ts:36-39, 77, 114; main/src/components/Toast.tsx:34; features F06-093, F07-077, F07-079; brief (browser shortcuts take precedence on web)"
+ },
+ {
+  "id": "seed-sheets-7",
+  "outcome": "decided",
+  "reply": "On web, Import JSON opens a file input limited to .json and uploads the file to the server rather than reading a local path. The sheet shows a progress state and an error state for cases such as invalid JSON or a failed upload, since the reference has no error path (importList has no catch). The desktop path keeps the system file dialog, and the inventory should list both new states.",
+  "evidence": "main/src/commands/lists.ts:11-24; features F09-002; brief (web uploads files to the server)"
+ },
+ {
+  "id": "seed-toast-0",
+  "outcome": "answered",
+  "reply": "The reference defines the timer: toastStore.ts:26 sets 6000 ms, show() clears the previous timer before replacing the toast (lines 24-25), and dismiss() clears it (lines 29-30). So a new toast restarts the 6 s timer, and Dismiss or Undo cancels it. The reference timer does not pause while the pill is hovered or focused, so the web spec should record that gap, since keyboard users can lose Undo after 6 s.",
+  "evidence": "main/src/stores/toastStore.ts:23-31; main/src/components/Toast.tsx:29-32, 41-42; spec/features/area-06.json F06-095, F06-096, F06-097; spec/features/area-07.json F07-078"
+ },
+ {
+  "id": "seed-toast-1",
+  "outcome": "answered",
+  "reply": "The source settles this: Toast.tsx:29-32 runs toast.action() and then dismiss() in the same click, so Undo removes the pill. The after-undo recording that still shows the pill is stale, and the feature list already records that conflict. The same capture also disagrees on the restored count (tree shows 7 tasks, screenshot shows 8), so both after-undo captures should be re-taken before they are used as evidence.",
+  "evidence": "main/src/components/Toast.tsx:29-32; main/src/stores/toastStore.ts:28-31; spec/features/area-07.json F07-077 (edge cases, check 'corrected'); spec/inventory/toast.json notes"
+ },
+ {
+  "id": "seed-toast-2",
+  "outcome": "decided",
+  "reply": "The toast carries no Cmd+Z hint, since Toast.tsx:21-36 renders only the message, Undo and Dismiss, so nothing is stripped from it. The Cmd+Z hint is in the Move to Trash sheet detail (tasks.ts:77, 114), which is a separate sheet. In the web build the Undo ToolbarButton is the toast's only undo control, a native button reachable by Tab, Cmd+Z is not relied on, and no web-only route is added; the desktop build keeps the palette Undo item (F06-028) as a second route.",
+  "evidence": "main/src/components/Toast.tsx:21-36; main/src/commands/tasks.ts:77, 114; spec/features/area-07.json F07-017, F07-079 (hotkeys.rs:515-520); spec/features/area-06.json F06-028 (palette.ts:109-116); spec/inventory/toast.json widgets"
+ },
+ {
+  "id": "seed-toast-3",
+  "outcome": "needs_mujtaba",
+  "question": "When a web Undo call fails, should the toast (a) stay open until the undo succeeds, showing an error with Undo as the retry and Dismiss still closing it, (b) swap its message for a short error and auto-dismiss after 6 s as usual, or (c) dismiss silently as the reference does and leave the task in Trash?",
+  "reply": "The reference calls undo() with void (tasks.ts:36-39), so a rejected call is unhandled, the command stays on the undo stack (history.ts:48-58; F07-018), and Toast.tsx:29-31 dismisses the pill at once. One reviewer decided on option (a) for the web build, while the other treats failure feedback as a product call that the brief and decisions do not settle, so it goes to you.",
+  "evidence": "main/src/commands/tasks.ts:36-39; main/src/stores/history.ts:48-58; main/src/components/Toast.tsx:29-32; spec/features/area-07.json F07-018, F07-077"
+ },
+ {
+  "id": "seed-toast-4",
+  "outcome": "answered",
+  "reply": "The label is not hard-coded: Toast.tsx:22 renders toast.message as supplied by the caller. The two callers are 'Moved to Trash' for a single delete (tasks.ts:82) and '<n> moved to Trash' for a bulk delete, where n is the root count (tasks.ts:120; F07-034). The 'Delete N task' text in F07-031 is the undo command label and is never displayed (F07-021), so the spec should list the two message formats and their callers.",
+  "evidence": "main/src/components/Toast.tsx:21-23; main/src/commands/tasks.ts:82, 120; spec/features/area-07.json F07-021, F07-029, F07-031, F07-034; spec/inventory/toast.json Label widget"
+ },
+ {
+  "id": "seed-toast-5",
+  "outcome": "decided",
+  "reply": "The wrapper is pointer-events-none (Toast.tsx:14, 19), so only the pill takes clicks and the footer outside it stays clickable; the premise is partly wrong. Both builds keep the reference placement, a fixed bottom-centre overlay, and the pill (x 477 to 702, y 702 to 743) covers only empty footer centre at reference width, clearing the Sort and filter button (x 12), the done counter (x 52) and the percentage (x 820). The pill must never cover the Sort and filter button or the percentage; where a narrow window would force overlap, the pill rises above the footer, which replaces the earlier acceptance of overlap on narrow web widths.",
+  "evidence": "main/src/components/Toast.tsx:14, 19; spec/features/area-07.json F07-101 (footer 0,729, 860x32); spec/inventory/trash.json footer entries (Sort & filter [12,735], counter [52,737], percentage [820,737]); spec/inventory/toast.json pill region (x 477, y 702, 225x41)"
+ },
+ {
+  "id": "seed-toast-6",
+  "outcome": "decided",
+  "reply": "Icon-only toast buttons carry a title that serves as both tooltip and accessible name, because IconButton sets no aria-label of its own, so the inventory's 'aria label' should read 'name from title'. Dismiss keeps title 'Dismiss' (Toast.tsx:42), and Undo keeps its visible label with no tooltip (Toast.tsx:25-35). The missing tooltip in the recordings is a capture gap, since hover states were not recorded, not a spec decision.",
+  "evidence": "main/src/components/Toast.tsx:25-42; common-ui/src/components/buttons/IconButton.tsx:67-88; common-ui/src/components/buttons/ToolbarButton.tsx:44-73; spec/features/area-06.json F06-094; spec/inventory/toast.json widgets"
+ },
+ {
+  "id": "seed-trash-0",
+  "outcome": "decided",
+  "reply": "Destructive actions show the danger colour at rest in both builds: Empty keeps variant danger (TrashPane.tsx:69-80), per-row Delete permanently gets the same (TrashPane.tsx:116-124), and Restore all stays default. The reference's danger variant renders grey at rest and turns red only on hover (ToolbarButton.tsx:28-29; IconButton.tsx:34), so the grey capture is accurate to the reference rather than stale, and the shared library's danger variant needs a danger-coloured resting state. This is a deliberate change from the reference.",
+  "evidence": "main/src/components/TrashPane.tsx:69-80, 116-124; common-ui/src/components/buttons/ToolbarButton.tsx:28-29; common-ui/src/components/buttons/IconButton.tsx:34; spec/inventory/trash.json Empty widget conflict note; brief decision on danger colour"
+ },
+ {
+  "id": "seed-trash-1",
+  "outcome": "needs_mujtaba",
+  "question": "Should the per-row 'Delete permanently', which cannot be undone, (a) get the same danger confirm sheet as Empty, naming the item, (b) stay immediate and be recorded as a deliberate exception to the reference, or (c) confirm only when several items or the last item in the trash are purged?",
+  "reply": "The reference purges one item at once with no confirmation (TrashPane.tsx:122; F07-011), while Empty asks first through askConfirm (TrashPane.tsx:37-45; F07-006), and purge cannot be undone (F07-012). Neither the brief nor the decisions settles whether a single permanent delete needs a guard, so it goes to you.",
+  "evidence": "main/src/components/TrashPane.tsx:37-46, 116-124; spec/features/area-07.json F07-006, F07-011, F07-012"
+ },
+ {
+  "id": "seed-trash-2",
+  "outcome": "answered",
+  "reply": "No toast comes from these actions: showUndoToast is called only from requestDeleteTask and bulkDelete (tasks.ts:36-39, 82, 120), and TrashPane and trashStore never touch the toast store, so Restore all, row Restore and Delete permanently raise no undoable notice. F07-012 agrees that restore and purge are not undoable. Remove the undoable-action notice and the toast link from the trash links entry.",
+  "evidence": "main/src/commands/tasks.ts:36-39, 82, 120; main/src/components/TrashPane.tsx (no toast import); main/src/stores/trashStore.ts:27-38; spec/features/area-07.json F07-012; spec/inventory/trash.json links entry 'toast'"
+ },
+ {
+  "id": "seed-trash-3",
+  "outcome": "decided",
+  "reply": "Minimize and Full Screen are inert in this pane (WindowControls.tsx:110-111; F07-082), and the Trash pane is a pane rather than a window, so both lights are dropped in both builds. The pane keeps only the red close control, titled 'Close Trash' (F07-081; TrashPane.tsx:61-63). The main window's own controls stay on its title bar (F07-085).",
+  "evidence": "main/src/components/TrashPane.tsx:61-63; spec/features/area-07.json F07-081, F07-082, F07-085; spec/features/area-07.json WindowControls.tsx:110-111; spec/inventory/trash.json widgets (inert minimize and fullscreen lights)"
+ },
+ {
+  "id": "seed-trash-4",
+  "outcome": "needs_mujtaba",
+  "question": "In the desktop 'Empty Trash?' dialog window, which button has default focus: (a) the danger 'Empty Trash' accept button, as the reference allows since Enter accepts any sheet, (b) Cancel, as the safer default for an irreversible delete, or (c) no default, so Enter does nothing?",
+  "reply": "Both reviewers agree the desktop confirmation is a separate dialog window titled 'Empty Trash?' with no backdrop dimming, and that it takes focus when it opens. The shared Sheet gives accept no focus target, and Enter accepts through the window key handler (sheet.ts:68-73; Sheet.tsx:126-131; F06-070; focus parks on the scrim per F06-089), so keeping that matches the reference. Whether an irreversible empty should keep Enter-accepts is a safety call the brief and decisions do not settle, so it goes to you.",
+  "evidence": "main/src/lib/sheet.ts:68-73; common-ui/src/components/surfaces/Sheet.tsx:126-131; main/src/components/SheetHost.tsx:110-120; spec/features/area-06.json F06-070, F06-071, F06-089; main/src/components/TrashPane.tsx:37-45"
+ },
+ {
+  "id": "seed-trash-5",
+  "outcome": "decided",
+  "reply": "Desktop keeps the reference hover reveal (TrashPane.tsx:112, 121; F07-009). In the web build, the row Restore and Delete permanently buttons show on row hover, on focus within the row and on row selection, stay visible on devices without hover, and get a focus-visible ring since they are real buttons. The inventory's row IconButton entries should add the missing focus state.",
+  "evidence": "main/src/components/TrashPane.tsx:107-124; spec/features/area-07.json F07-009; spec/inventory/trash.json row IconButton states"
+ },
+ {
+  "id": "seed-trash-6",
+  "outcome": "decided",
+  "reply": "The Cmd+Backslash and Cmd+, hints sit on the main title bar's Hide preview panel and Settings buttons (F07-092, F07-093), not in the Trash pane, and the Cmd+Z hint is in the Move to Trash sheet detail (tasks.ts:77, 114; F07-079), not in the undo toast. In the web build, drop any hint whose key the browser may take, remove the Cmd+Z text from the web Move to Trash detail, and keep Cmd+Backslash and Cmd+, only where the web app actually receives them. Each build's bindings should be recorded in the spec.",
+  "evidence": "spec/features/area-07.json F07-079, F07-092, F07-093 (hotkeys.rs:353-364); main/src/commands/tasks.ts:77, 114; spec/inventory/trash.json main title-bar entries and links"
+ },
+ {
+  "id": "seed-trash-7",
+  "outcome": "needs_mujtaba",
+  "question": "When a web Trash restore or purge is rejected, or the item was already restored or purged elsewhere, should the pane (a) reload the list and show an inline message, (b) reload silently as the reference does, or (c) show a toast with the error, and should the same choice govern the web undo failure in seed-toast-3?",
+  "reply": "The reference reloads both stores after the API call (trashStore.ts:27-30; F07-013), but no handler catches a rejection, so no error is shown (TrashPane.tsx:35-46, 113, 122; F07-014). One reviewer decided the web build should refresh the list with 'This item was already changed elsewhere' for stale items and show an error for other failures, while the other treats the choice as a product call, so it goes to you alongside the toast question in seed-toast-3.",
+  "evidence": "main/src/stores/trashStore.ts:27-30; main/src/components/TrashPane.tsx:35-46, 113, 122; spec/features/area-07.json F07-013, F07-014"
+ },
+ {
+  "id": "seed-attachment-lightbox-0",
+  "outcome": "decided",
+  "reply": "Decided for the desktop build: the lightbox opens as its own window with no scrim and no blur over the main window, because desktop dialogs are separate windows. Close and Escape close that window, and a click on the empty stage closes it too, as in the reference, so both builds share one close rule. F04-052 is reinterpreted this way for desktop.",
+  "evidence": "Reviewer A: AttachmentLightbox.tsx:288-297 (Overlay dim, blur, placement), :340-343 (stage onClick closes); spec/features/area-04.json F04-052. Reviewer B: spec/features/area-04.json F04-052, F04-053; spec/inventory/attachment-lightbox.json top bar Close entry (AttachmentLightbox.tsx:337); brief rule that dialogs and sheets are separate windows."
+ },
+ {
+  "id": "seed-attachment-lightbox-1",
+  "outcome": "answered",
+  "reply": "The source answers this: a click on the empty stage closes the lightbox. dismissOn none removes the Overlay scrim's press handler, but the panel's children fill the window and the stage div has onClick=onClose, so only the top bar, media and chevrons are excluded. Escape also closes through useDismissable, and both builds keep this rule (desktop closes the separate window), while the running-app check in F04-053 is still open.",
+  "evidence": "AttachmentLightbox.tsx:296 (dismissOn none), :298-301 (top bar stopPropagation), :340-343 (stage onClick=onClose), :368-373 (media wrapper stopPropagation); common-ui/src/components/surfaces/Overlay.tsx:89-97 (scrim press only when target is scrim, skipped for dismissOn none), :79-83 (Escape via useDismissable); spec/features/area-04.json F04-053 check notes."
+ },
+ {
+  "id": "seed-attachment-lightbox-2",
+  "outcome": "invalid",
+  "reply": "The 44px figure is wrong for this app: the root font size is 14px, so h-11 w-11 (2.75rem) renders at 38.5px, matching the measured 39x39. Both chevrons use the same class, so there is no size conflict, and the rebuild uses h-11 w-11 on the shared chevron widget at 1rem = 14px.",
+  "evidence": "main/src/index.css:45 (html, body font-size 14px); AttachmentLightbox.tsx:352 and :362 (both chevrons h-11 w-11); spec/inventory/attachment-lightbox.json Previous and Next entries (39x39 measured); brief rule 1rem = 14px; spec/features/area-04.json F04-055."
+ },
+ {
+  "id": "seed-attachment-lightbox-3",
+  "outcome": "decided",
+  "reply": "Decided: the top bar uses h-13 (3.25rem), which is 45.5px at the 14px root, not 52px as a 16px root would give. A 28px control centred in 45.5px sits at y 8.75, matching the recorded y 9, so the measured 40px bar is the outlier and the recording should be re-measured against h-13.",
+  "evidence": "AttachmentLightbox.tsx:299 (h-13 flex bar); main/src/index.css:45 (14px root); spec/inventory/attachment-lightbox.json top bar entry (about 40px measured, controls at y 9); spec/features/area-04.json F04-052 (top bar h-13); common-ui/styles/tokens.css:207-218 (rem spacing ramp)."
+ },
+ {
+  "id": "seed-attachment-lightbox-4",
+  "outcome": "decided",
+  "reply": "Decided: the Remove attachment glyph carries the danger colour at rest, so it does not look like Rename or Reveal until hover. Hover keeps the danger background with a white glyph from the code, because destructive actions use the danger colour.",
+  "evidence": "AttachmentLightbox.tsx:52-54 (danger class on hover only), :331-336 (remove BarButton); spec/inventory/attachment-lightbox.json Remove attachment entry; spec/features/area-04.json F04-058 (Remove is danger); brief rule that destructive actions use the danger colour."
+ },
+ {
+  "id": "seed-attachment-lightbox-5",
+  "outcome": "decided",
+  "reply": "Decided: one shared Open externally widget with the onMedia variant serves both entry points, and the variant is set once in the shared library. The top bar shows it icon-only, and the fallback card shows the icon with a visible Open externally label in place of the primary Button. Accent blue stays reserved for the primary action and selection, as the brief requires.",
+  "evidence": "Reviewer A: AttachmentLightbox.tsx:314-318 (top bar BarButton, onMedia), :210-217 (fallback primary Button). Reviewer B: spec/inventory/attachment-lightbox.json Open externally entry (BarButton, onMedia) and fallback-card Button (primary); brief rules on same job, same widget and variant, and accent blue."
+ },
+ {
+  "id": "seed-attachment-lightbox-6",
+  "outcome": "decided",
+  "reply": "Decided: the web build drops Reveal in Finder, and the Reveal item in the tile menu too, because a cloud app has no local file manager and the reference hides the action for remote files. No download action exists in the reference, so none is added, and Open externally stays the only way to leave the app.",
+  "evidence": "Reviewer A: AttachmentLightbox.tsx:319-325 (hidden only when remote); main/src/api.ts:202-203 and main/src-tauri/src/lib.rs:741 (reveal_attachment opens local file manager); spec/features/area-04.json F04-048. Reviewer B: spec/features/area-04.json F04-058 (Reveal in Finder, local only); spec/inventory/attachment-lightbox.json Reveal entry; brief (cloud app, files on the server)."
+ },
+ {
+  "id": "seed-attachment-lightbox-7",
+  "outcome": "decided",
+  "reply": "Decided: on web, ArrowLeft and ArrowRight step attachments only when focus is outside a native video, audio or text preview control, and the handler does not stop propagation there, so native controls keep those keys. The reference listens in the window capture phase and stops propagation for every arrow key whatever the target, which conflicts with the brief rule that browser shortcuts take precedence.",
+  "evidence": "Reviewer A: AttachmentLightbox.tsx:108-122 (window capture keydown, no target check), :236-262 and :271-282 (video, audio, text preview); spec/features/area-04.json F04-054. Reviewer B: spec/inventory/attachment-lightbox.json keyboard region; brief (browser shortcuts take precedence)."
+ },
+ {
+  "id": "seed-o3",
+  "outcome": "decided",
+  "reply": "Decided: desktop keeps Settings as its own fixed-size window (640x520), as the reference does. On web, Settings is a /settings route page rather than a modal, because the web build has no separate windows, and window chrome and Escape-to-close are desktop-only.",
+  "evidence": "Reviewer A: main/src/windows/SettingsWindow.tsx:30-33 (640x520 via build_panel); main/src/windows/settings/SettingsTitleBar.tsx:19-29; spec/features F10-001. Reviewer B: spec/features/area-10.json F10-001; spec/inventory/settings-general.json title bar entry; brief (desktop separate windows; web is a cloud app)."
+ },
+ {
+  "id": "seed-settings-general-0",
+  "outcome": "answered",
+  "reply": "The source defines this: each setting is restored to the value it had when the window opened (F10-027, with the baseline taken on first load per F10-033). Settings write through and persist at once (settings.ts:100-114, F10-030), so discard is a second write of the open-time value through the normal set path. The group clear control does the same for its own group's changed settings (F10-034; settings.ts:125-132).",
+  "evidence": "Reviewer A: main/src/windows/settings/settings.ts:76-79 (opened baseline), :100-114 (set writes and persists), :125-132 (discard writes opened values back), :134 (discardAll). Reviewer B: spec/features/area-10.json F10-027, F10-030, F10-033, F10-034."
+ },
+ {
+  "id": "seed-settings-general-1",
+  "outcome": "decided",
+  "reply": "Decided: both controls discard, so they keep one undo glyph and one widget, but each label names its scope. The title bar control reads 'Discard all settings and shortcut changes since this window opened' (aria label 'Discard all changes'), and the group header control reads 'Discard changes in this group'. The current near-identical wording cannot tell them apart.",
+  "evidence": "Reviewer A: main/src/windows/SettingsWindow.tsx:219-220 (title and aria-label of title bar undo); common-ui/src/components/settings/SettingsGroup.tsx:26 (default discardTitle). Reviewer B: spec/inventory/settings-general.json title-bar undo and SectionHeader clear entries; spec/features/area-10.json F10-027, F10-034; brief rule that the same job uses the same widget."
+ },
+ {
+  "id": "seed-settings-general-2",
+  "outcome": "needs_mujtaba",
+  "question": "On web, should the Shortcuts tab (a) be dropped entirely, leaving General and About, (b) keep the 31 Main window rows as a read-only list, or (c) keep them rebindable with any combo the browser reserves excluded?",
+  "reply": "The Capture tab is dropped on web, since its rows are desktop screenshot settings and the brief has no screenshots, and the About pane's Data folder rows (F10-038, F10-039) open a local folder, so they go too. Whether the Shortcuts tab stays is open: its Global and Capture bar scopes go on web, and dropping the whole tab also removes its search coverage (F10-052) and leaves General and About in the nav.",
+  "evidence": "Reviewer A: main/src/windows/settings/panes.ts:8-13 (PANES order); main/src/windows/settings/shortcutsPane.tsx:6-9 (SCOPES); main/src/windows/settings/capturePane.tsx; spec/features F10-041, F10-052. Reviewer B: spec/features/area-10.json F10-041, F10-076, F10-038, F10-039; brief (no capture window, no global hotkeys, browser shortcuts take precedence)."
+ },
+ {
+  "id": "seed-settings-general-3",
+  "outcome": "needs_mujtaba",
+  "question": "On web, should Reduced motion be (a) a read-only mirror of the browser prefers-reduced-motion query, (b) a stored account preference that starts from the browser query and can be overridden, or (c) removed from the web build?",
+  "reply": "The Low Power and macOS Reduce Motion footnotes and the forced, disabled state go on web, since the browser cannot read those native signals. The browser's prefers-reduced-motion setting keeps applying through the CSS block (tokens.css:326-333), as the reference already treats the system setting. Whether the toggle mirrors the browser query, becomes an overridable account preference, or is removed is a product call the brief does not settle, and one view reads it as the user's own switch that does not follow the query.",
+  "evidence": "Reviewer A: main/src/windows/settings/generalPane.tsx:20-21, :50-57, :60-69; common-ui/styles/tokens.css:326-333; main/src/lib/reducedMotion.ts:12-15; spec/features F11-004. Reviewer B: spec/features/area-10.json F10-059, F10-060, F10-061, F10-062; spec/inventory/settings-general.json Reduced motion Toggle entry."
+ },
+ {
+  "id": "seed-settings-general-4",
+  "outcome": "decided",
+  "reply": "On web, Settings is a routed page with a plain heading, not a window, so it has no traffic lights, drag region or fixed 640x520 size. Escape clears a non-empty search and otherwise does nothing, so it never tries to close the browser tab. The reference's Escape-closes-window rule (F10-024) is desktop-only, and browser shortcuts take precedence.",
+  "evidence": "Reviewer A: main/src/windows/settings/SettingsTitleBar.tsx:19-29 (TitleBar with WindowControls, draggable); main/src/windows/SettingsWindow.tsx:32-33 (fixed size), :123-125 (Escape closes when query empty); spec/features F10-024. Reviewer B: spec/features/area-10.json F10-024, F10-028, F10-029; spec/inventory/settings-general.json title bar and WindowControls entries; brief."
+ },
+ {
+  "id": "seed-settings-general-5",
+  "outcome": "decided",
+  "reply": "Decided: the web build does not override Cmd+F or Ctrl+F. The browser's own find takes that key, since browser shortcuts take precedence, and the search field stays reachable by click and Tab with no other focus shortcut added. The web handler must not call preventDefault for these keys, while desktop keeps F10-025 as it is.",
+  "evidence": "Reviewer A: main/src/windows/SettingsWindow.tsx:128-131 (preventDefault and select on Cmd/Ctrl+F); spec/features F10-025; brief (browser shortcuts take precedence). Reviewer B: spec/features/area-10.json F10-025; spec/inventory/settings-general.json TextInput entry (Cmd+F selects text); brief."
+ },
+ {
+  "id": "seed-settings-general-6",
+  "outcome": "needs_mujtaba",
+  "question": "On web, should Theme, Reduced motion and Show completed tasks (a) all be stored per account so they sync across devices, (b) store Theme and Reduced motion per browser and Show completed tasks per account, or (c) all stay per browser as in the reference?",
+  "reply": "Decided: on web, a failed save is shown next to the control and the control reverts to its last saved value, instead of failing silently as F10-031 does on desktop. Whether Theme, Reduced motion and Show completed tasks belong to the account or the browser is a product call: the reference keeps Theme and Reduced motion as local preferences (reducedMotion.ts:54-58, F11-009) and shares only Show completed tasks across windows (F10-064), while the cloud brief could put all three on the account.",
+  "evidence": "Reviewer A: main/src/windows/settings/settings.ts:110-112 (silent catch on write); main/src/lib/reducedMotion.ts:54-58 (local persist and broadcast); spec/features F10-031, F10-064, F11-009. Reviewer B: brief (web is multi-user, cloud, files on the server); spec/features/area-11.json F11-009; spec/features/area-10.json F10-031, F10-064."
+ },
+ {
+  "id": "seed-o7",
+  "outcome": "needs_mujtaba",
+  "reply": "The Global part is settled: the web build drops the Global scope (toggle_capture_bar and screenshot_capture) because the brief gives web no global hotkeys. The web defaults for Main-window chords that browsers reserve are not settled, including Cmd+N (hotkeys.rs:345), Cmd+F (:351), Cmd+1 to Cmd+9 (:375-423) and Cmd+Shift+[ and ] (:441, :447).",
+  "question": "For the Main-window chords that browsers reserve (Cmd+N, Cmd+F, Cmd+1 to 9, Cmd+Shift+[ and ], Cmd+Alt+Left and Right, Cmd+Shift+N), should the web build (a) keep the Mac defaults and show those rows as unavailable, (b) remap each to a chord the browser does not reserve, or (c) remove those commands from web, given that Reviewer A treats this as an open product choice and Reviewer B would decide it now by assigning web-safe defaults without naming the chords?",
+  "evidence": "common/src/hotkeys.rs:328-340 (Global scope), :341-526 (31 Main-scope defaults), :345, :351, :375-423, :441, :447; brief: web has no global hotkeys and browser shortcuts take precedence. Reviewer A gave needs_mujtaba with the chord list; Reviewer B gave decided at shortcutsPane.tsx:7 without choosing an option, so the product choice stays open."
+ },
+ {
+  "id": "seed-settings-shortcuts-0",
+  "outcome": "answered",
+  "reply": "The title-bar Discard-all (undo) control exists in the reference, but only while something has changed. SettingsWindow.tsx:198 sets the changed flag and :209-227 render the undo IconButton as the trailing slot only then, placed before the window controls at SettingsTitleBar.tsx:15-16. The inventory's trailing=false reflects the unchanged recordings, so the inventory should record the changed state rather than add a new control.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:198, 209-227; main/src/windows/settings/SettingsTitleBar.tsx:15-16, 25; feature F10-027. Reviewer A names the flag dirtySession; Reviewer B names settings.changed or hotkeys.changed. Both cite the same lines."
+ },
+ {
+  "id": "seed-settings-shortcuts-1",
+  "outcome": "answered",
+  "reply": "Every search effect is in the reference, and the inventory missed them because its recording had an empty query. The clear button renders only while the query is non-empty, tabs show match badges and dim when they have no matches, and the intro is replaced by a no-match EmptyState while searching. The inventory should add a searching state rather than treat these as missing widgets, and the matching rule is F10-013.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:138, 167-184 (selectPane, clearSearch), 235-246 (clear button), 284-291 (match Badge, opacity-40), 318-341 (intro and EmptyState). Reviewer B cites :198-199, 236, 269, 291, 310-318, so the line numbers for the badge and empty-state branch differ between reviews and should be checked before posting. Features F10-011, F10-013, F10-015 to F10-018, F10-020, F10-021."
+ },
+ {
+  "id": "seed-settings-shortcuts-2",
+  "outcome": "decided",
+  "reply": "The group discard is the undo IconButton in SectionHeader, shown only while that group has changed since the window opened. The accent dot that SectionHeader draws when active has no handler and is dropped, because the brief reserves accent blue for primary action and selection. F10-034's 'click the dot' is therefore wrong, and F10-050 already names the undo button as the trigger.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:41 (onDiscard only when changed); main/src/windows/settings/shortcutsPane.tsx:42-43; common-ui/src/components/settings/SettingsGroup.tsx:35-38; common-ui/src/components/typography/SectionHeader.tsx:35-37 (dot), :51-60 (undo button); features F10-034, F10-050. Reviewer A kept the dot as a marker and corrected only the click target; Reviewer B dropped it on the brief's accent rule, which A did not address, so B's decision is followed."
+ },
+ {
+  "id": "seed-settings-shortcuts-3",
+  "outcome": "answered",
+  "reply": "Every selected state uses the blue selection fill, bg-selection-1l (--selection-1l, oklch(0.6 0.2 255 / 0.1)). The neutral --wash-2l value is used only for hover, so the neutral default-state capture was a hover, and the Capture tab should get the same correction.",
+  "evidence": "common-ui/src/components/menus/MenuItem.tsx:8 (hover), :42 (active); common-ui/styles/tokens.css:61 (--selection-1l), :69 (--wash-2l). Reviewer B said the neutral value does not appear in MenuItem.tsx; Reviewer A traced it to the hover token at :8, which is the more precise reading and is followed."
+ },
+ {
+  "id": "seed-settings-shortcuts-4",
+  "outcome": "decided",
+  "reply": "On web, remove the Global group (two rows, with the 'work anywhere in macOS' hint) and the Capture bar group (Clear capture draft), since those are the global toggle, screenshot and tray-only commands the brief removes from web. The Main window group stays with its 31 commands. Desktop keeps all groups, and its hint, which is hard-coded to macOS, should follow the platform.",
+  "evidence": "main/src/windows/settings/shortcutsPane.tsx:6-10 (scopes), :7 (hint); common/src/hotkeys.rs:328-340 (Global), :341-526 (31 Main-scope entries), :527-532 (Capture bar); settings-shortcuts.json Main window entry (31 rows); feature F10-076. Both reviewers agree on the outcome; their shortcutsPane.tsx line ranges differ slightly (6-9 vs 6-10)."
+ },
+ {
+  "id": "seed-settings-shortcuts-5",
+  "outcome": "decided",
+  "reply": "On web, remove the Capture tab and its link, leaving General, Shortcuts and About. The tablist, roving tabIndex and arrow-key handling are generic over the pane list, so the remaining tabs keep wrap-at-ends (F10-006) and the single Tab stop (F10-007). Desktop keeps the Capture tab and the four-section list in F10-002.",
+  "evidence": "main/src/windows/settings/capturePane.tsx:24-27 (PANES entry, icon screenshot_monitor); main/src/windows/SettingsWindow.tsx:186-196 (onNavKeys), :268-297 (tablist, tabIndex at :282); settings-shortcuts.json links (settings-capture); features F10-002, F10-006, F10-007."
+ },
+ {
+  "id": "seed-settings-shortcuts-6",
+  "outcome": "decided",
+  "reply": "Browser shortcuts win on web, so the web build removes the Settings Cmd/Ctrl+F search-focus shortcut and refuses to record a combo the browser reserves, such as Cmd+F, Cmd+T, Cmd+W and Ctrl+F. The refusal uses the existing red footnote under the recorder row, and the sidebar search field (F10-009) remains the way to search Settings. Whether the Main-window Cmd+F row ships with a default is left to the open question on the browser-reserved chords.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:128-131; main/src/windows/settings/shortcutsPane.tsx:18-23; common/src/hotkeys.rs:351 (Cmd+F default); features F10-009, F10-025, F10-026, F10-048. Reviewer B's proposal that the Search default ships unbound is a web default choice, so it is deferred to the seed-o7 question rather than decided here."
+ },
+ {
+  "id": "seed-settings-shortcuts-7",
+  "outcome": "needs_mujtaba",
+  "reply": "The reference opens Settings at 640 x 520, so the inventory's 1180 x 760 is not the layout reference. The code also leaves the window resizable with a 640 x 520 minimum, which does not match F10-001's word 'fixed', so the desktop window needs one answer on whether it is locked or resizable.",
+  "question": "Should the desktop Settings window be fixed at 640 x 520 as F10-001 states, or open at 640 x 520 and stay resizable with a 640 x 520 minimum as the reference code does (Reviewer A reads F10-001's 'fixed' as the open size and minimum, while Reviewer B treats it as a product decision)?",
+  "evidence": "main/src-tauri/src/lib.rs:884-891 (open_settings: 640 x 520, resizable, minimum 640 x 520; line 889 resizable flag), :815-816 and :824-825 (build_panel, cited by Reviewer B); main/src/windows/SettingsWindow.tsx:32-33, :114; feature F10-001."
+ },
+ {
+  "id": "seed-o6",
+  "outcome": "decided",
+  "reply": "The web build drops the Capture pane. Every control in it is screen capture mode or the local screenshots folder, and the brief gives web no capture window and no screenshots. Desktop keeps the pane.",
+  "evidence": "main/src/windows/settings/capturePane.tsx:24-67; settings-capture.json (Screenshots group only); brief: web has no capture window or screenshots. Both reviewers agree."
+ },
+ {
+  "id": "seed-settings-capture-0",
+  "outcome": "decided",
+  "reply": "On web, drop the Screenshots group (Capture mode segmented control, its footnote and the Saved to row) along with the Capture tab and its link, since the brief removes screen capture and local folders from web. No server-side replacement is proposed, because it would be new scope rather than a fix to this pane. Desktop keeps the group.",
+  "evidence": "main/src/windows/settings/capturePane.tsx:28-66; settings-capture.json widgets 19-35; brief: web has no capture or screenshots. Both reviewers agree on the outcome."
+ },
+ {
+  "id": "seed-settings-capture-1",
+  "outcome": "decided",
+  "reply": "The Saved to row stays on desktop, since the brief removes capture only from web. The nearest-existing-ancestor fallback lives in the Rust open_path command rather than in PathButton, which only documents it, so the shared PathButton keeps the fallback for the local data folder rows too.",
+  "evidence": "main/src/windows/settings/capturePane.tsx:54-63; main/src/windows/settings/PathButton.tsx:10-12 (doc comment); main/src-tauri/src/lib.rs:772-785 (open_path; Reviewer B also cites :775); features F10-038, F10-039, F13-060. Both reviewers agree the fallback is in the Rust command; Reviewer B's note that PathButton also backs the data folder rows is kept."
+ },
+ {
+  "id": "seed-settings-capture-2",
+  "outcome": "answered",
+  "reply": "The Discard-all control exists in the reference and is shown only when something has changed. SettingsWindow.tsx:198 sets the changed flag and :209-227 render the undo button as the title bar's trailing slot, placed before the window controls at SettingsTitleBar.tsx:15-16. The inventory's trailing=false reflects the unchanged recording, so the inventory should record the changed state rather than add a control.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:198, 209-227; main/src/windows/settings/SettingsTitleBar.tsx:15-16, 25; features F10-027, F13-061. Same finding as seed-settings-shortcuts-0."
+ },
+ {
+  "id": "seed-settings-capture-3",
+  "outcome": "answered",
+  "reply": "The clear button exists and renders only while the search query is non-empty, as an IconButton labelled Clear search. clearSearch resets the query and scope, so the empty trailing slot in the inventory reflects the empty-query recording, and the inventory should add the non-empty state rather than a new widget.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:167-170, 235-246 (Reviewer B cites :236); feature F10-011; settings-capture.json InputWell entry (default state, empty value)."
+ },
+ {
+  "id": "seed-settings-capture-4",
+  "outcome": "answered",
+  "reply": "The uppercase eyebrow and the muted Label are one nested element, not two, because SectionHeader renders its label as a Label child. Keep SectionHeader as the single heading and drop the separate Label entry. The Shortcuts inventory counts its three group headings the same way and should be corrected too.",
+  "evidence": "common-ui/src/components/typography/SectionHeader.tsx:38-44; main/src/windows/settings/capturePane.tsx:29-31; settings-capture.json entries at 172,58 (100x16); settings-shortcuts.json group headings (Reviewer B)."
+ },
+ {
+  "id": "seed-settings-capture-5",
+  "outcome": "decided",
+  "reply": "Keep the two placements that SettingRow defines: Capture mode's value-dependent hint goes in the footnote, and Saved to's static 'Click to open the folder' stays in the description. Use one 11px caption token for both, which replaces the 11.5px description size and matches the SectionHeader hint.",
+  "evidence": "common-ui/src/components/settings/SettingRow.tsx:8-18 (description vs footnote contract), :38 (text-[11.5px]); main/src/windows/settings/capturePane.tsx:17-19, 49 (text-[11px]), 55-57; common-ui/src/components/typography/SectionHeader.tsx:46 (11px hint). Conflict: Reviewer B moves Saved to into a footnote and cites F10-061 and F10-066 for that, which were not verified; Reviewer A's reading follows the SettingRow contract and is followed."
+ },
+ {
+  "id": "seed-settings-capture-6",
+  "outcome": "decided",
+  "reply": "The web build renders no window lights, because a browser tab has its own controls and the brief gives web no window chrome. On desktop the two lights are inert, as F10-029 says: the inert prop sets the DOM disabled attribute, so the inert and disabled readings describe the same control.",
+  "evidence": "main/src/components/WindowControls.tsx:66, 95-118, 111, 144, 194-199; features F10-029, F13-063; brief: web has no window chrome. Both reviewers agree; Reviewer B adds the F13-063 wording."
+ },
+ {
+  "id": "seed-settings-capture-7",
+  "outcome": "answered",
+  "reply": "The reference opens Settings at 640 x 520, so the inventory's 1180 x 760 window and 1026 x 715 tabpanel cannot be the layout reference. Whether the window is fixed or resizable with a 640 x 520 minimum is the open question raised on seed-settings-shortcuts-7.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:32-33, 114; main/src-tauri/src/lib.rs:884-891; feature F10-001; settings-capture.json title bar entry (1180x46). Both reviewers agree on 640 x 520."
+ },
+ {
+  "id": "seed-settings-about-0",
+  "outcome": "decided",
+  "reply": "There are two discard controls, not one described three ways. The title-bar discard-all shows only while a setting or hotkey has changed since open, and the group header undo shows only when that group has changed; the About groups pass no onDiscard, so only the title-bar control can appear there. Desktop keeps the title-bar control and the group dot; web moves discard-all to the page heading row because it is not window chrome, and the undo clearIcon is removed from the About SectionHeaders.",
+  "evidence": "SettingsWindow.tsx:198, 209-227; common-ui/src/components/settings/SettingsGroup.tsx:25-38; common-ui/src/components/typography/SectionHeader.tsx:51-60; grep shows onDiscard only in generalPane.tsx, capturePane.tsx, shortcutsPane.tsx; SettingsWindow.tsx:41; types.ts:46-49; features F10-027, F10-034, F10-050"
+ },
+ {
+  "id": "seed-settings-about-1",
+  "outcome": "decided",
+  "reply": "The reference has a clear-search control (a button labelled 'Clear search' that calls clearSearch, shown while the query is non-empty), and Escape clears the query before closing the window. Add both to the search field entry. The focus outline is not settled by source, and the brief reserves accent blue for the primary action and selection, so the field takes the shared neutral focus ring rather than the screenshot blue in F10-010.",
+  "evidence": "SettingsWindow.tsx:119-124, 238-255; features F10-010 (outline from screenshot only), F10-011 (clearSearch confirmed from source), F10-023; brief decision on accent blue"
+ },
+ {
+  "id": "seed-settings-about-2",
+  "outcome": "decided",
+  "reply": "The 'Discard changes...' wording is the discard tooltip, not a reset label: the window-level tooltip reads 'Discard every change made since this window opened' and the group title reads 'Discard changes made since this window opened'. Keep the row heading 'Restore defaults' (the search anchor), keep the trigger 'Reset all settings…', and change the confirm button from 'Reset everything' to 'Reset all settings' in the danger style. Update F10-068, F10-069, F10-070 and the F10-073 search terms to match.",
+  "evidence": "main/src/windows/settings/aboutPane.tsx:44, :47; ResetEverything.tsx:15, :27; common-ui SettingsGroup.tsx:26; SettingsWindow.tsx:219; features F10-068, F10-069, F10-070, F10-073"
+ },
+ {
+  "id": "seed-settings-about-3",
+  "outcome": "answered",
+  "reply": "PathButton renders a muted em dash with no button whenever path is null. Null covers both loading and a failed lookup, because the type stays null while loading and the catch leaves it null. The loaded state is a button with a folder_open icon, the path in monospace, and aria-label 'Open <path> in the file manager'; the version value uses the same dash when null.",
+  "evidence": "main/src/windows/settings/PathButton.tsx:13-31; main/src/windows/settings/types.ts:21-24; main/src/windows/SettingsWindow.tsx:96-101; aboutPane.tsx:22, :34; features F10-040"
+ },
+ {
+  "id": "seed-settings-about-4",
+  "outcome": "decided",
+  "reply": "On web, remove the Data folder row and its PathButton, and remove the Capture settings pane, since its capture mode and screenshots folder are desktop-only. Drop 'macOS' and the menu-bar capture wording from the Application description on both builds, because desktop targets Windows as well as macOS; the replacement tagline is copy for the owner to supply. On web also drop 'capture' from the Restore defaults text.",
+  "evidence": "main/src/windows/settings/aboutPane.tsx:18, :26-35, :46; main/src/windows/settings/capturePane.tsx:58-61; features F10-065 to F10-067; brief platform-modifier decision (Control on Windows, Command on macOS)"
+ },
+ {
+  "id": "seed-settings-about-5",
+  "outcome": "decided",
+  "reply": "On web, drop WindowControls, the three traffic lights and the TitleBar drag region, and keep 'Settings' as the h1 Label. On desktop, keep the chrome as the existing code builds it: the shared TitleBar draws macOS traffic lights on macOS and Windows buttons on Windows, and the panel is non-minimizable and non-maximizable, so the minimize and full-screen lights stay inert. The existing implementation already settles the desktop chrome question, so it needs no product choice.",
+  "evidence": "main/src/windows/settings/SettingsTitleBar.tsx:6-8; main/src-tauri/src/lib.rs:803-823 (minimizable(false), maximizable(false)); features F10-028, F10-029; brief: web is a browser tab with no window chrome"
+ },
+ {
+  "id": "seed-settings-about-6",
+  "outcome": "decided",
+  "reply": "On web, remove the window-level Escape binding that closes the window and the Cmd/Ctrl+F listener, so the browser's own find shortcut works. Keep Escape clearing the search query first, since that is in-page, and reach the search field by normal focus. Desktop keeps both window bindings as the reference has them.",
+  "evidence": "main/src/windows/SettingsWindow.tsx:119-124 (Escape), :128 (metaKey/ctrlKey + f); features F10-023, F10-024, F10-025; brief: browser shortcuts take precedence on web"
+ },
+ {
+  "id": "seed-settings-about-7",
+  "outcome": "answered",
+  "reply": "The source sets the Settings panel to 640 x 520 and makes that its minimum, so F10-001 should read 'opens at 640 x 520 and cannot shrink below it' rather than 'fixed'. The 1180 x 760 figure matches the main window in tauri.conf.json, so the reference recording was likely taken from the wrong window. Record 640 x 520 in the frame region and re-check the reference recording at that size.",
+  "evidence": "main/src-tauri/src/lib.rs:876-891 (resizable, min 640x520); main/src/windows/SettingsWindow.tsx:30-33, :114; main/src-tauri/tauri.conf.json:16-17 (main window 1180x760); features F10-001"
+ },
+ {
+  "id": "seed-o0",
+  "outcome": "decided",
+  "reply": "Agreed. The brief has no capture window or screen capture on web and tasks are added by hand in the main window, and every F13 and F14 feature is desktop bar, hotkey or tray behaviour. The capture-bar screen is therefore built for desktop only.",
+  "evidence": "Brief (no capture window on web; tasks added by hand); features F13-001 to F13-063 and F14-001 to F14-063"
+ },
+ {
+  "id": "seed-capture-bar-0",
+  "outcome": "decided",
+  "reply": "Nothing replaces the footer-right slot on web, since the capture bar is desktop-only and the screenshot button, its icon, the Capturing spinner and the screenshot HotkeyHint do not carry over. Do not add a file-attach control here; web uploads belong to the main task editor. Desktop keeps the screenshot ToolbarButton, its icon, its HotkeyHint and the Cmd+Shift+Enter binding.",
+  "evidence": "tray/src/components/Footer.tsx:68-108; features F13-020, F13-021, F13-028, F14-003, F14-007; brief (no capture window on web)"
+ },
+ {
+  "id": "seed-capture-bar-1",
+  "outcome": "answered",
+  "reply": "These entry points live in the tray process, not in this screen's widget tree. The global toggle is registered from hotkey settings (F14-001), click-away dismiss is the window Focused(false) handler with a 500 ms reveal grace, and the tray menu is built in lib.rs:204-216. Add an 'Entry points' note listing F14-001, F14-024 and F14-040 to F14-042, and record the docs-versus-code conflict on show_menu_on_left_click in F14-040; a hotkey pressed while main is focused is handled by main (F14-047).",
+  "evidence": "features F14-001, F14-024, F14-040 to F14-042, F14-047; tray/src-tauri/src/lib.rs:204-216, :272-280; tray/src-tauri/src/window.rs:322-339"
+ },
+ {
+  "id": "seed-capture-bar-2",
+  "outcome": "needs_mujtaba",
+  "question": "Should Cmd+Enter in the title field submit the task or dismiss the bar, given that Cmd+Enter is also the default global toggle: (a) submit from title and notes and move the toggle default off Cmd+Enter, (b) keep Cmd+Enter as the toggle and submit from the title only on plain Enter, with Cmd+Enter submitting only in the notes, or (c) submit from title and notes and ignore the toggle while the bar is focused?",
+  "reply": "Today Cmd+Enter in the title does two jobs: the card save submits, and the global capture-enter dismisses the bar, because Cmd+Return is the default toggle. Reviewer A asks the owner to choose among the three options above, while reviewer B makes plain Enter and Cmd/Ctrl+Enter submit from the title with Escape as the only dismiss key, which removes the title-dismiss branch of the global toggle. The owner needs to pick which key owns this behaviour before the capture-bar spec is final.",
+  "evidence": "features F13-003 (App.tsx:41-44; Cmd/Ctrl/Alt+Enter also submit), F13-005, F13-009 (NotesSection.tsx:37-38), F13-016 (useCaptureBarEvents.ts:33-37 dismisses when title focused); common/src/hotkeys.rs:330-333 (default Cmd+Return)"
+ },
+ {
+  "id": "seed-capture-bar-3",
+  "outcome": "decided",
+  "reply": "On success the draft clears and the bar dismisses after POST /refresh, with no separate success state. On failure the bar stays open with the draft intact and shows one inline error in the footer, styled like the screenshot failure ('Capture failed', red, with the message as tooltip); the copy is still to be written. The reference save() has no catch, so this failure state is new for desktop, and the web post-submit state belongs to the main window's add-task flow.",
+  "evidence": "features F13-015 (useCaptureDraft.ts:78-90), F13-024 (Capture failed pattern), F14-046 (POST /refresh, dismissed); brief (no capture bar on web)"
+ },
+ {
+  "id": "seed-capture-bar-4",
+  "outcome": "decided",
+  "reply": "This does not apply to web, because the capture bar is desktop-only. On desktop keep tabIndex -1 on the target, Clear and screenshot buttons as the reference records, since Tab moves only between title and notes and each action has a hotkey. Give the collapsed Tab-hint button the shared library focus ring, since it is a plain button with no focus style.",
+  "evidence": "features F13-041 (TitleRow.tsx:51, Footer.tsx:45, Footer.tsx:76), F13-013, F14-003, F14-054; tray NotesSection.tsx:50-57 (hint button, no focus style)"
+ },
+ {
+  "id": "seed-capture-bar-5",
+  "outcome": "decided",
+  "reply": "Every xs ToolbarButton uses iconSize 16, so the screenshot button moves from 15 to 16 to match the bar's other icons. All text-style buttons, including the collapsed Tab-hint button, use the content-2 to content-1 hover. The screenshot button's filled state uses the shared neutral filled variant rather than accent, since the brief reserves accent for the primary action and selection.",
+  "evidence": "tray/src/components/Footer.tsx:33, :46, :72 (iconSize 15); TitleRow.tsx:49 (iconSize 16), :52 (hover); NotesSection.tsx:50-57 (no hover); features F13-026, F13-053; brief decision on accent blue"
+ },
+ {
+  "id": "seed-capture-bar-6",
+  "outcome": "decided",
+  "reply": "This does not apply to web, because the capture bar is desktop-only. On desktop the hints show the platform modifier, Cmd on macOS and Ctrl on Windows, for Cmd+B, Cmd+I, Cmd+U, Cmd+Shift+Backspace and Cmd+Shift+Enter. The browser-conflict check for B, I and U belongs to the web main-window editor if it reuses this toolbar.",
+  "evidence": "formatAccel in tray/src/components/TitleRow.tsx and Footer.tsx; features F13-012, F13-021, F13-027; brief platform-modifier decision (Control on Windows, Command on macOS)"
+ },
+ {
+  "id": "seed-capture-bar-7",
+  "outcome": "answered",
+  "reply": "The reference already does this in the desktop window: a non-activating frameless panel with an opaque rounded card whose height follows the card, 116 px collapsed and 185 px with notes open, capped at 300 logical px. Placement anchors at the cursor, flips at the right and bottom edges, and is clamped to the display. Keep this logic in the desktop spec and record the ids F14-015 to F14-019, F14-028, F14-031 and F14-032 in the frame note; the web build has no equivalent.",
+  "evidence": "tray/src-tauri/src/window.rs:22-26, :30-60, :126-166, :191-209; features F13-039, F14-015 to F14-019, F14-028, F14-031, F14-032; inventory state:capture-bar 760x116 and state:capture-bar-notes 760x185"
+ },
+ {
+  "id": "seed-multi-inspector-1",
+  "outcome": "decided",
+  "reply": "Decided: destructive Delete uses the danger colour at rest everywhere it appears (multi-inspector Delete, bulk bar Delete, single-task inspector Delete and the row menu Delete), following the brief's rule that destructive actions use the danger colour. Both reviewers agree the gap is at rest: the shared ToolbarButton danger variant sets the text to content-3 and only tints on hover, and the neutral grey reading contradicts the danger variant set in the reference. The shared ToolbarButton and IconButton danger variants must carry the danger text colour at rest, as MenuItem already does.",
+  "evidence": "/home/coder/project/taskscape-tauri/common-ui/src/components/buttons/ToolbarButton.tsx:28-29 (danger text-content-3 at rest, hover-only tint); /home/coder/project/taskscape-tauri/common-ui/src/components/buttons/IconButton.tsx:34 (danger built on NEUTRAL); /home/coder/project/taskscape-tauri/common-ui/src/components/menus/MenuItem.tsx:9-10; /home/coder/project/taskscape-tauri/main/src/components/preview/MultiInspector.tsx:137-146 (variant danger); /home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:469-478 (bulk bar Delete, variant danger); /home/coder/project/taskscape-tauri/main/src/components/preview/TaskInspector.tsx:366-372; /home/coder/project/taskscape-tauri/main/src/components/TaskRow.tsx:198-203 and 230-236; /home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-063, F07-070; /home/coder/project/omnicui/examples/taskscape/spec/features/area-04.json F04-116; /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (danger tone colour not recorded); brief decision on danger colour."
+ },
+ {
+  "id": "seed-multi-inspector-2",
+  "outcome": "answered",
+  "reply": "The confirmation already exists in the reference, so the inventory's 'unverified' note is stale. The multi-select inspector Delete and the bulk bar Delete both call bulkDelete, which opens the 'Move N tasks to Trash?' sheet before deleting, and the single-task inspector Delete calls requestDeleteTask, which asks 'Move to Trash?' first. Whether Move-to-Trash keeps the accent tone or switches to danger is not settled by the decisions and is a separate open point, not part of this comment.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/commands/tasks.ts:67-83 (requestDeleteTask, askConfirm 'Move to Trash?'); :69-70 (accent tone comment, Trash is reversible); :106-121 (bulkDelete askConfirm before deleteSelection); /home/coder/project/taskscape-tauri/main/src/components/preview/MultiInspector.tsx:143 (calls bulkDelete); /home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:474; /home/coder/project/taskscape-tauri/main/src/components/TaskRow.tsx:251; /home/coder/project/taskscape-tauri/main/src/components/preview/TaskInspector.tsx:370; /home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-028, F07-033, F07-034, F07-072; /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (Delete entry marked 'unverified')."
+ },
+ {
+  "id": "seed-multi-inspector-3",
+  "outcome": "decided",
+  "reply": "Decided: Clear uses one shared widget and variant everywhere, a ToolbarButton with the close icon, the label 'Clear' and the ghost variant, in both the summary header and the bulk bar, because the brief requires the same job to use the same widget and variant. Reviewer B proposed removing the header control and keeping only the bulk bar's 'Clear selection' button; that is not adopted because the rule requires matching widgets, not fewer placements, and removing a placement is a product change the decisions do not call for. Both controls call the same clear(listId) action, so the outcome is identical and the post-clear landing is inferred, not a separate behaviour to build.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/preview/MultiInspector.tsx:89-96 (header IconButton, store clear); /home/coder/project/taskscape-tauri/main/src/components/TaskPane.tsx:479-488 (bulk bar ToolbarButton 'Clear', clear(listId)); /home/coder/project/taskscape-tauri/common-ui/src/components/buttons/ToolbarButton.tsx:8 (variants); /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (Clear regions 'Summary header' and 'Bulk bar'; landing 'inferred'); /home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-064; /home/coder/project/omnicui/examples/taskscape/spec/features/area-04.json F04-019."
+ },
+ {
+  "id": "seed-multi-inspector-4",
+  "outcome": "decided",
+  "reply": "Decided: the window controls (close, minimise, full screen) are native window chrome flagged system in F07-085, so they are not rebuilt on web and are kept only in the desktop build. The drag grip is a decorative icon with pointer events disabled (F07-086) and its drag-to-move behaviour is an inference, so it is not rebuilt on web either and stays unchanged on desktop, which is the existing app. The comment is attached to the wrong node, since these controls sit in the title bar, not the Clear control.",
+  "evidence": "/home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-085 (~2622, system: true), F07-086 (~2647, pointer-events-none, decorative); /home/coder/project/taskscape-tauri/main/src/components/TitleBar.tsx:55; /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (Title bar region; drag-grip 'drag to move the window' is an inference); brief (web runs in a browser tab with no window chrome)."
+ },
+ {
+  "id": "seed-multi-inspector-5",
+  "outcome": "decided",
+  "reply": "Decided: the reference's bulk set-done has no rollback, so this is a gap, not a behaviour to copy. Each bulk verb on web reverts its optimistic patch and shows an error message when the API call fails, following the single toggle-done rollback, and reloads the affected shared list after a failed call as the trash restore path does. Reviewer B exempted bulk Copy from the revert and reload because it writes nothing to the server, but no cited source supports that and the copy failure path was not traced, so the same rule applies to Copy by consistency.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/stores/actions.ts:63-71 (toggleDone reverts and rethrows); :87-91 (setTasksDone patches, awaits API, no catch or revert); /home/coder/project/taskscape-tauri/main/src/commands/tasks.ts:133-157 (bulkSetDone, bulkMove, bulkCopy with no failure handling); /home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-013, F07-023 (~801), F07-025 (~843); /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (bulk verb behaviours)."
+ },
+ {
+  "id": "seed-multi-inspector-6",
+  "outcome": "answered",
+  "reply": "The chevron exists, but on the parent task row in the task list, not in the multi-select inspector, which is why this screen's shot lacks it. It is a chevron_left icon that rotates when the row is expanded and calls toggleCollapsed to collapse or expand the subtasks, and at rest it sits at opacity 0 until the row is hovered. The '1 / 3' counter is the separate done-of-total badge on that row, so the inventory should record the trigger as the row chevron and mark '1 / 3' as the rendered form.",
+  "evidence": "/home/coder/project/taskscape-tauri/main/src/components/TaskRow.tsx:412-440 (disclosure chevron, toggleCollapsed); :418 (click handler); :423-424 (opacity-0 until group hover when expanded); :430-435 (chevron_left, -rotate-90 when expanded); :441-449 (done/total badge); /home/coder/project/taskscape-tauri/main/src/stores/layoutStore.ts:174-181 (collapsed set); /home/coder/project/omnicui/examples/taskscape/spec/features/area-07.json F07-099 (~3134, '1/3' vs '1 / 3' note); /home/coder/project/omnicui/examples/taskscape/spec/features/area-04.json F04-089 (~3458); /home/coder/project/omnicui/examples/taskscape/spec/inventory/multi-inspector.json (chevron_left entry, purpose inferred)."
+ }
+]

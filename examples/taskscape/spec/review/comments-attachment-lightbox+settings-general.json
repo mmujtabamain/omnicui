@@ -1,0 +1,114 @@
+[
+ {
+  "id": "seed-attachment-lightbox-0",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The scrim region and the Overlay dialog (dim strong, blur, placement fill) model the lightbox as a modal layer over the main window. The desktop build is offline and uses separate windows for dialogs, so the lightbox should open as its own window with no backdrop dimming or blur of the main window, and Close or Escape should close that window. This matches feature F04-052, which the desktop version should reinterpret."
+ },
+ {
+  "id": "seed-attachment-lightbox-1",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The scrim click behaviour is unresolved: the inventory says it is unconfirmed whether a bare click on the Backdrop2 surface closes the lightbox, and Overlay is set to dismissOn none. The rebuild needs an explicit decision for both versions, since the stage div is the only confirmed click-to-close target and F04-053 says the lightbox closes on backdrop click."
+ },
+ {
+  "id": "seed-attachment-lightbox-2",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Previous and Next chevrons are sized inconsistently: the code class h-11 w-11 gives 44px, while the measured buttons are 39x39. The variant should be fixed to one size in the rebuild rather than left to whichever source is used, and the chosen size should be noted in the chevron widgets."
+ },
+ {
+  "id": "seed-attachment-lightbox-3",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The top bar height conflicts: the code uses h-13 (52px) while the measured bar is about 40px with 28px controls at y 9. The rebuild should pick one height for the top bar region, since the 12px difference changes where the stage starts and how the image is centred."
+ },
+ {
+  "id": "seed-attachment-lightbox-4",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Remove attachment button is styled as a danger action only on hover (danger background, white glyph); its default state is the same neutral white-at-70% glyph as Rename and Reveal. A destructive action that is indistinguishable at rest from safe actions is an inconsistency, and the default state should carry the danger tone or the difference should be stated."
+ },
+ {
+  "id": "seed-attachment-lightbox-5",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The same job, opening the attachment externally, is done by two different widgets: the Open externally icon button in the top bar (onMedia, 28x28) and the primary Button with the text Open externally inside the fallback card. The rebuild should use one shared component or a single variant so the two entry points look and behave the same."
+ },
+ {
+  "id": "seed-attachment-lightbox-6",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Reveal in Finder button calls api.revealAttachment to open a local file manager, which does not exist in a cloud app where files live on the server. The web version should drop this button, or replace it with a download action, and keep Open externally as the only way to leave the app."
+ },
+ {
+  "id": "seed-attachment-lightbox-7",
+  "node": "screen:attachment-lightbox",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The window-level capture keydown handler for ArrowLeft and ArrowRight calls stopPropagation and runs before native controls, so it can take arrow keys away from the audio and video controls and from the selectable text preview. The web build should scope the arrow handling to when no media or text element has focus and should leave browser shortcuts in charge."
+ },
+ {
+  "id": "seed-o3",
+  "node": "screen:settings-general",
+  "author": "Opus (orchestrator)",
+  "tag": "both",
+  "text": "The reference opens Settings as its own window. Desktop: keep it a separate window. Web: a /settings page in the app, not a modal."
+ },
+ {
+  "id": "seed-settings-general-0",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The title-bar undo IconButton and the Appearance and Tasks group clear controls promise to discard changes, but feature F10-030 says settings persist as soon as they change. The inventory never says what discard restores once a value is already written, so the rebuild needs a defined rule (for example, a pre-open baseline written back) before these controls can be built."
+ },
+ {
+  "id": "seed-settings-general-1",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "Two controls use the same undo icon for different scopes. The title-bar undo (trailing IconButton, tooltip \"Discard every change made since this window opened\") discards settings and hotkeys together, while the SectionHeader clear control (clearTitle \"Discard changes made since this window opened\") discards only its own group. The tooltip wording is also nearly identical, so the two should be given distinct labels or one icon and scope."
+ },
+ {
+  "id": "seed-settings-general-2",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The sidebar has a Capture tab (screenshot_monitor icon) and a Shortcuts tab (keyboard icon), but the web version has no capture window, no screenshots and no global hotkeys, and tasks are added by hand. Those two tabs and their search coverage (F10-052) should be dropped from the web nav, leaving the tablist and ArrowDown/ArrowUp wrap order to match the remaining panes."
+ },
+ {
+  "id": "seed-settings-general-3",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Reduced motion row's forced-state logic and footnotes (variant A for Low Power Mode, variant B for macOS Reduce Motion) depend on native OS signals the browser cannot read. On web the Toggle should follow only the browser prefers-reduced-motion query, and both footnotes and the lowPower/systemPrefers disabled state should be removed."
+ },
+ {
+  "id": "seed-settings-general-4",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The title bar with macOS traffic lights (WindowControls), the drag region and the Escape-closes-window gesture (F10-024) only make sense for a separate desktop window. In the web version Settings should be a routed page with a plain heading, and Escape should not try to close the browser tab."
+ },
+ {
+  "id": "seed-settings-general-5",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The search shortcut Cmd+F / Ctrl+F (F10-025) collides with the browser's own find, and browser shortcuts take precedence in the web build. The web search field needs a different focus shortcut or should accept the browser find behaviour, and this should be decided before the field is built."
+ },
+ {
+  "id": "seed-settings-general-6",
+  "node": "screen:settings-general",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "Theme, Reduced motion and Show completed tasks are stored as local preferences in the desktop reference (F10-064 broadcasts show_completed across windows, F11-009 saves theme between launches). In the multi-user cloud app these values belong to the account and must sync across devices, and a failed save must be surfaced to the user rather than silently ignored as F10-031 does."
+ }
+]

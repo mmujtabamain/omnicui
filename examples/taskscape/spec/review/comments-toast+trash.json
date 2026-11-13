@@ -1,0 +1,107 @@
+[
+ {
+  "id": "seed-toast-0",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The auto-dismiss timer has no widget or behaviour in the inventory. F06-095 requires the toast to auto-dismiss after 6 seconds, F06-096 requires a new toast to replace the current one and restart the timer, and F06-097 requires Dismiss to cancel the timer, yet the inventory only says the duration is not shown in the evidence. Add the timeout as a stated behaviour of the Toast wrapper, including the restart and cancel rules."
+ },
+ {
+  "id": "seed-toast-1",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The after-undo state contradicts the code. Toast.tsx:31 dismisses the toast after Undo runs, and F07-077 says Undo restores the task, but the after-undo recording still shows the pill with the same message. The spec should decide whether the pill is removed on Undo and treat the recording as stale, or whether the toast stays and the code changes, instead of leaving this as an open question."
+ },
+ {
+  "id": "seed-toast-2",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Undo ToolbarButton has no keyboard path in the web build. The reference relies on Cmd+Z (F07-017, F07-079 hint text) for the same job, but browser shortcuts take precedence in the web version, so the Undo button must be the only route to undo from the toast. Do not carry the Cmd+Z hint into the web toast."
+ },
+ {
+  "id": "seed-toast-3",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Undo action in the web version is a server call, so it can fail, but the toast has no failure state. Toast.tsx:31 calls toast.action() and then dismisses, while F07-018 says a failed undo leaves the command on the undo stack. The web Toast needs an error message or a retry path, because the pill would otherwise disappear and the trashed task would stay in Trash with no explanation."
+ },
+ {
+  "id": "seed-toast-4",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The message label has only one observed value, \"Moved to Trash\", but F07-034 defines a bulk delete toast and F07-031 counts only root items in the single-task label. The inventory gives the Label no variants for counts or other actions, so the spec should list the message formats each caller supplies, or the Label will be built with a single hard-coded wording."
+ },
+ {
+  "id": "seed-toast-5",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The toast pill sits over the footer row of the task-list pane, which holds the progress footer (F07-101, 2/8 DONE and 25%). The inventory does not say whether the pill must avoid covering that footer or may overlap it, and the pill's pointer-events handling makes the overlap clickable in the strip. Decide the placement rule explicitly for both builds, since the web layout will vary with window width."
+ },
+ {
+  "id": "seed-toast-6",
+  "node": "screen:toast",
+  "author": "Haiku critic",
+  "tag": "general",
+  "text": "The Dismiss IconButton carries a title and aria label of \"Dismiss\" in code, but no visible tooltip appears in either recording, and the Undo button has no tooltip at all. The two buttons in the same pill therefore differ in how their purpose is exposed, so the spec should state one rule for tooltips on toast controls and keep the Undo and Dismiss labels consistent."
+ },
+ {
+  "id": "seed-trash-0",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Empty ToolbarButton is specified as variant=danger in TrashPane.tsx, but the captured look shows it in the same grey as Restore all, not red. Pick one: either the destructive action gets its danger tone in both rebuilds, or the variant is dropped so the two bulk buttons match. The inventory should record which one is intended."
+ },
+ {
+  "id": "seed-trash-1",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "Confirmation policy is inconsistent: Empty opens the 'Empty Trash?' sheet (F07-006), but the per-row Delete permanently IconButton calls purge([t.id]) immediately with no confirmation (F07-011). A permanent delete of one item should get the same guard as clearing the whole trash, or the difference should be stated as deliberate."
+ },
+ {
+  "id": "seed-trash-2",
+  "node": "link:trash>toast",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "This link says Restore all, a row Restore, and Delete permanently raise an 'undoable action notice', but feature F07-012 says trash restore and purge are not undoable. The toast link is also unconfirmed in the code. The notice should either be removed from these actions or described as informational only, with no Undo button."
+ },
+ {
+  "id": "seed-trash-3",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The pane title bar's Minimize and Full Screen lights are inert and have no purpose in this pane (F07-082), and the inventory lists no behaviour for them. The rebuild should drop them from the Trash pane title bar; only the close control has a function, and on the desktop build the main-window controls stay with the main window."
+ },
+ {
+  "id": "seed-trash-4",
+  "node": "link:trash>sheets",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The Empty Trash confirmation is an askConfirm sheet that dims and attaches to the main window. The desktop rebuild must show it as a separate dialog window with no backdrop dimming, as the rebuild note requires, and it should be given its own window title and default-button focus."
+ },
+ {
+  "id": "seed-trash-5",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "Per-row Restore and Delete permanently buttons are opacity-0 until group-hover, so they are invisible to keyboard and touch users. The web build needs focus-visible styling and always-visible or tap-reachable row actions, and the inventory should list a focus state, which none of the row buttons has."
+ },
+ {
+  "id": "seed-trash-6",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The Trash pane shortcut hints (Hide preview panel ⌘\\, Settings ⌘,) and the ⌘Z hint in the undo notice assume global-style keys. Browser shortcuts take precedence in the web build, so these hints need web-specific bindings or removal, and the inventory should not carry the desktop shortcut text over unchanged."
+ },
+ {
+  "id": "seed-trash-7",
+  "node": "screen:trash",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The trash is multi-user in the web build, so Restore all, Empty and the row actions can act on items another user has already restored or purged. Feature F07-013 (reconcile with the live task store) and F07-014 (no error handling) are not represented by any widget, and the web build needs a stale-item and failure message on these actions."
+ }
+]

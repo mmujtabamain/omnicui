@@ -1,0 +1,128 @@
+[
+ {
+  "id": "seed-context-menus-0",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "Right-click on a task row and on a list tab is only inferred (no onContextMenu in the trees, F06-052 and F07-065 are unverified). In the web build the browser's native context menu and browser shortcuts take precedence, so the right-click opener must be defined explicitly or dropped. The More IconButton (eight per task row) is the only confirmed opener and should be the baseline for web."
+ },
+ {
+  "id": "seed-context-menus-1",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Move to list MenuItem (chevron_right, submenu) has no recorded submenu contents, so the list targets, empty-list state and selection behaviour are unknown. Its open-on-hover-only behaviour (F06-047) also gives no click or keyboard path, so the rebuild needs a defined click/keyboard way to open it and a list of destinations."
+ },
+ {
+  "id": "seed-context-menus-2",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "In the project-dropdown, Rename project and Delete project are IconButtons that are opacity-0 until the row is hovered, while the task and tab menus expose Rename and Delete as full text MenuItems always visible. The same job (rename, delete) is done by different widgets, and the hover-only buttons are unreachable by touch or keyboard, so they should match the text-row pattern."
+ },
+ {
+  "id": "seed-context-menus-3",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "Two anchored menu implementations coexist: MenuPanel (ContextMenu.tsx, with a 4px viewport clamp, submenu flip and Overlay dismissal) and the ProjectMenu Surface2 dropdown (no MenuPanel, no Overlay, no clamp or flip recorded, dismissed only by onDismiss). The rebuild should use one menu component so project and task menus share positioning, dismissal and Escape handling."
+ },
+ {
+  "id": "seed-context-menus-4",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The whole menu layer (full-window Overlay, Backdrop2 scrim, z-order above sheets per ContextMenu.tsx:30-32) is an in-window construct. In the desktop build, task and tab menus should open as native popup menus at the pointer or More button, and the sheet-stacking rule (F06-044) no longer applies because sheets are separate windows."
+ },
+ {
+  "id": "seed-context-menus-5",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Copy row has the purpose 'Copies the task' with no target format recorded, while the feature list has F07-053 'Copy tasks as Markdown'. The inventory should state what Copy puts on the clipboard, including the multi-task case, so the rebuild matches the Markdown copy behaviour."
+ },
+ {
+  "id": "seed-context-menus-6",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The project-dropdown Delete project button has no confirmation step recorded (handler 'likely confirmed, not captured'), whereas tab Delete list… routes to a confirmation sheet (F07-073). In the multi-user cloud app, deleting a shared project needs a confirm step and a permission check, which the inventory does not cover."
+ },
+ {
+  "id": "seed-context-menus-7",
+  "node": "screen:context-menus",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The state name 'multi-context-menu' is a single-row task menu on 'Cut a spare key', and no bulk or multi-selection menu is recorded. Bulk actions exist in the feature list (F07-058 bulk bar, F07-059 to F07-064 Bulk Done, Move to, Copy, Delete, Clear), so the rebuild needs to decide whether a right-click on a multi-selection shows a bulk menu or the single-row menu."
+ },
+ {
+  "id": "seed-o1",
+  "node": "screen:sheets",
+  "author": "Opus (orchestrator)",
+  "tag": "desktop",
+  "text": "On the desktop version every sheet becomes its own window (new list, new project, rename, confirmations), with no backdrop dimming the main window. The backdrop was a workaround for Tauri, where opening windows lags."
+ },
+ {
+  "id": "seed-o2",
+  "node": "screen:sheets",
+  "author": "Opus (orchestrator)",
+  "tag": "web",
+  "text": "On the web these stay in-page dialogs over a backdrop, which is the platform's own idiom."
+ },
+ {
+  "id": "seed-sheets-0",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "Destructive confirmations use different tones and verbs. delete-list uses a danger-tone badge and a red 'Delete list' button, while delete-confirm ('Move to Trash?') uses the accent tone and a neutral 'Move' button. Both delete something, so the same job is styled two ways without a clear reason; consider one destructive tone and verb pattern for both."
+ },
+ {
+  "id": "seed-sheets-1",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The Cancel button is 84px wide on the name sheets and delete-confirm, but 100px on delete-list (556,403). The code sets min-w-24 (96px) on grid buttons, which matches neither measurement. The variant width is unexplained and should be fixed to one value in the rebuild."
+ },
+ {
+  "id": "seed-sheets-2",
+  "node": "link:sheets>main-window",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The 'Import JSON…' KeyAction in the instead slot resolves with { action: 'instead', id } and closes the sheet, but the inventory does not show where the instead path leads. The rebuild needs to know whether this opens a file picker, starts an import flow, or only closes."
+ },
+ {
+  "id": "seed-sheets-3",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "Project deletion and rename have no sheet state. F09-014 (delete a project, confirmed by a count of its lists and tasks) and F09-013 (rename a project) are in the feature list, but the delete-list copy is fixed to one list ('Its 3 tasks go with it') and no project sheet or count variant appears. Add a project delete variant with the list and task counts, or state where it is handled."
+ },
+ {
+  "id": "seed-sheets-4",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "both",
+  "text": "The danger accept button ('Delete list') is not guarded. There is no ask on this sheet, so Enter runs accept and deletes the list at once, and the delete-confirm 'Move' has the same immediate-Enter behaviour. For destructive actions, the rebuild should make Cancel the default Enter target or require an explicit click."
+ },
+ {
+  "id": "seed-sheets-5",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "desktop",
+  "text": "The desktop version must not draw a scrim, dim the main window, or dismiss on a press outside the card. Each sheet should open as its own modal window, with Escape and Cancel closing it, and the 'Background window' and 'Scrim (Backdrop)' regions should be dropped for desktop."
+ },
+ {
+  "id": "seed-sheets-6",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The delete-confirm detail line says '⌘Z puts it back' and the Toast Undo action (F06-093) depends on a global undo shortcut. In the web version browser shortcuts take precedence and there are no global hotkeys, so the copy and recovery path should use an on-screen Undo control in the toast, not a keyboard shortcut."
+ },
+ {
+  "id": "seed-sheets-7",
+  "node": "screen:sheets",
+  "author": "Haiku critic",
+  "tag": "web",
+  "text": "The 'Import JSON…' instead action reads a local file in the reference, but the web version is a cloud app where files are uploaded to the server. The web import needs an upload step with its own error and progress states, and the inventory has none."
+ }
+]
