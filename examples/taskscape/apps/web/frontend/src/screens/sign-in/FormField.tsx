@@ -29,11 +29,11 @@ export function FormField({
   spellCheck?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-space-3">
+    <div className="flex flex-col gap-1.5">
       <Text as="span" size="sm" weight="medium" tone="secondary">
         {label}
       </Text>
-      <div className="flex h-[2.5rem] items-center rounded-(--radius-field) border border-edge-2 bg-surface-1 px-space-4 outline-none focus-within:ring-2 focus-within:ring-focus-1">
+      <div className="flex h-[2.5rem] items-center rounded-(--radius-field) border border-edge-2 bg-surface-1 px-3 outline-none focus-within:ring-2 focus-within:ring-focus-1">
         <Input
           data-part={part}
           mode="bare"

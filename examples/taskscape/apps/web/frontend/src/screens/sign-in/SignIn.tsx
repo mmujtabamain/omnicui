@@ -121,10 +121,10 @@ export function SignIn({
   };
 
   return (
-    <div className="flex h-full min-h-0 items-center justify-center overflow-auto bg-surface-1 p-space-5">
+    <div className="flex h-full min-h-0 items-center justify-center overflow-auto bg-surface-1 p-6">
       <Card data-part="app.signin.card" className="w-[22rem] max-w-full">
-        <div className="flex flex-col gap-space-5 p-space-6">
-          <div className="flex flex-col items-center gap-space-3">
+        <div className="flex flex-col gap-6 p-6">
+          <div className="flex flex-col items-center gap-1.5">
             {isSignin ? (
               <Heading as="h1" size="md" data-part="app.signin.appName" className="text-center">
                 Taskscape
@@ -139,7 +139,7 @@ export function SignIn({
             </Text>
           </div>
 
-          <div className="flex flex-col gap-space-4">
+          <div className="flex flex-col gap-4">
             {!isSignin && (
               <FormField
                 label="Name (optional)"
@@ -177,7 +177,7 @@ export function SignIn({
             />
           </div>
 
-          <div className="flex flex-col gap-space-4">
+          <div className="flex flex-col gap-3">
             <Button
               type="button"
               data-part="app.signin.submitButton"

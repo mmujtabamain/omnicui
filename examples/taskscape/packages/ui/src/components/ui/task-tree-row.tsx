@@ -39,7 +39,7 @@ export const taskTreeRowVariants = cva(
   },
 );
 
-export const taskTreeRowTitleVariants = cva("min-w-0 flex-1 truncate text-[1rem] leading-[1.1875rem] font-medium", {
+export const taskTreeRowTitleVariants = cva("min-w-0 flex-1 truncate text-[1rem] leading-[1.357rem] font-medium", {
   variants: {
     done: {
       true: "text-content-3 line-through",
@@ -154,67 +154,70 @@ export const TaskTreeRow = React.forwardRef<HTMLDivElement, TaskTreeRowProps>(fu
     }
   };
 
+  // A treeitem is owned by a tree or group; the group is the row's wrapper, so the row keeps its treeitem role.
   return (
-    <div
-      ref={ref}
-      role="treeitem"
-      data-slot="row"
-      tabIndex={0}
-      aria-level={depth + 1}
-      aria-selected={highlighted}
-      aria-expanded={hasChildren ? expanded : undefined}
-      aria-label={title}
-      draggable={draggable}
-      style={{ paddingLeft: `${(20 + Math.max(0, depth) * 24) / 14}rem`, ...style }}
-      className={cn(
-        taskTreeRowVariants({
-          selection: highlighted ? "selected" : "none",
-          drop: dropIndicator,
-          dragging,
-        }),
-        className,
-      )}
-      {...props}
-      onKeyDown={handleKeyDown}
-      onClick={(event) => {
-        onClick?.(event);
-        onActivate?.({ platformModifier: platformModifierOf(event), shift: event.shiftKey });
-      }}
-      onDoubleClick={(event) => {
-        onDoubleClick?.(event);
-        onToggleDone?.();
-      }}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        onContextMenu?.(event);
-      }}
-      onDragOver={(event) => {
-        onDragOver?.(event);
-        if (onDrop) event.preventDefault();
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        if (!onDrop) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        const ratio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
-        onDrop(ratio < 0.3 ? "before" : ratio > 0.7 ? "after" : "nest");
-      }}
-    >
-      <Checkbox
-        data-slot="check"
-        size="md"
-        shape="round"
-        intent={intent}
-        checked={checked}
-        ariaLabel={checkLabel}
-        onCheckedChange={() => onCheck?.(checkAction)}
-        // The check's own presses and double-clicks must not also activate or toggle the row.
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
-      />
-      <span data-slot="title" className={taskTreeRowTitleVariants({ done })}>
-        {title}
-      </span>
+    <div role="group" className="min-w-0">
+      <div
+        ref={ref}
+        role="treeitem"
+        data-slot="row"
+        tabIndex={0}
+        aria-level={depth + 1}
+        aria-selected={highlighted}
+        aria-expanded={hasChildren ? expanded : undefined}
+        aria-label={title}
+        draggable={draggable}
+        style={{ paddingLeft: `${(20 + Math.max(0, depth) * 24) / 14}rem`, ...style }}
+        className={cn(
+          taskTreeRowVariants({
+            selection: highlighted ? "selected" : "none",
+            drop: dropIndicator,
+            dragging,
+          }),
+          className,
+        )}
+        {...props}
+        onKeyDown={handleKeyDown}
+        onClick={(event) => {
+          onClick?.(event);
+          onActivate?.({ platformModifier: platformModifierOf(event), shift: event.shiftKey });
+        }}
+        onDoubleClick={(event) => {
+          onDoubleClick?.(event);
+          onToggleDone?.();
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onContextMenu?.(event);
+        }}
+        onDragOver={(event) => {
+          onDragOver?.(event);
+          if (onDrop) event.preventDefault();
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          if (!onDrop) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const ratio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+          onDrop(ratio < 0.3 ? "before" : ratio > 0.7 ? "after" : "nest");
+        }}
+      >
+        <Checkbox
+          data-slot="check"
+          size="md"
+          shape="round"
+          intent={intent}
+          checked={checked}
+          ariaLabel={checkLabel}
+          onCheckedChange={() => onCheck?.(checkAction)}
+          // The check's own presses and double-clicks must not also activate or toggle the row.
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+        />
+        <span data-slot="title" className={taskTreeRowTitleVariants({ done })}>
+          {title}
+        </span>
+      </div>
     </div>
   );
 });
