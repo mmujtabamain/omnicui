@@ -395,7 +395,9 @@ tests:
       - { event: notesChanged, times: 1, last: { count: 1 } }
     screenshot: true
 
-  - name: "plain Enter in the new note editor adds a line and does not save the note"
+  - name: "plain Enter in the new note editor adds a line and keeps editing"
+    # Enter is a new line, never "done". The note itself is saved as soon as it has text (F03-028),
+    # so the count is not checked here.
     props: { task: "Book bike service" }
     steps:
       - { action: press, part: addNote }
@@ -404,7 +406,6 @@ tests:
     expect:
       - { part: newNoteEditor, focused: true }
       - { part: noteBody, visible: false }
-      - { part: notesCount, visible: false }
 
   - name: "an empty new note is discarded when its editor loses focus"
     props: { task: "Book bike service" }

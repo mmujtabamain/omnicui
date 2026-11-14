@@ -87,8 +87,10 @@ export const richTextPlaceholderVariants = cva(
 
 export interface RichTextEditorProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange" | "onBlur" | "defaultValue"> {
-  /** Rich document as a string (plain text, newline between paragraphs). The start value. */
+  /** The start value: plain text (newline between paragraphs), or HTML when valueFormat is "html". */
   value?: string;
+  /** "text" (the default) keeps only the words; "html" keeps the marks, lists and links as HTML. */
+  valueFormat?: "text" | "html";
   toolbar?: "floating" | "docked";
   size?: "sm" | "md" | "capped";
   placeholder?: string;
@@ -106,8 +108,9 @@ export interface RichTextEditorProps
   disabled?: boolean;
   /** Required: the accessible name of the textbox. */
   ariaLabel?: string;
-  onChange?: (value: string, paragraphs: number) => void;
-  onBlur?: (value: string) => void;
+  /** value is in the editor's format; text is always the plain text (for counts and emptiness). */
+  onChange?: (value: string, paragraphs: number, text: string) => void;
+  onBlur?: (value: string, text: string) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
   onRequestLink?: () => void;
@@ -147,6 +150,7 @@ type Live = Pick<
   RichTextEditorProps,
   "onChange" | "onBlur" | "onSubmit" | "onCancel" | "onRequestLink" | "onDropAttachment" | "onOpenMention"
 > & {
+  valueFormat: "text" | "html";
   mentions: RichTextMention[];
   submitOnModEnter: boolean;
   escapeCancels: boolean;
@@ -155,7 +159,7 @@ type Live = Pick<
 type LiveRef = { current: Live };
 
 const NO_MENTIONS: RichTextMention[] = [];
-const NO_LIVE: Live = { mentions: NO_MENTIONS, submitOnModEnter: false, escapeCancels: false };
+const NO_LIVE: Live = { valueFormat: "text", mentions: NO_MENTIONS, submitOnModEnter: false, escapeCancels: false };
 
 type PMView = Editor["view"];
 type JsonNode = { type: string; text?: string; content?: JsonNode[] };
@@ -176,6 +180,12 @@ function serialize(ed: Editor): string {
     if (node.type.name === "mention") return `@${String(node.attrs.label)}`;
     return node.type.name === "hardBreak" ? "\n" : "";
   });
+}
+
+/** The editor's value in its format; an empty document is "" in both. */
+function valueOf(ed: Editor, format: "text" | "html"): string {
+  if (format === "text") return serialize(ed);
+  return serialize(ed) === "" && ed.isEmpty ? "" : ed.getHTML();
 }
 
 function countParagraphs(ed: Editor): number {
@@ -309,6 +319,7 @@ function buildExtensions(live: LiveRef, maxLength: number) {
 export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(function RichTextEditor(
   {
     value = "",
+    valueFormat = "text",
     toolbar = "floating",
     size = "sm",
     placeholder = "",
@@ -334,6 +345,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
 ) {
   const live = React.useRef<Live>(NO_LIVE);
   live.current = {
+    valueFormat,
     mentions,
     submitOnModEnter,
     escapeCancels,
@@ -413,7 +425,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
 
   const editor = useEditor({
     extensions,
-    content: toDoc(value),
+    content: valueFormat === "html" ? value : toDoc(value),
     editable: !disabled,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
@@ -421,7 +433,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
       handleKeyDown: (view, event) => handleKey(view, event),
     },
     onUpdate: ({ editor: ed }) => {
-      live.current.onChange?.(serialize(ed), countParagraphs(ed));
+      live.current.onChange?.(valueOf(ed, live.current.valueFormat), countParagraphs(ed), serialize(ed));
     },
     onTransaction: ({ editor: ed }) => sync(ed),
   });
@@ -442,10 +454,10 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
 
   // The value is the start value; a changed value replaces the content only when the editor is not being edited.
   React.useEffect(() => {
-    if (editor && !editor.isFocused && serialize(editor) !== value) {
-      editor.commands.setContent(toDoc(value), { emitUpdate: false });
+    if (editor && !editor.isFocused && valueOf(editor, valueFormat) !== value) {
+      editor.commands.setContent(valueFormat === "html" ? value : toDoc(value), { emitUpdate: false });
     }
-  }, [editor, value]);
+  }, [editor, value, valueFormat]);
 
   React.useEffect(() => {
     if (value !== "") setCollapsed(false);
@@ -470,7 +482,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
         if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
         showMenu(null);
         const text = editor ? serialize(editor) : "";
-        live.current.onBlur?.(text);
+        live.current.onBlur?.(editor ? valueOf(editor, live.current.valueFormat) : "", text);
         if (collapseWhenEmpty && text === "") setCollapsed(true);
       }}
       onDragOverCapture={(event) => {

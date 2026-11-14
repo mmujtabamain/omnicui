@@ -22,8 +22,9 @@ interface NoteBodyProps {
   placeholder?: string;
   autoFocus?: boolean;
   mentions: RichTextMention[];
-  onChange: (text: string) => void;
-  onBlur: (text: string) => void;
+  /** html is what is stored (marks, lists, links); text is its plain text (counts, emptiness, events). */
+  onChange: (html: string, text: string) => void;
+  onBlur: (html: string, text: string) => void;
   onOpenMention: (id: string) => void;
   onRequestLink: () => void;
   deleteButton?: React.ReactNode;
@@ -51,7 +52,7 @@ function NoteBody({
     if (ref.current) tag(ref.current);
   });
   const [focused, setFocused] = React.useState(false);
-  const [length, setLength] = React.useState(value.length);
+  const [length, setLength] = React.useState(() => plainText(value).length);
 
   return (
     <div
@@ -69,9 +70,10 @@ function NoteBody({
         autoFocus={autoFocus}
         maxLength={NOTE_LIMIT}
         mentions={mentions}
-        onChange={(text) => {
+        valueFormat="html"
+        onChange={(html, _paragraphs, text) => {
           setLength(text.length);
-          onChange(text);
+          onChange(html, text);
         }}
         onBlur={onBlur}
         onOpenMention={onOpenMention}
@@ -107,23 +109,23 @@ function SavedNote({
 }: NoteProps & { note: { id: Id; content: string }; index: number }) {
   const updateNote = useWrite(ep.notes.update);
   const removeNote = useWrite(ep.notes.remove);
-  const text0 = plainText(note.content);
-  const saved = React.useRef(text0);
+  // Notes are stored as HTML (the API sanitizes it), so bold, lists and links survive a reload.
+  const saved = React.useRef(note.content);
 
-  const persist = (text: string) => {
-    if (text === saved.current) return;
-    saved.current = text;
-    updateNote.mutate([note.id, { content: text }]);
+  const persist = (html: string, text: string) => {
+    if (html === saved.current) return;
+    saved.current = html;
+    updateNote.mutate([note.id, { content: html }]);
     emit("noteSaved", { text });
   };
 
   // Autosave: each change is written as it is made (the contract reads the save straight after typing);
   // an emptied note waits for its blur.
-  const onChange = (text: string) => {
-    if (text !== "") persist(text);
+  const onChange = (html: string, text: string) => {
+    if (text !== "") persist(html, text);
   };
 
-  const onBlur = (text: string) => {
+  const onBlur = (html: string, text: string) => {
     if (text === "") {
       // An emptied note is discarded at once, with no confirmation.
       if (saved.current !== "") {
@@ -133,7 +135,7 @@ function SavedNote({
       }
       return;
     }
-    persist(text);
+    persist(html, text);
   };
 
   const first = index === 0;
@@ -141,7 +143,7 @@ function SavedNote({
     <NoteBody
       part={first ? `${P}noteBody` : `${P}noteBodySecond`}
       counterPart={first ? `${P}noteChars` : `${P}noteCharsSecond`}
-      value={text0}
+      value={note.content}
       mentions={mentions}
       onChange={onChange}
       onBlur={onBlur}
@@ -195,15 +197,15 @@ function DraftNote({
   // Writes run one after another, so keystrokes and a blur cannot create the note twice.
   const queue = React.useRef<Promise<void>>(Promise.resolve());
 
-  const write = (text: string) => {
+  const write = (html: string, text: string) => {
     queue.current = queue.current
       .then(async () => {
-        if (text === saved.current) return;
+        if (html === saved.current) return;
         if (draftId.current === null) {
           if (text === "") return;
-          const note = await createNote.mutateAsync([taskId, text]);
+          const note = await createNote.mutateAsync([taskId, html]);
           draftId.current = note.id;
-          saved.current = text;
+          saved.current = html;
           onCreated(note.id);
           emit("notesChanged", { count: savedCount + 1 });
           emit("noteSaved", { text });
@@ -218,8 +220,8 @@ function DraftNote({
           emit("notesChanged", { count: savedCount });
           return;
         }
-        await updateNote.mutateAsync([draftId.current, { content: text }]);
-        saved.current = text;
+        await updateNote.mutateAsync([draftId.current, { content: html }]);
+        saved.current = html;
         emit("noteSaved", { text });
       })
       .catch((error: unknown) => {
@@ -236,11 +238,11 @@ function DraftNote({
       placeholder="Write a note ... (drop an attachment to @mention it)"
       autoFocus
       mentions={mentions}
-      onChange={(text) => void write(text)}
-      onBlur={(text) => {
+      onChange={(html, text) => void write(html, text)}
+      onBlur={(html, text) => {
         // Finishing waits for the window to have focus (F03-029): a blur from switching apps keeps the draft.
         const windowFocused = document.hasFocus();
-        void write(text).then(() => {
+        void write(html, text).then(() => {
           if (windowFocused) onFinished();
         });
       }}
