@@ -456,6 +456,9 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
   };
 
   const counterNear = length > 0.9 * maxLength;
+  // A hidden floating bar keeps its buttons hit-testable (the bar itself is pointer-events none until focus),
+  // so a press on a button from cold still reaches it.
+  const hit = toolbar === "floating" ? "pointer-events-auto" : undefined;
 
   return (
     <div
@@ -495,6 +498,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.bold}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleBold().run())}
           />
         </ToolbarItem>
@@ -507,6 +511,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.italic}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleItalic().run())}
           />
         </ToolbarItem>
@@ -519,6 +524,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.underline}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleMark("rteUnderline").run())}
           />
         </ToolbarItem>
@@ -530,6 +536,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.strike}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleStrike().run())}
           />
         </ToolbarItem>
@@ -541,6 +548,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.bulletList}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleBulletList().run())}
           />
         </ToolbarItem>
@@ -552,6 +560,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             pressed={format.orderedList}
             disabled={disabled}
             retainFocus
+            className={hit}
             onPressedChange={() => act((ed) => ed.chain().focus().toggleOrderedList().run())}
           />
         </ToolbarItem>
@@ -563,7 +572,9 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             size="sm"
             shape="icon"
             width="content"
+            iconSize={15}
             retainFocus
+            className={hit}
             disabled={disabled}
             onClick={() => live.current.onRequestLink?.()}
           />

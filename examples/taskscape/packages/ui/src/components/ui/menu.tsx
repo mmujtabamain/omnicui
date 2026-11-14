@@ -7,11 +7,13 @@ import { cn } from "../../lib/utils";
 /**
  * The one role=menu floating panel. Radix DropdownMenu serves every placement. Control and submenu
  * menus anchor to the trigger (Radix Popper, below it by `offset`). Cursor and anchored menus anchor to
- * a zero-size point at pointX/pointY, clamped by Radix collision handling with a 4px inset. Widths are
- * the measured pixels at 1rem = 14px: task 152px, tab 156px, project min 210px.
+ * a zero-size point at pointX/pointY. Radix shifts a cursor or anchored menu sideways inside the window,
+ * but not vertically, so the widget lifts one that would run past the bottom edge by its overflow, never
+ * above the 4px inset. Only a menu taller than the window itself scrolls. Widths are the measured pixels
+ * at 1rem = 14px: task 152px, tab 156px, project min 210px.
  */
 export const menuPanelVariants = cva(
-  "z-(--z-index-dropdown) flex flex-col max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto rounded-(--radius-panel) bg-surface-3 py-space-3 text-content-1 shadow-menu outline-none animate-panel-in",
+  "z-(--z-index-dropdown) flex flex-col max-h-[calc(100vh-1.143rem)] overflow-y-auto rounded-(--radius-panel) bg-surface-3 py-space-3 text-content-1 shadow-menu outline-none animate-panel-in",
   {
     variants: {
       width: {
@@ -79,6 +81,8 @@ export function Menu({
   // Set by an outside press or focus; the focus then does not return to the trigger.
   const outsideRef = React.useRef(false);
   const [clickPoint, setClickPoint] = React.useState<Point | null>(null);
+  // Vertical lift of a cursor or anchored panel, in px (zero or negative), measured from the panel's own height.
+  const [lift, setLift] = React.useState(0);
 
   const change = (next: boolean, reason: MenuOpenReason) => {
     if (openRef.current === next) return;
@@ -165,6 +169,14 @@ export function Menu({
 
   const point = clickPoint ?? { x: pointX, y: pointY };
 
+  // Called with the panel element once it mounts. A panel that would end below the window is lifted so its
+  // bottom sits at the 4px inset, but its top never goes above the inset.
+  const measureLift = (panelEl: HTMLElement) => {
+    const room = window.innerHeight - 4 - (point.y + panelEl.offsetHeight);
+    const next = Math.max(-(point.y - 4), Math.min(0, room));
+    if (next !== lift) setLift(next);
+  };
+
   return (
     <DropdownMenuPrimitive.Root open={open} onOpenChange={handleRootChange} modal={false}>
       {control ? (
@@ -179,11 +191,14 @@ export function Menu({
       )}
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
+          ref={(panelEl: HTMLDivElement | null) => {
+            if (panelEl && !control) measureLift(panelEl);
+          }}
           data-slot="panel"
           aria-label={ariaLabel}
           side={placement === "submenu" ? "right" : "bottom"}
           align="start"
-          sideOffset={control ? offset : 0}
+          sideOffset={control ? offset : lift}
           avoidCollisions={placement !== "control"}
           collisionPadding={4}
           className={menuPanelVariants({ width })}

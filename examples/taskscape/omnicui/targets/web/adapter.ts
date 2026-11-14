@@ -380,10 +380,9 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     // hidden: a 1×1 box that clips its content), which is left out here.
     if (p.field === "text") return loc.evaluate((el) => {
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return el.value;
-      // Left out: what only a screen reader gets, and what is hidden from it (an icon's ligature
-      // name draws a glyph, not text).
+      // Left out: what only a screen reader gets, and an icon's ligature name (it draws a glyph, not text).
       const hidden = [...el.querySelectorAll<HTMLElement>("*")].filter((d) => {
-        if (d.getAttribute("aria-hidden") === "true") return true;
+        if (/Material Symbols/.test(getComputedStyle(d).fontFamily) && d.children.length === 0) return true;
         const r = d.getBoundingClientRect(), s = getComputedStyle(d);
         return r.width <= 1 && r.height <= 1 && (s.overflow === "hidden" || s.clip !== "auto" || s.clipPath !== "none");
       });
