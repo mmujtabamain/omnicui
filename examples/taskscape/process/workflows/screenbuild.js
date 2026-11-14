@@ -6,7 +6,8 @@ export const meta = {
 
 // args: { root, pg, python, screens: [{ id, folder, component, inventory?, features?, notes?, refs: [state], uses?: [folder], note? }] }
 //   id: contract name (tasklist); folder: src/screens/<folder>; component: TaskList;
-//   refs: reference states (spec/references/<state>/shot.png); uses: other screen folders it composes.
+//   refs: reference states (spec/references/<state>/shot.png); uses: other screen folders it composes;
+//   own: the only files under src/screens/ it may write, when it shares a folder (default: the whole folder).
 const OPTS = { model: 'haiku', effort: 'high', agentType: 'ts-builder' }
 const RESULT = {
   type: 'object',
@@ -20,11 +21,14 @@ const RESULT = {
 const R = args.root
 const F = `${R}/apps/web/frontend`
 const check = (s) => `cd ${R} && PATH=$HOME/.local/node22/bin:$PATH SCREENS_DATABASE_URL=${args.pg} TASKSCAPE_PYTHON=${args.python} node apps/web/frontend/scripts/check-screen.mjs ${s.id}`
-const files = (s) => `${F}/src/screens/${s.folder}/ (your screen, exported as ${s.component} from ${s.folder}/${s.component}.tsx) and ${F}/src/harness/${s.id}.tsx`
+const files = (s) => s.own
+  ? `${s.own.map((o) => `${F}/src/screens/${o}`).join(', ')} (your screen, exported as ${s.component}) and ${F}/src/harness/${s.id}.tsx`
+  : `${F}/src/screens/${s.folder}/ (your screen, exported as ${s.component} from ${s.folder}/${s.component}.tsx) and ${F}/src/harness/${s.id}.tsx`
 const refs = (s) => s.refs.map((r) => `${R}/spec/references/${r}/shot.png`).join(', ')
 const reads = (s) => [
   `${F}/AGENTS.md (how a screen is written: follow it exactly)`,
   `${R}/omnicui/contracts/${s.id}.contract.yaml (the contract the screen must pass)`,
+  `${R}/spec/screens/contract-notes-${s.id}.txt (how the contract was written and what each of its props must make the harness do)`,
   ...(s.inventory ? [`${R}/spec/inventory/${s.inventory} (the reference screen: regions, widgets, states, measurements)`] : []),
   ...(s.features ? [`${R}/spec/inventory/${s.features} (its feature titles with ids; Grep ${R}/spec/features/area-*.json for a feature's full record)`] : []),
   ...(s.notes ? [`${R}/spec/screens/${s.notes} (the team's review notes and how each was settled)`] : []),

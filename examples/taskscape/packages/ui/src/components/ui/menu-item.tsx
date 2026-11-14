@@ -37,7 +37,7 @@ export interface MenuItemProps
   /** item: ordinary row. action: separated footer row, full width, 32px, leading icon. */
   variant?: "item" | "action";
   tone?: "default" | "danger";
-  /** radio: a 14px check slot is always reserved; a checked row shows the check. */
+  /** radio: a 14px check slot is always reserved; the row sits in a RadioGroup and shows the check when its value is the group's. */
   selection?: "action" | "radio";
   /** submenu: a trailing chevron; press, hover, ArrowRight, Enter or Space open the submenu. */
   trailing?: "none" | "submenu";
@@ -46,8 +46,6 @@ export interface MenuItemProps
   icon?: string;
   label?: string;
   truncate?: boolean;
-  /** Radio rows only: the current value. */
-  checked?: boolean;
   disabled?: boolean;
   /** Radio rows only: the value this row sets in its group. */
   value?: string;
@@ -64,20 +62,22 @@ export interface MenuItemProps
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
   {
     variant = "item", tone = "default", selection = "action", trailing = "none", size = "default",
-    icon = "", label = "Item", truncate = false, checked = false, disabled = false, value = "",
+    icon = "", label = "Item", truncate = false, disabled = false, value = "",
     rowActions = false, submenu, onSelect, onSubmenuToggle, onRenameAction, onDeleteAction,
     onKeyDown, onPointerMove, className, ...props
   },
   ref,
 ) {
   const [open, setOpen] = React.useState(false);
+  const openRef = React.useRef(false);
   const radio = selection === "radio";
   const hasSubmenu = trailing === "submenu";
   const geometry = variant === "action" || size === "large" ? "large" : "default";
 
   // Opening only: a press, hover, ArrowRight, Enter or Space opens the submenu and never runs the row.
   const setSubmenu = (next: boolean) => {
-    if (next === open) return;
+    if (next === openRef.current) return;
+    openRef.current = next;
     setOpen(next);
     onSubmenuToggle?.(next);
   };
@@ -112,16 +112,18 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
     <>
       {radio && (
         <span aria-hidden="true" className="inline-flex size-[1rem] shrink-0 items-center justify-center">
-          {checked && <Icon data-slot="check" name="check" size={15} weight={900} tone="accent" />}
+          <DropdownMenuPrimitive.ItemIndicator className="flex items-center justify-center">
+            <Icon data-slot="check" name="check" size={15} weight={900} tone="accent" className="shrink-0" />
+          </DropdownMenuPrimitive.ItemIndicator>
         </span>
       )}
       {icon !== "" && (
-        <Icon data-slot="icon" name={icon} size={15} weight={300} tone={tone === "danger" ? "danger" : "muted"} />
+        <Icon data-slot="icon" name={icon} size={15} weight={300} tone={tone === "danger" ? "danger" : "muted"} className="shrink-0" />
       )}
       <span data-slot="label" className={cn("min-w-0 flex-1", truncate && "truncate")}>
         {label}
       </span>
-      {hasSubmenu && <Icon data-slot="chevron" name="chevron_right" size={15} weight={300} tone="muted" />}
+      {hasSubmenu && <Icon data-slot="chevron" name="chevron_right" size={15} weight={300} tone="muted" className="shrink-0" />}
     </>
   );
 
@@ -144,7 +146,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
   };
 
   const item = radio ? (
-    <DropdownMenuPrimitive.RadioItem ref={ref} {...rowCommon} checked={checked}>
+    <DropdownMenuPrimitive.RadioItem ref={ref} {...rowCommon} value={value}>
       {content}
     </DropdownMenuPrimitive.RadioItem>
   ) : (

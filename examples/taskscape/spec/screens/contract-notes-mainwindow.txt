@@ -1,0 +1,109 @@
+# How the app.mainwindow contract was written, and what its props make the harness do
+
+BASIS. Merged from Draft A (with its notes) and Draft B (with its notes), and corrected by the critique. Sources named by the drafts: spec/inventory/main-window.json, features-main-window.txt, notes-main-window.txt, spec/screens/web.md, spec/decisions.md, library/contract-format.txt, library/index.txt, and grepped feature records (area-08, area-09). I did not open the files myself; the merge works from the draft texts and the critique. Where a fix needs a source value that is not in the drafts, the value is flagged below.
+
+PROPS (merged harness meaning). Only one prop: dataset (string, default standard). The harness signs in as the demo account on the real API and loads the named set before mounting. standard = Home (Errands, Reading, Garden) and Spring launch (Website, Press kit), opening on Home > Errands. empty = Home with one empty list, Inbox. nolists = Home with no lists. long = standard plus 40 more tasks in Errands. Only the empty, nolists and long tests override it, through the per-test props. Split, preview state, sheets, trash, palette and Settings are reached by steps, the way a user reaches them. Draft A's splitList prop is dropped (see drops).
+
+EVENTS. events: {} because the inventory lists no outward event for this screen.
+
+ROLES. Row titles, the project and list menu items, and the account menu items are buttons (aria menuitem, tab or option mapped to button). Menus, dialogs, containers and the aside are generic. Toast is status; StatsBar count is generic, because the role rule maps only toast and progress to status (Draft B's status on doneCount was changed). Separators are slider (Draft B's own judgement, kept with the comment). Heading is used for titles.
+
+KEYS. One vocabulary for the whole file: KeyboardEvent.code style (KeyN, Digit2, Slash, Comma, BracketLeft, BracketRight, F2, Escape, Delete, Enter, Space, Arrow keys), modifiers joined with +. Draft A's character style ('/', 'N', 'K', '2') was rewritten to match. Control stands for the web Mod key. The macOS Mod-to-Meta mapping is not defined in the files read and is flagged.
+
+FIXES FROM THE CRITIQUE, APPLIED.
+- settingsButton kept (name contains "Settings") with a test that it opens settingsDialog. Draft A's note that web.md replaces the toolbar Settings button is judged unsourced by the critique; web.md lines 17-19 only add the account menu.
+- Whole-project search tests kept (scopeWholeProject, groupHeading, matchRow). Scope label "Whole project" is taken from decision 3 as the critique says.
+- Project menu: projectNew (New project) and the create-without-switching test added. The active-project mark is checked by screenshot only, since menuitem selected is not recorded.
+- New list: a create test (dialogCreate) and an Enter-accepts test (dialogName plus Enter) added.
+- Delete-list confirmation: Escape cancels test added (from Draft A).
+- Task delete: now goes through dialogMoveToTrash (decision 10). The Delete-key-then-toast version without confirmation is dropped.
+- Control-click: decision cited as decisions.md line 8 (not decision 7). Written as { input: selectToggle } followed by a press step.
+- Alt-click: Draft A's modifierHold test kept, with its span flagged.
+- optional removed from every part. No part here is absent from every state of this target, and the absence checks must be real assertions.
+- Empty and long data set tests kept. Clamp tests for both dividers kept with numeric values (0.25, 0.75, 280, 420). Drag direction flagged; each end is tested by dragging to it.
+- Bulk mark done (bulkMarkDone) and an openSelection presence check added (decision 6: the multi-select inspector shows Open and Clear selection).
+- Keyboard coverage added: Shift+ArrowDown, Control+KeyA, Space, Alt+Space, Escape on the selection, Alt+Shift+BracketLeft/Right for project keys, Alt+Shift+ArrowLeft/Right wrap, Alt+Digit2 and Alt+Digit3, F2 re-trigger, typing guard via the search focus, printable key starts search, Control+KeyZ undo.
+- Tab cycling wraps tested (three presses from Errands back to Errands; one step back from Errands to Garden).
+- Escape on the project menu, account menu, delete list, settings and palette are tested.
+- Focus steps added before every key step.
+- Viewport comment corrected (sizes apply to every test; the states are the tests). keyboard comment kept.
+- Shift+ArrowDown test now presses rowSelect explicitly before the arrow key, so it does not assume a title press picks the row.
+- F15-008 (deleting a parent moves its subtree to Trash; 1 / 4 done) added. The count is derived: 4 tasks in the subtree, 1 done.
+- F09-088 attachment badge added (switch to Spring launch, press rowHeroRewrite, check attachmentBadge). Badge location is not in the sources; flagged.
+- F09-020 (a tab press keeps the split pane on its list) added.
+- F09-032 (split needs two lists) added as splitView disabled in the empty test.
+- F09-048 (F2 re-trigger) added in the F2 test.
+- F08-047 palette filtering added (type text that matches nothing; paletteOpenTrash hidden).
+- F08-004 Control+Comma test added; the web chord is assumed to keep the Mod key.
+- Account menu email line added as accountEmail (presence only, since its text is not in the sources).
+- sheetDetail check changed from [0-9] to contains "8", the Errands task count (flagged; copy not in the sources).
+- The undo-failure path (decision 11) is not tested (see left out).
+
+CONFLICTS RESOLVED OR RECORDED.
+1. Toolbar Settings button: Draft A says it is replaced by the account menu; Draft B keeps it. Critique says keep it; kept.
+2. Which list the Split view button opens: Draft A says the toolbar does not record it; Draft B asserts Reading in the right pane, and both drafts use the Reading split as the reference split-view state. Kept Draft B's check, flagged as an assumption.
+3. Row titles: Draft A had row as a button; Draft B had row as a generic container with the title as a button. Kept both: row is generic (container), rowTitle and the other row titles are buttons.
+4. doneCount role: status in Draft B, generic in Draft A. Set to generic (see roles).
+5. Sheet fade: Draft A traces opacity. Draft B says motion classes are not applied (F11-030). Critique asks for a decision. Dropped the trace: the sources do not confirm the fade, and the critique's scale part is also unconfirmed.
+6. Settings size and shape: web.md modal (640x520) followed; the notes reply that Settings "routes to a settings page" is set aside. Size is not asserted because expect has no size field.
+7. Delete-key behaviour: Draft A has a confirmation step; Draft B has none. Kept the confirmation (decision 10). The Delete binding itself is assumed.
+8. Control+Comma: Draft B's note says its hint is dropped with the web Settings route; critique says test it. Kept the test, flagged.
+9. Names: "Delete list" name on dialogDelete (feature record F09-009) is used, and Draft B's sheetConfirm name (not in the sources) is dropped. "Cancel" (F09-094), "Create" (web.md) and "Undo" are sourced names; "Move to Trash" and "Open Trash" come from decision wording. Names not in the sources are not asserted: trash, commandButton, accountButton, trashClose, bulkMarkDone, openSelection, settingsClose.
+10. Row More menu contents are not recorded; only that it opens.
+
+DROPS, WITH REASONS.
+Props: Draft A splitList dropped. It is not defined in web.md or contract-format, and the harness has no way to act on it. Split is reached by the splitView press.
+Parts: Draft B emptyState dropped as a duplicate of noListsTitle and noListsSubtitle. Draft B viewControl dropped as a duplicate of sortFilter. Draft B optional flags removed (critique). Draft B projectMenuHome selected check dropped (menuitem selected not recorded). Draft A previewEmptyTitle, selectionClear, check, more, search, footerDoneCount, subtask, paletteButton, trashButton, sheetName, sheetCreate, sheetCancel, sheetConfirm, sheetDetail, paletteInput, accountMenuSettings, accountMenuSignOut, projectItem, projectItemSpringLaunch, and Draft B's doneCount-as-status were renamed to single names (previewEmpty, clearSelection, rowSelect, rowMore, searchField, doneCount, subtaskOatMilk, commandButton, trash, dialogName, dialogCreate, dialogCancel, dialogDelete, dialogDetail, commandInput, accountSettings, accountSignOut, projectMenuHome, projectMenuSpring). Not drops of meaning.
+Tests dropped: Draft B Control+Backslash preview toggle (browser reservation not checked; left unmeasured). Draft A drag-divider tests that only checked visibility (superseded by the clamp tests). Draft A split-view tests that depended on the splitList prop (replaced by step-driven versions). Draft A split-closed-from-right-button test (merged into the split close test). Draft A single Alt+Shift+ArrowRight test (its first press is part of the wrap test). Draft A new-list sheet fade trace (see conflict 5). Draft B delete-with-Delete-key-and-toast test (replaced by the confirmed version; see fix list). Draft B's default-size rest test (merged into the rest test). Draft B's trash-and-filter replacement test (covered by the two mirror tests). Draft B's emptyState test (duplicate). Draft B's round-checks test and clear-selection-button test (merged into the picking and clear-selection tests). Draft B's Escape-clears-selection test (merged into the Escape test). Draft B's palette button test (duplicate of the command button test). Draft B's rename test on Pick up prescription (merged into the rename test; the Control+KeyA select step is kept from it). Draft B's Enter-does-not-confirm test on the Errands list and Draft A's version on Reading (merged into one test). Draft B's F2 edit test (duplicate of the rename test). Draft A's rest test and Draft B's default-size test (merged). Draft A's project-menu test and Draft B's project-menu test (merged, selected check dropped). Draft A's delete-list-focuses-cancel and Draft B's version (merged). Draft B's search typing and Draft A's search typing kept as separate data (bike, groc); not dropped.
+
+LEFT OUT ON PURPOSE.
+- Window controls and drag region (web draws none; decision 2; web.md).
+- Show completed toggle (review answer: no control on this screen).
+- Desktop-only items: Settings window, sheets as windows, capture bar, global hotkeys, Cmd+Enter, tray (web.md, decisions).
+- Drag and drop (tab reorder, task drags); drag is used only on sliders.
+- Double-click reset of the split divider (no double-click action in the grammar).
+- List tab right-click menu, including Open in split view (no right-click action).
+- Project rename and delete, rename list (not located in these files; other screens).
+- Roll-name button on the New list sheet (F09-005): no part recorded in the sources.
+- Filter panel close control (F09-035) and dismiss by backdrop (F09-098): no part recorded.
+- Picked task deleted and selection pruned (F09-042): the interplay of delete and picks is not specified.
+- Focused pane fallback (F09-021): the trigger is not specified.
+- Palette preselect (F08-046): the preselected row is not recorded.
+- Modifier alone does nothing (F08-060): the expected result is not recorded.
+- Option-held states F08-034, F08-037, F08-038: hover highlight and inspector target are not recorded; the square mark-done control is visual (screenshot).
+- Undo failure (decision 11): the harness has no failure injection; list as unmeasured.
+- Loading and error states (web notes): no failure injection; the boot veil sits outside the mounted component.
+- Scrolling of the long list (only the counts are tested).
+- Visual tokens and motion (F11 items, F09-056, F09-086, F09-090): covered by screenshots; motion not confirmed (F11-030).
+- Tooltips and hints (F09-074, F08-040 to F08-042): browser reservation not checked.
+- Chords with no web default in the sources: F08-011, F08-012, F08-014, F08-015, F08-017, F08-020.
+- Indent and outdent (F08-027, F08-028): visual only, no depth field.
+- Trash purge and empty (F15-010 to F15-012): trash screen.
+- Due dates (F15-054 part): dropped by decision.
+- Create-task commit path: not in the sources, so only the draft start is tested.
+- Settings screen internals, inspector and composer internals, command palette internals (own screens).
+- Desktop-only capture and settings items (F15 and F11 items named in the drafts).
+- Attachment-badge location: the badge test relies on rowHeroRewrite in Website (web.md line 41); flagged.
+- Inventory notes line asking for a page build, deploy, checklist post and devbench reply: this is not part of the contract task, and it was not acted on.
+
+UNCERTAIN, FLAGGED FOR THE FORMAT OWNER OR THE SOURCES.
+1. Trash button name and position (decision 1 fixes only the icon button); name not asserted.
+2. commandButton and accountButton have no fixed name or text; presence checks only.
+3. Delete key binding (F08-021) is assumed; the reference binding is not in the files read.
+4. modifierHold assumed to hold Alt (Option on macOS) for the next press; the span is not documented.
+5. Picked-check reads checked true (no picked record).
+6. Enter commits an F2 title edit (F08-031 names F2 or Enter to start; no commit key recorded).
+7. Control+KeyA before type assumed to replace the editor's value.
+8. Mod on macOS maps to Meta (not defined in the files read).
+9. Drag direction for both dividers is assumed; each end is tested.
+10. dialogDetail contains "8" assumes the count rule counts the Errands tasks; the copy is not in the sources.
+11. long data set count 10 / 48 done is derived from web.md (40 tasks, every fifth done, plus 2 of 8 in standard).
+12. New list tab placed after the last tab is assumed (F09-067 does not state placement).
+13. previewTitle is assumed to be a heading showing the task title (F11-083).
+14. previewPanel is the preview inspector in the aside; it is hidden while the trash or filter panel shows (Draft A's use of previewPanel as the aside host was read this way).
+15. Absence checks on parts that toggle are real assertions here (no optional flags).
+16. Settings button presence follows the critique (F09-075, F11-068); the web.md reading is not fully resolved in the drafts.
+17. Control+Comma web chord (F08-004) is assumed.
+18. Row menu contents not recorded; only the open is checked.
+19. Dark and narrow states come from colorSchemes and viewports, not separate tests; no trace or record is used because no motion is confirmed.
+

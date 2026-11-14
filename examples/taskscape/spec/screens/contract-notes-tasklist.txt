@@ -1,0 +1,90 @@
+# How the app.tasklist contract was written, and what its props make the harness do
+
+BASED ON: the two drafts (A and B), the critic's findings, and the critic's fixes, which were applied. This merge opened no source files. Every fact comes from the drafts and their citations. The critic flagged several of those citations as unverified, and the items marked UNVERIFIED below must be checked before the build.
+
+CRITIC FIXES APPLIED: row is a button (aria option), so the Ctrl/Cmd test can press a row body. check is a button with selected for picked and its name for done (no checked flag). Search navigation expectations use rowBookBike and rowGroceries, with a stated active-match rule. The confirmDelete and cancelDelete parts and the delete-confirmation tests were removed (the sheet is outside this component; the critic's first fix). bulkDelete and menuDelete are kept as presence checks. The multi-selection row menu tests were removed (decision 6). Percentages other than exact values (25, 50, 0) were removed. The regex text matches became contains or exact text. The Ctrl/Cmd test is split from the plain press. The Title only highlight test asserts matchMark. The composer focus test was split out. The Escape test now checks the existing subtasks. collapsed-all was renamed collapse-one. The Show completed test asserts only what the sources support. The cross-list tests check the list switch and the preview. Rebuild-only event expectations were kept for the cross-list and search cases, and the event declarations say they are rebuild-only. The keys are Slash and KeyB/KeyZ. The attachment test passes project. The long scroll uses two scroll steps. The Option-click test carries the done-lamp record, and the duplicate record test was dropped. The removed tests that depended on the dialog are noted below.
+
+PROPS (harness meaning):
+- dataset: standard, empty or long. The harness signs in as the demo account and loads that data set before mounting. nolists was left out of the allowed values because no test uses it.
+- project: Home or Spring launch. The harness opens this project before it selects the list. Added because the Website test needed it (critic fix).
+- list: the list name inside the active project. The harness selects it by name before the screen renders.
+- showCompleted: false sets Show completed tasks off for the account before mount.
+- split: true mounts the pane as the left pane of a split view, so Close split shows. The reference shows Close split in no state, so this setting is unverified.
+
+EVENTS: rebuild-only checks. The reference emits none. The format does not define how a comparison treats event expectations, so they are checked on the rebuild only. filterToggled was dropped (no decision, reference or feature behind it; the sort panel is outside this screen). copied, draftStarted and splitClosed rest on feature or decision records; taskPreviewed and listOpened rest on decision 3 and the search tests.
+
+DROPPED ENTRIES (duplicate, critic, or decision):
+- B hover test (duplicate of the A row-hover test); A row-hover kept with its screenshot as the check.
+- B Option-held hover test (duplicate of the A option-held hover test; its taskPreviewed times 0 was dropped as undocumented).
+- B Option-click without selecting (duplicate of the A Option-click test, merged with its record).
+- B done-lamp record test (duplicate, merged into the Option-click test).
+- B Escape clears selection (duplicate of the A Escape test).
+- B Alt+Space on a picked task (duplicate of the A Option+Space test).
+- B plain check press with taskPreviewed (merged into the A plain-press test; the preview expectation was dropped because no file says a check press previews).
+- A multi-select-shift (merged with B's Shift+Arrow test, which starts with a check press; both gave 4 rows).
+- B Enter and Shift+Enter test (merged into the A Shift+Enter test with the taskPreviewed count).
+- A search-typed and B typing-filters tests (merged; rowBookBike is used for the row that the filter shows).
+- B clear-search test (merged with the A clear-search test).
+- A and B Escape-in-search tests (merged).
+- B slash test (merged into the A Slash test, using Slash).
+- B Down-arrow test: kept with focus instead of the dropped times 0.
+- B search options menu test (merged into the A test; the B visible flags were kept).
+- A Title only empty-state test (merged into the B Title only test).
+- A and B empty Inbox tests (merged; doneCount is the contains form).
+- A split test and B Close split test (merged).
+- A More test and B More test (merged; rowMenu kept from A, item list from B).
+- A rename-inline test (merged into the rename-opens test; the focus check and the B text check are both kept).
+- A rename commit test and B commit test (merged, keeping the A typed text).
+- A add-subtask test and B add-subtask test (merged, keeping the A text Buy stamps).
+- B Escape closes composer test (kept as the Escape test; the focus check is in its own test).
+- A collapsed-all test and B collapse-chevron test (merged as collapse-one, with the B badge check).
+- B ArrowLeft collapse test (duplicate of the A ArrowLeft test).
+- B ArrowDown and ArrowUp test (split into the A ArrowDown test plus an ArrowUp test).
+- B hover tests (duplicates).
+- B Show completed off footer count test: rewritten to the A and B footer 2/8 and to rowOatMilk and rowPostParcel hidden.
+- B bulk Move to list to Garden (duplicate of the bulk move behaviour in the A test to Reading).
+- B bulk Done 2 picked and bulk Undone: both kept (different picks).
+- B Sort & filter event test (dropped with filterToggled).
+- B multi-selection row menu tests (dropped; decision 6).
+- A delete from row menu, bulk Delete cancel, bulk Delete confirm, and Enter does not confirm (all dropped with the confirmation dialog; the critic fix says the dialog is outside this component; the Move versus Delete label conflict for F07-028 is therefore moot here; UNVERIFIED for any future dialog contract).
+- Percent values 38%, 63%, 13%, 21% (dropped; the critic says rounding is not recorded).
+- B taskPreviewed on check presses (dropped; not supported by any file).
+- Parts dropped: confirmDelete, cancelDelete, menuCopyMany, menuMarkDone, menuDeleteMany, menuMoveGarden, menuMoveReading (replaced by moveTargetReading), resultGroup (merged into groupHeading), searchCount (renamed matchCount), subtaskBadge (renamed badgeGroceries), collapse (renamed disclosure).
+
+PARTS AND ROLES: the names are the clearer ones used by both drafts, with B's names for the scope and field items. Map rules applied: option to button, menuitem and menuitemradio to button, listitem to generic, list to generic, menu to generic, and the dialog-free roles only. The count parts (matchCount, doneCount, selectionCount) are status. The doneCount role changed from generic (A) to status (B). The round check is a button, not a checkbox, because the picked state needs selected (critic fix).
+
+STEP SEMANTICS (assumed; platforms.yaml was not read, so the harness must define these):
+- modifierHold: holds Option (Alt on the web) for the following steps of the test.
+- selectToggle: holds Ctrl (Linux and Windows) or Cmd (macOS) for the next press.
+- dismiss: sends Escape.
+- do: scroll with with.direction: the scroll form comes from draft A. The scrollArea role is generic (aria list). The format says only hover is an action for generic parts, so the scroll advertisement is unverified. The test uses two scroll steps in case one does not reach row 40.
+- A key step on a part focuses that part first, then sends the key.
+- selected on a button: unverified (draft A flagged it too).
+- Space and Alt+Space on a focused button may also fire that button's native press; the tests expect the screen's key handling only.
+- record needs a motion step: the Option-click press starts it.
+
+ACTIVE-MATCH RULE (assumed, stated for the search tests): typing does not activate a match and emits no preview. The first Enter moves focus to the first match in tree order (Book bike service), each Enter moves to the next match and wraps, and Shift+Enter moves to the previous match. Each move emits taskPreviewed. This rule makes both critic-checked expectations hold: the two-Enter test ends on rowGroceries and the Shift+Enter test ends on rowBookBike with three previews. The rule depends on row order (below).
+
+ROW ORDER AND STANDARD DATA (UNVERIFIED): the visible root order is Pick up prescription, Post the parcel to Mum, Book bike service, Cut a spare key, then Buy groceries for the week (the parent, last), taken from the inventory's screenshot coordinates as draft A states. web.md lists Buy groceries first. The bulk and move tests and the rowBookBike focus depend on this order. Standard data: 8 tasks counting subtasks (5 roots, and 3 subtasks under Buy groceries: Oat milk, Sourdough loaf, and one unnamed third task), 2 done (Oat milk, Post the parcel). Derived by hand, not recorded: 3/8 (one Option-click), 5/8 (picks Pick up, Post, Book and Cut, with Post already done), 1/8 (Post undone), 1/4 (four picked moved out of Errands, leaving Buy groceries, Oat milk, Sourdough, third; only Oat milk done), 2/7 (Pick up moved out), 4/8 (two picked done), 5/8 (Option-click on the groceries parent, with 3/3 badge), 1/2 (Sourdough promoted; remaining subtasks Oat milk and third; Oat milk done). Search "b" matches Book bike service and Buy groceries for the week, which assumes the unnamed third subtask has no b. Whole project "b" count 3 (Errands 2 and Reading 1, Return library books) assumes no other Home list has a b match. Whole project "the" count 5 is UNVERIFIED (the critic says it depends on note text not in web.md). Long data set 10/48 is UNVERIFIED (no source). The attachment count 2 on the first Website row is UNVERIFIED. The Garden match Trim the hedge is UNVERIFIED for the Home project.
+
+UNVERIFIED, flagged by test or part: renameField placement, and whether typing replaces the existing title (the test assumes the inline field opens with the whole title selected); the bulk verb labels Mark done and Mark not done (the review did not say whether only the title changes); the group heading text (inferred from list names); the no-matches empty state (code path only); the attachment badge; whether Alt+N is the New task binding (draft A's critic-based reading of decision 18); whether the F08-031 F2 key is the title-edit trigger (area-08 records the trigger as uncertain; the Enter alternative in the critic's list is not in the sources read, so no test uses Enter for rename).
+
+COLOUR AND VIEWPORT: colorSchemes is light only, because F07-104 says light appearance in this capture and B says the reference has no dark capture for this screen. Draft A's dark screenshots would have had no reference. The viewport is 860 by 768. The width is measured in the inventory; the height is estimated and not measured.
+
+NOT COVERED, ON PURPOSE:
+- Drag and drop, right-click, double-click, blank-area click, mouse Shift-click and Ctrl-click (no step form; the drafts agreed).
+- Delete confirmations and Trash (dialog outside this component; the critic said to remove them). The Delete key with a picked task (F08-021) is dialog-dependent and not tested. Enter-not-confirm (decision 10) and Cancel default (decision 13) are dialog behaviours and not tested here.
+- Multi-selection row menu (decision 6).
+- Sort & filter panel contents and filter events (outside the screen).
+- New task draft contents, subtask-row click into the preview, and the Copy toast (outside the screen).
+- Wrap at top and bottom (F08-023): the wrap behaviour is not in the drafts.
+- Blur dismissing the composer (F01-084): no step form for blur.
+- Add subtask un-collapsing a collapsed parent (F07-050): no More button on a parent is defined, so no test reaches it.
+- Done tasks keeping position (F01-079) is covered only by the Option-click test's row check.
+- Move-up and move-down shortcuts, and select-all bindings beyond Control+KeyA (F08-020, F07-045): per-platform bindings are not in the files read.
+- Desktop-only items (Cmd+F, Cmd+N, the capture hint, the Screenshot slot) per web.md.
+- nolists dataset, no feature described.
+- Layout measurements (F01-033, F01-081): screenshot only.
+- Trash, undo, toast and API-failure items (F07-010 to F07-020, F07-023 to F07-034): outside this screen.
+- Split-pane stats (F01-082), the draft inspector (F01-080), and the global shortcuts (F08-003 to F08-015): outside this screen.
+- Option-select opening the inspector (F08-038): the inspector is outside.

@@ -1,0 +1,614 @@
+# Contract for the Context menus screen (web build), id app.contextmenus.
+# Merged from Draft A (placeholder only, dropped) and Draft B with the critique's fixes applied.
+# Draft B sources (cited, not re-read in this merge): spec/inventory/context-menus.json, spec/features/area-06.json, spec/features/area-07.json,
+# spec/screens/notes-context-menus.txt (web opener is More, Move to list submenu rules, one shared menu, bulk menu, project More,
+# owner-only project delete with confirmation), spec/screens/web.md (demo data), spec/decisions.md (9, 10, 13).
+# Viewport 1180 x 760 and light scheme are the inventory's measured values (no dark state recorded).
+# Keyboard: true measures only parts on screen at mount (per critique). Menu items, sheet buttons and the subtask input are not on screen
+# at mount, so their keys are exercised by explicit key steps in the tests rather than by the keyboard check.
+id: app.contextmenus
+
+props:
+  dataset: { type: string, default: standard }   # demo data set loaded on sign-in: standard, empty, nolists, long. No other prop: every menu is opened by a step.
+
+parts:
+  projectSwitcher: { role: button }        # ProjectSwitcher, aria-label "Switch project", shows "Home"
+  splitViewToggle: { role: switch }        # aria: button with aria-pressed (title bar Split view toggle); tested as checked
+  listTab: { role: button }                # aria: tab. First list tab (Errands)
+  tabReading: { role: button }             # aria: tab. Reading tab
+  tabMoreReading: { role: button }         # More IconButton on the Reading tab (web opener of the tab menu)
+  tabDelete: { role: button }              # Delete list X on the first tab (Errands), title "Delete list"
+  taskList: { role: generic }              # aria: list. Task rows of the open list
+  doneCount: { role: status }              # footer done count, "2/8 DONE" at rest
+  toast: { role: status }                  # bottom centre toast
+  toastUndo: { role: button }              # Undo action in the toast (F07-077)
+  toastClose: { role: button }             # close control of the toast (F07-078)
+  scrim: { role: button }                  # aria: none (a click target only); scrim behind an open sheet; a press outside the sheet dismisses it (F06-068)
+  row: { role: button }                    # aria: listitem. First task row body (Buy groceries for the week)
+  rowMore: { role: button }                # More IconButton on the first row
+  rowPick: { role: checkbox }              # round check on the first row (picked = multi-select membership)
+  rowPrescription: { role: button }        # aria: listitem. Pick up prescription row body
+  rowMorePrescription: { role: button }    # More IconButton on Pick up prescription
+  rowPickPrescription: { role: checkbox }  # round check on Pick up prescription
+  rowCutKey: { role: button }              # aria: listitem. Cut a spare key row body
+  rowPickCutKey: { role: checkbox }        # round check on Cut a spare key
+  inspectorTitle: { role: textbox }        # title editor in the preview inspector
+  subtaskInput: { role: textbox }          # subtask composer under a row
+  taskMenu: { role: generic }              # aria: menu. Row menu, single row or bulk
+  submenu: { role: generic }               # aria: menu. Move to list submenu
+  menuCopy: { role: button }               # aria: menuitem. "Copy" (single) or "Copy 2 tasks" (bulk)
+  menuAddSubtask: { role: button }         # aria: menuitem. single row menu only
+  menuRename: { role: button }             # aria: menuitem. single row menu only
+  menuMove: { role: button }               # aria: menuitem. "Move to list", opens submenu
+  menuDelete: { role: button }             # aria: menuitem, danger. "Delete task…" or "Delete 2 tasks…"
+  menuMarkDone: { role: button }           # aria: menuitem. bulk only, "Mark 2 done"
+  menuMarkUndone: { role: button }         # aria: menuitem. bulk only, "Mark 2 not done"
+  moveTarget: { role: button }             # aria: menuitem. First list in the submenu (Reading)
+  tabMenu: { role: generic }               # aria: menu. Tab menu panel
+  tabMenuRename: { role: button }          # aria: menuitem. "Rename"
+  tabMenuSplit: { role: button }           # aria: menuitem. "Open in split view"
+  tabMenuExport: { role: button }          # aria: menuitem. "Export list…"
+  tabMenuDelete: { role: button }          # aria: menuitem, danger. "Delete list…"
+  projectMenu: { role: generic }           # project dropdown panel
+  projectRow: { role: button }             # aria: menuitem. "Home" (current project, check icon)
+  projectSpring: { role: button }          # aria: menuitem. "Spring launch"
+  projectMoreSpring: { role: button }      # More IconButton on the Spring launch row
+  projectRename: { role: button }          # aria: menuitem. "Rename project", in the project More menu
+  projectDelete: { role: button }          # aria: menuitem, danger. "Delete project", in the project More menu
+  newProject: { role: button }             # footer row "New project…"
+  sheetHeadline: { role: heading }         # headline of the confirmation or prompt sheet a menu item opens; exists only while a sheet is open
+  sheetField: { role: textbox }            # prompt field of the rename and new sheets
+  sheetCancel: { role: button }            # Cancel in a sheet (default focus, decision 13)
+  sheetAccept: { role: button }            # accept button of a sheet (Move, Delete, Create…)
+
+tests:
+  - name: "at rest shows Home, the Errands tab, the done count and no menu"
+    steps: []
+    expect:
+      - { part: projectSwitcher, text: { contains: "Home" } }
+      - { part: listTab, text: { contains: "Errands" } }
+      - { part: listTab, selected: true }
+      - { part: tabReading, text: { contains: "Reading" } }
+      - { part: doneCount, text: { contains: "2/8" } }
+      - { part: taskList, text: { contains: "Buy groceries for the week" } }
+      - { part: taskMenu, visible: false }
+    screenshot: true
+
+  - name: "More on a task row opens the row menu under the button"
+    steps:
+      - { action: press, part: rowMorePrescription }
+    expect:
+      - { part: taskMenu, visible: true }
+      - { part: menuCopy, text: { contains: "Copy" } }
+      - { part: menuAddSubtask, text: { contains: "Add subtask" } }
+      - { part: menuRename, text: { contains: "Rename" } }
+      - { part: menuMove, text: { contains: "Move to list" } }
+      - { part: menuDelete, text: { contains: "Delete task" } }
+      - { part: menuMarkDone, visible: false }
+    screenshot: true
+
+  - name: "the row menu records its opening motion"
+    steps:
+      - { action: press, part: rowMorePrescription }
+    expect:
+      - { part: taskMenu, visible: true }
+    record: true
+
+  - name: "Escape closes the row menu and returns focus to its More button"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: key, part: menuCopy, key: Escape }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: rowMorePrescription, focused: true }
+
+  - name: "pressing outside the menu closes it and does not press what is under it"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: tabReading }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: listTab, selected: true }
+      - { part: tabReading, selected: false }
+
+  - name: "Copy closes the row menu"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuCopy }
+    expect:
+      - { part: taskMenu, visible: false }
+
+  - name: "Add subtask closes the menu and opens the subtask input under the row"
+    steps:
+      - { action: press, part: rowMore }
+      - { action: press, part: menuAddSubtask }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: subtaskInput, visible: true }
+      - { part: subtaskInput, focused: true }
+
+  - name: "Enter in the subtask input adds the subtask to the list"
+    steps:
+      - { action: press, part: rowMore }
+      - { action: press, part: menuAddSubtask }
+      - { action: type, part: subtaskInput, text: "Buy stamps" }
+      - { action: key, part: subtaskInput, key: Enter }
+    expect:
+      - { part: taskList, text: { contains: "Buy stamps" } }
+
+  - name: "Escape in the subtask input dismisses it"
+    # Typed text is entered first. The format cannot assert that text is absent, so this test checks dismissal (visibility) only.
+    steps:
+      - { action: press, part: rowMore }
+      - { action: press, part: menuAddSubtask }
+      - { action: type, part: subtaskInput, text: "Stamps draft" }
+      - { action: key, part: subtaskInput, key: Escape }
+    expect:
+      - { part: subtaskInput, visible: false }
+      - { part: taskList, text: { contains: "Buy groceries for the week" } }
+
+  - name: "Rename opens the title editor in the preview inspector"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuRename }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: inspectorTitle, visible: true }
+      - { part: inspectorTitle, focused: true }
+
+  - name: "a renamed task shows its new title in the row and the inspector"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuRename }
+      - { action: type, part: inspectorTitle, text: "Collect the prescription" }
+      - { action: key, part: inspectorTitle, key: Enter }
+    expect:
+      - { part: rowPrescription, text: { contains: "Collect the prescription" } }
+      - { part: inspectorTitle, text: { contains: "Collect the prescription" } }
+
+  - name: "pressing Move to list opens the list submenu and keeps the menu open"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuMove }
+    expect:
+      - { part: taskMenu, visible: true }
+      - { part: submenu, visible: true }
+      - { part: moveTarget, text: { contains: "Reading" } }
+
+  - name: "hovering Move to list opens the submenu"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: hover, part: menuMove }
+    expect:
+      - { part: submenu, visible: true }
+      - { part: moveTarget, visible: true }
+    screenshot: true
+
+  - name: "hovering another row closes the submenu"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: hover, part: menuMove }
+      - { action: hover, part: menuCopy }
+    expect:
+      - { part: submenu, visible: false }
+      - { part: taskMenu, visible: true }
+
+  - name: "ArrowRight on Move to list opens the submenu and focuses its first list"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: key, part: menuMove, key: ArrowRight }
+    expect:
+      - { part: submenu, visible: true }
+      - { part: moveTarget, focused: true }
+
+  - name: "Escape on a submenu item returns to the parent menu"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: key, part: menuMove, key: ArrowRight }
+      - { action: key, part: moveTarget, key: Escape }
+    expect:
+      - { part: submenu, visible: false }
+      - { part: taskMenu, visible: true }
+
+  - name: "ArrowLeft on a submenu item returns to the parent menu"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: key, part: menuMove, key: ArrowRight }
+      - { action: key, part: moveTarget, key: ArrowLeft }
+    expect:
+      - { part: submenu, visible: false }
+      - { part: taskMenu, visible: true }
+
+  - name: "choosing a list in the submenu moves the task out of this list"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: hover, part: menuMove }
+      - { action: press, part: moveTarget }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: rowPrescription, visible: false }
+
+  - name: "a task moved to Reading appears in Reading"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: hover, part: menuMove }
+      - { action: press, part: moveTarget }
+      - { action: press, part: tabReading }
+    expect:
+      - { part: tabReading, selected: true }
+      - { part: taskList, text: { contains: "Pick up prescription" } }
+
+  - name: "Delete task asks Move to Trash? and focuses Cancel"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: sheetHeadline, text: { contains: "Move to Trash?" } }
+      - { part: sheetCancel, focused: true }
+      - { part: sheetAccept, focused: false }
+    screenshot: true
+
+  - name: "the Move to Trash sheet records its opening motion"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+    expect:
+      - { part: sheetHeadline, visible: true }
+    record: true
+
+  - name: "Enter on the Move to Trash? sheet with Cancel focused cancels and does not move the task"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: key, part: sheetCancel, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: rowPrescription, visible: true }
+
+  - name: "Enter on the focused Move to Trash? accept button does not confirm the delete (decision 10)"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: rowPrescription, visible: true }
+
+  - name: "Escape on the Move to Trash? sheet cancels and does not move the task"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: key, part: sheetCancel, key: Escape }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: rowPrescription, visible: true }
+
+  - name: "pressing the scrim outside the Move to Trash? sheet dismisses it and does not move the task"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: press, part: scrim }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: rowPrescription, visible: true }
+
+  - name: "Tab inside the Move to Trash? sheet keeps focus in the sheet"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Tab }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: sheetCancel, focused: true }
+
+  - name: "confirming Move to Trash removes the task and shows the toast"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { part: rowPrescription, visible: false }
+      - { part: toast, text: { contains: "Moved to Trash" } }
+
+  - name: "toast Undo after Move to Trash restores the task"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: press, part: sheetAccept }
+      - { action: press, part: toastUndo }
+    expect:
+      - { part: rowPrescription, visible: true }
+
+  - name: "the toast close control hides the toast"
+    steps:
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: press, part: sheetAccept }
+      - { action: press, part: toastClose }
+    expect:
+      - { part: toast, visible: false }
+
+  - name: "two picked rows make More open the bulk menu"
+    steps:
+      - { action: press, part: rowPickPrescription }
+      - { action: press, part: rowPickCutKey }
+      - { action: press, part: rowMorePrescription }
+    expect:
+      - { part: rowPickPrescription, checked: true }
+      - { part: rowPickCutKey, checked: true }
+      - { part: taskMenu, visible: true }
+      - { part: menuCopy, text: { contains: "Copy 2 tasks" } }
+      - { part: menuMarkDone, text: { contains: "Mark 2 done" } }
+      - { part: menuMarkUndone, text: { contains: "Mark 2 not done" } }
+      - { part: menuMove, text: { contains: "Move to list" } }
+      - { part: menuDelete, text: { contains: "Delete 2 tasks" } }
+      - { part: menuAddSubtask, visible: false }
+      - { part: menuRename, visible: false }
+    screenshot: true
+
+  - name: "bulk Mark 2 done marks both picked tasks done"
+    steps:
+      - { action: press, part: rowPickPrescription }
+      - { action: press, part: rowPickCutKey }
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuMarkDone }
+    expect:
+      - { part: taskMenu, visible: false }
+      - { part: doneCount, text: { contains: "4/8" } }
+
+  - name: "bulk Move to list moves every picked task"
+    steps:
+      - { action: press, part: rowPickPrescription }
+      - { action: press, part: rowPickCutKey }
+      - { action: press, part: rowMorePrescription }
+      - { action: hover, part: menuMove }
+      - { action: press, part: moveTarget }
+      - { action: press, part: tabReading }
+    expect:
+      - { part: taskList, text: { contains: "Pick up prescription" } }
+      - { part: taskList, text: { contains: "Cut a spare key" } }
+
+  - name: "bulk Delete asks once for all picked tasks"
+    steps:
+      - { action: press, part: rowPickPrescription }
+      - { action: press, part: rowPickCutKey }
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+    expect:
+      - { part: sheetHeadline, text: { contains: "Move 2 tasks to Trash?" } }
+      - { part: sheetCancel, focused: true }
+
+  - name: "bulk Delete accept removes both picked tasks and shows the toast"
+    steps:
+      - { action: press, part: rowPickPrescription }
+      - { action: press, part: rowPickCutKey }
+      - { action: press, part: rowMorePrescription }
+      - { action: press, part: menuDelete }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { part: rowPrescription, visible: false }
+      - { part: rowCutKey, visible: false }
+      - { part: toast, visible: true }
+
+  - name: "More on a list tab opens the tab menu"
+    steps:
+      - { action: press, part: tabMoreReading }
+    expect:
+      - { part: tabMenu, visible: true }
+      - { part: tabMenuRename, text: { contains: "Rename" } }
+      - { part: tabMenuSplit, text: { contains: "Open in split view" } }
+      - { part: tabMenuExport, text: { contains: "Export list" } }
+      - { part: tabMenuDelete, text: { contains: "Delete list" } }
+    screenshot: true
+
+  - name: "hovering a tab menu item highlights it"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: hover, part: tabMenuExport }
+    expect:
+      - { part: tabMenu, visible: true }
+    screenshot: true
+
+  - name: "Escape closes the tab menu and returns focus to its More button"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: key, part: tabMenuRename, key: Escape }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: tabMoreReading, focused: true }
+
+  - name: "tab Rename closes the menu and opens the rename sheet with the list name"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuRename }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: sheetField, visible: true }
+      - { part: sheetField, focused: true }
+      - { part: sheetField, text: { contains: "Reading" } }
+
+  - name: "renaming the list in its sheet changes the tab name"
+    # The critique asks for an exact match ("Reading list" only). The fields used in these drafts only offer contains,
+    # so this test cannot rule out "ReadingReading list". Left for the rebuild (see notes).
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuRename }
+      - { action: type, part: sheetField, text: "Reading list" }
+      - { action: key, part: sheetField, key: Enter }
+    expect:
+      - { part: tabReading, text: { contains: "Reading list" } }
+
+  - name: "Open in split view closes the menu and turns split view on"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuSplit }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: splitViewToggle, checked: true }
+
+  - name: "Export list closes the tab menu"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuExport }
+    expect:
+      - { part: tabMenu, visible: false }
+
+  - name: "Delete list asks first with Cancel focused"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuDelete }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: sheetCancel, focused: true }
+      - { part: sheetAccept, visible: true }
+      - { part: tabReading, visible: true }
+
+  - name: "Cancel on Delete list keeps the list"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuDelete }
+      - { action: press, part: sheetCancel }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: tabReading, visible: true }
+
+  - name: "Enter on the focused Delete list accept button does not confirm (decision 10)"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuDelete }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: tabReading, visible: true }
+
+  - name: "confirming Delete list removes its tab"
+    steps:
+      - { action: press, part: tabMoreReading }
+      - { action: press, part: tabMenuDelete }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { part: tabReading, visible: false }
+
+  - name: "the Delete list button on a tab asks first"
+    steps:
+      - { action: press, part: tabDelete }
+    expect:
+      - { part: sheetCancel, focused: true }
+      - { part: listTab, visible: true }
+
+  - name: "project dropdown opens under the project switcher"
+    steps:
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectMenu, visible: true }
+      - { part: projectRow, text: { contains: "Home" } }
+      - { part: projectSpring, text: { contains: "Spring launch" } }
+      - { part: newProject, text: { contains: "New project" } }
+    screenshot: true
+
+  - name: "Escape closes the project dropdown and returns focus to the switcher"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: key, part: projectRow, key: Escape }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+      - { part: projectSwitcher, focused: true }
+
+  - name: "pressing outside the project dropdown closes it without switching tabs"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: tabReading }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: tabReading, selected: false }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+
+  - name: "picking Spring launch switches the project"
+    # Uncertain (flagged in notes): the inventory says click is not verifiable; the first tab becoming Website comes from the demo data.
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectSpring }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+      - { part: listTab, text: { contains: "Website" } }
+
+  - name: "a project's More button shows Rename project and Delete project"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+    expect:
+      - { part: projectRename, text: { contains: "Rename project" } }
+      - { part: projectDelete, text: { contains: "Delete project" } }
+
+  - name: "Rename project opens the rename sheet with the project name"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+      - { action: press, part: projectRename }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: sheetField, visible: true }
+      - { part: sheetField, focused: true }
+      - { part: sheetField, text: { contains: "Spring launch" } }
+
+  - name: "Delete project asks first with Cancel focused"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+      - { action: press, part: projectDelete }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: sheetCancel, focused: true }
+
+  - name: "Cancel on Delete project keeps the project"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+      - { action: press, part: projectDelete }
+      - { action: press, part: sheetCancel }
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: projectSpring, visible: true }
+
+  - name: "Enter on the focused Delete project accept button does not confirm (decision 10)"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+      - { action: press, part: projectDelete }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: true }
+
+  - name: "confirming Delete project removes it from the dropdown"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMoreSpring }
+      - { action: press, part: projectDelete }
+      - { action: press, part: sheetAccept }
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectSpring, visible: false }
+      - { part: projectRow, visible: true }
+
+  - name: "New project closes the dropdown and opens the new project sheet"
+    # Sheet button label "Create" is from F06-102 as cited by the critique; Draft B's note said labels were not asserted. Kept, flagged in notes.
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: newProject }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: sheetField, visible: true }
+      - { part: sheetAccept, text: { contains: "Create" } }
+
+viewports:
+  - { width: 1180, height: 760 }
+colorSchemes: [ light ]
+keyboard: true

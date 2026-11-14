@@ -31,7 +31,7 @@ export const toastViewportVariants = cva(
 export const toastVariants = cva(
   [
     "pointer-events-auto relative flex h-[2.929rem] max-w-[calc(100%-2.286rem)] items-center gap-2 border pl-3.5 pr-1.5 select-none touch-none",
-    "rounded-(--radius-control) outline-none focus-visible:ring-2 focus-visible:ring-focus-1",
+    "rounded-(--radius-control) outline-none focus-visible:ring-2 focus-visible:ring-focus-1 data-[state=closed]:hidden",
     "data-[swipe=move]:translate-x-(--radix-toast-swipe-move-x) data-[swipe=move]:translate-y-(--radix-toast-swipe-move-y)",
     "data-[swipe=cancel]:translate-x-0 data-[swipe=cancel]:translate-y-0",
   ],
@@ -81,6 +81,7 @@ export const ToastRoot = React.forwardRef<HTMLLIElement, ToastRootProps>(functio
   return (
     <ToastPrimitive.Root
       ref={ref}
+      role="status"
       type="background"
       data-slot="toast"
       className={cn(toastVariants({ tone }), !reducedMotion && "animate-rise", className)}
@@ -103,6 +104,19 @@ export const ToastMessage = React.forwardRef<HTMLSpanElement, React.ComponentPro
     />
   );
 });
+
+/** Enter and Space press the focused control: the press is explicit, so it does not rely on the native key-to-click path. */
+function pressOnKey(event: React.KeyboardEvent<HTMLButtonElement>) {
+  if (event.key === "Enter" || event.key === " " || event.key === "Space") {
+    event.preventDefault();
+    event.currentTarget.click();
+  }
+}
+
+/** A native Space click fires on keyup; cancelling it keeps one Space press to one click. */
+function cancelSpaceKeyUp(event: React.KeyboardEvent<HTMLButtonElement>) {
+  if (event.key === " " || event.key === "Space") event.preventDefault();
+}
 
 export interface ToastProps {
   /** Controlled visibility. false is the idle state: nothing is mounted. */
@@ -152,12 +166,15 @@ export function Toast({
   onActioned,
 }: ToastProps) {
   const reason = React.useRef<ToastDismissReason | null>(null);
+  const rootRef = React.useRef<HTMLLIElement>(null);
   const label = failed ? "Try again" : actionLabel;
 
   return (
     <ToastPrimitive.Provider swipeDirection={swipeDirection} label="Notifications">
       <ToastViewport position={position} focusHotkey={focusHotkey} />
       <ToastRoot
+        ref={rootRef}
+        forceMount
         open={open}
         duration={duration}
         tone={tone}
@@ -169,7 +186,12 @@ export function Toast({
           }
           onOpenChange?.(next);
         }}
-        onEscapeKeyDown={() => {
+        onEscapeKeyDown={(event) => {
+          // Escape dismisses only while focus is inside this toast.
+          if (!rootRef.current?.contains(document.activeElement)) {
+            event.preventDefault();
+            return;
+          }
           reason.current = "escape";
         }}
         onSwipeEnd={() => {
@@ -186,7 +208,17 @@ export function Toast({
               onActioned?.(label);
             }}
           >
-            <Button data-slot="action" variant="ghost" tone="strong" hover="wash" size="sm" label={label} />
+            <Button
+              data-slot="action"
+              variant="ghost"
+              tone="strong"
+              hover="wash"
+              size="sm"
+              width="content"
+              label={label}
+              onKeyDown={pressOnKey}
+              onKeyUp={cancelSpaceKeyUp}
+            />
           </ToastPrimitive.Action>
         )}
         <ToastPrimitive.Close
@@ -202,9 +234,12 @@ export function Toast({
             hover="wash"
             size="sm"
             shape="icon"
+            width="content"
             icon="close"
             iconSize={16}
             ariaLabel="Close"
+            onKeyDown={pressOnKey}
+            onKeyUp={cancelSpaceKeyUp}
           />
         </ToastPrimitive.Close>
       </ToastRoot>

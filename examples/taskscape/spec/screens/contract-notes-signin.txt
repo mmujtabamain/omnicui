@@ -1,0 +1,50 @@
+# How the app.signin contract was written, and what its props make the harness do
+
+Basis: the two drafts (A and B), the critic's findings, and the harness rules. I had no file-reading tools in this run, so I did not re-open spec/screens/web.md, spec/decisions.md, API.md, the router, or the inventory. Every spec-derived claim comes from the drafts and the critic, and anything they could not confirm is marked UNVERIFIED in the YAML comments.
+
+Harness meaning of each prop:
+- mode ("signin" | "signup", default "signin"): the harness signs out, then mounts the page at /signin for "signin" or /signup for "signup". Route names are UNVERIFIED against the router.
+- dataset ("standard" | "empty" | "nolists" | "long", default "standard"): the harness loads this demo data set for the demo account before mounting. This page shows none of it, and no test here observes it, so the prop has no effect on the assertions.
+
+Event signedIn { email: string }: fired once on a 200 (sign-in) or 201 (create account), just before the main window opens, carrying the address the request sent. The rebuild must emit this as a test hook. It is a contract requirement the parent must approve, because no source file mentions it. It is the only success signal in the contract, so the success tests rely on it.
+
+Corrections applied from the critic:
+- Demo credentials (demo@taskscape.test / taskscape-demo) are UNVERIFIED. No readable file contains them. Draft B's citation of web.md for them was wrong. Confirm from the seed or API source before the build.
+- Button copy is UNVERIFIED, so button and link checks match patterns (for example "(?i)sign in", "(?i)create") and do not use exact strings. Field names are matched by pattern too (email, password, name) rather than exact labels, because the labels are not sourced.
+- The on-page app name is UNVERIFIED. "Taskscape" comes from the spec/decisions.md heading only, so the appName check uses a case-insensitive pattern.
+- Server statuses (200, 201, 400) and error shapes ({detail}, {field: [...]}) are UNVERIFIED against API.md. The critic showed that web.md does not state them. Draft A's claim that web.md gives the 400 shape was wrong and is withdrawn. web.md says only that a failed request shows the error inline or in a toast, never silently.
+- The 8-character password rule is dropped: its test and the comment on passwordField are removed because the rule is not sourced. Restore them if API.md confirms the rule.
+- The wrong-password test no longer checks that the email is kept after a refusal, because that behaviour is not sourced.
+- The absent-part visibility checks (visible: false on emailField after success, and on nameField in sign-in mode) are removed, because the format does not define how an absent part reports visibility. Success and refusal are asserted through signedIn times 1 or 0 and through the status regions.
+- The signed-out account-button, title-bar and Settings/Trash absence is not asserted, because the spec does not say so. It is left out of the contract.
+- The focus test is retitled "the email field accepts keyboard focus". It does not claim autofocus.
+- The busy test is merged into the demo press test as a record on submitButton. The contract does not assert the busy state, because the harness waits for the app to settle and the spec gives no busy behaviour. The record is the only check of it.
+- The optional flag is set on appName, nameField, and all four error regions. The Draft A/Draft B conflict on whether the error regions are always rendered is resolved in favour of optional (present only after a refusal). The inventory was not read, so this is unverified. If the inventory shows them always rendered, the optional flags are harmless and the comments need updating.
+- The Draft B split of createLink and signInLink is replaced by the single modeLink part from Draft A.
+- The name field is named nameField (not "title" or "Name"), and appName is used for the heading.
+- Name optionality is ASSUMED in both drafts, not sourced. The Enter-without-name test is the one kept. It is the only test that checks optionality.
+
+Drops (duplicate or unsourced):
+- Draft A password-under-8 test: unsourced rule.
+- Draft A email-kept check on the wrong-password test: unsourced behaviour.
+- Draft A visible:false checks on absent parts (emailField after success, nameField on sign-in): semantics undefined.
+- Draft B wrong-password and unknown-email tests: kept as Draft A's versions, which carry signedIn times 0. Draft B's versions lacked that check.
+- Draft B Enter-with-name signup test: near-duplicate of the signin Enter test and the no-name signup Enter test. Enter is covered; this also avoids an extra account creation.
+- Draft B name-optional press test: same optionality check as the kept Enter-without-name test.
+- Draft B sign-in-link and create-account-link tests: duplicates of the Draft A mode-switch tests, which carry the fuller expect lists.
+- Duplicate press and busy tests in both drafts: merged into one.
+- Draft A standalone busy test: merged into the press test as a record.
+
+Conflicts resolved:
+- Button copy: exact (Draft A) vs pattern (critic): pattern.
+- Name label: exact "Name (optional)" (Draft A) vs contains "Name" (Draft B): pattern.
+- Title part (Draft B) vs appName (Draft A): appName.
+- Error regions: always rendered (Draft A) vs optional (Draft B): optional, as above.
+
+Harness requirements:
+- Success tests create real accounts (sam.reader@, new.reader@, plus the demo sign-ins). The harness must use a fresh database or generate unique emails each run, or a second run will fail on the same address.
+- The emailError test assumes the server refuses demo@taskscape.test on create account because that account exists. This is an assumption, not a sourced fact. If the server does not refuse it, that test needs a different trigger.
+- The 1280x800 viewport is a placeholder, not measured. The critic noted that contract-format.txt's default is 320x240 and web.md's 640x520 is the settings size, which does not apply here. Replace with the inventory measure before the build.
+- colorSchemes [light, dark] is kept from both drafts, but the dark state is not verified.
+
+Still to check before the build: demo credentials, routes, button and link copy, on-page app name, server codes and error shapes, error-region rendering at rest, the viewport size, the dark scheme, name optionality, the emailError trigger, and the signedIn hook.

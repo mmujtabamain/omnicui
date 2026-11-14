@@ -32,12 +32,12 @@ export const SELECT_OPTION_SETS: Record<SelectOptionSet, readonly SelectOption[]
 /** A neutral Button-style field: 26px tall, 12.5px text at weight 500, wash on hover. */
 export const selectTriggerVariants = cva(
   [
-    "group/select relative inline-flex min-w-0 items-center gap-1.5 select-none whitespace-nowrap",
+    "group/select relative inline-flex min-w-0 items-center gap-1.5 select-none whitespace-nowrap pointer-events-auto",
     "h-[1.857rem] px-2 rounded-(--radius-field) bg-surface-0 text-content-1",
     "text-[0.893rem] leading-[1.339rem] font-medium text-left",
     "outline-none transition-[background-color,opacity] duration-(--duration-fast) ease-standard",
-    "hover:bg-wash-1 focus-visible:ring-2 focus-visible:ring-focus-1 focus-visible:ring-offset-0",
-    "disabled:pointer-events-none disabled:opacity-45",
+    "enabled:hover:bg-wash-1 focus-visible:ring-2 focus-visible:ring-focus-1 focus-visible:ring-offset-0",
+    "disabled:opacity-45",
   ],
   {
     variants: {
@@ -69,9 +69,10 @@ function matchIndex(labels: readonly string[], text: string, from: number): numb
   const n = labels.length;
   const repeated = text.length > 1 && text.split("").every((c) => c === text[0]);
   const start = repeated ? from + 1 : from;
+  const prefix = repeated ? text[0] : text;
   for (let step = 0; step < n; step++) {
     const i = (((start + step) % n) + n) % n;
-    if (labels[i].toLowerCase().startsWith(text)) return i;
+    if (labels[i].toLowerCase().startsWith(prefix)) return i;
   }
   return -1;
 }
@@ -138,7 +139,9 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
   // Open list: a typed letter moves the highlight; the prefix builds up across keys.
   const handleListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!isTypeKey(event)) return;
+    // Stops Radix's own typeahead on the content, so only this search moves the highlight.
     event.preventDefault();
+    event.stopPropagation();
     const text = typeAhead(event.key);
     const items = optionElements();
     const from = Math.max(0, items.indexOf(document.activeElement as HTMLElement));
@@ -174,6 +177,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
           data-slot="listbox"
           position="popper"
           sideOffset={4}
+          collisionPadding={0}
           className={cn(
             "z-(--z-index-popover) min-w-(--radix-select-trigger-width) max-h-(--radix-select-content-available-height)",
             "overflow-hidden rounded-(--radius-panel) border border-edge-2 bg-surface-3 text-content-1 shadow-menu",
@@ -183,9 +187,11 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
           <SelectPrimitive.Viewport className="p-1" onKeyDown={handleListKeyDown}>
             {options.map((option, index) => (
               <SelectPrimitive.Item key={option.value} data-slot={`option${index + 1}`} value={option.value} className={selectItemClass}>
-                <SelectPrimitive.ItemIndicator aria-hidden="true" className="absolute left-2 flex items-center">
-                  <Icon name="check" size={16} tone="inherit" />
-                </SelectPrimitive.ItemIndicator>
+                {/* The check is drawn from its glyph code, so the option text holds only its label. */}
+                <SelectPrimitive.ItemIndicator
+                  aria-hidden="true"
+                  className="absolute left-2 flex size-[1.143rem] items-center justify-center text-[1.143rem] leading-none [font-family:'Material_Symbols_Outlined'] [font-variation-settings:'wght'_300] before:content-['\e5ca']"
+                />
                 <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
               </SelectPrimitive.Item>
             ))}

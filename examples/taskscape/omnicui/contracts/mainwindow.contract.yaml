@@ -1,0 +1,1007 @@
+id: app.mainwindow
+# Main window of the Taskscape web app (web build). Targets: spec/screens/web.md, spec/decisions.md.
+# Mounted alone, signed in as the demo account on the real API, with one demo data set.
+# Key names use KeyboardEvent.code style everywhere: KeyN, Digit2, Slash, Comma, BracketLeft, BracketRight,
+# F2, Escape, Delete, Enter, Space, ArrowLeft, ArrowRight, ArrowUp, ArrowDown. Modifiers are joined with +:
+# Control, Alt, Shift. Control is the web Mod key (Ctrl on Windows and Linux); on macOS the platform layer
+# maps Mod to Meta. Alt is Option on macOS.
+# Every key step is preceded by a focus step on the same part.
+# Drag acts only on slider parts (splitDivider, previewDivider). Drag and drop is not tested.
+props:
+  # dataset: the demo data set the harness loads for the demo account before mounting.
+  #   standard = Home (Errands, Reading, Garden) and Spring launch (Website, Press kit); opens on Home > Errands.
+  #   empty = Home with one empty list, Inbox.
+  #   nolists = Home with no lists.
+  #   long = standard plus 40 more tasks in Errands.
+  dataset:
+    type: string
+    default: standard
+events: {}   # The screen emits no event. Its state is read from its parts.
+parts:
+  # Window and title bar
+  window: { role: generic }
+  titleBar: { role: generic }
+  listTabs: { role: generic }   # aria: tablist
+  projectSwitcher: { role: button }   # name "Switch project"; text "Home"
+  projectMenuHome: { role: button }   # aria: menuitem; first item of the open project menu (Home); the active-project mark is checked by screenshot
+  projectMenuSpring: { role: button }   # aria: menuitem; text "Spring launch"
+  projectNew: { role: button }   # aria: menuitem; the New project item
+  listTab: { role: button }   # aria: tab; first tab (Errands on load)
+  listTabReading: { role: button }   # aria: tab; text "Reading"
+  listTabGarden: { role: button }   # aria: tab; text "Garden"
+  listTabNew: { role: button }   # aria: tab; the tab a test creates; placed after the last tab (assumed)
+  deleteList: { role: button }   # name "Delete list"; first tab's delete button (Errands)
+  deleteListReading: { role: button }   # name "Delete list"; Reading tab's delete button
+  newList: { role: button }   # name "New list"
+  splitView: { role: button }   # name "Split view", or "Close split view" while split is on; selected while split is on
+  swapPanes: { role: button }   # name "Swap panes"; split only
+  previewToggle: { role: button }   # name contains "Hide preview panel" (shown) or "Show preview panel" (hidden); selected while the aside shows the preview
+  commandButton: { role: button }   # search-and-commands button in the title bar (decision 7); name not in the sources
+  trash: { role: button }   # title-bar Trash icon button (decision 1); name not in the sources, so not asserted
+  settingsButton: { role: button }   # title-bar Settings button; name contains "Settings"
+  accountButton: { role: button }   # account button ending the title bar (web.md); name and text not in the sources
+  accountMenu: { role: generic }   # aria: menu
+  accountEmail: { role: generic }   # the email line of the account menu (web.md); presence only
+  accountSettings: { role: button }   # aria: menuitem; text "Settings"
+  accountSignOut: { role: button }   # aria: menuitem; text "Sign out"
+  # Left task pane
+  taskPane: { role: generic }
+  searchField: { role: textbox }   # name and placeholder "Search Errands"
+  searchOptions: { role: button }   # name "Search options"; opens the scope menu, not the filter panel
+  scopeMenu: { role: generic }   # aria: menu
+  scopeWholeProject: { role: button }   # aria: menuitem; text "Whole project" (decision 3)
+  groupHeading: { role: heading }   # list heading over a group of whole-project search matches; text "Reading"
+  matchRow: { role: button }   # aria: option; a match row in the whole-project search results; text contains "soil health"
+  newTask: { role: button }   # name "New task"
+  row: { role: generic }   # first row container; text "Pick up prescription", subtitle "Counter closes at 6"
+  rowTitle: { role: button }   # title of the first row; press selects and previews it
+  rowSelect: { role: checkbox }   # round check named "Select" on the first row; checked = picked
+  rowMore: { role: button }   # name "More" on the first row
+  rowMenu: { role: generic }   # aria: menu; the row's More menu (contents not recorded)
+  rowTitleEdit: { role: textbox }   # inline title editor opened by F2
+  rowBike: { role: button }   # title "Book bike service"
+  checkBike: { role: checkbox }   # round check named "Select" on Book bike service
+  rowKeysTitle: { role: button }   # title "Cut a spare key"
+  rowKeysSelect: { role: checkbox }   # round check named "Select" on Cut a spare key
+  rowGroceries: { role: button }   # title "Buy groceries for the week"; expanded parent with subtasks
+  rowGroceriesExpand: { role: button }   # disclosure chevron on rowGroceries
+  subtaskCount: { role: generic }   # badge "1 / 3" on rowGroceries
+  subtaskOatMilk: { role: generic }   # depth-1 row "Oat milk"; hidden when the parent is collapsed
+  rowHeroRewrite: { role: button }   # title "Rewrite the hero section" in Website (web.md); used on Spring launch
+  attachmentBadge: { role: generic }   # attachment badge on rowHeroRewrite (F09-088); location not in the sources, presence only
+  doneCount: { role: generic }   # footer count "2 / 8 done" (StatsBar)
+  footerPercent: { role: generic }   # footer "25 %"
+  sortFilter: { role: button }   # name "Sort & filter"; footer control that toggles the filter panel
+  # Selection (picked rows)
+  selectionCount: { role: generic }   # badge with the number of picked tasks
+  multiInspector: { role: generic }   # multi-select inspector, shown when more than one row is picked
+  openSelection: { role: button }   # "Open" in the multi-select inspector (decision 6); name not asserted
+  clearSelection: { role: button }   # name "Clear selection" in the multi-select inspector
+  bulkMarkDone: { role: button }   # bulk bar action that marks the picked tasks done (decision 6); label not in the sources
+  # Right aside (preview inspector, draft inspector, trash, filter panel)
+  previewPanel: { role: generic }   # the preview inspector in the aside; hidden when the preview is off or the trash or filter panel is shown
+  previewEmpty: { role: generic }   # empty preview; text "No task selected"
+  previewTitle: { role: heading }   # title of the shown task (TaskInspector header; assumed a heading)
+  draftInspector: { role: generic }   # DraftInspector after New task
+  previewDivider: { role: slider }   # aria: separator; resizer on the aside edge; value = aside width in px, 280 to 420
+  trashPane: { role: generic }   # TrashPane in the aside
+  trashHeading: { role: heading }   # trash pane heading
+  trashClose: { role: button }   # close control of the trash pane; name not in the sources
+  filterPanel: { role: generic }   # FilterPanel in the aside
+  filterHeading: { role: heading }   # filter panel heading
+  # Split
+  splitDivider: { role: slider }   # aria: separator; resizer between the two panes; value = split ratio, 0.25 to 0.75
+  splitPane: { role: generic }   # right task pane (split only)
+  splitSearch: { role: textbox }   # placeholder and name "Search Reading"
+  splitClose: { role: button }   # name "Close split" (right pane search row)
+  splitRow: { role: generic }   # first row of the right pane; "Finish the novel on the nightstand" with Reading on the right
+  splitFooterDoneCount: { role: generic }   # right pane footer "1 / 3 done"
+  # Empty states
+  noListsTitle: { role: generic }   # "No lists yet"
+  noListsSubtitle: { role: generic }   # "Create a list to start adding tasks"
+  # Sheets and dialogs (modal; new list, new project, delete list, task delete)
+  dialog: { role: generic }   # aria: dialog
+  dialogHeading: { role: heading }   # sheet headline
+  dialogName: { role: textbox }   # name field of the New list and New project sheets
+  dialogCreate: { role: button }   # name "Create"; sheet accept button
+  dialogCancel: { role: button }   # name "Cancel"; default focus in confirmations (decision 13)
+  dialogDelete: { role: button }   # name "Delete list"; danger button of the delete list confirmation
+  dialogMoveToTrash: { role: button }   # name "Move to Trash"; danger button of the task delete confirmation (decision 10)
+  dialogDetail: { role: generic }   # delete list confirmation text that counts the tasks (F09-009); copy not in the sources
+  # Toast
+  toast: { role: status }   # toast after an undoable action
+  toastUndo: { role: button }   # toast action name "Undo"
+  # Command palette
+  commandPalette: { role: generic }   # aria: dialog
+  commandInput: { role: textbox }   # palette search input; keeps focus while open
+  paletteOpenTrash: { role: button }   # aria: option; command "Open Trash"
+  # Settings (web modal over the window, 640x520 in web.md)
+  settingsDialog: { role: generic }   # aria: dialog
+  settingsHeading: { role: heading }   # Settings heading
+  settingsClose: { role: button }   # close control of the settings dialog; name not in the sources
+
+tests:
+  # Rest and layout
+  - name: "main window at rest on Home, Errands"
+    steps:
+      - { action: hover, part: window }
+    expect:
+      - { part: titleBar, visible: true }
+      - { part: listTabs, visible: true }
+      - { part: projectSwitcher, name: "Switch project", text: { contains: "Home" } }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: listTabReading, text: "Reading", selected: false }
+      - { part: listTabGarden, text: "Garden", selected: false }
+      - { part: newList, name: "New list", visible: true }
+      - { part: splitView, name: "Split view", selected: false }
+      - { part: previewToggle, name: { contains: "Hide preview panel" }, selected: true }
+      - { part: commandButton, visible: true }
+      - { part: trash, visible: true }
+      - { part: settingsButton, visible: true }
+      - { part: accountButton, visible: true }
+      - { part: taskPane, visible: true }
+      - { part: searchField, name: "Search Errands" }
+      - { part: newTask, name: "New task", visible: true }
+      - { part: row, text: { contains: "Pick up prescription" } }
+      - { part: row, text: { contains: "Counter closes at 6" } }
+      - { part: rowTitle, text: "Pick up prescription" }
+      - { part: rowSelect, checked: false }
+      - { part: rowGroceries, text: "Buy groceries for the week" }
+      - { part: subtaskOatMilk, text: "Oat milk" }
+      - { part: subtaskCount, text: "1 / 3" }
+      - { part: doneCount, text: "2 / 8 done" }
+      - { part: footerPercent, text: { contains: "25" } }
+      - { part: sortFilter, name: "Sort & filter", visible: true }
+      - { part: previewPanel, visible: true }
+      - { part: previewEmpty, text: "No task selected" }
+      - { part: splitPane, visible: false }
+    screenshot: true   # main-default; the same test runs in dark (colorSchemes) and at 820x640 (viewports)
+
+  - name: "preview panel hidden gives the task pane the full width"
+    steps:
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, name: { contains: "Show preview panel" }, selected: false }
+      - { part: previewPanel, visible: false }
+      - { part: previewEmpty, visible: false }
+      - { part: previewDivider, visible: false }
+      - { part: taskPane, visible: true }
+      - { part: rowTitle, visible: true }
+      - { part: rowTitle, text: "Pick up prescription" }
+    screenshot: true   # preview-hidden
+
+  - name: "preview panel shown again after a second toggle"
+    steps:
+      - { action: press, part: previewToggle }
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, name: { contains: "Hide preview panel" }, selected: true }
+      - { part: previewPanel, visible: true }
+      - { part: previewEmpty, visible: true }
+
+  - name: "preview divider clamps at 420 px"
+    steps:
+      - { action: drag, part: previewDivider, dx: -1000, dy: 0 }   # direction assumed: dragging left widens the aside
+    expect:
+      - { part: previewDivider, value: 420 }
+      - { part: previewPanel, visible: true }
+
+  - name: "preview divider clamps at 280 px"
+    steps:
+      - { action: drag, part: previewDivider, dx: 1000, dy: 0 }
+    expect:
+      - { part: previewDivider, value: 280 }
+      - { part: previewPanel, visible: true }
+
+  # Split
+  - name: "split view opens with Reading in the right pane"
+    steps:
+      - { action: press, part: splitView }
+    expect:
+      - { part: splitView, name: "Close split view", selected: true }
+      - { part: splitPane, visible: true }
+      - { part: splitClose, name: "Close split", visible: true }
+      - { part: splitSearch, name: "Search Reading" }
+      - { part: splitRow, text: { contains: "Finish the novel on the nightstand" } }
+      - { part: splitFooterDoneCount, text: "1 / 3 done" }
+      - { part: splitDivider, visible: true }
+      - { part: swapPanes, name: "Swap panes", visible: true }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: rowTitle, text: "Pick up prescription" }
+      - { part: doneCount, text: "2 / 8 done" }
+      - { part: previewPanel, visible: true }
+    screenshot: true   # split-view
+
+  - name: "split view button pressed twice closes the split"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: splitView }
+    expect:
+      - { part: splitView, name: "Split view", selected: false }
+      - { part: splitPane, visible: false }
+      - { part: splitDivider, visible: false }
+
+  - name: "close split removes the right pane"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: splitClose }
+    expect:
+      - { part: splitPane, visible: false }
+      - { part: splitRow, visible: false }
+      - { part: splitView, name: "Split view", selected: false }
+      - { part: rowTitle, text: "Pick up prescription" }
+
+  - name: "swap panes puts Reading on the left"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: swapPanes }
+    expect:
+      - { part: rowTitle, text: "Finish the novel on the nightstand" }
+      - { part: splitRow, text: { contains: "Pick up prescription" } }
+
+  - name: "a list tab press leaves the split pane on its list"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: listTabGarden }
+    expect:
+      - { part: listTabGarden, selected: true }
+      - { part: splitRow, text: { contains: "Finish the novel on the nightstand" } }
+      - { part: splitPane, visible: true }
+
+  - name: "split divider clamps at the low end, ratio 0.25"
+    steps:
+      - { action: press, part: splitView }
+      - { action: drag, part: splitDivider, dx: -1000, dy: 0 }   # direction assumed: dragging left lowers the ratio
+    expect:
+      - { part: splitDivider, value: 0.25 }
+
+  - name: "split divider clamps at the high end, ratio 0.75"
+    steps:
+      - { action: press, part: splitView }
+      - { action: drag, part: splitDivider, dx: 2000, dy: 0 }
+    expect:
+      - { part: splitDivider, value: 0.75 }
+
+  # Data sets
+  - name: "empty data set shows Inbox, no rows, and no split (one list)"
+    props: { dataset: "empty" }
+    steps:
+      - { action: hover, part: window }
+    expect:
+      - { part: listTab, text: "Inbox", selected: true }
+      - { part: row, visible: false }
+      - { part: previewEmpty, text: "No task selected" }
+      - { part: splitView, disabled: true }   # split needs two lists (F09-032)
+
+  - name: "no lists shows the empty state and disables split view"
+    props: { dataset: "nolists" }
+    steps:
+      - { action: hover, part: window }
+    expect:
+      - { part: noListsTitle, text: "No lists yet" }
+      - { part: noListsSubtitle, text: "Create a list to start adding tasks" }
+      - { part: listTab, visible: false }
+      - { part: newList, visible: true }
+      - { part: splitView, disabled: true }
+      - { part: previewEmpty, text: "No task selected" }
+      - { part: previewPanel, visible: true }
+    screenshot: true   # no-lists
+
+  - name: "long data set counts all tasks"
+    props: { dataset: "long" }
+    steps:
+      - { action: hover, part: window }
+    expect:
+      - { part: row, visible: true }
+      - { part: doneCount, text: "10 / 48 done" }   # derived from web.md: 40 tasks, every fifth done, plus 2 of 8 in standard
+
+  # Row selection and preview
+  - name: "pressing a row title selects it and previews it"
+    steps:
+      - { action: press, part: rowTitle }
+    expect:
+      - { part: previewTitle, text: "Pick up prescription" }
+      - { part: previewEmpty, visible: false }
+      - { part: previewPanel, visible: true }
+
+  - name: "pressing another task title moves the preview to it"
+    steps:
+      - { action: press, part: rowBike }
+    expect:
+      - { part: rowBike, text: "Book bike service" }
+      - { part: previewTitle, text: "Book bike service" }
+      - { part: previewEmpty, visible: false }
+
+  - name: "picking two tasks opens the multi-select inspector"
+    steps:
+      - { action: press, part: rowSelect }
+      - { action: press, part: checkBike }
+    expect:
+      - { part: rowSelect, checked: true }   # assumed: a picked check reads checked (no picked record in the sources)
+      - { part: checkBike, checked: true }
+      - { part: selectionCount, text: "2" }
+      - { part: multiInspector, visible: true }
+      - { part: openSelection, visible: true }
+      - { part: clearSelection, name: "Clear selection", visible: true }
+      - { part: previewEmpty, visible: false }
+
+  - name: "clear selection empties the picks and restores the empty preview"
+    steps:
+      - { action: press, part: rowSelect }
+      - { action: press, part: checkBike }
+      - { action: press, part: clearSelection }
+    expect:
+      - { part: clearSelection, visible: false }
+      - { part: multiInspector, visible: false }
+      - { part: rowSelect, checked: false }
+      - { part: checkBike, checked: false }
+      - { part: previewEmpty, visible: true }
+
+  - name: "Escape clears the selection"
+    steps:
+      - { action: press, part: rowSelect }
+      - { action: press, part: rowKeysSelect }
+      - { action: focus, part: rowSelect }
+      - { action: key, part: rowSelect, key: Escape }
+    expect:
+      - { part: rowSelect, checked: false }
+      - { part: rowKeysSelect, checked: false }
+      - { part: multiInspector, visible: false }
+      - { part: clearSelection, visible: false }
+
+  - name: "Control-click on a title adds that row to the selection"
+    steps:
+      - { action: press, part: rowSelect }
+      - { input: selectToggle }   # decisions.md line 8 (Control-click on the web)
+      - { action: press, part: rowKeysTitle }
+    expect:
+      - { part: rowKeysSelect, checked: true }
+      - { part: selectionCount, text: "2" }
+
+  - name: "Shift+ArrowDown extends the selection to the next row"
+    steps:
+      - { action: press, part: rowSelect }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Shift+ArrowDown }
+    expect:
+      - { part: selectionCount, text: "2" }
+      - { part: multiInspector, visible: true }
+
+  - name: "Control+A selects every task in the pane"
+    steps:
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Control+KeyA }
+    expect:
+      - { part: rowSelect, checked: true }
+      - { part: rowKeysSelect, checked: true }
+
+  - name: "Space toggles the pick on the focused row"
+    steps:
+      - { action: focus, part: rowKeysSelect }
+      - { action: key, part: rowKeysSelect, key: Space }
+    expect:
+      - { part: rowKeysSelect, checked: true }
+
+  - name: "Alt+Space marks the focused task done"
+    steps:
+      - { action: focus, part: rowKeysSelect }
+      - { action: key, part: rowKeysSelect, key: Alt+Space }
+    expect:
+      - { part: doneCount, text: "3 / 8 done" }
+
+  - name: "Alt-held press on the round check marks the task done and keeps its place"
+    steps:
+      - { input: modifierHold }   # holds Alt (Option on macOS) for the press that follows; the span is not documented
+      - { action: press, part: checkBike }
+    expect:
+      - { part: doneCount, text: "3 / 8 done" }
+      - { part: rowBike, visible: true }
+
+  - name: "bulk mark done marks every picked task done"
+    steps:
+      - { action: press, part: rowSelect }
+      - { action: press, part: rowKeysSelect }
+      - { action: press, part: bulkMarkDone }
+    expect:
+      - { part: doneCount, text: "4 / 8 done" }
+
+  # Delete, undo, trash (destructive actions go through the confirmation, decision 10)
+  - name: "deleting the active task asks first, then moves it to the Trash with Undo"
+    steps:
+      - { action: press, part: rowBike }
+      - { action: focus, part: rowBike }
+      - { action: key, part: rowBike, key: Delete }   # the Delete binding is not in the sources; assumed
+      - { action: press, part: dialogMoveToTrash }
+    expect:
+      - { part: rowBike, visible: false }
+      - { part: doneCount, text: "2 / 7 done" }
+      - { part: toast, visible: true }
+      - { part: toastUndo, name: "Undo", visible: true }
+
+  - name: "Undo restores the deleted task"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Delete }
+      - { action: press, part: dialogMoveToTrash }
+      - { action: press, part: toastUndo }
+    expect:
+      - { part: rowTitle, text: "Pick up prescription" }
+
+  - name: "Control+Z restores the deleted task"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Delete }
+      - { action: press, part: dialogMoveToTrash }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Control+KeyZ }
+    expect:
+      - { part: rowTitle, text: "Pick up prescription" }
+
+  - name: "a deleted task is listed in the trash"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: Delete }
+      - { action: press, part: dialogMoveToTrash }
+      - { action: press, part: trash }
+    expect:
+      - { part: trashPane, text: { contains: "Pick up prescription" } }
+
+  - name: "deleting a parent task moves its subtasks to the Trash"
+    steps:
+      - { action: press, part: rowGroceries }
+      - { action: focus, part: rowGroceries }
+      - { action: key, part: rowGroceries, key: Delete }
+      - { action: press, part: dialogMoveToTrash }
+    expect:
+      - { part: rowGroceries, visible: false }
+      - { part: doneCount, text: "1 / 4 done" }   # 4 tasks in the subtree, 1 of them done (Oat milk)
+
+  - name: "the trash button opens the trash in the aside"
+    steps:
+      - { action: press, part: trash }
+    expect:
+      - { part: trashPane, visible: true }
+      - { part: trashHeading, visible: true }
+      - { part: trashPane, text: { contains: "Print the old flyer" } }   # seeded Trash item (web.md)
+      - { part: previewPanel, visible: false }
+      - { part: previewEmpty, visible: false }
+
+  - name: "closing the trash brings the preview back"
+    steps:
+      - { action: press, part: trash }
+      - { action: press, part: trashClose }
+    expect:
+      - { part: trashPane, visible: false }
+      - { part: previewEmpty, visible: true }
+
+  # Rename (inline title editor)
+  - name: "F2 opens the inline title editor on the active task, and F2 again keeps it open"
+    steps:
+      - { action: press, part: rowBike }
+      - { action: focus, part: rowBike }
+      - { action: key, part: rowBike, key: F2 }
+      - { action: focus, part: rowTitleEdit }
+      - { action: key, part: rowTitleEdit, key: F2 }
+    expect:
+      - { part: rowTitleEdit, visible: true }
+      - { part: rowTitleEdit, focused: true }
+
+  - name: "renaming a task through the inline editor shows the new title"
+    steps:
+      - { action: press, part: rowBike }
+      - { action: focus, part: rowBike }
+      - { action: key, part: rowBike, key: F2 }
+      - { action: focus, part: rowTitleEdit }
+      - { action: key, part: rowTitleEdit, key: Control+KeyA }   # selects the current title so type replaces it (assumed)
+      - { action: type, part: rowTitleEdit, text: "Book bike service today" }
+      - { action: key, part: rowTitleEdit, key: Enter }   # commit key assumed; the sources do not name it
+    expect:
+      - { part: rowBike, text: "Book bike service today" }
+      - { part: rowTitleEdit, visible: false }
+
+  # Subtasks
+  - name: "the disclosure collapses the subtasks"
+    steps:
+      - { action: press, part: rowGroceriesExpand }
+    expect:
+      - { part: rowGroceries, visible: true }
+      - { part: subtaskOatMilk, visible: false }
+
+  - name: "ArrowLeft collapses an expanded parent"
+    steps:
+      - { action: focus, part: rowGroceriesExpand }
+      - { action: key, part: rowGroceriesExpand, key: ArrowLeft }
+    expect:
+      - { part: rowGroceries, visible: true }
+      - { part: subtaskOatMilk, visible: false }
+
+  - name: "ArrowRight expands a collapsed parent again"
+    steps:
+      - { action: press, part: rowGroceriesExpand }
+      - { action: focus, part: rowGroceriesExpand }
+      - { action: key, part: rowGroceriesExpand, key: ArrowRight }
+    expect:
+      - { part: subtaskOatMilk, visible: true }
+      - { part: subtaskCount, text: "1 / 3" }
+
+  # Row menu
+  - name: "More opens the row menu"
+    steps:
+      - { action: press, part: rowMore }
+    expect:
+      - { part: rowMenu, visible: true }
+
+  - name: "Escape closes the row menu"
+    steps:
+      - { action: press, part: rowMore }
+      - { action: focus, part: rowMore }
+      - { action: key, part: rowMore, key: Escape }
+    expect:
+      - { part: rowMenu, visible: false }
+
+  # Drafts
+  - name: "New task button starts a draft without adding a row"
+    steps:
+      - { action: press, part: newTask }
+    expect:
+      - { part: draftInspector, visible: true }
+      - { part: previewEmpty, visible: false }
+      - { part: previewPanel, visible: true }
+      - { part: doneCount, text: "2 / 8 done" }
+
+  - name: "Alt+KeyN starts a new task draft"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+KeyN }
+    expect:
+      - { part: draftInspector, visible: true }
+      - { part: previewEmpty, visible: false }
+      - { part: doneCount, text: "2 / 8 done" }
+
+  # Search and arrows
+  - name: "Slash focuses the search field"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Slash }
+    expect:
+      - { part: searchField, focused: true }
+
+  - name: "a printable key starts a search in the focused list"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: KeyG }
+    expect:
+      - { part: searchField, focused: true }
+
+  - name: "typing in the search field filters the rows"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "bike" }
+    expect:
+      - { part: searchField, text: "bike" }
+      - { part: rowBike, visible: true }
+      - { part: row, visible: false }
+
+  - name: "typing a parent task name keeps it and hides the other rows"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "groc" }
+    expect:
+      - { part: searchField, focused: true }
+      - { part: rowGroceries, visible: true }
+      - { part: rowKeysTitle, visible: false }
+
+  - name: "arrows in the search field do not move the active task"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: searchField }
+      - { action: key, part: searchField, key: ArrowDown }
+    expect:
+      - { part: previewTitle, text: "Pick up prescription" }
+
+  - name: "ArrowDown moves the active task to the next row"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: ArrowDown }
+    expect:
+      - { part: previewTitle, text: "Post the parcel to Mum" }
+
+  - name: "ArrowUp from the first row wraps to the last visible row"
+    steps:
+      - { action: press, part: rowTitle }
+      - { action: focus, part: rowTitle }
+      - { action: key, part: rowTitle, key: ArrowUp }
+    expect:
+      - { part: previewTitle, text: "Apples" }   # last visible row: subtask of Buy groceries
+
+  # Search options and whole-project search (decision 3)
+  - name: "search options opens the scope menu, not the filter panel"
+    steps:
+      - { action: press, part: searchOptions }
+    expect:
+      - { part: scopeMenu, visible: true }
+      - { part: scopeWholeProject, visible: true }
+      - { part: filterPanel, visible: false }
+
+  - name: "whole-project search groups the matches under list headings"
+    steps:
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+      - { action: type, part: searchField, text: "soil" }
+    expect:
+      - { part: groupHeading, text: "Reading", visible: true }
+      - { part: matchRow, text: { contains: "soil health" } }
+
+  - name: "choosing a match opens its list with the task selected and previewed"
+    steps:
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+      - { action: type, part: searchField, text: "soil" }
+      - { action: press, part: matchRow }
+    expect:
+      - { part: listTabReading, selected: true }
+      - { part: previewTitle, text: "Read the long article on soil health" }
+
+  # Filter panel and aside
+  - name: "Sort & filter opens the filter panel in the aside"
+    steps:
+      - { action: press, part: sortFilter }
+    expect:
+      - { part: filterPanel, visible: true }
+      - { part: filterHeading, visible: true }
+      - { part: previewPanel, visible: false }
+
+  - name: "the footer Sort & filter control toggles the filter panel back off"
+    steps:
+      - { action: press, part: sortFilter }
+      - { action: press, part: sortFilter }
+    expect:
+      - { part: filterPanel, visible: false }
+      - { part: previewEmpty, visible: true }
+
+  - name: "opening the filter panel closes the trash"
+    steps:
+      - { action: press, part: trash }
+      - { action: press, part: sortFilter }
+    expect:
+      - { part: filterPanel, visible: true }
+      - { part: trashPane, visible: false }
+
+  - name: "opening the trash closes the filter panel"
+    steps:
+      - { action: press, part: sortFilter }
+      - { action: press, part: trash }
+    expect:
+      - { part: trashPane, visible: true }
+      - { part: filterPanel, visible: false }
+
+  # Account menu and Settings (web: account menu; Settings is a modal dialog, web.md)
+  - name: "account menu lists Settings, Sign out and the account email"
+    steps:
+      - { action: press, part: accountButton }
+    expect:
+      - { part: accountMenu, visible: true }
+      - { part: accountSettings, text: "Settings", visible: true }
+      - { part: accountSignOut, text: "Sign out", visible: true }
+      - { part: accountEmail, visible: true }
+
+  - name: "Escape closes the account menu"
+    steps:
+      - { action: press, part: accountButton }
+      - { action: focus, part: accountSettings }
+      - { action: key, part: accountSettings, key: Escape }
+    expect:
+      - { part: accountSignOut, visible: false }
+
+  - name: "account menu Settings opens the settings modal"
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountSettings }
+    expect:
+      - { part: settingsDialog, visible: true }
+      - { part: settingsHeading, visible: true }
+
+  - name: "the title-bar Settings button opens the settings dialog"
+    steps:
+      - { action: press, part: settingsButton }
+    expect:
+      - { part: settingsDialog, visible: true }
+      - { part: settingsHeading, visible: true }
+      - { part: settingsClose, visible: true }
+
+  - name: "Escape closes the settings dialog"
+    steps:
+      - { action: press, part: settingsButton }
+      - { action: focus, part: settingsClose }
+      - { action: key, part: settingsClose, key: Escape }
+    expect:
+      - { part: settingsDialog, visible: false }
+
+  - name: "Control+Comma opens the settings dialog"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Control+Comma }   # F08-004; the web chord is assumed to keep the Mod key
+    expect:
+      - { part: settingsDialog, visible: true }
+
+  # Command palette (decision 7)
+  - name: "title-bar command button opens the palette with focus in the input"
+    steps:
+      - { action: press, part: commandButton }
+    expect:
+      - { part: commandPalette, visible: true }
+      - { part: commandInput, focused: true }
+
+  - name: "Control+KeyK opens the command palette"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Control+KeyK }
+    expect:
+      - { part: commandPalette, visible: true }
+      - { part: commandInput, focused: true }
+
+  - name: "Escape closes the command palette"
+    steps:
+      - { action: press, part: commandButton }
+      - { action: focus, part: commandInput }
+      - { action: key, part: commandInput, key: Escape }
+    expect:
+      - { part: commandPalette, visible: false }
+      - { part: taskPane, visible: true }
+
+  - name: "palette command Open Trash opens the trash"
+    steps:
+      - { action: press, part: commandButton }
+      - { action: type, part: commandInput, text: "Open Trash" }
+      - { action: press, part: paletteOpenTrash }
+    expect:
+      - { part: trashPane, visible: true }
+      - { part: commandPalette, visible: false }
+
+  - name: "the palette filters its commands as you type"
+    steps:
+      - { action: press, part: commandButton }
+      - { action: type, part: commandInput, text: "zzzz" }
+    expect:
+      - { part: paletteOpenTrash, visible: false }
+
+  # New list sheet (web: modal dialog with backdrop)
+  - name: "New list button opens the new list sheet"
+    steps:
+      - { action: press, part: newList }
+    expect:
+      - { part: dialog, visible: true }
+      - { part: dialogHeading, visible: true }
+      - { part: dialogName, visible: true }
+      - { part: dialogCancel, name: "Cancel", visible: true }
+      - { part: dialogCreate, name: "Create", visible: true }
+
+  - name: "Cancel closes the new list sheet and keeps the tabs"
+    steps:
+      - { action: press, part: newList }
+      - { action: press, part: dialogCancel }
+    expect:
+      - { part: dialog, visible: false }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: listTabReading, visible: true }
+      - { part: listTabNew, visible: false }
+
+  - name: "New list sheet adds a tab with the typed name"
+    steps:
+      - { action: press, part: newList }
+      - { action: type, part: dialogName, text: "Hardware" }
+      - { action: press, part: dialogCreate }
+    expect:
+      - { part: listTabNew, text: "Hardware", visible: true }   # placed after the last tab (assumed)
+
+  - name: "Enter in the name field accepts the new list sheet"
+    steps:
+      - { action: press, part: newList }
+      - { action: type, part: dialogName, text: "Hardware" }
+      - { action: focus, part: dialogName }
+      - { action: key, part: dialogName, key: Enter }
+    expect:
+      - { part: dialog, visible: false }
+      - { part: listTabNew, text: "Hardware", visible: true }
+
+  - name: "Alt+Shift+KeyN opens the new list sheet"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+Shift+KeyN }
+    expect:
+      - { part: dialog, visible: true }
+      - { part: dialogHeading, visible: true }
+      - { part: dialogName, visible: true }
+
+  - name: "global shortcuts do nothing while a sheet is open"
+    steps:
+      - { action: press, part: newList }
+      - { action: focus, part: dialogCancel }
+      - { action: key, part: dialogCancel, key: Alt+KeyN }
+    expect:
+      - { part: draftInspector, visible: false }
+      - { part: dialogName, visible: true }
+
+  # Delete list confirmation (decisions 10 and 13)
+  - name: "delete list asks first and starts with Cancel focused"
+    steps:
+      - { action: press, part: deleteList }
+    expect:
+      - { part: dialog, visible: true }
+      - { part: dialogHeading, visible: true }
+      - { part: dialogDelete, name: "Delete list", visible: true }
+      - { part: dialogCancel, focused: true }
+      - { part: dialogDetail, text: { contains: "8" } }   # the Errands task count; copy not in the sources
+
+  - name: "Escape cancels the delete list confirmation"
+    steps:
+      - { action: press, part: deleteList }
+      - { action: focus, part: dialogCancel }
+      - { action: key, part: dialogCancel, key: Escape }
+    expect:
+      - { part: dialog, visible: false }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: listTabReading, visible: true }
+
+  - name: "Cancel keeps the list"
+    steps:
+      - { action: press, part: deleteList }
+      - { action: press, part: dialogCancel }
+    expect:
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: dialogDelete, visible: false }
+
+  - name: "Enter on the focused Delete list button does not confirm"
+    steps:
+      - { action: press, part: deleteList }
+      - { action: focus, part: dialogDelete }
+      - { action: key, part: dialogDelete, key: Enter }
+    expect:
+      - { part: dialog, visible: true }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: listTabReading, visible: true }
+
+  - name: "Space on the focused Delete list button confirms the delete"
+    steps:
+      - { action: press, part: deleteList }
+      - { action: focus, part: dialogDelete }
+      - { action: key, part: dialogDelete, key: Space }
+    expect:
+      - { part: listTab, text: "Reading", selected: true }
+      - { part: dialog, visible: false }
+
+  - name: "clicking Delete list on the Reading tab removes that tab"
+    steps:
+      - { action: press, part: deleteListReading }
+      - { action: press, part: dialogDelete }
+    expect:
+      - { part: listTabReading, visible: false }
+      - { part: listTab, text: "Errands", selected: true }
+      - { part: dialog, visible: false }
+
+  - name: "confirming the delete of the first list leaves the first remaining list active"
+    steps:
+      - { action: press, part: deleteList }
+      - { action: press, part: dialogDelete }
+    expect:
+      - { part: listTab, text: "Reading", selected: true }
+      - { part: rowTitle, text: "Finish the novel on the nightstand" }
+
+  # Projects (decision and feature records F09-006, F09-007, F09-062, F09-063)
+  - name: "project menu lists the projects and New project"
+    steps:
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectMenuHome, visible: true }
+      - { part: projectMenuSpring, name: "Spring launch", visible: true }
+      - { part: projectNew, visible: true }
+    screenshot: true   # the active-project mark on Home is checked by screenshot only
+
+  - name: "Escape closes the project menu"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: focus, part: projectMenuHome }
+      - { action: key, part: projectMenuHome, key: Escape }
+    expect:
+      - { part: projectMenuSpring, visible: false }
+      - { part: projectSwitcher, visible: true }
+
+  - name: "choosing Spring launch resets the panes to its first list"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMenuSpring }
+    expect:
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+      - { part: listTab, text: "Website", selected: true }
+      - { part: listTabReading, visible: false }
+      - { part: doneCount, text: "1 / 5 done" }
+      - { part: rowHeroRewrite, visible: true }
+
+  - name: "switching project closes the split pane"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMenuSpring }
+    expect:
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+      - { part: splitRow, visible: false }
+      - { part: splitView, name: "Split view", selected: false }
+
+  - name: "Spring launch shows the attachment badge on Rewrite the hero section"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectMenuSpring }
+      - { action: press, part: rowHeroRewrite }
+    expect:
+      - { part: attachmentBadge, visible: true }   # F09-088; badge location not in the sources
+
+  - name: "project keys step through the projects and wrap"
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketRight }   # Home to Spring launch
+      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketRight }   # wraps to Home
+      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketLeft }    # Home to Spring launch
+    expect:
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }   # a missed wrap would end on Home
+
+  - name: "creating a project does not switch to it"
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectNew }
+      - { action: type, part: dialogName, text: "Trip" }
+      - { action: press, part: dialogCreate }
+    expect:
+      - { part: projectSwitcher, text: { contains: "Home" } }
+      - { part: listTab, text: "Errands", selected: true }
+
+  # List tabs
+  - name: "clicking a list tab makes it the active list"
+    steps:
+      - { action: press, part: listTabReading }
+    expect:
+      - { part: listTabReading, selected: true }
+      - { part: listTab, selected: false }
+      - { part: rowTitle, text: "Finish the novel on the nightstand" }
+      - { part: searchField, name: "Search Reading" }
+
+  - name: "Alt+Shift+ArrowRight steps through the list tabs and wraps"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
+      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
+      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
+    expect:
+      - { part: listTab, selected: true }
+      - { part: listTabGarden, selected: false }
+
+  - name: "Alt+Shift+ArrowLeft wraps from Errands to Garden"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+Shift+ArrowLeft }
+    expect:
+      - { part: listTabGarden, selected: true }
+
+  - name: "Alt+Digit2 selects the second list"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+Digit2 }
+    expect:
+      - { part: listTabReading, selected: true }
+      - { part: rowTitle, text: "Finish the novel on the nightstand" }
+
+  - name: "Alt+Digit3 selects the third list"
+    steps:
+      - { action: focus, part: listTab }
+      - { action: key, part: listTab, key: Alt+Digit3 }
+    expect:
+      - { part: listTabGarden, selected: true }
+
+viewports:
+  - { width: 1180, height: 760 }   # the reference window (main-default, split-view, preview-hidden, no-lists); sizes apply to every test
+  - { width: 820, height: 640 }    # narrow-window
+colorSchemes: [light, dark]   # the dark reference state (main-dark) is the same tests run in dark
+keyboard: true   # sheet and dialog buttons are not mounted when the window mounts, so the automatic Enter and Space checks do not run on them; decision 10 is covered by the explicit tests

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
+import { EmptyState } from "./empty-state";
 import { Icon } from "./icon";
 
 /** One element per kind: image img, video video, audio panel, pdf embed, text pre. */
@@ -92,17 +93,15 @@ export const AttachmentPreview = React.forwardRef<HTMLDivElement, AttachmentPrev
       className={cn("relative flex h-full w-full min-h-0 min-w-0 items-center justify-center", className)}
       {...props}
     >
-      <div
-        role="status"
-        data-slot="fallback"
-        className={cn(
-          failed ? "flex" : "hidden",
-          "w-full max-w-md flex-col items-center gap-2 rounded-(--radius-panel) bg-surface-2 px-8 py-10 text-center",
-        )}
-      >
-        <Icon name={FALLBACK_ICON[kind]} size={40} weight={200} tone="inherit" className="text-content-3" />
-        <span className="text-[0.929rem] font-medium text-content-1">Preview unavailable</span>
-        {name !== "" && <span className="max-w-full truncate text-[0.857rem] text-content-3">{name}</span>}
+      <div role="status" data-slot="fallback" className={cn(failed ? "flex" : "hidden", "w-full max-w-md")}>
+        <EmptyState
+          surface="card"
+          icon={FALLBACK_ICON[kind]}
+          iconSize={40}
+          title="Preview unavailable"
+          subtitle={name}
+          className="w-full"
+        />
       </div>
 
       <div className={cn(loading ? "flex" : "hidden", "items-center gap-1.5 text-content-3")}>
@@ -142,10 +141,7 @@ export const AttachmentPreview = React.forwardRef<HTMLDivElement, AttachmentPrev
       {kind === "audio" && (
         <div
           data-slot="audio"
-          className={cn(
-            failed ? "hidden" : "flex flex-col items-center",
-            attachmentPreviewVariants({ kind: "audio" }),
-          )}
+          className={cn(attachmentPreviewVariants({ kind: "audio" }), "flex", failed && "hidden")}
         >
           <Icon data-slot="glyph" name="audio_file" size={40} weight={200} tone="inherit" className="text-content-3" />
           <audio

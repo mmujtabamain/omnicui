@@ -12,13 +12,17 @@ export const emptyStateVariants = cva("flex min-w-0 flex-col items-center gap-1 
   variants: {
     scope: {
       pane: "h-full w-full justify-center bg-surface-2",
-      list: "pt-24 pb-10",
+      list: "",
     },
     surface: {
       plain: "",
       card: "rounded-(--radius-panel) bg-surface-2 px-10 py-12",
     },
   },
+  compoundVariants: [
+    // The measured list spacing is for the inline list state; a card keeps its own px-10 py-12.
+    { scope: "list", surface: "plain", className: "pt-24 pb-10" },
+  ],
   defaultVariants: { scope: "list", surface: "plain" },
 });
 

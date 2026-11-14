@@ -44,7 +44,7 @@ export interface ListTabLabelProps extends Omit<React.HTMLAttributes<HTMLDivElem
   name?: string;
   /** Active tab. Host-controlled: the widget never changes it. */
   selected?: boolean;
-  /** Raised applies only with selected true (draft-inspector). */
+  /** Raised applies only with selected true (draft-inspector); ignored otherwise. */
   surface?: Variants["surface"];
   /** Split view: decorative blue marker before the name, outside the accessible name. */
   paneMarker?: boolean;
@@ -71,6 +71,8 @@ export const ListTabLabel = React.forwardRef<HTMLDivElement, ListTabLabelProps>(
   ref,
 ) {
   const showClose = closable && selected;
+  // Raised is valid only with selected true (spec: "Raised applies only when selected is true").
+  const tabSurface = selected && surface === "raised" ? "raised" : "flat";
 
   return (
     <TabsPrimitive.Root
@@ -86,7 +88,7 @@ export const ListTabLabel = React.forwardRef<HTMLDivElement, ListTabLabelProps>(
           value={TAB}
           role="button"
           data-slot="tab"
-          className={cn(listTabLabelVariants({ selected, surface }), "max-w-[11.429rem]")}
+          className={cn(listTabLabelVariants({ selected, surface: tabSurface }), "max-w-[11.429rem]")}
         >
           {paneMarker && (
             <span data-slot="paneMarker" aria-hidden="true" className="size-[0.5rem] shrink-0 rounded-full bg-accent-500" />

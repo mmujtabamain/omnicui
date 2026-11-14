@@ -71,7 +71,7 @@ function NoteBody({ label }: { label: string }) {
         aria-label={label || "Note"}
         tabIndex={0}
         contentEditable
-        className="min-h-[4.5rem] px-3 py-2.5 text-[0.929rem] leading-[1.357rem] text-content-1 outline-none focus-visible:ring-2 focus-visible:ring-focus-1"
+        className="min-h-[4.5rem] px-3 py-2.5 text-[0.929rem] leading-[1.357rem] text-content-1 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1"
       />
       <div
         data-slot="editorToolbar"

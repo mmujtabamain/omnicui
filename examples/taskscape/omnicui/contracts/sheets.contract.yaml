@@ -1,0 +1,517 @@
+id: app.sheets
+
+# Web build: the one modal question card (SheetHost) over the dimmed window.
+# Sheets are in-page dialogs over the soft scrim (notes-sheets [web]).
+# Desktop sheets are separate windows with no scrim and are not part of this contract.
+# Mounted alone at 1180x760, signed in as the demo account.
+
+props:
+  # dataset: demo data set the harness loads for the demo account. Allowed: standard (default), empty, nolists, long.
+  dataset: { type: string, default: standard }
+  # sheet: the one sheet that is up when the screen starts, over the dimmed window, built from the same spec the app uses for that action.
+  # Allowed: newList, newProject, renameList, renameProject, deleteList, deleteProject, deleteConfirm.
+  sheet: { type: string, default: newList }
+  # list: name of the list for renameList and deleteList. The harness finds that list by name in the demo data.
+  list: { type: string, default: Reading }
+  # project: name of the project for renameProject and deleteProject. The harness finds that project by name in the demo data.
+  project: { type: string, default: "Spring launch" }
+  # task: title of the task for deleteConfirm. The harness selects that task in the list behind the sheet, then opens its Move to Trash confirmation.
+  task: { type: string, default: "Book bike service" }
+
+events:
+  answered:                       # the sheet resolved; text and id are "" when the result has none
+    action: { type: string }      # accept, dismiss or instead
+    text: { type: string }        # the accepted name for prompts, else ""
+    id: { type: string }          # the instead id, else ""
+
+parts:
+  scrim: { role: generic }        # aria: none. Full-window soft dim behind the card. Not pressed: its centre is under the card.
+  card: { role: generic }         # aria: dialog (aria-modal). The sheet surface, 364px wide, centred. Checked with role: generic.
+  glyph: { role: generic }        # aria: none (aria-hidden). 32px tinted badge with an 18px icon. Accent for name prompts, danger for deletions.
+  headline: { role: heading }     # h2. The dialog's accessible name.
+  detail: { role: generic }       # aria: none (p). One secondary line. Present in deleteList, deleteProject and deleteConfirm only.
+  nameField: { role: textbox }    # The one text input of a name prompt. Accessible name is the headline. Present in the four name prompts only.
+  roll: { role: button }          # aria: button, "Roll another name" (casino icon). Present in newList, newProject, renameList. Not in the Tab order.
+  importJson: { role: button }    # "Import JSON…" in the footer's left slot. newList only.
+  cancel: { role: button }        # "Cancel". Every state.
+  accept: { role: button }        # The accept action, by state: Create, Rename, Delete list, Delete project, Move to Trash.
+  toast: { role: status }         # aria: status. Toast raised by Move to Trash. Mounted after the sheet host.
+  toastUndo: { role: button }     # "Undo" in the toast.
+  toastClose: { role: button }    # The toast's dismiss control.
+
+tests:
+  # New list
+  - name: "new list sheet opens over the dimmed window with its parts"
+    props: { sheet: newList }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: scrim, visible: true }
+      - { part: glyph, visible: true }
+      - { part: headline, text: "New list" }
+      - { part: nameField, name: "New list", focused: true, text: { matches: "\\S" } }
+      - { part: roll, name: "Roll another name", visible: true }
+      - { part: importJson, text: "Import JSON…", visible: true }
+      - { part: cancel, text: "Cancel", visible: true }
+      - { part: accept, text: "Create", disabled: false }
+      - { part: detail, visible: false }
+      - { part: toast, visible: false }
+    screenshot: { mask: [nameField] }
+
+  - name: "clearing the name disables Create and Enter keeps the sheet open"
+    props: { sheet: newList }
+    steps:
+      - { action: key, part: nameField, key: Backspace }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { part: nameField, text: "", focused: true }
+      - { part: accept, disabled: true }
+      - { part: card, visible: true }
+
+  - name: "typing replaces the prefilled name and enables Create"
+    props: { sheet: newList }
+    steps:
+      - { action: type, part: nameField, text: "Weekend plans" }
+    expect:
+      - { part: nameField, text: "Weekend plans", focused: true }
+      - { part: accept, disabled: false }
+
+  - name: "Enter creates the list and closes the sheet"
+    props: { sheet: newList }
+    steps:
+      - { action: type, part: nameField, text: "Weekend plans" }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Weekend plans", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "the Create button resolves the sheet with the typed name"
+    props: { sheet: newList }
+    steps:
+      - { action: type, part: nameField, text: "Camp trip" }
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Camp trip", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Escape closes the new list sheet"
+    props: { sheet: newList }
+    steps:
+      - { action: key, part: nameField, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Cancel closes the new list sheet"
+    props: { sheet: newList }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Tab from Create wraps to the name field"
+    props: { sheet: newList }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Tab }
+    expect:
+      - { part: nameField, focused: true }
+      - { part: accept, focused: false }
+
+  - name: "Tab from the name field skips the dice button and reaches Import JSON"
+    props: { sheet: newList }
+    steps:
+      - { action: key, part: nameField, key: Tab }
+    expect:
+      - { part: importJson, focused: true }
+      - { part: roll, focused: false }
+
+  - name: "the dice button rolls a name and keeps focus in the field"
+    props: { sheet: newList }
+    steps:
+      - { action: press, part: roll }
+    expect:
+      - { part: nameField, focused: true, text: { matches: "\\S" } }
+      - { part: roll, focused: false }
+
+  - name: "a press in the name field keeps the sheet open"
+    props: { sheet: newList }
+    steps:
+      - { action: press, part: nameField }
+    expect:
+      - { part: card, visible: true }
+      - { part: nameField, focused: true }
+
+  - name: "Import JSON resolves the sheet with the instead action"
+    props: { sheet: newList }
+    steps:
+      - { action: press, part: importJson }
+    expect:
+      - { event: answered, times: 1, last: { action: instead } }
+
+  # New project
+  - name: "new project sheet shows the name prompt without Import JSON"
+    props: { sheet: newProject }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "New project" }
+      - { part: nameField, name: "New project", focused: true, text: { matches: "\\S" } }
+      - { part: roll, name: "Roll another name", visible: true }
+      - { part: importJson, visible: false }
+      - { part: cancel, text: "Cancel", visible: true }
+      - { part: accept, text: "Create", disabled: false }
+    screenshot: { mask: [nameField] }
+
+  - name: "clearing the project name disables Create and Enter keeps the sheet open"
+    props: { sheet: newProject }
+    steps:
+      - { action: key, part: nameField, key: Backspace }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { part: accept, disabled: true }
+      - { part: card, visible: true }
+
+  - name: "Enter creates the project and closes the sheet"
+    props: { sheet: newProject }
+    steps:
+      - { action: type, part: nameField, text: "Lantern" }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Lantern", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "the Create button resolves the project sheet with the typed name"
+    props: { sheet: newProject }
+    steps:
+      - { action: type, part: nameField, text: "Nereid" }
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Nereid", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Escape closes the new project sheet"
+    props: { sheet: newProject }
+    steps:
+      - { action: key, part: nameField, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Cancel closes the new project sheet"
+    props: { sheet: newProject }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  # Rename list
+  - name: "rename list sheet opens with the current list name in the field"
+    props: { sheet: renameList, list: Reading }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "Rename list" }
+      - { part: nameField, name: "Rename list", text: "Reading", focused: true }
+      - { part: roll, name: "Roll another name", visible: true }
+      - { part: glyph, visible: true }
+      - { part: importJson, visible: false }
+      - { part: detail, visible: false }
+      - { part: cancel, text: "Cancel", visible: true }
+      - { part: accept, text: "Rename", disabled: false }
+    screenshot: true
+
+  - name: "rename list selects its name again when the field gets focus"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: key, part: nameField, key: Tab }
+      - { action: focus, part: nameField }
+      - { action: type, part: nameField, text: "Camp" }
+    expect:
+      - { part: nameField, text: "Camp" }
+
+  - name: "Enter renames the list and closes the sheet"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: type, part: nameField, text: "Books" }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Books", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "the Rename button resolves the sheet with the new list name"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: type, part: nameField, text: "Camp" }
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Camp", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "clearing the list name disables Rename"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: key, part: nameField, key: Backspace }
+    expect:
+      - { part: accept, disabled: true }
+      - { part: card, visible: true }
+
+  - name: "Escape closes the rename list sheet"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: key, part: nameField, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Cancel closes the rename list sheet"
+    props: { sheet: renameList, list: Reading }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  # Rename project
+  - name: "rename project sheet opens with the project name in the field"
+    props: { sheet: renameProject, project: "Spring launch" }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "Rename project" }
+      - { part: nameField, name: "Rename project", text: "Spring launch", focused: true }
+      - { part: importJson, visible: false }
+      - { part: detail, visible: false }
+      - { part: cancel, text: "Cancel", visible: true }
+      - { part: accept, text: "Rename", disabled: false }
+
+  - name: "Enter renames the project and closes the sheet"
+    props: { sheet: renameProject, project: "Spring launch" }
+    steps:
+      - { action: type, part: nameField, text: "Launch 2027" }
+      - { action: key, part: nameField, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Launch 2027", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "the Rename button resolves the sheet with the new project name"
+    props: { sheet: renameProject, project: "Spring launch" }
+    steps:
+      - { action: type, part: nameField, text: "Nereid" }
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Nereid", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Escape closes the rename project sheet"
+    props: { sheet: renameProject, project: "Spring launch" }
+    steps:
+      - { action: key, part: nameField, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  # Delete list
+  - name: "delete list sheet asks to confirm with Cancel focused and no field"
+    props: { sheet: deleteList, list: Reading }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: glyph, visible: true }
+      - { part: headline, text: "Delete “Reading”?" }
+      - { part: detail, text: { matches: "^Its 3 tasks go with it\\. No undo\\.$" } }
+      - { part: cancel, text: "Cancel", focused: true }
+      - { part: accept, text: "Delete list", disabled: false }
+      - { part: nameField, visible: false }
+      - { part: roll, visible: false }
+      - { part: importJson, visible: false }
+    screenshot: true
+
+  - name: "Enter does not delete the list"
+    props: { sheet: deleteList, list: Reading }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: card, visible: true }
+      - { part: accept, focused: true }
+      - { part: headline, text: "Delete “Reading”?" }
+
+  - name: "Tab then Space deletes the list"
+    props: { sheet: deleteList, list: Reading }
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Escape cancels the delete list sheet"
+    props: { sheet: deleteList, list: Reading }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Cancel closes the delete list sheet"
+    props: { sheet: deleteList, list: Reading }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "pressing Delete list deletes the list and closes the sheet"
+    props: { sheet: deleteList, list: Reading }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  # Delete project
+  - name: "delete project sheet counts its lists and tasks with Cancel focused"
+    props: { sheet: deleteProject, project: "Spring launch" }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "Delete “Spring launch”?" }
+      - { part: detail, text: { matches: "^Its 2 lists and \\d+ tasks go with it\\. No undo\\.$" } }
+      - { part: cancel, text: "Cancel", focused: true }
+      - { part: accept, text: "Delete project", disabled: false }
+      - { part: nameField, visible: false }
+      - { part: roll, visible: false }
+
+  - name: "Enter does not delete the project"
+    props: { sheet: deleteProject, project: "Spring launch" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: card, visible: true }
+      - { part: accept, focused: true }
+
+  - name: "Tab then Space deletes the project"
+    props: { sheet: deleteProject, project: "Spring launch" }
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "Escape cancels the delete project sheet"
+    props: { sheet: deleteProject, project: "Spring launch" }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  - name: "pressing Delete project deletes it and closes the sheet"
+    props: { sheet: deleteProject, project: "Spring launch" }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+
+  # Move to Trash
+  - name: "Move to Trash confirmation shows the task title and no shortcut hint"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: glyph, visible: true }
+      - { part: headline, text: "Move to Trash?" }
+      - { part: detail, text: { contains: "Book bike service" } }
+      - { part: detail, text: { matches: "^[^⌘]*$" } }
+      - { part: cancel, text: "Cancel", focused: true }
+      - { part: accept, text: "Move to Trash", disabled: false }
+      - { part: nameField, visible: false }
+      - { part: roll, visible: false }
+      - { part: importJson, visible: false }
+      - { part: toast, visible: false }
+    screenshot: true
+
+  - name: "Enter does not move the task to Trash"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: card, visible: true }
+      - { part: accept, focused: true }
+      - { part: toast, visible: false }
+
+  - name: "Tab then Space moves the task to Trash and shows the Undo toast"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+      - { part: toast, text: { contains: "Moved to Trash" }, visible: true }
+      - { part: toastUndo, text: "Undo", visible: true }
+
+  - name: "pressing Move to Trash closes the sheet and shows the toast"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "", id: "" } }
+      - { part: card, visible: false }
+      - { part: toast, text: { contains: "Moved to Trash" }, visible: true }
+    screenshot: true
+
+  - name: "the Moved to Trash toast rises in after the confirm"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: press, part: accept }
+    record: { part: toast }
+    expect:
+      - { part: toast, visible: true }
+
+  - name: "Undo on the toast removes the toast"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: press, part: accept }
+      - { action: press, part: toastUndo }
+    expect:
+      - { part: toast, visible: false }
+      - { part: card, visible: false }
+
+  - name: "closing the toast removes it"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: press, part: accept }
+      - { action: press, part: toastClose }
+    expect:
+      - { part: toast, visible: false }
+
+  - name: "Escape cancels the Move to Trash confirmation without moving the task"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+      - { part: toast, visible: false }
+
+  - name: "Cancel closes the Move to Trash confirmation without moving the task"
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    steps:
+      - { action: press, part: cancel }
+    record: { part: card }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "", id: "" } }
+      - { part: card, visible: false }
+      - { part: toast, visible: false }
+
+viewports: [ { width: 1180, height: 760 } ]
+colorSchemes: [ light ]
+
+# keyboard is off on purpose. The automatic check (Enter and Space must do what a press does)
+# would require Enter to confirm the danger buttons, which decision 10 forbids.
+# The key behaviour is covered by the explicit key tests above.
+keyboard: false

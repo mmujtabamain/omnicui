@@ -1,0 +1,151 @@
+id: "app.signin"
+# Sign in and create account: the web app's account page (spec/screens/web.md, Accounts).
+# One page in two modes, on routes /signin and /signup (routes unverified against the router).
+# Items marked UNVERIFIED are assumptions to confirm before the screen is built; see notes.
+props:
+  mode: { type: string, default: "signin" }      # signin | signup. The harness signs out, then mounts the page at /signin (signin) or /signup (signup).
+  dataset: { type: string, default: "standard" } # standard | empty | nolists | long. The harness loads this demo data set for the demo account before mounting the page. This page shows none of it, and no test here observes it.
+events:
+  signedIn: { email: { type: string } }          # Fired once when sign-in (200) or create-account (201) succeeds, just before the main window opens. email is the address the request sent. Requires a test hook in the rebuild (see notes).
+parts:
+  card: { role: generic }                        # The centred card on surface-1 that holds the form. Look checked by screenshot only.
+  appName: { role: heading, optional: true }     # The app name. Sign-in mode only. Name taken from the spec/decisions.md heading; on-page text UNVERIFIED.
+  nameField: { role: textbox, optional: true }   # Name field. Create-account mode only. Optional (assumed, see notes).
+  emailField: { role: textbox }                  # Email field. Both modes.
+  passwordField: { role: textbox }               # Password field. Both modes.
+  submitButton: { role: button }                 # Primary (accent) button. Sign-in mode: sign-in copy. Create-account mode: create-account copy. Copy UNVERIFIED, so tests match patterns. Shows busy while its request runs.
+  modeLink: { role: button }                     # aria: link. Sign-in mode: link to create an account. Create-account mode: link back to sign in.
+  formError: { role: status, optional: true }    # Server message for a refused sign-in (400 {detail}), under the form. Shape UNVERIFIED against API.md.
+  nameError: { role: status, optional: true }    # Server message for a refused name (400 {name: [...]}), under the name field. No known trigger; not exercised.
+  emailError: { role: status, optional: true }   # Server message for a refused email (400 {email: [...]}), under the email field. Shape UNVERIFIED against API.md.
+  passwordError: { role: status, optional: true } # Server message for a refused password (400 {password: [...]}), under the password field. No test exercises it yet.
+tests:
+  - name: "signed out, the sign-in page shows the app name, the fields and the link to create an account"
+    props: { mode: "signin" }
+    steps: []
+    expect:
+      - { part: appName, text: { matches: "(?i)taskscape" } }
+      - { part: emailField, name: { matches: "(?i)email" } }
+      - { part: passwordField, name: { matches: "(?i)password" } }
+      - { part: submitButton, name: { matches: "(?i)sign in" } }
+      - { part: modeLink, text: { matches: "(?i)account" } }
+    screenshot: true
+
+  - name: "the create-account page shows the name, email and password fields, the create button and the link back to sign in"
+    props: { mode: "signup" }
+    steps: []
+    expect:
+      - { part: nameField, name: { matches: "(?i)name" } }
+      - { part: emailField, name: { matches: "(?i)email" } }
+      - { part: passwordField, name: { matches: "(?i)password" } }
+      - { part: submitButton, name: { matches: "(?i)create" } }
+      - { part: modeLink, text: { matches: "(?i)sign in" } }
+    screenshot: true
+
+  - name: "the email field accepts keyboard focus on the sign-in page"
+    props: { mode: "signin" }
+    steps:
+      - { action: focus, part: emailField }
+    expect:
+      - { part: emailField, focused: true }
+
+  - name: "the demo account signs in with the button and the main window opens; the button is recorded while the request runs"
+    props: { mode: "signin" }
+    steps:
+      - { action: type, part: emailField, text: "demo@taskscape.test" }
+      - { action: type, part: passwordField, text: "taskscape-demo" }
+      - { action: press, part: submitButton }
+    record: { part: submitButton }
+    expect:
+      - { event: signedIn, times: 1, last: { email: "demo@taskscape.test" } }
+
+  - name: "Enter in the password field signs in with the demo account and the main window opens"
+    props: { mode: "signin" }
+    steps:
+      - { action: type, part: emailField, text: "demo@taskscape.test" }
+      - { action: type, part: passwordField, text: "taskscape-demo" }
+      - { action: key, part: passwordField, key: "Enter" }
+    expect:
+      - { event: signedIn, times: 1, last: { email: "demo@taskscape.test" } }
+
+  - name: "a wrong password shows the server's message under the form and does not sign in"
+    props: { mode: "signin" }
+    steps:
+      - { action: type, part: emailField, text: "demo@taskscape.test" }
+      - { action: type, part: passwordField, text: "wrong-password" }
+      - { action: press, part: submitButton }
+    expect:
+      - { part: formError, visible: true }
+      - { part: formError, text: { matches: "\\S" } }
+      - { event: signedIn, times: 0 }
+    screenshot: true
+
+  - name: "an unknown email shows the server's message under the form and does not sign in"
+    props: { mode: "signin" }
+    steps:
+      - { action: type, part: emailField, text: "nobody@taskscape.test" }
+      - { action: type, part: passwordField, text: "taskscape-demo" }
+      - { action: press, part: submitButton }
+    expect:
+      - { part: formError, visible: true }
+      - { part: formError, text: { matches: "\\S" } }
+      - { event: signedIn, times: 0 }
+
+  - name: "the link on the sign-in page switches to create-account mode"
+    props: { mode: "signin" }
+    steps:
+      - { action: press, part: modeLink }
+    expect:
+      - { part: nameField, visible: true }
+      - { part: emailField, name: { matches: "(?i)email" } }
+      - { part: passwordField, name: { matches: "(?i)password" } }
+      - { part: submitButton, name: { matches: "(?i)create" } }
+      - { part: modeLink, text: { matches: "(?i)sign in" } }
+    screenshot: true
+
+  - name: "the link on the create-account page returns to sign-in mode"
+    props: { mode: "signup" }
+    steps:
+      - { action: press, part: modeLink }
+    expect:
+      - { part: submitButton, name: { matches: "(?i)sign in" } }
+      - { part: modeLink, text: { matches: "(?i)account" } }
+
+  - name: "create an account with a name and the main window opens"
+    props: { mode: "signup" }
+    steps:
+      - { action: type, part: nameField, text: "Sam Reader" }
+      - { action: type, part: emailField, text: "sam.reader@taskscape.test" }
+      - { action: type, part: passwordField, text: "long-enough-password" }
+      - { action: press, part: submitButton }
+    expect:
+      - { event: signedIn, times: 1, last: { email: "sam.reader@taskscape.test" } }
+
+  - name: "the name is optional: Enter in the password field creates the account without one"
+    props: { mode: "signup" }
+    steps:
+      - { action: type, part: emailField, text: "new.reader@taskscape.test" }
+      - { action: type, part: passwordField, text: "long-enough-password" }
+      - { action: key, part: passwordField, key: "Enter" }
+    expect:
+      - { event: signedIn, times: 1, last: { email: "new.reader@taskscape.test" } }
+
+  - name: "an email the server refuses shows its message under the email field and does not sign in"
+    props: { mode: "signup" }
+    steps:
+      - { action: type, part: emailField, text: "demo@taskscape.test" }
+      - { action: type, part: passwordField, text: "long-enough-password" }
+      - { action: press, part: submitButton }
+    expect:
+      - { part: emailError, visible: true }
+      - { part: emailError, text: { matches: "\\S" } }
+      - { event: signedIn, times: 0 }
+    screenshot: true
+
+viewports:
+  - { width: 1280, height: 800 }   # PLACEHOLDER, not measured. Replace with this screen's size from the reference inventory before the build.
+colorSchemes: [ light, dark ]      # Dark state assumed, not verified.
+keyboard: true
+# Not tested, on purpose: drag (no slider on this screen); the error-then-success path (no clear-field input is named); Tab order (keyboard: true covers the buttons);
+# the 8-character password rule (not sourced); a name-field refusal (no known trigger); network or server failures with no message (add once the harness can stub the API);
+# absence of the account button, title bar, Settings and Trash on the signed-out page (not sourced).

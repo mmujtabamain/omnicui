@@ -61,13 +61,18 @@ await build({
 });
 execFileSync(join(here, "../../../node_modules/.bin/tailwindcss"), ["-i", APP ? join(frontend, "src/styles.css") : join(ui, "src/styles/index.css"), "-o", join(dist, "harness.css"), "--minify"], { stdio: ["ignore", "ignore", "inherit"] });
 writeFileSync(join(dist, "harness.html"), readFileSync(join(here, "harness.html")));
+// Media the contracts name (fixtures/photo.png…) are served from ./fixtures; fixtures/missing.* is a 404.
+mkdirSync(join(dist, "fixtures"), { recursive: true });
+for (const f of readdirSync(join(here, "fixtures"))) copyFileSync(join(here, "fixtures", f), join(dist, "fixtures", f));
 // The icon font sits next to the styles (packages/ui/scripts/fonts.mjs); the CSS asks for ./fonts/.
 mkdirSync(join(dist, "fonts"), { recursive: true });
 for (const f of readdirSync(join(ui, "src/styles/fonts"))) copyFileSync(join(ui, "src/styles/fonts", f), join(dist, "fonts", f));
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml", ".mp4": "video/mp4", ".mp3": "audio/mpeg", ".pdf": "application/pdf" };
 const api = APP ? await startApi() : null;
 const server = createServer((req, res) => {
   if (api && /^\/(api|media)\//.test(req.url ?? "")) return proxy(req, res, api);
+  // fixtures/held-open.*: the response never comes, for a loading state that lasts.
+  if (/\/fixtures\/held-open\./.test(req.url ?? "")) return;
   const path = join(dist, new URL(req.url ?? "/", "http://x").pathname);
   if (!path.startsWith(dist) || !existsSync(path)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": TYPES[path.slice(path.lastIndexOf("."))] ?? "application/octet-stream" });
@@ -195,7 +200,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async advertise() {
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu"],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback"],
       cannot: {
         "do.scroll": "not implemented in this target yet",
         "do.swipe": "a desktop browser has no swipe",
@@ -231,11 +236,18 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     return null;
   },
   // protocol: do. back is the browser's back button (history.back(), which the app's History
-  // API routing answers with popstate); contextMenu is a right click.
+  // API routing answers with popstate); contextMenu is a right click; togglePlayback plays or pauses
+  // the part's video or audio.
   async do(p) {
     if (p.name === "back") await page.goBack({ waitUntil: "commit" });
     // contextMenu: a right click on the part, as a mouse user opens a context menu.
     else if (p.name === "contextMenu") await (await locate(p.part)).click({ button: "right" });
+    // togglePlayback: what the media element's own play/pause control does.
+    else if (p.name === "togglePlayback") await (await locate(p.part)).evaluate(async (el) => {
+      const m = (el.matches("video, audio") ? el : el.querySelector("video, audio")) as HTMLMediaElement | null;
+      if (!m) throw new Error("no video or audio element in this part");
+      if (m.paused) await m.play().catch(() => {}); else m.pause();
+    });
     else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
     await settle();
     return null;

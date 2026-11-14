@@ -1,0 +1,86 @@
+# How the app.sheets contract was written, and what its props make the harness do
+
+Based on: the text of Draft A and Draft B (both written from spec/inventory/sheets.json, spec/inventory/features-sheets.txt, spec/features/area-06.json and area-09.json, spec/screens/notes-sheets.txt, spec/screens/web.md, spec/decisions.md, spec/library/contract-format.txt) and on the critique. In this step no file was opened, so every value below is taken from the drafts and the critique, not re-read from the sources.
+
+PROPS (merged harness meaning):
+- dataset: the harness signs in as the demo account and loads that demo data set (standard by default; empty, nolists, long also allowed). No test now depends on a non-standard set.
+- sheet: the harness mounts the screen with exactly that one sheet open over the main window, built from the app's own spec for that action. Allowed: newList, newProject, renameList, renameProject, deleteList, deleteProject, deleteConfirm. Named "sheet" (Draft B's name) rather than "open" (Draft A) because it names what it is.
+- list: for renameList and deleteList, the harness finds that list by name in the demo data. Its name prefills the rename field and titles the delete headline. Ignored by other sheets.
+- project: same as list, for renameProject and deleteProject. Default changed to "Spring launch" (Draft A's default) because the rename and delete project tests use it and both drafts' Home default was not tested in the final set.
+- task: for deleteConfirm, the harness selects that task in the list behind the sheet, then opens its Move to Trash confirmation. Ignored by other sheets.
+- Dropped props: value (a starting-name hook is not in any source; the critique flagged it) and tail (the locked suffix is not sourced for New list). Their tests and the suffix part were dropped with them.
+
+EVENTS: answered is the sheet's resolved result, with action (accept, dismiss, instead), text (the accepted name for prompts, else "") and id (the instead id, else ""). Absent values are sent as "". Accept and dismiss results are asserted in full. The instead result is asserted with action only: the id "import" in Draft B was not found in any source, and the close after Import JSON was assumed, so neither is asserted.
+
+PARTS: the names are the clearer ones used everywhere. nameField (Draft A's name) is used instead of field, and importJson instead of instead, because it says what the button is. The roles follow the allowed set: dialog maps to generic (card, checked with role dialog), h2 to heading, p to generic, toast to status, the scrim is generic and not pressed.
+
+CHANGES FROM THE CRITIQUE APPLIED:
+- Fixed the format error in the detail "contains" checks: they now use text: { contains: ... }.
+- Added the toast parts (toast, toastUndo, toastClose) and the Moved to Trash toast tests from Draft A, and added a screenshot to the toast test.
+- Removed every times: 0 expectation. The "no event" checks are now card visibility checks, because times: 0 is not documented.
+- Removed the trimming claim: the accepted name in the test is typed without surrounding spaces.
+- Removed the roll-then-type selection claim. Kept Draft A's roll test (focus stays in the field and the name is non-empty).
+- Removed invented copy: the zero-list, singular and empty-list tests and their expected text.
+- The delete list detail is now a matches pattern pinned to the demo count (Reading has 3 tasks). Its wording is inferred from the project template and must be confirmed.
+- The delete project detail keeps the \d+ pattern. Pin the exact task count once the root-task or with-subtasks rule is confirmed.
+- Added Cancel on newProject and renameList, and Escape on renameProject and deleteProject, as the critique asked.
+- Added the Tab-to-Import-JSON test from Draft A, and the rename-list focus-and-retype test from Draft B.
+- Added the record of the card on Cancel from the Move to Trash confirmation, as the critique suggested. The press starts the exit motion, so the record is valid.
+- Added the no-⌘ check on the Move to Trash detail, cited to the notes [web] reply, not to decision 15.
+- Renamed the Move to Trash test so its name does not claim a danger button is checked.
+- Added the card role dialog check to the new list opening test.
+- Added owner-only scope: the project sheets are tested only for the demo account, which is the owner (decision 9, as the critique states; the decision text was not re-read here).
+
+DROPPED (with reason):
+- Draft B tests with value/tail and the suffix part: no source for the starting-name hook or the locked tail on New list.
+- Draft B "Enter in the name field accepts it" and "typing replaces the prefilled name" (B version): duplicates of Draft A tests kept here.
+- Draft B "an empty name disables Create and Enter only refocuses the field": duplicate of the clearing test, which covers focus and disabled state.
+- Draft B "an empty project name cannot be created" and "an empty list name cannot be renamed": duplicates of the clearing tests.
+- Draft B "roll another name replaces the text and leaves it selected": the selection claim is not sourced.
+- Draft B "Shift+Tab from the name field wraps focus to Create": the key syntax for a modifier combo is not documented in the format, so it cannot be written reliably. Tab-order coverage remains via the Tab tests.
+- Draft B delete project zero/singular, delete list empty, and project-with-no-lists tests: the copy is not sourced (critique).
+- Draft B delete project "counts its lists and tasks" with dataset empty/Home: Home is not in the final set; the Spring launch count test replaces it.
+- Draft B event expectations with times: 0: not documented.
+- Draft B test "Create resolves accept with the trimmed name": trimming is not sourced. Its replacement is kept.
+- Draft B "Import JSON ... closes the sheet" and the id assertion: unverified (critique).
+- Draft B "delete confirmation ... danger button" test: merged into the Move to Trash confirmation test, and renamed, because nothing in it moves the task.
+
+KEPT BUT CHANGED: several Draft B tests that used Draft B names now use the merged names (importJson, nameField, sheet, project). Draft A's Enter-based and press-based variants are both kept where they test different inputs.
+
+LEFT OUT (union, with reasons):
+- Desktop variant (separate windows, no scrim, no outside-press dismiss): notes [desktop], not this web contract.
+- Press outside the card to dismiss (F06-068 and the notes backdrop-click line): a press acts on the part's centre, which is under the card. Also, generic accepts only hover. The format cannot express this; flag for the parent.
+- Web Import JSON file flow (file input, upload progress, error states): no copy, state names or file-input role in any source; no action can pick a file. Only the press of importJson is tested.
+- Undo failure with Try again (decision 11): needs a failing backend.
+- Failed sheet actions (Create, Rename, Delete) with an inline or toast error (web.md): needs a failing backend.
+- Focus returns to opener (F06-088), only one sheet at a time (F06-059), stale sheet id (F06-060): the opener is outside this screen.
+- Scrim parks focus (F06-089), window blur and resize dismissal (F06-090; sheets do not set dismissOnWindowChange), stacking over menus (F06-084), context menu above sheets (F06-044), portal (F06-086), depth counter that disables the key map (F06-087): internal or not observable from this screen.
+- Toast timing and replacement (F06-096, F06-097: replace while shown, timer cancel): need a second toast-raising action and timing; no step can wait. Auto-dismiss after 6 s is also not tested for the same reason.
+- F06-091 (bottom centre) and F06-092 (message): checked only through text and the screenshot, not by position.
+- Data-change checks (list created or deleted, project renamed, task moved): visible in the main-window, title-bar and task-list contracts. This contract can check only that the sheet closes and the toast appears.
+- F09-002 system file dialog and F09-003 export: system dialogs cannot be driven.
+- F09-007, F09-010, F09-015 (pane and persistence effects): they happen after accept, outside the sheet.
+- Trash confirmations for Empty Trash or purge of several items (decisions 10 and 12): no inventory state or feature record in this screen's sources.
+- F06-080 generator mapping: the generator is in lib/nameSuggest, not read.
+- F06-081 placeholder: a textbox placeholder is not a readable field; placeholders are not asserted because area-06 says the caller supplies them.
+- F06-077, F06-058, F06-061, F06-062, F06-083, F06-085: visual only (centred, tone, glyph, colours, sizes); left to the screenshots.
+- F06-078 locked tail: dropped as unsourced for New list (see the dropped props).
+- Cancel width 6rem (84px) and the 364px card width: not expressible as checks; left to screenshots.
+- Keyboard: true is not set. It would make Enter press the danger button, which contradicts decision 10. Explicit key tests are written instead. The automatic Enter and Space check is lost for the prompt sheets too. The critique suggested splitting the contract into a prompt-sheet contract (keyboard true) and a destructive-sheet contract; that would need two ids and two files, so this merge keeps one contract and accepts the loss.
+- Colour schemes: light only. The reference has no dark capture of the sheets.
+- Rolled names are random, so tests check non-empty text, and the new-list and new-project screenshots mask nameField.
+- Hover, pressed, focus-ring and disabled looks: not captured in the reference.
+- Glyph: aria-hidden ligature, so only its visibility is checked.
+- Trace: none, because the sheet opens at mount with no step to start its entrance. Record is used only where a step starts motion: the toast rise after Move to Trash, and the card exit after Cancel.
+- Singular and empty count variants of the delete-project copy: no demo data set gives them, and their copy is not sourced.
+
+SCREENSHOTS: the five reference states each have a screenshot test (new list, new project, rename list, delete list, Move to Trash). The Move to Trash reference shows an accent badge and a Move button; the decided design is a danger tone and a Move to Trash label (notes-sheets [both]), so that baseline must be regenerated from the decided design, not the reference.
+
+UNCERTAIN (to confirm with the harness owner or the sheet spec):
+- visible: false on a part that a state does not render (nameField, roll, importJson, detail, toast). The format defines visible by on-screen size; it is not documented whether an absent part passes visible: false.
+- The text of a textbox is its value (nameField text checks).
+- The key name Space is assumed; Tab then Space is the only way to confirm a destructive sheet by keyboard, as decision 10 requires.
+- Tab order (nameField, importJson, cancel, accept) is inferred from DOM order, not from a recording.
+- The events "last" object is asserted in full for accept and dismiss, and as action only for instead. Whether a partial last is accepted is not documented.
+- The delete list detail wording and the delete project task count are inferred; see the notes on the detail patterns above.
+- The record on the Cancel test starts the card's exit motion; whether the harness accepts a record on a part that leaves the page is not documented.

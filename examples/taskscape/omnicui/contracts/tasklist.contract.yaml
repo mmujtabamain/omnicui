@@ -1,0 +1,760 @@
+# Behaviour contract for the Task list pane (inventory id task-list), web version.
+# Merged from two drafts with the critic's fixes applied.
+# Sources named by the drafts: spec/inventory/task-list.json, spec/inventory/features-task-list.txt,
+# spec/screens/notes-task-list.txt, spec/screens/web.md, spec/decisions.md.
+# Left out: drag and drop (drag acts only on slider parts), right-click, double-click, blank-area click,
+# and mouse Shift-click and Ctrl-click on rows (no step form sends them; Shift+Arrow, selectToggle and the check cover them).
+id: app.tasklist
+
+props:
+  dataset:
+    type: string
+    default: standard
+    # standard | empty | long. The harness signs in as the demo account and loads this demo data set before mounting (spec/screens/web.md).
+    # nolists is listed in web.md but no test here uses it.
+  project:
+    type: string
+    default: Home
+    # Home | Spring launch. The harness opens this project before it selects the list. The list is looked up inside it.
+  list:
+    type: string
+    default: Errands
+    # List name inside the active project: Errands, Reading, Garden (Home); Website (Spring launch); Inbox (dataset empty only).
+    # The harness selects this list by name before the screen renders.
+  showCompleted:
+    type: boolean
+    default: true
+    # false: the harness sets Settings > Show completed tasks off for the account before mount. Done tasks are hidden; the footer still counts them.
+  split:
+    type: boolean
+    default: false
+    # true: the harness mounts the pane as the left pane of a split view, so Close split shows. false: a single pane.
+    # The reference shows Close split in no state, so the harness must be able to set this; that is unverified.
+
+events:
+  # Rebuild-only checks. The reference shows no events and the format does not define how a comparison treats them,
+  # so these are checked on the rebuilt screen only. The rebuilt screen must emit them.
+  taskPreviewed: { title: { type: string } }   # a task is previewed: search navigation, or the cross-list match chosen
+  listOpened: { list: { type: string } }       # a cross-list match opened its list (decision 3)
+  copied: { count: { type: integer } }         # row Copy or bulk Copy
+  draftStarted: { list: { type: string } }     # New task, or Alt+N
+  splitClosed: { list: { type: string } }      # Close split was pressed
+
+parts:
+  search: { role: textbox }                    # list search field, placeholder "Search {list}"
+  searchOptions: { role: button }              # title "Search options"; opens the scope and fields menu
+  clearSearch: { role: button }                # title "Clear search"; shown only while a query is typed
+  matchCount: { role: status }                 # direct match count; in a cross-list search it counts every group
+  newTask: { role: button }                    # title "New task"
+  closeSplit: { role: button }                 # title "Close split"; shown only when split
+  sortFilter: { role: button }                 # footer button "Sort & filter"
+  searchMenu: { role: generic }                # aria: menu (ScopeFields popover)
+  scopeThisList: { role: button }              # aria: menuitemradio, "This list"
+  scopeWholeProject: { role: button }          # aria: menuitemradio, "Whole project"
+  scopeAllProjects: { role: button }           # aria: menuitemradio, "All projects"
+  fieldsTitleAndNotes: { role: button }        # aria: menuitemradio, "Title & notes"
+  fieldsTitleOnly: { role: button }            # aria: menuitemradio, "Title only"
+  fieldsNotesOnly: { role: button }            # aria: menuitemradio, "Notes only"
+  groupHeading: { role: heading }              # first list heading of a cross-list result; text names the list (decision 3)
+  groupHeadingReading: { role: heading }       # the Reading heading in Whole project results
+  rowReturnBooks: { role: button }             # aria: option. "Return library books" (Reading), a cross-list result
+  matchTrimHedge: { role: button }             # "Trim the hedge" (Garden), a cross-list result
+  scrollArea: { role: generic }                # aria: list. The scrolling task tree
+  emptyState: { role: generic }                # title and subtitle of the empty or no-match state
+  row: { role: button }                        # aria: option. The FIRST root row (Pick up prescription in standard)
+  check: { role: button }                      # round select handle on the first row. selected = picked.
+                                               # Name: Select, Deselect (picked), Mark done (Option held), Mark not done (task done)
+  more: { role: button }                       # More button on the first row
+  rowGroceries: { role: button }               # "Buy groceries for the week" (parent with three subtasks)
+  rowOatMilk: { role: button }                 # subtask "Oat milk" (done)
+  rowPostParcel: { role: button }              # "Post the parcel to Mum" (done root)
+  rowBookBike: { role: button }                # "Book bike service" (root)
+  rowNewSubtask: { role: button }              # the subtask the Add subtask test creates under the first row
+  rowLastErrand: { role: button }              # "Errand number 40" (long data set)
+  disclosure: { role: button }                 # chevron on rowGroceries; title Collapse or Expand
+  subtask: { role: generic }                   # aria: listitem. The first subtask row in document order (Oat milk in standard)
+  badgeGroceries: { role: generic }            # subtask count of Buy groceries for the week, text like 1/3
+  badgeBike: { role: generic }                 # subtask count of Book bike service, shown once it has a child
+  attachmentBadge: { role: generic }           # attachment count (paperclip icon and the count) of a row
+  matchMark: { role: generic }                 # first highlight in the first matching row (title or note line)
+  checkBike: { role: button }                  # round check of Book bike service
+  checkPost: { role: button }                  # round check of Post the parcel to Mum
+  checkCut: { role: button }                   # round check of Cut a spare key
+  checkGroceries: { role: button }             # round check of Buy groceries for the week
+  checkSourdough: { role: button }             # round check of Sourdough loaf (a subtask)
+  moreSourdough: { role: button }              # More button of Sourdough loaf
+  rowMenu: { role: generic }                   # aria: menu. Row context menu opened by More
+  menuCopy: { role: button }                   # aria: menuitem, "Copy"
+  menuAddSubtask: { role: button }             # aria: menuitem, "Add subtask"
+  menuRename: { role: button }                 # aria: menuitem, "Rename"
+  menuMoveToList: { role: button }             # aria: menuitem, "Move to list"; hover opens its submenu
+  moveTargetReading: { role: button }          # item "Reading" of the Move to list menu (row menu and bulk bar)
+  menuPromote: { role: button }                # aria: menuitem, "Promote to top level"; only on subtasks
+  menuDelete: { role: button }                 # aria: menuitem, "Delete task"; presence only (the confirmation is outside this screen)
+  renameField: { role: textbox }               # inline title field while a row is renamed. Placement not verified in the files read
+  subtaskComposer: { role: textbox }           # placeholder "Subtask title — Enter to add"
+  doneCount: { role: status }                  # footer "{done}/{total} done" (CSS uppercases it)
+  percent: { role: generic }                   # footer "{pct}%"
+  selectionCount: { role: status }             # bulk bar "{count} selected" (CSS uppercases it)
+  bulkBar: { role: generic }                   # footer shown while one or more rows are picked
+  bulkDone: { role: button }                   # bulk verb "Mark done"
+  bulkUndone: { role: button }                 # bulk verb "Mark not done"
+  bulkMove: { role: button }                   # bulk verb "Move to list"; opens the list menu
+  bulkCopy: { role: button }                   # bulk verb "Copy"
+  bulkDelete: { role: button }                 # bulk verb "Delete"; presence only
+  bulkClear: { role: button }                  # bulk verb "Clear"
+
+tests:
+  - name: "main list: the Errands tree, notes preview, search bar and footer"
+    steps: []
+    expect:
+      - { part: search, name: { contains: "Search Errands" }, text: "" }
+      - { part: searchOptions, name: "Search options" }
+      - { part: newTask, name: "New task" }
+      - { part: sortFilter, visible: true }
+      - { part: row, name: { contains: "Pick up prescription" }, selected: false }
+      - { part: row, text: { contains: "Counter closes at 6" } }
+      - { part: check, name: "Select", selected: false }
+      - { part: rowGroceries, name: { contains: "Buy groceries for the week" } }
+      - { part: rowOatMilk, name: { contains: "Oat milk" }, visible: true }
+      - { part: subtask, text: { contains: "Oat milk" } }
+      - { part: badgeGroceries, text: "1/3" }
+      - { part: doneCount, text: { contains: "2/8" } }
+      - { part: percent, text: "25%" }
+      - { part: matchCount, visible: false }
+      - { part: clearSearch, visible: false }
+      - { part: selectionCount, visible: false }
+      - { part: bulkBar, visible: false }
+    screenshot: true
+
+  - name: "row hover: the hovered row takes the wash (the screenshot is the check; the expect only confirms the row exists)"
+    steps:
+      - { action: hover, part: rowGroceries }
+    expect:
+      - { part: rowGroceries, visible: true }
+    screenshot: true
+
+  - name: "a plain press on a row body selects it for preview only, not for the picked set"
+    steps:
+      - { action: press, part: row }
+    expect:
+      - { part: row, selected: true }
+      - { part: rowPostParcel, selected: false }
+      - { part: selectionCount, visible: false }
+    screenshot: true
+
+  - name: "option held and hovering a row: the check shows the mark-done name"
+    steps:
+      - { input: modifierHold }
+      - { action: hover, part: row }
+    expect:
+      - { part: check, name: "Mark done" }
+      - { part: check, selected: false }
+      - { part: doneCount, text: { contains: "2/8" } }
+    screenshot: true
+
+  - name: "Option-click on the check marks the task done, keeps its place and does not pick it"
+    steps:
+      - { input: modifierHold }
+      - { action: press, part: check }
+    record: { part: check }
+    expect:
+      - { part: check, name: "Mark not done" }
+      - { part: check, selected: false }
+      - { part: row, name: { contains: "Pick up prescription" }, selected: false }
+      - { part: doneCount, text: { contains: "3/8" } }
+
+  - name: "Option+Space marks the active task done"
+    steps:
+      - { action: key, part: row, key: "Alt+Space" }
+    expect:
+      - { part: doneCount, text: { contains: "3/8" } }
+      - { part: check, name: "Mark not done" }
+
+  - name: "a plain press on the round check picks the row and shows the bulk bar"
+    steps:
+      - { action: press, part: check }
+    expect:
+      - { part: check, name: "Deselect", selected: true }
+      - { part: selectionCount, text: "1 selected" }
+      - { part: bulkDone, name: "Mark done", visible: true }
+      - { part: doneCount, visible: false }
+    screenshot: true
+
+  - name: "Escape clears the picked rows and returns the footer to the stats"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: row, key: "Escape" }
+    expect:
+      - { part: check, name: "Select", selected: false }
+      - { part: bulkBar, visible: false }
+      - { part: doneCount, text: { contains: "2/8" } }
+
+  - name: "Shift+ArrowDown extends the picked range to four rows (anchor kept)"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "Shift+ArrowDown" }
+      - { action: key, part: rowPostParcel, key: "Shift+ArrowDown" }
+      - { action: key, part: rowBookBike, key: "Shift+ArrowDown" }
+    expect:
+      - { part: selectionCount, text: "4 selected" }
+      - { part: bulkDone, name: "Mark done", visible: true }
+      - { part: bulkMove, name: "Move to list", visible: true }
+      - { part: check, selected: true }
+      - { part: doneCount, visible: false }
+    screenshot: true
+
+  - name: "bulk Clear returns the footer from the bulk bar to the stats"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "Shift+ArrowDown" }
+      - { action: key, part: rowPostParcel, key: "Shift+ArrowDown" }
+      - { action: key, part: rowBookBike, key: "Shift+ArrowDown" }
+      - { action: press, part: bulkClear }
+    expect:
+      - { part: bulkBar, visible: false }
+      - { part: doneCount, text: { contains: "2/8" } }
+
+  - name: "bulk Mark done sets every picked task done"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "Shift+ArrowDown" }
+      - { action: key, part: rowPostParcel, key: "Shift+ArrowDown" }
+      - { action: key, part: rowBookBike, key: "Shift+ArrowDown" }
+      - { action: press, part: bulkDone }
+    expect:
+      - { part: doneCount, text: { contains: "5/8" } }
+
+  - name: "bulk Mark not done clears done on every picked task"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "Shift+ArrowDown" }
+      - { action: key, part: rowPostParcel, key: "Shift+ArrowDown" }
+      - { action: key, part: rowBookBike, key: "Shift+ArrowDown" }
+      - { action: press, part: bulkUndone }
+    expect:
+      - { part: doneCount, text: { contains: "1/8" } }
+
+  - name: "bulk Move to list moves the picked tasks out of Errands"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "Shift+ArrowDown" }
+      - { action: key, part: rowPostParcel, key: "Shift+ArrowDown" }
+      - { action: key, part: rowBookBike, key: "Shift+ArrowDown" }
+      - { action: press, part: bulkMove }
+      - { action: press, part: moveTargetReading }
+    expect:
+      - { part: row, name: { contains: "Buy groceries for the week" } }
+      - { part: doneCount, text: { contains: "1/4" } }
+
+  - name: "bulk Copy copies the picked tasks"
+    steps:
+      - { action: press, part: check }
+      - { action: press, part: checkBike }
+      - { action: press, part: bulkCopy }
+    expect:
+      - { event: copied, times: 1, last: { count: 2 } }
+
+  - name: "bulk Mark done on two picked tasks, then Clear: 4 of 8 done"
+    steps:
+      - { action: press, part: check }
+      - { action: press, part: checkBike }
+      - { action: press, part: bulkDone }
+      - { action: press, part: bulkClear }
+    expect:
+      - { part: doneCount, text: { contains: "4/8" } }
+      - { part: percent, text: "50%" }
+
+  - name: "bulk Mark not done on one picked done task: 1 of 8 done"
+    steps:
+      - { action: press, part: checkPost }
+      - { action: press, part: bulkUndone }
+      - { action: press, part: bulkClear }
+    expect:
+      - { part: doneCount, text: { contains: "1/8" } }
+
+  - name: "the bulk bar offers Move to list, Copy, Delete and Clear for a selection"
+    steps:
+      - { action: press, part: check }
+    expect:
+      - { part: bulkMove, visible: true, name: "Move to list" }
+      - { part: bulkCopy, visible: true, name: { contains: "Copy" } }
+      - { part: bulkDelete, visible: true, name: { contains: "Delete" } }
+      - { part: bulkClear, visible: true, name: { contains: "Clear" } }
+    screenshot: true
+
+  # Selection by modifier on the row body (selectToggle is Ctrl on Linux and Windows, Cmd on macOS, for the next press).
+  - name: "Ctrl or Cmd press on a row body adds that row to the picked set"
+    steps:
+      - { action: press, part: check }
+      - { input: selectToggle }
+      - { action: press, part: rowBookBike }
+    expect:
+      - { part: selectionCount, text: "2 selected" }
+      - { part: checkBike, selected: true }
+
+  - name: "Space removes the active task from the picked set"
+    steps:
+      - { action: press, part: checkGroceries }
+      - { action: key, part: checkGroceries, key: "Space" }
+    expect:
+      - { part: selectionCount, visible: false }
+      - { part: checkGroceries, selected: false }
+
+  - name: "select all: Control+KeyA selects the tasks of the focused pane (Control on the web)"
+    steps:
+      - { action: key, part: row, key: "Control+KeyA" }
+    expect:
+      - { part: bulkBar, visible: true }
+      - { part: selectionCount, text: { contains: "selected" } }
+
+  - name: "More opens the single-task row menu"
+    steps:
+      - { action: press, part: more }
+    expect:
+      - { part: rowMenu, visible: true }
+      - { part: menuCopy, visible: true, name: "Copy" }
+      - { part: menuAddSubtask, visible: true, name: "Add subtask" }
+      - { part: menuRename, visible: true, name: "Rename" }
+      - { part: menuMoveToList, visible: true, name: "Move to list" }
+      - { part: menuDelete, visible: true, name: { contains: "Delete task" } }
+      - { part: menuPromote, visible: false }
+    screenshot: true
+
+  - name: "Escape closes the row menu"
+    steps:
+      - { action: press, part: more }
+      - { action: key, part: menuCopy, key: "Escape" }
+    expect:
+      - { part: menuCopy, visible: false }
+      - { part: rowMenu, visible: false }
+
+  - name: "Copy in the row menu copies that task"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuCopy }
+    expect:
+      - { event: copied, times: 1, last: { count: 1 } }
+
+  - name: "Rename from the row menu opens the inline title field, focused, with the current title"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuRename }
+    expect:
+      - { part: renameField, visible: true, focused: true, text: "Pick up prescription" }
+    screenshot: true
+
+  - name: "Rename from the row menu changes the task title"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuRename }
+      - { action: type, part: renameField, text: "Collect the prescription" }
+      - { action: key, part: renameField, key: "Enter" }
+    expect:
+      - { part: row, name: { contains: "Collect the prescription" } }
+      - { part: renameField, visible: false }
+
+  - name: "F2 on the active row starts a rename and Escape cancels it"
+    steps:
+      - { action: key, part: row, key: "F2" }
+      - { action: key, part: renameField, key: "Escape" }
+    expect:
+      - { part: row, name: { contains: "Pick up prescription" } }
+      - { part: renameField, visible: false }
+
+  - name: "F2 on a picked task starts its title edit"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "F2" }
+    expect:
+      - { part: renameField, visible: true, focused: true }
+
+  - name: "Add subtask from the row menu: Enter adds the subtask and clears the composer"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuAddSubtask }
+      - { action: type, part: subtaskComposer, text: "Buy stamps" }
+      - { action: key, part: subtaskComposer, key: "Enter" }
+    expect:
+      - { part: rowNewSubtask, name: { contains: "Buy stamps" } }
+      - { part: subtaskComposer, visible: true, text: "" }
+
+  - name: "the subtask composer is focused when Add subtask opens it"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuAddSubtask }
+    expect:
+      - { part: subtaskComposer, visible: true, focused: true }
+
+  - name: "Escape closes the subtask composer and keeps the existing subtasks"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuAddSubtask }
+      - { action: key, part: subtaskComposer, key: "Escape" }
+    expect:
+      - { part: subtaskComposer, visible: false }
+      - { part: subtask, text: { contains: "Oat milk" } }
+
+  - name: "Enter on an empty subtask composer dismisses it"
+    steps:
+      - { action: press, part: more }
+      - { action: press, part: menuAddSubtask }
+      - { action: key, part: subtaskComposer, key: "Enter" }
+    expect:
+      - { part: subtaskComposer, visible: false }
+      - { part: subtask, text: { contains: "Oat milk" } }
+
+  - name: "Promote to top level makes a subtask a root task"
+    steps:
+      - { action: press, part: moreSourdough }
+      - { action: press, part: menuPromote }
+    expect:
+      - { part: badgeGroceries, text: "1/2" }
+
+  - name: "Move to list in the row menu moves the task to Reading"
+    steps:
+      - { action: press, part: more }
+      - { action: hover, part: menuMoveToList }
+      - { action: press, part: moveTargetReading }
+    expect:
+      - { part: doneCount, text: { contains: "2/7" } }
+      - { part: row, name: { contains: "Post the parcel to Mum" } }
+
+  - name: "a press on a subtask round check picks that subtask"
+    steps:
+      - { action: press, part: checkSourdough }
+    expect:
+      - { part: checkSourdough, selected: true }
+      - { part: selectionCount, text: "1 selected" }
+
+  - name: "Option-click on a parent marks its subtasks done too"
+    steps:
+      - { input: modifierHold }
+      - { action: press, part: checkGroceries }
+    expect:
+      - { part: doneCount, text: { contains: "5/8" } }
+      - { part: badgeGroceries, text: "3/3" }
+
+  - name: "the disclosure chevron collapses one parent and hides its subtasks"
+    steps:
+      - { action: press, part: disclosure }
+    expect:
+      - { part: disclosure, name: "Expand" }
+      - { part: rowOatMilk, visible: false }
+      - { part: badgeGroceries, visible: true, text: "1/3" }
+    screenshot: true
+
+  - name: "ArrowLeft on a parent row collapses it"
+    steps:
+      - { action: key, part: rowGroceries, key: "ArrowLeft" }
+    expect:
+      - { part: rowOatMilk, visible: false }
+      - { part: disclosure, name: "Expand" }
+
+  - name: "ArrowRight on a collapsed parent expands it"
+    steps:
+      - { action: key, part: rowGroceries, key: "ArrowLeft" }
+      - { action: key, part: rowGroceries, key: "ArrowRight" }
+    expect:
+      - { part: rowOatMilk, visible: true }
+      - { part: disclosure, name: "Collapse" }
+
+  - name: "ArrowLeft on a subtask moves focus to its parent"
+    steps:
+      - { action: key, part: rowOatMilk, key: "ArrowLeft" }
+    expect:
+      - { part: rowGroceries, focused: true }
+
+  - name: "ArrowDown moves the active row to the next row"
+    steps:
+      - { action: key, part: row, key: "ArrowDown" }
+    expect:
+      - { part: rowPostParcel, focused: true }
+
+  - name: "ArrowUp moves the active row back to the previous row"
+    steps:
+      - { action: key, part: rowPostParcel, key: "ArrowUp" }
+    expect:
+      - { part: row, focused: true }
+
+  - name: "Tab nests the active task under its previous sibling"
+    steps:
+      - { action: press, part: checkCut }
+      - { action: key, part: checkCut, key: "Tab" }
+    expect:
+      - { part: badgeBike, text: "0/1" }
+
+  - name: "Shift+Tab moves a subtask out after its parent"
+    steps:
+      - { action: press, part: checkSourdough }
+      - { action: key, part: checkSourdough, key: "Shift+Tab" }
+    expect:
+      - { part: badgeGroceries, text: "1/2" }
+
+  # Active-match rule (assumed; the drafts state no rule): typing does not activate a match and emits no preview.
+  # The first Enter moves focus to the first match in tree order (Book bike service), each Enter moves to the next and
+  # wraps; Shift+Enter moves to the previous. Each move emits taskPreviewed.
+  - name: "typing filters the tree to matching titles and flattens the subtasks"
+    steps:
+      - { action: type, part: search, text: "b" }
+    expect:
+      - { part: search, text: "b" }
+      - { part: matchCount, text: "2" }
+      - { part: rowBookBike, name: { contains: "Book bike service" } }
+      - { part: rowGroceries, name: { contains: "Buy groceries for the week" } }
+      - { part: rowOatMilk, visible: false }
+      - { part: badgeGroceries, visible: false }
+      - { part: matchMark, text: "B" }
+      - { part: clearSearch, visible: true }
+    screenshot: true
+
+  - name: "Clear search button clears the query and restores the full list"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: press, part: clearSearch }
+    expect:
+      - { part: search, text: "" }
+      - { part: row, name: { contains: "Pick up prescription" } }
+      - { part: matchCount, visible: false }
+      - { part: clearSearch, visible: false }
+      - { part: badgeGroceries, text: "1/3" }
+
+  - name: "Enter in the search field moves focus to the second match, Enter again wraps is not needed here"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: key, part: search, key: "Enter" }
+      - { action: key, part: search, key: "Enter" }
+    expect:
+      - { part: rowGroceries, focused: true }
+
+  - name: "Shift+Enter moves focus to the previous match, with a preview per move"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: key, part: search, key: "Enter" }
+      - { action: key, part: search, key: "Enter" }
+      - { action: key, part: search, key: "Shift+Enter" }
+    expect:
+      - { part: rowBookBike, focused: true }
+      - { event: taskPreviewed, times: 3, last: { title: "Book bike service" } }
+
+  - name: "Escape in the search field clears the query and leaves the field"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: key, part: search, key: "Escape" }
+    expect:
+      - { part: search, text: "", focused: false }
+      - { part: matchCount, visible: false }
+      - { part: rowOatMilk, visible: true }
+
+  - name: "ArrowDown in the search field does not leave the field"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: key, part: search, key: "ArrowDown" }
+    expect:
+      - { part: search, text: "b", focused: true }
+
+  - name: "a typed letter on the focused row focuses the search field and seeds it"
+    steps:
+      - { action: key, part: row, key: "KeyB" }
+    expect:
+      - { part: search, focused: true }
+      - { part: search, text: "b" }
+
+  - name: "a typed letter after a press on the check seeds the search with no matches"
+    steps:
+      - { action: press, part: check }
+      - { action: key, part: check, key: "KeyZ" }
+    expect:
+      - { part: search, focused: true, text: "z" }
+      - { part: matchCount, text: "0" }
+      - { part: emptyState, text: { contains: "No matches in Errands" } }
+
+  - name: "the Slash key focuses the search field without typing a slash"
+    steps:
+      - { action: key, part: row, key: "Slash" }
+    expect:
+      - { part: search, focused: true }
+      - { part: search, text: "" }
+
+  - name: "search options: the scope and fields menu shows the current choices"
+    steps:
+      - { action: press, part: searchOptions }
+    expect:
+      - { part: searchMenu, visible: true }
+      - { part: scopeThisList, name: "This list", selected: true }
+      - { part: scopeWholeProject, name: "Whole project", selected: false }
+      - { part: scopeAllProjects, name: "All projects", selected: false }
+      - { part: fieldsTitleAndNotes, name: "Title & notes", selected: true }
+      - { part: fieldsTitleOnly, name: "Title only", selected: false }
+      - { part: fieldsNotesOnly, name: "Notes only", selected: false }
+    screenshot: true
+
+  - name: "Escape closes the search options menu"
+    steps:
+      - { action: press, part: searchOptions }
+      - { input: dismiss }
+    expect:
+      - { part: searchMenu, visible: false }
+
+  - name: "a match in the notes counts with the default fields"
+    steps:
+      - { action: type, part: search, text: "Counter" }
+    expect:
+      - { part: matchCount, text: "1" }
+      - { part: row, name: { contains: "Pick up prescription" } }
+
+  - name: "Title only ignores notes: a query found only in notes shows the no-matches state"
+    steps:
+      - { action: type, part: search, text: "Counter" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: fieldsTitleOnly }
+    expect:
+      - { part: matchCount, text: "0" }
+      - { part: emptyState, visible: true, text: { contains: "No matches in Errands" } }
+    screenshot: true
+
+  - name: "Title only still highlights the matching text in the row"
+    steps:
+      - { action: press, part: searchOptions }
+      - { action: press, part: fieldsTitleOnly }
+      - { action: type, part: search, text: "e" }
+    expect:
+      - { part: row, text: { contains: "Counter closes at 6" } }
+      - { part: matchMark, text: "e" }
+    screenshot: true
+
+  - name: "Whole project scope groups the matches under their list headings"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+    expect:
+      - { part: matchCount, text: "3" }
+      - { part: groupHeading, text: { contains: "Errands" } }
+      - { part: groupHeadingReading, text: { contains: "Reading" } }
+      - { part: rowReturnBooks, visible: true, name: { contains: "Return library books" } }
+    screenshot: true
+
+  - name: "choosing the Reading match opens Reading with that task selected and previewed"
+    steps:
+      - { action: type, part: search, text: "b" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+      - { action: press, part: rowReturnBooks }
+    expect:
+      - { part: search, name: { contains: "Search Reading" } }
+      - { part: rowReturnBooks, selected: true }
+      - { event: listOpened, times: 1, last: { list: "Reading" } }
+      - { event: taskPreviewed, times: 1, last: { title: "Return library books" } }
+
+  - name: "Whole project scope with the query the: matches grouped by list, Errands first"
+    steps:
+      - { action: type, part: search, text: "the" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+    expect:
+      - { part: groupHeading, text: { contains: "Errands" } }
+      - { part: matchCount, text: "5" }
+      - { part: matchTrimHedge, visible: true, name: "Trim the hedge" }
+    screenshot: true
+
+  - name: "choosing the Garden match opens Garden with the task previewed"
+    steps:
+      - { action: type, part: search, text: "the" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+      - { action: press, part: matchTrimHedge }
+    expect:
+      - { event: listOpened, times: 1, last: { list: "Garden" } }
+      - { event: taskPreviewed, last: { title: "Trim the hedge" } }
+      - { part: search, name: { contains: "Search Garden" } }
+
+  - name: "All projects scope adds the lists of other projects"
+    steps:
+      - { action: type, part: search, text: "hero" }
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeAllProjects }
+    expect:
+      - { part: groupHeading, text: { contains: "Website" } }
+    screenshot: true
+
+  - name: "no matches: the empty state names the list"
+    steps:
+      - { action: type, part: search, text: "zzz" }
+    expect:
+      - { part: emptyState, text: { contains: "No matches in Errands" } }
+    screenshot: true
+
+  - name: "empty list: an empty Inbox shows the empty state with the web add hint"
+    props: { dataset: empty, list: Inbox }
+    steps: []
+    expect:
+      - { part: search, name: { contains: "Search Inbox" } }
+      - { part: emptyState, text: { contains: "Nothing here yet" } }
+      - { part: emptyState, text: { contains: "Press + to add a task" } }
+      - { part: doneCount, text: { contains: "0/0" } }
+      - { part: percent, text: "0%" }
+    screenshot: true
+
+  - name: "long list: the search bar stays fixed while the tree scrolls"
+    props: { dataset: long }
+    steps:
+      - { do: scroll, part: scrollArea, with: { direction: down } }
+      - { do: scroll, part: scrollArea, with: { direction: down } }
+    expect:
+      - { part: search, visible: true }
+      - { part: rowLastErrand, name: { contains: "Errand number 40" }, visible: true }
+
+  - name: "long list: the footer counts all 48 tasks"
+    props: { dataset: long }
+    steps: []
+    expect:
+      - { part: doneCount, text: { contains: "10/48" } }
+    screenshot: true
+
+  - name: "Show completed off hides done tasks and the footer still counts them"
+    props: { showCompleted: false }
+    steps: []
+    expect:
+      - { part: subtask, text: { contains: "Sourdough loaf" } }
+      - { part: rowOatMilk, visible: false }
+      - { part: rowPostParcel, visible: false }
+      - { part: doneCount, text: { contains: "2/8" } }
+
+  - name: "attachment count shows on a task with attachments"
+    props: { project: "Spring launch", list: "Website" }
+    steps: []
+    expect:
+      - { part: attachmentBadge, text: { contains: "2" } }
+      - { part: row, name: { contains: "Rewrite the hero section" } }
+
+  - name: "split: Close split ends the split view and reports the list"
+    props: { split: true }
+    steps:
+      - { action: press, part: closeSplit }
+    expect:
+      - { part: closeSplit, visible: false }
+      - { part: search, visible: true }
+      - { event: splitClosed, times: 1, last: { list: "Errands" } }
+
+  - name: "New task starts a draft for the list and adds no row"
+    steps:
+      - { action: press, part: newTask }
+    expect:
+      - { event: draftStarted, times: 1, last: { list: "Errands" } }
+      - { part: doneCount, text: { contains: "2/8" } }
+      - { part: row, name: { contains: "Pick up prescription" } }
+
+  - name: "Alt+N starts a draft for the list (decision 18 as read by the critic; binding not checked against decisions.md text here)"
+    steps:
+      - { action: key, part: row, key: "Alt+KeyN" }
+    expect:
+      - { event: draftStarted, times: 1, last: { list: "Errands" } }
+
+viewports:
+  # 860 px is the pane width (inventory: StatsBar 860x32, EmptyState 860x201). 768 px is estimated from the footer bottom near y 761; not measured.
+  - { width: 860, height: 768, props: {} }
+
+colorSchemes: [light]   # the reference has no dark capture for this screen (F07-104: light appearance in this capture)
+
+keyboard: true

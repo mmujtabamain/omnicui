@@ -143,7 +143,12 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
           data-slot={SEGMENT_SLOTS[index]}
           className={segmentVariants({ tone, size, shape })}
         >
-          {showIcon && option.icon && <Icon name={option.icon} size={15} tone="inherit" className="shrink-0" />}
+          {showIcon && option.icon && (
+            // A fixed 15px box: a glyph name wider than the icon cannot widen the segment.
+            <span className="inline-flex size-[1.071rem] shrink-0 items-center justify-center overflow-hidden">
+              <Icon name={option.icon} size={15} tone="inherit" />
+            </span>
+          )}
           {showLabel && option.label}
         </RadioGroupPrimitive.Item>
       ))}

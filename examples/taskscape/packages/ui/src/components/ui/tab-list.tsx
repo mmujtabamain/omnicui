@@ -38,7 +38,7 @@ const tabListItemVariants = cva(
     variants: {
       orientation: {
         horizontal:
-          "h-full shrink-0 justify-center px-3 text-[0.929rem] after:absolute after:inset-x-2 after:bottom-0 after:h-[0.143rem] after:rounded-full after:bg-transparent data-[state=active]:after:bg-accent-500",
+          "h-full justify-center px-3 text-[0.929rem] after:absolute after:inset-x-2 after:bottom-0 after:h-[0.143rem] after:rounded-full after:bg-transparent data-[state=active]:after:bg-accent-500",
         vertical:
           "h-[2rem] w-full shrink-0 justify-start rounded-(--radius-field) px-2 text-[0.929rem] hover:bg-wash-1 data-[state=active]:bg-wash-2",
       },
@@ -48,6 +48,7 @@ const tabListItemVariants = cva(
       },
     },
     compoundVariants: [
+      { orientation: "horizontal", overflow: "scroll", className: "shrink-0" },
       { orientation: "horizontal", overflow: "fit", className: "min-w-0 flex-1 shrink truncate" },
     ],
     defaultVariants: { orientation: "horizontal", overflow: "scroll" },

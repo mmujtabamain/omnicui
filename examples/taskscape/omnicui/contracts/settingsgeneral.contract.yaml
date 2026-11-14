@@ -1,0 +1,416 @@
+# Contract: app.settingsgeneral, the Settings: General page of the web app.
+# Web form: a routed page at the Settings route with a plain heading. No window chrome, no drag region,
+# no traffic lights, no close control. Settings persist per account (decision 17).
+# Desktop-only parts (Capture tab, data folder rows, footnotes, window controls) are left out.
+id: "app.settingsgeneral"
+
+props:
+  dataset: { type: string, default: "standard" }
+  # standard (default), empty, nolists or long: the demo data set the harness loads for the demo account.
+  # This screen shows account settings only, so the data set changes nothing visible here.
+  # No other props: the harness mounts the page alone with no context, and it opens on the General pane.
+  # Before every test, including the generated keyboard checks, the harness resets the demo account's
+  # Theme, Reduced motion and Show completed tasks to their defaults (System, System, on).
+
+viewports:
+  - { width: 1180, height: 760 }   # measured root size of the reference tree (inventory)
+  - { width: 640, height: 520 }    # desktop and web.md size (decision 19); kept for the narrow layout
+
+colorSchemes: [light, dark]
+
+keyboard: true
+# Enter and Space on each button and switch do what a press does.
+
+parts:
+  heading: { role: heading }                     # plain page heading "Settings" (web); replaces the desktop title bar h1
+  discardAll: { role: button }                   # trailing control in the page header next to the heading; name "Discard all changes"; shown while any setting differs from its open-time value (placement not decided)
+  sectionNav: { role: generic }                  # aria: tablist, aria-label "Settings sections", vertical
+  generalTab: { role: button }                   # aria: tab; "General"
+  shortcutsTab: { role: button }                 # aria: tab; "Shortcuts" (kept on web, decision 15)
+  aboutTab: { role: button }                     # aria: tab; "About"
+  search: { role: textbox }                      # name "Search settings"; placeholder "Search"; text is the typed query
+  clearSearch: { role: button }                  # name "Clear search"; shown while the query is not empty
+  generalMatches: { role: generic }              # count badge on the General tab while searching
+  contentPanel: { role: generic }                # aria: tabpanel; the pane content block
+  appearanceGroup: { role: generic }             # Appearance card
+  appearanceHeader: { role: generic }            # section label "Appearance"; "General · Appearance" while a search spans all sections
+  appearanceDiscard: { role: button }            # group clear control; name "Discard changes in this group"; shown only while Theme or Reduced motion differs
+  tasksGroup: { role: generic }                  # Tasks card
+  tasksHeader: { role: generic }                 # section label "Tasks"
+  tasksDiscard: { role: button }                 # group clear control; name "Discard changes in this group"; shown only while Show completed tasks differs
+  themeTitle: { role: generic }                  # "Theme"
+  themeDescription: { role: generic }            # "Follow the system appearance, or pin one."
+  themeSystem: { role: button }                  # segment of the Theme segmented control (role not recorded; mapped to button); "System"; selected when chosen
+  themeLight: { role: button }                   # segment; "Light"
+  themeDark: { role: button }                    # segment; "Dark"
+  reducedMotionTitle: { role: generic }          # "Reduced motion"
+  reducedMotionDescription: { role: generic }    # "Cuts animations and transitions to the minimum."
+  reducedMotionSystem: { role: button }          # segment of the three-way choice (decision 16); "System" (follows the OS or browser prefers-reduced-motion)
+  reducedMotionOn: { role: button }              # segment; "On"
+  reducedMotionOff: { role: button }             # segment; "Off"
+  showCompletedTitle: { role: generic }          # "Show completed tasks"
+  showCompletedDescription: { role: generic }    # "Keep finished tasks in the list instead of hiding them."
+  showCompletedSwitch: { role: switch }          # accessible name "Show completed tasks"; on by default
+  emptyTitle: { role: generic }                  # "No settings match"; shown when a search matches nothing
+  emptySubtitle: { role: generic }               # "Nothing here for “<trimmed query>”." (curly quotes)
+
+tests:
+  - name: "opens on General with the default settings"
+    steps: []
+    expect:
+      - { part: heading, text: "Settings" }
+      - { part: sectionNav, visible: true }
+      - { part: generalTab, name: "General", selected: true }
+      - { part: shortcutsTab, name: "Shortcuts", selected: false }
+      - { part: aboutTab, name: "About", selected: false }
+      - { part: search, name: "Search settings", text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: themeTitle, text: "Theme" }
+      - { part: themeDescription, text: "Follow the system appearance, or pin one." }
+      - { part: themeSystem, name: "System", selected: true }
+      - { part: themeLight, name: "Light", selected: false }
+      - { part: themeDark, name: "Dark", selected: false }
+      - { part: reducedMotionTitle, text: "Reduced motion" }
+      - { part: reducedMotionDescription, text: "Cuts animations and transitions to the minimum." }
+      - { part: reducedMotionSystem, name: "System", selected: true }
+      - { part: reducedMotionOn, name: "On", selected: false }
+      - { part: reducedMotionOff, name: "Off", selected: false }
+      - { part: showCompletedTitle, text: "Show completed tasks" }
+      - { part: showCompletedDescription, text: "Keep finished tasks in the list instead of hiding them." }
+      - { part: showCompletedSwitch, name: "Show completed tasks", checked: true }
+      - { part: appearanceHeader, text: { matches: "(?i)^appearance$" } }
+      - { part: tasksHeader, text: { matches: "(?i)^tasks$" } }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: tasksDiscard, visible: false }
+      - { part: generalMatches, visible: false }
+    screenshot: true
+
+  - name: "theme segments choose one value and mark the change"
+    steps:
+      - { action: press, part: themeLight }
+      - { action: press, part: themeDark }
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeLight, selected: false }
+      - { part: themeSystem, selected: false }
+      - { part: discardAll, visible: true, name: "Discard all changes" }
+      - { part: appearanceDiscard, visible: true, name: "Discard changes in this group" }
+      - { part: tasksDiscard, visible: false }
+    screenshot: true
+
+  - name: "choosing Dark then System returns the theme to its open-time value"
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: themeSystem }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: themeLight, selected: false }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+
+  - name: "dark theme is chosen"
+    steps:
+      - { action: press, part: themeDark }
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+    screenshot: true
+
+  - name: "light theme is chosen and replaces System"
+    steps:
+      - { action: press, part: themeLight }
+    expect:
+      - { part: themeLight, selected: true }
+      - { part: themeSystem, selected: false }
+    screenshot: true
+
+  - name: "a theme choice stays after switching panes"
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: aboutTab }
+      - { action: press, part: generalTab }
+    expect:
+      - { part: generalTab, selected: true }
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+      - { part: discardAll, visible: true }
+
+  - name: "discard all restores every open-time value"
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: reducedMotionOn }
+      - { action: press, part: showCompletedSwitch }
+      - { action: press, part: discardAll }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: reducedMotionSystem, selected: true }
+      - { part: reducedMotionOn, selected: false }
+      - { part: showCompletedSwitch, checked: true }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: tasksDiscard, visible: false }
+
+  - name: "Appearance group discard restores theme and reduced motion"
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: reducedMotionOn }
+      - { action: press, part: appearanceDiscard }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: reducedMotionSystem, selected: true }
+      - { part: appearanceDiscard, visible: false }
+      - { part: discardAll, visible: false }
+      - { part: tasksDiscard, visible: false }
+
+  - name: "a group discard restores only its own group"
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: showCompletedSwitch }
+      - { action: press, part: appearanceDiscard }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: showCompletedSwitch, checked: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: tasksDiscard, visible: true }
+      - { part: discardAll, visible: true }
+
+  - name: "turning Show completed tasks off marks the Tasks group"
+    steps:
+      - { action: press, part: showCompletedSwitch }
+    expect:
+      - { part: showCompletedSwitch, checked: false }
+      - { part: tasksDiscard, visible: true }
+      - { part: appearanceDiscard, visible: false }
+      - { part: discardAll, visible: true }
+    screenshot: true
+
+  - name: "the Tasks group discard turns Show completed tasks back on"
+    steps:
+      - { action: press, part: showCompletedSwitch }
+      - { action: press, part: tasksDiscard }
+    expect:
+      - { part: showCompletedSwitch, checked: true }
+      - { part: tasksDiscard, visible: false }
+      - { part: discardAll, visible: false }
+
+  - name: "show completed tasks switch turns back on after two presses"
+    steps:
+      - { action: press, part: showCompletedSwitch }
+      - { action: press, part: showCompletedSwitch }
+    expect:
+      - { part: showCompletedSwitch, checked: true }
+      - { part: tasksDiscard, visible: false }
+      - { part: discardAll, visible: false }
+
+  - name: "reduced motion On is chosen and marks the Appearance group"
+    steps:
+      - { action: press, part: reducedMotionOn }
+    expect:
+      - { part: reducedMotionOn, selected: true }
+      - { part: reducedMotionSystem, selected: false }
+      - { part: reducedMotionOff, selected: false }
+      - { part: appearanceDiscard, visible: true }
+    screenshot: true
+
+  - name: "reduced motion Off after On is chosen and marks the Appearance group"
+    steps:
+      - { action: press, part: reducedMotionOn }
+      - { action: press, part: reducedMotionOff }
+    expect:
+      - { part: reducedMotionOff, selected: true }
+      - { part: reducedMotionOn, selected: false }
+      - { part: reducedMotionSystem, selected: false }
+      - { part: appearanceDiscard, visible: true }
+
+  - name: "returning reduced motion to System clears the change"
+    steps:
+      - { action: press, part: reducedMotionOn }
+      - { action: press, part: reducedMotionOff }
+      - { action: press, part: reducedMotionSystem }
+    expect:
+      - { part: reducedMotionSystem, selected: true }
+      - { part: reducedMotionOn, selected: false }
+      - { part: reducedMotionOff, selected: false }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+
+  - name: "search narrows the page to the one matching row"
+    steps:
+      - { action: type, part: search, text: "motion" }
+    expect:
+      - { part: search, text: "motion", focused: true }
+      - { part: clearSearch, visible: true }
+      - { part: generalMatches, text: "1", visible: true }
+      - { part: appearanceHeader, text: { matches: "(?i)^general · appearance$" } }
+      - { part: reducedMotionTitle, visible: true }
+      - { part: reducedMotionSystem, visible: true }
+      - { part: themeTitle, visible: false }
+      - { part: themeSystem, visible: false }
+      - { part: tasksHeader, visible: false }
+      - { part: showCompletedSwitch, visible: false }
+    screenshot: true
+
+  - name: "search ignores case and needs every word to match"
+    steps:
+      - { action: type, part: search, text: "REDUCED motion" }
+    expect:
+      - { part: reducedMotionTitle, visible: true }
+      - { part: generalMatches, text: "1" }
+      - { part: themeTitle, visible: false }
+
+  - name: "a search whose words no row has shows the empty state"
+    steps:
+      - { action: type, part: search, text: "motion theme" }
+    expect:
+      - { part: emptyTitle, text: "No settings match" }
+      - { part: emptySubtitle, text: "Nothing here for “motion theme”." }
+      - { part: reducedMotionTitle, visible: false }
+      - { part: themeTitle, visible: false }
+      - { part: generalMatches, visible: false }
+    screenshot: true
+
+  - name: "the empty state quotes the trimmed query"
+    steps:
+      - { action: type, part: search, text: "  motion theme  " }
+    expect:
+      - { part: emptySubtitle, text: "Nothing here for “motion theme”." }
+
+  - name: "the clear button returns the full pane"
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: clearSearch }
+    expect:
+      - { part: search, text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: generalMatches, visible: false }
+      - { part: appearanceHeader, text: { matches: "(?i)^appearance$" } }
+      - { part: themeTitle, visible: true }
+      - { part: themeSystem, visible: true }
+      - { part: tasksHeader, visible: true }
+      - { part: showCompletedSwitch, visible: true }
+
+  - name: "Escape clears a non-empty search"
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { part: search, text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: heading, text: "Settings" }
+      - { part: generalTab, selected: true }
+      - { part: themeTitle, visible: true }
+
+  - name: "Escape with an empty search does nothing on web"
+    # Web rule from the review notes. Desktop Escape closes the window (F10-024) and is not tested here.
+    steps:
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { part: heading, visible: true, text: "Settings" }
+      - { part: generalTab, selected: true }
+      - { part: themeSystem, selected: true }
+      - { part: showCompletedSwitch, checked: true }
+      - { part: search, text: "" }
+
+  - name: "clicking the search field focuses it"
+    steps:
+      - { action: press, part: search }
+    expect:
+      - { part: search, focused: true }
+      - { part: search, text: "" }
+      - { part: clearSearch, visible: false }
+    screenshot: true
+
+  - name: "search field takes focus from the keyboard"
+    steps:
+      - { action: focus, part: search }
+    expect:
+      - { part: search, focused: true }
+      - { part: clearSearch, visible: false }
+
+  - name: "a click on General keeps the query and drops the section prefix"
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: generalTab }
+    expect:
+      - { part: search, text: "motion" }
+      - { part: generalTab, selected: true }
+      - { part: appearanceHeader, text: { matches: "(?i)^appearance$" } }
+      - { part: reducedMotionTitle, visible: true }
+      - { part: themeTitle, visible: false }
+      - { part: generalMatches, text: "1" }
+
+  - name: "editing a narrowed search returns to all-section results"
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: generalTab }
+      - { action: type, part: search, text: " " }
+    expect:
+      - { part: search, text: { matches: "^motion\\s*$" } }
+      - { part: appearanceHeader, text: { matches: "(?i)^general · appearance$" } }
+      - { part: reducedMotionTitle, visible: true }
+      - { part: themeTitle, visible: false }
+
+  - name: "a click on a tab with no matches clears the search"
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: shortcutsTab }
+    expect:
+      - { part: search, text: "" }
+      - { part: shortcutsTab, selected: true }
+      - { part: generalTab, selected: false }
+      - { part: themeTitle, visible: false }
+      - { part: clearSearch, visible: false }
+
+  - name: "clicking a section shows that pane and animates it in"
+    steps:
+      - { action: press, part: shortcutsTab }
+    record: { part: contentPanel }
+    expect:
+      - { part: shortcutsTab, selected: true }
+      - { part: generalTab, selected: false }
+      - { part: themeSystem, visible: false }
+      - { part: appearanceHeader, visible: false }
+
+  - name: "switching back to General animates its content in"
+    # The About press only sets up the switch. The trace covers the General press that starts the motion.
+    steps:
+      - { action: press, part: aboutTab }
+      - { action: press, part: generalTab }
+    trace:
+      - { part: contentPanel, property: opacity }
+    expect:
+      - { part: generalTab, selected: true }
+      - { part: themeTitle, visible: true }
+
+  - name: "ArrowDown moves to the next section and focuses its tab"
+    steps:
+      - { action: focus, part: generalTab }
+      - { action: key, part: generalTab, key: ArrowDown }
+    expect:
+      - { part: shortcutsTab, selected: true, focused: true }
+      - { part: generalTab, selected: false }
+      - { part: themeTitle, visible: false }
+
+  - name: "ArrowUp from General wraps to About"
+    steps:
+      - { action: focus, part: generalTab }
+      - { action: key, part: generalTab, key: ArrowUp }
+    expect:
+      - { part: aboutTab, selected: true, focused: true }
+      - { part: generalTab, selected: false }
+      - { part: themeTitle, visible: false }
+
+  - name: "ArrowDown from the last section wraps to General"
+    steps:
+      - { action: focus, part: generalTab }
+      - { action: key, part: generalTab, key: ArrowDown }
+      - { action: key, part: shortcutsTab, key: ArrowDown }
+      - { action: key, part: aboutTab, key: ArrowDown }
+    expect:
+      - { part: generalTab, selected: true, focused: true }
+      - { part: aboutTab, selected: false }
+      - { part: themeTitle, visible: true }

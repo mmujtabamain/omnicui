@@ -1,0 +1,769 @@
+# Right-hand preview pane of the main window, about 319 px wide and 715 px tall.
+# Left out on purpose: the Shot attachment button, its Spinner and its tooltip (the web has no screen capture);
+# drag of an attachment tile onto a note (drag acts only on sliders); the right-click attachment context menu and
+# its tile menu items (no action in this format opens it, and no keyboard route is confirmed); the lightbox internals
+# (own screen, attachment-lightbox); the sheets that Rename, Link, File, Remove, Delete and Delete note open (their
+# own screens; this contract checks that the trigger emits its event or opens its screen); the native file picker.
+id: "app.taskinspector"
+
+props:
+  # Demo data set the harness loads after signing in as the demo account, before mounting. Values: standard (default; every test uses it), empty, nolists, long (no test uses them).
+  dataset: { type: string, default: standard }
+  # Title of the task to show. Must be a task title in the chosen data set. The harness selects the task with this title in its list (Website list for "Rewrite the hero section", Errands for the others), then mounts the inspector on it. The inspector is keyed by task id, so a different task remounts it. Values used by tests: "Book bike service", "Rewrite the hero section", "Post the parcel to Mum", "Buy groceries for the week".
+  task: { type: string, default: "Book bike service" }
+
+events:
+  # A committed title change (updateTask) with a new, non-blank, trimmed title.
+  titleChanged: { title: { type: string } }
+  # The header done toggle or a subtask done toggle; title is that task's or subtask's title.
+  doneChanged: { title: { type: string }, done: { type: boolean } }
+  # Close panel calls setPreviewOpen(false); the preview shell is another screen, so this event is the observable of that call.
+  previewOpenChanged: { open: { type: boolean } }
+  # Emitted when a delete request starts, before any confirmation. target: task, note or attachment (for a note or attachment, the owning task's title).
+  deleteRequested: { target: { type: string }, title: { type: string } }
+  # A subtask title was clicked; title is the subtask title.
+  taskSelected: { title: { type: string } }
+  # Number of saved notes after a note is created or removed.
+  notesChanged: { count: { type: integer } }
+  # A saved note was written; text is the note's plain text.
+  noteSaved: { text: { type: string } }
+  # File or Copy a file asked for a file. Only kind file is emitted.
+  attachRequested: { kind: { type: string } }
+  # Link, Add a link (empty box) or the note toolbar Add link asked for a link. where: attachments, emptyBox or note.
+  linkRequested: { where: { type: string } }
+  # A tile click. action: open (remote link opens externally; local image opens the lightbox). Rename and remove come from the tile menu, which this contract does not reach.
+  attachmentAction: { action: { type: string }, name: { type: string } }
+
+parts:
+  accentTick: { role: generic }             # decorative accent bar at the header's left edge
+  doneToggle: { role: checkbox }            # header done Checkbox. Name "Mark done" or "Mark not done". Size sm (16 px); size is checked by screenshot only
+  title: { role: textbox }                  # title field: readonly until clicked, then editable (text selected on open); placeholder Untitled
+  breadcrumb: { role: generic }             # project and list path, for example "Home / Errands"
+  created: { role: generic }                # "Created {relative time}"; the native title tooltip is not testable
+  updated: { role: generic }                # "Updated {relative time}"
+  closePanel: { role: button }              # name Close panel
+  rename: { role: button }                  # name Rename; starts in-place title editing
+  copyTask: { role: button }                # name Copy task; name Copied for 1200 ms after a copy
+  deleteTask: { role: button }              # name Delete task
+  notesHeading: { role: heading }           # section heading "Notes"
+  notesCount: { role: generic }             # the note count; shown only when the task has notes
+  addNote: { role: button }                 # name Add note. One control with two looks: header button when notes exist, dashed box when none
+  noteBody: { role: textbox }               # first saved note's rich-text editor; present only when that note exists
+  noteBodySecond: { role: textbox }         # second saved note (Rewrite the hero section)
+  noteDelete: { role: button }              # name Delete note; revealed on hover of its note
+  newNoteEditor: { role: textbox }          # add-note editor; present only while adding a note
+  noteBold: { role: button }                # Bold button of the floating formatting toolbar; the toolbar appears on focus of a note editor (offscreen until then). Tests focus noteBody before using it
+  noteItalic: { role: button }              # Italic button of the same toolbar
+  noteUnderline: { role: button }           # Underline button of the same toolbar
+  noteStrike: { role: button }              # Strikethrough button of the same toolbar
+  noteBullet: { role: button }              # Bulleted list button of the same toolbar
+  noteNumbered: { role: button }            # Numbered list button of the same toolbar
+  noteLink: { role: button }                # "Add link" button of the same toolbar
+  noteChars: { role: generic }              # "{chars}/2000" counter of the focused editor (the toolbar counter), for the new note or note 1
+  noteCharsSecond: { role: generic }        # "{chars}/2000" counter shown when the second saved note is focused
+  mentionPopup: { role: generic }           # aria: listbox. Mention autocomplete; shown only when the @ query has matches
+  mentionItem: { role: button }             # aria: option. First mention row (attachment name)
+  mentionChip: { role: button }             # an @mention chip inside a note body
+  subtasksHeading: { role: heading }        # "Subtasks"; shown only when the task has children
+  subtasksCount: { role: generic }          # "{done} done / {total}"
+  subtaskDone: { role: checkbox }           # first subtask row's done checkbox
+  subtaskTitle: { role: button }            # first subtask row's title; clicking selects that subtask
+  subtaskSourdough: { role: button }        # "Sourdough loaf" subtask title in Buy groceries for the week
+  attachmentsHeading: { role: heading }     # "Attachments"; always shown
+  attachFile: { role: button }              # header File button (web: browser file picker that uploads)
+  attachLink: { role: button }              # header Link button: visible text "Link", accessible name "Add a link"
+  emptyCopyFile: { role: button }           # "Copy a file" in the empty attachments box
+  emptyAddLink: { role: button }            # "Add a link" in the empty attachments box (same name as the header Link button)
+  attachmentTileLink: { role: button }      # remote link tile "Brand brief"; opens externally
+  attachmentTileImage: { role: button }     # local image tile "hero-sketch.png"; opens the lightbox
+  lightbox: { role: generic }               # aria: dialog. Mounted when a local image tile or a mention chip is opened; its internals are in attachment-lightbox
+
+viewports:
+  - { width: 319, height: 715 }
+
+colorSchemes: [light, dark]
+
+keyboard: true
+
+# Created and Updated use relative times that change over days; masked in screenshots and matched by prefix only.
+mask: [created, updated]
+
+tests:
+  - name: "a task with no notes, subtasks or attachments shows its empty states"
+    props: { task: "Book bike service" }
+    steps: []
+    expect:
+      - { part: title, text: "Book bike service" }
+      - { part: breadcrumb, text: { matches: "^Home\\s*/\\s*Errands$" } }
+      - { part: created, text: { matches: "^Created " } }
+      - { part: updated, text: { matches: "^Updated " } }
+      - { part: doneToggle, checked: false }
+      - { part: notesHeading, name: "Notes" }
+      - { part: notesCount, visible: false }
+      - { part: addNote, name: "Add note" }
+      - { part: addNote, visible: true }
+      - { part: subtasksHeading, visible: false }
+      - { part: attachmentsHeading, name: "Attachments" }
+      - { part: attachFile, name: "File" }
+      - { part: attachLink, name: "Add a link" }
+      - { part: emptyCopyFile, name: "Copy a file" }
+      - { part: emptyAddLink, name: "Add a link" }
+    screenshot: true
+
+  - name: "the header done toggle marks the task done and reports it"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: doneToggle }
+    expect:
+      - { part: doneToggle, checked: true }
+      - { part: doneToggle, name: "Mark not done" }
+      - { event: doneChanged, times: 1, last: { title: "Book bike service", done: true } }
+    screenshot: true
+
+  - name: "the header done toggle pressed twice marks the task not done again"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: doneToggle }
+      - { action: press, part: doneToggle }
+    expect:
+      - { part: doneToggle, checked: false }
+      - { part: doneToggle, name: "Mark done" }
+      - { event: doneChanged, times: 2, last: { title: "Rewrite the hero section", done: false } }
+
+  - name: "a done task opens with its toggle checked and its title shown in full"
+    props: { task: "Post the parcel to Mum" }
+    steps: []
+    expect:
+      - { part: title, text: "Post the parcel to Mum" }
+      - { part: doneToggle, checked: true }
+      - { part: doneToggle, name: "Mark not done" }
+      - { part: breadcrumb, text: { matches: "^Home\\s*/\\s*Errands$" } }
+      - { part: emptyCopyFile, visible: true }
+    screenshot: true
+
+  - name: "clicking the title starts an in-place rename"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: title }
+    expect:
+      - { part: title, focused: true }
+      - { part: title, text: "Rewrite the hero section" }
+    screenshot: true
+
+  - name: "rename in place: typing and Enter commits the new title"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "Service the bike" }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { part: title, text: "Service the bike" }
+      - { event: titleChanged, times: 1, last: { title: "Service the bike" } }
+    screenshot: true
+
+  - name: "rename in place: Escape reverts the draft and saves nothing"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "Something else" }
+      - { action: key, part: title, key: Escape }
+    expect:
+      - { part: title, text: "Book bike service" }
+      - { event: titleChanged, times: 0 }
+
+  - name: "rename in place: moving focus away commits the title"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "Fix the bike lights" }
+      - { action: focus, part: copyTask }
+    expect:
+      - { part: title, text: "Fix the bike lights" }
+      - { event: titleChanged, times: 1, last: { title: "Fix the bike lights" } }
+
+  - name: "blurring the title commits it trimmed"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "  Hero copy  " }
+      - { action: focus, part: rename }
+    expect:
+      - { part: title, text: "Hero copy" }
+      - { event: titleChanged, last: { title: "Hero copy" } }
+
+  - name: "rename in place: a blank title reverts to the saved title"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: title }
+      - { action: key, part: title, key: Backspace }
+      - { action: type, part: title, text: "   " }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { part: title, text: "Book bike service" }
+      - { event: titleChanged, times: 0 }
+
+  - name: "a blank title reverts on blur and saves nothing"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "   " }
+      - { action: focus, part: rename }
+    expect:
+      - { part: title, text: "Rewrite the hero section" }
+      - { event: titleChanged, times: 0 }
+
+  - name: "the Rename button starts editing the title"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: rename }
+      - { action: type, part: title, text: "Book bike check" }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { part: title, text: "Book bike check" }
+      - { event: titleChanged, times: 1, last: { title: "Book bike check" } }
+
+  - name: "the Rename button focuses the title editor"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: rename }
+    expect:
+      - { part: rename, name: "Rename" }
+      - { part: title, focused: true }
+
+  - name: "a long title wraps onto a second line while it is edited"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: title }
+      - { action: type, part: title, text: "Rewrite the hero section and move the call to action above the fold" }
+    expect:
+      - { part: title, text: "Rewrite the hero section and move the call to action above the fold" }
+    screenshot: true
+
+  - name: "a task with notes, subtasks and attachments shows all three sections"
+    props: { task: "Rewrite the hero section" }
+    steps: []
+    expect:
+      - { part: title, text: "Rewrite the hero section" }
+      - { part: breadcrumb, text: { matches: "^Spring launch\\s*/\\s*Website$" } }
+      - { part: accentTick, visible: true }
+      - { part: created, text: { matches: "^Created " } }
+      - { part: updated, text: { matches: "^Updated " } }
+      - { part: notesHeading, name: "Notes" }
+      - { part: notesCount, text: "2" }
+      - { part: addNote, name: "Add note" }
+      - { part: noteBody, text: { contains: "Lead with the one-line promise" } }
+      - { part: noteBodySecond, text: { contains: "Ask design for two layouts by Friday." } }
+      - { part: subtasksHeading, name: "Subtasks" }
+      - { part: subtasksCount, text: "1 done / 2" }
+      - { part: subtaskTitle, text: "Draft headline options" }
+      - { part: attachmentsHeading, name: "Attachments" }
+      - { part: attachmentTileLink, name: { contains: "Brand brief" } }
+      - { part: attachmentTileImage, name: { contains: "hero-sketch.png" } }
+      - { part: emptyCopyFile, visible: false }
+    screenshot: true
+
+  - name: "a task with subtasks shows the subtask rows and their done count"
+    props: { task: "Buy groceries for the week" }
+    steps: []
+    expect:
+      - { part: title, text: "Buy groceries for the week" }
+      - { part: breadcrumb, text: { matches: "^Home\\s*/\\s*Errands$" } }
+      - { part: subtasksHeading, name: "Subtasks" }
+      - { part: subtasksCount, text: "1 done / 3" }
+      - { part: subtaskDone, checked: true }
+      - { part: subtaskTitle, text: "Oat milk" }
+      - { part: subtaskSourdough, text: "Sourdough loaf" }
+      - { part: emptyCopyFile, visible: true }
+    screenshot: true
+
+  - name: "toggling a subtask updates the subtask, the done count and reports it"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: subtaskDone }
+    expect:
+      - { part: subtaskDone, checked: true }
+      - { part: subtaskDone, name: "Mark not done" }
+      - { part: subtasksCount, text: "2 done / 2" }
+      - { part: subtaskTitle, text: "Draft headline options" }
+      - { event: doneChanged, times: 1, last: { title: "Draft headline options", done: true } }
+    screenshot: true
+
+  - name: "selecting a subtask shows it in the inspector without a Subtasks section"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: subtaskTitle }
+    expect:
+      - { part: title, text: "Draft headline options" }
+      - { part: subtasksHeading, visible: false }
+    screenshot: true
+
+  - name: "pressing a subtask title shows that subtask in the inspector"
+    props: { task: "Buy groceries for the week" }
+    steps:
+      - { action: press, part: subtaskSourdough }
+    expect:
+      - { part: title, text: "Sourdough loaf" }
+      - { part: breadcrumb, text: { matches: "^Home\\s*/\\s*Errands$" } }
+      - { part: subtasksHeading, visible: false }
+      - { event: taskSelected, last: { title: "Sourdough loaf" } }
+    screenshot: true
+
+  - name: "focusing a saved note opens its editor"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBodySecond }
+    expect:
+      - { part: noteBodySecond, focused: true }
+      - { part: noteBodySecond, text: { contains: "Ask design for two layouts by Friday." } }
+
+  - name: "focusing a saved note shows its editor chrome and character count"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+    expect:
+      - { part: noteCharsSecond, text: { matches: "^37\\s*/\\s*2000$" } }
+    screenshot: true
+
+  - name: "a saved note autosaves while the user types, without blurring"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " Thanks." }
+    expect:
+      - { part: noteBodySecond, text: { contains: "Thanks." } }
+      - { event: noteSaved, last: { text: "Ask design for two layouts by Friday. Thanks." } }
+
+  - name: "a saved note saves its edit when it loses focus"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBodySecond }
+      - { action: type, part: noteBodySecond, text: " Confirmed." }
+      - { action: focus, part: addNote }
+    expect:
+      - { part: noteBodySecond, text: { contains: "Confirmed." } }
+      - { part: noteBodySecond, focused: false }
+      - { event: noteSaved, last: { text: "Ask design for two layouts by Friday. Confirmed." } }
+
+  - name: "Escape in a saved note does nothing and keeps focus"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: Escape }
+    expect:
+      - { part: noteBodySecond, focused: true }
+      - { part: noteBodySecond, text: { contains: "Ask design for two layouts by Friday." } }
+
+  - name: "the header Add note button opens an editor after the saved notes"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: addNote }
+    expect:
+      - { part: newNoteEditor, focused: true }
+      - { part: notesCount, text: "2" }
+    screenshot: true
+
+  - name: "the dashed Add note box opens a draft editor"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+    expect:
+      - { part: newNoteEditor, focused: true }
+      - { part: addNote, visible: false }
+
+  - name: "typing into a new note creates it before its editor loses focus"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNoteEditor, text: "Call the dentist" }
+    expect:
+      - { part: newNoteEditor, focused: true }
+      - { part: notesCount, text: "1" }
+      - { event: notesChanged, times: 1, last: { count: 1 } }
+
+  - name: "the first note from the dashed box is saved when the editor loses focus"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNoteEditor, text: "Check the chain tension" }
+      - { action: focus, part: copyTask }
+    expect:
+      - { part: noteBody, text: "Check the chain tension" }
+      - { part: notesCount, text: "1" }
+      - { part: newNoteEditor, visible: false }
+      - { part: addNote, name: "Add note" }
+      - { event: notesChanged, times: 1, last: { count: 1 } }
+    screenshot: true
+
+  - name: "plain Enter in the new note editor adds a line and does not save the note"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNoteEditor, text: "Line one" }
+      - { action: key, part: newNoteEditor, key: Enter }
+    expect:
+      - { part: newNoteEditor, focused: true }
+      - { part: noteBody, visible: false }
+      - { part: notesCount, visible: false }
+
+  - name: "an empty new note is discarded when its editor loses focus"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: focus, part: copyTask }
+    expect:
+      - { part: newNoteEditor, visible: false }
+      - { part: noteBody, visible: false }
+      - { part: notesCount, visible: false }
+      - { part: addNote, name: "Add note" }
+      - { event: notesChanged, times: 0 }
+
+  - name: "an empty new note on a task with notes is discarded on blur"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: focus, part: copyTask }
+    expect:
+      - { part: newNoteEditor, visible: false }
+      - { part: notesCount, text: "2" }
+      - { event: notesChanged, times: 0 }
+
+  - name: "a saved note emptied and then blurred is discarded without a confirmation step"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNoteEditor, text: "x" }
+      - { action: focus, part: copyTask }
+      - { action: focus, part: noteBody }
+      - { action: key, part: noteBody, key: End }
+      - { action: key, part: noteBody, key: Backspace }
+      - { action: focus, part: copyTask }
+    expect:
+      - { part: noteBody, visible: false }
+      - { part: notesCount, visible: false }
+      - { part: addNote, name: "Add note" }
+
+  - name: "emptying a saved note of a task with notes and blurring it discards it without a confirmation"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: key, part: noteBodySecond, key: "Shift+Home" }
+      - { action: key, part: noteBodySecond, key: Backspace }
+      - { action: focus, part: rename }
+    expect:
+      - { part: notesCount, text: "1" }
+      - { event: notesChanged, last: { count: 1 } }
+      - { event: deleteRequested, times: 0 }
+
+  - name: "the note delete control fades in when its note is hovered"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: hover, part: noteBody }
+    trace:
+      - { part: noteDelete, property: opacity }
+    expect:
+      - { part: noteDelete, visible: true }
+      - { part: noteDelete, name: "Delete note" }
+
+  - name: "Delete note asks before deleting: the request is emitted and the note stays"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: hover, part: noteBody }
+      - { action: press, part: noteDelete }
+    expect:
+      - { event: deleteRequested, times: 1, last: { target: "note", title: "Rewrite the hero section" } }
+      - { part: notesCount, text: "2" }
+
+  - name: "the formatting toolbar fades in when a note editor gets focus"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+    trace:
+      - { part: noteBold, property: opacity }
+
+  - name: "formatting buttons apply to the selected text"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBody }
+      - { action: key, part: noteBody, key: End }
+      - { action: key, part: noteBody, key: "Shift+Home" }
+      - { action: press, part: noteBold }
+      - { action: press, part: noteItalic }
+    expect:
+      - { part: noteBold, selected: true }
+      - { part: noteItalic, selected: true }
+    screenshot: true
+
+  - name: "the bold keyboard shortcut toggles bold on the selection"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBody }
+      - { action: key, part: noteBody, key: End }
+      - { action: key, part: noteBody, key: "Shift+Home" }
+      - { input: toggleBold }
+    expect:
+      - { part: noteBold, selected: true }
+
+  - name: "the bulleted list button marks the list"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBody }
+      - { action: key, part: noteBody, key: End }
+      - { action: key, part: noteBody, key: "Shift+Home" }
+      - { action: press, part: noteBullet }
+    expect:
+      - { part: noteBullet, selected: true }
+
+  - name: "the underline, strikethrough and numbered list buttons mark the selection"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBody }
+      - { action: key, part: noteBody, key: End }
+      - { action: key, part: noteBody, key: "Shift+Home" }
+      - { action: press, part: noteUnderline }
+      - { action: press, part: noteStrike }
+      - { action: press, part: noteNumbered }
+    expect:
+      - { part: noteUnderline, selected: true }
+      - { part: noteStrike, selected: true }
+      - { part: noteNumbered, selected: true }
+
+  - name: "the bold named input formats text typed after it and the counter counts it"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: addNote }
+      - { action: type, part: newNoteEditor, text: "Oil" }
+      - { input: toggleBold }
+      - { action: type, part: newNoteEditor, text: " chain" }
+    expect:
+      - { part: newNoteEditor, text: "Oil chain" }
+      - { part: noteChars, text: { matches: "^9\\s*/\\s*2000$" } }
+    screenshot: true
+
+  - name: "Add link in a note asks for a link"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBody }
+      - { action: press, part: noteLink }
+    expect:
+      - { event: linkRequested, last: { where: "note" } }
+
+  - name: "typing @ opens the attachment mention popup"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBody }
+      - { action: type, part: noteBody, text: "@" }
+    expect:
+      - { part: mentionPopup, visible: true }
+      - { part: mentionItem, text: { contains: "Brand brief" } }
+    screenshot: true
+
+  - name: "typing @hero in a note lists the matching attachment"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " @hero" }
+    expect:
+      - { part: mentionPopup, visible: true }
+      - { part: mentionItem, text: { contains: "hero-sketch.png" } }
+    screenshot: true
+
+  - name: "a query with no matching attachment shows no mention popup"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " @zzz" }
+    expect:
+      - { part: mentionPopup, visible: false }
+      - { part: noteBodySecond, text: { contains: "@zzz" } }
+
+  - name: "ArrowDown and Enter pick a mention and insert it"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBody }
+      - { action: type, part: noteBody, text: "@" }
+      - { action: key, part: noteBody, key: ArrowDown }
+      - { action: key, part: noteBody, key: Enter }
+    expect:
+      - { part: mentionPopup, visible: false }
+      - { part: noteBody, text: { contains: "@hero-sketch.png" } }
+
+  - name: "Enter picks the highlighted attachment, inserts it and adds a trailing space"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " @hero" }
+      - { action: key, part: noteBodySecond, key: Enter }
+    expect:
+      - { part: noteBodySecond, text: { contains: "@hero-sketch.png" } }
+      - { part: noteBodySecond, text: { matches: "@hero-sketch\\.png\\s$" } }
+      - { part: mentionPopup, visible: false }
+    screenshot: true
+
+  - name: "Escape closes the mention popup and keeps the typed @"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBody }
+      - { action: type, part: noteBody, text: "@" }
+      - { action: key, part: noteBody, key: Escape }
+    expect:
+      - { part: mentionPopup, visible: false }
+      - { part: noteBody, text: { contains: "@" } }
+
+  - name: "a mention row picked with the mouse inserts the attachment"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBody }
+      - { action: type, part: noteBody, text: "@" }
+      - { action: press, part: mentionItem }
+    expect:
+      - { part: noteBody, text: { contains: "@Brand brief" } }
+      - { part: mentionPopup, visible: false }
+
+  - name: "clicking a mention row for a typed query inserts that attachment"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " @hero" }
+      - { action: press, part: mentionItem }
+    expect:
+      - { part: noteBodySecond, text: { contains: "@hero-sketch.png" } }
+      - { part: mentionPopup, visible: false }
+
+  - name: "hovering a mention row highlights it"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: focus, part: noteBody }
+      - { action: type, part: noteBody, text: "@" }
+      - { action: hover, part: mentionItem }
+    expect:
+      - { part: mentionItem, text: { contains: "Brand brief" } }
+    screenshot: true
+
+  - name: "clicking an @mention chip in a note opens the lightbox"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " @hero" }
+      - { action: key, part: noteBodySecond, key: Enter }
+      - { action: press, part: mentionChip }
+    expect:
+      - { part: lightbox, visible: true }
+
+  - name: "typing in a note stays in the note"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: noteBodySecond }
+      - { action: key, part: noteBodySecond, key: End }
+      - { action: type, part: noteBodySecond, text: " hello" }
+    expect:
+      - { part: title, text: "Rewrite the hero section" }
+      - { event: titleChanged, times: 0 }
+      - { part: noteBodySecond, text: { contains: "hello" } }
+
+  - name: "attachments header has File and Link"
+    props: { task: "Rewrite the hero section" }
+    steps: []
+    expect:
+      - { part: attachmentsHeading, visible: true }
+      - { part: attachFile, name: "File" }
+      - { part: attachLink, name: "Add a link" }
+    screenshot: true
+
+  - name: "File button asks for a file to attach"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: attachFile }
+    expect:
+      - { event: attachRequested, last: { kind: "file" } }
+
+  - name: "header Link button asks for a link"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: attachLink }
+    expect:
+      - { event: linkRequested, last: { where: "attachments" } }
+
+  - name: "empty attachments box offers Copy a file and Add a link"
+    props: { task: "Book bike service" }
+    steps: []
+    expect:
+      - { part: emptyCopyFile, name: "Copy a file" }
+      - { part: emptyAddLink, name: "Add a link" }
+      - { part: emptyAddLink, visible: true }
+    screenshot: true
+
+  - name: "Copy a file in the empty box asks for a file"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: emptyCopyFile }
+    expect:
+      - { event: attachRequested, last: { kind: "file" } }
+
+  - name: "Add a link in the empty box asks for a link"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: emptyAddLink }
+    expect:
+      - { event: linkRequested, last: { where: "emptyBox" } }
+
+  - name: "a remote link tile opens externally"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: attachmentTileLink }
+    expect:
+      - { event: attachmentAction, last: { action: "open", name: "Brand brief" } }
+
+  - name: "pressing a local image tile opens the attachment lightbox"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: attachmentTileImage }
+    expect:
+      - { part: lightbox, visible: true }
+    screenshot: true
+
+  - name: "dismiss closes the lightbox"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: attachmentTileImage }
+      - { input: dismiss }
+    expect:
+      - { part: lightbox, visible: false }
+
+  - name: "hovering an image tile reveals the open-in-full badge"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: hover, part: attachmentTileImage }
+    screenshot: true
+
+  - name: "Copy task copies the task and shows Copied"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: copyTask }
+    expect:
+      - { part: copyTask, name: "Copied" }
+    screenshot: true
+
+  - name: "Close panel reports that the preview should hide"
+    props: { task: "Book bike service" }
+    steps:
+      - { action: press, part: closePanel }
+    expect:
+      - { event: previewOpenChanged, times: 1, last: { open: false } }
+
+  - name: "Delete task requests a delete of the shown task and removes nothing yet"
+    props: { task: "Rewrite the hero section" }
+    steps:
+      - { action: press, part: deleteTask }
+    expect:
+      - { event: deleteRequested, times: 1, last: { target: "task", title: "Rewrite the hero section" } }
+      - { part: title, text: "Rewrite the hero section" }
+
+# Trace tests (toolbar fade, note delete fade) need reduced motion Off, the harness setting for decision 16 (System, On, Off); the trace tests do not run with it On.
+# Keys: "Shift+Home" replaces "Control+A" so that the selection works on every platform; select-all is not used.

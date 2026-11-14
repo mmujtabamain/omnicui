@@ -105,7 +105,7 @@ export const AttachmentTile = React.forwardRef<HTMLButtonElement, AttachmentTile
         className="pointer-events-none absolute inset-0 hidden items-center justify-center group-hover/attachment-tile:flex"
       >
         {/* The glyph is drawn by a pseudo-element, so the tile's rendered text never includes the overlay name. */}
-        <span className="material-symbols-outlined flex size-[1.714rem] items-center justify-center rounded-full bg-surface-3 text-content-1 shadow-lift [font-family:'Material_Symbols_Outlined'] [font-variation-settings:'wght'_300] before:content-['open\_in\_full'] before:whitespace-nowrap before:text-[1.143rem] before:leading-none" />
+        <span className="material-symbols-outlined flex size-[1.714rem] items-center justify-center rounded-full bg-surface-2 text-content-1 shadow-lift [font-family:'Material_Symbols_Outlined'] [font-variation-settings:'wght'_300] before:content-['open\_in\_full'] before:whitespace-nowrap before:text-[1.143rem] before:leading-none" />
       </span>
     </button>
   );

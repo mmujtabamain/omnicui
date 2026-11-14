@@ -1,0 +1,48 @@
+# How the app.contextmenus contract was written, and what its props make the harness do
+
+Basis and merge
+- Draft A is only "// placeholder" with "Notes A: placeholder". It has no parts, tests or notes, so it was dropped with no content lost. Draft B is the working contract.
+- I could not open any spec file in this merge (only the structured output tool was available). Every citation to spec/inventory, spec/features, spec/screens and spec/decisions is carried over from Draft B and the critique unchecked. Those claims remain unverified.
+- Critique fixes applied: decision 10 Enter-on-focused-accept tests (Move to Trash, Delete list, Delete project); Escape, scrim and Tab focus-trap tests on the Move to Trash sheet (F06-067/068/069); Cancel-keeps test split out for Delete list and Delete project; sheetCancel focus asserted for Delete project; ArrowLeft return test (F06-046 path); focus-return checks after tab menu and project dropdown Escape (F06-088); toast Undo and close parts and tests (F06-093/094, F07-077/078); bulk delete toast check (F07-034); record tests for the row menu and the delete sheet (F06-103); splitViewToggle changed to role switch with checked (critique suggestion); subtask Escape test types text first; F06-090 added to the left-out list; owner-only rule (decision 9) added to the left-out list; New project test asserts the Create button.
+
+Harness meaning of props
+- dataset (string, default standard): the harness signs in as the demo account on the real API and loads that data set before the first step. Allowed values: standard, empty, nolists, long. The app then opens on Home > Errands with no menu open. No other prop exists because every menu is opened by a step, and the format offers no context props for this screen.
+- The format gives no per-test props, so no test uses a non-default dataset. Empty, nolists and long therefore never run. Flagged for the rebuild.
+
+Conflicts and how they were handled
+- Exact text match: the critique asks for "Reading list" only (F06-076 selection-on-focus rule). The fields used here offer contains only, and I did not invent an exact-match field. The rename test still uses contains, so "ReadingReading list" would pass. Left open for the rebuild.
+- Bulk actions: critique cites decision 6 (bulk bar is the one bulk place). Draft B and its notes use the bulk More menu. Not resolved. Bulk-bar features F07-058 to F07-064 are untested here and need a bulk-bar contract or a citation that decision 6 is superseded.
+- Click on a submenu row: F06-046 says a click does nothing. Draft B follows the notes decision that a click opens the submenu. Kept on the notes decision, unverified.
+- Right-click openers (F06-042, F06-052, F07-065): left out on the basis of the web mapping in notes. The critique could not confirm the notes line. Kept and flagged.
+- "Create" button label: Draft B said labels are not asserted. The critique's F06-102 reference gives the label, so the test asserts it. Flagged.
+- Dark scheme: decisions 16 and 17 make Theme per account on the web, but no dark state is recorded. colorSchemes stays light. Dark is not measured.
+
+Left out on purpose (with reason)
+- F06-039 clamp and F06-049 submenu flip: horizontal room was checked at x 830, 348 and 112 inside 1180 px. Vertical room is not checked: the window is 760 px tall and a low row in the long data set could open a menu near the bottom edge. No test exercises the long set, so this is not covered.
+- F06-043 and F06-090 blur or resize dismissal: no action in the format blurs or resizes the window.
+- F06-044 menu above sheets: a sheet is modal on the web, so no menu opens over it.
+- F06-051 disabled Move to list when no other list exists: reaching it needs deleting Reading and Garden and parts for Garden that neither draft has. The disabled-versus-hidden behaviour is not recorded, so no field can be chosen. Not tested.
+- Disabled tab menu items: not recorded in any state.
+- F07-053 Copy as Markdown: no action reads the clipboard. The Copy test checks only that the menu closes.
+- Shortcut hints on rows: no recorded state shows one.
+- Trace and do actions: no trace test is written and no do actions are used. Motion is covered by the record tests.
+- Hover colours and dividers: covered by the hover screenshots only.
+- F07-031, F07-032, F07-036 (subtask parents in delete and selection): the parent-with-subtask parts and the expected wording are not in either draft and cannot be invented. Not tested.
+- F07-076 (done count after deleting a done task): Post the parcel's done state is not confirmed in the drafts, so the 2/8 to 1/7 expectation is unverified. Not tested.
+- F07-089 (delete button on each tab): tabDelete covers the Errands tab only. The button on other tabs is not confirmed as a part. Omission noted.
+- Owner-only rename and delete (decision 9): no non-owner data set exists in the dataset values, so the non-owner case cannot be tested.
+
+Uncertain items kept from Draft B (flagged, not verified)
+- Rename task commit key assumed Enter (F07-054 has none).
+- Open in split view result inferred from the label. Asserted as splitViewToggle checked.
+- Spring launch switch assumes the switcher shows Spring launch and the first tab becomes Website (demo data).
+- Project rename sheet prefilled with the project name, modelled on F06-100.
+- Bulk Mark 2 done expects "4/8", assuming the picked rows have no subtasks in the demo data.
+- Buy groceries assumed expanded, so the subtask input shows under it.
+- Focus return to More after Escape is asserted for the row menu and now also for the tab menu and project dropdown (F06-088 overlay rule, unverified for those two).
+- Sheet headlines "Move to Trash?" (F07-070) and "Move 2 tasks to Trash?" (notes); toast "Moved to Trash" (F06-098).
+- Icon glyph names may appear as text in labels, so labels are matched with contains.
+- The hover-highlight check has no format field and relies on the screenshot only.
+
+Keyboard
+- keyboard: true measures parts on screen at mount only (per critique). Menu items, sheet buttons and the subtask input are not on screen at mount. Their Enter and Escape behaviour is covered by the explicit key steps in the tests, not by the keyboard check.

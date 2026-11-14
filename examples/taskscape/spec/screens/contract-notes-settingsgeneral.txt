@@ -1,0 +1,93 @@
+# How the app.settingsgeneral contract was written, and what its props make the harness do
+
+BASIS. Built only from the two drafts (A and B) and the critic's list. The source files the drafts cite (inventory, decisions, web.md, review notes, area-10 and area-12 features) were not reopened here, so every merged value comes from what the drafts recorded. Where the critic's verified answer conflicted with a draft, the critic's answer was used.
+
+PROPS (merged meaning). Only one prop.
+- dataset: string, default "standard". The harness signs in as the demo account and loads the named demo data set. Values: standard, empty, nolists, long. This screen shows account settings only, so no visible difference is expected.
+- No context prop. The screen opens on General by default, so the harness mounts it alone and needs nothing else.
+- Settings reset: before every test, including the generated keyboard checks (keyboard: true), the harness resets the demo account's Theme, Reduced motion and Show completed tasks to their defaults. The discard baseline is the value at page open, so this reset is what makes discard return to the default. The defaults (System, System, on) are assumptions, not sourced from web.md; see UNCERTAIN.
+
+EVENTS. None declared. No event is grounded for this screen on web.
+
+PARTS. One name per part. Names chosen for clarity: heading (not title), contentPanel (not panel), generalMatches (not matchCount, since it is the General tab badge), themeTitle, reducedMotionTitle and showCompletedTitle (paired with the Description parts), showCompletedSwitch (not showCompleted). Roles follow the hard rules, with the real ARIA role in comments.
+
+CONFLICTS AND CHOICES TO CONFIRM.
+1. Presentation (not settled). Both drafts build a routed page with no close control and an Escape-does-nothing-on-empty test. web.md says Settings opens as a modal over the main window, 640x520, and Escape or the close button closes it. The critic could not settle this from the files it read. The routed page is kept because both drafts cite the review notes as settled. If a modal is chosen: add a dialog container part and a close-button part, change the Escape-on-empty test to expect the dialog to close, and keep only the 640x520 viewport. The fade and scrim (F11-026, F11-027) would then come into scope.
+2. Viewport. Both drafts used 1180x760 (inventory measured root). The critic asked for 640x520 as well, since web.md and decision 19 give that size. Both are listed. Whether every test runs at both sizes is up to the harness; the contract does not say.
+3. Discard placement. Both drafts put the title-bar discard control in the page header next to the heading. Placement is not decided on web.
+4. Reduced motion default. Assumed System, because decision 16 treats it like Theme and no decision states the default.
+
+MERGE DECISIONS.
+Kept from both: the opening test (A's checks plus B's names and label text), theme segment tests, discard-all and group-discard tests, Show completed tests, reduced-motion tests, search tests, empty state, Escape tests, tab and arrow tests, the pane-switch tests.
+Kept from A only: the theme-stays-after-switching-panes test; the editing-a-narrowed-search test (F10-019); the search-ignores-case-and-words test; the trace on the General return.
+Kept from B only: the rows and names checks (merged into the opening test); the Appearance group discard test; the Off-after-On test; the ArrowDown-from-last-section wrap test; the focus-action search test.
+
+DROPPED (duplicate or wrong):
+- A "ArrowDown from General moves to Shortcuts": replaced by B's version, which uses a focus step and asserts focused (critic).
+- A "ArrowUp then ArrowDown wraps back": covered by B's two wrap tests, which assert focus.
+- B "rows show their titles, descriptions and option names": folded into the opening test.
+- B "a change shows the title-bar discard control": folded into the theme segments test, with the discard name check added.
+- B "discard all restores the values from when the window opened": subset of A's discard-all test.
+- B "reduced motion can be set to On", "reduced motion returns to System", "show completed tasks switch turns off": each a subset of an A test.
+- B "Tasks group discard restores show completed tasks": duplicate of A's Tasks group discard test.
+- B "search ignores letter case": covered by A's case test.
+- B "every word of the query must match a row" (query "motion zzqx"): same behaviour as A's empty-state test; A's exact curly-quote subtitle kept.
+- B "clear button empties the search": duplicate of A's clear test.
+- B "Escape clears a non-empty search" and "Escape on an empty search": duplicates of A's Escape tests.
+- B "clicking General keeps a search that has matches": duplicate of A's test. B's expected header "General · Appearance" was wrong; the critic's reading (a scoped search drops the prefix, F10-014/017) is used, which is what A's test expects.
+- B "clicking a section with no matches clears the search" (About): duplicate of A's Shortcuts version. About row content was not read.
+- B "switching panes animates the new pane in": merged into "clicking a section shows that pane and animates it in", with the record step.
+- B "only the selected section is a Tab stop": dropped. It did not measure F10-007 (it would pass whether or not General is the only tab stop), and the format has no way to start from a part before the tab list. F10-007 is not measured.
+- B hover steps (on heading) in the first two tests: removed, since they changed nothing.
+
+CHANGES APPLIED FROM THE CRITIC.
+- The arrow tests assert focused on the destination tab.
+- The General-click test expects no prefix when scoped (scoped search).
+- The generalTab selected assertion is removed from search-state tests (the critic said it is ambiguous during a search). It is kept only on the click-General test, where the tab was just pressed.
+- "Light theme overrides a dark system setting" renamed to "light theme is chosen and replaces System", because the colour scheme is a harness combination, not a step.
+- The empty-state subtitle is pinned to the exact curly-quoted text. A trimmed-query test was added ("  motion theme  " shows the trimmed query).
+- The appearance-group discard checks the other group and the page-level discard control stay hidden.
+- Discard-all checks the Tasks group control is hidden after the reset.
+
+CRITIC ITEMS NOT APPLIED.
+- Test for a term only an About or Shortcuts row matches (F10-052, F10-073): not added. Those pane rows were not read, so the expected results are unknown. Left out.
+- Badge parts for Shortcuts and About (F10-015): not added, for the same reason. Only the General badge is declared. Left out.
+- Search-binding test ("/" focuses search, decision 18): not added. Whether the Search binding applies on this page is not confirmed by the files the drafts cite. Cmd/Ctrl+F is dropped (the browser keeps it on web).
+- Absent-part checks (visible: false): kept, and now flagged as an assumption (see UNCERTAIN). If the harness reports a missing part as not found rather than not visible, those checks must change.
+
+UNCERTAIN (flagged, not hidden).
+- Viewport sizes (see conflict 2). The modal decision would change the Escape tests and the viewport.
+- Account defaults (System, System, on) are assumed; web.md does not give them.
+- The General badge count "1" for "motion": the source of the count was not read, so it is an assumption.
+- Shortcuts has no row matching "motion" (test "a click on a tab with no matches clears the search"). Not checked against the Shortcuts rows.
+- Theme does not match "motion" and Reduced motion does not match "theme". Keywords are not visible (F10-056), so a hidden keyword could break the search tests.
+- type " " is assumed to append to the query (test "editing a narrowed search returns to all-section results").
+- The trace uses property opacity on contentPanel. F10-008 names only the animate-panel-in class on the content block. The trace in the General-return test spans the About setup press as well as the General press (the critic's concern; the About press is setup only).
+- Segments are mapped to button with selected, because the segmented control's role is not recorded.
+- The absent-part checks assume a missing part reads as visible: false (see above).
+- Reset requirement: the harness must apply the reset before every generated keyboard check as well. Stated in the props comment.
+
+LEFT OUT ON PURPOSE.
+- Capture tab and its features; data folder rows, launch and path buttons (web.md, notes).
+- Window chrome: traffic lights, drag region, title bar as a window, fixed window size, open fade (F10-001, F10-029, F11-058, F11-059): desktop only.
+- Escape closing the window (F10-024): desktop only.
+- Cmd/Ctrl+F (F10-025): the browser keeps the key on web (notes).
+- F10-026: the recorder keys are on the Shortcuts pane, not this screen.
+- F10-019 as a cross-pane scope test: only the same-pane editing test is kept, since a second pane with matches is needed for the cross-pane case.
+- F10-021, F10-022: General has no intro (the intro is on Shortcuts).
+- F10-031 (silent write failures) and the web inline error with revert: need a fault-injection prop, which the format does not have.
+- F10-032 (fallback for bad stored values): needs injected stored values; no prop.
+- F10-060, F10-061, F10-062, the forced state and footnotes (Low Power, macOS Reduce Motion): removed on web (notes).
+- F10-064 (Show completed broadcast) and F11-002, F11-010: other windows, desktop only.
+- Persistence across a reload (F10-030, F11-005, F11-009): the format has no reload step.
+- F10-016 dimming and F10-034 group dot: not fields. Dimming is covered by the search screenshot; the dot is covered by the group discard checks.
+- F10-005 (scroll to top on section click) and F10-036 (row layouts): not observable through fields.
+- F10-052, F10-073 (search reaching About and Shortcuts rows): needs pane content that was not read.
+- F10-037 to F10-054, F10-068 to F10-077: About and Shortcuts content, or desktop-only data folder. Other screens.
+- F11-001, F11-004, F11-012, F11-021, F11-049 (CSS and theme token effects): covered only by the screenshots.
+- F11-011 (native window background) and F11-003 (Low Power auto-on): desktop only, or removed on web.
+- Failed-save message and revert: the format cannot make a save fail with the demo account.
+- Tab stop (F10-007): no tabIndex field in the format (see the dropped Tab-stop test above).
+- Drag-and-drop: none on this screen.
+- Desktop-only pane intro and the desktop Ctrl+F test: not written.
+- Events: none declared.

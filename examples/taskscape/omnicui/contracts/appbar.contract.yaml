@@ -1,0 +1,450 @@
+# Merged contract for the Title bar screen (app.appbar).
+# Both drafts were placeholders, so this is written from the critique's fixes only.
+id: "app.appbar"
+
+# Props: the start state the harness sets before the screen mounts.
+props:
+  dataset:
+    type: string
+    default: standard
+    # Allowed values: standard, empty, nolists, long. The harness loads that demo data set
+    # before mounting. The title bar takes no other prop; it mounts alone as the demo account.
+
+colorSchemes: [light, dark]
+# viewports: not declared. The title bar's sizes are in the inventory, which this merge could not read.
+# Until they are added, the default 320x240 applies, which is wrong for a title bar.
+
+parts:
+  # Project switcher and project menu (desktop and web)
+  projectSwitcher: { role: button }  # the project pill; its text is the active project name
+  projectMenu: { role: generic }  # aria: menu (the project dropdown)
+  rowHome: { role: button }  # aria: menuitem; first project row (Home in standard data)
+  rowSpringLaunch: { role: button }  # aria: menuitem; Spring launch in standard data
+  renameProjectButton: { role: button }  # shown on hover; first row instance
+  deleteProjectButton: { role: button }  # shown on hover; first row instance
+  newProjectButton: { role: button }
+  rollNameButton: { role: button }  # rolls another project name
+  projectNameInput: { role: textbox }  # rename and create project prompt
+  deleteDialog: { role: generic }  # aria: dialog; project and list delete confirmation
+  cancelButton: { role: button }  # default focus (decision 13)
+  confirmDeleteButton: { role: button }  # the danger button (decision 12)
+
+  # Tabs and lists (desktop and web)
+  tabStrip: { role: generic }  # aria: tablist
+  tabErrands: { role: button, optional: true }        # aria: tab; one tab per list is not measured
+  tabReading: { role: button, optional: true }        # aria: tab
+  tabGarden: { role: button, optional: true }         # aria: tab
+  tabInbox: { role: button, optional: true }          # aria: tab
+  closeTabErrands: { role: button, optional: true }   # close button on the Errands tab
+  newListButton: { role: button }
+  rollListNameButton: { role: button }  # rolls another list name
+  listNameInput: { role: textbox }  # new list prompt
+  noListsMessage: { role: status }  # no-lists copy; exact text is not in the spec
+
+  # Split, preview, settings (desktop and web)
+  splitToggle: { role: switch }  # checked = split view on; disabled on nolists
+  swapButton: { role: button }  # visible only while split view is on
+  previewToggle: { role: button }  # selected = preview on
+  settingsButton: { role: button, optional: true }    # desktop only; on web Settings is in the account menu
+  settingsDialog: { role: generic }  # aria: dialog; Settings modal (web 640x520)
+  settingsCloseButton: { role: button }
+  motionSystem: { role: button }  # reduced-motion choice (decision 16), segmented control
+  motionOn: { role: button }
+  motionOff: { role: button }  # Web only
+  accountButton: { role: button, optional: true }     # shows the account initial
+  accountMenu: { role: generic, optional: true }      # aria: menu
+  accountMenuEmail: { role: generic, optional: true } # shows the account email
+  accountMenuSettings: { role: button, optional: true }   # aria: menuitem
+  accountMenuSignOut: { role: button, optional: true }    # aria: menuitem
+  paletteButton: { role: button, optional: true }     # search and commands (decision 7)
+  trashAside: { role: generic, optional: true }       # Trash in the aside (decision 8)
+
+  # Both targets
+  trashButton: { role: button }  # decision 1
+
+  # Desktop only, drawn by the OS (no screenshot comparison)
+  trafficClose: { role: button, optional: true }      # macOS
+  trafficMinimize: { role: button, optional: true }   # macOS
+  trafficZoom: { role: button, optional: true }       # macOS
+  captionMinimize: { role: button, optional: true }   # Windows
+  captionMaximize: { role: button, optional: true }   # Windows
+  captionClose: { role: button, optional: true }      # Windows
+
+tests:
+  # Project switcher and menu (F02-004 to F02-010)
+  - name: "switcher shows Home and the Errands tab is selected"
+    # F02-004, F02-063
+    expect:
+      - { part: projectSwitcher, text: "Home" }
+      - { part: tabErrands, selected: true }
+
+  - name: "project menu opens and marks the active row"
+    # F02-005, F02-009
+    steps:
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectMenu, visible: true }
+      - { part: rowHome, selected: true }
+
+  - name: "Escape closes the project menu"
+    # F02-006
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: Escape }  # generic projectMenu takes no key; the pill that opened the menu takes it
+    expect:
+      - { part: projectMenu, visible: false }
+
+  - name: "a press outside the project menu closes it"
+    # F02-006
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: previewToggle }  # was tabStrip (generic, takes no press); previewToggle is a button outside the menu
+    expect:
+      - { part: projectMenu, visible: false }
+
+  - name: "pressing the project pill again closes the project menu"
+    # F02-006. Reading chosen: a second press toggles the menu closed. The other reading (stays open) is not tested.
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectMenu, visible: false }
+
+  - name: "selecting a project changes the switcher text and the selected row"
+    # F02-007, F02-009
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: rowSpringLaunch }
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectSwitcher, text: "Spring launch" }
+      - { part: rowSpringLaunch, selected: true }
+      - { part: rowHome, selected: false }
+
+  - name: "row rename and delete buttons show on hover"
+    # F02-010
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: hover, part: rowHome }
+    expect:
+      - { part: renameProjectButton, visible: true }
+      - { part: deleteProjectButton, visible: true }
+
+  - name: "rename project through the prompt, Enter accepts"
+    # F02-011
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: renameProjectButton }
+      - { action: type, part: projectNameInput, text: "Household" }
+      - { action: key, part: projectNameInput, key: Enter }
+    expect:
+      - { part: projectSwitcher, text: "Household" }
+
+  - name: "new project prompt starts with a random name of the expected shape"
+    # F02-013, F02-014. The exact name is random, so only the shape is checked.
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: newProjectButton }
+    expect:
+      - { part: projectNameInput, text: { matches: '^[A-Za-z][A-Za-z ]*$' } }
+
+  - name: "roll another project name keeps the expected shape"
+    # F02-014. Only the shape is checked; the value changes on each roll.
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: newProjectButton }
+      - { action: press, part: rollNameButton }
+    expect:
+      - { part: projectNameInput, text: { matches: '^[A-Za-z][A-Za-z ]*$' } }
+
+  - name: "new project prompt creates the typed name, Enter accepts"
+    # F02-013
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: newProjectButton }
+      - { action: type, part: projectNameInput, text: "Garden plan" }
+      - { action: key, part: projectNameInput, key: Enter }
+    expect:
+      - { part: projectSwitcher, text: "Garden plan" }
+
+  - name: "delete project: Enter on the dialog does not delete, Cancel has focus"
+    # F02-012, decision 10, decision 13
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: deleteProjectButton }
+      - { action: key, part: cancelButton, key: Enter }  # generic deleteDialog takes no key; the focused default is Cancel (decision 13)
+    expect:
+      - { part: cancelButton, focused: true }
+      - { part: rowHome, visible: true }
+
+  - name: "delete project: Tab to the danger button, press it, project removed"
+    # F02-012, decision 10, decision 12, decision 13
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: deleteProjectButton }
+      - { action: key, part: cancelButton, key: Tab }
+      - { action: press, part: confirmDeleteButton }
+    expect:
+      - { part: rowHome, visible: false }
+
+  - name: "Escape cancels the project delete dialog"
+    # F02-012, decision 10
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: deleteProjectButton }
+      - { action: key, part: cancelButton, key: Escape }  # generic deleteDialog takes no key; the focused default is Cancel
+    expect:
+      - { part: deleteDialog, visible: false }
+      - { part: rowHome, visible: true }
+
+  # Tabs and lists (F02-035 to F02-062)
+  - name: "pressing a tab selects it"
+    # F02-035, F02-036, F02-039, F09-065
+    steps:
+      - { action: press, part: tabReading }
+    expect:
+      - { part: tabReading, selected: true }
+      - { part: tabErrands, selected: false }
+
+  - name: "focused and hovered tabs show their state"
+    # F02-037, F02-038 (focus ring and separators). Colours are checked by the screenshot.
+    steps:
+      - { action: focus, part: tabReading }
+      - { action: hover, part: tabGarden }
+    expect:
+      - { part: tabReading, focused: true }
+    screenshot: true
+
+  - name: "close button on a tab removes its list after confirmation"
+    # F02-052, F02-049. Assumes the tab close button opens the list delete confirmation; verify against F02-049 before use.
+    steps:
+      - { action: press, part: closeTabErrands }
+      - { action: key, part: cancelButton, key: Tab }
+      - { action: press, part: confirmDeleteButton }
+    expect:
+      - { part: tabErrands, visible: false }
+
+  - name: "new list prompt creates a tab"
+    # F02-057
+    steps:
+      - { action: press, part: newListButton }
+      - { action: type, part: listNameInput, text: "Plants" }
+      - { action: key, part: listNameInput, key: Enter }
+    expect:
+      - { part: tabStrip, text: { matches: 'Plants' } }
+
+  - name: "new list prompt starts with a random adjective and noun"
+    # F02-015. Only the shape is checked.
+    steps:
+      - { action: press, part: newListButton }
+    expect:
+      - { part: listNameInput, text: { matches: '^[A-Za-z]+ [A-Za-z]+$' } }
+
+  - name: "roll another list name keeps the expected shape"
+    # F02-015. Only the shape is checked.
+    steps:
+      - { action: press, part: newListButton }
+      - { action: press, part: rollListNameButton }
+    expect:
+      - { part: listNameInput, text: { matches: '^[A-Za-z]+ [A-Za-z]+$' } }
+
+  - name: "no-lists state disables split and shows the message"
+    # F02-062, F02-016, F09-068, F09-069. Exact copy is not in the spec, so the text is matched.
+    props: { dataset: nolists }
+    expect:
+      - { part: splitToggle, disabled: true }
+      - { part: noListsMessage, visible: true }
+      - { part: noListsMessage, text: { matches: '.+' } }
+
+  # Split and preview (F02-016 to F02-018, F09-069 to F09-073)
+  - name: "swap button is hidden until split view is on"
+    # F02-017
+    expect:
+      - { part: swapButton, visible: false }
+
+  - name: "split toggle on shows the swap button"
+    # F02-016, F02-017
+    steps:
+      - { action: press, part: splitToggle }
+    expect:
+      - { part: splitToggle, checked: true }
+      - { part: swapButton, visible: true }
+
+  - name: "split toggle off hides the swap button"
+    # F02-016, F02-017
+    steps:
+      - { action: press, part: splitToggle }
+      - { action: press, part: splitToggle }
+    expect:
+      - { part: splitToggle, checked: false }
+      - { part: swapButton, visible: false }
+
+  - name: "preview toggle shows its selected state"
+    # F02-018
+    steps:
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, selected: true }
+
+  - name: "pressing preview again clears its selected state"
+    # F02-018
+    steps:
+      - { action: press, part: previewToggle }
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, selected: false }
+
+  # Settings (F02-019, F02-021, F09-075)
+  - name: "desktop: settings button opens the settings dialog"
+    # F02-019, F09-075. The shortcut hint is not measured (tooltip text is not on screen until hover).
+    only: [desktop]
+    steps:
+      - { action: press, part: settingsButton }
+    expect:
+      - { part: settingsDialog, visible: true }
+
+  - name: "desktop: Escape closes the settings dialog"
+    # F02-019
+    only: [desktop]
+    steps:
+      - { action: press, part: settingsButton }
+      - { action: key, part: settingsCloseButton, key: Escape }  # generic settingsDialog takes no key; its close button does
+    expect:
+      - { part: settingsDialog, visible: false }
+
+  - name: "web: Settings opens from the account menu and Escape closes it"
+    # web.md: the web drops the standalone Settings button; Settings sits in the account menu
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountMenuSettings }
+      - { action: key, part: settingsCloseButton, key: Escape }  # generic settingsDialog takes no key; its close button does
+    expect:
+      - { part: settingsDialog, visible: false }
+
+  - name: "web: settings close button closes the Settings modal"
+    # web.md: closed by Escape or the close button
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountMenuSettings }
+      - { action: press, part: settingsCloseButton }
+    expect:
+      - { part: settingsDialog, visible: false }
+
+  - name: "web: motion choice in Settings shows the selected option"
+    # F02-021, decision 16 (System, On, Off). The location of the segmented control is an assumption (the Settings dialog).
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountMenuSettings }
+      - { action: press, part: motionOn }
+    expect:
+      - { part: motionOn, selected: true }
+      - { part: motionSystem, selected: false }
+
+  # Web account menu and palette (web.md, decision 7)
+  - name: "web: account button shows an initial and the menu lists email, Settings and Sign out"
+    # web.md. The initial and the email shape are matched; the demo account name is not in the spec.
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+    expect:
+      - { part: accountButton, text: { matches: '^[A-Z]$' } }
+      - { part: accountMenuEmail, text: { matches: '^[^@ ]+@[^@ ]+$' } }
+      - { part: accountMenuSettings, text: "Settings" }
+      - { part: accountMenuSignOut, text: "Sign out" }
+
+  - name: "web: palette button is visible in the title bar"
+    # decision 7
+    only: [web]
+    expect:
+      - { part: paletteButton, visible: true }
+
+  - name: "web: Ctrl/Cmd+K opens the search and commands palette"
+    # decision 7. Per-platform forms: Control+K on Windows and Linux, Meta+K on macOS (platforms.yaml, not verified here).
+    only: [web]
+    steps:
+      - { action: key, part: paletteButton, key: Control+K }
+    screenshot: true
+
+  # Trash (decision 1, decision 8)
+  - name: "trash button is visible on both targets"
+    # decision 1
+    expect:
+      - { part: trashButton, visible: true }
+
+  - name: "web: trash button shows the Trash list in the aside"
+    # decision 8. Desktop opens Trash in its own window; that is not asserted here.
+    only: [web]
+    steps:
+      - { action: press, part: trashButton }
+    expect:
+      - { part: trashAside, visible: true }
+
+  # Desktop window chrome (OS-drawn; part checks only)
+  - name: "desktop: macOS traffic lights are present"
+    # F02-023 to F02-033. The platform draws these, so only the parts are checked, not a screenshot.
+    only: [desktop]
+    expect:
+      - { part: trafficClose, role: button, visible: true }
+      - { part: trafficMinimize, role: button, visible: true }
+      - { part: trafficZoom, role: button, visible: true }
+
+  - name: "desktop: Windows caption buttons are present"
+    # F02-023 to F02-033. The platform draws these, so only the parts are checked, not a screenshot.
+    only: [desktop]
+    expect:
+      - { part: captionMinimize, role: button, visible: true }
+      - { part: captionMaximize, role: button, visible: true }
+      - { part: captionClose, role: button, visible: true }
+
+  # Reference states (one screenshot test each)
+  - name: "reference: title bar with standard data"
+    # F02-022, F02-034 (inactive grey and dark-mode colours, both schemes)
+    screenshot: true
+
+  - name: "reference: project menu open"
+    steps:
+      - { action: press, part: projectSwitcher }
+    screenshot: true
+
+  - name: "reference: delete project confirmation"
+    # decision 12 (danger colour on delete, accent blue only for primary action and selection)
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: deleteProjectButton }
+    screenshot: true
+
+  - name: "reference: no-lists state"
+    props: { dataset: nolists }
+    screenshot: true
+
+  - name: "reference: split view on"
+    steps:
+      - { action: press, part: splitToggle }
+    screenshot: true
+
+  - name: "reference: preview on"
+    steps:
+      - { action: press, part: previewToggle }
+    screenshot: true
+
+  - name: "web reference: account menu open"
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+    screenshot: true
+
+  - name: "web reference: settings dialog"
+    only: [web]
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountMenuSettings }
+    screenshot: true
+
+  - name: "desktop reference: settings dialog"
+    only: [desktop]
+    steps:
+      - { action: press, part: settingsButton }
+    screenshot: true

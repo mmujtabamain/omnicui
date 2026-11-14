@@ -35,6 +35,9 @@ export const toggleVariants = cva(
 /** Glyph size in px per toggle size (1rem is 14px). */
 const GLYPH_PX = { sm: 15, md: 14, lg: 19 } as const;
 
+/** Glyph weight for every size (spec: 300 throughout; the title bar and capture bar both read as 300). */
+const GLYPH_WEIGHT = 300;
+
 export interface ToggleProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "defaultValue">,
     VariantProps<typeof toggleVariants> {
@@ -94,7 +97,7 @@ export const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(function 
         }}
         className={cn(toggleVariants({ size, shape }), className)}
       >
-        {glyph !== "" && <Icon name={glyph} size={GLYPH_PX[size ?? "sm"]} tone="inherit" />}
+        {glyph !== "" && <Icon name={glyph} size={GLYPH_PX[size ?? "sm"]} weight={GLYPH_WEIGHT} tone="inherit" />}
         {shape === "text" && label !== "" && <span data-slot="label" className="min-w-0 truncate">{label}</span>}
       </TogglePrimitive.Root>
     </Tooltip>

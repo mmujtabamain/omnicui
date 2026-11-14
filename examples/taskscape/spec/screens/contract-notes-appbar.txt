@@ -1,0 +1,53 @@
+# How the app.titlebar contract was written, and what its props make the harness do
+
+BASIS
+- Both drafts were placeholders. Draft A is "// placeholder" with "Notes A: placeholder"; Draft B is "// placeholder replaced below" with no replacement. So there was no entry from either draft to keep or merge, and no conflicting values. The contract is written from the critique's fixes and the feature IDs and decisions the critique cites.
+- I could not open contract-format.txt, features-title-bar.txt, web.md or decisions.md (no file tool in this run). Everything the critique does not spell out is therefore unverified against the spec. The YAML shape follows the field names the critique and task use (part, action, key, text, matches, selected, checked, disabled, focused, visible, role, only, screenshot, colorSchemes, props type/default). The following are my reading and must be checked against contract-format.txt before the contract is used: the object form of a part, { role: ..., optional: true }; the `text` key on the type step; `checked` for the switch; the `hover` and `focus` actions; the per-test `dataset` key; the `steps` and `expect` nesting. If any of these is wrong, the whole file needs a re-check.
+- No events are declared. Neither draft declared one, and the critique gives no event for the title bar.
+- viewports is not declared. The title bar's real sizes are in the inventory, which I could not read. Until they are added, the default 320x240 applies, which is wrong for a title bar. The narrow-window test (F02-061) is therefore not written.
+
+PROPS (merged meaning)
+- dataset (string, default standard): the harness loads that demo data set before mounting the title bar. Allowed values: standard, empty, nolists, long. Tests that need another set name it with a test-level dataset key (nolists is used for the no-lists test and its screenshot). The title bar reads no other prop. It mounts alone as the demo account, so no context prop (list, task, open) is needed.
+
+PARTS (merged; one name each, the clearer name kept)
+- Both drafts had none, so the names are new. Each part is named by what it is. Roles: menus, dialogs and tab lists are generic with # aria comments; tabs, dropdown rows, menu items and the Settings and account controls are button with an aria comment; the split toggle is a switch; the no-lists copy is status; prompts are textbox. Desktop-only and web-only parts are optional: true.
+- The critique's duplicate pairs are each one part: checkmark is the selected state on rowHome/rowSpringLaunch; rename/new/delete project are renameProjectButton, newProjectButton, deleteProjectButton; Settings is settingsButton (desktop) or the account menu item (web); split is splitToggle; preview is previewToggle; new list is newListButton.
+- Parts for the tab rename input and the tab context menu are not written (see the drop list). Dynamic tabs are optional; "one tab per list" is not measured.
+
+TESTS: UNION AND DROPS
+Kept and written: switcher text Home and Errands selected (F02-004, F02-063); project menu open, Escape, outside press, re-press (F02-005, F02-006, F02-009); select a project (F02-007); hover shows rename and delete (F02-010); rename project with Enter (F02-011); new project name shape, roll, and typed name (F02-013, F02-014); delete project: Enter does not confirm, Tab then press on the danger button, Escape cancels (F02-012, decisions 10, 12, 13); tab selection, focus and hover (F02-035, F02-036, F02-037, F02-038, F02-039); tab close and list delete confirmation (F02-049, F02-052; assumption noted in the test); new list tab, name shape, roll (F02-015, F02-057); no-lists state (F02-062, F02-016, F09-068, F09-069); swap button visibility and split on/off (F02-016, F02-017); preview toggle (F02-018); desktop Settings open and Escape (F02-019, F09-075); web Settings via the account menu, close button, Escape (web.md); motion choice (F02-021, decision 16; location assumed to be the Settings dialog); web account button and menu (web.md); web palette button and Ctrl/Cmd+K (decision 7); Trash button on both targets, and the web aside (decision 1, decision 8); desktop OS-drawn controls as part checks only (F02-023 to F02-033); reference screenshots for each state (F02-022, F02-034, decision 12).
+Dropped (with reason):
+- F02-001, F02-002, F02-003, F02-059, F02-060, F09-058: window chrome, double-click, drag grip. Web drops them (decision 2), and drag acts only on slider parts. No test.
+- F02-041 (double-click rename tab), F02-042, F02-043, F02-044, F02-045, F02-046, F02-047: double-click, right-click and the tab rename textbox are not reachable with the format's actions. Blur (F02-044) is not expressed. The split item label conflict (F02-047 "toggles split view for that list" versus F09-096 "Open in split view" versus F09-023 "Toggle split on a list tab") is therefore unresolved; no label is chosen and no tab context menu test is written.
+- F02-051 middle-click delete: middle-click is not an action the format defines, and the spec's confirmation (F09-009, decision 10) contradicts the immediate delete it describes.
+- F02-053, F02-054, F02-055, F02-056: drag-and-drop, not allowed.
+- F02-058 scroll: scroll is only allowed when the target advertises it, and none is declared. Not measured.
+- F02-020, F02-024, F09-074: shortcut hints in tooltips are not on screen until hover, and there is no tooltip field. Not measured.
+- F02-019's shortcut hint: same reason, not measured.
+- F09-019, F09-022, F09-052, F09-099: persistence across launches and localStorage 'ui.split'. The format cannot restart the app or seed storage.
+- F02-006's ambiguity: resolved as "a second press toggles the menu closed". The other reading is not tested.
+- F02-008, F09-092, F09-097: defect notes, not checkable features.
+- F02-050 (dismissal settings): the setting is not named in the critique. Dropped.
+- F02-048 / F09-003 (export): there is no part or location for export in either draft or the critique. Not written. This is a gap; add a part once the location is known.
+- F02-061, F09-059, F09-077, F09-078 (viewports and narrow window): sizes are not in the spec as read, so not measured (see viewports note).
+- F02-035 and F09-064 (tab count, project rows count): data-dependent. Only fixed-name tab parts are checked, and "one tab per list" is not measured.
+- F02-034 colours and F02-022 inactive-grey and F02-038 separators: not dropped. Checked by the screenshot tests with colorSchemes [light, dark].
+- Duplicate entries folded into one part or test each (for example F02-009/F09-062, F02-011/F09-013, F02-012/F09-014, F02-013/F09-063, F02-019/F09-075, F02-039/F09-065, F02-057/F09-067, F02-062/F09-068, F02-036/F09-064).
+
+CHOICES MADE WHERE THE CRITIQUE LEFT A SPLIT
+- Settings: kept as desktop-only settingsButton; web reaches Settings through the account menu (critique option 1). Web tests cover Escape and the close button.
+- Trash: the button test runs on both targets; the aside assertion is web-only; desktop is not asserted (decision 8).
+- Delete on the Home row: the first project row is Home in standard data, and the deletion test removes it. If the app refuses to delete Home, change the delete test to a non-default row.
+- Split toggle is a switch with checked (a switch has no selected state). The critique's "selected/disabled" note was read as selected for buttons and checked for the switch.
+- Palette key: written as Control+K on the paletteButton part. The macOS form (Meta+K) must come from platforms.yaml, which I could not read.
+- Tab close (closeTabErrands) is assumed to open the list delete confirmation (F02-049). Verify against the spec before relying on it.
+
+NOT MEASURED (in the YAML as comments or absent)
+- F02-001, F02-002, F02-003, F02-059, F02-060, F09-058 (window chrome, no web test per decision 2).
+- F02-061 narrow window (no sizes).
+- Shortcut hints, persistence, drag, scroll, middle-click, right-click and double-click tests as listed above.
+- OS-drawn window controls get part checks only, not screenshot comparison (the platform draws them).
+- Desktop Settings 640x520 size (the spec gives it for the web only; no size check written).
+
+NEXT STEP
+Run this contract through the format checker against contract-format.txt and the inventory. Any mismatch in the field names listed above must be fixed, and viewports must be added from the inventory before the screen is run.

@@ -1,0 +1,60 @@
+# How the app.commandpalette contract was written, and what its props make the harness do
+
+Based on: Draft B, the only complete draft, plus the critique. Draft A is a placeholder ("// placeholder replaced below", "Notes A: placeholder") with no parts, props, events or tests, so it adds nothing to the union and is dropped. Draft B cited files (spec/inventory/command-palette.json, features-command-palette.txt, spec/features/area-06.json and area-08.json, spec/screens/notes-command-palette.txt, spec/screens/web.md, spec/decisions.md, spec/library/contract-format.txt, index.txt, CommandPalette.tsx, palette.ts). This merge had no file access, so no claim was re-checked against source. Items the critique says need a source check are kept and listed under open items, not marked verified.
+
+Harness meaning of props:
+- dataset: before mounting, the harness loads that demo data set for the demo account. "standard" (open project Home, open list Errands), "empty" (one list, Inbox), "nolists" (project with no lists). "long" exists in spec/screens/web.md but no test here uses it, so it is left out of the allowed-values comment.
+- task: the harness selects the task with this title in the focused list (Errands in standard) in app state before mounting, so the Delete row shows. "" selects nothing, so no Delete row. A title missing from the chosen data set should be reported as a harness error (proposal; the format gives no rule for this).
+- The palette mounts open. There is no open prop.
+
+Event closed: the palette emits it itself, onClose first and then run. command is the label of the row that ran, or "" when dismissed without running a row. Open: whether the harness can observe this emit is unverified. If it cannot, command must be dropped and about 30 tests need changes.
+
+Critique fixes applied:
+- Header: the screen-id conflict is resolved; the contract id app.commandpalette is used.
+- Parts: added groupHeadingTask and groupHeadingManage. The LIST search now checks the Task heading returning mid-list (Search this list is Task, after New list in Manage). The palette-search test checks the Manage heading between New task and New list.
+- F06-013 scroll test: added a visible check on rowSettings with a comment that visible may not respect the 60vh clip; the screenshot stays as the backstop. F08-049 was removed from the test name, because the feature title ("Palette list runs past its panel") describes overflow and the full record was not read. F08-049 is no longer claimed as covered.
+- F06-010 and F06-037: added { event: closed, times: 0 } to assert that no close happens. Format support for times 0 is unconfirmed.
+- F06-035 and F06-036: replaced the tests that selected the already-active list (errands) and project (home) with non-active ones: "reading" to Reading and "spring" to Spring launch. These names are the critique's examples and are unverified against the data set.
+- F06-002: renamed to say layout is checked by screenshot; centring and the 12vh top edge are screenshot-only.
+- dataset comment: "long" removed from the allowed values, as no test uses it.
+- Delete label "Delete “Book bike service”": kept, with the quote style flagged as unconfirmed.
+- Tab test: kept, with a comment on the unverified single-tab-stop assumption.
+- Hover and press actions on rows: kept as drafted; the format's accepted action list was not checked.
+- Screenshot tests (F06-002, F06-013, F06-014, F08-047): hint glyphs will differ from the desktop reference by design. No mask field was added, because mask support in the format was not confirmed.
+
+Dropped:
+- Draft A (placeholder, no content).
+- Draft B header line "screen id command-palette" (conflicts with the contract id).
+- Draft B tests "F06-035 Go to list shows the lists of the active project" (errands, already active) and "F06-036 Go to project selects that project" (home, already active). Replaced as above.
+- Draft B test name tail "F08-049" in the scroll test.
+- "long" from the dataset comment.
+
+Kept from Draft B and left out on purpose (reasons from Draft B, not re-checked):
+- Scrim press dismissal (F06-018 second half, F08-048): a press on a generic scrim is not expressible; Escape covers dismissal.
+- F06-003 catalog rebuild timing: not observable from the palette.
+- F06-016 row icons and chevron fallback: icons are not parts; screenshot only.
+- F06-017, F08-045, F08-071/072 hint glyphs: screenshot only (see open items).
+- F06-084, F06-086 stacking and portal placement: not observable.
+- F06-087, F08-061 app key map and overlay depth counter: the main window, not mounted here.
+- F06-088 focus return to the opener and F06-089 focus parking on the scrim: the opener is outside this screen, and the input takes focus on open.
+- F08-010, F08-043 opener: the web opener is a title-bar control plus Ctrl/Cmd+K (decision 7), part of the app shell.
+- F06-038 to F06-057 context menu, F06-058 to F06-082 sheets and prompts, F06-083 dim levels (screenshot), F06-091 to F06-103 toasts and recordings, F08-001 to F08-009, F08-011 to F08-042, F08-050 to F08-082: other screens.
+- Drag and drop: none on this screen.
+
+Open items (unverified; check before shipping):
+1. Hint text or icon: F08-078 says "kbd element with spoken label" (text), while F08-045 and F08-074 say icons. Decision 18 values (New task Alt+N, New list Alt+Shift+N, Search this list "/") are therefore not asserted. If the hint is text, add a hint part per row and assert them.
+2. New project hint: "treat Cmd+Shift+P like the reserved chords" is not in decisions.md. Check whether the chord is browser-reserved; if not, keep the reference hint and cite decision 18.
+3. Palette-search query: the inventory records "ne", the screenshot shows "new". Tests use "new". Confirm from the baseline screenshot.
+4. selected on option-mapped buttons: confirm the web target reports aria-selected; otherwise the highlight tests (about eight) fail and only screenshots remain.
+5. times 0 on the closed event: confirm the format accepts it.
+6. Hover and press actions: confirm the format accepts them on these parts.
+7. Delete label quote style: confirm the exact label string against the inventory or app.
+8. F08-049 full record: the title describes overflow; the scroll-in-cap test may not cover it. Needs a separate check.
+9. Blur dismissal on web: no decision source. Decide whether overlays dismiss on blur, and mark F06-090 applicability; no test is possible either way.
+10. Tab order: the input is assumed to be the only tab stop; Shift+Tab is not tested.
+11. Delete row position: code order (after Settings, before Go to list) versus the feature title (after built-in commands). No test depends on it; the spec should be aligned.
+12. Names "Reading" (F06-035) and "Spring launch" (F06-036) must exist in the standard data set; confirm.
+13. Visible check and the 60vh clip: confirm whether the harness visible check respects the scroll container's clip.
+14. "/" hint on Search this list while the palette input is focused: the shortcut cannot fire from inside the palette; decide whether the hint is shown.
+15. Dark scheme: dark classes exist (CommandPalette.tsx:84,89) but were not captured; light only until decided.
+16. Harness wiring of the closed event (see above).

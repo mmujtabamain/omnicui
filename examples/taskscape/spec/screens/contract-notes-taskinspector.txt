@@ -1,0 +1,54 @@
+# How the app.taskinspector contract was written, and what its props make the harness do
+
+Basis: the two drafts (A and B), the critique, and the sources the drafts cite (inventory task-inspector.json, features-task-inspector.txt, notes-task-inspector.txt, web.md, decisions.md, area-03/04 records). This run had no file-reading tool, so I did not open the cited sources myself. Every source-backed claim below is as the drafts and critique report it, and the open items are listed under Uncertain.
+
+Props, and what the harness does with them:
+- dataset (string, default standard): before mounting, the harness signs in as the demo account and loads that data set. Every test uses standard. empty, nolists and long are allowed but not used.
+- task (string, default "Book bike service"): the harness selects the task with that title in its list (Website for "Rewrite the hero section", Errands for the others), then mounts the inspector on it. The inspector is keyed by task id, so another task remounts it. The value must be a title in the chosen data set. The default is Draft A's, which is the row-selected state; Draft B's default was "Rewrite the hero section".
+- Draft B's open prop is dropped. Its harness action sent an undefined message (titleEditReq), and the request it models (F03-012) comes from elsewhere in the app. The Rename button test covers in-place rename.
+
+Events (one set, each named once; the rebuild must emit these as added instrumentation, because the screen emits no events in the source):
+- titleChanged (Draft B's name, replacing Draft A's titleRenamed; same meaning).
+- doneChanged (B's fields, with title, and A's done).
+- previewOpenChanged {open} (A's name and fields, replacing B's previewHidden; both are the Close panel observable, A's maps to setPreviewOpen(false)).
+- deleteRequested {target, title} (B's richer version, which covers notes and attachments).
+- taskSelected, notesChanged, noteSaved, attachRequested, linkRequested and attachmentAction are kept from B; each is read by at least one test.
+- attachRequested kind is limited to file, as the critique asked; the link mention is removed from its comment.
+- notesChanged uses type integer as Draft B wrote it. The validator must accept integer; this is not confirmed.
+
+Parts (one name each; the clearer name kept, with the replaced name in brackets):
+- doneToggle [doneCheck]; breadcrumb [projectPath]; created [createdLine]; updated [updatedLine]; noteBody (first saved note; A's description "always live" corrected to present only when the note exists); noteBodySecond [noteBodyTwo, noteBodySecond]; newNoteEditor [noteDraft]; noteBold etc. [toolbarBold]; noteChars [charCount]; mentionPopup [mentionList]; subtaskDone [subtaskCheck]; attachmentTileLink [attachmentTile, attachTileLink]; attachmentTileImage [attachTileImage]; emptyCopyFile [attachCopyFile]; emptyAddLink [attachAddLink]; inspector dropped with its only test; accentTick kept.
+- All optional flags are removed (critique). Absence is expressed with visible: false.
+- Toolbar parts (noteBold to noteLink, noteChars, noteCharsSecond) are the one floating formatting toolbar, shown on focus of an editor. The toolbar counter (noteChars) follows the focused editor.
+- Tile menu parts (tileMenu, tileMenuRename, tileMenuOpen, tileMenuDownload, tileMenuRemove) are dropped. See the drop list.
+
+Tests merged and de-duplicated: the empty-states test (A's expects plus B's addNote visible); the done toggle (A's test plus B's pressed-twice test); the done-task test (A's version; B's duplicate dropped); the sections test (A's and B's expects merged, without "Works offline" or the Buy groceries note); the Buy groceries subtasks test (A and B merged, no note assertion); the subtask toggle (B's name and event checks plus A's title check); the subtask-selection tests (both kept: Rewrite via A, Buy groceries with taskSelected via B); the autosave tests (B's typing test plus A's blur test with B's noteSaved event); the new-note blur test (A plus B's notesChanged); the Add note header test (A's version); the mention tests (A's and B's, with the Escape duplicate removed); the empty-note discard tests (both kept: different tasks); the Delete task test (B's with target; A's duplicate dropped); the image-tile lightbox test (A's version; B's duplicate dropped).
+
+Drops, with reasons:
+- Draft B prop open and its test "a rename requested by the harness opens the title editor": harness action with an undefined message; the request is outside this screen (critique).
+- Draft B tile menu parts and tests (ContextMenu key on image and link tiles, Download emits download, remote link menu has no Download, tile menu Rename and Remove emit attachmentAction): the ContextMenu key is a requirement no source names, and Download has no source (F04-048 is Reveal in Finder, which web drops). Rename and Remove menu items are sourced (F04-049, F04-050) but unreachable without right-click. Re-add when a keyboard route is confirmed.
+- Draft B inspector part and its trace test "the inspector rises in": F04-014 is the DraftInspector entrance, not this screen (critique).
+- Draft B "Works offline" note text (A only; not confirmable) and the Buy groceries note assertions (conflict with web.md; the critique asked for removal).
+- Draft B test "Enter in the draft note adds a paragraph": duplicates Draft A's plain-Enter test.
+- Draft B duplicates: Enter commits a typed title; Escape reverts a typed title; Copy task button shows Copied; close panel (previewHidden); long title wraps onto more lines; image tile opens the lightbox; empty attachments box offers Copy a file and Add a link; header Add note opens a focused draft editor; hovering a note reveals Delete note (merged into the trace test); the Escape test on "@hero" (Draft A's Escape test covers the behaviour); the dashed-box test is kept.
+- Draft A duplicate: Delete task (kept as B's version with target).
+- Control+A key uses are replaced by End then Shift+Home. Select-all is platform-specific and the format does not translate keys.
+- Draft A's toolbarBold and charCount parts: replaced by noteBold and noteChars (Draft B's names for the same controls).
+
+Added (from the critique, with the test count fixed): typing into a new note creates it before blur (F03-028); underline, strikethrough and numbered buttons (F04-079, 080, 082); a query with no match shows no popup (F03-040); the trailing space after a picked chip (F03-043); a mention hover test; the linkRequested test on the toolbar Add link button; the file and link header tests (F03-064, F03-065); the empty-box buttons; the lightbox dismiss test; the mention chip lightbox test.
+
+Uncertain or conflicting (for the owner):
+1. Header Add note label: the review decision and decision 4 name it "Add note" for both looks; F03-025 calls the header control Note. Kept as "Add note"; the header assertion changes if the label stays Note.
+2. Buy groceries for the week: the reference shows the note "Check the cupboard before going.", but web.md lists none. Tests assert no note; the row-with-subtasks screenshot may differ.
+3. Copied state: lasts 1200 ms. The name check holds only if the harness reads before the timer resets; if settle takes longer, it fails for that reason. Not changed; the owner should decide between a timed check and dropping the name check.
+4. Shot button (Draft A and B both drop it per web.md). The critique notes web.md's decision 5 may turn the Shot slot into Image on web. Not confirmed; no Image part is added. If it is, add an Image part and a test.
+5. Mention order (Brand brief first, hero-sketch second) is assumed by the ArrowDown test and the "@ then mouse click" test. Order-independent tests use @hero.
+6. Selected state on toolbar buttons (noteBold, noteItalic, noteUnderline, noteStrike, noteBullet, noteNumbered) assumes the web advertises selected. Unconfirmed; if not, these are not measured.
+7. Keys: "Shift+Home" selects to line start on every platform in the rich-text editor; not verified against the editor. The key form for named keys follows the drafts.
+8. Events with times 0 and the validator: not confirmed that the validator accepts times 0 or integer.
+9. Reduced motion (decision 16: System, On, Off): the trace tests need it Off. The contract cannot set it; the harness must.
+10. Attachment tile accessible names come from title attributes and captions; not confirmed.
+11. Mention chip click target: the chip is a button part; its behaviour (lightbox) is per Draft B.
+12. Relative times are masked in screenshots and matched by prefix.
+
+Left out on purpose (merged): Shot button, Spinner and tooltip (web drops them); drag onto a note (drag acts only on sliders); right-click and tile menu (see drop list); lightbox internals (attachment-lightbox); the sheets that Rename, Link URL, File, Remove, Delete and Delete note open, plus the Move to Trash confirmation (other screens; Enter does not confirm destructive sheets, decision 10); native file picker; pane shell, resizer and persistence (main window); no-project and no-list states (no demo data has them); native title tooltips on Created and Updated; DraftInspector and MultiInspector features (F04-001 to F04-032 and related); F03-047 and F04-045 drag; F03-029 and F03-034 (no observable outcome); F03-050 bare-domain link (no visible link text); F03-054 near-limit tone; F03-055 and F03-056 placeholder and lazy load; F03-060 and F03-061 nesting and geometry (screenshots only); F04-040 async thumbnails (harness settle); F04-093 em-dash fallback (every demo task has a project); F04-051 to F04-068 lightbox internals; F04-070 to F04-072 logic. The inventory's merged-notes field holds a paragraph about a relayed chat request; it is not part of this task and was not acted on.

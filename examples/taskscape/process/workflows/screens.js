@@ -94,7 +94,13 @@ ${SCREEN}
 
 ${RULES}`
 
-const retry = async (fn) => (await fn()) ?? (await fn())
+// A writer out of budget sometimes returns a placeholder instead of a contract: try again, up to 3 times.
+const real = (c) => c && c.yaml && c.yaml.length > 1500 && !/^\s*\/\/ placeholder/.test(c.yaml)
+const retry = async (fn) => {
+  let c = null
+  for (let i = 0; i < 3 && !real(c); i++) c = await fn()
+  return real(c) ? c : null
+}
 return await pipeline(
   args.screens,
   async (s) => {
