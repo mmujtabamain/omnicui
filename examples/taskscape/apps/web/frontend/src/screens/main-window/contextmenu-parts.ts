@@ -1,15 +1,16 @@
 // data-part names for the context menus (contract app.contextmenus), in the main window. The child screens
 // tag their own elements (app.appbar.*, app.tasklist.*, app.sheets.*, app.toasthost.*), and the main window's
-// own tagger (parts.ts) renames some of them to app.mainwindow.*. SOURCES gives every name a part can carry
+// own tagger (parts.ts) adds app.mainwindow.* names to some of them. SOURCES gives every name a part can carry
 // the contract's name. The parts with no name of their own (the More buttons, the task rows, the submenu,
 // the project row that is last) are claimed by structure.
 //
-// parts.ts claims some elements by structure too (the first row's More, the first tab, the Reading tab, the
-// sheet buttons "Create", "Delete list" and "Move to Trash"). An element it holds is not taken here: the two
-// taggers would take turns on it for ever, so that part is left to the main window's name.
+// data-part is a list of names, and the test matches any one of them. This tagger adds its own names
+// (app.contextmenus.*) next to the other names an element carries, and removes only its own names that are no
+// longer due. Every write is conditional, so the tagger is idempotent and the MutationObserver that runs it
+// settles after one extra pass.
 const P = "app.contextmenus.";
 
-/** Names a part carries before this tagger renames it: the child screen's, and the main window's rename of it. */
+/** Names a part carries before this tagger renames it: the child screen's, and the main window's name for it. */
 const SOURCES: Record<string, string> = {
   // Project switcher and project dropdown
   "app.appbar.projectSwitcher": "projectSwitch",
@@ -71,44 +72,32 @@ const SOURCES: Record<string, string> = {
   "app.toasthost.dismiss": "toastDismiss",
 };
 
-/** The names parts.ts gives by claiming an element. A claim does not take an element that carries one. */
-const MAIN_CLAIMS = new Set([
-  "app.mainwindow.rowMore",
-  "app.mainwindow.row",
-  "app.mainwindow.rowTitle",
-  "app.mainwindow.rowSelect",
-  "app.mainwindow.listTab",
-  "app.mainwindow.listTabReading",
-  "app.mainwindow.listTabGarden",
-  "app.mainwindow.listTabNew",
-  "app.mainwindow.deleteList",
-  "app.mainwindow.deleteListReading",
-  "app.mainwindow.dialogCreate",
-  "app.mainwindow.dialogDelete",
-  "app.mainwindow.dialogMoveToTrash",
-  "app.mainwindow.rowBike",
-  "app.mainwindow.rowKeysTitle",
-  "app.mainwindow.rowGroceries",
-  "app.mainwindow.rowHeroRewrite",
-  "app.mainwindow.subtaskOatMilk",
-  "app.mainwindow.matchRow",
-  "app.mainwindow.commandInput",
-  "app.mainwindow.paletteOpenTrash",
-]);
-
 const buttonsIn = (root: ParentNode | null | undefined) =>
   Array.from(root?.querySelectorAll<HTMLElement>('[role="button"][aria-label], button[aria-label]') ?? []);
 
 const text = (el: Element | null | undefined) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();
 
-/** Gives `part` to `target` (or to nothing when it is absent) and takes it from every other element. */
+/** The names an element carries, in order. */
+const namesOf = (el: Element): string[] => (el.getAttribute("data-part") ?? "").split(/\s+/).filter(Boolean);
+
+/** Writes the element's names only when the list differs from the one it carries. */
+function setNames(el: Element, next: string[]): void {
+  const value = next.join(" ");
+  if (value === namesOf(el).join(" ")) return;
+  if (value) el.setAttribute("data-part", value);
+  else el.removeAttribute("data-part");
+}
+
+/** Every context-menu name that a source name gives: the values of SOURCES, prefixed. */
+const RENAMED = new Set(Object.values(SOURCES).map((part) => P + part));
+
+/** Gives `part` to `target` and takes it from every other element; the other names an element carries stay. */
 function claim(part: string, target: Element | null | undefined): void {
   const full = P + part;
-  if (target && MAIN_CLAIMS.has(target.getAttribute("data-part") ?? "")) return;
-  for (const el of Array.from(document.querySelectorAll(`[data-part="${full}"]`))) {
-    if (el !== target) el.removeAttribute("data-part");
+  for (const el of Array.from(document.querySelectorAll(`[data-part~="${full}"]`))) {
+    if (el !== target) setNames(el, namesOf(el).filter((name) => name !== full));
   }
-  if (target && target.getAttribute("data-part") !== full) target.setAttribute("data-part", full);
+  if (target && !namesOf(target).includes(full)) setNames(target, [...namesOf(target), full]);
 }
 
 /** The row each named title was found in. A rename replaces the title button, but the row stays. */
@@ -118,18 +107,22 @@ const rowsByTitle = new Map<string, HTMLElement>();
 function rowOf(title: string): HTMLElement | null {
   const known = rowsByTitle.get(title);
   if (known?.isConnected) return known;
-  const pane = document.querySelector('[data-part="app.mainwindow.taskPane"]');
+  const pane = document.querySelector('[data-part~="app.mainwindow.taskPane"]');
   const rows = Array.from(pane?.querySelectorAll<HTMLElement>("[data-task-id]") ?? []);
-  const row = rows.find((r) => buttonsIn(r).some((el) => el.getAttribute("aria-label") === title)) ?? null;
+  const row = rows.find((r) => buttonsIn(r).some((el) => (el.getAttribute("aria-label") ?? "").startsWith(title))) ?? null;
   if (row) rowsByTitle.set(title, row);
   return row;
 }
 
-/** The title button of a row: the row's button that is neither its check, its disclosure nor its More button. */
+/**
+ * The title of a row: the title button's first span (the title alone; the button also holds the note under it).
+ * The title button is the row's button that is neither its check, its disclosure nor its More button.
+ */
 function titleOf(title: string): HTMLElement | null {
   const row = rowOf(title);
   if (!row) return null;
-  return buttonsIn(row).find((el) => !el.matches('[data-slot="check"], [data-row-control]') && el.getAttribute("aria-label") !== "More") ?? null;
+  const button = buttonsIn(row).find((el) => !el.matches('[data-slot="check"], [data-row-control]') && el.getAttribute("aria-label") !== "More") ?? null;
+  return button?.querySelector<HTMLElement>(":scope > span") ?? button;
 }
 
 /** The More button of the row titled `title`. */
@@ -137,12 +130,14 @@ function moreOf(title: string): HTMLElement | null {
   return rowOf(title)?.querySelector<HTMLElement>('[aria-label="More"]') ?? null;
 }
 
-/** Renames every element whose name is a source name. */
+/** Adds the context-menu name of each source name an element carries; drops its own once the source no longer gives it. */
 function renameAll(): void {
   for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-part]"))) {
-    const name = el.getAttribute("data-part") ?? "";
-    const part = SOURCES[name];
-    if (part !== undefined) el.setAttribute("data-part", P + part);
+    const names = namesOf(el);
+    const due = names.flatMap((name) => (SOURCES[name] !== undefined ? [P + SOURCES[name]] : []));
+    const next = names.filter((name) => !RENAMED.has(name) || due.includes(name));
+    for (const name of due) if (!next.includes(name)) next.push(name);
+    setNames(el, next);
   }
 }
 
@@ -164,9 +159,9 @@ function claimStructure(): void {
   claim("moveGarden", garden);
 
   // The project dropdown's last project row, when there are three or more (the first two carry their names).
-  const menu = document.querySelector<HTMLElement>(`[data-part="${P}projectMenu"]`);
+  const menu = document.querySelector<HTMLElement>(`[data-part~="${P}projectMenu"]`);
   const items = Array.from(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []).filter(
-    (el) => el.getAttribute("data-part") !== P + "projectNew",
+    (el) => !namesOf(el).includes(P + "projectNew"),
   );
   claim("projectLast", items.length >= 3 ? items[items.length - 1] : null);
 }

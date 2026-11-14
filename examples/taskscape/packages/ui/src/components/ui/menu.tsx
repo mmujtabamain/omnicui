@@ -177,8 +177,9 @@ export function Menu({
     if (next !== lift) setLift(next);
   };
 
+  // Modal: a press outside closes the menu and goes no further (it does not reach what is under it).
   return (
-    <DropdownMenuPrimitive.Root open={open} onOpenChange={handleRootChange} modal={false}>
+    <DropdownMenuPrimitive.Root open={open} onOpenChange={handleRootChange} modal>
       {control ? (
         triggerNode && <DropdownMenuPrimitive.Trigger asChild>{triggerNode}</DropdownMenuPrimitive.Trigger>
       ) : (

@@ -1,10 +1,11 @@
-// data-part names for the main window (contract app.mainwindow). The child screens tag their own
-// elements (app.appbar.*, app.tasklist.*, ...): RENAMES gives those the main window's names. The parts no
+// data-part names for the main window (contract app.mainwindow). The child screens tag their own elements
+// (app.appbar.*, app.tasklist.*, ...): RENAMES gives each of those a main-window name as well. The parts no
 // child tags are claimed here, by position, accessible name or text.
 //
-// An element carries one data-part, so a claim never takes an element that already carries another part
-// of this screen: it takes the element's first child span instead. Every write is conditional and the
-// tagger is idempotent, so the MutationObserver that runs it settles after one extra pass.
+// data-part is a list of names, and the test matches any one of them. This tagger adds its own names
+// (app.mainwindow.*) next to the child screen's and the context-menu tagger's, and removes only its own names
+// that are no longer due. Every write is conditional, so the tagger is idempotent and the MutationObserver that
+// runs it settles after one extra pass.
 const P = "app.mainwindow.";
 
 /** Child-screen data-part -> the main window's part. */
@@ -84,39 +85,45 @@ export function setListCount(count: number): void {
   listCount = count;
 }
 
-/** The name each renamed element had from its child screen, and the name it was given here. */
-const origin = new WeakMap<Element, { orig: string; applied: string }>();
+/** The names an element carries, in order. */
+const namesOf = (el: Element): string[] => (el.getAttribute("data-part") ?? "").split(/\s+/).filter(Boolean);
 
+/** Writes the element's names only when the list differs from the one it carries. */
+function setNames(el: Element, next: string[]): void {
+  const value = next.join(" ");
+  if (value === namesOf(el).join(" ")) return;
+  if (value) el.setAttribute("data-part", value);
+  else el.removeAttribute("data-part");
+}
+
+/**
+ * Every main-window name that a child name gives: the values of RENAMES, prefixed. rowMore is left out: the
+ * structure claims it too (the first row's More, which may lack the child's name), so dropping it here and
+ * claiming it again would write on every pass.
+ */
+const RENAMED = new Set(Object.values(RENAMES).map((part) => P + part).filter((name) => name !== P + "rowMore"));
+
+/** Adds the main-window name of each child name an element carries; drops its own rename once the child no longer gives it. */
 function renameAll(): void {
   for (const el of Array.from(document.querySelectorAll("[data-part]"))) {
-    const current = el.getAttribute("data-part") ?? "";
-    const known = origin.get(el);
-    // React writes a prop only when it changes: a name other than the one applied is the child's new name.
-    const orig = known && known.applied === current ? known.orig : current;
-    const part = RENAMES[orig];
-    if (part === undefined) continue;
-    const full = P + part;
-    if (current !== full) el.setAttribute("data-part", full);
-    origin.set(el, { orig, applied: full });
+    const names = namesOf(el);
+    const due = names.flatMap((name) => (RENAMES[name] !== undefined ? [P + RENAMES[name]] : []));
+    const next = names.filter((name) => !RENAMED.has(name) || due.includes(name));
+    for (const name of due) if (!next.includes(name)) next.push(name);
+    setNames(el, next);
   }
 }
 
 const text = (el: Element | null | undefined) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();
 
-/** True for an element that already carries one of this screen's parts. */
-const ours = (el: Element) => (el.getAttribute("data-part") ?? "").startsWith(P);
-
-/** Gives `part` to the first element of `found` (or its first child span when that element is taken). */
+/** Gives `part` to the first element of `found` and takes it from every other element; the other names stay. */
 function claim(part: string, found: (Element | null | undefined)[]): void {
   const full = P + part;
-  let target: Element | null = found.find((el): el is Element => !!el) ?? null;
-  if (target && ours(target) && target.getAttribute("data-part") !== full) {
-    target = target.querySelector(":scope > span");
+  const target = found.find((el): el is Element => !!el) ?? null;
+  for (const el of Array.from(document.querySelectorAll(`[data-part~="${full}"]`))) {
+    if (el !== target) setNames(el, namesOf(el).filter((name) => name !== full));
   }
-  for (const el of Array.from(document.querySelectorAll(`[data-part="${full}"]`))) {
-    if (el !== target) el.removeAttribute("data-part");
-  }
-  if (target && target.getAttribute("data-part") !== full) target.setAttribute("data-part", full);
+  if (target && !namesOf(target).includes(full)) setNames(target, [...namesOf(target), full]);
 }
 
 const buttonsIn = (root: ParentNode | null | undefined) =>
@@ -140,7 +147,7 @@ function tagStructure(): void {
   }
 
   // The active list's first row (the left pane): its container, title, round check and More button.
-  const pane = document.querySelector(`[data-part="${P}taskPane"]`);
+  const pane = document.querySelector(`[data-part~="${P}taskPane"]`);
   const rows = Array.from(pane?.querySelectorAll<HTMLElement>("[data-task-id]") ?? []);
   const firstRow = rows[0] ?? null;
   // The row the tests name is "Pick up prescription", wherever a search has moved it (or dropped it from the list).
@@ -155,7 +162,7 @@ function tagStructure(): void {
   claim("matchRow", [options.find((el) => text(el).includes("soil health"))]);
 
   // List tabs: the tabs in order, and their Delete buttons in the same order.
-  const listTabs = document.querySelector(`[data-part="${P}listTabs"]`);
+  const listTabs = document.querySelector(`[data-part~="${P}listTabs"]`);
   const tabs = Array.from(listTabs?.querySelectorAll<HTMLElement>('[role="tab"]') ?? []);
   const tab = (name: string) => tabs.find((el) => text(el).includes(name));
   const deletes = Array.from(listTabs?.querySelectorAll<HTMLElement>('[aria-label="Delete list"]') ?? []);
@@ -168,7 +175,7 @@ function tagStructure(): void {
   claim("deleteListReading", [readingAt >= 0 ? deletes[readingAt] : undefined]);
 
   // The split button is disabled with fewer than two lists (F09-032); the title bar only checks for none.
-  const split = document.querySelector<HTMLButtonElement>(`[data-part="${P}splitView"]`);
+  const split = document.querySelector<HTMLButtonElement>(`[data-part~="${P}splitView"]`);
   if (split) {
     const want = listCount < 2;
     if (want !== split.hasAttribute("disabled")) {
@@ -178,13 +185,13 @@ function tagStructure(): void {
   }
 
   // The command palette: its input and the Open Trash command.
-  const palette = document.querySelector(`[data-part="${P}commandPalette"]`);
+  const palette = document.querySelector(`[data-part~="${P}commandPalette"]`);
   claim("commandInput", [palette?.querySelector('input, textarea, [role="combobox"], [contenteditable="true"]')]);
   const items = Array.from(palette?.querySelectorAll<HTMLElement>('[role="option"], [role="button"], [role="menuitem"]') ?? []);
   claim("paletteOpenTrash", [items.find((el) => text(el).includes("Open Trash"))]);
 
   // Sheets: the card's buttons, found by their label.
-  const card = document.querySelector(`[data-part="${P}dialog"]`);
+  const card = document.querySelector(`[data-part~="${P}dialog"]`);
   const sheetButtons = Array.from(card?.querySelectorAll<HTMLElement>('button, [role="button"]') ?? []);
   const named = (label: string) => sheetButtons.find((el) => text(el) === label) ?? sheetButtons.find((el) => text(el).includes(label));
   claim("dialogCreate", [named("Create")]);
@@ -195,7 +202,7 @@ function tagStructure(): void {
 /** The round checks are checkboxes: the check itself carries the role and its picked state. */
 function tagChecks(): void {
   for (const part of CHECKS) {
-    const el = document.querySelector(`[data-part="${P + part}"]`);
+    const el = document.querySelector(`[data-part~="${P + part}"]`);
     if (!el) continue;
     if (el.getAttribute("role") !== "checkbox") el.setAttribute("role", "checkbox");
     const checked = el.getAttribute("aria-selected") === "true" ? "true" : "false";

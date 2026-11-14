@@ -272,7 +272,16 @@ async function step(method: string, p: Params, settled = true) {
     case "press": {
       const loc = await locate(p.part);
       for (let i = 0; i < (p.times ?? 1); i++) {
-        if (await loc.isDisabled()) {
+        // A user presses where the part is: if something covers it (a sheet's scrim, a modal menu's
+        // outside layer), the press lands on that, as the user's would; Playwright's click() would
+        // wait for the part to be uncovered instead.
+        await loc.scrollIntoViewIfNeeded().catch(() => {});
+        const covered = await loc.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !hit || !(el === hit || el.contains(hit));
+        });
+        if (covered || (await loc.isDisabled())) {
           const box = await loc.boundingBox();
           if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
         } else await loc.click();
