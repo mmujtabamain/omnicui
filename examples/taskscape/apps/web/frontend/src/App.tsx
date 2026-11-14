@@ -13,9 +13,16 @@ export function App() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   useAppearance(me.data ? settings.data : undefined);
-  useEffect(() => setUnauthorizedHandler(() => { qc.setQueryData(keys.me, undefined); qc.invalidateQueries({ queryKey: keys.me }); navigate("/signin"); }), [qc, navigate]);
+  // A 401 while signed in means the session ended: back to the sign-in page. Signed out, a 401 is expected.
+  useEffect(() => setUnauthorizedHandler(() => {
+    if (!qc.getQueryData(keys.me)) return;
+    qc.removeQueries({ queryKey: keys.settings });
+    qc.invalidateQueries({ queryKey: keys.me });
+    navigate("/signin");
+  }), [qc, navigate]);
 
-  if (me.isPending) return null;
+  // Only the very first check shows nothing; later re-checks keep the page on screen.
+  if (me.isLoading) return null;
   const signedIn = !!me.data;
   return (
     <Crash>

@@ -15,7 +15,11 @@ export const keys = {
 };
 
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: ep.auth.me, retry: false });
-export const useSettings = () => useQuery({ queryKey: keys.settings, queryFn: ep.settings.get });
+/** The account's settings; nothing is asked for while signed out (it would only answer 401). */
+export const useSettings = () => {
+  const me = useMe();
+  return useQuery({ queryKey: keys.settings, queryFn: ep.settings.get, enabled: !!me.data });
+};
 export const useShortcuts = () => useQuery({ queryKey: keys.shortcuts, queryFn: ep.settings.shortcuts });
 export const useProjects = () => useQuery({ queryKey: keys.projects, queryFn: ep.projects.list });
 export const useLists = (project: Id | null | undefined) =>
