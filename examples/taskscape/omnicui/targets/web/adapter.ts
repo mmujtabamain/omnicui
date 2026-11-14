@@ -255,6 +255,10 @@ async function doAction(p: Params) {
     if (!m) throw new Error("no video or audio element in this part");
     if (m.paused) await m.play().catch(() => {}); else m.pause();
   });
+  // Held keys: down now, up never (the next mount opens a fresh page). The mouse steps that follow
+  // carry them, as a user's click does while the key is held.
+  else if (p.name === "holdModifier") await page.keyboard.down("Alt");
+  else if (p.name === "holdSelect") await page.keyboard.down(process.platform === "darwin" ? "Meta" : "Control");
   else if (p.name in DO) await DO[p.name](await locate(p.part), p.with ?? {});
   else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
 }
@@ -281,7 +285,9 @@ async function step(method: string, p: Params, settled = true) {
       if ((await page.locator(selector(p.part)).count()) === 0) break;
       const box = await loc.boundingBox();
       if (!box) break;
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      // Two moves, so the part gets pointerenter and then a pointermove inside it (a submenu opens on either).
+      await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2, { steps: 2 });
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 2 });
       break;
     }
     case "do": await doAction(p); break;
@@ -321,7 +327,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async advertise() {
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback", ...Object.keys(DO).map((n) => `do.${n}`)],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback", "do.holdModifier", "do.holdSelect", ...Object.keys(DO).map((n) => `do.${n}`)],
       cannot: {
         "do.scroll": "not implemented in this target yet",
         "do.swipe": "a desktop browser has no swipe",
