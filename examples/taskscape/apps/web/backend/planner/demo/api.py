@@ -21,6 +21,8 @@ def reset(request):
         return Response({"dataset": [f"one of {', '.join(sorted(demo.DATASETS))}"]}, status=400)
     User = get_user_model()
     user = User.objects.filter(email=EMAIL).first() or User.objects.create_user(username=EMAIL, email=EMAIL, password="taskscape-demo", first_name="Demo")
+    # Accounts a test created (a sign-up) go too, so every test starts from the same state.
+    User.objects.exclude(pk=user.pk).delete()
     counts = demo.load(user, name)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     log.info("demo reset %s %s", name, user.id)

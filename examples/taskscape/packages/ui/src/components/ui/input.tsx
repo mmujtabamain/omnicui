@@ -51,6 +51,10 @@ export interface InputProps
   > {
   /** Controlled text. */
   value?: string;
+  /** What the field holds: password masks it; email and url bring the matching keyboard and autofill. */
+  type?: "text" | "password" | "email" | "url" | "search";
+  /** Autofill hint, e.g. "email", "current-password", "new-password". */
+  autoComplete?: string;
   name?: string;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -83,7 +87,7 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
   {
     value = "", placeholder = "", ariaLabel = "", size = "md", mode = "inline", multiline = false,
     autoFocus = false, selectOnFocus = false, selectOnOpen = true, stopKeyPropagation = false,
-    spellCheck = true, disabled = false, editRequest = 0, className,
+    spellCheck = true, disabled = false, editRequest = 0, type = "text", autoComplete, className,
     onValueChange, onSubmit, onCommit, onCancel, ...props
   },
   ref,
@@ -198,7 +202,7 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
 
   if (multiline)
     return <textarea {...props} {...shared} ref={setRef} rows={1} aria-multiline={true} />;
-  return <input {...props} {...shared} ref={setRef} type="text" />;
+  return <input {...props} {...shared} ref={setRef} type={type} autoComplete={autoComplete} />;
 });
 
 export { inputVariants };

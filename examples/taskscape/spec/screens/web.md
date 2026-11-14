@@ -35,9 +35,9 @@ except where this file (or `spec/decisions.md`) says otherwise.
 Every screen test signs in as the demo account and loads one data set (`dataset` prop):
 
 - `standard` (default): projects Home (lists Errands, Reading, Garden) and Spring launch (Website,
-  Press kit). Errands holds "Buy groceries for the week" (subtasks Oat milk (done), Sourdough loaf,
-  Apples), "Pick up prescription" (notes "Counter closes at 6"), "Post the parcel to Mum" (done),
-  "Book bike service", "Cut a spare key". Website holds "Rewrite the hero section" (subtasks "Draft
+  Press kit). Errands holds, in this order, "Pick up prescription" (notes "Counter closes at 6"), "Post
+  the parcel to Mum" (done), "Book bike service", "Cut a spare key", "Buy groceries for the week"
+  (subtasks Oat milk (done), Sourdough loaf, Apples). Website holds "Rewrite the hero section" (subtasks "Draft
   headline options", "Pick the hero image" (done); two notes; a link "Brand brief" and an image
   "hero-sketch.png"), "Pricing page: compare plans table", "Collect FAQ questions from support".
   Reading: "Finish the novel on the nightstand", "Read the long article on soil health" (done),

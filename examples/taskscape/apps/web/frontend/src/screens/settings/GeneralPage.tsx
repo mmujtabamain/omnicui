@@ -50,8 +50,8 @@ const MOTION_CHOICES: Choice<Settings["reduced_motion"]>[] = [
 export interface GeneralPageProps {
   /** The values now shown. */
   values: Settings;
-  /** The values when the page opened. */
-  baseline: Settings;
+  /** True when a setting differs from its open-time value. */
+  changed: (field: PrefField) => boolean;
   /** Words of the search; empty when not searching. */
   tokens: string[];
   /** The search is limited to this pane (a click on a tab that had matches). */
@@ -61,13 +61,13 @@ export interface GeneralPageProps {
   onDiscard: (fields: PrefField[]) => void;
 }
 
-export function GeneralPage({ values, baseline, tokens, scoped, failed, onChange, onDiscard }: GeneralPageProps) {
+export function GeneralPage({ values, changed, tokens, scoped, failed, onChange, onDiscard }: GeneralPageProps) {
   const searching = tokens.length > 0;
   const rowShown = (id: string) => !searching || GENERAL_ROWS.some((row) => row.id === id && rowMatches(row, tokens));
   const groupShown = (group: string) =>
     !searching || GENERAL_ROWS.some((row) => row.group === group && rowMatches(row, tokens));
   const heading = (name: string) => (searching && !scoped ? `General · ${name}` : name);
-  const changed = (fields: PrefField[]) => fields.some((field) => values[field] !== baseline[field]);
+  const groupChanged = (fields: PrefField[]) => fields.some((field) => changed(field));
 
   return (
     <div className="flex min-w-0 flex-col gap-[1.286rem]">
@@ -76,7 +76,7 @@ export function GeneralPage({ values, baseline, tokens, scoped, failed, onChange
         labelPart="app.settingsgeneral.appearanceHeader"
         groupPart="app.settingsgeneral.appearanceGroup"
         discardPart="app.settingsgeneral.appearanceDiscard"
-        changed={changed(APPEARANCE)}
+        changed={groupChanged(APPEARANCE)}
         onDiscard={() => onDiscard(APPEARANCE)}
         visible={groupShown("appearance")}
       >
@@ -118,7 +118,7 @@ export function GeneralPage({ values, baseline, tokens, scoped, failed, onChange
         labelPart="app.settingsgeneral.tasksHeader"
         groupPart="app.settingsgeneral.tasksGroup"
         discardPart="app.settingsgeneral.tasksDiscard"
-        changed={changed(TASKS)}
+        changed={groupChanged(TASKS)}
         onDiscard={() => onDiscard(TASKS)}
         visible={groupShown("tasks")}
       >

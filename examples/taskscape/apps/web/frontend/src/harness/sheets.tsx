@@ -7,7 +7,7 @@ import { useLists, useProjects, useTasks } from "../api/queries";
 import { useUi } from "../state/ui";
 import { SheetHost, openSheet, type SheetResult, type SheetSpec } from "../screens/sheets";
 
-/** The answer the contract's "answered" event carries. */
+/** The payload of the "answered" event. text and id are "" when the result has none. */
 interface Answered {
   action: string;
   text: string;
@@ -20,8 +20,8 @@ interface SheetsProps {
   list?: string;
   project?: string;
   task?: string;
-  /** Receives the "answered" event: the sheet resolved. */
-  onAnswered?: (payload: Answered) => void;
+  /** The event sink the runner provides: called with the event name and its payload. */
+  emit?: (name: string, payload: Answered) => void;
 }
 
 function SheetsHarness(props: SheetsProps) {
@@ -33,17 +33,15 @@ function SheetsHarness(props: SheetsProps) {
 }
 
 function SheetsStage({
-  sheet = "newList", list = "Reading", project = "Spring launch", task = "Book bike service", onAnswered,
+  sheet = "newList", list = "Reading", project = "Spring launch", task = "Book bike service", emit,
 }: SheetsProps) {
   const projects = useProjects();
   const home = projects.data?.find((p) => p.name === "Home");
   const homeLists = useLists(home?.id);
   const errands = homeLists.data?.find((l) => l.name === "Errands");
   const errandTasks = useTasks({ list: errands?.id });
-  const started = React.useRef(false);
-
   // Renders nothing until the data the chosen sheet needs has loaded.
-  const spec: SheetSpec | null = (() => {
+  const found: SheetSpec | null = (() => {
     if (!projects.data || !homeLists.data || !home) return null;
     switch (sheet) {
       case "newList":
@@ -76,9 +74,16 @@ function SheetsStage({
     }
   })();
 
-  React.useEffect(() => {
-    if (!spec || started.current) return;
-    started.current = true;
+  // The spec is kept once found: a write (Move to Trash) removes its row from the refetched data,
+  // and the sheet and its toast must outlive that.
+  // Layout effects: the sheet is up before the browser paints, so the runner never sees the gap.
+  const [spec, setSpec] = React.useState<SheetSpec | null>(null);
+  React.useLayoutEffect(() => {
+    if (spec === null && found !== null) setSpec(found);
+  }, [spec, found]);
+
+  React.useLayoutEffect(() => {
+    if (!spec) return;
     if (spec.kind === "deleteConfirm" && home && errands) {
       // The task is selected in the list behind the sheet, as the reference shows it.
       const ui = useUi.getState();
@@ -87,8 +92,10 @@ function SheetsStage({
       ui.select([spec.task.id]);
       ui.preview(spec.task.id);
     }
-    openSheet(spec).then((result) => onAnswered?.(answered(result)));
-  }, [spec, home, errands, onAnswered]);
+    // The answer leaves the page once per opened sheet, through the runner's sink.
+    openSheet(spec).then((result) => emit?.("answered", answered(result)));
+    // Opens once: the spec is fixed for the life of this mount.
+  }, [spec]);
 
   if (!spec) return null;
   return (

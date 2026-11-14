@@ -10,12 +10,11 @@ import { Input } from "@taskscape/ui/input";
 import { Overlay, OverlayTitle } from "@taskscape/ui/overlay";
 import { Scrim } from "@taskscape/ui/scrim";
 import { Text } from "@taskscape/ui/text";
-import { Toast } from "@taskscape/ui/toast";
 import * as ep from "../../api/endpoints";
 import { useLists, useWrite } from "../../api/queries";
 import type { TaskList } from "../../api/types";
 import { rollListName, rollProjectName } from "./names";
-import { type SheetResult, type SheetSpec, useSheets } from "./store";
+import { type SheetResult, type SheetSpec, type ToastState, useSheets } from "./store";
 
 type Commit = (spec: SheetSpec, name: string) => Promise<SheetResult>;
 
@@ -67,49 +66,73 @@ function useCommit(): Commit {
   };
 }
 
-/** Undo (or Try again after a failure). A failure keeps the toast up with the error. */
-function retryToast() {
-  const toast = useSheets.getState().toast;
-  if (!toast?.retry) return;
-  toast.retry().catch(() => useSheets.getState().setToast({ ...toast, failed: true }));
+/** The toast's action: Undo, or Try again after a failure. A failure brings the toast back with the error. */
+function runToastAction(toast: ToastState) {
+  useSheets.getState().setToast(null);
+  toast.retry?.().catch(() => useSheets.getState().setToast({ ...toast, failed: true }));
 }
 
-/** Toast has no data-part of its own, so its root, Undo and close are tagged after each render. */
-function tagToastParts() {
-  const root = document.querySelector<HTMLElement>('[data-slot="toast"]');
-  if (!root) return;
-  root.setAttribute("data-part", "app.sheets.toast");
-  root.querySelector('[data-slot="action"]')?.setAttribute("data-part", "app.sheets.toastUndo");
-  root.querySelector('[data-slot="close"]')?.setAttribute("data-part", "app.sheets.toastClose");
+const TOAST_MS = 6000;
+
+/**
+ * The "Moved to Trash" toast, bottom centre. Always mounted and hidden while there is none, so its
+ * parts exist in the page. Each new toast restarts the 6-second timer.
+ */
+function TrashToast() {
+  const toast = useSheets((s) => s.toast);
+
+  React.useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => useSheets.getState().setToast(null), TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-[1.429rem] z-(--z-index-popover) flex justify-center">
+      <div
+        data-part="app.sheets.toast"
+        role="status"
+        className={`pointer-events-auto relative flex h-[2.929rem] max-w-[calc(100%-2.286rem)] items-center gap-2 rounded-(--radius-control) border border-edge-2 bg-surface-3 pr-1.5 pl-3.5 shadow-lift animate-rise ${toast ? "" : "hidden"}`}
+      >
+        <Text size="md" overflow="truncate">
+          {toast ? (toast.failed ? toast.errorMessage : toast.message) : ""}
+        </Text>
+        <Button
+          data-part="app.sheets.toastUndo"
+          variant="ghost"
+          tone="strong"
+          hover="wash"
+          size="sm"
+          width="content"
+          label={toast?.failed ? "Try again" : "Undo"}
+          onClick={() => toast && runToastAction(toast)}
+        />
+        <Button
+          data-part="app.sheets.toastClose"
+          variant="ghost"
+          tone="muted"
+          hover="wash"
+          size="sm"
+          shape="icon"
+          width="content"
+          icon="close"
+          iconSize={16}
+          ariaLabel="Dismiss"
+          onClick={() => useSheets.getState().setToast(null)}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function SheetHost() {
   const pending = useSheets((s) => s.pending);
-  const toast = useSheets((s) => s.toast);
   const commit = useCommit();
-
-  // Radix mounts the toast after this render, so the tags follow the DOM as it changes.
-  React.useEffect(() => {
-    tagToastParts();
-    const observer = new MutationObserver(tagToastParts);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <>
       {pending && <SheetCard key={pending.key} spec={pending.spec} commit={commit} />}
-      <Toast
-        open={toast !== null}
-        message={toast?.message ?? ""}
-        failed={toast?.failed ?? false}
-        errorMessage={toast?.errorMessage ?? "Could not undo"}
-        actionLabel="Undo"
-        showAction={toast?.retry !== undefined}
-        duration={6000}
-        onActioned={retryToast}
-        onDismissed={() => useSheets.getState().setToast(null)}
-      />
+      <TrashToast />
     </>
   );
 }
@@ -182,6 +205,11 @@ function configFor(spec: SheetSpec, projectLists: TaskList[] | undefined): Confi
         accept: "Move to Trash", instead: false, prompt: null,
       };
   }
+}
+
+/** Footer buttons: 6rem (84px) on name sheets; 7.143rem (100px) on the deletion sheets, as the reference. */
+function footerWidth(danger: boolean): string {
+  return danger ? "min-w-[7.143rem]" : dialogButtonVariants();
 }
 
 function SheetCard({ spec, commit }: { spec: SheetSpec; commit: Commit }) {
@@ -301,6 +329,7 @@ function SheetCard({ spec, commit }: { spec: SheetSpec; commit: Commit }) {
               insteadId="import"
               data-part="app.sheets.importJson"
               label="Import JSON…"
+              className="min-w-[9.071rem]"
               onResolve={(id) => answer({ action: "instead", id })}
             />
           )}
@@ -311,7 +340,7 @@ function SheetCard({ spec, commit }: { spec: SheetSpec; commit: Commit }) {
               size="lg"
               width="content"
               label="Cancel"
-              className={dialogButtonVariants()}
+              className={footerWidth(danger)}
               onClick={() => answer({ action: "dismiss" })}
             />
             <Button
@@ -320,7 +349,7 @@ function SheetCard({ spec, commit }: { spec: SheetSpec; commit: Commit }) {
               size="lg"
               width="content"
               label={cfg.accept}
-              className={dialogButtonVariants()}
+              className={footerWidth(danger)}
               disabled={cfg.prompt !== null && name === ""}
               busy={busy}
               onClick={() => void submit(name)}

@@ -1,6 +1,6 @@
 // One task list pane: the search well, the rows of the list (or the matches grouped by list), the empty
 // states and the footer with the done count.
-import { useState, type Ref } from "react";
+import { useState, type ReactNode, type Ref } from "react";
 import { Badge } from "@taskscape/ui/badge";
 import { Button } from "@taskscape/ui/button";
 import { Checkbox } from "@taskscape/ui/checkbox";
@@ -8,6 +8,7 @@ import { EmptyState } from "@taskscape/ui/empty-state";
 import { Heading } from "@taskscape/ui/heading";
 import { Icon } from "@taskscape/ui/icon";
 import { Input } from "@taskscape/ui/input";
+import { MatchHighlight } from "@taskscape/ui/match-highlight";
 import { Menu } from "@taskscape/ui/menu";
 import { MenuItem } from "@taskscape/ui/menu-item";
 import { ProgressBar } from "@taskscape/ui/progress-bar";
@@ -34,6 +35,24 @@ const GROUP_PARTS: Record<string, string> = {
 };
 
 const part = (on: boolean, name: string) => (on ? { "data-part": `app.filterpanel.${name}` } : {});
+
+/** A task title with the matching characters filled (F05-058). Title matches only: notes-only search fills nothing. */
+function TitleText({ title, query, fields }: { title: string; query: string; fields: Fields }) {
+  const q = query.trim().toLowerCase();
+  if (q === "" || fields === "notes") return <>{title}</>;
+  const lower = title.toLowerCase();
+  const parts: ReactNode[] = [];
+  let at = 0;
+  let hit = lower.indexOf(q);
+  while (hit >= 0) {
+    if (hit > at) parts.push(title.slice(at, hit));
+    parts.push(<MatchHighlight key={hit} query={q} text={title.slice(hit, hit + q.length)} />);
+    at = hit + q.length;
+    hit = lower.indexOf(q, at);
+  }
+  if (at < title.length) parts.push(title.slice(at));
+  return <>{parts}</>;
+}
 
 export interface TaskPaneProps {
   pane: PaneView;
@@ -67,7 +86,7 @@ export function TaskPane(p: TaskPaneProps) {
     const t = m.task;
     const isFirst = primary && t.id === firstRow;
     const named = primary && ROW_PARTS[t.title] ? { "data-part": `app.filterpanel.${ROW_PARTS[t.title]}` } : {};
-    const note = t.note_items[0]?.content ?? t.notes;
+    const note = t.notes.replace(/<[^>]*>/g, "").trim();
     return (
       <div key={t.id} {...part(isFirst, "row")}>
         <Row
@@ -92,10 +111,22 @@ export function TaskPane(p: TaskPaneProps) {
               tone={t.done ? "muted" : "strong"}
               size="default"
               width="full"
-              label={t.title}
-              className={`h-auto min-h-0 justify-start px-0 text-[1rem] leading-[1.1875rem] ${t.done ? "line-through" : ""}`}
+              className={`block truncate h-auto min-h-0 justify-start px-0 text-[1rem] leading-[1.1875rem] ${t.done ? "line-through" : ""}`}
               onClick={() => useUi.getState().preview(t.id)}
-            />
+              asChild
+            >
+              <span
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  e.preventDefault();
+                  useUi.getState().preview(t.id);
+                }}
+              >
+                <TitleText title={t.title} query={pane.query} fields={p.fields} />
+              </span>
+            </Button>
             {note !== "" && (
               <Text as="span" size="xs" tone="secondary" overflow="truncate" className="block">
                 {note}
@@ -109,10 +140,10 @@ export function TaskPane(p: TaskPaneProps) {
               size="sm"
               shape="icon"
               tone="muted"
-              icon="chevron_right"
+              icon="chevron_left"
               ariaLabel={m.expanded ? "Collapse" : "Expand"}
               reveal={m.expanded ? "row" : "always"}
-              className={m.expanded ? "rotate-90" : undefined}
+              className={m.expanded ? "-rotate-90" : undefined}
               onClick={() => p.onToggle(t.id)}
             />
           )}

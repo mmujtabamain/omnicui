@@ -33,6 +33,9 @@ Write only inside your screen's folder and its harness entry. Shared code (`src/
 
 ## Parts: `data-part`
 
+Widgets that compose other parts inside them (Dialog, Toast) take a `parts` map from their own
+`data-slot` names to your part names: `<Dialog parts={{ accept: "app.sheets.accept", root: "app.sheets.card" }} …/>`.
+
 Every part the contract lists is the element with `data-part="app.<contract name>.<part>"`, e.g.
 `data-part="app.tasklist.search"`. Widgets pass `data-part` through to their root, so put it on
 the widget itself (`<Button data-part="app.trash.emptyTrash" …/>`). The test reads the role, name,
@@ -51,6 +54,9 @@ function TrashHarness(props: { dataset?: string }) {
 export default { id: "app.trash", Component: TrashHarness, events: [] };
 ```
 
+- Events: the harness receives `emit(name, fields)` as a prop, exactly as a widget harness does.
+  Call it with the contract's event name and exactly its declared fields. It is the only hook the
+  runner reads; do not add others (window events, extra callback props).
 - Before your harness renders, the page has already loaded the demo data set `props.dataset` and
   signed in as the demo account (`spec/screens/web.md` lists the data). `AppHarness` gives a fresh
   query cache, a router and the account's theme, and makes the test wait while requests run.

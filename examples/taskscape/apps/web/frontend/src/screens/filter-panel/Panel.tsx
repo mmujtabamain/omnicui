@@ -88,13 +88,13 @@ function Segments<T extends string>({
             key={o.value}
             data-part={`app.filterpanel.${o.part}`}
             variant={on ? "primary" : "ghost"}
-            size="md"
+            size="sm"
             tone="default"
             width="full"
             label={o.label}
             aria-selected={on}
             aria-pressed={on}
-            className="min-w-0 flex-1 px-1 font-semibold"
+            className={`min-w-0 flex-1 h-[1.643rem] px-1 font-semibold ${on ? "shadow-lift" : ""}`}
             onClick={() => onChange(o.value)}
           />
         );
@@ -203,7 +203,7 @@ export function Panel({ subtitle, view, resetEnabled, summary, onPatch, onReset,
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface-2">
-      <div className="flex h-[3.143rem] shrink-0 items-center gap-2 border-b border-edge-1 px-3">
+      <div className="flex h-[2.75rem] shrink-0 items-center gap-2 border-b border-edge-1 px-3">
         <Icon name="tune" size="md" tone="muted" />
         <div className="flex min-w-0 flex-1 flex-col">
           <Heading size="sm" data-part="app.filterpanel.panelTitle">
@@ -258,7 +258,7 @@ export function Panel({ subtitle, view, resetEnabled, summary, onPatch, onReset,
                   icon={manual ? "drag_indicator" : "sort"}
                   trailingIcon="unfold_more"
                   label={sortLabel}
-                  className="min-w-0 flex-1 justify-start"
+                  className="h-[1.857rem] min-w-0 flex-1 justify-start"
                 />
               }
             >
@@ -372,7 +372,7 @@ export function Panel({ subtitle, view, resetEnabled, summary, onPatch, onReset,
                 icon="schedule"
                 trailingIcon="unfold_more"
                 label={rangeLabel}
-                className="justify-start"
+                className="h-[1.857rem] justify-start"
               />
             }
           >

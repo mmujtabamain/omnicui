@@ -2,6 +2,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
+import { useMergedRef, useParts, type PartNames } from "../../lib/parts";
 import { Button } from "./button";
 import { Footer } from "./footer";
 import { Input } from "./input";
@@ -34,6 +35,8 @@ export type DialogPresentation = "overlay" | "window";
 export type DialogSize = "sheet" | "palette" | "fullscreen";
 
 export interface DialogProps {
+  /** Test names for the parts inside (keys are data-slot names, "root" for the card): see lib/parts. */
+  parts?: PartNames;
   /** Controlled visibility, passed to Overlay. false renders nothing. */
   open?: boolean;
   /** Called with false when the card asks to close (Cancel, Escape, or an outside press on web). */
@@ -97,11 +100,15 @@ export const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(function Dia
     instead = "",
     acceptLabel = "",
     cancelLabel = "Cancel",
+    parts,
     className,
   },
   ref,
 ) {
   const descriptionId = React.useId();
+  const card = React.useRef<HTMLDivElement | null>(null);
+  const cardRef = useMergedRef(ref, card);
+  useParts(card, parts);
   const confirm = kind === "confirm";
   const destructive = tone === "destructive" || (tone === "" && confirm);
   const placement: OverlayPlacement =
@@ -109,7 +116,7 @@ export const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(function Dia
 
   return (
     <Overlay
-      ref={ref}
+      ref={cardRef}
       data-slot="card"
       open={open}
       onOpenChange={onOpenChange}

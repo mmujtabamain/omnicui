@@ -400,3 +400,16 @@ def test_every_project_write_logs_a_line_at_info_with_resource_id_and_user(
         str(written_id) in tokens and str(ana.pk) in tokens and any("project" in t for t in tokens)
         for tokens in info_tokens
     ), f"no INFO log line naming the project {written_id} and user {ana.pk}: {info_tokens}"
+
+
+@pytest.mark.django_db
+def test_delete_works_with_a_real_session_login(ana):
+    # Session login hands the view a lazy user object (force_authenticate does not); the last-project
+    # lock must not depend on the user's class.
+    from planner.models import Project as P
+    P.objects.create(owner=ana, name="Kept", sort_order=8)
+    P.objects.create(owner=ana, name="Spare", sort_order=9)
+    c = APIClient()
+    c.force_login(ana)
+    target = P.objects.filter(owner=ana).order_by("-sort_order").first()
+    assert c.delete(f"/api/projects/{target.id}").status_code == 204

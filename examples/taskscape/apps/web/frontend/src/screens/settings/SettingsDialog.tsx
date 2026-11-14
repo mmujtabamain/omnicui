@@ -1,6 +1,7 @@
 // The Settings page (web form of the Settings window): a plain heading, a section list with search,
-// and the pane content. Settings are stored per account; each change is saved as it is made, and
-// the discard controls write the values from when the page opened back.
+// and the pane content. Settings are stored per account and saved as each change is made. The
+// discard controls write back each setting's value from before this page first changed it (the
+// open-time value), read from the server just before that first write.
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@taskscape/ui/badge";
@@ -38,24 +39,52 @@ const PANE_PART: Record<PaneId, string> = {
 export function SettingsDialog() {
   const qc = useQueryClient();
   const { data } = useSettings();
-  const write = useWrite(ep.settings.update);
 
-  // The open-time values, taken once when the page first has them. `last` keeps the latest values
-  // seen, so the page holds still if the settings query is refetched into a new cache.
-  const opened = React.useRef<{ baseline: Settings; last: Settings } | null>(null);
-  if (data !== undefined) {
-    if (opened.current === null) opened.current = { baseline: data, last: data };
-    opened.current.last = data;
+  // The latest values seen, so the page holds still while the settings query is refetched.
+  const lastSeen = React.useRef<Settings | null>(null);
+  if (data !== undefined) lastSeen.current = data;
+  const values: Settings | null = data ?? lastSeen.current;
+
+  // Open-time values, per field: filled in just before this page's first write to the field.
+  const [baseline, setBaseline] = React.useState<Partial<Settings>>({});
+  const baselineReads = React.useRef<Partial<Record<PrefField, Promise<void>>>>({});
+
+  function captureBaseline(fields: PrefField[]): Promise<void> {
+    const waits = fields.map((field) => {
+      if (!baselineReads.current[field]) {
+        baselineReads.current[field] = ep.settings
+          .get()
+          .then((server) => {
+            setBaseline((prev) => {
+              if (field in prev) return prev;
+              const next = { ...prev };
+              Object.assign(next, { [field]: server[field] });
+              return next;
+            });
+          })
+          .catch((error: unknown) => {
+            delete baselineReads.current[field];
+            throw error;
+          });
+      }
+      return baselineReads.current[field] as Promise<void>;
+    });
+    return Promise.all(waits).then(() => undefined);
   }
+
+  const write = useWrite(async (patch: Partial<Settings>) => {
+    await captureBaseline(Object.keys(patch) as PrefField[]);
+    return ep.settings.update(patch);
+  });
 
   const [pane, setPane] = React.useState<PaneId>("general");
   const [query, setQuery] = React.useState("");
   const [scoped, setScoped] = React.useState(false);
   const [failed, setFailed] = React.useState<Partial<Record<PrefField, boolean>>>({});
 
-  const values: Settings | undefined = data ?? opened.current?.last;
-  const baseline: Settings | undefined = opened.current?.baseline;
-  if (values === undefined || baseline === undefined) return null;
+  if (values === null) return null;
+
+  const changed = (field: PrefField) => field in baseline && values[field] !== baseline[field];
 
   const tokens = queryTokens(query);
   const searching = tokens.length > 0;
@@ -65,7 +94,7 @@ export function SettingsDialog() {
     about: 0,
   };
   const anyMatch = counts.general + counts.shortcuts + counts.about > 0;
-  const anyChange = PREF_FIELDS.some((field) => values[field] !== baseline[field]);
+  const anyChange = PREF_FIELDS.some((field) => changed(field));
 
   /** Shows the change at once, saves it, and puts the fields back if the save fails. */
   function commit(patch: Partial<Settings>) {
@@ -93,9 +122,12 @@ export function SettingsDialog() {
     });
   }
 
+  /** Writes back the open-time value of each field that is known to have changed. */
   function discard(fields: PrefField[]) {
     const patch: Partial<Settings> = {};
-    for (const field of fields) Object.assign(patch, { [field]: baseline![field] });
+    for (const field of fields) {
+      if (field in baseline) Object.assign(patch, { [field]: baseline[field] });
+    }
     commit(patch);
   }
 
@@ -128,7 +160,7 @@ export function SettingsDialog() {
     body = (
       <GeneralPage
         values={values}
-        baseline={baseline}
+        changed={changed}
         tokens={tokens}
         scoped={scoped}
         failed={failed}
@@ -167,6 +199,7 @@ export function SettingsDialog() {
             data-part="app.settingsgeneral.sectionNav"
             label="Settings sections"
             orientation="vertical"
+            className="gap-[0.143rem] p-0"
             value={pane}
             onValueChange={(next) => choosePane(next as PaneId)}
           >
@@ -177,10 +210,12 @@ export function SettingsDialog() {
                 <TabListItem
                   key={item.id}
                   value={item.id}
+                  // A click on the tab that is already open (General while searching) still scopes the search.
+                  onClick={() => choosePane(item.id)}
                   data-part={PANE_PART[item.id]}
                   className={cx(
-                    "h-[2.143rem] gap-2 font-normal",
-                    accent && "data-[state=active]:bg-accent-500/10",
+                    "h-[2.143rem] gap-2 px-[0.643rem] font-normal",
+                    accent ? "data-[state=active]:bg-accent-500/10" : "data-[state=active]:bg-transparent",
                     dimmed && "opacity-40",
                   )}
                 >

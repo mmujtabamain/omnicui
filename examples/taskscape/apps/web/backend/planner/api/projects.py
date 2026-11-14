@@ -3,6 +3,7 @@
 A project is the owner's; anything of another user's answers 404 (see common.owned)."""
 import logging
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers, viewsets
 from rest_framework.exceptions import NotFound
@@ -77,7 +78,7 @@ class ProjectViewSet(viewsets.GenericViewSet):
         project_id = project.pk
         with transaction.atomic():
             # Serialise deletes per user so two of them cannot both leave the user with no project.
-            type(user).objects.select_for_update().get(pk=user.pk)
+            get_user_model().objects.select_for_update().get(pk=user.pk)
             if projects_of(user).count() <= 1:
                 return Response({"detail": "A project is needed."}, status=400)
             files = list(

@@ -59,7 +59,7 @@ export function SearchBox({
   };
   return (
     <div
-      className="flex h-[1.75rem] min-w-0 items-center gap-1.5 rounded-(--radius-field) bg-wash-2 pl-1.5 pr-0.5 focus-within:ring-2 focus-within:ring-focus-1"
+      className="flex h-[1.75rem] min-w-0 items-center gap-1.5 rounded-(--radius-field) bg-wash-2 pl-[0.643rem] pr-0.5 focus-within:ring-2 focus-within:ring-focus-1"
       onMouseDown={(event) => {
         if ((event.target as Element).closest("button, input")) return;
         event.preventDefault();
@@ -123,14 +123,7 @@ export function SettingsGroup({
   return (
     <section className={cx("flex min-w-0 flex-col gap-2", !visible && "hidden")}>
       <div className="flex min-w-0 items-center gap-2">
-        <Text
-          data-part={labelPart}
-          as="div"
-          size="xs"
-          weight="semibold"
-          tone="muted"
-          className="tracking-[0.08em] [font-variant-caps:all-small-caps]"
-        >
+        <Text data-part={labelPart} as="div" size="xs" weight="semibold" tone="muted" case="uppercase">
           {label}
         </Text>
         {changed && <span aria-hidden="true" className="block size-[0.429rem] shrink-0 rounded-full bg-content-1" />}
@@ -186,13 +179,19 @@ export function SettingItem({
           <Text data-part={titlePart} as="div" size="md" tone="primary" className="leading-[1.393rem]">
             {title}
           </Text>
-          <Text data-part={descriptionPart} as="p" size="sm" tone="secondary" className="leading-[1.2rem]">
+          <Text
+            data-part={descriptionPart}
+            as="p"
+            size="xs"
+            tone="muted"
+            className="text-[0.821rem] leading-[1.232rem]"
+          >
             {description}
           </Text>
         </div>
         {!stacked && <div className="flex shrink-0 items-center">{children}</div>}
       </div>
-      {stacked && <div className="mt-2 flex min-w-0">{children}</div>}
+      {stacked && <div className="mt-[0.357rem] flex min-w-0">{children}</div>}
       {error !== "" && (
         <Text as="p" role="status" size="xs" tone="danger" className="mt-1">
           {error}
@@ -228,7 +227,7 @@ export function Segments<V extends string>({
       role="group"
       aria-label={label}
       className={cx(
-        "flex h-[2rem] items-stretch gap-[0.143rem] rounded-(--radius-field) bg-wash-2 p-[0.143rem]",
+        "flex h-[1.857rem] items-stretch gap-[0.143rem] rounded-(--radius-field) bg-wash-2 p-[0.143rem]",
         stacked ? "w-full" : "shrink-0",
       )}
     >
@@ -250,6 +249,7 @@ export function Segments<V extends string>({
             aria-pressed={selected}
             onClick={() => onChange(choice.value)}
             className={cx(
+              "h-full",
               stacked ? "flex-1 px-2" : "px-2.5",
               "text-[0.857rem] font-semibold",
               selected ? "bg-surface-3 text-content-1 shadow-lift" : "text-content-2 hover:text-content-1",

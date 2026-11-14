@@ -18,14 +18,15 @@ STANDARD = {
     "lists": [("Home", "Errands"), ("Home", "Reading"), ("Home", "Garden"), ("Spring launch", "Website"), ("Spring launch", "Press kit")],
     # (key, list, title, parent key, extra)
     "tasks": [
-        ("groceries", "Errands", "Buy groceries for the week", None, {"age": 2 * DAY}),
-        ("milk", "Errands", "Oat milk", "groceries", {"done": True}),
-        ("bread", "Errands", "Sourdough loaf", "groceries", {}),
-        ("apples", "Errands", "Apples", "groceries", {}),
         ("pharmacy", "Errands", "Pick up prescription", None, {"notes": "Counter closes at 6"}),
         ("post", "Errands", "Post the parcel to Mum", None, {"done": True, "age": 3 * DAY}),
         ("bike", "Errands", "Book bike service", None, {"age": 5 * DAY}),
         ("keys", "Errands", "Cut a spare key", None, {}),
+        # Last in Errands, as the reference screens show it.
+        ("groceries", "Errands", "Buy groceries for the week", None, {"age": 2 * DAY}),
+        ("milk", "Errands", "Oat milk", "groceries", {"done": True}),
+        ("bread", "Errands", "Sourdough loaf", "groceries", {}),
+        ("apples", "Errands", "Apples", "groceries", {}),
         ("novel", "Reading", "Finish the novel on the nightstand", None, {}),
         ("article", "Reading", "Read the long article on soil health", None, {"done": True}),
         ("library", "Reading", "Return library books", None, {}),

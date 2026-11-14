@@ -109,16 +109,16 @@ export interface PaneView {
 
 const DAY = 86_400_000;
 
-function hasNotes(t: Task): boolean {
-  return t.notes.trim() !== "" || t.note_items.length > 0;
+/** A task has notes when its notes text is not empty (the row's second line shows that text). */
+export function hasNotes(t: Task): boolean {
+  return t.notes.trim() !== "";
 }
 
 /** q is lower case. Title & notes, Title only or Notes only, per the search options. */
 export function matchesQuery(t: Task, q: string, fields: Fields): boolean {
   if (fields !== "notes" && t.title.toLowerCase().includes(q)) return true;
   if (fields === "title") return false;
-  if (t.notes.toLowerCase().includes(q)) return true;
-  return t.note_items.some((n) => n.content.toLowerCase().includes(q));
+  return t.notes.toLowerCase().includes(q);
 }
 
 function inWindow(t: Task, v: View, now: number): boolean {
@@ -151,6 +151,7 @@ function compareTasks(sort: SortMode, a: Task, b: Task): number {
     case "done":
       return Number(a.done) - Number(b.done) || a.sort_order - b.sort_order;
     default:
+      // Manual is the stored order (sort_order, then id). Descending reverses it (F05-043, F05-047).
       return a.sort_order - b.sort_order || a.id - b.id;
   }
 }

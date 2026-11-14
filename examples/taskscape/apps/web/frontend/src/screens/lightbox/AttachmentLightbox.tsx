@@ -1,6 +1,7 @@
 // The web Attachment lightbox: a full-window overlay over the page that previews one attachment of
 // a task at a large size, steps through the task's attachments, and offers open, rename and remove.
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AttachmentPreview } from "@taskscape/ui/attachment-preview";
 import { Button } from "@taskscape/ui/button";
 import { Footer } from "@taskscape/ui/footer";
@@ -34,6 +35,9 @@ export interface AttachmentLightboxProps {
 }
 
 type Sheet = "rename" | "remove" | null;
+
+/** A text preview is capped at this many characters (F04-063). */
+const TEXT_LIMIT = 262144;
 
 /** Opens the attachment in the default app: a new browser tab on the web. */
 function openAttachment(attachment: Attachment) {
@@ -155,7 +159,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               size="xl"
               icon="open_in_new"
               ariaLabel="Open externally"
-              description="Open externally"
+              title="Open externally"
               onClick={openExternally}
             />
             <Button
@@ -166,7 +170,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               size="xl"
               icon="drive_file_rename_outline"
               ariaLabel="Rename"
-              description="Rename"
+              title="Rename"
               onClick={() => setSheet("rename")}
             />
             <Button
@@ -178,7 +182,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               size="xl"
               icon="delete"
               ariaLabel="Remove attachment"
-              description="Remove attachment"
+              title="Remove attachment"
               className="text-danger-500"
               onClick={() => setSheet("remove")}
             />
@@ -190,7 +194,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               size="xl"
               icon="close"
               ariaLabel="Close"
-              description="Close  Esc"
+              title="Close  Esc"
               onClick={() => close("button")}
             />
           </div>
@@ -208,7 +212,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               icon="chevron_left"
               iconWeight={300}
               ariaLabel="Previous"
-              description="Previous"
+              title="Previous"
               className="pointer-events-auto absolute top-1/2 left-4 -translate-y-1/2"
               onClick={() => stepBy(-1)}
             />
@@ -223,7 +227,7 @@ export function AttachmentLightbox({ listId, taskId, attachmentId, events = {} }
               icon="chevron_right"
               iconWeight={300}
               ariaLabel="Next"
-              description="Next"
+              title="Next"
               className="pointer-events-auto absolute top-1/2 right-4 -translate-y-1/2"
               onClick={() => stepBy(1)}
             />
@@ -313,10 +317,16 @@ function RenameForm({
   const [draft, setDraft] = React.useState(base);
   const field = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
-  // Focus is on the field (autoFocus); the caret goes to the end, so typed text is appended.
+  // The dialog focuses this field after it mounts and selects its text; once that is done the caret
+  // goes to the end, so typed text is appended to the base name.
   React.useEffect(() => {
     const el = field.current;
-    if (el) el.setSelectionRange(el.value.length, el.value.length);
+    if (!el) return;
+    const timer = window.setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
@@ -371,24 +381,24 @@ function RenameForm({
   );
 }
 
-/** The media stage: the inline preview for a file, or the No inline preview card for a link. */
-function Body({ item, kind, onOpen }: { item: Attachment; kind: FileKind; onOpen: () => void }) {
-  if (kind === "image")
-    return (
-      <AttachmentPreview
-        data-part="app.attachmentlightbox.image"
-        kind="image"
-        src={item.url}
-        name={item.name}
-        className="h-auto w-auto"
-      />
-    );
-  if (kind === "video")
-    return <AttachmentPreview kind="video" src={item.url} name={item.name} className="h-auto w-auto" />;
-  if (kind === "audio")
-    return <AttachmentPreview kind="audio" src={item.url} name={item.name} className="h-auto w-auto" />;
-  if (kind === "pdf")
-    return <AttachmentPreview kind="pdf" src={item.url} name={item.name} className="h-[34rem] w-[48rem] max-w-[90vw]" />;
+/** The text of a text file, read when it is shown and capped at TEXT_LIMIT with a trailing ellipsis. */
+function useTextBody(url: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["attachment-text", url],
+    enabled,
+    retry: false,
+    staleTime: Infinity,
+    queryFn: async () => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+      const text = await response.text();
+      return text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT - 1)}…` : text;
+    },
+  });
+}
+
+/** The No inline preview card: the kind's glyph, the name, a status line and Open externally. */
+function PreviewCard({ item, kind, status, onOpen }: { item: Attachment; kind: FileKind; status: string; onOpen: () => void }) {
   return (
     <div className="flex w-[24rem] max-w-full flex-col items-center gap-[0.714rem] rounded-(--radius-panel) bg-surface-2 px-10 py-12 text-center">
       <Icon name={KIND_ICON[kind]} size="display" weight={200} tone="muted" />
@@ -396,7 +406,7 @@ function Body({ item, kind, onOpen }: { item: Attachment; kind: FileKind; onOpen
         {item.name}
       </Text>
       <Text as="div" size="sm" tone="muted" data-part="app.attachmentlightbox.fallbackStatus">
-        No inline preview
+        {status}
       </Text>
       <Button
         data-part="app.attachmentlightbox.fallbackOpen"
@@ -409,4 +419,36 @@ function Body({ item, kind, onOpen }: { item: Attachment; kind: FileKind; onOpen
       />
     </div>
   );
+}
+
+/** The media stage: the inline preview for a file, or the No inline preview card for a link. */
+function Body({ item, kind, onOpen }: { item: Attachment; kind: FileKind; onOpen: () => void }) {
+  // A media file whose preview fails shows the No inline preview card, as the reference does.
+  const [brokenUrl, setBrokenUrl] = React.useState<string | null>(null);
+  const text = useTextBody(item.url, kind === "text");
+  const onError = () => setBrokenUrl(item.url);
+
+  if (kind === "text") {
+    if (text.isError) return <PreviewCard item={item} kind={kind} status="Couldn’t read this file" onOpen={onOpen} />;
+    if (text.data === undefined) return <Text as="div" size="md" tone="onMediaMuted">Loading…</Text>;
+    return <AttachmentPreview kind="text" text={text.data} name={item.name} className="h-[34rem] w-[48rem] max-w-[90vw]" />;
+  }
+  if (kind === "file" || kind === "link" || brokenUrl === item.url)
+    return <PreviewCard item={item} kind={kind} status="No inline preview" onOpen={onOpen} />;
+  if (kind === "image")
+    return (
+      <AttachmentPreview
+        data-part="app.attachmentlightbox.image"
+        kind="image"
+        src={item.url}
+        name={item.name}
+        className="h-auto w-auto"
+        onError={onError}
+      />
+    );
+  if (kind === "video")
+    return <AttachmentPreview kind="video" src={item.url} name={item.name} className="h-auto w-auto" onError={onError} />;
+  if (kind === "audio")
+    return <AttachmentPreview kind="audio" src={item.url} name={item.name} className="h-auto w-auto" onError={onError} />;
+  return <AttachmentPreview kind="pdf" src={item.url} name={item.name} className="h-[34rem] w-[48rem] max-w-[90vw]" />;
 }

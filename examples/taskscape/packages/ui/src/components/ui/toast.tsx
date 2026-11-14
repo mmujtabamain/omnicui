@@ -2,6 +2,7 @@ import * as React from "react";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
+import { useParts, type PartNames } from "../../lib/parts";
 import { Button } from "./button";
 
 /** Why the toast closed. The widget reports it with onDismissed. */
@@ -149,6 +150,8 @@ export interface ToastProps {
   onDismissed?: (reason: ToastDismissReason) => void;
   /** The action was pressed; label is the text shown at that moment. */
   onActioned?: (label: string) => void;
+  /** Test names for the parts inside (keys are data-slot names, "root" for the pill): see lib/parts. */
+  parts?: PartNames;
 }
 
 /**
@@ -171,9 +174,11 @@ export function Toast({
   onOpenChange,
   onDismissed,
   onActioned,
+  parts,
 }: ToastProps) {
   const reason = React.useRef<ToastDismissReason | null>(null);
   const rootRef = React.useRef<HTMLLIElement>(null);
+  useParts(rootRef, parts);
   const label = failed ? "Try again" : actionLabel;
   const [hovered, setHovered] = React.useState(false);
   const [focused, setFocused] = React.useState(false);
