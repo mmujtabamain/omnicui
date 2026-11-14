@@ -1,0 +1,298 @@
+id: ui.listtab
+
+# ListTab: full list tab in the desktop title bar. ListTabLabel and SidebarTab are separate widgets.
+# Only this look has rename, drag, drop and delete. Every test runs on desktop only (only: [desktop]).
+# Role: the tab part is a button in this format; its ARIA role is tab (Radix Tabs TabsTrigger in the web
+# build, Tabs.Root with activationMode manual). Manual activation: Left and Right move focus, Enter and
+# Space select (proposed keyboard text in the spec, open item 1).
+# The tablist container belongs to the strip that holds this widget, so it is not a part here.
+# Props are controlled: the parent owns selection, rename mode, drop and drag state.
+# Drag reorder and task drop are always on for this look. The format allows drag only on slider parts,
+# so reorder, drop and drag motion are not tested here; their visible states are the dropTarget and dragging screenshots.
+# Not tested: double-click (renameStart), middle-click (delete) and right-click (contextMenu). The format has no
+# double, middle or secondary button action. They are covered by F2, the delete button and the context-menu keys.
+# Home and End between tabs need more than one tab, so the tab strip contract covers them.
+# Strip size 640x48 is assumed; the catalogue does not record it.
+
+props:
+  name: { type: string, default: "" }            # list name shown on the tab; replaced by the rename input while editing
+  selected: { type: boolean, default: false }    # true: active list, bg-surface-2 fill with hairline edges; false: no fill
+  editing: { type: boolean, default: false }     # true: inline rename input beside the tab; false: name shown on the tab
+  dropTarget: { type: boolean, default: false }  # true: a dragged task row or tab is over this tab (bg-selection-1)
+  dragging: { type: boolean, default: false }    # true: this tab is being dragged (opacity-40)
+  paneMarker: { type: boolean, default: false }  # true: split-view pane marker shown (catalogue 'split (pane dot shown)'; open item 8)
+
+events:
+  select: {}                  # click, Enter or Space on the tab (parent calls selectList); keyboard part is open item 1
+  renameStart: {}             # F2 on the tab (double-click not tested, see header)
+  renameCommit:               # Enter in the rename input, or blur with a changed name
+    name: { type: string }
+  renameCancel: {}            # Escape in the rename input; the name is restored
+  delete: {}                  # delete button (click, Enter, Space); the caller confirms, the confirmation is not this widget
+  contextMenu: {}             # Shift+F10 or the ContextMenu key on the tab; right-click is not tested (see header)
+  dropTask:                   # a task row dropped on this tab moves that task to this list (not tested: drag)
+    taskId: { type: string }
+  reorder:                    # the tab was dragged to a new place in the strip (not tested: drag)
+    fromIndex: { type: integer }
+    toIndex: { type: integer }
+
+parts:
+  wrapper: { role: generic }                       # aria: none. Plain div; tab, deleteButton and renameInput sit inside it
+  tab: { role: button }                            # aria: tab. Accessible name is the list name; selection is aria-selected
+  deleteButton: { role: button }                   # aria: button. Trailing delete control; sibling of the tab, never a child of it
+  renameInput: { role: textbox, optional: true }   # aria: textbox. Beside the tab, never inside it (tab has no interactive children). Only while editing
+  paneMarker: { role: generic, optional: true }    # aria: none. Visual split-view marker; only when the paneMarker prop is true
+
+viewports:
+  default: [ { width: 640, height: 48 } ]          # assumed desktop title-bar strip size; not recorded in the catalogue
+
+colorSchemes: [ light, dark ]
+
+same: pixels
+
+keyboard: true
+
+tests:
+  # --- states, light and dark (screenshot at every colour scheme) ---
+  - name: selected list has the selected fill
+    only: [desktop]
+    props: { name: Errands, selected: true }
+    expect:
+      - { part: tab, role: button }
+      - { part: tab, selected: true }
+      - { part: tab, text: Errands }
+      - { part: wrapper, visible: true }
+    screenshot: true
+
+  - name: unselected list has no fill
+    only: [desktop]
+    props: { name: Garden, selected: false }
+    expect:
+      - { part: tab, selected: false }
+      - { part: tab, text: Garden }
+    screenshot: true
+
+  - name: hover on an unselected tab fills the tab with the wash colour
+    only: [desktop]
+    props: { name: Garden, selected: false }
+    steps: [ { action: hover, part: tab } ]
+    screenshot: true
+
+  - name: hover on the selected tab
+    only: [desktop]
+    props: { name: Errands, selected: true }
+    steps: [ { action: hover, part: tab } ]
+    screenshot: true
+
+  - name: hover fades in the wash colour
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: hover, part: tab } ]
+    record: { part: tab }
+
+  - name: keyboard focus shows on the tab with role tab and the list name
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: focus, part: tab } ]
+    expect:
+      - { part: tab, role: button }
+      - { part: tab, name: Garden }
+      - { part: tab, focused: true }
+    screenshot: true
+
+  - name: keyboard focus shows on the selected tab
+    only: [desktop]
+    props: { name: Errands, selected: true }
+    steps: [ { action: focus, part: tab } ]
+    expect: [ { part: tab, focused: true } ]
+    screenshot: true
+
+  - name: drop target shows the selection colour
+    only: [desktop]
+    props: { name: Garden, dropTarget: true }
+    screenshot: true
+
+  - name: dragged tab is dimmed
+    only: [desktop]
+    props: { name: Garden, dragging: true }
+    screenshot: true
+
+  - name: rename input shows the current name beside the tab and takes focus
+    only: [desktop]
+    props: { name: Errands, editing: true }
+    expect:
+      - { part: renameInput, visible: true }
+      - { part: renameInput, role: textbox }
+      - { part: renameInput, text: Errands }
+      - { part: renameInput, focused: true }
+    screenshot: true
+
+  - name: pane marker shows in split view
+    only: [desktop]
+    props: { name: Garden, paneMarker: true }
+    expect: [ { part: paneMarker, visible: true } ]
+    screenshot: true
+
+  - name: pane marker shows on the selected tab in split view
+    only: [desktop]
+    props: { name: Errands, selected: true, paneMarker: true }
+    expect: [ { part: paneMarker, visible: true } ]
+    screenshot: true
+
+  # --- delete button states ---
+  - name: hover on the delete button (screenshot; danger token, open item 6)
+    # The danger colour is not asserted; the screenshot records it.
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: hover, part: deleteButton } ]
+    screenshot: true
+
+  - name: focus on the delete button (screenshot; danger token, open item 6)
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: focus, part: deleteButton } ]
+    screenshot: true
+
+  - name: hover fades the delete button in
+    # Open item 2 (is delete always shown, or only on hover?). The catalogue records no fade-in.
+    # Drop this test if the button is always visible.
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: hover, part: tab } ]
+    record: { part: deleteButton }
+
+  # --- roles and delete ---
+  - name: delete button reports role button and its name
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: hover, part: deleteButton } ]   # open item 2: hover first in case the button is hover-only
+    expect:
+      - { part: deleteButton, role: button }
+      - { part: deleteButton, name: { contains: Delete } }
+
+  - name: press on the delete button emits delete
+    # The delete event opens the Delete list confirmation downstream; that confirmation is not this widget.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: hover, part: deleteButton }          # open item 2: hover first in case the button is hover-only
+      - { action: press, part: deleteButton }
+    expect: [ { event: delete, times: 1 } ]
+
+  - name: Tab from the tab reaches the delete button
+    # APG Tabs: Tab leaves the tablist for the next element. This holds only while deleteButton sits outside
+    # the tablist element. If the strip puts it inside, this is a deliberate deviation or the button moves out.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Tab }
+    expect: [ { part: deleteButton, focused: true } ]
+
+  - name: Tab then Enter on the delete button emits delete
+    # Same placement condition as the Tab test above.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Tab }
+      - { action: key, part: deleteButton, key: Enter }
+    expect: [ { event: delete, times: 1 } ]
+
+  # --- selection ---
+  - name: press on the tab selects the list
+    only: [desktop]
+    props: { name: Garden }
+    steps: [ { action: press, part: tab } ]
+    expect: [ { event: select, times: 1 } ]
+
+  - name: Enter on the tab selects the list
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Enter }
+    expect: [ { event: select, times: 1 } ]
+
+  - name: Space on the tab selects the list
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Space }
+    expect: [ { event: select, times: 1 } ]
+
+  # --- keyboard routes (proposed, open item 1) ---
+  - name: arrow keys move focus and keep it on a lone tab
+    # Manual activation: arrows only move focus. Wrapping returns focus to this tab.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: ArrowRight }
+    expect: [ { part: tab, focused: true } ]
+
+  - name: ArrowLeft keeps focus on a lone tab
+    # Manual activation: arrows only move focus. Wrapping returns focus to this tab.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: ArrowLeft }
+    expect: [ { part: tab, focused: true } ]
+
+  - name: F2 on the tab starts rename
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: F2 }
+    expect: [ { event: renameStart, times: 1 } ]
+
+  - name: context-menu key opens the list menu
+    # The menu items Rename and Delete belong to the list menu, not to this widget.
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: ContextMenu }
+    expect: [ { event: contextMenu, times: 1 } ]
+
+  - name: Shift+F10 on the tab opens the list menu
+    only: [desktop]
+    props: { name: Garden }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: "Shift+F10" }
+    expect: [ { event: contextMenu, times: 1 } ]
+
+  # --- inline rename ---
+  - name: Enter commits the typed name
+    only: [desktop]
+    props: { name: "", editing: true }
+    steps:
+      - { action: focus, part: renameInput }
+      - { action: type, part: renameInput, text: "Chores" }
+      - { action: key, part: renameInput, key: Enter }
+    expect: [ { event: renameCommit, times: 1, last: { name: "Chores" } } ]
+
+  - name: Escape cancels the rename and restores the name
+    only: [desktop]
+    props: { name: Errands, editing: true }
+    steps:
+      - { action: focus, part: renameInput }
+      - { action: type, part: renameInput, text: "Oops" }
+      - { action: key, part: renameInput, key: Escape }
+    expect:
+      - { event: renameCancel, times: 1 }
+      - { part: renameInput, text: Errands }
+
+  - name: blur with a changed name commits it
+    # Blur with an unchanged name is not tested here.
+    only: [desktop]
+    props: { name: "", editing: true }
+    steps:
+      - { action: focus, part: renameInput }
+      - { action: type, part: renameInput, text: "Chores" }
+      - { action: focus, part: tab }
+    expect: [ { event: renameCommit, times: 1, last: { name: "Chores" } } ]

@@ -1,0 +1,175 @@
+id: ui.sectionheader
+
+# Eyebrow heading for a content block: 11px semibold uppercase muted label,
+# optional hairline or trailing rule, optional trailing slot, and an optional
+# restore control with a changed dot. Covers the four section headers (plain,
+# add toolbar, reset, discard) and the command group heading (inset listGroup).
+#
+# The format has no enum fields, so the allowed values are listed here:
+#   rule:    none | hairline | trailing
+#   restore: none | reset | discard
+#   inset:   block | listGroup
+#   as:      h2 | h3 | div
+
+props:
+  label: { type: string, default: "" }          # heading text (ReactNode in the component; text here)
+  trailing: { type: string, default: "" }       # trailing count text, e.g. "3"; add IconButtons are ReactNode and not expressible here
+  active: { type: boolean, default: false }     # group is non-default: shows the changed dot and the restore control
+  restore: { type: string, default: none }      # none | reset (filter groups, restart_alt) | discard (settings groups, undo)
+  restoreLabel: { type: string, default: "" }   # accessible name and tooltip of the restore control; required when restore is not none
+  as: { type: string, default: h3 }             # heading level for block headings; div for listGroup
+  inset: { type: string, default: block }       # block (caps tracking 0.08em) | listGroup (px inset, mt/mb spacing, no rule)
+  rule: { type: string, default: none }         # trailing hairline: none | hairline (after label) | trailing (label to pane edge)
+
+events:
+  restoreRequested: { kind: { type: string } }  # kind is the restore the control asked for: reset or discard
+
+parts:
+  # aria: heading (level from as) for block headings; aria: none (mapped to generic) for listGroup
+  title: { role: heading, same: { default: pixels } }
+  trailing: { role: generic, optional: true, same: { default: pixels } }
+  # aria: none. The rule is purely visual, so it is decorative and not announced
+  rule: { role: generic, optional: true, same: { default: pixels } }
+  # aria: none. The changed state is conveyed by the restore button's name; the dot is decorative
+  changedDot: { role: generic, optional: true, same: { default: pixels } }
+  # aria: button (IconButton). Tab stop, named by restoreLabel
+  restore: { role: button, optional: true, same: { default: pixels } }
+
+keyboard: true
+colorSchemes: [light, dark]
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 960, height: 240 }
+
+tests:
+  - name: default block heading is an h3 heading with its label
+    props: { label: Notes }
+    expect:
+      - { part: title, text: Notes }
+      - { part: title, role: heading }
+
+  - name: as h2 keeps the heading role
+    props: { label: Notes, as: h2 }
+    expect:
+      - { part: title, role: heading }
+      - { part: title, text: Notes }
+
+  - name: trailing count text sits in the trailing slot
+    props: { label: Notes, trailing: "3" }
+    expect:
+      - { part: title, text: Notes }
+      - { part: trailing, text: "3" }
+
+  - name: zero count still shows in the trailing slot
+    props: { label: Subtasks, trailing: "0" }
+    expect:
+      - { part: trailing, text: "0" }
+
+  - name: hairline rule is drawn after the label
+    props: { label: Sort, rule: hairline }
+    expect:
+      - { part: rule, visible: true }
+
+  - name: trailing rule runs from the label to the pane edge
+    props: { label: Notes, rule: trailing }
+    expect:
+      - { part: rule, visible: true }
+
+  - name: idle group shows no changed dot and no restore control
+    props: { label: Sort, restore: reset, restoreLabel: "Clear sort", active: false }
+    expect:
+      - { part: changedDot, visible: false }
+      - { part: restore, visible: false }
+
+  - name: changed filter group shows the dot and a named restore button
+    props: { label: Sort, active: true, restore: reset, restoreLabel: "Clear sort" }
+    expect:
+      - { part: changedDot, visible: true }
+      - { part: restore, role: button }
+      - { part: restore, name: "Clear sort" }
+      - { part: restore, visible: true }
+
+  - name: changed settings group names the window baseline on the restore button
+    # Desktop copy is given here; the web target passes its own baseline (for example last saved),
+    # so the check uses contains to hold on both
+    props: { label: Appearance, active: true, restore: discard, restoreLabel: "Discard changes made since this window opened" }
+    expect:
+      - { part: changedDot, visible: true }
+      - { part: restore, role: button }
+      - { part: restore, name: { contains: "Discard changes" } }
+
+  - name: listGroup label is inset with no rule and no restore
+    # The listGroup title is role none (mapped to generic), which the parts map cannot express per variant,
+    # so no role check is made here; the listbox names its group through aria-labelledby on this label
+    props: { label: Selected, inset: listGroup, as: div }
+    expect:
+      - { part: title, text: Selected }
+
+  - name: pressing restore reports a reset
+    props: { label: Sort, active: true, restore: reset, restoreLabel: "Clear sort" }
+    steps:
+      - { action: press, part: restore }
+    expect:
+      - { event: restoreRequested, times: 1, last: { kind: "reset" } }
+
+  - name: pressing restore on a settings group reports a discard
+    props: { label: Appearance, active: true, restore: discard, restoreLabel: "Discard changes made since this window opened" }
+    steps:
+      - { action: press, part: restore }
+    expect:
+      - { event: restoreRequested, times: 1, last: { kind: "discard" } }
+
+  - name: Tab focus lands on the restore control and Enter runs it
+    props: { label: Sort, active: true, restore: reset, restoreLabel: "Clear sort" }
+    steps:
+      - { action: focus, part: restore }
+      - { action: key, part: restore, key: Enter }
+    expect:
+      - { event: restoreRequested, times: 1, last: { kind: "reset" } }
+
+  - name: Space on the restore control runs it
+    props: { label: Appearance, active: true, restore: discard, restoreLabel: "Discard changes made since this window opened" }
+    steps:
+      - { action: focus, part: restore }
+      - { action: key, part: restore, key: Space }
+    expect:
+      - { event: restoreRequested, times: 1, last: { kind: "discard" } }
+
+  # Dropped: "after restore focus moves to the title". The format allows the focused field
+  # only on button, checkbox, slider, switch and textbox parts, not on a heading (title).
+
+  - name: screenshot plain section header
+    props: { label: Notes }
+    screenshot: true
+
+  - name: screenshot section header with count
+    props: { label: Notes, trailing: "3" }
+    screenshot: true
+
+  - name: screenshot section header with empty count
+    props: { label: Subtasks, trailing: "0" }
+    screenshot: true
+
+  - name: screenshot section header with hairline rule
+    props: { label: Sort, rule: hairline }
+    screenshot: true
+
+  - name: screenshot section header with trailing rule
+    props: { label: Notes, rule: trailing }
+    screenshot: true
+
+  - name: screenshot idle group with no restore control
+    props: { label: Sort, restore: reset, restoreLabel: "Clear sort", active: false }
+    screenshot: true
+
+  - name: screenshot changed filter group with reset restore
+    props: { label: Sort, active: true, restore: reset, restoreLabel: "Clear sort" }
+    screenshot: true
+
+  - name: screenshot changed settings group with discard restore
+    props: { label: Appearance, active: true, restore: discard, restoreLabel: "Discard changes made since this window opened" }
+    screenshot: true
+
+  - name: screenshot listGroup command group heading
+    props: { label: Selected, inset: listGroup, as: div }
+    screenshot: true

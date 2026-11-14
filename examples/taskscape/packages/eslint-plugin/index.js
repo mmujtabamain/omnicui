@@ -23,10 +23,15 @@ const noPrimitives = {
   }),
 };
 const noRawStyle = {
-  meta: { type: "problem", messages: { style: "No inline style: use the widget's props or a token utility.", colour: "Colours come from tokens (bg-surface-1, text-content-2…), not raw values." } },
+  meta: {
+    type: "problem",
+    schema: [{ type: "object", properties: { allowStyle: { type: "boolean" } }, additionalProperties: false }],
+    messages: { style: "No inline style: use the widget's props or a token utility.", colour: "Colours come from tokens (bg-surface-1, text-content-2…), not raw values." },
+  },
   create: (ctx) => ({
     JSXAttribute(node) {
-      if (node.name.name === "style") ctx.report({ node, messageId: "style" });
+      // The library may set computed geometry inline (a glyph's size, a measured offset); the apps may not.
+      if (node.name.name === "style" && !ctx.options[0]?.allowStyle) ctx.report({ node, messageId: "style" });
       if (node.name.name === "className" && node.value?.type === "Literal" && (RAW_COLOUR.test(node.value.value) || NAMED_COLOUR.test(node.value.value)))
         ctx.report({ node, messageId: "colour" });
     },

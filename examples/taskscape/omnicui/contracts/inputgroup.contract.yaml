@@ -1,0 +1,271 @@
+# InputGroup: the one chrome for text entry (shadcn InputGroup pattern).
+# A frame, not a control. It draws the border, fill, focus ring and the leading
+# and trailing slots around one inner Input. The inner input carries the ARIA
+# role and the keyboard behaviour. A press anywhere in the well focuses the input.
+# Families: structure, text. Base: shadcn InputGroup (input-group addon pattern).
+#
+# Sizes at 1rem = 14px: sm is h-7 (1.75rem, 24.5px, 12px text, settings sidebar
+# search); md is h-10 (2.5rem, 35px, 14px text, list search, sheet well, sheet name).
+# Tests compare the drawn result, not the px values.
+#
+# Props: the format allows only string, integer, number and boolean, so the variant
+# axes are strings with the allowed values in comments. The slots (leading, suffix,
+# trailing) are ReactNode and cannot be props; the parts cover them.
+# Events: none. The frame emits no events. Value changes belong to the inner Input
+# (forms family). The caller appends suffix on accept.
+#
+# Roles: the format's text role is textbox only, so the inner input is declared
+# textbox for every tone and shape. Its real ARIA role is given per variant in the
+# part comment. The searchbox (tone search) and combobox (shape bar, palette row,
+# owned by CommandInput) roles are not asserted here, because a role check would
+# contradict the declared role. Role checks run on the field tone only.
+#
+# Trailing actions: clear (shown while the field has a value, on every tone) and
+# roll (dice button, present only with sheet: true). Each is its own tab stop.
+#
+# Not measured:
+# - focusInputOnPress: a press on the well itself cannot be driven (generic parts
+#   accept hover only), so focusInputOnPress: false is not tested either. A press
+#   on the input is tested. Left to the platform harness and the owning widget.
+# - Focus ring: its token is undecided (widget open item 1). Focus tests check focus
+#   on the input, not the ring. Screenshots taken while the input is focused draw the
+#   ring, so they only check that targets agree on it.
+# - Leading icon aria-hidden: left to the platform accessibility harness.
+# - Focus after pressing clear: not recorded in the widget's keyboard notes, so no
+#   test expects focus to move or return.
+# - Suffix with an empty typed value: unrecorded (widget open item 6), so untested.
+# - Input label: the owning widget supplies it. Tests only check that a name exists.
+# - Drag: no slider parts, so drag does not apply.
+# - Trace and record: the spec defines no motion for this frame.
+# - Optional parts (leading, suffix, clear, roll): checks on them are skipped where a
+#   target does not render the part. The hidden-state checks on clear are therefore
+#   not conclusive on such a target.
+# - keyboard: true does not reach clear at mount (it is hidden while empty), so the
+#   Enter and Space tests on clear are written out by hand below.
+
+id: ui.inputgroup
+
+props:
+  shape: { type: string, default: well }              # 'well' | 'bar'. well is the rounded bordered bar with a leading icon (list search, sheet well). bar is the full-width palette input row with a border-bottom edge and short fixed height.
+  tone: { type: string, default: field }              # 'field' | 'search'. field is bordered, edge-2 border, surface-1 fill (sheet well, sheet name). search is a filled grey rounded pill with no border (list search, settings search).
+  size: { type: string, default: md }                 # 'md' | 'sm'. md is h-10 (2.5rem, 35px), 14px text. sm is h-7 (1.75rem, 24.5px), 12px text.
+  suffix: { type: string, default: "" }               # locked, greyed, non-editable tail. "" means none. The caller appends it to the trimmed value on accept; the frame does not change the typed value.
+  focusInputOnPress: { type: boolean, default: true } # true: a press anywhere in the well focuses the input. Not measured (see header).
+  disabled: { type: boolean, default: false }         # disabled chrome; the input cannot take focus.
+  sheet: { type: boolean, default: false }            # true renders the roll dice button. Sheets only: windows on desktop, dialogs on web.
+
+parts:
+  well:                          # the frame. The wrapper takes no role.
+    role: generic                # aria: none
+  leading:                       # leading icon slot. Decorative.
+    role: generic                # aria: none (hidden from assistive technology; not measured)
+    optional: true
+  input:                         # the one inner Input. Declared textbox, the only text role the format lists.
+    role: textbox                # aria: textbox (field tone); searchbox (tone search); combobox (shape bar, palette row, owned by CommandInput)
+  suffix:                        # locked, greyed tail. Present only when suffix is set.
+    role: generic                # aria: none
+    optional: true
+  trailing:                      # trailing slot wrapper. Holds clear and roll.
+    role: generic                # aria: none
+    optional: true
+  clear:                         # clear button, named Clear. Shown while the field has a value, on every tone.
+    role: button                 # aria: button
+    optional: true
+  roll:                          # roll dice button, named Roll dice. Present only when sheet is true.
+    role: button                 # aria: button
+    optional: true
+
+same: pixels
+
+keyboard: true                   # Enter and Space on clear do what a press does.
+colorSchemes: [light, dark]
+viewports:                       # union of the two drafts' sizes; the drafts disagreed.
+  - { width: 320, height: 240 }
+  - { width: 360, height: 120 }
+  - { width: 860, height: 120 }
+  - { width: 880, height: 120 }
+
+tests:
+  - name: sheet well at rest is the default field tone at md size
+    expect:
+      - { part: well, visible: true }
+      - { part: input, visible: true }
+      - { part: input, role: textbox }
+      - { part: input, name: { matches: ".+" } }
+    screenshot: true
+
+  - name: task-list search well is the search tone at md size
+    props: { shape: well, tone: search, size: md }
+    expect:
+      - { part: leading, visible: true }
+      - { part: input, visible: true }
+      - { part: input, name: { matches: ".+" } }
+    screenshot: true
+
+  - name: settings sidebar search is the search tone at sm size
+    props: { shape: well, tone: search, size: sm }
+    expect:
+      - { part: well, visible: true }
+      - { part: input, visible: true }
+      - { part: input, name: { matches: ".+" } }
+    screenshot: true
+
+  - name: field tone at sm size
+    props: { shape: well, tone: field, size: sm }
+    expect:
+      - { part: well, visible: true }
+      - { part: input, role: textbox }
+    screenshot: true
+
+  - name: bar shape is the full-width palette input row frame
+    props: { shape: bar, tone: field, size: md }
+    expect:
+      - { part: well, visible: true }
+      - { part: input, visible: true }
+    screenshot: true
+
+  - name: suffix is a locked tail after the typed value
+    props: { suffix: ".md" }
+    steps:
+      - { action: type, part: input, text: "report" }
+    expect:
+      - { part: input, text: "report" }
+      - { part: suffix, text: ".md" }
+      - { part: suffix, visible: true }
+      - { part: well, text: { contains: ".md" } }
+    screenshot: true
+
+  - name: sheet name with a fixed suffix keeps the suffix out of the typed value
+    props: { shape: well, tone: field, size: md, suffix: ".txt" }
+    steps:
+      - { action: type, part: input, text: "notes" }
+    expect:
+      - { part: input, text: "notes" }
+      - { part: suffix, text: ".txt" }
+      - { part: suffix, visible: true }
+      - { part: well, text: { contains: ".txt" } }
+    screenshot: true
+
+  - name: sheet name with a suffix shows the clear button
+    props: { shape: well, tone: field, size: md, suffix: ".txt" }
+    steps:
+      - { action: type, part: input, text: "notes" }
+    expect:
+      - { part: input, text: "notes" }
+      - { part: clear, visible: true }
+      - { part: clear, role: button }
+      - { part: clear, name: { contains: "Clear" } }
+
+  - name: focusing the input gives it keyboard focus
+    # no screenshot: the focus ring token is undecided (widget open item 1)
+    steps:
+      - { action: focus, part: input }
+    expect:
+      - { part: input, focused: true }
+
+  - name: a press on the input focuses it
+    steps:
+      - { action: press, part: input }
+    expect:
+      - { part: input, focused: true }
+
+  - name: filled well shows the typed value with the input still focused
+    steps:
+      - { action: type, part: input, text: "draft" }
+    expect:
+      - { part: input, text: "draft" }
+      - { part: input, focused: true }
+    screenshot: true
+
+  - name: trailing slot with clear shows at the end of a filled well
+    steps:
+      - { action: type, part: input, text: "draft" }
+    expect:
+      - { part: trailing, visible: true }
+      - { part: clear, visible: true }
+    screenshot: true
+
+  - name: disabled well shows disabled chrome
+    props: { shape: well, tone: field, size: md, disabled: true }
+    expect:
+      - { part: input, disabled: true }
+    screenshot: true
+
+  - name: disabled input takes no focus when focused
+    props: { disabled: true }
+    steps:
+      - { action: focus, part: input }
+    expect:
+      - { part: input, disabled: true }
+      - { part: input, focused: false }
+
+  - name: disabled input takes no focus on press
+    props: { disabled: true }
+    steps:
+      - { action: press, part: input }
+    expect:
+      - { part: input, disabled: true }
+      - { part: input, focused: false }
+
+  - name: Tab from the input reaches the clear button as its own tab stop
+    steps:
+      - { action: type, part: input, text: "draft" }
+      - { action: key, part: input, key: Tab }
+    expect:
+      - { part: clear, focused: true }
+      - { part: input, focused: false }
+
+  - name: Tab from the search field moves to the clear button
+    props: { shape: well, tone: search, size: md }
+    steps:
+      - { action: type, part: input, text: "Dune" }
+      - { action: key, part: input, key: Tab }
+    expect:
+      - { part: clear, focused: true }
+      - { part: input, focused: false }
+
+  - name: Shift+Tab from the clear button returns to the input
+    steps:
+      - { action: type, part: input, text: "draft" }
+      - { action: key, part: input, key: Tab }
+      - { action: key, part: clear, key: Shift+Tab }
+    expect:
+      - { part: input, focused: true }
+      - { part: clear, focused: false }
+
+  - name: pressing clear empties the field
+    props: { shape: well, tone: search, size: md }
+    steps:
+      - { action: type, part: input, text: "Dune" }
+      - { action: press, part: clear }
+    expect:
+      - { part: input, text: "" }
+      - { part: clear, visible: false }
+
+  - name: Enter on the focused clear button clears the field
+    props: { shape: well, tone: search, size: md }
+    steps:
+      - { action: type, part: input, text: "Dune" }
+      - { action: focus, part: clear }
+      - { action: key, part: clear, key: Enter }
+    expect:
+      - { part: input, text: "" }
+
+  - name: Space on the focused clear button clears the field
+    props: { shape: well, tone: search, size: md }
+    steps:
+      - { action: type, part: input, text: "Dune" }
+      - { action: focus, part: clear }
+      - { action: key, part: clear, key: Space }
+    expect:
+      - { part: input, text: "" }
+
+  - name: Tab from clear moves on to roll on sheets
+    props: { shape: well, tone: field, size: md, sheet: true }
+    steps:
+      - { action: type, part: input, text: "Dune" }
+      - { action: key, part: input, key: Tab }
+      - { action: key, part: clear, key: Tab }
+    expect:
+      - { part: roll, focused: true }
+      - { part: roll, name: { contains: "Roll" } }

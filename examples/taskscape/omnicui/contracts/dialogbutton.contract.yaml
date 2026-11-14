@@ -1,0 +1,224 @@
+# DialogButton: the action button in a sheet or confirm dialog footer.
+# Roles:
+#   accept  (Radix AlertDialog Action). Space presses any accept. Enter presses a primary or neutral accept.
+#           Whether Enter may confirm a danger accept is an open item (see below), so no test pins it.
+#   cancel  (Radix AlertDialog Cancel). Enter and Space press it. Escape is handled by the dialog, not this button.
+#   instead (plain Button). Press or Enter/Space resolves with insteadId.
+# Accept closes the sheet on success. The empty-field guard is owned by the caller: it focuses the field and
+# calls preventDefault so the sheet stays open. The button still emits activate.
+#
+# keyboard: true is not set on purpose. It would require Enter to press every button, but a destructive
+# accept must not be confirmed by Enter without a decision (see open item 3). Enter and Space are tested per
+# role below instead.
+#
+# Not covered here, and why:
+#   - Hover and pressed looks: not captured.
+#   - Focus-visible look: not verified. Add a focused screenshot once verified.
+#   - Disabled look: code only, so no screenshot. Behaviour is tested below.
+#   - Tab cycling across the footer: a property of the sheet's footer grid.
+#   - Import JSON (instead) behaviour after closing: not verified (open item 4).
+#
+# Moved to a sheet contract (an AlertDialog root with a footer holding these buttons). A standalone button
+# cannot be measured on initial focus, Escape, Tab or the empty-field guard:
+#   - On open, Cancel has initial focus for a destructive sheet; a danger accept does not (open item 2).
+#   - Escape while Cancel has focus dismisses as cancel (desktop window close may differ).
+#   - Escape while accept has focus: one dismiss with role cancel, no activate.
+#   - Enter with a text field focused does not press accept; the textbox keeps focus.
+#   - Tab moves focus through the footer in footer-grid order.
+#   - Empty-field guard: focus the field, press accept, the sheet stays open, no submission.
+#
+# Open items (no test pins these until decided):
+#   1. Accept default variant: neutral is recorded, primary is proposed. Both screenshots are kept.
+#   2. Initial focus on Cancel (APG: least destructive action). Tested in the sheet contract.
+#   3. Whether Enter may confirm a danger accept. The widget's keyboard rule says it fires at once today.
+#   4. Import JSON (instead) behaviour after closing. The dismiss assertion is left out.
+#   5. Cancel width: 84px measured, lg min-width 84px. Long-label screenshot added.
+
+id: ui.dialogbutton
+
+props:
+  # role has no default: a missing role must not silently act as accept. The format has no required flag,
+  # so "" stands in. The caller must set accept, cancel or instead.
+  role: { type: string, default: "" }
+  # The id that instead resolves with. Read only when role is instead. "" stands in for unset.
+  insteadId: { type: string, default: "" }
+  # primary | neutral | danger, passed through to Button. "" takes the role default:
+  # accept neutral as recorded (primary is proposed, open item 1); cancel and instead neutral.
+  # A destructive accept is passed danger by the caller.
+  variant: { type: string, default: "" }
+  # Visible text, also the accessible name. A contract addition, not in the widget spec prop list, so tests
+  # can read the text. "" stands in: the caller sets it, and every test passes it explicitly.
+  label: { type: string, default: "" }
+  # Passed to Button. Not used for the empty-field guard.
+  disabled: { type: boolean, default: false }
+
+events:
+  # The accept button was activated (press, Enter, or Space). role is always accept.
+  activate: { role: { type: string } }
+  # The cancel button was activated. role is always cancel.
+  dismiss: { role: { type: string } }
+  # The instead button was activated. insteadId is the prop value.
+  resolve: { insteadId: { type: string } }
+
+parts:
+  # aria: button (AlertDialog Action for accept, AlertDialog Cancel for cancel, a plain button for instead).
+  # The button look is the same on desktop and web.
+  button: { role: button, same: { default: pixels } }
+
+colorSchemes: [ light, dark ]
+
+tests:
+  - name: accept with primary variant
+    # Open item 1: primary is proposed, not confirmed. Kept beside the neutral test so either outcome can be compared.
+    props: { role: accept, variant: primary, label: Done }
+    screenshot: true
+
+  - name: accept with neutral variant (the recorded default)
+    props: { role: accept, variant: neutral, label: Done }
+    screenshot: true
+
+  - name: accept with danger variant
+    props: { role: accept, variant: danger, label: Done }
+    screenshot: true
+
+  - name: cancel has the neutral look
+    props: { role: cancel, label: Cancel }
+    screenshot: true
+
+  - name: cancel look cropped to the button
+    # Open item 5: the button's box alone, so sheet context does not add noise.
+    props: { role: cancel, label: Cancel }
+    screenshot: { part: button }
+
+  - name: cancel with a long label
+    # Open item 5: checks min-width behaviour against the measured 84px cancel width.
+    props: { role: cancel, label: "Cancel and discard changes" }
+    screenshot: { part: button }
+
+  - name: instead has the neutral look
+    props: { role: instead, insteadId: alternate, label: "Import JSON" }
+    screenshot: true
+
+  - name: accept reports as a button with its label
+    props: { role: accept, variant: primary, label: Done }
+    expect:
+      - { part: button, role: button }
+      - { part: button, text: Done }
+      - { part: button, name: Done }
+
+  - name: press on primary accept activates once
+    props: { role: accept, variant: primary, label: Done }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+      - { event: dismiss, times: 0 }
+
+  - name: press on neutral accept activates once
+    props: { role: accept, variant: neutral, label: Done }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+      - { event: dismiss, times: 0 }
+
+  - name: press on danger accept activates once
+    props: { role: accept, variant: danger, label: Done }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+      - { event: dismiss, times: 0 }
+
+  - name: press on cancel dismisses once
+    props: { role: cancel, label: Cancel }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { event: dismiss, times: 1, last: { role: cancel } }
+      - { event: activate, times: 0 }
+
+  - name: press on instead resolves with its id
+    # The dismiss assertion is left out until open item 4 (Import JSON after closing) is verified.
+    props: { role: instead, insteadId: alternate, label: "Import JSON" }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { event: resolve, times: 1, last: { insteadId: alternate } }
+
+  - name: disabled accept shows disabled and ignores press
+    props: { role: accept, variant: primary, label: Done, disabled: true }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { part: button, disabled: true }
+      - { event: activate, times: 0 }
+
+  - name: Enter presses a primary accept
+    props: { role: accept, variant: primary, label: Done }
+    steps:
+      - { action: focus, part: button }
+      - { input: confirm }
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+
+  - name: Enter presses a neutral accept
+    props: { role: accept, variant: neutral, label: Done }
+    steps:
+      - { action: focus, part: button }
+      - { input: confirm }
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+
+  - name: Space presses a primary accept
+    props: { role: accept, variant: primary, label: Done }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+
+  - name: Space presses a neutral accept
+    props: { role: accept, variant: neutral, label: Done }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+
+  - name: Space confirms a danger accept once focused
+    props: { role: accept, variant: danger, label: Done }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { event: activate, times: 1, last: { role: accept } }
+
+  - name: Enter presses cancel
+    props: { role: cancel, label: Cancel }
+    steps:
+      - { action: focus, part: button }
+      - { input: confirm }
+    expect:
+      - { event: dismiss, times: 1, last: { role: cancel } }
+
+  - name: Space presses cancel
+    props: { role: cancel, label: Cancel }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { event: dismiss, times: 1, last: { role: cancel } }
+
+  - name: Enter presses instead
+    props: { role: instead, insteadId: alternate, label: "Import JSON" }
+    steps:
+      - { action: focus, part: button }
+      - { input: confirm }
+    expect:
+      - { event: resolve, times: 1, last: { insteadId: alternate } }
+
+  - name: Space presses instead
+    props: { role: instead, insteadId: alternate, label: "Import JSON" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { event: resolve, times: 1, last: { insteadId: alternate } }
+
+viewports:
+  - { width: 320, height: 240 }

@@ -1,0 +1,261 @@
+# omnicui contract: ui.numberfield (merged from drafts A and B; draft A was a placeholder)
+id: ui.numberfield
+
+# NumberField: the narrow day-count input in the filter panel. The row is shown only when
+# the date range is custom. That is the host's choice, so this widget has no absent render.
+# The absent state belongs to the filter-panel host contract, which is not written yet.
+#
+# Base: shadcn/ui Input with type="number", native spin buttons hidden.
+# Size is fixed inside the widget (1rem = 14px): height 22.75px (h-6.5), width 42px (w-12).
+# These are decided here but unconfirmed: spec open item 4 (token scale) is not closed.
+# No assertion in this contract checks size.
+# The filter panel uses the same field. There is no size prop and no variant.
+#
+# Hosting: the target hosts this widget with its displayed value seeded from props.value and
+# kept in the widget's own state, so that an emitted change is shown. Tests after an edit assume this.
+#
+# Real ARIA role: textbox (WAI-ARIA APG spinbutton pattern). The format has no spinbutton
+# category, so the part is declared textbox, which selects the field and action set only.
+# The AT role is checked through the role field in the expects.
+# aria-valuemin and aria-valuemax are set by the widget from min and max. No format field reads
+# them, so they are unverified here.
+# The spec's aria-label is written ariaLabel, because names must be camelCase.
+#
+# keyboard: true is not set. It covers buttons, switches and checkboxes, and this widget has none.
+# Enter and Escape are not recorded in the spec, so they are not tested.
+# There is no blur action in the format, so the blur rules below are stated but not tested.
+# There is no drag: this widget has no slider part.
+# The mouse wheel is not tested: there is no wheel action.
+#
+# Behaviour rules. These are proposed for the spec owner and are not yet accepted:
+# - A value at or above max is clamped to max before it is shown and emitted.
+# - A typed value below min is shown as typed and is not emitted while typing, because more digits
+#   can bring it into range (typing 2 then 5 for 25 must work with min 10). On blur it clamps to min
+#   and is emitted. Not tested: no blur action.
+# - Empty while editing: the field shows empty, emits nothing and is not pinned. On blur an empty
+#   field reverts to the last emitted value. Decided: commit on blur, not on every change, so that
+#   Number('') never becomes 0 and then 1. Not tested: no blur action.
+# - ArrowUp and ArrowDown step by 1 and stop at min and max. No wrap. A key press that leaves the
+#   shown value unchanged emits nothing.
+# - Home and End set min and max. These are APG optional keys, added here and not in the recorded
+#   spec. The widget must intercept them, because native type=number does not map them.
+# - PageUp and PageDown are not added: APG leaves the large step to the widget, and the spec records none.
+# - The mouse wheel over the focused field does not step the value. This is an idiomatic addition
+#   and is not in the spec.
+# - The day count is whole days. A fraction is truncated before clamping. Decided here, since the
+#   spec is silent. Not covered by a test.
+# - A value prop outside min..max is shown clamped and is not emitted.
+#
+# Focus ring (spec open item 6): a 1px ring in the neutral foreground token, not the accent blue,
+# because accent means only the primary action and selection. It must be at least 3:1 against the
+# field and the page in both colour schemes (WCAG 2.2 SC 1.4.11). The focused screenshot compares
+# targets with each other and does not measure contrast, so this is a manual or token-level check,
+# not a test.
+#
+# Open items for the spec owner, not resolved here:
+# - open 1: the empty and partial input rules above (proposed, not accepted).
+# - open 3: the real default for value was not read. The default below is a placeholder.
+# - open 4: the token scale, which the size comment depends on.
+# - open 5: Enter and Escape behaviour.
+
+props:
+  value:
+    type: integer
+    default: 1        # TBD placeholder: the real default was not read (spec open 3). Every test passes an explicit value.
+  min:
+    type: integer
+    default: 1        # lowest day count. Typed values below it are held until blur, as described above.
+  max:
+    type: integer
+    default: 365      # highest day count. Values above it are pinned to it.
+  ariaLabel:
+    type: string
+    default: ""       # placeholder. The host must pass a label: the day count has none in code, and an unnamed spinbutton fails APG. The format does not enforce this.
+
+events:
+  changed:            # the spec's onValueChange
+    value:
+      type: integer   # the clamped day count, emitted on every user change that alters the value.
+                      # Never emitted for an empty field, a typed value below min, or a value prop.
+
+parts:
+  field:
+    role: textbox     # aria: spinbutton (native input type=number). role textbox selects the field and action set only.
+    same: { default: pixels }
+
+colorSchemes: [light, dark]
+
+tests:
+  - name: shows the day count with the spinbutton role and its label
+    props: { value: 30, ariaLabel: "Day count" }
+    steps: []
+    expect:
+      - { part: field, role: textbox }
+      - { part: field, name: "Day count" }
+      - { part: field, text: "30" }
+      - { part: field, focused: false }
+
+  - name: resting state, light and dark
+    props: { value: 30, ariaLabel: "Day count" }
+    steps: []
+    screenshot: true
+
+  - name: resting at three digits, visual baseline
+    props: { value: 365, ariaLabel: "Day count" }
+    steps: []
+    screenshot: true
+
+  - name: focused state shows the focus ring
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+    expect:
+      - { part: field, focused: true }
+    screenshot: true
+
+  - name: typed digits replace the value and emit it
+    # The steps clear "30" with two Backspace presses (the first emits 3, the second emits nothing),
+    # then type "5" (emits 5). Assumes focus leaves the caret at the end.
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "5" }
+    expect:
+      - { part: field, text: "5" }
+      - { event: changed, times: 2, last: { value: 5 } }
+
+  - name: an empty field is not pinned to min while editing
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+    expect:
+      - { part: field, text: "" }
+      - { event: changed, times: 1, last: { value: 3 } }
+
+  - name: typing above max pins to max
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "400" }
+    expect:
+      - { part: field, text: "365" }
+      - { event: changed, last: { value: 365 } }
+
+  - name: clamped at max, light and dark
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "400" }
+    screenshot: true
+
+  - name: typed zero is held and not emitted until blur
+    # Replaces "typing zero pins to min": under the partial-input rule, 0 is below min and is shown as typed.
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "0" }
+    expect:
+      - { part: field, text: "0" }
+      - { event: changed, times: 1, last: { value: 3 } }
+
+  - name: a typed value below a custom min is shown and not emitted
+    props: { value: 30, min: 10, max: 60, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "3" }
+    expect:
+      - { part: field, text: "3" }
+      - { event: changed, times: 0 }
+
+  - name: two digits typed above a custom min emit the typed value
+    props: { value: 30, min: 10, max: 60, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Backspace }
+      - { action: type, part: field, text: "25" }
+    expect:
+      - { part: field, text: "25" }
+      - { event: changed, times: 1, last: { value: 25 } }
+
+  - name: a value prop outside the range is shown clamped and not emitted
+    props: { value: 500, ariaLabel: "Day count" }
+    steps: []
+    expect:
+      - { part: field, text: "365" }
+      - { event: changed, times: 0 }
+
+  - name: clamped at min by ArrowDown, light and dark
+    props: { value: 1, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: ArrowDown }
+    screenshot: true
+
+  - name: ArrowUp steps up by one
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: ArrowUp }
+    expect:
+      - { part: field, text: "31" }
+      - { event: changed, times: 1, last: { value: 31 } }
+
+  - name: ArrowDown steps down by one
+    props: { value: 30, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: ArrowDown }
+    expect:
+      - { part: field, text: "29" }
+      - { event: changed, times: 1, last: { value: 29 } }
+
+  - name: ArrowUp at max stays at max and emits nothing
+    props: { value: 365, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: ArrowUp }
+    expect:
+      - { part: field, text: "365" }
+      - { event: changed, times: 0 }
+
+  - name: ArrowDown at min stays at min and emits nothing
+    props: { value: 1, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: ArrowDown }
+    expect:
+      - { part: field, text: "1" }
+      - { event: changed, times: 0 }
+
+  - name: Home sets the minimum
+    # Proposed addition (APG optional key), not in the recorded spec. See header.
+    props: { value: 100, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Home }
+    expect:
+      - { part: field, text: "1" }
+      - { event: changed, times: 1, last: { value: 1 } }
+
+  - name: End sets the maximum
+    # Proposed addition (APG optional key), not in the recorded spec. See header.
+    props: { value: 100, ariaLabel: "Day count" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: End }
+    expect:
+      - { part: field, text: "365" }
+      - { event: changed, times: 1, last: { value: 365 } }

@@ -1,0 +1,194 @@
+# contracts/ui.progressbar.contract.yaml
+#
+# ProgressBar: a thin, read-only, determinate bar showing the done ratio of a
+# list or pane. It has no text inside. Any percentage label is rendered by the
+# consumer beside it and is not part of this widget.
+# Base: Radix Progress, as shadcn Progress. Family: status.
+# Replaces: "Thin progress bar, 84px".
+#
+# Read-only: not focusable, no actions, emits no events. The percentage label
+# beside the bar belongs to the consumer, not to this widget.
+# Left out on purpose: drag (the bar is not moved by the user; it is a slider
+# only in its field set, so no drag is tested), trace and record (no step starts
+# a value change, and a mount animation cannot be traced), keyboard: true (there
+# is no button, switch or checkbox). Pointer presses and Enter/Space are tested
+# to change nothing.
+# Reduced motion (product decision 16) governs any fill transition; it is not
+# measured here.
+# The accessible value text (Radix default "25%") is not asserted; only the
+# numeric value (aria-valuenow) is checked.
+#
+# Open in the catalogue, not decided here:
+# (1) the fill colour is confirmed against the source before the screens are
+#     built (reference blue not measured; both designs assume the done-lamp token);
+# (2) the full state is assumed to be fill to 100%, with no distinct complete look yet;
+# (3) track height, about 4px (0.286rem), is measured on two rows and estimated on three;
+# (4) the component name is unknown on filter-panel and trash;
+# (5) the 84px width is a fixed default, not a catalogue variant.
+
+id: ui.progressbar
+
+props:
+  # Done ratio, between 0 and max. Values above max are clamped to max and
+  # values below 0 to 0. WAI-ARIA keeps aria-valuenow inside min and max;
+  # Radix nulls an out-of-range value and shows indeterminate, which this
+  # widget does not do. Catalogue values: 0 (task-list empty), 0.25
+  # (main-window, task-list, draft-inspector, filter-panel, trash), 0.3333
+  # (main-window split pane).
+  value: { type: number, default: 0 }
+  # Upper bound, so value is a ratio by default. A max that is not above 0
+  # falls back to 1. Always written to aria-valuemax. Implementations must pass
+  # 1 explicitly, because Radix defaults max to 100.
+  max: { type: number, default: 1 }
+  # Accessible name, sent as aria-label (camelCase in this contract). Required,
+  # because the bar has no text, so the name is the only label. The empty
+  # default is a placeholder; a consumer must pass a real name. Examples:
+  # "Done in Inbox", "Done in this pane".
+  ariaLabel: { type: string, default: "" }
+  # Fill colour token. Only "done" is defined: the fill uses the done-lamp
+  # colour and the track uses the muted token. Accent blue is not used, because
+  # it is reserved for primary action and selection.
+  tone: { type: string, default: "done" }
+  # Layout escape hatch only. Consumers do not set size. Fixed defaults: width
+  # 84px (6rem on the 14px root), track height about 4px (0.286rem).
+  className: { type: string, default: "" }
+
+# No events: the bar is read-only and emits nothing.
+events: {}
+
+parts:
+  # aria: progressbar. The root (Radix Progress.Root). Mapped to slider, the
+  # nearest range role in this format, so that name, value and focused can be
+  # checked; the real ARIA role is checked through role. It carries the value
+  # (aria-valuenow, aria-valuemin 0, aria-valuemax) and the name from ariaLabel.
+  # It is not focusable.
+  bar: { role: slider }
+  # aria: none (presentational indicator). The done-lamp fill (Radix
+  # Progress.Indicator). Some implementations draw no fill element at value 0,
+  # so the part is optional.
+  fill: { role: generic, optional: true }
+
+# States covered by tests below: empty (value 0), partial (0 < value < max),
+# full (value equals max). Full is derived from the value and has no prop.
+# The spec has no indeterminate state; value always has a number.
+
+same: pixels
+colorSchemes: [light, dark]
+
+# keyboard: not set. The bar is not focusable and has no keys. keyboard: true
+# only applies to button, switch and checkbox parts, and there are none here.
+#
+# No trace or record: no step changes value, so no motion can be started.
+
+tests:
+  - name: empty row shows the track only
+    props: { value: 0, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, visible: true }
+      - { part: bar, value: 0 }
+      - { part: fill, visible: false }
+    screenshot: true
+
+  - name: partial quarter fills a quarter and is named for its list
+    props: { value: 0.25, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, visible: true }
+      - { part: bar, name: "Done in Inbox" }
+      - { part: bar, value: 0.25 }
+      - { part: fill, visible: true }
+    screenshot: true
+
+  - name: quarter fill box matches
+    props: { value: 0.25, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+    screenshot: { part: fill }
+
+  - name: split pane partial fills one third
+    props: { value: 0.3333, ariaLabel: "Done in this pane" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, visible: true }
+      - { part: bar, name: "Done in this pane" }
+      - { part: bar, value: 0.3333 }
+      - { part: fill, visible: true }
+    screenshot: true
+
+  - name: max scales the ratio
+    props: { value: 3, max: 12, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 3 }
+    screenshot: true
+
+  - name: max sets the scale, so 1 of 4 is a quarter
+    props: { value: 1, max: 4, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 1 }
+    screenshot: true
+
+  - name: full at default max fills to 100 percent
+    props: { value: 1, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 1 }
+      - { part: fill, visible: true }
+    screenshot: true
+
+  - name: full when value equals a custom max
+    props: { value: 12, max: 12, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 12 }
+    screenshot: true
+
+  - name: value above max clamps to full
+    props: { value: 2, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 1 }
+    screenshot: true
+
+  - name: value below zero clamps to empty
+    props: { value: -0.5, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 0 }
+      - { part: fill, visible: false }
+    screenshot: true
+
+  - name: tone done is the only tone and fills with the done-lamp colour
+    props: { tone: done, value: 0.25, ariaLabel: "Done in Inbox" }
+    expect:
+      - { part: bar, role: status }
+    screenshot: true
+
+  - name: hover changes nothing
+    props: { value: 0.25, ariaLabel: "Done in Inbox" }
+    steps:
+      - { action: hover, part: bar }
+    expect:
+      - { part: bar, role: status }
+      - { part: bar, value: 0.25 }
+    screenshot: true
+
+  - name: the bar is not focusable
+    props: { value: 0.25, ariaLabel: "Done in Inbox" }
+    steps:
+      - { action: focus, part: bar }
+    expect:
+      - { part: bar, focused: false }
+      - { part: bar, value: 0.25 }
+
+  - name: press, Enter and Space change nothing
+    props: { value: 0.25, ariaLabel: "Done in Inbox" }
+    steps:
+      - { action: press, part: bar }
+      - { action: key, part: bar, key: Enter }
+      - { action: key, part: bar, key: Space }
+    expect:
+      - { part: bar, value: 0.25 }
+      - { part: bar, focused: false }

@@ -1,0 +1,234 @@
+# Card (ui.card): rounded container for grouped content. Base: shadcn Card.
+# It is a container only: children (settings rows, the note editor, buttons) belong to the caller.
+# It replaces the note card, the settings group card (SettingsGroup folded in here), the attachments
+# empty box and the labelled shortcut scope group. It is not focusable and handles no keys.
+# Its own behaviour: the group label, the search breadcrumb, the changed dot, the discard action,
+# and the reveal of the note editor toolbar on focus-within.
+#
+# Mapping notes:
+# - Props are typed string where the spec gives a union; allowed values are in the comment.
+# - onDiscard has no contract type. discardable is true when a handler is provided.
+#   Pressing the discard action emits discarded with the group label.
+# - changed state = changed AND discardable. A change with no handler shows neither the dot nor
+#   the discard action.
+# - Search context: the heading shows breadcrumb when set, otherwise label.
+# - note: true renders the note editor and its toolbar as the card content (the format cannot
+#   express children).
+# - Discard is immediate (not a destructive confirmation under decision 10): no confirm step.
+# - The dot and the discard action do not use accent blue (accent is for primary action and selection).
+# - Not tested here: emptied-and-blurred discard (NoteCard), child-row filtering in search (children),
+#   and the divider between child rows (no child rows in the harness).
+# - Open: note card fill (surface-2 assumed) and radius (panel assumed) are unconfirmed; the tests
+#   use the spec defaults. surface-3 and dashed values are kept as listed in the input.
+
+id: ui.card
+
+props:
+  tone: { type: string, default: surface-2 }     # fill: base | surface-2 | surface-3
+  border: { type: string, default: solid }       # border: none | solid | dashed
+  radius: { type: string, default: panel }       # corner: panel | control
+  context: { type: string, default: page }       # page | search
+  divided: { type: boolean, default: false }     # hairline between child rows (divide-y, edge-1)
+  asChild: { type: boolean, default: false }     # styling and role merge onto the single child; parts unchanged
+  label: { type: string, default: "" }           # group heading; labels the group when set; empty means no heading and no group name
+  breadcrumb: { type: string, default: "" }      # search context: path shown as the heading, e.g. "General · Appearance"
+  hint: { type: string, default: "" }            # secondary line under the heading (desktop Global group only)
+  changed: { type: boolean, default: false }     # a change is pending; the dot and discard show only when changed and discardable
+  discardable: { type: boolean, default: false } # an onDiscard handler is provided
+  note: { type: boolean, default: false }        # the card holds the note editor; focus within reveals its toolbar
+
+events:
+  discarded: { label: { type: string } }         # the discard action was activated (press, Enter or Space); label is the group label
+
+parts:
+  container: { role: generic }                   # aria: group when label is set, otherwise no group role
+  heading: { role: heading, optional: true }     # group label (search: breadcrumb path); names the group; absent when both are empty
+  hint: { role: generic, optional: true }        # secondary line; absent when hint is empty
+  changeDot: { role: generic }                   # aria: none, decorative (aria-hidden); shown only when changed and discardable
+  discard: { role: button }                      # discard pending change; shown only when changed and discardable
+  editor: { role: textbox, optional: true }      # note editor; present only when note is true
+  editorToolbar: { role: generic, optional: true } # aria: toolbar; visible only while focus is within the card
+
+tests:
+  - name: base tone has no fill
+    props: { tone: base, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: surface-2 tone is the default settings fill
+    props: { tone: surface-2, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: surface-3 tone is the sunken fill (attachments)
+    props: { tone: surface-3, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: no border has no edge
+    props: { border: none, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: solid border is the default edge-2 hairline
+    props: { border: solid, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: dashed border draws the attachments empty-box edge
+    props: { border: dashed, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: panel radius is the default corner
+    props: { radius: panel, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: control radius is the smaller corner
+    props: { radius: control, label: Appearance }
+    steps: []
+    screenshot: true
+
+  - name: page context is the default
+    props: { context: page, label: Appearance }
+    steps: []
+    expect:
+      - { part: heading, text: "Appearance" }
+    screenshot: true
+
+  - name: search context shows the breadcrumb path as the group heading
+    props: { context: search, breadcrumb: "General · Appearance", label: Appearance }
+    steps: []
+    expect:
+      - { part: heading, text: "General · Appearance" }
+      - { part: container, role: generic }
+    screenshot: true
+
+  - name: divided card (screenshot only, no child rows in the harness)
+    props: { label: Appearance, divided: true }
+    steps: []
+    screenshot: true
+
+  - name: hint shows under the group heading
+    props: { label: Global, hint: "work anywhere in macOS" }
+    steps: []
+    expect:
+      - { part: heading, text: "Global" }
+      - { part: hint, text: "work anywhere in macOS" }
+    screenshot: true
+
+  - name: idle card shows no dot and no discard action
+    props: { label: Appearance, discardable: true }
+    steps: []
+    expect:
+      - { part: changeDot, visible: false }
+      - { part: discard, visible: false }
+    screenshot: true
+
+  - name: idle by default has no changed dot and no discard action
+    props: {}
+    steps: []
+    expect:
+      - { part: changeDot, visible: false }
+      - { part: discard, visible: false }
+    screenshot: true
+
+  - name: changed card with a discard handler shows the dot and the discard button
+    props: { label: Appearance, changed: true, discardable: true }
+    steps: []
+    expect:
+      - { part: changeDot, visible: true }
+      - { part: discard, role: button }
+      - { part: discard, visible: true }
+      - { part: discard, name: { contains: "Discard" } }
+    screenshot: true
+
+  - name: changed card without a discard handler shows no dot and no discard action
+    props: { label: Appearance, changed: true, discardable: false }
+    steps: []
+    expect:
+      - { part: changeDot, visible: false }
+      - { part: discard, visible: false }
+
+  - name: pressing discard emits discarded once with the group label
+    props: { label: Appearance, changed: true, discardable: true }
+    steps:
+      - { action: press, part: discard }
+    expect:
+      - { event: discarded, times: 1, last: { label: "Appearance" } }
+
+  - name: discard stays available until the caller clears changed
+    props: { label: Appearance, changed: true, discardable: true }
+    steps:
+      - { action: press, part: discard, times: 2 }
+    expect:
+      - { event: discarded, times: 2 }
+      - { part: discard, visible: true }
+      - { part: changeDot, visible: true }
+
+  - name: discard button can take keyboard focus (reachable by Tab)
+    props: { label: Appearance, changed: true, discardable: true }
+    steps:
+      - { action: focus, part: discard }
+    expect:
+      - { part: discard, focused: true }
+
+  - name: Enter on focused discard emits discarded once with the group label
+    props: { label: Appearance, changed: true, discardable: true }
+    steps:
+      - { action: focus, part: discard }
+      - { action: key, part: discard, key: Enter }
+    expect:
+      - { event: discarded, times: 1, last: { label: "Appearance" } }
+
+  - name: Space on focused discard emits discarded once with the group label
+    props: { label: Appearance, changed: true, discardable: true }
+    steps:
+      - { action: focus, part: discard }
+      - { action: key, part: discard, key: Space }
+    expect:
+      - { event: discarded, times: 1, last: { label: "Appearance" } }
+
+  - name: labelled card is a group named by its heading
+    props: { label: Appearance }
+    steps: []
+    expect:
+      - { part: container, role: generic }
+      - { part: heading, role: heading }
+      - { part: heading, text: "Appearance" }
+      - { part: heading, name: "Appearance" }
+
+  - name: unlabelled card has no group role
+    props: { label: "" }
+    steps: []
+    expect:
+      - { part: container, role: generic }
+
+  - name: note card hides its editor toolbar until focus is within
+    props: { note: true }
+    steps: []
+    expect:
+      - { part: editorToolbar, visible: false }
+    screenshot: true
+
+  - name: note card shows its editor toolbar while focus is within
+    props: { note: true }
+    steps:
+      - { action: focus, part: editor }
+    expect:
+      - { part: editor, focused: true }
+      - { part: editorToolbar, visible: true }
+    screenshot: true
+
+  - name: asChild renders onto the child with the same look
+    props: { asChild: true, label: Appearance }
+    steps: []
+    expect:
+      - { part: heading, text: "Appearance" }
+    screenshot: true
+
+viewports: [ { width: 320, height: 240 }, { width: 640, height: 520 } ]
+colorSchemes: [ light, dark ]
+keyboard: true
+same: pixels

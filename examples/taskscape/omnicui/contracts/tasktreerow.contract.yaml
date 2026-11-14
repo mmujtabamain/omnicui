@@ -1,0 +1,353 @@
+# Contract ui.tasktreerow: one row of the task tree (root task at depth 0, subtask at depth 1 and deeper).
+# Kept separate from TaskRow because the tree interaction differs: a round select check (Option on macOS,
+# Alt on Windows and web) that switches it to done, platform-modifier and Shift multi-select, drag to reorder
+# or nest, double-click to toggle done, a right-click row menu, and treeitem semantics.
+#
+# Roles (hard rules): the row is an ARIA treeitem, so its part role is button (# aria: treeitem); the round
+# check is a checkbox; the title is generic text. The real ARIA roles are tested through the role field.
+# Base: custom tree item. The round check is the shared RoundCheck (Radix Checkbox styled round).
+# The row menu is a Radix ContextMenu (opened by right-click, the context-menu key or Shift+F10).
+# This row only emits contextMenu; the menu itself is not tested here.
+#
+# Variants (depth axis): 0 = root task, no indent, title at x 47. 1 = subtask, indented 24px (1.7143rem),
+# title at x 71, round check at x 44. Each deeper level adds 24px. Positions are covered by screenshots.
+#
+# Not expressible in this format, so not tested here: aria-level (depth + 1), aria-expanded, right-click,
+# pointer Shift+click, Up/Down/Home/End focus movement (a tree-level behaviour), drag and drop (drag acts only
+# on sliders), the drop zone computed from pointer position, collapse-all or flat search visibility, and the
+# keyboard path for the Option or Alt check switch (the row does not read keys for it; the parent sets checkAction).
+
+id: ui.tasktreerow
+
+props:
+  # Task title. Weight 500, 14px with 19px line height (1.1875rem).
+  title: { type: string, default: "" }
+  # Nesting level: 0 for a root task, 1 for a subtask, deeper adds 24px each. Drives indent and aria-level (depth + 1).
+  depth: { type: integer, default: 0 }
+  # Muted title with strikethrough. The round check uses the done-lamp token (never accent blue).
+  done: { type: boolean, default: false }
+  # Previewed or picked: selection background. Reported as aria-selected.
+  selected: { type: boolean, default: false }
+  # Part of the multi selection: blue tint.
+  picked: { type: boolean, default: false }
+  # Row is being dragged: drawn at 40 percent opacity.
+  dragging: { type: boolean, default: false }
+  # Drop feedback by vertical zone. Allowed values: "none", "before" (top 30 percent, line on top edge),
+  # "after" (bottom 30 percent, line on bottom edge), "nest" (middle zone, ring plus selection background).
+  dropIndicator: { type: string, default: "none" }
+  # Action of the round check. Allowed values: "select" (default), "done" (while Option on macOS or Alt on
+  # Windows and web is held). Set by the parent from the held key; the row does not read keys for it.
+  checkAction: { type: string, default: "select" }
+  # Whether the row can be dragged. True for tree rows.
+  draggable: { type: boolean, default: true }
+  # Proposed (open item 6): true for a parent row, which carries aria-expanded.
+  hasChildren: { type: boolean, default: false }
+  # Proposed (open item 6): open state of a parent row.
+  expanded: { type: boolean, default: false }
+
+events:
+  # Row click, Enter, Space, or Shift+ArrowUp / Shift+ArrowDown. platformModifier toggles this row in the
+  # selection; shift extends a range from the last selected row.
+  activate:
+    platformModifier: { type: boolean }
+    shift: { type: boolean }
+  # Round check click, or Space with the check focused. action is "select" or "done", following checkAction.
+  check:
+    action: { type: string }
+  # Double-click, or the proposed platform modifier+Enter (Control+Enter off macOS, Command+Enter on macOS).
+  toggleDone: {}
+  # Right-click, the context-menu key or Shift+F10. The web calls preventDefault so the browser menu does not show.
+  contextMenu: {}
+  # Drop onto this row at the computed zone. position is "before", "after" or "nest".
+  # Not tested here: drag acts only on sliders.
+  drop:
+    position: { type: string }
+  # Proposed (open item 6): ArrowRight expands a collapsed parent row, ArrowLeft collapses an expanded one.
+  toggleExpanded:
+    expanded: { type: boolean }
+
+parts:
+  row:
+    role: button                 # aria: treeitem (aria-level, aria-selected; aria-expanded on parents)
+    same: { default: pixels }
+  check:
+    role: checkbox               # aria: checkbox. Named "Select {title}" when checkAction is select, "Mark {title} done" when it is done.
+    same: { default: pixels }
+  title:
+    role: generic                # visible task title, plain text
+    same: { default: pixels }
+
+tests:
+  # Variants by depth
+  - name: "root task (depth 0) is a tree item named by its title, with an unchecked check"
+    props: { title: "Buy milk", depth: 0 }
+    expect:
+      - { part: row, role: button }
+      - { part: row, name: "Buy milk" }
+      - { part: row, selected: false }
+      - { part: row, visible: true }
+      - { part: title, text: "Buy milk" }
+      - { part: check, name: "Select Buy milk" }
+      - { part: check, checked: false }
+    screenshot: { part: row }
+
+  - name: "subtask (depth 1) is indented with its round check and title in place"
+    props: { title: "Call the bank", depth: 1 }
+    expect:
+      - { part: row, role: button }
+      - { part: row, name: "Call the bank" }
+      - { part: check, role: checkbox }
+      - { part: check, name: "Select Call the bank" }
+      - { part: title, text: "Call the bank" }
+    screenshot: { part: row }
+
+  - name: "a deeper level (depth 2) adds another 24px of indent"
+    props: { title: "Pay the invoice", depth: 2 }
+    expect:
+      - { part: row, role: button }
+    screenshot: { part: row }
+
+  # Visual states
+  - name: "hover washes the row background"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: hover, part: row }
+    screenshot: { part: row }
+
+  - name: "keyboard focus shows the focus-visible ring on the row (proposed)"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+    expect:
+      - { part: row, focused: true }
+    screenshot: { part: row }
+
+  - name: "focus-visible ring on the round check"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: check }
+    expect:
+      - { part: check, focused: true }
+    screenshot: true
+
+  - name: "selected row shows the selection background"
+    props: { title: "Buy milk", depth: 0, selected: true }
+    expect:
+      - { part: row, selected: true }
+    screenshot: { part: row }
+
+  - name: "selected row in select mode shows its check checked (proposed)"
+    props: { title: "Buy milk", depth: 0, selected: true, checkAction: "select" }
+    expect:
+      - { part: check, checked: true }
+    screenshot: { part: row }
+
+  - name: "picked row shows the blue multi-select tint"
+    props: { title: "Buy milk", depth: 0, picked: true }
+    screenshot: { part: row }
+
+  - name: "done row shows a muted, struck-through title and a checked done-lamp check"
+    props: { title: "Buy milk", depth: 0, done: true }
+    expect:
+      - { part: title, text: "Buy milk" }
+      - { part: check, checked: true }
+    screenshot: { part: row }
+
+  - name: "done row in done mode names the check Mark done and shows it checked"
+    props: { title: "Buy milk", depth: 0, done: true, checkAction: "done" }
+    expect:
+      - { part: check, name: "Mark Buy milk done" }
+      - { part: check, checked: true }
+    screenshot: { part: row }
+
+  - name: "check in done mode is named Mark done"
+    props: { title: "Buy milk", depth: 0, checkAction: "done" }
+    expect:
+      - { part: check, name: "Mark Buy milk done" }
+      - { part: check, checked: false }
+    screenshot: { part: row }
+
+  - name: "row being dragged is drawn at 40 percent opacity"
+    props: { title: "Buy milk", depth: 0, dragging: true }
+    screenshot: { part: row }
+
+  - name: "drop before shows a line on the top edge"
+    props: { title: "Buy milk", depth: 0, dropIndicator: "before" }
+    screenshot: { part: row }
+
+  - name: "drop after shows a line on the bottom edge"
+    props: { title: "Buy milk", depth: 0, dropIndicator: "after" }
+    screenshot: { part: row }
+
+  - name: "drop nest shows a ring and the selection background"
+    props: { title: "Buy milk", depth: 0, dropIndicator: "nest" }
+    screenshot: { part: row }
+
+  # Round check
+  - name: "press on the check in select mode selects through the check"
+    props: { title: "Buy milk", depth: 0, checkAction: "select" }
+    steps:
+      - { action: press, part: check }
+    expect:
+      - { part: check, name: "Select Buy milk" }
+      - { event: check, times: 1, last: { action: "select" } }
+
+  - name: "press on the check in done mode marks the task done"
+    props: { title: "Buy milk", depth: 0, checkAction: "done" }
+    steps:
+      - { action: press, part: check }
+    expect:
+      - { part: check, name: "Mark Buy milk done" }
+      - { event: check, times: 1, last: { action: "done" } }
+
+  - name: "Space on the focused check does what a press does (select mode)"
+    props: { title: "Buy milk", depth: 0, checkAction: "select" }
+    steps:
+      - { action: focus, part: check }
+      - { action: key, part: check, key: Space }
+    expect:
+      - { event: check, times: 1, last: { action: "select" } }
+
+  - name: "Space on the focused check does what a press does (done mode)"
+    props: { title: "Buy milk", depth: 0, checkAction: "done" }
+    steps:
+      - { action: focus, part: check }
+      - { action: key, part: check, key: Space }
+    expect:
+      - { event: check, times: 1, last: { action: "done" } }
+
+  # Row selection
+  - name: "click on the row activates it with no modifiers"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: press, part: row }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: false, shift: false } }
+
+  - name: "platform-modifier click toggles the row in the selection"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { input: selectToggle }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: true, shift: false } }
+
+  - name: "Enter on the focused row selects it (proposed)"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Enter }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: false, shift: false } }
+
+  - name: "Space on the focused row acts as a press, with no modifier"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Space }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: false, shift: false } }
+
+  - name: "Command+Space toggles the row in the selection on macOS (proposed)"
+    only: [macos]
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Meta+Space }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: true, shift: false } }
+
+  - name: "Control+Space toggles the row in the selection off macOS (proposed)"
+    except: [macos]
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Control+Space }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: true, shift: false } }
+
+  - name: "Shift+ArrowDown on the focused row extends the range (proposed)"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Shift+ArrowDown }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: false, shift: true } }
+
+  - name: "Shift+ArrowUp on the focused row extends the range (proposed)"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Shift+ArrowUp }
+    expect:
+      - { event: activate, times: 1, last: { platformModifier: false, shift: true } }
+
+  # Done toggling
+  - name: "double-click toggles done"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { do: doubleClick, part: row }
+    expect:
+      - { event: toggleDone, times: 1 }
+
+  - name: "Control+Enter toggles done off macOS (proposed)"
+    except: [macos]
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Control+Enter }
+    expect:
+      - { event: toggleDone, times: 1 }
+
+  - name: "Command+Enter toggles done on macOS (proposed)"
+    only: [macos]
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Meta+Enter }
+    expect:
+      - { event: toggleDone, times: 1 }
+
+  # Row menu
+  - name: "the context-menu key opens the row menu"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ContextMenu }
+    expect:
+      - { event: contextMenu, times: 1 }
+
+  - name: "Shift+F10 opens the row menu"
+    props: { title: "Buy milk", depth: 0 }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Shift+F10 }
+    expect:
+      - { event: contextMenu, times: 1 }
+
+  # Expand and collapse (proposed, open item 6)
+  - name: "ArrowRight expands a collapsed parent row (proposed)"
+    props: { title: "Plan trip", depth: 0, hasChildren: true, expanded: false }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowRight }
+    expect:
+      - { event: toggleExpanded, times: 1, last: { expanded: true } }
+
+  - name: "ArrowLeft collapses an expanded parent row (proposed)"
+    props: { title: "Plan trip", depth: 0, hasChildren: true, expanded: true }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowLeft }
+    expect:
+      - { event: toggleExpanded, times: 1, last: { expanded: false } }
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 960, height: 240 }
+
+colorSchemes: [light, dark]
+
+keyboard: true
+
+same: pixels

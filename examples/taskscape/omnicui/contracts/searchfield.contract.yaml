@@ -1,0 +1,262 @@
+# ui.searchfield: the one search input for the four search rows.
+# Composed, no Radix primitive: InputGroup (tone search) around an input type=search,
+# with a leading magnifier (aria-hidden) and an optional clear IconButton from the library.
+# Sources: spec/catalogue/text.json; WAI-ARIA 1.2 searchbox (a subclass of textbox).
+# inputRef, registerSearchFocus and the host-side Cmd/Ctrl+F and typed-letter focus are not expressible here (see the notes block below).
+id: ui.searchfield
+
+props:
+  value: { type: string, default: "" }              # controlled query
+  placeholder: { type: string, default: "Search" }  # settings uses "Search"; panes pass their own (verified by screenshot only)
+  # "md": list panes (14px text, 35px well, full pane width). "sm": settings sidebar (12px text, 24.5px well).
+  # Width follows the pane; it is not a variant. Allowed values: "md" or "sm".
+  size: { type: string, default: "md" }
+  # "filter": typing filters the open list; Enter and Shift+Enter are not asserted here (open).
+  # "match": typing filters to matching titles; Enter and Shift+Enter step through matches. Allowed values: "filter" or "match".
+  navigation: { type: string, default: "filter" }
+  # true: a trailing clear button shows while the value is non-empty (settings-general only).
+  clearable: { type: boolean, default: false }
+  autoFocus: { type: boolean, default: false }
+  disabled: { type: boolean, default: false }
+  # Accessible name, required in the React API: the host must pass a specific name
+  # (e.g. "Search settings", "Search Errands"). The empty default makes a missing name visible instead of passing a plausible one.
+  ariaLabel: { type: string, default: "" }
+
+events:
+  # Every change of the query, including clears (onValueChange).
+  changed: { value: { type: string } }
+  # "next" for Enter, "previous" for Shift+Enter; only with navigation match (onStepMatch).
+  stepMatch: { direction: { type: string } }
+  # Escape or the clear button emptied the query (onClear). Carries no fields.
+  cleared: {}
+
+parts:
+  well: { role: generic }          # aria: none. The InputGroup search well (pill, tone search). Heights: 35px md, 24.5px sm (draft B).
+  icon: { role: generic }          # aria: none. Leading magnifier, aria-hidden, no text.
+  field: { role: textbox }         # aria: searchbox, inferred from the native input type=search. The implementation must not add an explicit role attribute.
+  # aria: button. Shown only when clearable and the value is non-empty. Not optional: its absence depends on state, not on target.
+  clearButton: { role: button }
+
+same: pixels
+colorSchemes: [light, dark]        # No dark tokens are recorded yet for the well, focus indicator or clear button; dark is compared across targets only.
+# keyboard: true is measured only on buttons on screen when the component mounts. At the default mount the clear button is not on screen,
+# so the Enter-on-clear test below is kept on purpose rather than as a repeat.
+keyboard: true
+viewports:
+  - { width: 320, height: 240 }    # default
+  - { width: 832, height: 120 }    # list pane (catalogue well 832px)
+  - { width: 139, height: 120 }    # settings sidebar, about 139px per the catalogue
+
+# Proposals, not asserted (not the reference):
+#   clearButton name "Clear search" (open item 7).
+#   Focus returns to the field after the clear button is pressed (the clear button unmounts, so focus would otherwise fall to body).
+# Open, not asserted:
+#   Filter mode Enter and Shift+Enter: the main-window onKeyDown handler was not read.
+#   Escape: whether the widget or the browser handles Escape on input type=search; the native cancel button is not recorded as hidden.
+#   Typed-letter focus from anywhere: conflicts with WCAG 2.1.4 Character Key Shortcuts; not in this reference contract.
+#   Match mode: whether rows match title or notes (open item 9); belongs to the host contract.
+#   Focus colour: a token or the selection accent (open item 1).
+#   Placeholder text is checked by screenshot comparison only, since the format has no text check on the placeholder.
+# Not expressible as parts or props: flattened rows; the highlight and scroll of the current match (host-owned); stopPropagation of key
+# events in match mode; the host's inputRef and registerSearchFocus; Cmd/Ctrl+F; Escape bubbling from an empty query to close a window.
+
+tests:
+  - name: typing emits changed on every change
+    props: { navigation: filter, ariaLabel: "Search Errands" }
+    steps:
+      - { action: focus, part: field }
+      - { action: type, part: field, text: "a" }
+      - { action: type, part: field, text: "b" }
+    expect:
+      - { part: field, text: "ab" }
+      - { part: field, role: textbox }
+      - { event: changed, times: 2, last: { value: "ab" } }
+
+  - name: the field's accessible name is the aria-label the host passes
+    props: { ariaLabel: "Search settings" }
+    expect:
+      - { part: field, name: "Search settings" }
+      - { part: field, role: textbox }
+
+  - name: the icon and the well are visible on an empty field
+    expect:
+      - { part: well, visible: true }
+      - { part: icon, visible: true }
+      - { part: field, text: "" }
+
+  - name: controlled value is shown in the field
+    props: { value: "design" }
+    expect:
+      - { part: field, text: "design" }
+      - { part: field, role: textbox }
+
+  - name: autoFocus focuses the field on mount
+    props: { autoFocus: true }
+    expect:
+      - { part: field, focused: true }
+
+  - name: host focus action focuses the field
+    steps:
+      - { action: focus, part: field }
+    expect:
+      - { part: field, focused: true }
+      - { part: field, text: "" }
+
+  - name: clear button is hidden while the query is empty
+    props: { clearable: true, value: "" }
+    expect:
+      - { part: field, text: "" }
+      - { part: clearButton, visible: false }
+
+  - name: clear button appears once the query is non-empty
+    props: { clearable: true }
+    steps:
+      - { action: type, part: field, text: "ab" }
+    expect:
+      - { part: clearButton, role: button }
+      - { part: clearButton, visible: true }
+
+  - name: clear button is never shown when not clearable
+    props: { clearable: false }
+    steps:
+      - { action: type, part: field, text: "ab" }
+    expect:
+      - { part: field, text: "ab" }
+      - { part: clearButton, visible: false }
+
+  - name: clear button empties the query and emits changed and cleared
+    props: { clearable: true }
+    steps:
+      - { action: type, part: field, text: "ab" }
+      - { action: press, part: clearButton }
+    expect:
+      - { part: field, text: "" }
+      - { event: changed, last: { value: "" } }
+      - { event: cleared, times: 1 }
+      - { part: clearButton, visible: false }
+
+  - name: Enter on the clear button clears like a press
+    props: { clearable: true, value: "abc" }
+    steps:
+      - { action: focus, part: clearButton }
+      - { action: key, part: clearButton, key: Enter }
+    expect:
+      - { part: field, text: "" }
+      - { event: cleared, times: 1 }
+
+  - name: filter with clearable, Escape clears a non-empty query
+    props: { navigation: filter, clearable: true }
+    steps:
+      - { action: type, part: field, text: "ab" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { part: field, text: "" }
+      - { event: changed, last: { value: "" } }
+      - { event: cleared, times: 1 }
+
+  - name: filter with clearable, Escape on an empty query emits nothing
+    # Whether Escape then bubbles to the host (closing its window) is not observable here.
+    props: { navigation: filter, clearable: true, value: "" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { part: field, text: "" }
+      - { event: cleared, times: 0 }
+
+  - name: disabled field takes no focus and no input
+    props: { disabled: true, value: "abc" }
+    steps:
+      - { action: focus, part: field }
+      - { action: type, part: field, text: "x" }
+    expect:
+      - { part: field, disabled: true }
+      - { part: field, focused: false }
+      - { part: field, text: "abc" }
+      - { event: changed, times: 0 }
+
+  - name: match mode Enter steps to the next match
+    props: { navigation: match }
+    steps:
+      - { action: type, part: field, text: "ab" }
+      - { action: key, part: field, key: Enter }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: stepMatch, times: 2, last: { direction: next } }
+      - { part: field, text: "ab" }
+      - { part: field, focused: true }
+
+  - name: match mode Shift+Enter steps to the previous match
+    props: { navigation: match }
+    steps:
+      - { action: type, part: field, text: "ab" }
+      - { action: key, part: field, key: "Shift+Enter" }
+    expect:
+      - { event: stepMatch, times: 1, last: { direction: previous } }
+      - { part: field, text: "ab" }
+
+  - name: match mode Escape clears the query and blurs the field
+    props: { navigation: match, clearable: false }
+    steps:
+      - { action: type, part: field, text: "ab" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { part: field, text: "" }
+      - { part: field, focused: false }
+      - { event: cleared, times: 1 }
+      - { event: changed, last: { value: "" } }
+
+  - name: focused state shows a visible focus indicator
+    steps:
+      - { action: focus, part: field }
+    screenshot: true
+
+  - name: screenshot md empty in the list pane
+    props: { size: md, ariaLabel: "Search Errands" }
+    screenshot: true
+
+  - name: screenshot md filled, no clear button
+    props: { size: md, value: "abc", ariaLabel: "Search Errands" }
+    screenshot: true
+
+  - name: screenshot md filled with clear button in the list pane
+    props: { size: md, clearable: true, ariaLabel: "Search Errands" }
+    steps:
+      - { action: type, part: field, text: "design" }
+    screenshot: true
+
+  - name: screenshot md filled in match navigation
+    props: { size: md, navigation: match, ariaLabel: "Search tasks" }
+    steps:
+      - { action: type, part: field, text: "task" }
+    screenshot: true
+
+  - name: screenshot match mode field after Enter
+    # The highlight and scroll of the current match are host-owned; this checks the field only.
+    props: { navigation: match, value: "task" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Enter }
+    screenshot: true
+
+  - name: screenshot sm empty plain field in the settings sidebar
+    props: { size: sm, clearable: false, ariaLabel: "Search settings" }
+    screenshot: true
+
+  - name: screenshot sm filled with clear button in the settings sidebar
+    props: { size: sm, clearable: true, ariaLabel: "Search settings" }
+    steps:
+      - { action: type, part: field, text: "theme" }
+    screenshot: true
+
+  - name: screenshot disabled field with a value
+    props: { disabled: true, value: "design", ariaLabel: "Search Errands" }
+    screenshot: true
+
+  - name: well box matches across targets, md
+    props: { size: md }
+    screenshot: { part: well }
+
+  - name: well box matches across targets, sm
+    props: { size: sm }
+    screenshot: { part: well }

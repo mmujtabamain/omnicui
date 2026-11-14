@@ -1,0 +1,128 @@
+# CharacterCounter (ui.charactercounter)
+# The note limit readout ("count / limit") under the note field.
+# Built from Text, size xs (0.75rem = 10.5px at 1rem = 14px), with tabular numbers
+# so digit widths hold still as the count changes.
+# Variants: none. States: normal (muted tone) and near (danger tone).
+# Visible text is count then limit, for example 1801/2000. Separators and wording are not fixed
+# by this contract, so the tests check the two numbers in that order only.
+# Threshold: near when count is strictly greater than nearRatio * limit. With the defaults
+# (limit 2000, nearRatio 0.9) 1800 is still normal and 1801 is near. The tests pin both sides of that edge.
+# Tone is a colour, but the digits carry the value, so colour is not the only cue.
+# Motion: none specified. The tone changes at once, so there is no trace or record.
+# Keyboard: not set. The widget has no button, switch or checkbox and takes no keys.
+# The aria-describedby link from the note field belongs to the note editor, not to this widget.
+# Threshold changes at runtime are not tested: the format has no step that changes a prop,
+# so each side of the threshold is covered by mounting at that count.
+id: ui.charactercounter
+
+props:
+  count: { type: integer, default: 0 }        # current character count, a whole number from 0 up; counts above limit are shown as they are
+  limit: { type: integer, default: 2000 }     # maximum length in characters, greater than zero; the reference is 2000
+  nearRatio: { type: number, default: 0.9 }   # share of limit, greater than 0 and at most 1; the danger tone starts above count = nearRatio * limit
+
+events: {}                                    # none: the widget is display only and emits nothing
+
+parts:
+  readout:
+    role: generic                             # aria: none, plain text; not a live region, so keystrokes are not announced
+    same: pixels                              # muted tone in normal, danger tone in near
+  announcement:
+    role: status                              # aria: status, a visually hidden polite live region
+    optional: true                            # the spec leaves the polite status open; where a target has none, its checks are skipped
+    same: none                                # draws nothing on screen; empty at mount and while normal; one short sentence on crossing into near; cleared before each set
+
+tests:
+  - name: an empty note reads normal
+    props: { count: 0, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "^0\\b.*2,?000" } }
+      - { part: readout, visible: true }
+      - { part: announcement, role: status }
+    screenshot: true
+
+  - name: normal state, low count shows count and limit
+    props: { count: 137, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "137.*2,?000" } }
+      - { part: readout, visible: true }
+      - { part: announcement, role: status }
+    screenshot: true
+
+  - name: normal state, exactly at the threshold stays muted
+    props: { count: 1800, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "1,?800.*2,?000" } }
+      - { part: announcement, role: status }
+    screenshot: true
+
+  - name: near state, one above the threshold uses the danger tone
+    props: { count: 1801, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "1,?801.*2,?000" } }
+      - { part: announcement, role: status }
+    screenshot: true
+
+  - name: near state, the limit itself uses the danger tone
+    props: { count: 2000, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "2,?000.*2,?000" } }
+    screenshot: true
+
+  - name: near state, over the limit stays near
+    props: { count: 2001, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "2,?001.*2,?000" } }
+    screenshot: true
+
+  - name: near state, a custom nearRatio moves the threshold
+    props: { count: 1601, limit: 2000, nearRatio: 0.8 }
+    expect:
+      - { part: readout, text: { matches: "1,?601.*2,?000" } }
+    screenshot: true
+
+  - name: normal state, a custom nearRatio keeps the threshold strict
+    props: { count: 1600, limit: 2000, nearRatio: 0.8 }
+    expect:
+      - { part: readout, text: { matches: "1,?600.*2,?000" } }
+    screenshot: true
+
+  - name: nearRatio 0.5 keeps 1000 of 2000 normal
+    props: { count: 1000, limit: 2000, nearRatio: 0.5 }
+    expect:
+      - { part: readout, text: { matches: "1,?000.*2,?000" } }
+    screenshot: true
+
+  - name: nearRatio 0.5 makes 1001 of 2000 near
+    props: { count: 1001, limit: 2000, nearRatio: 0.5 }
+    expect:
+      - { part: readout, text: { matches: "1,?001.*2,?000" } }
+    screenshot: true
+
+  - name: defaults apply when limit and nearRatio are omitted
+    props: { count: 1801 }
+    expect:
+      - { part: readout, text: { matches: "1,?801.*2,?000" } }
+    screenshot: true
+
+  - name: a smaller limit uses its own threshold, 451 of 500 is near
+    props: { count: 451, limit: 500 }
+    expect:
+      - { part: readout, text: { matches: "451.*500" } }
+    screenshot: true
+
+  - name: a limit of 1000 moves the threshold to 900
+    props: { count: 901, limit: 1000 }
+    expect:
+      - { part: readout, text: { matches: "901.*1,?000" } }
+    screenshot: true
+
+  - name: figures are drawn the same on every target
+    props: { count: 1111, limit: 2000 }
+    expect:
+      - { part: readout, text: { matches: "1,?111.*2,?000" } }
+    screenshot: { part: readout }
+
+colorSchemes: [light, dark]
+
+viewports:
+  - { width: 320, height: 240 }

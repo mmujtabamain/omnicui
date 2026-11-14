@@ -1,0 +1,93 @@
+# Lightbox: full-window viewer for one attachment.
+# Base: Radix Dialog, modal, size fullscreen. Presentation overlay sits over Scrim strong-blur.
+# children (AttachmentPreview or EmptyState) is a slot, not a contract prop. Tests render the target's default children.
+# onClose is the close event below (a callback cannot be a prop in this format).
+id: ui.lightbox
+
+props:
+  # presentation: overlay | window. overlay sits over the page under Scrim strong-blur (web, and desktop when it stays in-window).
+  # window is a desktop dialog window. Undecided; the test for it is desktop only.
+  presentation: { type: string, default: overlay }
+  # open: true shows the lightbox; false renders nothing. Controlled, as Radix Dialog's open. Spec states open and closed.
+  open: { type: boolean, default: false }
+
+events:
+  # Sent when the user dismisses it. reason: stage (click on empty stage) or escape (Escape, WAI-ARIA dialog pattern and Radix default).
+  close: { reason: { type: string } }
+
+parts:
+  # aria: dialog (modal). Tested through the role field; aria-modal is set by the target.
+  # Desktop window presentation draws its own edges, so its box is held to layout, not pixels.
+  lightbox:
+    role: generic
+    same: { default: pixels, desktop: layout }
+
+  # aria: none (presentational). Column stack, px-16 pb-8. A click on empty stage closes (onClose).
+  # That click cannot be a test: press acts only on button, checkbox, switch and slider, and generic takes hover only.
+  stage:
+    role: generic
+
+  # aria: none. Wraps AttachmentPreview; absent for EmptyState, so optional. A click here never closes.
+  media:
+    role: generic
+    optional: true
+
+# keyboard is not set. The widget has no button, switch, checkbox or textbox, so Enter and Space have nothing to do here.
+# Escape is the only key in scope (input dismiss). The prev and next chevrons are not in this catalogue.
+# Focus moving into the dialog on open and back to the opener on close (WAI-ARIA, onCloseAutoFocus) is not expressible: generic has no focused field.
+
+tests:
+  - name: open shows a modal dialog over the page
+    props: { open: true }
+    expect:
+      - { part: lightbox, role: generic }
+      - { part: lightbox, visible: true }
+      - { part: stage, visible: true }
+    screenshot: true
+
+  - name: closed renders nothing
+    props: { open: false }
+    expect:
+      - { part: lightbox, visible: false }
+
+  # Escape closing is not confirmed by the product decisions. Included as the WAI-ARIA dialog pattern requires and the Radix default does. Confirm before release.
+  - name: Escape closes it and emits close once
+    props: { open: true }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { part: lightbox, visible: false }
+      - { event: close, times: 1, last: { reason: escape } }
+
+  - name: Escape while closed does nothing
+    props: { open: false }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { part: lightbox, visible: false }
+
+  # Closing is the motion; it is started by a step, so it can be traced.
+  - name: closing fades the lightbox out
+    props: { open: true }
+    steps:
+      - { input: dismiss }
+    trace:
+      - { part: lightbox, property: opacity }
+
+  - name: overlay presentation over the scrim
+    props: { presentation: overlay, open: true }
+    screenshot: true
+
+  # Undecided. Desktop only, since the window presentation is a desktop dialog window.
+  - name: window presentation is a dialog window on desktop
+    only: [desktop]
+    props: { presentation: window, open: true }
+    expect:
+      - { part: lightbox, role: generic }
+    screenshot: true
+
+colorSchemes: [light, dark]
+
+viewports:
+  default: [ { width: 1280, height: 800 } ]
+  mobile: [ { width: 360, height: 640 } ]

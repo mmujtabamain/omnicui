@@ -1,0 +1,240 @@
+id: ui.icon
+
+# Icon: one Material Symbols glyph from the ligature font. Not a Radix primitive.
+# Decorative by default; labelled when the caller gives a label.
+# Sizes are named steps (1rem = 14px). Off-scale px sizes snap to the nearest step, ties up
+# (13 to 14, 15 to 16, 19 to 20). Callers pass a token, so the snap is a porting rule and
+# cannot be tested through this format.
+# Always pointer-events none: a press reaches the parent control or drag region.
+# Never a tab stop; the parent holds focus and handles keys.
+# keyboard is not set: the icon has no button, switch or checkbox part.
+# Drag is not tested: drag acts only on slider parts and the icon has none.
+# Platform: the glyph is the same on both targets. Desktop-only uses (drag grip,
+# split-view marker, capture buttons) are the parent's concern; those tests use only: [desktop].
+# The macOS keycap glyphs use only: [macos].
+# Accessible names cannot be asserted: the generic part fields are role, text and visible only.
+# Label tests check role img; decorative tests check visibility only (aria-hidden is not a field).
+
+props:
+  # Material Symbols ligature name, for example drag_indicator, chevron_left, restart_alt.
+  # Required: the empty default renders nothing. Modifier keys: the caller passes the platform
+  # glyph name (keyboard_command_key on macOS, keyboard_option_key). Error state: the caller passes error.
+  name: { type: string, default: "" }
+  # "" = decorative (aria-hidden). Non-empty = role img with this accessible name.
+  # Required for the reduced-motion glyph inside StatusIndicator.
+  label: { type: string, default: "" }
+  # Allowed: xs, sm, md, lg, xl, display. Any other value is refused. Default md.
+  # xs 12px (0.857rem), keycap glyph; sm 14px (1rem); md 16px (1.143rem), default;
+  # lg 18px (1.286rem), also the sheet glyph inside the tint badge; xl 20px (1.429rem);
+  # display 44px (3.143rem), lightbox fallback card glyph.
+  size: { type: string, default: "md" }
+  # Allowed: 200, 300, 400. Default 300.
+  # 200: lightbox fallback card icon (44px), measured thin.
+  # 400: measured heavier glyphs (window drag grip, split-view marker, project switcher chevron,
+  # trash pane header icon, toast undo and dismiss, lightbox file-type icon, segment fullscreen,
+  # capture screenshot).
+  weight: { type: integer, default: 300 }
+  # Allowed: inherit, primary, secondary, muted, accent, danger, onMedia, onMediaMuted. Default muted.
+  # inherit = currentColor (parent sets the colour); primary = content-1 (oklch 0.26 light);
+  # secondary = content-2 (oklch 0.46 light); muted = content-3 (oklch 0.62 light);
+  # accent = accent-500 (oklch 0.6 0.2 255), split-view marker and toast undo;
+  # danger = danger-500; onMedia = white 100% on the dark lightbox scrim;
+  # onMediaMuted = white 60%, lightbox file-type icon.
+  # Ignored when tint is not none: the tint sets the glyph colour.
+  tone: { type: string, default: "muted" }
+  # Allowed: none, accent, danger. Default none.
+  # none = bare glyph;
+  # accent = 32px box on selection-1 (dark selection-1d), radius of rounded-control, glyph 18px accent-500;
+  # danger = 32px box on danger-100 (dark danger-100d), glyph 18px danger (oklch 0.55 0.2 27).
+  tint: { type: string, default: "none" }
+  # Allowed: always, groupHover. Default always.
+  # always = visible;
+  # groupHover = opacity 0 until the enclosing tile is hovered, and while the tile has focus-within.
+  reveal: { type: string, default: "always" }
+  # Allowed: none, ccw90. Default none.
+  # none = not rotated;
+  # ccw90 = -90deg with a 100ms transition, no transition under reduced motion. The caller drives it.
+  rotate: { type: string, default: "none" }
+
+# The icon emits nothing.
+events: {}
+
+parts:
+  # aria: img when label is given; otherwise aria-hidden (no accessible role).
+  # pointer-events none: a press goes to the parent control or drag region.
+  glyph: { role: generic, same: pixels }
+  # The enclosing tile, rendered around the glyph by every test. Only the groupHover test hovers it.
+  tile: { role: generic, same: none }
+  # The 32px tint box. Present only when tint is accent or danger.
+  badge: { role: generic, optional: true, same: pixels }
+
+colorSchemes: [ light, dark ]
+
+tests:
+  - name: labelled glyph is exposed as an image
+    props: { name: search, label: Search }
+    expect:
+      - { part: glyph, role: generic }
+      - { part: glyph, visible: true }
+
+  - name: unlabelled glyph is decorative
+    props: { name: chevron_left }
+    expect:
+      - { part: glyph, visible: true }
+    screenshot: true
+
+  - name: size xs keycap glyph on macOS
+    only: [macos]
+    props: { name: keyboard_command_key, size: xs, tone: secondary }
+    screenshot: true
+
+  - name: size xs generic glyph
+    props: { name: close, size: xs }
+    screenshot: true
+
+  - name: size sm
+    props: { name: folder_open, size: sm }
+    screenshot: true
+
+  - name: size md
+    props: { name: unfold_more, size: md }
+    screenshot: true
+
+  - name: size lg
+    props: { name: search, size: lg }
+    screenshot: true
+
+  - name: size xl reduced-motion glyph is labelled
+    props: { name: motion_photos_off, label: Reduced motion is on, size: xl }
+    expect:
+      - { part: glyph, role: generic }
+    screenshot: true
+
+  - name: size display is 44px for the lightbox fallback card glyph
+    props: { name: description, size: display }
+    screenshot: true
+
+  - name: size display lightbox fallback card at weight 200
+    props: { name: description, size: display, weight: 200 }
+    screenshot: true
+
+  - name: weight 300 is the default stroke
+    props: { name: tune, weight: 300 }
+    screenshot: true
+
+  - name: weight 400 measured heavier stroke
+    props: { name: delete, size: lg, weight: 400, tone: secondary }
+    screenshot: true
+
+  - name: tone inherit takes the parent colour
+    props: { name: folder, size: sm, tone: inherit }
+    screenshot: true
+
+  - name: tone primary on the window drag grip
+    only: [desktop]
+    props: { name: drag_indicator, size: xl, weight: 400, tone: primary }
+    screenshot: true
+
+  - name: tone secondary
+    props: { name: tune, size: lg, tone: secondary }
+    screenshot: true
+
+  - name: tone muted default for chevrons
+    props: { name: chevron_right, size: sm, tone: muted }
+    screenshot: true
+
+  - name: tone accent on the toast undo icon
+    props: { name: undo, size: sm, weight: 400, tone: accent }
+    screenshot: true
+
+  - name: tone danger on a destructive menu row
+    props: { name: delete, size: md, tone: danger }
+    screenshot: true
+
+  - name: tone onMedia on the lightbox scrim
+    props: { name: close, size: md, tone: onMedia }
+    screenshot: true
+
+  - name: tone onMediaMuted on the lightbox file type icon
+    props: { name: description, size: md, weight: 400, tone: onMediaMuted }
+    screenshot: true
+
+  - name: tint none is a bare glyph
+    props: { name: chevron_right, tint: none }
+    screenshot: true
+
+  - name: tint accent on the create sheet is a 32px selection badge with an 18px accent glyph
+    props: { name: list_alt_add, size: lg, tint: accent }
+    expect:
+      - { part: glyph, visible: true }
+      - { part: badge, visible: true }
+    screenshot: true
+
+  - name: tint accent on the rename sheet
+    props: { name: edit, size: lg, tint: accent }
+    screenshot: true
+
+  - name: tint danger on the delete list sheet is a 32px danger badge with an 18px danger glyph
+    props: { name: delete, size: lg, tint: danger }
+    expect:
+      - { part: glyph, visible: true }
+      - { part: badge, visible: true }
+    screenshot: true
+
+  - name: reveal always is visible at rest
+    props: { name: chevron_right, size: sm, reveal: always }
+    screenshot: true
+
+  - name: reveal groupHover is hidden at rest
+    props: { name: chevron_right, size: sm, reveal: groupHover }
+    screenshot: true
+
+  - name: reveal groupHover fades in when the tile is hovered
+    props: { name: chevron_right, size: sm, reveal: groupHover }
+    steps:
+      - { action: hover, part: tile }
+    trace:
+      - { part: glyph, property: opacity }
+
+  - name: rotate none
+    props: { name: chevron_left, size: md, rotate: none }
+    screenshot: true
+
+  - name: rotate ccw90 is the expanded subtask chevron
+    props: { name: chevron_left, size: md, rotate: ccw90 }
+    screenshot: true
+
+  - name: error state swaps the name to error
+    props: { name: error, size: md, weight: 400, tone: inherit }
+    screenshot: true
+
+  - name: split-view marker is an accent state indicator
+    only: [desktop]
+    props: { name: vertical_split, size: xl, tone: accent }
+    screenshot: true
+
+  - name: capture clear button icon
+    only: [desktop]
+    props: { name: close, size: md, tone: inherit }
+    screenshot: true
+
+  - name: capture target button icon
+    only: [desktop]
+    props: { name: crop, size: sm, tone: inherit }
+    screenshot: true
+
+  - name: capture screenshot button icon
+    only: [desktop]
+    props: { name: screenshot_region, size: md, weight: 400, tone: inherit }
+    screenshot: true
+
+  - name: keycap option glyph on macOS
+    only: [macos]
+    props: { name: keyboard_option_key, size: xs, tone: secondary }
+    screenshot: true
+
+  - name: sheet glyph on the accent badge with a label
+    props: { name: list_alt_add, label: Create list, size: lg, tint: accent }
+    expect:
+      - { part: glyph, role: generic }
+    screenshot: true

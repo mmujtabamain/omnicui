@@ -1,0 +1,104 @@
+# contracts/popover.contract.yaml
+# ui.popover: the @-mention popover, on a Radix Popover base, anchored at the caret.
+# Implementation constraints this format cannot check:
+#   - Focus stays in the editor (APG combobox pattern). Radix Content's onOpenAutoFocus and
+#     onCloseAutoFocus call preventDefault, and onEscapeKeyDown is overridden to emit escaped.
+#   - The highlighted row (aria-activedescendant on the editor) is not checkable here.
+#   - Radix Content may render role dialog. That is unconfirmed and is not a part of this contract.
+#   - The layer (z-tooltip or z-dropdown) is undecided, so there are no screenshot, trace or record tests.
+#   - Tab behaviour is not specified in the sources, so no Tab test is written.
+id: ui.popover
+
+props:
+  maxItems: { type: integer, default: 6 }  # most rows shown; rows are declared row1 to row6, so keep it at 6 or below
+  anchorX: { type: number, default: 0 }    # caret x, for placement (placement is not measured by these tests)
+  anchorY: { type: number, default: 0 }    # caret y, for placement (placement is not measured by these tests)
+
+events:
+  picked: { value: { type: string } }      # the text of the row that was picked
+  escaped: {}                              # Escape closed the list; no fields
+
+parts:
+  editor: { role: textbox }                # aria: combobox; the @ input that owns the list
+  list: { role: generic }                  # aria: listbox; not visible when closed
+  row1: { role: button }                   # aria: option; picked with do: pick
+  row2: { role: button }                   # aria: option
+  row3: { role: button }                   # aria: option
+  row4: { role: button }                   # aria: option
+  row5: { role: button }                   # aria: option
+  row6: { role: button }                   # aria: option
+
+tests:
+  - name: typing @ opens the list with matches and keeps focus in the editor
+    steps:
+      - { action: type, part: editor, text: "@al" }   # fixture must supply matches containing "al"
+    expect:
+      - { part: list, visible: true }
+      - { part: list, role: generic }
+      - { part: row1, visible: true }
+      - { part: row1, role: button }
+      - { part: row1, text: { contains: "al" } }
+      - { part: editor, role: button }
+      - { part: editor, focused: true }
+
+  - name: a query with no matches keeps the list closed
+    steps:
+      - { action: type, part: editor, text: "@zzzzzz" }
+    expect:
+      - { part: list, visible: false }
+      - { part: row1, visible: false }
+      - { part: editor, text: "@zzzzzz" }
+      - { part: editor, focused: true }
+
+  - name: maxItems caps the rows shown
+    props: { maxItems: 2 }
+    steps:
+      - { action: type, part: editor, text: "@a" }    # fixture must supply at least 2 matches
+    expect:
+      - { part: row1, visible: true }
+      - { part: row2, visible: true }
+      - { part: row3, visible: false }
+
+  - name: arrow keys keep focus in the editor and the list open
+    steps:
+      - { action: type, part: editor, text: "@a" }
+      - { action: key, part: editor, key: ArrowDown }
+      - { action: key, part: editor, key: ArrowDown }
+      - { action: key, part: editor, key: ArrowUp }
+    expect:
+      - { part: list, visible: true }
+      - { part: editor, text: "@a" }
+      - { part: editor, focused: true }
+
+  - name: Enter picks the highlighted row
+    steps:
+      - { action: type, part: editor, text: "@a" }
+      - { action: key, part: editor, key: ArrowDown }
+      - { action: key, part: editor, key: Enter }
+    expect:
+      - { event: picked, times: 1 }
+      - { part: list, visible: false }
+      - { part: editor, focused: true }
+
+  - name: Escape closes the list, emits escaped, and leaves the text alone
+    steps:
+      - { action: type, part: editor, text: "@a" }
+      - { action: key, part: editor, key: Escape }
+    expect:
+      - { event: escaped, times: 1 }
+      - { part: list, visible: false }
+      - { part: editor, text: "@a" }
+      - { part: editor, focused: true }
+
+  - name: a pointer pick on a row does not take focus from the editor
+    only: [web]                                       # web target advertises do.pick (mousedown, preventDefault)
+    steps:
+      - { action: type, part: editor, text: "@a" }
+      - { do: pick, part: row1 }
+    expect:
+      - { event: picked, times: 1 }
+      - { part: editor, focused: true }
+
+viewports:
+  default: [ { width: 640, height: 480 } ]           # sized so the 196px list and the caret fit; confirm
+  mobile: [ { width: 360, height: 640 } ]

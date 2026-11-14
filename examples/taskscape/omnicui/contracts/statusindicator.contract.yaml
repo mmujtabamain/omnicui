@@ -1,0 +1,111 @@
+# Contract ui.statusindicator (StatusIndicator)
+#
+# Purpose: non-interactive 32px status cell holding a 20px glyph (Icon xl). It shows only
+# while a status is active (reduced motion). Its explanation is a tooltip.
+# Base: Radix Tooltip (the reference used a title attribute).
+# Family: labels. Replaces: reduced-motion status icon.
+# Kept as its own widget, not an Icon variant: a 32px cell with a conditional render and a tooltip.
+# Variants: none in the spec. The two tooltip wordings (Low Power, Settings) are the two content
+# cases, each with its own screenshot test below.
+#
+# Decisions taken for the open items of the spec:
+# 1. Focusable: yes. The cell is a tab stop (tabIndex 0). Focus opens the tooltip and Escape
+#    closes it. The tooltip never takes focus (WAI-ARIA APG tooltip pattern).
+#    The format gives generic parts only the hover action, so focus and key steps on the cell
+#    cannot be written as tests; the Escape test below uses the input step instead.
+# 2. Touch: a tap on the cell also opens the tooltip. Radix does not open a tooltip on touch by
+#    default, so the implementation opens it explicitly on tap. No test measures this.
+# 3. Web shows the indicator wherever desktop does, when reduced motion is in effect (account
+#    setting On, or System with prefers-reduced-motion: reduce). Product to confirm.
+# 4. Web copy for the Settings wording (proposed, product to confirm):
+#    "Reduced motion is on (set in your account settings)".
+# Hover: the tooltip stays open while the pointer is on the cell or on the tooltip, opens after
+# the Radix delay (700 ms default), and does not fade or slide while reduced motion is on.
+# The spec defines no motion for this widget, so there is no trace or record.
+
+id: ui.statusindicator
+
+props:
+  # Glyph name rendered by Icon at xl (20px glyph inside the 32px cell).
+  icon: { type: string, default: "motion_photos_off" }
+  # Accessible name of the status (the cell's aria-label). Callers always pass it;
+  # the default exists for tests only.
+  label: { type: string, default: "Reduced motion" }
+  # Explanation shown on hover and on focus. Allowed values: the Low Power wording
+  # "Reduced motion active on Low Power Mode" (macOS only) or the Settings wording (default).
+  # Web maps the Settings wording to its own copy (see the tooltip test).
+  tooltip: { type: string, default: "Reduced motion is on (Settings > General)" }
+  # Needed because the hidden state needs an input: true while the status is active,
+  # false renders nothing. Allowed values: true or false.
+  active: { type: boolean, default: true }
+
+# None. The widget is non-interactive and emits no events.
+events: {}
+
+parts:
+  # aria: img, named by the label prop. tabIndex 0 (decision 1). The format has no img role,
+  # so the cell is generic; its role is checked through the role field in the tests.
+  cell: { role: generic }
+  # aria: none. Decorative glyph inside the cell (aria-hidden).
+  glyph: { role: generic }
+  # aria: tooltip. Radix Tooltip Content in a portal. It exists only while open and is
+  # referenced by the cell's aria-describedby.
+  tooltip:
+    role: generic
+    same: { default: pixels, desktop: [layout, colours] }
+
+colorSchemes: [light, dark]
+
+# Keyboard is not set: the widget has no Enter or Space action.
+# No mask: the whole cell and the open tooltip are compared.
+# No trace or record: the spec defines no motion for this widget.
+# Default viewport (320 x 240) is enough for a 32px cell and its tooltip, so viewports is not set.
+same: pixels
+
+tests:
+  - name: shows the cell and glyph at rest while active
+    props: { active: true }
+    expect:
+      - { part: cell, visible: true }
+      - { part: cell, role: generic }
+      - { part: glyph, visible: true }
+      - { part: tooltip, visible: false }
+    screenshot: true
+
+  - name: renders nothing while the status is not active
+    props: { active: false }
+    expect:
+      - { part: cell, visible: false }
+      - { part: glyph, visible: false }
+      - { part: tooltip, visible: false }
+
+  - name: hover opens the Settings wording with the tooltip role
+    props: { active: true, tooltip: "Reduced motion is on (Settings > General)" }
+    steps:
+      - { action: hover, part: cell }
+    expect:
+      - { part: tooltip, visible: true }
+      - { part: tooltip, role: status }
+      - { part: tooltip, text: { default: "Reduced motion is on (Settings > General)", web: "Reduced motion is on (set in your account settings)" }, why: "Web needs its own copy: the Settings > General path names a desktop window." }
+    screenshot: true
+
+  - name: hover opens the Low Power wording on macOS
+    only: [macos]
+    props: { active: true, tooltip: "Reduced motion active on Low Power Mode" }
+    steps:
+      - { action: hover, part: cell }
+    expect:
+      - { part: tooltip, visible: true }
+      - { part: tooltip, role: status }
+      - { part: tooltip, text: "Reduced motion active on Low Power Mode" }
+    screenshot: true
+
+  - name: Escape closes the tooltip opened by hover
+    props: { active: true }
+    steps:
+      - { action: hover, part: cell }
+      # dismiss is the platforms.yaml input for Escape; that file must define it.
+      - { input: dismiss }
+    expect:
+      - { part: tooltip, visible: false }
+      - { part: cell, visible: true }

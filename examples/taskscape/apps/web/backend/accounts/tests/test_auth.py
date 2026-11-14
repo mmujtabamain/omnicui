@@ -36,7 +36,7 @@ def test_signin_and_signout(ana):
 @pytest.mark.django_db
 def test_everything_else_needs_a_session():
     c = APIClient()
-    assert c.get("/api/settings").status_code == 403
+    assert c.get("/api/settings").status_code == 401
 
 
 @pytest.mark.django_db

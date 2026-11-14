@@ -1,0 +1,156 @@
+id: ui.hotkeyhint
+
+# HotkeyHint (ui.hotkeyhint). Display-only glyph sequence for one accelerator:
+# the platform modifier glyph, the Option or Alt glyph, then the key glyph,
+# edge to edge, in catalogue order (modifiers then key).
+# Base: shadcn/ui Kbd pattern (a kbd element with platform glyph mapping). No Radix primitive.
+# Not focusable. Emits no events.
+
+props:
+  accel: { type: string, default: "" }
+  # Canonical accelerator: modifiers then key, joined with "+", for example Meta+Alt+N.
+  # Modifier names: Meta (Command), Alt (Option), Control, Shift. The stored format is open.
+  # An empty value renders nothing.
+  size: { type: string, default: sm }
+  # Allowed values: sm | md (size axis).
+  # sm: 12px glyphs and text (0.857rem), weight 300. Settings Keycap (idle), capture bar Clear and screenshot buttons.
+  # md: 13px glyphs and text (0.929rem), weight 300. Command palette rows only; takes the row colour, so it follows the active row.
+  tone: { type: string, default: inherit }
+  # Allowed values: inherit | muted (tone axis).
+  # inherit: currentColor, so the glyphs take the parent's text colour.
+  # muted: muted-foreground token (light value oklch(0.62 0.013 264)). Dark value is open.
+  platform: { type: string, default: "" }
+  # Allowed values: macos | windows | other, or "" to resolve the host OS from app context (the web resolves here too).
+  # macos: Meta is the Command glyph, Alt is the Option glyph.
+  # windows (and web): Meta is the Control glyph, Alt is the Alt glyph.
+  # other: covers Linux. Its glyph map is not in the brief, so no glyph is asserted for it.
+
+events: {}
+# None. The widget is display only and emits no events.
+
+parts:
+  hint:
+    role: generic
+    # aria: none. The kbd element has no implicit role (MDN). Its glyphs are aria-hidden.
+    # A visually hidden text equivalent (for example "Command Shift N") is what assistive technology reads; it is not checked here.
+    # Fields a generic part allows: role, text, visible.
+
+same: pixels
+# Targets of one design hold the same pixels for the hint.
+
+colorSchemes: [light, dark]
+# Every test below is also screenshotted in light and dark.
+
+tests:
+  - name: shows the key glyph last and reports no ARIA role
+    props: { accel: "Meta+Shift+N", platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+      - { part: hint, role: generic }
+
+  - name: a modifier-and-option accelerator keeps the key last
+    props: { accel: "Meta+Alt+N", platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+
+  - name: empty accel renders nothing
+    props: { accel: "" }
+    expect:
+      - { part: hint, visible: false }
+
+  - name: other platform shows the accelerator with the key last
+    props: { accel: "Meta+Shift+N", platform: other }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+
+  - name: sm inherit on macOS, idle settings keycap
+    props: { accel: "Meta+Shift+N", size: sm, tone: inherit, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+    screenshot: true
+
+  - name: md inherit, command palette row
+    props: { accel: "Meta+Alt+N", size: md, tone: inherit, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+    screenshot: true
+
+  - name: md inherit on macOS, command palette row size
+    props: { accel: "Meta+Shift+H", size: md, tone: inherit, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: sm muted on macOS, capture bar button hint
+    props: { accel: "Meta+Shift+N", size: sm, tone: muted, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+    screenshot: true
+
+  - name: sm muted, capture bar button
+    props: { accel: "Meta+Shift+H", size: sm, tone: muted, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: md inherit on windows, Meta shows Control
+    props: { accel: "Meta+Alt+N", size: md, tone: inherit, platform: windows }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+    screenshot: true
+
+  - name: sm muted on windows, Alt glyph for Alt
+    props: { accel: "Alt+Shift+H", size: sm, tone: muted, platform: windows }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: windows maps Command to the Control glyph
+    props: { accel: "Meta+Shift+N", size: sm, tone: inherit, platform: windows }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "N$" } }
+    screenshot: true
+
+  - name: windows and web map Option to the Alt glyph
+    props: { accel: "Alt+Shift+H", size: sm, tone: inherit, platform: windows }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: other platform (Linux) renders Option with the open glyph map
+    props: { accel: "Alt+Shift+H", size: sm, tone: inherit, platform: other }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: macOS maps Option to the Option glyph
+    props: { accel: "Meta+Alt+H", size: sm, tone: inherit, platform: macos }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+  - name: defaults are sm and inherit and show the accelerator
+    props: { accel: "Meta+H" }
+    expect:
+      - { part: hint, visible: true }
+      - { part: hint, text: { matches: "H$" } }
+    screenshot: true
+
+# Not in this contract: no keyboard: true (the widget has no button, switch or checkbox
+# part, and is not focusable). No trace or record (nothing moves). No drag (no slider part).
+# The states "not shown" for palette rows without an accelerator, the Clear hint, and the
+# screenshot hint are consumer rules and are tested in the consumers' contracts.

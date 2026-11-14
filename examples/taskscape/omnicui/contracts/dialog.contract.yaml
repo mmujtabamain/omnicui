@@ -1,0 +1,409 @@
+id: ui.dialog
+
+# Dialog: a modal card with an optional badge, a headline, optional detail copy,
+# an optional text field (kind name), an optional footer left slot, and a footer
+# with Cancel and Accept.
+# Built on Radix Dialog as shadcn DialogContent, inside the single Radix Dialog root
+# owned by Overlay. Behaviour follows the WAI-ARIA modal dialog pattern.
+# dialog and alertdialog are not part roles, so the card is declared generic and its
+# ARIA role is in a comment on the part. The role assertions check the role that
+# assistive technology reports, through the role field that generic parts allow.
+# Not in props: tone override (held back until spec open item 1 is decided), acceptTone
+# (duplicates kind), footer (a part, always present), children (slots, modelled as parts),
+# onOpenChange and onAccept (modelled as events), kind sheet (no row uses it).
+# Decisions this contract relies on, to be recorded in the spec: confirm uses the
+# alertdialog role; Cancel takes initial focus on confirm; Enter in the name field
+# accepts; Escape closes both kinds; Enter and Space on a focused Accept press it
+# like any button. Outside-press dismissal is undecided and not tested.
+
+props:
+  open: { type: boolean, default: false }
+  # Controlled visibility, passed to Overlay. false renders nothing.
+  kind: { type: string, default: "name" }
+  # name | confirm. The catalogue's prompt kind is folded into name (same card, same footer).
+  # name: the text field takes focus and Enter in the field accepts.
+  # confirm: Cancel takes focus, the role is alertdialog, and Enter or Space on Accept press it.
+  tone: { type: string, default: "" }
+  # Colour of the accept button, derived from kind: "" gives name the default tone and
+  # confirm the destructive tone. No override values are recorded (spec open item 1).
+  presentation: { type: string, default: "overlay" }
+  # overlay: web, centred over the window with a Scrim. window: desktop, its own window, no Scrim.
+  size: { type: string, default: "sheet" }
+  # sheet: centred card, 364px at the 14px root (26rem, width min(26rem, 100%)).
+  # palette: 490px wide, top at y 91, max height 60vh. fullscreen: fills the window (Lightbox).
+  badge: { type: string, default: "" }
+  # Badge text at the top of the card. "" hides the badge. Text only: the spec's badge is a node.
+  title: { type: string, default: "" }
+  # Headline, rendered as Dialog.Title and naming the card. Required: a card with "" as its
+  # title is an error (the format has no required flag, so the default is empty).
+  description: { type: string, default: "" }
+  # Detail copy, rendered as Dialog.Description. "" hides it and aria-describedby is not set.
+  instead: { type: string, default: "" }
+  # Text of the footer's left slot. "" hides it. Text only: the spec's instead is a node.
+  acceptLabel: { type: string, default: "" }
+  # Label of the Accept button. Required: "" is an error (the format has no required flag).
+  cancelLabel: { type: string, default: "Cancel" }
+
+events:
+  openChanged: { open: { type: boolean } }
+  # The card asks to close, from Cancel or Escape. open is false for every close request.
+  # Accept does not close the card; the owner sets open.
+  accepted: {}
+  # The accept action ran: Accept pressed, Enter or Space on the focused Accept, or Enter in
+  # the field for kind name. No fields.
+
+parts:
+  card:
+    role: generic
+    # aria: dialog for kind name, alertdialog for kind confirm. aria-modal is true.
+    # aria-labelledby is the title and aria-describedby the description when set. Not checkable
+    # here: generic parts have no name field.
+    same: { default: pixels, desktop: layout }
+  badge: { role: generic, optional: true }
+  # Badge slot. Absent when badge is "".
+  title:
+    role: heading
+    # Dialog.Title, rendered as an h2. Its text assertions depend on spec open item 5
+    # (whether the headline counts as visible text).
+  description: { role: generic, optional: true }
+  # Dialog.Description. Absent when description is "".
+  field: { role: textbox, optional: true }
+  # Body text field. Present for kind name; absent for kind confirm.
+  instead: { role: generic, optional: true }
+  # Left slot of the footer. Caller content, no ARIA role. Absent when instead is "".
+  footer: { role: generic }
+  # The action row. No ARIA role. Order: Cancel first, Accept last.
+  cancel:
+    role: button
+    # Initial focus for kind confirm (working decision, spec open item 3).
+  accept:
+    role: button
+    # Accept. Its colour comes from tone, derived from kind.
+
+same: pixels
+
+viewports:
+  default: [ { width: 1180, height: 760 }, { width: 320, height: 240 } ]
+  mobile: [ { width: 360, height: 640 } ]
+
+colorSchemes: [ light, dark ]
+
+keyboard: true
+# Enter and Space on Cancel and Accept must do what a press does. Accept on a confirm card
+# is an ordinary button here, so the generated check covers it with no exception.
+
+# Not covered by this contract:
+# - Entering state and the open motion (animate-sheet-in). A part that animates as it mounts
+#   cannot be traced, and no step in this format opens the card, so this is a screenshot only.
+# - Clicks inside the card: the card, title and description take no press, so the format
+#   cannot express the check.
+# - Outside press: there is no part for the Scrim, and the behaviour is undecided.
+# - Scrim presence: the Scrim is not a part here; it belongs in the Overlay contract.
+# - Focus return to the opener: the opener is outside this widget; test it at Overlay.
+# - Desktop window title and close control: host chrome, check on the desktop host.
+# - aria-modal and the card's accessible name: generic parts have no name field.
+
+tests:
+  - name: name card opens with focus on the field
+    props: { open: true, kind: name, title: "New list", badge: "List", acceptLabel: "Create" }
+    expect:
+      - { part: card, role: generic }
+      - { part: title, text: "New list" }
+      - { part: badge, text: "List" }
+      - { part: field, focused: true }
+      - { part: footer, visible: true }
+      - { part: cancel, name: "Cancel" }
+      - { part: accept, name: "Create" }
+
+  - name: confirm card opens with Cancel focused and the alertdialog role
+    props: { open: true, kind: confirm, title: "Delete this list?", description: "Its tasks move to Trash", badge: "Delete", acceptLabel: "Delete" }
+    expect:
+      - { part: card, role: generic }
+      - { part: cancel, focused: true }
+      - { part: accept, focused: false }
+      - { part: accept, name: "Delete" }
+      - { part: title, text: "Delete this list?" }
+      - { part: description, text: "Its tasks move to Trash" }
+
+  - name: confirm card with an empty description opens with Cancel focused
+    props: { open: true, kind: confirm, title: "Delete project?", description: "", acceptLabel: "Delete" }
+    expect:
+      - { part: card, role: generic }
+      - { part: cancel, focused: true }
+      - { part: title, text: "Delete project?" }
+    # Absence of the description is not asserted: checks on an absent optional part are skipped.
+
+  - name: badge and footer text show when set
+    props: { open: true, kind: name, title: "Rename list", badge: "Lists", instead: "Esc cancels", acceptLabel: "Rename" }
+    expect:
+      - { part: badge, text: "Lists" }
+      - { part: instead, text: "Esc cancels" }
+
+  - name: empty badge and footer text leave the name card with the field focused
+    props: { open: true, kind: name, title: "New project", badge: "", instead: "", acceptLabel: "Create" }
+    expect:
+      - { part: field, focused: true }
+      - { part: title, text: "New project" }
+    # Absence of the badge and footer text is not asserted: checks on absent optional parts are skipped.
+
+  - name: closed card renders nothing
+    props: { open: false, kind: name, title: "New list" }
+    expect:
+      - { part: card, visible: false }
+      - { part: title, visible: false }
+
+  - name: name card takes typed text
+    props: { open: true, kind: name, title: "Rename list", acceptLabel: "Rename" }
+    steps:
+      - { action: type, part: field, text: "Inbox" }
+    expect:
+      - { part: field, text: "Inbox" }
+
+  - name: Enter in the name field accepts
+    props: { open: true, kind: name, title: "Rename list", acceptLabel: "Rename" }
+    steps:
+      - { action: focus, part: field }
+      - { action: type, part: field, text: "Inbox" }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { part: field, text: "Inbox" }
+      - { event: accepted, times: 1 }
+
+  - name: Enter on the focused Cancel of a confirm cancels
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Enter on the focused Accept of a confirm accepts
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: accepted, times: 1 }
+      - { event: openChanged, times: 0 }
+
+  - name: Space on the focused Accept of a confirm accepts
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: accepted, times: 1 }
+
+  - name: Space on the focused Cancel of a confirm cancels
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: key, part: cancel, key: Space }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Enter on the focused Cancel of a name card closes it
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Space on the focused Accept of a name card accepts
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: accepted, times: 1 }
+
+  - name: Enter on the focused Accept of a name card accepts
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { event: accepted, times: 1 }
+
+  - name: pressing Cancel cancels a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: pressing Accept accepts a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: accepted, times: 1 }
+      - { event: openChanged, times: 0 }
+
+  - name: pressing Accept accepts a name card
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: accepted, times: 1 }
+      - { event: openChanged, times: 0 }
+
+  - name: pressing Cancel closes a name card
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Escape cancels a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Escape cancels a confirm from its Accept button
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Escape }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Escape cancels a name card from the field
+    props: { open: true, kind: name, title: "Rename list", acceptLabel: "Rename" }
+    steps:
+      - { action: focus, part: field }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
+
+  - name: Tab from Accept wraps to Cancel in a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Tab }
+    expect:
+      - { part: cancel, focused: true }
+
+  - name: Shift+Tab from Cancel wraps to Accept in a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: key, part: cancel, key: "Shift+Tab" }
+    expect:
+      - { part: accept, focused: true }
+
+  - name: Tab and Shift+Tab stay inside a confirm
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Tab }
+      - { action: key, part: cancel, key: "Shift+Tab" }
+    expect:
+      - { part: accept, focused: true }
+      - { event: accepted, times: 0 }
+
+  - name: Tab from the field reaches Cancel in a name card
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { part: cancel, focused: true }
+
+  - name: Shift+Tab from the field wraps to Accept in a name card
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: key, part: field, key: "Shift+Tab" }
+    expect:
+      - { part: accept, focused: true }
+
+  - name: Tab from Accept wraps to the field in a name card
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: Tab }
+    expect:
+      - { part: field, focused: true }
+
+  - name: name card in the sheet size, overlay presentation
+    only: [web]
+    props: { open: true, kind: name, title: "New list", badge: "List", acceptLabel: "Create", presentation: overlay, size: sheet }
+    screenshot: true
+    # Web capture: one target, so it is a documentation capture, not a comparison.
+
+  - name: name card sheet
+    props: { open: true, kind: name, title: "New list", acceptLabel: "Create" }
+    screenshot: { part: card }
+
+  - name: confirm card sheet
+    props: { open: true, kind: confirm, title: "Delete this list?", description: "Its tasks move to Trash", acceptLabel: "Delete" }
+    screenshot: { part: card }
+
+  - name: confirm card with badge and footer text
+    props: { open: true, kind: confirm, title: "Delete permanently?", description: "This cannot be undone.", badge: "Trash", instead: "Esc cancels", acceptLabel: "Delete permanently" }
+    screenshot: { part: card }
+
+  - name: new project card
+    only: [web]
+    props: { open: true, kind: name, title: "New project", badge: "Project", acceptLabel: "Create", presentation: overlay, size: sheet }
+    screenshot: true
+
+  - name: new project card in its own window
+    only: [desktop]
+    props: { open: true, kind: name, title: "New project", badge: "Project", acceptLabel: "Create", presentation: window, size: sheet }
+    screenshot: true
+
+  - name: rename list prompt
+    only: [web]
+    props: { open: true, kind: name, title: "Rename list", badge: "Rename", acceptLabel: "Rename", presentation: overlay, size: sheet }
+    screenshot: true
+
+  - name: delete list card with detail copy
+    only: [web]
+    props: { open: true, kind: confirm, title: "Delete this list?", description: "Its tasks move to Trash", badge: "Delete", acceptLabel: "Delete", presentation: overlay, size: sheet }
+    screenshot: true
+
+  - name: delete confirmation without detail copy
+    only: [web]
+    props: { open: true, kind: confirm, title: "Delete for good?", description: "", badge: "Delete", acceptLabel: "Delete permanently", presentation: overlay, size: sheet }
+    screenshot: true
+
+  - name: palette size, anchored at the top
+    only: [web]
+    props: { open: true, kind: name, title: "Commands", acceptLabel: "Run", presentation: overlay, size: palette }
+    screenshot: true
+
+  - name: fullscreen size fills the window
+    only: [web]
+    props: { open: true, kind: name, title: "Preview", acceptLabel: "Done", presentation: overlay, size: fullscreen }
+    expect:
+      - { part: card, visible: true }
+    screenshot: true
+
+  - name: confirm card in its own window
+    only: [desktop]
+    props: { open: true, kind: confirm, title: "Delete this list?", description: "Its tasks move to Trash", badge: "Delete", acceptLabel: "Delete", presentation: window, size: sheet }
+    screenshot: true
+
+  - name: name card in its own window
+    only: [desktop]
+    props: { open: true, kind: name, title: "New list", badge: "List", acceptLabel: "Create", presentation: window, size: sheet }
+    screenshot: true
+
+  - name: Escape cancels a confirm in its own window
+    only: [desktop]
+    props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete", presentation: window }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }

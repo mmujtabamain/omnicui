@@ -14,6 +14,6 @@ export default [
     // The library may use raw elements and primitives (that is its job) but still no raw colours.
     files: ["packages/ui/src/components/**/*.tsx"],
     plugins: { taskscape },
-    rules: { "taskscape/no-raw-style": "error" },
+    rules: { "taskscape/no-raw-style": ["error", { allowStyle: true }] },
   },
 ];

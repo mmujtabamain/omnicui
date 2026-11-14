@@ -1,0 +1,76 @@
+# Spinner (ui.spinner): small inline indeterminate loading indicator, 12px square,
+# colour inherited from the surrounding text. Family: status. Also used in the
+# structure family: a busy indicator beside status text while a screen capture runs.
+# The widget draws only the indicator. The busy and disabled state of the host
+# control belongs to the Button family.
+# Reference use: the Shot button's busy state in the attachments section.
+# The consumer mounts it only while busy and unmounts it when busy ends.
+id: ui.spinner
+
+props:
+  size: { type: string, default: sm }        # only sm: 12px square (0.857rem on the 14px root). Add a value only when a second use appears.
+  label: { type: string, default: Loading }  # accessible name; rendered as visually hidden text
+  className: { type: string, default: "" }   # layout escape hatch only; its value is opaque to the tests
+
+events: {}                                   # none: the spinner emits nothing; the consumer unmounts it when loading ends
+
+parts:
+  indicator:
+    role: status                             # the spinning icon; aria: status, a polite live region named by the label prop
+    same:
+      default: [layout, colours]             # the look (stroke, angle) is not recorded, so pixels is not claimed
+
+colorSchemes: [light, dark]
+
+# Not expressed in this contract, and why:
+# - keyboard: the spinner is not focusable, so keyboard is left off. The status role
+#   accepts only hover and has no focused field, so "not focusable" cannot be asserted.
+# - reduced motion: the spin stops or slows when the user prefers reduced motion. No
+#   format field can express this. The spin is not traced or recorded either: it animates
+#   as it mounts, and no step starts it, so only screenshots are used.
+# - not rendered when idle: the consumer mounts the spinner only while busy. There is no
+#   busy prop and no idle state, so the unmounted state cannot be asserted here.
+# - only and except: the widget is in the shared library and is tested on every target.
+#   Desktop is its only recorded use, but no only: [desktop] restriction is set.
+# - text: the label is visually hidden, so it is checked as the accessible name, not as visible text.
+# - className: its value is opaque; the test below checks only that role and name survive it.
+
+tests:
+  - name: mounts as a status named Loading by default
+    expect:
+      - { part: indicator, role: status }
+      - { part: indicator, name: Loading }
+      - { part: indicator, visible: true }
+
+  - name: label prop sets the accessible name
+    props: { label: Capturing screen }
+    expect:
+      - { part: indicator, role: status }
+      - { part: indicator, name: Capturing screen }
+
+  - name: size defaults to sm, 12px square, light and dark
+    screenshot: { part: indicator }
+
+  - name: size sm draws on screen inside the viewport
+    props: { size: sm }
+    expect:
+      - { part: indicator, visible: true }
+
+  - name: size sm, 12px square, light and dark
+    props: { size: sm }
+    # The spin never stops. Only this part's box is compared, and pixels are not
+    # claimed (same: layout, colours), so the comparison holds layout and colour only.
+    screenshot: { part: indicator }
+
+  - name: hover leaves the indicator visible and named
+    steps:
+      - { action: hover, part: indicator }
+    expect:
+      - { part: indicator, visible: true }
+      - { part: indicator, name: Loading }
+
+  - name: className keeps the status and its name
+    props: { className: extra }
+    expect:
+      - { part: indicator, role: status }
+      - { part: indicator, name: Loading }

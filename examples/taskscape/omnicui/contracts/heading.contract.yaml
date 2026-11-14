@@ -1,0 +1,172 @@
+id: ui.heading
+
+# Display-family (font-display) semibold title, always tone primary.
+# A styled h1, h2, h3, p or span chosen by `as`. Not a Radix primitive.
+# Replaces: project pill (title bar), settings and trash window titles, filter panel title,
+# sheet headline (dialog title), selection summary headline.
+# Sizes use 1rem = 14px.
+
+props:
+  # as: h1, h2, h3, p or span. Default h2.
+  # h1: settings and trash window titles, and the desktop sheet headline (each sheet is its own window).
+  # h2: the web sheet headline (dialog title) and the filter panel title.
+  # h3: allowed for a nested title; the level is set only by this prop.
+  # p: the selection summary headline (open item 5: the reference uses p, the review suggested h2).
+  # span: the title-bar project pill (a trigger, kept out of the heading outline; open item 4).
+  as: { type: string, default: h2 }
+  # size: sm = 14px (1rem), semibold. md = 16px (1.143rem), semibold, for the sheet headline and selection summary.
+  size: { type: string, default: sm }
+  # overflow: truncate = one line with an ellipsis. wrap = wraps onto more lines, text-wrap: pretty.
+  overflow: { type: string, default: truncate }
+  # content: the title text (the children on web, the window or sheet text on desktop).
+  # A string in the contract; long values drive the truncated and wrapped states.
+  content: { type: string, default: Title }
+
+# No events: a heading is display only.
+events: {}
+
+parts:
+  # aria: heading (level 1 to 3 from `as`); no heading role for p and span, which report generic.
+  # The ARIA default level is not relied on.
+  title: { role: heading, same: { default: pixels } }
+
+# keyboard is not set: a heading has no press, so Enter and Space have nothing to match.
+# Not focusable: no focus steps. Drag belongs to the title bar, not the text, and is left out of this contract.
+# Tone primary is a colour and is held by the screenshots. Sizes are held by the screenshots (14px and 16px semibold).
+# No trace or record: the heading does not move.
+colorSchemes: [light, dark]
+
+tests:
+  - name: default is an h2 heading with its text
+    # no props: the defaults apply, so the title reads Title
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Title }
+      - { part: title, text: Title }
+      - { part: title, visible: true }
+
+  - name: filter panel title is a level 2 heading at 14px on one line
+    props: { as: h2, size: sm, overflow: truncate, content: Filters }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Filters }
+      - { part: title, text: Filters }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: settings window title is a level 1 heading
+    only: [desktop]
+    # the settings title bar is a drag region, but dragging belongs to the bar, not the text, so no drag step
+    props: { as: h1, size: sm, overflow: truncate, content: Settings }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Settings }
+      - { part: title, text: Settings }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: trash window title is a level 1 heading
+    only: [desktop]
+    # whether the trash bar drags is not recorded, so no drag behaviour is asserted
+    props: { as: h1, size: sm, overflow: truncate, content: Trash }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Trash }
+      - { part: title, text: Trash }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: level 3 keeps the heading role
+    props: { as: h3, size: sm, overflow: truncate, content: Labels }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Labels }
+      - { part: title, visible: true }
+
+  - name: title bar project pill is a span with no heading role
+    props: { as: span, size: sm, overflow: truncate, content: "Garden plan" }
+    steps: []
+    # a span has no heading role, so the reported role is generic
+    expect:
+      - { part: title, role: generic }
+      - { part: title, text: "Garden plan" }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: selection summary headline is 16px semibold in a paragraph with no heading role
+    props: { as: p, size: md, overflow: truncate, content: "3 tasks selected" }
+    steps: []
+    # open item 5: p follows the reference; a paragraph has no heading role, so the reported role is generic
+    expect:
+      - { part: title, role: generic }
+      - { part: title, text: "3 tasks selected" }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: truncated state is one line with an ellipsis
+    props: { as: h2, size: sm, overflow: truncate, content: "Move every task in Garden plan to another project" }
+    steps: []
+    # the full string stays in the accessible name and the text; the ellipsis is what the screenshot shows
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: "Move every task in Garden plan to another project" }
+      - { part: title, text: { contains: "Move every task in Garden plan" } }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: wrapped state breaks onto more lines with text-pretty
+    props: { as: h2, size: md, overflow: wrap, content: "Move every task in Garden plan to another project" }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: "Move every task in Garden plan to another project" }
+      - { part: title, text: "Move every task in Garden plan to another project" }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: sheet headline on desktop is the h1 window title
+    only: [desktop]
+    # each desktop sheet is its own window with no backdrop, so the headline is the window title (h1)
+    props: { as: h1, size: md, overflow: wrap, content: "Rename list" }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: "Rename list" }
+      - { part: title, text: "Rename list" }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: sheet headline on web is a level 2 heading
+    only: [web]
+    # the dialog's own accessible name (aria-labelledby) sits on the dialog part, not on this part
+    props: { as: h2, size: md, overflow: wrap, content: "Rename list" }
+    steps: []
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: "Rename list" }
+      - { part: title, text: "Rename list" }
+      - { part: title, visible: true }
+    screenshot: true
+
+  - name: size sm renders 14px semibold at light and dark
+    props: { size: sm, content: Settings }
+    screenshot: true
+
+  - name: size md renders 16px semibold at light and dark
+    props: { size: md, content: "Rename list" }
+    screenshot: true
+
+  - name: hovering the title leaves it unchanged
+    # a heading has no hover state; the title box is compared by screenshot
+    props: { as: h2, size: sm, overflow: truncate, content: Filters }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, role: heading }
+      - { part: title, name: Filters }
+      - { part: title, text: Filters }
+      - { part: title, visible: true }
+    screenshot: { part: title }

@@ -1,0 +1,237 @@
+# Stack (ui.stack): a plain flex wrapper with no fill of its own.
+# Groups the inspector body, the capture bar title and footer rows, and the drag strips.
+# Platforms: the same markup on desktop and web. dragRegion is desktop only (on web the
+# element is an empty spacer). The capture rows are desktop only.
+# Not Stack: tab strip drag filler, search options wrapper, toolbar group (Toolbar),
+# lightbox stage and lightbox media wrapper (Lightbox).
+# Role: the spec value is "none" (aria: none). WAI-ARIA none is a synonym of presentation,
+# which strips the element's semantics. A div with flex and no role is the generic role, so
+# the part is generic here. The part must not be focusable and must not have an accessible
+# name. Do not give the Stack an aria role; a consumer that needs one wraps the Stack in its
+# own element.
+# Keyboard: not applicable. The Stack has no interactive parts and no key acts on it, so
+# keyboard: true is not set (it would add no tests).
+# Open: no trace or record. The motion starts on mount, and a part that animates as it mounts
+# cannot be traced; motion tests take a screenshot of the settled frame.
+# The timing for animate-rise waits on a motion token not yet in the catalogue.
+# Children are supplied by the test harness, not by the contract (children is a ReactNode
+# slot, not a contract type). The harness renders two plain, unstyled children: first with
+# text One and second with text Two. Every test uses these two children.
+# Emits no events.
+
+id: ui.stack
+
+props:
+  direction: { type: string, default: row }      # row | column (flex direction)
+  justify: { type: string, default: start }      # start | center | end | between (main axis; between is the capture footer row)
+  align: { type: string, default: stretch }      # start | center | end | stretch (cross axis; stretch is the CSS flex default)
+  grow: { type: string, default: none }          # none | fill (flex-1 min-w-0; column also gets min-h-0)
+  gap: { type: string, default: none }           # none | space-3 | space-4 | space-5 | space-6 (token names, no px)
+  dragRegion: { type: boolean, default: false }  # desktop: window drag region; web: empty spacer
+  motion: { type: string, default: none }        # none | rise (entrance animation, animate-rise)
+  asChild: { type: boolean, default: false }     # true: the flex classes go onto the single child element instead of a wrapper
+
+events: {}   # Stack emits no events.
+
+colorSchemes: [ light, dark ]
+
+parts:
+  root: { role: generic, same: pixels }    # aria: none (see header). The element that takes the layout props.
+  first: { role: generic }                 # fixture child from the harness, text One
+  second: { role: generic }                # fixture child from the harness, text Two
+
+same: pixels
+
+viewports:
+  - { width: 320, height: 240 }
+
+tests:
+  - name: no props is a row, start-justified, stretch-aligned, unfilled and ungapped
+    props: {}
+    expect:
+      - { part: root, role: generic }
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: row lays children out along the horizontal axis
+    props: { direction: row }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: column lays children out along the vertical axis
+    props: { direction: column }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: justify start packs children at the start of the main axis
+    props: { justify: start }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: justify center centres children on the main axis
+    props: { justify: center }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: justify end packs children at the end of the main axis
+    props: { justify: end }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: justify between spreads children to both ends (capture footer)
+    props: { justify: between, direction: row, gap: none }
+    expect:
+      - { part: root, visible: true }
+      - { part: first, text: One }
+      - { part: second, text: Two }
+    screenshot: true
+
+  - name: align start aligns children to the cross-axis start
+    props: { align: start }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: align center centres children on the cross axis
+    props: { align: center }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: align end aligns children to the cross-axis end
+    props: { align: end }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: align stretch stretches children across the cross axis
+    props: { align: stretch }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: grow none keeps the fixed size
+    props: { grow: none }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: grow fill takes the free width in a row (task area)
+    props: { grow: fill, direction: row }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: grow fill takes the free height in a column (inspector body)
+    props: { grow: fill, direction: column }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: gap none puts no space between children
+    props: { gap: none }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: gap space-3 puts the space-3 token between children
+    props: { gap: space-3 }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: gap space-4 puts the space-4 token between children
+    props: { gap: space-4 }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: gap space-5 puts the space-5 token between children
+    props: { gap: space-5 }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: gap space-6 puts the space-6 token between children
+    props: { gap: space-6 }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: dragRegion false is a plain wrapper
+    props: { dragRegion: false }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: dragRegion true marks the element as a window drag region (desktop)
+    props: { dragRegion: true }
+    only: [desktop]
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: dragRegion true is an empty spacer on web with no visual effect
+    props: { dragRegion: true }
+    only: [web]
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: motion none shows the body with no entrance animation
+    props: { motion: none }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: motion rise settles to the same layout as motion none
+    # Only the settled look is checked. A trace or record needs a step that starts the motion,
+    # and no step here can remount the element, so the entrance cannot be traced.
+    # The motion token is still open.
+    props: { motion: rise }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: inspector body root is a filling column with the rise entrance
+    props: { direction: column, grow: fill, motion: rise }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: capture title row is a row with a window drag region (desktop)
+    props: { direction: row, align: center, dragRegion: true }
+    only: [desktop]
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: capture footer row spreads its items between the ends, centred (desktop)
+    props: { direction: row, justify: between, align: center }
+    only: [desktop]
+    expect:
+      - { part: root, visible: true }
+    screenshot: true
+
+  - name: asChild renders the layout onto the child element
+    props: { asChild: true }
+    expect:
+      - { part: root, visible: true }
+    screenshot: true

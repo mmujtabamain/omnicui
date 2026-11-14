@@ -1,0 +1,268 @@
+# ui.resizer: drag handle between two columns, with two uses.
+#   Split divider: reset double-click, value is splitRatio (0.25 to 0.75).
+#   Preview edge, draft-inspector and multi-inspector resizers: reset none,
+#   value is previewWidth in px (280 to 420). A 4px grab strip with a 1px
+#   hairline in its centre.
+# Base: shadcn ResizableHandle over react-resizable-panels (not Radix).
+# Role: WAI-ARIA window splitter, a focusable separator (part role slider, see parts).
+# keyboard: true is not used. Enter, Home and End here are not a press
+# (a press never resets), so the keyboard behaviour is written out below.
+# Pointer behaviour and the col-resize cursor are the same on every platform.
+# Touch drag is not recorded in the reference, so no touch test is written.
+# Drag is measured on the resizer slider part only, with dx (a column splitter).
+# onResize and onReset are the resized and reset events; they are not props.
+id: ui.resizer
+
+props:
+  # Column splitter only; cursor col-resize. Only "vertical" is valid.
+  orientation: { type: string, default: "vertical" }
+  # splitRatio (0.25 to 0.75) for the split divider, or previewWidth in px
+  # (280 to 420) for the preview edge. Clamped to min and max. The default 0.5
+  # is the assumed default split (confirm against resetSplitRatio, App.tsx:84);
+  # the preview edge always passes its own value.
+  value: { type: number, default: 0.5 }
+  # Lower clamp: 0.25 for splitRatio, 280 for previewWidth.
+  min: { type: number, default: 0.25 }
+  # Upper clamp: 0.75 for splitRatio, 420 for previewWidth.
+  max: { type: number, default: 0.75 }
+  # "double-click": split divider. Double-click, Enter and Home restore the
+  #   default split, and End moves to max.
+  # "none": drag and keys only (preview edge, draft and multi-inspector
+  #   resizers). Double-click does nothing; Home and End go to min and max.
+  reset: { type: string, default: "none" }
+  # false when the aside is closed: the handle is not shown at all.
+  open: { type: boolean, default: true }
+  # Accessible name (APG requires one). "Resize columns" for the split divider;
+  # the preview edge passes "Resize preview".
+  label: { type: string, default: "Resize columns" }
+
+events:
+  # value: the new splitRatio or previewWidth, after clamping to min and max.
+  # Emitted on each drag move and each arrow, Home or End step.
+  resized: { value: { type: number } }
+  # No fields. Emitted only when reset is double-click and the default is restored.
+  reset: {}
+
+parts:
+  # aria: separator. Focusable window splitter (APG): aria-orientation vertical,
+  # aria-valuenow is value, aria-valuemin is min, aria-valuemax is max. The
+  # accessible name is label. slider is the allowed role that takes a value and
+  # arrow keys; the real role is checked through the role field in the tests.
+  resizer: { role: slider }
+  # aria: none. The 1px hairline in the centre of the 4px strip; transparent when idle.
+  hairline: { role: generic, optional: true }
+
+same: pixels
+colorSchemes: [light, dark]
+
+tests:
+  # Roles, names and focus
+  - name: split divider is a focusable separator
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: focus, part: resizer } ]
+    expect:
+      - { part: resizer, role: generic }
+      - { part: resizer, name: "Resize columns" }
+      - { part: resizer, focused: true }
+      - { part: resizer, visible: true }
+
+  - name: preview edge is a focusable separator
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: focus, part: resizer } ]
+    expect:
+      - { part: resizer, role: generic }
+      - { part: resizer, name: "Resize preview" }
+      - { part: resizer, focused: true }
+      - { part: resizer, visible: true }
+
+  # Hidden state
+  - name: hidden when the aside is closed
+    props: { reset: none, value: 340, min: 280, max: 420, open: false }
+    expect:
+      - { part: resizer, visible: false }
+      - { part: hairline, visible: false }
+
+  # Visual states, light and dark (screenshot runs at every colour scheme)
+  - name: split divider at rest, hairline transparent
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    screenshot: true
+
+  - name: preview edge at rest, hairline transparent
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    screenshot: true
+
+  - name: split divider on hover, strip background edge-2
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: hover, part: resizer } ]
+    screenshot: true
+
+  - name: preview edge on hover, strip background edge-2
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: hover, part: resizer } ]
+    screenshot: true
+
+  - name: hairline crop while hovered
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: hover, part: resizer } ]
+    screenshot: { part: hairline }
+
+  - name: split divider keyboard focus ring
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: focus, part: resizer } ]
+    expect: [ { part: resizer, focused: true } ]
+    screenshot: true
+
+  - name: preview edge keyboard focus ring
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: focus, part: resizer } ]
+    expect: [ { part: resizer, focused: true } ]
+    screenshot: true
+
+  # Dragging state (strip background edge-3). The state only lasts for the
+  # gesture, so the clip of a short drag stands in for it.
+  - name: split divider while dragging, strip background edge-3
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: drag, part: resizer, dx: 40, dy: 0 } ]
+    record: { part: resizer }
+
+  # Drag and clamps. The split divider: dragging right raises splitRatio.
+  # The preview edge sits on the aside's left edge: dragging left widens it.
+  - name: drag right past the max clamps the split ratio to 0.75
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: drag, part: resizer, dx: 2000, dy: 0 } ]
+    expect:
+      - { part: resizer, value: 0.75 }
+      - { event: resized, last: { value: 0.75 } }
+
+  - name: drag left past the min clamps the split ratio to 0.25
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: drag, part: resizer, dx: -2000, dy: 0 } ]
+    expect:
+      - { part: resizer, value: 0.25 }
+      - { event: resized, last: { value: 0.25 } }
+
+  - name: drag the preview edge left widens the aside to 420
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: drag, part: resizer, dx: -2000, dy: 0 } ]
+    expect:
+      - { part: resizer, value: 420 }
+      - { event: resized, last: { value: 420 } }
+
+  - name: drag the preview edge right narrows the aside to 280
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: drag, part: resizer, dx: 2000, dy: 0 } ]
+    expect:
+      - { part: resizer, value: 280 }
+      - { event: resized, last: { value: 280 } }
+
+  # Double-click reset (the do action is advertised by targets as do.doubleClick;
+  # a press never resets)
+  - name: double-click restores the default split
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps:
+      - { action: drag, part: resizer, dx: 2000, dy: 0 }
+      - { do: doubleClick, part: resizer }
+    expect:
+      - { part: resizer, value: 0.5 }
+      - { event: reset, times: 1 }
+
+  - name: double-click on the preview edge does nothing
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps:
+      - { action: drag, part: resizer, dx: -2000, dy: 0 }
+      - { do: doubleClick, part: resizer }
+    expect:
+      - { event: reset, times: 0 }
+      - { part: resizer, value: 420 }
+      - { event: resized, last: { value: 420 } }
+
+  # Keyboard: reset. Enter, Home and End are not a press here.
+  - name: Home restores the default split
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps:
+      - { action: drag, part: resizer, dx: 2000, dy: 0 }
+      - { action: key, part: resizer, key: Home }
+    expect:
+      - { part: resizer, value: 0.5 }
+      - { event: reset, times: 1 }
+
+  - name: Enter restores the default split
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps:
+      - { action: drag, part: resizer, dx: -2000, dy: 0 }
+      - { action: key, part: resizer, key: Enter }
+    expect:
+      - { part: resizer, value: 0.5 }
+      - { event: reset, times: 1 }
+
+  - name: Enter does nothing on the preview edge
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps:
+      - { action: drag, part: resizer, dx: -2000, dy: 0 }
+      - { action: key, part: resizer, key: Enter }
+    expect:
+      - { event: reset, times: 0 }
+      - { event: resized, last: { value: 420 } }
+
+  # Single press: a press never resets
+  - name: single press changes nothing
+    props: { reset: double-click, value: 0.7, min: 0.25, max: 0.75 }
+    steps: [ { action: press, part: resizer, times: 1 } ]
+    expect: [ { part: resizer, value: 0.7 } ]
+
+  # Keyboard: stepping. One press emits one change; a run of presses reaches the clamp.
+  - name: one ArrowRight press emits one resized event on the split divider
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowRight, times: 1 } ]
+    expect: [ { event: resized, times: 1 } ]
+
+  - name: one ArrowLeft press emits one resized event on the split divider
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowLeft, times: 1 } ]
+    expect: [ { event: resized, times: 1 } ]
+
+  - name: ArrowRight moves the split divider right up to 0.75
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowRight, times: 100 } ]
+    expect: [ { event: resized, last: { value: 0.75 } } ]
+
+  - name: ArrowRight at the max stays at 0.75
+    props: { reset: double-click, value: 0.75, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowRight, times: 3 } ]
+    expect: [ { part: resizer, value: 0.75 } ]
+
+  - name: ArrowLeft moves the split divider left down to 0.25
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowLeft, times: 100 } ]
+    expect: [ { event: resized, last: { value: 0.25 } } ]
+
+  - name: ArrowLeft at the min stays at 0.25
+    props: { reset: double-click, value: 0.25, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: ArrowLeft, times: 3 } ]
+    expect: [ { part: resizer, value: 0.25 } ]
+
+  - name: ArrowLeft widens the preview edge up to 420
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: key, part: resizer, key: ArrowLeft, times: 100 } ]
+    expect: [ { event: resized, last: { value: 420 } } ]
+
+  - name: ArrowRight narrows the preview edge down to 280
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: key, part: resizer, key: ArrowRight, times: 100 } ]
+    expect: [ { event: resized, last: { value: 280 } } ]
+
+  # Keyboard: Home, End (APG optional) on both variants
+  - name: End moves the split divider to the max
+    props: { reset: double-click, value: 0.5, min: 0.25, max: 0.75 }
+    steps: [ { action: key, part: resizer, key: End } ]
+    expect: [ { event: resized, last: { value: 0.75 } } ]
+
+  - name: Home moves the preview edge to the 280 min
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: key, part: resizer, key: Home } ]
+    expect: [ { event: resized, last: { value: 280 } } ]
+
+  - name: End moves the preview edge to the 420 max
+    props: { reset: none, value: 340, min: 280, max: 420, label: "Resize preview" }
+    steps: [ { action: key, part: resizer, key: End } ]
+    expect: [ { event: resized, last: { value: 420 } } ]

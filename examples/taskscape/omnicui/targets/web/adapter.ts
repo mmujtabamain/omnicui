@@ -9,7 +9,8 @@
 // only once the page has settled: no running animations, fonts loaded, the app not busy (see
 // settle()), two frames painted.
 import { createServer } from "node:http";
-import { readFileSync, mkdirSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readdirSync, existsSync, copyFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
@@ -32,21 +33,30 @@ class RpcError extends Error {
 
 // --- build what ships, and serve it ------------------------------------------------------------
 const ui = join(here, "../../../packages/ui");
-const dist = join(here, "dist");
-mkdirSync(dist, { recursive: true });
+// Every adapter process builds into a folder of its own, so several checks can run side by side.
+const dist = mkdtempSync(join(tmpdir(), "omnicui-web-"));
+process.on("exit", () => rmSync(dist, { recursive: true, force: true }));
 // One harness entry per widget (packages/ui/src/harness/<name>.tsx, default export { id, Component, events }).
-const entries = existsSync(join(ui, "src/harness")) ? readdirSync(join(ui, "src/harness")).filter((f) => f.endsWith(".tsx")).sort() : [];
-writeFileSync(join(here, "registry.gen.ts"),
-  entries.map((f, i) => `import h${i} from "../../../packages/ui/src/harness/${f}";`).join("\n") +
+// OMNICUI_WIDGETS=button,icon builds only those, so a widget still being written elsewhere cannot break this build.
+const only = process.env.OMNICUI_WIDGETS?.split(",").map((w) => w.trim()).filter(Boolean);
+const entries = (existsSync(join(ui, "src/harness")) ? readdirSync(join(ui, "src/harness")).filter((f) => f.endsWith(".tsx")).sort() : [])
+  .filter((f) => !only || only.includes(f.replace(/\.tsx$/, "")));
+const registry = join(dist, "registry.gen.ts");
+writeFileSync(registry,
+  entries.map((f, i) => `import h${i} from ${JSON.stringify(join(ui, "src/harness", f))};`).join("\n") +
   `\nexport const harnesses = [${entries.map((_, i) => `h${i}`).join(", ")}];\n`);
 await build({
   entryPoints: [join(here, "harness.tsx")],
   bundle: true, minify: true, outdir: dist, entryNames: "harness", format: "iife",
   loader: { ".woff2": "file", ".ttf": "file" }, assetNames: "[name]", define: { "process.env.NODE_ENV": '"production"' }, logLevel: "warning",
   nodePaths: [join(ui, "node_modules"), join(here, "../../../node_modules")],
+  plugins: [{ name: "registry", setup: (b) => b.onResolve({ filter: /^\.\/registry\.gen$/ }, () => ({ path: registry })) }],
 });
 execFileSync(join(here, "../../../node_modules/.bin/tailwindcss"), ["-i", join(ui, "src/styles/index.css"), "-o", join(dist, "harness.css"), "--minify"], { stdio: ["ignore", "ignore", "inherit"] });
 writeFileSync(join(dist, "harness.html"), readFileSync(join(here, "harness.html")));
+// The icon font sits next to the styles (packages/ui/scripts/fonts.mjs); the CSS asks for ./fonts/.
+mkdirSync(join(dist, "fonts"), { recursive: true });
+for (const f of readdirSync(join(ui, "src/styles/fonts"))) copyFileSync(join(ui, "src/styles/fonts", f), join(dist, "fonts", f));
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml" };
 const server = createServer((req, res) => {
   const path = join(dist, new URL(req.url ?? "/", "http://x").pathname);
@@ -94,7 +104,8 @@ async function settle() {
     }
     const deadline = performance.now() + 5000;
     while (performance.now() < deadline) {
-      const running = document.getAnimations().filter((a) => a.playState === "running");
+      // An endless animation (a spinner) never finishes; waiting on it would only use up the deadline.
+      const running = document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations !== Infinity);
       if (running.length === 0) break;
       await Promise.race([Promise.all(running.map((a) => a.finished.catch(() => null))), new Promise((r) => setTimeout(r, 100))]);
     }
@@ -102,9 +113,13 @@ async function settle() {
   });
 }
 
-// A part is the element whose data-slot (shadcn's convention) or data-part is the part's name.
+// A part ("ui.button.label") is the element whose data-part is its full name or, shadcn's
+// convention, whose data-slot is its own name ("label"). data-part settles a clash with a nested widget.
 const quote = (s: string) => s.replace(/"/g, '\\"');
-const selector = (part: string) => `[data-slot="${quote(part)}"], [data-part="${quote(part)}"]`;
+const selector = (part: string) => {
+  const own = part.slice(part.lastIndexOf(".") + 1);
+  return `[data-part="${quote(part)}"], [data-slot="${quote(own)}"]`;
+};
 
 async function locate(part: string) {
   const loc = page.locator(selector(part));
@@ -130,7 +145,18 @@ type Params = Record<string, any>;
 
 async function step(method: string, p: Params, settled = true) {
   switch (method) {
-    case "press": await (await locate(p.part)).click(); break;
+    // A disabled control is still pressed where a user would press it, by the mouse: Playwright's
+    // click() would wait for it to become enabled instead.
+    case "press": {
+      const loc = await locate(p.part);
+      for (let i = 0; i < (p.times ?? 1); i++) {
+        if (await loc.isDisabled()) {
+          const box = await loc.boundingBox();
+          if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        } else await loc.click();
+      }
+      break;
+    }
     case "hover": await (await locate(p.part)).hover(); break;
     case "focus": await (await locate(p.part)).focus(); break;
     // The key goes wherever focus really is, so a part that can't be focused fails honestly.

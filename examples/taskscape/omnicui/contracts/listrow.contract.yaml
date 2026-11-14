@@ -1,0 +1,269 @@
+# ListRow (ui.listrow). One look, two hosts.
+# host list: a listitem in a plain list (trash rows). The row body is the focus stop and activation target.
+# host menu: a menuitemradio in a DropdownMenu (project switcher rows). The body is the item.
+# Trailing actions follow the host: list shows Restore and Delete; menu shows Edit and Delete.
+# Drag is not tested: there is no slider part.
+id: ui.listrow
+
+props:
+  title: { type: string }                       # row title; required, no default
+  meta: { type: string, default: "" }           # secondary line under the title; "" means no meta line
+  host: { type: string, default: list }         # list | menu. list: plain list row (listitem). menu: project switcher row in a DropdownMenu (menuitemradio); choosing it switches project and closes the menu
+  indicator: { type: string, default: none }    # none | check. check shows the accent check when selected (host menu)
+  actions: { type: string, default: none }      # none | hover. trailing icon buttons revealed on hover and on focus-within
+  selected: { type: boolean, default: false }   # selection background (selection-1); with indicator check it also shows the check
+
+events:
+  activated: { title: { type: string } }        # row body press by click, Enter or Space, or choosing a menu-host row; title is the row title. Pressing a row action does not emit it
+  actionRequested: { action: { type: string } } # restore, edit or delete; the host runs it. Delete confirmation is outside this widget
+
+parts:
+  listRow: { role: generic, optional: true }    # aria: listitem. Host list only; wraps the body and the actions
+  body: { role: button, same: { default: pixels, mobile: [layout, colours] } }   # aria: button (host list) or menuitemradio (host menu). The row surface; the focus stop and the activation target
+  title: { role: generic }                      # row title text
+  meta: { role: generic, optional: true }       # secondary line; absent when meta is ""
+  check: { role: generic, optional: true }      # aria-hidden decorative accent check; present only when indicator is check and selected
+  restore: { role: button, optional: true, same: { default: pixels, mobile: [layout, colours] } }   # aria: button; name "Restore <title>"; neutral; host list with actions hover
+  edit: { role: button, optional: true, same: { default: pixels, mobile: [layout, colours] } }      # aria: button; name "Edit <title>" (proposed label); neutral; host menu with actions hover; sits beside the menuitem, not inside it
+  deleteAction: { role: button, optional: true, same: { default: pixels, mobile: [layout, colours] } }  # aria: button; name "Delete <title>"; danger colour (checked by screenshot only); host list or menu with actions hover; outside the menuitem on host menu
+
+keyboard: true
+same: pixels
+colorSchemes: [light, dark]
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 720, height: 480 }
+
+tests:
+  # Content and roles
+
+  - name: list row at rest shows title and meta, no actions
+    props: { title: "Pricing page", meta: "Website · deleted 3d ago", host: list, indicator: none, actions: none, selected: false }
+    expect:
+      - { part: listRow, role: generic }
+      - { part: body, role: button }
+      - { part: title, text: "Pricing page" }
+      - { part: meta, text: "Website · deleted 3d ago" }
+    screenshot: true
+
+  - name: list row without a meta line
+    props: { title: "Pricing page", host: list, indicator: none, actions: none, selected: false }
+    expect:
+      - { part: title, text: "Pricing page" }
+    screenshot: true
+
+  # Selection
+
+  - name: selected list row shows the selection background and no check
+    props: { title: "Pricing page", meta: "Website · deleted 3d ago", host: list, indicator: none, actions: none, selected: true }
+    expect:
+      - { part: title, text: "Pricing page" }
+    screenshot: true
+
+  # States: list row
+
+  - name: hover washes the list row with no actions
+    props: { title: "Pricing page", meta: "Website · deleted 3d ago", host: list, indicator: none, actions: none, selected: false }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: title, text: "Pricing page" }
+    screenshot: true
+
+  - name: hover washes the list row and reveals restore and delete
+    props: { title: "Pricing page", meta: "Website · deleted 3d ago", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: restore, name: "Restore Pricing page" }
+      - { part: restore, visible: true }
+      - { part: deleteAction, name: "Delete Pricing page" }
+      - { part: deleteAction, visible: true }
+    screenshot: true
+
+  - name: actions stay hidden at rest
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    expect:
+      - { part: restore, name: "Restore Pricing page" }
+      - { part: deleteAction, name: "Delete Pricing page" }
+    screenshot: true
+
+  - name: highlighted trash row with actions revealed on hover
+    props: { title: "Pricing page", meta: "Website · deleted 3d ago", host: list, indicator: none, actions: hover, selected: true }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: restore, name: "Restore Pricing page" }
+    screenshot: true
+
+  - name: keyboard focus into the row reveals the actions
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Tab }
+    expect:
+      - { part: restore, focused: true }
+      - { part: restore, name: "Restore Pricing page" }
+    screenshot: true
+
+  - name: focus on the row body shows the focus ring and reveals the actions
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: focus, part: body }
+    expect:
+      - { part: body, focused: true }
+      - { part: restore, visible: true }
+    screenshot: true
+
+  - name: actions fade in on hover
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+    trace: [ { part: restore, property: opacity } ]
+    allCombinations: true
+
+  - name: long title keeps the actions on the row
+    props: { title: "Website redesign handoff notes for the spring campaign archive", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: deleteAction, visible: true }
+    screenshot: true
+
+  # Keyboard and pointer: list row
+
+  - name: Enter on the list row emits activated
+    props: { title: "Pricing page", host: list, indicator: none, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Enter }
+    expect:
+      - { event: activated, times: 1, last: { title: "Pricing page" } }
+
+  - name: Space on the list row emits activated
+    props: { title: "Pricing page", host: list, indicator: none, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Space }
+    expect:
+      - { event: activated, times: 1, last: { title: "Pricing page" } }
+
+  - name: press on the list row body emits activated
+    props: { title: "Pricing page", host: list, indicator: none, actions: none, selected: false }
+    steps:
+      - { action: press, part: body, times: 1 }
+    expect:
+      - { event: activated, times: 1, last: { title: "Pricing page" } }
+
+  - name: pressing restore emits actionRequested and does not activate the row
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+      - { action: press, part: restore }
+    expect:
+      - { event: actionRequested, times: 1, last: { action: restore } }
+      - { event: activated, times: 0 }
+
+  - name: pressing delete emits actionRequested with delete
+    props: { title: "Pricing page", host: list, indicator: none, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+      - { action: press, part: deleteAction }
+    expect:
+      - { event: actionRequested, times: 1, last: { action: delete } }
+      - { event: activated, times: 0 }
+
+  # Menu host: project rows
+
+  - name: project row in the switcher, not selected, no check
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    expect:
+      - { part: body, role: button }
+      - { part: body, selected: false }
+      - { part: title, text: "Taskscape" }
+      - { part: check, visible: false }
+    screenshot: true
+
+  - name: selected project shows the accent check
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: true }
+    expect:
+      - { part: body, role: button }
+      - { part: body, selected: true }
+      - { part: check, visible: true }
+    screenshot: true
+
+  - name: menu row with actions at rest
+    props: { title: "Taskscape", host: menu, indicator: none, actions: hover, selected: false }
+    expect:
+      - { part: body, role: button }
+    screenshot: true
+
+  - name: hover washes a project row
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: body, role: button }
+    screenshot: true
+
+  - name: focus-visible ring on a project row
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+    expect:
+      - { part: body, focused: true }
+    screenshot: true
+
+  - name: hovering a selected project row reveals edit and delete
+    props: { title: "Taskscape", host: menu, indicator: check, actions: hover, selected: true }
+    steps:
+      - { action: hover, part: body }
+    expect:
+      - { part: edit, name: "Edit Taskscape" }
+      - { part: edit, visible: true }
+      - { part: deleteAction, name: "Delete Taskscape" }
+      - { part: deleteAction, visible: true }
+      - { part: check, visible: true }
+    screenshot: true
+
+  # Keyboard and pointer: project rows
+
+  - name: Enter chooses the project and emits activated
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Enter }
+    expect:
+      - { event: activated, times: 1, last: { title: "Taskscape" } }
+
+  - name: Space chooses the project and emits activated
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Space }
+    expect:
+      - { event: activated, times: 1, last: { title: "Taskscape" } }
+
+  - name: press chooses the project row
+    props: { title: "Taskscape", host: menu, indicator: check, selected: true }
+    steps:
+      - { action: press, part: body, times: 1 }
+    expect:
+      - { event: activated, times: 1, last: { title: "Taskscape" } }
+
+  - name: Escape closes the menu without choosing the project
+    props: { title: "Taskscape", host: menu, indicator: check, actions: none, selected: false }
+    steps:
+      - { action: focus, part: body }
+      - { action: key, part: body, key: Escape }
+    expect:
+      - { event: activated, times: 0 }
+
+  - name: pressing edit emits actionRequested and does not choose the project
+    props: { title: "Taskscape", host: menu, indicator: check, actions: hover, selected: false }
+    steps:
+      - { action: hover, part: body }
+      - { action: press, part: edit }
+    expect:
+      - { event: actionRequested, times: 1, last: { action: edit } }
+      - { event: activated, times: 0 }

@@ -1,0 +1,143 @@
+id: ui.windowframe
+
+# WindowFrame: root element of one window. Titled is the full app window
+# (main, Settings, and the web app root): a TitleBar above the body, h-screen
+# w-screen, flex column, bg surface-1, text content-1, overflow hidden. Frameless
+# is the desktop-only quick-add capture card: rounded-panel, 1px border, w-screen,
+# no TitleBar, light surface (dark grey in dark theme). The frame fills its window
+# and holds the title bar, body and overlays. Each desktop window is its own
+# document, so the frame has no ARIA role of its own (WAI-ARIA none, document root).
+#
+# Not expressible in the format (prop types are string, integer, number, boolean
+# only): children (titled: TitleBar and PaneGroup body row, with overlays;
+# frameless: capture bar rows) and onKeyDown (frameless: Enter, Escape, Tab for the
+# whole bar). Their behaviour is tested below through the bar's text fields.
+
+props:
+  # chrome values:
+  #   titled     app window with TitleBar and body (main, Settings, web app root).
+  #   frameless  desktop-only capture card, no TitleBar.
+  # Window size is window configuration, so it lives in viewports and not here.
+  chrome: { type: string, default: titled }
+
+events:
+  dismissed:
+    reason: { type: string }   # "escape". Frameless only: Escape from any field of the capture bar dismisses it.
+  submitted:
+    via: { type: string }      # "enter" (Enter in the title), "shortcut" (Mod+Enter in the title or the notes). Frameless only.
+
+parts:
+  frame: { role: generic }   # aria: none. Document root; each desktop window is its own document.
+  titleBar: { role: generic, optional: true }   # aria: banner. Titled only. The TitleBar widget has its own contract.
+  body: { role: generic, optional: true }       # aria: none. Titled only. Row holding the PaneGroup.
+  overlays: { role: generic, optional: true }   # aria: none. Titled only. Layer above the body for sheets and toasts.
+  captureTitle: { role: textbox, optional: true }   # aria: textbox. Frameless only. Single-line title field of the capture bar.
+  captureNotes: { role: textbox, optional: true }   # aria: textbox (multi-line). Frameless only. Notes field of the capture bar.
+
+same: pixels
+
+colorSchemes: [light, dark]
+
+# 1180x760: main default and Settings default. 820x640: main narrow window.
+# 640x520: Settings minimum and open size (decision 19).
+viewports:
+  - { width: 1180, height: 760 }
+  - { width: 820, height: 640 }
+  - { width: 640, height: 520 }
+
+# keyboard is not set: the frame has no button, switch or checkbox, so the press check
+# has nothing to act on. The bar's keys are tested through the steps below.
+# No trace or record: the frame has no motion of its own (sheets and toasts animate in their own contracts).
+# No drag: no slider parts here.
+
+tests:
+  - name: "titled frame fills its window and holds the title bar and body"
+    props: { chrome: titled }
+    expect:
+      - { part: frame, role: generic }
+      - { part: frame, visible: true }
+      - { part: titleBar, visible: true }
+      - { part: body, visible: true }
+
+  - name: "titled frame matches the design at every size and colour scheme"
+    props: { chrome: titled }
+    screenshot: true
+
+  - name: "frameless card holds the capture bar fields"
+    only: [desktop]
+    props: { chrome: frameless }
+    # The absence of titleBar in frameless cannot be asserted (checks on missing optional parts are skipped).
+    expect:
+      - { part: frame, visible: true }
+      - { part: captureTitle, visible: true }
+      - { part: captureNotes, visible: true }
+
+  - name: "frameless card is a rounded, bordered card at every size and colour scheme"
+    only: [desktop]
+    props: { chrome: frameless }
+    screenshot: true
+
+  - name: "Escape in the title dismisses the bar"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureTitle }
+      - { action: key, part: captureTitle, key: Escape }
+    expect:
+      - { event: dismissed, times: 1, last: { reason: escape } }
+
+  - name: "Escape in the notes dismisses the bar"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureNotes }
+      - { action: key, part: captureNotes, key: Escape }
+    expect:
+      - { event: dismissed, times: 1, last: { reason: escape } }
+
+  - name: "Enter in the title submits the capture"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureTitle }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { event: submitted, times: 1, last: { via: "enter" } }
+
+  - name: "Mod+Enter submits from the title and from the notes"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureTitle }
+      - { input: submit }
+      - { action: focus, part: captureNotes }
+      - { input: submit }
+    expect:
+      - { event: submitted, times: 2, last: { via: "shortcut" } }
+
+  - name: "Tab moves focus from the title to the notes inside the bar"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureTitle }
+      - { action: key, part: captureTitle, key: Tab }
+    expect:
+      - { part: captureNotes, focused: true }
+
+  - name: "Tab from the notes wraps focus back to the title"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureNotes }
+      - { action: key, part: captureNotes, key: Tab }
+    expect:
+      - { part: captureTitle, focused: true }
+
+  - name: "Shift+Tab from the title wraps focus to the notes"
+    only: [desktop]
+    props: { chrome: frameless }
+    steps:
+      - { action: focus, part: captureTitle }
+      - { action: key, part: captureTitle, key: Shift+Tab }
+    expect:
+      - { part: captureNotes, focused: true }

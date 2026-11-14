@@ -1,0 +1,352 @@
+id: ui.segmentedcontrol
+
+# SegmentedControl: mutually exclusive choice shown as joined segments, icon-only or icon and text.
+# Exactly one value is always selected; there is no deselect.
+# Base: Radix RadioGroup styled as shadcn ToggleGroup segments.
+#
+# Roles: the group is a generic part (# aria: radiogroup) and each segment is a button (# aria: radio).
+# A segment's checked state is read through its selected field (aria-checked).
+# The group name (groupName, aria-label) is required, but generic parts have no name field,
+# so the group name is not checkable here.
+# The format has no list type, so segments is one string of "value=Label" pairs in order.
+# The value is the event value and the label is the visible text (shape text) and the accessible name.
+# Icon names come from the caller through icons; the icon artwork is not part of this contract.
+#
+# Not expressed here:
+# - drag (no slider part); trace and record (the spec records no motion)
+# - keyboard: true (Enter is not defined for radio groups, so Space and the arrow keys are tested explicitly)
+# - entering the group with Tab onto the checked segment (roving tab stop): not measured; only the exit is tested
+# - per-segment aria-label and per-segment disabled (the spec's items prop): not expressed; not measured
+# - dimensions (23px, 19px, 25 by 23, 44 by 19, icon 15px) and colour tokens (accent-500, oklch values,
+#   wash-1, content-2): the format has no field for them; they are checked only by screenshot comparison
+#   across targets, never against the catalogue values
+#
+# Open items (not recorded in the spec; no test asserts them):
+# 1. Arrow keys: the spec says Up and Down only when the group is vertical. WAI-ARIA APG says Down and Right
+#    move to the next radio and Up and Left to the previous, whatever the layout. The tests follow APG;
+#    the product owner confirms.
+# 2. Theme tone: the selected and track colours are not recorded; the theme test leaves tone to its default.
+# 3. Theme on web: the web option set is not recorded; the Theme test runs on web and assumes the same three
+#    options. Screenshots mode is desktop only.
+# 4. Tri-state refine group name: not recorded; the value below is a placeholder, not a real name.
+# 5. Stored sort direction shown while sort is manual: not recorded; the disabled sort test asserts only the
+#    selection that the value prop gives.
+# 6. Icon names for the theme and Screenshots rows: not recorded; placeholders stand in for the caller's icons.
+# 7. shape versus labels: the spec says a group without a label is icon-only, and it also has a shape prop.
+#    shape is authoritative here; every test passes shape and the segment labels explicitly.
+# 8. visible means on screen and inside the viewport; it does not detect a label clipped inside its container.
+#    The sm tri-state test asserts visible on its third segment, and its screenshot is the clipping check in the
+#    caller's w-40 container. The default 320x240 viewport is the narrow case, so no viewport is added.
+
+props:
+  value: { type: string, default: all }                  # selected segment value (controlled); must be one of the segment values; never nothing selected
+  segments: { type: string, default: "all=All,active=Active,done=Done" }   # "value=Label" pairs in order, comma-separated, two or three entries
+  icons: { type: string, default: "" }                   # one icon name per segment, same order, comma-separated; needed by shape icon and variant surfaceThumb
+  groupName: { type: string }                            # required accessible name of the group (aria-label); no default, every test passes its own
+  tone: { type: string, default: accent }                # accent | surface: selected look (accent: accent-500 fill, on-accent text, lift shadow; surface: white pill, dark text)
+  shape: { type: string, default: icon }                 # icon | text: square icon-only segments or labelled segments
+  variant: { type: string, default: text }               # text | surfaceThumb: text only, or a leading icon and a label in each segment
+  size: { type: string, default: default }               # default: 23px high, 600 12px/18px | sm: 19px high, 600 11px/16.5px (the caller wraps it in a w-40 container)
+  disabled: { type: boolean, default: false }            # disables the whole group: opacity 40%, no pointer events
+
+events:
+  valueChanged: { value: { type: string } }              # the segment value; fires when a press, Space or an arrow key changes the selection; never when the selected segment is chosen again
+
+parts:
+  group: { role: generic }                               # aria: radiogroup
+  firstSegment: { role: button }                         # aria: radio (always present)
+  secondSegment: { role: button }                        # aria: radio (always present)
+  thirdSegment: { role: button, optional: true }         # aria: radio (absent in two-segment groups: sort direction, Date field)
+
+colorSchemes: [ light, dark ]
+
+mask: []
+
+tests:
+  # Structure and looks
+
+  - name: group is a radiogroup, each segment a radio, with text and selection
+    props: { value: all, shape: text, variant: text, tone: accent, size: default, groupName: Show }
+    expect:
+      - { part: group, role: generic }
+      - { part: firstSegment, role: checkbox }
+      - { part: firstSegment, name: All }
+      - { part: firstSegment, text: All }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, text: Active }
+      - { part: secondSegment, selected: false }
+      - { part: thirdSegment, text: Done }
+    screenshot: true
+
+  - name: two segments, Date field
+    props: { value: created, shape: text, variant: text, tone: accent, size: default, segments: "created=Created,updated=Updated", groupName: "Date field" }
+    expect:
+      - { part: firstSegment, text: Created }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, text: Updated }
+      - { part: secondSegment, selected: false }
+    screenshot: true
+
+  - name: small size, tri-state refine, third segment visible
+    # The group name for the tri-state row is not recorded; the placeholder below is not a real name (open item 4).
+    props: { value: any, shape: text, variant: text, tone: accent, size: sm, segments: "any=Any,with=With,without=Without", groupName: "PLACEHOLDER tri-state group name" }
+    expect:
+      - { part: firstSegment, text: Any }
+      - { part: firstSegment, selected: true }
+      - { part: thirdSegment, text: Without }
+      - { part: thirdSegment, visible: true }
+    screenshot: true
+
+  - name: icon shape, sort direction, icon-only segments
+    props: { value: ascending, shape: icon, variant: text, tone: accent, size: default, segments: "ascending=Ascending,descending=Descending", icons: "arrow_upward,arrow_downward", groupName: "Sort direction" }
+    expect:
+      - { part: firstSegment, name: Ascending }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, name: Descending }
+      - { part: secondSegment, selected: false }
+      - { part: firstSegment, visible: true }
+      - { part: secondSegment, visible: true }
+    screenshot: true
+
+  - name: sort direction disabled while sort is manual
+    # The stored direction shown while sort is manual is an open item (5); the selection here follows only from the value prop.
+    props: { value: ascending, shape: icon, disabled: true, segments: "ascending=Ascending,descending=Descending", icons: "arrow_upward,arrow_downward", groupName: "Sort direction" }
+    steps: [ { action: press, part: secondSegment } ]
+    expect:
+      - { part: firstSegment, disabled: true }
+      - { part: secondSegment, disabled: true }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, selected: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: true
+
+  - name: disabled group ignores a press, three segments
+    props: { value: all, shape: text, disabled: true, groupName: Show }
+    steps: [ { action: press, part: secondSegment } ]
+    expect:
+      - { part: firstSegment, disabled: true }
+      - { part: secondSegment, disabled: true }
+      - { part: thirdSegment, disabled: true }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, selected: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: true
+
+  - name: surface tone, capture mode
+    # Capture mode is desktop only; the web has no screen capture.
+    props: { value: full, shape: text, variant: text, tone: surface, size: default, segments: "full=Full screen,region=Region", groupName: "Capture mode" }
+    only: [desktop]
+    expect:
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, selected: false }
+    screenshot: true
+
+  - name: surfaceThumb variant, Screenshots mode
+    # Icon names are not recorded (open item 6); the placeholders stand in for the caller's icons.
+    props: { value: full, shape: text, variant: surfaceThumb, tone: surface, size: default, segments: "full=Full screen,region=Region", icons: "placeholder-full,placeholder-region", groupName: "Screenshots mode" }
+    only: [desktop]
+    expect:
+      - { part: firstSegment, text: "Full screen" }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, text: Region }
+    screenshot: true
+
+  - name: surfaceThumb variant, theme
+    # Tone is left to the default: the theme's selected and track colours are not recorded (open item 2).
+    # The web option set is not recorded (open item 3): on web this test assumes System, Light and Dark.
+    # Icon names are placeholders (open item 6).
+    props: { value: system, shape: text, variant: surfaceThumb, size: default, segments: "system=System,light=Light,dark=Dark", icons: "placeholder-system,placeholder-light,placeholder-dark", groupName: Theme }
+    expect:
+      - { part: firstSegment, text: System }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, text: Light }
+      - { part: thirdSegment, text: Dark }
+    screenshot: true
+
+  - name: middle segment selected, screenshot
+    props: { value: active, shape: text, variant: text, tone: accent, size: default, groupName: Show }
+    expect:
+      - { part: secondSegment, selected: true }
+      - { part: firstSegment, selected: false }
+    screenshot: true
+
+  - name: last segment selected, screenshot
+    props: { value: done, shape: text, variant: text, tone: accent, size: default, groupName: Show }
+    expect:
+      - { part: thirdSegment, selected: true }
+      - { part: firstSegment, selected: false }
+    screenshot: true
+
+  # Hover and focus
+
+  - name: hover on an unselected segment shows the wash
+    props: { value: all, shape: text, groupName: Show }
+    steps: [ { action: hover, part: secondSegment } ]
+    expect:
+      - { part: secondSegment, selected: false }
+    screenshot: true
+
+  - name: focus moves to a segment
+    props: { value: all, shape: text, groupName: Show }
+    steps: [ { action: focus, part: secondSegment } ]
+    expect:
+      - { part: secondSegment, focused: true }
+      - { part: firstSegment, focused: false }
+
+  - name: focus ring on a segment reached by the keyboard
+    # Reached through a keyboard action, not a programmatic focus, so the :focus-visible ring applies.
+    # The arrow selects the segment it reaches, so the ring shows on the selected segment.
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: firstSegment }
+      - { action: key, part: firstSegment, key: ArrowRight }
+    expect:
+      - { part: secondSegment, focused: true }
+      - { part: firstSegment, focused: false }
+    screenshot: true
+
+  # Pointer
+
+  - name: a press selects the segment and reports its value
+    props: { value: all, shape: text, groupName: Show }
+    steps: [ { action: press, part: secondSegment } ]
+    expect:
+      - { part: secondSegment, text: Active }
+      - { part: secondSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "active" } }
+
+  - name: press on the last segment selects it
+    props: { value: all, shape: text, groupName: Show }
+    steps: [ { action: press, part: thirdSegment } ]
+    expect:
+      - { part: thirdSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "done" } }
+
+  - name: press on the selected middle segment changes nothing
+    props: { value: active, shape: text, groupName: Show }
+    steps: [ { action: press, part: secondSegment } ]
+    expect:
+      - { part: secondSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { part: thirdSegment, selected: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: press on the selected first segment changes nothing
+    props: { value: all, shape: text, groupName: Show }
+    steps: [ { action: press, part: firstSegment } ]
+    expect:
+      - { part: firstSegment, selected: true }
+      - { event: valueChanged, times: 0 }
+
+  # Keyboard (roving focus: Tab enters on the checked segment; arrows move and select; Space selects)
+
+  - name: Tab from the checked segment leaves the group
+    # Entry onto the checked segment (roving tab stop) is not measured; only the exit is tested.
+    props: { value: active, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: secondSegment }
+      - { action: key, part: secondSegment, key: Tab }
+    expect:
+      - { part: firstSegment, focused: false }
+      - { part: secondSegment, focused: false }
+      - { part: thirdSegment, focused: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: ArrowRight moves focus to the next segment and selects it
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: firstSegment }
+      - { action: key, part: firstSegment, key: ArrowRight }
+    expect:
+      - { part: secondSegment, focused: true }
+      - { part: secondSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "active" } }
+
+  - name: ArrowRight from the last segment wraps to the first and selects it
+    props: { value: done, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: thirdSegment }
+      - { action: key, part: thirdSegment, key: ArrowRight }
+    expect:
+      - { part: firstSegment, focused: true }
+      - { part: firstSegment, selected: true }
+      - { part: thirdSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "all" } }
+
+  - name: ArrowLeft moves to the previous segment and selects it, from the last
+    props: { value: done, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: thirdSegment }
+      - { action: key, part: thirdSegment, key: ArrowLeft }
+    expect:
+      - { part: secondSegment, focused: true }
+      - { part: secondSegment, selected: true }
+      - { part: thirdSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "active" } }
+
+  - name: ArrowLeft moves to the previous segment and selects it, from the middle
+    props: { value: active, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: secondSegment }
+      - { action: key, part: secondSegment, key: ArrowLeft }
+    expect:
+      - { part: firstSegment, focused: true }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "all" } }
+
+  - name: ArrowLeft from the first segment wraps to the last and selects it
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: firstSegment }
+      - { action: key, part: firstSegment, key: ArrowLeft }
+    expect:
+      - { part: thirdSegment, focused: true }
+      - { part: thirdSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "done" } }
+
+  - name: ArrowDown and ArrowUp move and select like Right and Left
+    # The group is horizontal; APG maps Down to next and Up to previous (open item 1).
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: firstSegment }
+      - { action: key, part: firstSegment, key: ArrowDown }
+      - { action: key, part: secondSegment, key: ArrowUp }
+    expect:
+      - { part: firstSegment, focused: true }
+      - { part: firstSegment, selected: true }
+      - { part: secondSegment, selected: false }
+      - { event: valueChanged, times: 2, last: { value: "all" } }
+
+  - name: Space selects the focused unchecked segment
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: secondSegment }
+      - { action: key, part: secondSegment, key: Space }
+    expect:
+      - { part: secondSegment, selected: true }
+      - { part: firstSegment, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "active" } }
+
+  - name: Space on the checked middle segment changes nothing
+    props: { value: active, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: secondSegment }
+      - { action: key, part: secondSegment, key: Space }
+    expect:
+      - { part: secondSegment, selected: true }
+      - { part: secondSegment, focused: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: Space on the checked first segment changes nothing
+    props: { value: all, shape: text, groupName: Show }
+    steps:
+      - { action: focus, part: firstSegment }
+      - { action: key, part: firstSegment, key: Space }
+    expect:
+      - { part: firstSegment, selected: true }
+      - { event: valueChanged, times: 0 }

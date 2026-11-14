@@ -1,0 +1,79 @@
+# Contract for the TaskRow widget. Built from the format brief because both drafts were placeholders.
+id: ui.taskrow
+
+props:
+  # title: the task text shown in the heading
+  title: { type: string, default: "" }
+  # done: whether the task is checked off (true shows the "Done" status)
+  done: { type: boolean, default: false }
+
+events:
+  toggled:
+    done: { type: boolean }
+  removed:
+    title: { type: string }
+
+parts:
+  # aria: listitem
+  row: { role: generic }
+  title: { role: heading, same: { default: pixels, mobile: [layout, colours] } }
+  done: { role: checkbox }
+  status: { role: status }
+  # aria: button
+  remove: { role: button }
+
+tests:
+  - name: checking the box marks the task done
+    props: { done: false }
+    steps: [ { action: press, part: done, times: 1 } ]
+    expect:
+      - { part: done, checked: true }
+      - { event: toggled, times: 1, last: { done: true } }
+
+  - name: a done task shows its status
+    props: { title: "Buy milk", done: true }
+    expect:
+      - { part: status, text: { contains: "Done" } }
+
+  - name: title shows the task text
+    props: { title: "Buy milk" }
+    expect:
+      - { part: title, text: "Buy milk" }
+
+  - name: remove button emits removed with the title
+    props: { title: "Buy milk" }
+    steps: [ { action: press, part: remove, times: 1 } ]
+    expect:
+      - { event: removed, times: 1, last: { title: "Buy milk" } }
+
+  - name: swipe left removes the row on touch platforms
+    only: [ios, android]
+    props: { title: "Buy milk" }
+    steps: [ { do: swipe, part: row, with: { direction: left } } ]
+    expect:
+      - { event: removed, times: 1 }
+
+  - name: hovering remove changes its opacity
+    allCombinations: true
+    steps: [ { action: hover, part: remove } ]
+    trace:
+      - { part: remove, property: opacity }
+
+  - name: checking the box shows a visual transition
+    props: { done: false }
+    steps: [ { action: press, part: done, times: 1 } ]
+    record: { part: done }
+
+  - name: row looks right in every scheme and viewport
+    props: { title: "Buy milk" }
+    screenshot: true
+
+viewports:
+  default: [ { width: 320, height: 240 } ]
+  mobile: [ { width: 360, height: 640 } ]
+
+colorSchemes: [ light, dark ]
+
+keyboard: true
+
+same: pixels

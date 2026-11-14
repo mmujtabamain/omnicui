@@ -4,6 +4,7 @@
 import { createRoot, type Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { harnesses } from "./registry.gen";
+import { TooltipProvider } from "../../../packages/ui/src/components/ui/tooltip";
 
 type Harness = { id: string; Component: (props: any) => any; events: string[] };
 const byId = Object.fromEntries((harnesses as Harness[]).map((h) => [h.id, h]));
@@ -19,7 +20,7 @@ Object.assign(window, {
     events = [];
     const emit = (name: string, fields: Record<string, unknown> = {}) => events.push({ name, fields });
     root = createRoot(document.getElementById("root")!);
-    flushSync(() => root!.render(<h.Component {...props} emit={emit} />));
+    flushSync(() => root!.render(<TooltipProvider delayDuration={0}><h.Component {...props} emit={emit} /></TooltipProvider>));
     return null;
   },
   omnicuiEvents() {

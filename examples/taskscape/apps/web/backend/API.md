@@ -2,7 +2,7 @@
 
 JSON over HTTPS, session authentication (cookie) with CSRF on writes. Every URL below is under `/api/`, has no trailing slash, and needs a signed-in user unless it says otherwise. A user only ever sees their own projects and everything inside them; another user's row answers **404**, never 403. Validation errors answer **400** with DRF's usual `{field: [messages]}` body.
 
-Times are ISO 8601 UTC. Ids are integers. Lists are returned whole (no pagination).
+A visitor who is not signed in gets **401**. Times are ISO 8601 UTC. Ids are integers. Lists are returned whole (no pagination).
 
 ## Auth and settings (built)
 

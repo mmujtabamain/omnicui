@@ -1,0 +1,225 @@
+# contracts/confirmbutton.contract.yaml
+#
+# ConfirmButton: a button that acts only on its second activation, inline, because
+# the Settings window has no dialog layer.
+#
+# States (internal, reached by activating the button; there is no confirming prop):
+#   idle        the label shows; the button is the same control as the first press
+#   confirming  the confirmLabel shows; keyboard focus stays on the button
+#
+# Behaviour:
+#   - First activation (click, Enter or Space) moves idle to confirming. Emits nothing.
+#   - Second activation while confirming emits confirmed, then returns to idle.
+#   - Escape while confirming returns to idle and emits nothing (Taskscape decision 10:
+#     Escape cancels). Escape while idle does nothing.
+#   - tone danger (destructive): Enter does not confirm (decision 10). Enter may still
+#     arm, as any first activation does. Space or a click confirms.
+#   - Focus leaving a confirming button returns it to idle (Tab test below), so a stale
+#     armed state cannot be confirmed later.
+#   - The accessible name is the visible text, so it follows the state (WAI-ARIA APG
+#     button: role button, Enter and Space activate, name from content). No aria-pressed:
+#     this is not a toggle, and its label changes.
+#   - Not covered: drag (only slider parts take drag); motion (the spec sets no timing,
+#     so no trace or record).
+#
+# tone: "default" (ordinary action) or "danger" (destructive action, e.g. reset all
+# settings). It selects the colour token and the Enter rule above. The format has no
+# enum, so the values are listed here.
+
+id: ui.confirmbutton
+
+props:
+  tone: { type: string, default: "default" }                 # "default" | "danger"
+  label: { type: string, default: "Reset all settings…" }    # idle label
+  confirmLabel: { type: string, default: "Confirm reset" }   # label while confirming
+
+events:
+  confirmed: {}   # once per second activation; never on the arming activation, never on cancel
+
+parts:
+  button: { role: button }   # one element for idle and confirming; only its text and name change
+
+colorSchemes: [light, dark]
+keyboard: true
+same: pixels
+viewports: [ { width: 640, height: 520 }, { width: 1280, height: 720 } ]   # 640x520 is the Settings window minimum
+
+tests:
+  - name: idle shows the label and emits nothing
+    props: { tone: "default" }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { part: button, name: "Reset all settings…" }
+      - { part: button, visible: true }
+      - { event: confirmed, times: 0 }
+
+  - name: labels come from props and confirmLabel replaces label while confirming
+    props: { label: "Delete project…", confirmLabel: "Delete it" }
+    steps:
+      - { action: press, part: button, times: 1 }
+    expect:
+      - { part: button, text: "Delete it" }
+      - { part: button, name: "Delete it" }
+      - { event: confirmed, times: 0 }
+
+  - name: first press shows the confirming label and does not confirm
+    props: { tone: "default" }
+    steps:
+      - { action: press, part: button, times: 1 }
+    expect:
+      - { part: button, text: "Confirm reset" }
+      - { part: button, name: "Confirm reset" }
+      - { event: confirmed, times: 0 }
+
+  - name: second press confirms once and returns to the idle label
+    props: { tone: "default" }
+    steps:
+      - { action: press, part: button, times: 2 }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 1 }
+
+  - name: third press arms again and does not confirm a second time
+    props: { tone: "default" }
+    steps:
+      - { action: press, part: button, times: 3 }
+    expect:
+      - { part: button, text: "Confirm reset" }
+      - { event: confirmed, times: 1 }
+
+  - name: press four times confirms twice
+    props: { tone: "default" }
+    steps:
+      - { action: press, part: button, times: 4 }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 2 }
+
+  - name: Escape while confirming returns to idle without confirming
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: press, part: button, times: 1 }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 0 }
+
+  - name: Escape while armed by Enter cancels and keeps focus
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { part: button, focused: true }
+      - { event: confirmed, times: 0 }
+
+  - name: Escape while idle does nothing
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 0 }
+
+  - name: keyboard focus stays on the button while confirming
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+    expect:
+      - { part: button, focused: true }
+      - { part: button, text: "Confirm reset" }
+      - { event: confirmed, times: 0 }
+
+  - name: Enter arms and a second Enter confirms
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+      - { action: key, part: button, key: Enter }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 1 }
+
+  - name: Space arms and a second Space confirms
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 1 }
+
+  - name: moving focus away with Tab disarms
+    props: { tone: "default" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+      - { action: key, part: button, key: Tab }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { part: button, focused: false }
+      - { event: confirmed, times: 0 }
+
+  - name: danger tone Enter arms but a second Enter does not confirm
+    props: { tone: "danger" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+      - { action: key, part: button, key: Enter }
+    expect:
+      - { part: button, text: "Confirm reset" }
+      - { event: confirmed, times: 0 }
+
+  - name: danger tone Space confirms on the second press
+    props: { tone: "danger" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+      - { action: key, part: button, key: Space }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 1 }
+
+  - name: danger tone second click confirms
+    props: { tone: "danger" }
+    steps:
+      - { action: press, part: button, times: 2 }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 1 }
+
+  - name: danger tone Escape while confirming cancels
+    props: { tone: "danger" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: button, text: "Reset all settings…" }
+      - { event: confirmed, times: 0 }
+
+  - name: screenshot idle default
+    props: { tone: "default" }
+    screenshot: true
+
+  - name: screenshot idle danger
+    props: { tone: "danger" }
+    screenshot: true
+
+  - name: screenshot confirming default
+    props: { tone: "default" }
+    steps:
+      - { action: press, part: button, times: 1 }
+    screenshot: true
+
+  - name: screenshot confirming danger
+    props: { tone: "danger" }
+    steps:
+      - { action: press, part: button, times: 1 }
+    screenshot: true

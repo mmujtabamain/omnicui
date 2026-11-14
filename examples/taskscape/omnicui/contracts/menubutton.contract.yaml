@@ -1,0 +1,313 @@
+# Contract for ui.menubutton (MenuButton). Intended path: contracts/menubutton.contract.yaml
+# Lens: WAI-ARIA Menu Button pattern (APG, https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/).
+# The trigger is a button with aria-haspopup="menu". Enter, Space and ArrowDown open the menu and move
+# focus into it; Escape closes it and returns focus to the trigger. Radix DropdownMenu.Trigger supplies
+# that behaviour, shadcn Button the look. Same on web and desktop; colours are theme tokens.
+#
+# Not covered here (and why):
+#  - Menu items, their arrow-key movement, and focus landing on the first enabled item: MenuItem contract.
+#  - The New project row on the project switcher: MenuItem contract.
+#  - The menu prop (ReactNode in the spec): dropped on purpose; the menu content is owned by the MenuItem contract.
+#  - A press outside the menu: the format allows press only on button, checkbox, switch and slider parts,
+#    and this widget has no second part to press.
+#  - ArrowUp: not in the spec's key list (APG makes it optional). Not tested.
+#  - Enter or Space closing the menu from the trigger: the spec says they close it, but once focus is in the
+#    menu, Enter selects an item. Conflict left open; not tested.
+#  - role menu, aria-haspopup and aria-expanded: not checkable fields in this format. The open look and the
+#    menu visibility stand in for them.
+#  - The menu fade-in: the spec records no timing or easing, so there is no reference value to trace.
+#  - The filter Sort and Date triggers: the spec gives ghost, but no size or label. No test claims them.
+#  - The task-row context menu at the cursor: not this widget. Whether the More button opens at the cursor or
+#    anchored is an open decision (see Menu). This contract assumes anchored (sideOffset 4, start alignment),
+#    both unconfirmed.
+#
+# Null convention: the format has no nullable type. An empty string stands for null on label, placeholder,
+# leadingIcon, trailingIcon and ariaLabel.
+# Controlled open: when a test does not set open, the target owns the open state. When it sets open, the host
+# controls it and the trigger shows that state.
+# Title bar: the project switcher sits in the title bar. A region a target draws itself is left out of comparison,
+# so the switcher's pixels are not measured on such a target.
+# Unmeasured looks: the open look (the project switcher's open state is assumed to match its hover look, spec
+# open item 3, to confirm) and the disabled look are not captured in the spec. Their screenshots are baselines only.
+# Label type differs by use: the project pill is 14px/21px weight 600; bulk move is 12px/18px. The format has no
+# field for font size, so only the screenshots of those uses check it.
+
+id: ui.menubutton
+
+props:
+  # variant: 'neutral' | 'ghost' | 'pill'. Default ghost (no fill).
+  # neutral: recessed neutral pill. No measured use in the spec; it is not the project switcher.
+  # pill: filled pill, 85x28 measured, 7px radius; the title bar project switcher.
+  variant: { type: string, default: ghost }
+  # size: 'sm' | 'lg' | 'default' | 'icon'. sm is 21px high; lg and default are 28px (default is the pill size).
+  # icon is a 28px square with an icon only (the task row More button).
+  size: { type: string, default: sm }
+  # leadingIcon: leading glyph name (arrow_forward on the move triggers). '' means none.
+  leadingIcon: { type: string, default: "" }
+  # trailingIcon: trailing chevron name (unfold_more on the project switcher). '' means none.
+  trailingIcon: { type: string, default: "" }
+  # label: current value shown on the trigger. '' means null: the placeholder shows instead.
+  label: { type: string, default: "" }
+  # placeholder: shown when label is '' (Taskscape when no project is selected).
+  placeholder: { type: string, default: "" }
+  # disabled: true when there are no other lists (move to list) or no move targets (bulk move).
+  disabled: { type: boolean, default: false }
+  # ariaLabel: accessible name, including the current value, for example "Switch project, Home".
+  # Required when the trigger is icon-only or the label is not descriptive. '' means the visible text is the name.
+  ariaLabel: { type: string, default: "" }
+  # open: open state. Drives aria-expanded on the trigger (not checkable here) and the open look. Starts closed.
+  open: { type: boolean, default: false }
+
+events:
+  # openChanged: fired when the menu is asked to open or close: a press on the trigger, Enter, Space or ArrowDown
+  # on the trigger, Escape, or a press outside the menu (the outside press is not tested here). open is the requested state.
+  openChanged: { open: { type: boolean } }
+
+parts:
+  trigger:
+    # aria: button with aria-haspopup="menu" and aria-expanded (WAI-ARIA Menu Button pattern; Radix DropdownMenu.Trigger).
+    role: button
+  label:
+    role: generic
+    optional: true
+    # aria: none (text of the trigger). Absent on the icon-only trigger.
+  leadingIcon:
+    role: generic
+    optional: true
+    # aria: none (decorative glyph). Present only when leadingIcon is set.
+  trailingIcon:
+    role: generic
+    optional: true
+    # aria: none (decorative chevron). Present only when trailingIcon is set.
+  menu:
+    role: generic
+    optional: true
+    # aria: menu (DropdownMenu content, portalled, shown while open). Role menu is not checkable here.
+    # Its items are the MenuItem contract.
+
+same: pixels
+colorSchemes: [light, dark]
+keyboard: true
+
+# 640x480 is a desktop size chosen so the title bar pill and its menu fit. It is not from the spec.
+# The 320x240 default is too small for the title bar and its menu.
+viewports: [ { width: 640, height: 480 } ]
+
+tests:
+  # Variants and sizes, screenshots at light and dark.
+  - name: pill variant at lg with trailing chevron (project switcher)
+    props: { variant: pill, size: lg, label: Home, trailingIcon: unfold_more, ariaLabel: "Switch project, Home" }
+    expect:
+      - { part: label, text: Home }
+      - { part: trailingIcon, visible: true }
+    screenshot: true
+
+  - name: neutral variant at lg
+    props: { variant: neutral, size: lg, label: Home }
+    expect:
+      - { part: label, text: Home }
+    screenshot: true
+
+  - name: ghost variant, small, leading arrow (footer move to list)
+    props: { variant: ghost, size: sm, leadingIcon: arrow_forward, label: Work }
+    expect:
+      - { part: label, text: Work }
+      - { part: leadingIcon, visible: true }
+    screenshot: true
+
+  - name: ghost variant, large, leading arrow (bulk move)
+    props: { variant: ghost, size: lg, leadingIcon: arrow_forward, label: Move }
+    expect:
+      - { part: label, text: Move }
+    screenshot: true
+
+  - name: default size look (neutral, pill-size label)
+    props: { variant: neutral, size: default, label: Home }
+    expect:
+      - { part: label, text: Home }
+    screenshot: true
+
+  - name: icon size look (square, icon only)
+    props: { variant: ghost, size: icon, leadingIcon: more_horiz, ariaLabel: "More actions, Write report" }
+    expect:
+      - { part: trigger, name: "More actions, Write report" }
+      - { part: leadingIcon, visible: true }
+    screenshot: true
+
+  # Placeholder and empty label.
+  - name: placeholder shows when there is no label
+    props: { variant: pill, size: lg, placeholder: Taskscape, trailingIcon: unfold_more, ariaLabel: "Switch project" }
+    expect:
+      - { part: label, text: Taskscape }
+      - { part: trigger, name: "Switch project" }
+    screenshot: true
+
+  - name: placeholder look at default variant
+    props: { placeholder: Taskscape }
+    expect:
+      - { part: label, text: Taskscape }
+    screenshot: true
+
+  - name: empty label shows the placeholder
+    props: { label: "", placeholder: Taskscape }
+    expect:
+      - { part: label, text: Taskscape }
+      - { part: trigger, name: Taskscape }
+
+  - name: label shows the current value
+    props: { label: Home, placeholder: Taskscape }
+    expect:
+      - { part: label, text: Home }
+      - { part: trigger, name: Home }
+
+  # Disabled. The disabled look is not captured in the spec, so its screenshot is a baseline only.
+  - name: disabled trigger does not open
+    props: { variant: ghost, size: sm, label: "Move to list", leadingIcon: arrow_forward, disabled: true }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: trigger, disabled: true }
+      - { part: menu, visible: false }
+      - { event: openChanged, times: 0 }
+    screenshot: true
+
+  - name: disabled look
+    props: { label: Home, disabled: true }
+    screenshot: true
+
+  # States.
+  - name: open look and menu shown when open is set
+    props: { variant: ghost, size: sm, label: Work, leadingIcon: arrow_forward, open: true }
+    expect:
+      - { part: trigger, name: Work }
+      - { part: menu, visible: true }
+    screenshot: { part: trigger }
+
+  - name: hover washes the trigger
+    props: { variant: ghost, size: sm, label: Work, leadingIcon: arrow_forward }
+    steps:
+      - { action: hover, part: trigger }
+    screenshot: { part: trigger }
+
+  - name: focus ring shows on keyboard focus
+    props: { variant: ghost, size: sm, label: Work, leadingIcon: arrow_forward }
+    steps:
+      - { action: focus, part: trigger }
+    expect:
+      - { part: trigger, focused: true }
+    screenshot: { part: trigger }
+
+  # Pointer behaviour.
+  - name: press opens the menu
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { event: openChanged, times: 1, last: { open: true } }
+      - { part: trigger, focused: false }
+      - { part: menu, visible: true }
+
+  - name: second press on the trigger closes the menu
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: press, part: trigger, times: 2 }
+    expect:
+      - { event: openChanged, times: 2, last: { open: false } }
+      - { part: menu, visible: false }
+
+  - name: Escape after a press closes the menu and returns focus to the trigger
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: trigger, key: Escape }
+    expect:
+      - { event: openChanged, times: 2, last: { open: false } }
+      - { part: trigger, focused: true }
+      - { part: menu, visible: false }
+
+  - name: press while controlled open asks to close
+    props: { variant: ghost, size: sm, label: Work, open: true }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { part: menu, visible: true }
+
+  # Keyboard behaviour (keyboard: true also checks Enter and Space against press).
+  - name: Enter opens the menu and moves focus into it
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: Enter }
+    expect:
+      - { event: openChanged, times: 1, last: { open: true } }
+      - { part: trigger, focused: false }
+      - { part: menu, visible: true }
+
+  - name: Space opens the menu and moves focus into it
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: Space }
+    expect:
+      - { event: openChanged, times: 1, last: { open: true } }
+      - { part: trigger, focused: false }
+      - { part: menu, visible: true }
+
+  - name: ArrowDown opens the menu and moves focus into it
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: ArrowDown }
+    expect:
+      - { event: openChanged, times: 1, last: { open: true } }
+      - { part: trigger, focused: false }
+      - { part: menu, visible: true }
+
+  - name: Escape after an ArrowDown open closes the menu and returns focus to the trigger
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: ArrowDown }
+      - { action: key, part: trigger, key: Escape }
+    expect:
+      - { event: openChanged, times: 2, last: { open: false } }
+      - { part: trigger, focused: true }
+      - { part: menu, visible: false }
+
+  - name: Escape after an Enter open closes the menu and returns focus to the trigger
+    props: { variant: ghost, size: sm, label: Work }
+    steps:
+      - { action: key, part: trigger, key: Enter }
+      - { action: key, part: trigger, key: Escape }
+    expect:
+      - { event: openChanged, times: 2, last: { open: false } }
+      - { part: menu, visible: false }
+      - { part: trigger, focused: true }
+
+  # Accessible name carries the current value.
+  - name: accessible name includes the current value
+    props: { variant: pill, size: lg, label: Home, trailingIcon: unfold_more, ariaLabel: "Switch project, Home" }
+    expect:
+      - { part: trigger, role: button }
+      - { part: trigger, name: "Switch project, Home" }
+      - { part: trigger, text: { contains: Home } }
+      - { part: trailingIcon, visible: true }
+
+  # The More button is the entry point to the task-row menu, so the press is checked.
+  - name: More button is named by its task and opens its menu
+    props: { variant: ghost, size: icon, leadingIcon: more_horiz, ariaLabel: "More actions, Write report" }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: trigger, name: "More actions, Write report" }
+      - { part: leadingIcon, visible: true }
+      - { event: openChanged, times: 1, last: { open: true } }
+      - { part: menu, visible: true }
+
+  # Interaction states on the trigger.
+  - name: hover on an icon-only trigger is not tested here
+    props: { variant: ghost, size: icon, leadingIcon: more_horiz, ariaLabel: "More actions, Write report" }
+    expect:
+      - { part: trigger, name: "More actions, Write report" }
+    screenshot: false

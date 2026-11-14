@@ -1,0 +1,411 @@
+id: ui.menuitem
+
+# One row of a Menu. Base: Radix DropdownMenu.Item (shadcn DropdownMenuItem); Radix RadioItem when selection is radio.
+# Used by the task, list tab, attachment and project menus.
+# Role mapping: the row is a button part (omnicui part roles have no menuitem role). The real ARIA role is noted on
+# each part. The row's role field tests it: menuitem for action, plain and submenu rows, menuitemradio for radio rows
+# (radio rows sit in a labelled group, role group).
+# A checked radio row reads as selected. The target maps selected to the checked state of menuitemradio (aria-checked),
+# never to aria-selected; the format has no checked field for button parts.
+# Not checkable with the fields the format allows: aria-haspopup and aria-expanded on submenu rows. Submenu open and
+# close are proxied by the submenu part and the submenuToggled event.
+# Submenu rows: press, hover, ArrowRight, Enter and Space all open the submenu and none of them runs the row (APG
+# parent-item behaviour), so the keyboard check (Enter and Space must match a press) holds.
+# Escape closes the Menu; the Menu contract asserts the close and the focus return. Here Escape only must not run the row.
+# Harness-only parts (previous, sibling, disabledSibling, group) are mounted or wrapped by the test harness, as noted on each part.
+# Geometry (30px row, 32px project pitch, 15px icon, 14px check slot, 13px and 13.5px labels) has no size field: the icon
+# and check boxes are held to layout (same: [layout]) and the rest is shown by the screenshots.
+# Listed under "open" in the product notes and not encoded: the New project handler conflict, the title-bar button that is
+# not a menu item, the Mark n done colour, the touch affordance for row actions, the route from the row to its actions.
+# Colours (measured, for implementers): default label oklch(0.26 0.012 262), default icon oklch(0.62 0.013 264),
+# hover wash-2l, accent oklch(0.6 0.2 255) for the radio check, danger oklch(0.55 0.2 27), danger hover danger-100l.
+
+props:
+  variant: { type: string, default: "item" }          # 'item' | 'action'. action: separated footer row, full width, h-9 (32px), 13.5px text, leading add icon, label left.
+  tone: { type: string, default: "default" }          # 'default' | 'danger'. danger: icon and label oklch(0.55 0.2 27), hover danger-100l.
+  selection: { type: string, default: "action" }      # 'action' | 'radio'. radio: 14px check slot always reserved, role menuitemradio, must sit in a labelled group.
+  trailing: { type: string, default: "none" }         # 'none' | 'submenu'. submenu: trailing chevron_right; press, hover, ArrowRight, Enter or Space opens the submenu.
+  size: { type: string, default: "default" }          # 'default': 13px/19.5px label, 30px row. 'large': 13.5px/20.25px label, 32px pitch (project rows).
+  icon: { type: string, default: "" }                 # leading icon name, 15px. "" for no leading icon.
+  label: { type: string, default: "Item" }            # row text (a list, project or action name such as "New project…"). Truncates when truncate is true.
+  truncate: { type: boolean, default: false }         # long project names truncate with an ellipsis.
+  checked: { type: boolean, default: false }          # radio rows only: true for the current value; shows the check (15px, weight 900, accent).
+  disabled: { type: boolean, default: false }         # muted, no pointer events, skipped by arrow keys.
+  value: { type: string, default: "" }                # radio rows only: the value this row sets in its group. "" otherwise.
+  rowActions: { type: boolean, default: false }       # project rows only: renders the hover- and focus-revealed renameAction and deleteAction buttons as siblings of the row.
+
+events:
+  activated: { value: { type: string }, label: { type: string } }   # the row ran its action (press, Enter or Space). value: the radio value, or "" for action and plain rows. label: the row name. Submenu rows do not activate.
+  submenuToggled: { open: { type: boolean } }                       # a submenu row opened or closed (press, hover, ArrowRight, Enter, Space).
+  renamePressed: { label: { type: string } }                        # the rename row action was pressed (rowActions only).
+  deletePressed: { label: { type: string } }                        # the delete row action was pressed (rowActions only).
+
+parts:
+  row: { role: button }                                # aria: menuitem; menuitemradio when selection is radio. Checked state on the selected field (see header).
+  label: { role: generic }                             # the row text; the row's name is this label's text.
+  icon: { role: generic, optional: true, same: [layout] }    # decorative, no ARIA role. Leading icon, 15px; absent when icon is "".
+  check: { role: generic, optional: true, same: [layout] }   # decorative, no ARIA role. Radio check, 15px, weight 900, accent; present only when checked.
+  chevron: { role: generic, optional: true }           # decorative, no ARIA role. Trailing chevron_right on submenu rows.
+  submenu: { role: generic, optional: true }           # aria: menu. The submenu list; present only while open.
+  group: { role: generic, optional: true }             # aria: group. Harness-only: the labelled group (named "Date range") the radio rows sit in.
+  renameAction: { role: button, optional: true }       # aria: button. Hover- or focus-revealed IconButton beside the row, a sibling not nested in it. rowActions only.
+  deleteAction: { role: button, optional: true }       # aria: button. As renameAction, for delete. rowActions only.
+  previous: { role: button, optional: true }           # aria: menuitem. Harness-only: an enabled row mounted before this one (label "Paste").
+  sibling: { role: button, optional: true }            # aria: menuitem. Harness-only: an enabled row mounted after this one (label "Move to list" unless a test says otherwise).
+  disabledSibling: { role: button, optional: true }    # aria: menuitem. Harness-only: a disabled row mounted between this row and sibling (label "Archived lists").
+
+tests:
+  # Activation: press, Enter and Space on action, plain and radio rows.
+
+  - name: "a press runs the row once and emits activated with an empty value"
+    props: { label: "Copy", icon: "content_copy" }
+    steps: [ { action: press, part: row } ]
+    expect:
+      - { part: row, name: "Copy" }
+      - { part: row, role: button }
+      - { part: label, text: "Copy" }
+      - { event: activated, times: 1, last: { value: "", label: "Copy" } }
+
+  - name: "Enter runs the row once"
+    props: { label: "Copy", icon: "content_copy" }
+    steps: [ { action: key, part: row, key: Enter } ]
+    expect: [ { event: activated, times: 1, last: { value: "", label: "Copy" } } ]
+
+  - name: "Space runs the row once"
+    props: { label: "Copy", icon: "content_copy" }
+    steps: [ { action: key, part: row, key: Space } ]
+    expect: [ { event: activated, times: 1, last: { value: "", label: "Copy" } } ]
+
+  - name: "Escape does not run the row"
+    # Escape closes the Menu; that close is asserted in the Menu contract, not here.
+    props: { label: "Copy" }
+    steps: [ { action: key, part: row, key: Escape } ]
+    expect:
+      - { event: activated, times: 0 }
+      - { part: row, name: "Copy" }
+
+  - name: "a disabled row cannot be pressed or entered"
+    props: { label: "Rename", disabled: true }
+    steps:
+      - { action: press, part: row }
+      - { action: key, part: row, key: Enter }
+    expect:
+      - { part: row, disabled: true }
+      - { part: label, text: "Rename" }
+      - { event: activated, times: 0 }
+
+  - name: "a radio row emits its value and label when chosen"
+    props: { selection: "radio", value: "30d", label: "Last 30 days" }
+    steps: [ { action: press, part: row } ]
+    expect:
+      - { part: row, role: button }
+      - { event: activated, times: 1, last: { value: "30d", label: "Last 30 days" } }
+
+  # Radio state and group.
+
+  - name: "a checked radio row reads as selected and shows its check"
+    props: { selection: "radio", checked: true, value: "7d", label: "Last 7 days" }
+    expect:
+      - { part: row, role: button }
+      - { part: row, selected: true }
+      - { part: check, visible: true }
+
+  - name: "an unchecked radio row reads as not selected and keeps its label"
+    # The check part is absent when unchecked, so no check assertion is made here. The reserved 14px slot is
+    # covered by the unchecked screenshot below.
+    props: { selection: "radio", checked: false, value: "7d", label: "Last 7 days" }
+    expect:
+      - { part: row, role: button }
+      - { part: row, selected: false }
+      - { part: label, text: "Last 7 days" }
+      - { part: label, visible: true }
+
+  - name: "radio rows sit in a labelled group"
+    # Harness: wraps the row in a group named "Date range". The group's name is not checkable with the fields the
+    # format allows, so only its role is asserted.
+    props: { selection: "radio", value: "7d", label: "Last 7 days" }
+    expect: [ { part: group, role: generic, visible: true } ]
+
+  - name: "pressing a radio row unchecks the checked row in its group"
+    # Harness: mounts sibling as an unchecked radio row (value "30d", label "Last 30 days") in the same group.
+    # The harness keeps the group's value, so the row's checked prop is the state before the press.
+    props: { selection: "radio", checked: true, value: "7d", label: "Last 7 days" }
+    steps: [ { action: press, part: sibling } ]
+    expect:
+      - { part: sibling, selected: true }
+      - { part: row, selected: false }
+
+  # Submenu rows. A press, hover, ArrowRight, Enter or Space opens the submenu and none of them runs the row.
+
+  - name: "a press on a submenu row opens its submenu and does not run the row"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps: [ { action: press, part: row } ]
+    expect:
+      - { part: row, role: button }
+      - { part: chevron, visible: true }
+      - { event: submenuToggled, times: 1, last: { open: true } }
+      - { part: submenu, visible: true }
+      - { part: submenu, role: generic }
+      - { event: activated, times: 0 }
+
+  - name: "hovering a submenu row opens it for pointer users"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { event: submenuToggled, times: 1, last: { open: true } }
+      - { part: submenu, visible: true }
+
+  - name: "ArrowRight opens a submenu row"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowRight }
+    expect:
+      - { event: submenuToggled, times: 1, last: { open: true } }
+      - { part: submenu, visible: true }
+      - { part: submenu, role: generic }
+
+  - name: "Enter opens a submenu row without running it (APG: Enter on a parent item opens its submenu)"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps: [ { action: key, part: row, key: Enter } ]
+    expect:
+      - { event: submenuToggled, times: 1, last: { open: true } }
+      - { event: activated, times: 0 }
+      - { part: submenu, visible: true }
+
+  - name: "Space opens a submenu row without running it"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps: [ { action: key, part: row, key: Space } ]
+    expect:
+      - { event: submenuToggled, times: 1, last: { open: true } }
+      - { event: activated, times: 0 }
+      - { part: submenu, visible: true }
+
+  - name: "ArrowRight on a plain row opens nothing"
+    props: { label: "Copy", icon: "content_copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowRight }
+    expect:
+      - { event: submenuToggled, times: 0 }
+      - { event: activated, times: 0 }
+
+  # Focus and arrow keys. Each expectation names the harness sibling that should take the highlight, so a
+  # stuck or dropped focus fails the test.
+
+  - name: "ArrowDown moves the highlight to the next enabled row"
+    # Harness: mounts sibling (enabled) after this row.
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowDown }
+    expect:
+      - { part: sibling, focused: true }
+      - { part: row, focused: false }
+
+  - name: "ArrowDown skips a disabled row"
+    # Harness: mounts disabledSibling between this row and sibling (enabled).
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowDown }
+    expect:
+      - { part: disabledSibling, disabled: true }
+      - { part: disabledSibling, focused: false }
+      - { part: sibling, focused: true }
+
+  - name: "ArrowUp moves the highlight to the previous enabled row"
+    # Harness: mounts previous (enabled) before this row.
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowUp }
+    expect:
+      - { part: previous, focused: true }
+      - { part: row, focused: false }
+
+  - name: "Home moves the highlight to the first enabled row"
+    # Harness: mounts previous (enabled) before this row.
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: Home }
+    expect:
+      - { part: previous, focused: true }
+      - { part: row, focused: false }
+
+  - name: "End moves the highlight to the last enabled row"
+    # Harness: mounts sibling (enabled) after this row.
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: End }
+    expect:
+      - { part: sibling, focused: true }
+      - { part: row, focused: false }
+
+  - name: "typing the first letter of a sibling row moves the highlight to it"
+    # Harness: mounts sibling (label "Move to list") after this row. The key is named by its code (KeyM), as the
+    # format's own inputs name keys (Meta+BracketLeft).
+    props: { label: "Copy" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: KeyM }
+    expect:
+      - { part: sibling, focused: true }
+      - { part: row, focused: false }
+
+  - name: "keyboard focus puts the highlight on the row and shows the focus ring"
+    props: { label: "Copy", icon: "content_copy" }
+    steps: [ { action: focus, part: row } ]
+    expect: [ { part: row, focused: true } ]
+    screenshot: true
+
+  # Project rows (rowActions). Hover reveals the actions on every platform; focus reveals them on the web only.
+  # The keyboard route to the actions is undecided, so only pointer tests cover them on desktop.
+
+  - name: "hovering a project row reveals its rename and delete actions"
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { part: renameAction, visible: true }
+      - { part: deleteAction, visible: true }
+
+  - name: "focus reveals a project row's actions on the web, so keyboard users reach them"
+    only: [web]
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    steps: [ { action: focus, part: row } ]
+    expect:
+      - { part: renameAction, visible: true }
+      - { part: deleteAction, visible: true }
+
+  - name: "a press on the rename action emits renamePressed and does not run the row"
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    steps:
+      - { action: hover, part: row }
+      - { action: press, part: renameAction }
+    expect:
+      - { event: renamePressed, times: 1, last: { label: "Website redesign" } }
+      - { event: activated, times: 0 }
+
+  - name: "a press on the delete action emits deletePressed and does not run the row"
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    steps:
+      - { action: hover, part: row }
+      - { action: press, part: deleteAction }
+    expect:
+      - { event: deletePressed, times: 1, last: { label: "Website redesign" } }
+      - { event: activated, times: 0 }
+
+  # Platform wording. The Reveal in Finder label is macOS wording; the web hides the row and the Windows label is not
+  # in the catalogue, so this runs on macOS only.
+
+  - name: "Reveal in Finder row on macOS"
+    only: [macos]
+    props: { label: "Reveal in Finder" }
+    expect:
+      - { part: row, role: button }
+      - { part: label, text: "Reveal in Finder" }
+    screenshot: true
+
+  # Screenshot tests. Each runs at every viewport and at light and dark (colorSchemes).
+  # Disabled is not screenshotted: its look (component default opacity-40) was not captured.
+
+  - name: "screenshot of the default row with a leading icon"
+    props: { label: "Copy", icon: "content_copy" }
+    expect:
+      - { part: row, name: "Copy" }
+      - { part: row, role: button }
+      - { part: label, text: "Copy" }
+      - { part: icon, visible: true }
+    screenshot: true
+
+  - name: "screenshot of the default row on hover (wash-2l)"
+    props: { label: "Copy", icon: "content_copy" }
+    steps: [ { action: hover, part: row } ]
+    screenshot: true
+
+  - name: "screenshot of the danger tone row"
+    props: { tone: "danger", icon: "delete", label: "Delete task…" }
+    expect:
+      - { part: row, role: button }
+      - { part: label, text: "Delete task…" }
+      - { part: icon, visible: true }
+    screenshot: true
+
+  - name: "screenshot of the danger tone row on hover (danger-100l)"
+    props: { tone: "danger", icon: "delete", label: "Delete task…" }
+    steps: [ { action: hover, part: row } ]
+    screenshot: true
+
+  - name: "screenshot of the footer action row"
+    props: { variant: "action", size: "large", icon: "add", label: "New project…" }
+    expect:
+      - { part: row, role: button }
+      - { part: label, text: "New project…" }
+      - { part: icon, visible: true }
+    screenshot: true
+
+  - name: "screenshot of a checked radio row (the current date range)"
+    props: { variant: "item", selection: "radio", checked: true, value: "7d", label: "Last 7 days" }
+    expect:
+      - { part: row, role: button }
+      - { part: row, selected: true }
+      - { part: check, visible: true }
+    screenshot: true
+
+  - name: "screenshot of an unchecked radio row (slot reserved, no check)"
+    props: { variant: "item", selection: "radio", checked: false, value: "30d", label: "Last 30 days" }
+    expect:
+      - { part: row, role: button }
+      - { part: row, selected: false }
+    screenshot: true
+
+  - name: "screenshot of a submenu row with its trailing chevron"
+    props: { trailing: "submenu", label: "Move to list" }
+    expect:
+      - { part: row, role: button }
+      - { part: chevron, visible: true }
+    screenshot: true
+
+  - name: "screenshot of a submenu row with its submenu open"
+    props: { trailing: "submenu", label: "Move to list" }
+    steps:
+      - { action: focus, part: row }
+      - { action: key, part: row, key: ArrowRight }
+    expect: [ { part: submenu, visible: true } ]
+    screenshot: true
+
+  - name: "screenshot of a large checked project row"
+    props: { size: "large", selection: "radio", checked: true, value: "website", label: "Website redesign" }
+    expect:
+      - { part: row, role: button }
+      - { part: row, selected: true }
+    screenshot: true
+
+  - name: "screenshot of a large plain project row"
+    props: { size: "large", label: "Website redesign" }
+    screenshot: true
+
+  - name: "screenshot of a long project name truncated in the row"
+    # The name assertion is the full label, which is the name whether or not the text is cut. The screenshot is the
+    # real truncation check.
+    props: { size: "large", truncate: true, selection: "radio", checked: true, value: "planning", label: "Quarterly planning and retrospectives for the platform team" }
+    expect: [ { part: row, name: "Quarterly planning and retrospectives for the platform team" } ]
+    screenshot: true
+
+  - name: "screenshot of a project row at rest with its actions hidden"
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    screenshot: true
+
+  - name: "screenshot of a project row with its actions revealed on hover"
+    props: { rowActions: true, size: "large", selection: "radio", value: "website", label: "Website redesign" }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { part: renameAction, visible: true }
+      - { part: deleteAction, visible: true }
+    screenshot: true
+
+keyboard: true
+same: pixels
+colorSchemes: [ light, dark ]

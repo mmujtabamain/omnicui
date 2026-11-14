@@ -62,7 +62,7 @@ if __name__ == "__main__":
         {"write": lambda: cmd_write(rest), "check": cmd_check}[c]()
 
 
-ROLE_MAP = {
+ROLE_MAP = {"spinbutton": "textbox", 
     "option": "button", "tab": "button", "menuitem": "button", "menuitemradio": "button", "menuitemcheckbox": "button",
     "treeitem": "button", "link": "button", "combobox": "button",
     "listbox": "generic", "list": "generic", "listitem": "generic", "toolbar": "generic", "menu": "generic",
@@ -80,6 +80,9 @@ def cmd_mechanical():
         s = o = open(p).read()
         s = "\n".join(l for l in s.split("\n") if not l.startswith("//"))
         s = re.sub(r"(role:\s*)[\"']?([a-z]+)[\"']?", lambda m: m.group(1) + ROLE_MAP.get(m.group(2), m.group(2)) + (f"  # aria: {m.group(2)}" if m.group(2) in ROLE_MAP and "\n" not in m.group(0) and False else ""), s)
+        # A drag names both axes: { action: drag, dx: 40 } becomes { action: drag, dx: 40, dy: 0 }.
+        s = re.sub(r"(action:\s*drag\b[^}\n]*?\bdx:\s*-?[\d.]+)(?![^}\n]*\bdy:)", r"\1, dy: 0", s)
+        s = re.sub(r"(action:\s*drag\b)(?![^}\n]*\bdx:)([^}\n]*\bdy:)", r"\1, dx: 0\2", s)
         lines, out, in_props = s.split("\n"), [], False
         for line in lines:
             if re.match(r"^props:\s*$", line):

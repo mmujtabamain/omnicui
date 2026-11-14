@@ -1,0 +1,230 @@
+id: ui.checkbox
+
+# Checkbox: a binary mark on a task. intent "done" marks completion; intent "select" marks
+# row multi-select membership. The widget does not read keys or modifiers. The caller reads
+# Option (macOS) or Alt (Windows, web) and chooses intent. The Option-held done lamp is
+# intent done, shape square, size sm, and is tested at the caller, not here.
+# Catalogue sizes are px (sm: 16px box, 12px check glyph; md: 18px box, 14px glyph, weight 700)
+# and convert to rem at 1rem = 14px in the token layer.
+# Shapes: square = radius 4.375px (rounded-field); round = radius 50%.
+# NOT ASSERTED BY THIS FORMAT: box sizes, radii, glyph sizes, glyph weight. No field checks them.
+# Only cross-target screenshots cover them (see the glyph box test below).
+# NOT MEASURED: "done never looks like selection" (intent sets colour). The format compares
+# targets, not two states within one target.
+# NOT SUPPORTED: indeterminate (tri-state). checked is boolean only; no parent select-all state is modelled.
+# Accessible names are constant per control: "Mark done" for intent done, "Select" for intent select.
+# aria-checked carries the state, so the name does not change with checked. Confirm with the widget owner.
+# Allowed values of size (sm, md), shape (square, round) and intent (done, select) are comments only.
+# The format has no enum, so other values are not refused.
+# Open items: 5 (sm square select is tested as documented); 9 (round done glyph, see the glyph box test);
+# 11 (md shape square is an assumption, marked in the test names).
+
+props:
+  # Done state (intent done) or picked state (intent select).
+  checked: { type: boolean, default: false }
+  # Required accessible name (aria-label). Pass "Mark done" for intent done and "Select" for
+  # intent select. No default, so a missing name is not silently announced as the wrong one.
+  ariaLabel: { type: string }
+  # "sm" (16px box, 12px check glyph; default) or "md" (18px box, 14px glyph, weight 700; inspector header only).
+  size: { type: string, default: "sm" }
+  # "square" (radius 4.375px, rounded-field; default) or "round" (radius 50%, task rows).
+  shape: { type: string, default: "square" }
+  # "done" (done-lamp fill with check glyph; default) or "select" (selection accent with inner white dot).
+  intent: { type: string, default: "done" }
+  # Not recorded in the catalogue; included for the standard Radix disabled prop.
+  disabled: { type: boolean, default: false }
+
+events:
+  # Emitted with the next checked value. The caller routes it: done calls actToggleDone, select calls the membership toggle.
+  checkedChange:
+    checked: { type: boolean }
+
+parts:
+  control:
+    role: checkbox        # aria: checkbox with aria-checked, for both intents (not aria-pressed)
+    same: { default: pixels }
+  indicator:
+    role: generic         # aria: none; the check glyph or the select dot, decorative; rendered only while checked
+    same: { default: pixels }
+  row:
+    role: generic         # aria: none; the task-row group that holds a round check; the hover border is drawn here
+    optional: true        # present only in a task-row context; where absent, the row hover test is skipped
+    same: { default: pixels }
+
+keyboard: true
+
+colorSchemes: [light, dark]
+
+tests:
+  - name: "md square done control (inspector header, shape assumed square, open item 11), unchecked"
+    props: { checked: false, ariaLabel: "Mark done", size: md, shape: square, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: false, visible: true }
+      - { part: indicator, visible: false }
+    screenshot: true
+
+  - name: "md square done control (inspector header, shape assumed square, open item 11), checked"
+    props: { checked: true, ariaLabel: "Mark done", size: md, shape: square, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: true
+
+  - name: "small square done control (subtask), unchecked"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: false, visible: true }
+      - { part: indicator, visible: false }
+    screenshot: true
+
+  - name: "small square done control (subtask), checked"
+    props: { checked: true, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: true
+
+  - name: "small round done check (task row), unchecked"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: round, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: false, visible: true }
+      - { part: indicator, visible: false }
+    screenshot: true
+
+  - name: "small round done check (task row), checked"
+    props: { checked: true, ariaLabel: "Mark done", size: sm, shape: round, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: true
+
+  - name: "small round done check (task row), checked, glyph box compared across targets (open item 9)"
+    props: { checked: true, ariaLabel: "Mark done", size: sm, shape: round, intent: done }
+    expect:
+      - { part: control, role: checkbox, name: "Mark done", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: { part: indicator }
+
+  - name: "small round select toggle (task row), unchecked, empty grey ring"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    expect:
+      - { part: control, role: checkbox, name: "Select", checked: false, visible: true }
+      - { part: indicator, visible: false }
+    screenshot: true
+
+  - name: "small round select toggle (task row), checked, accent fill with inner white dot"
+    props: { checked: true, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    expect:
+      - { part: control, role: checkbox, name: "Select", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: true
+
+  - name: "small square select control (multi-inspector selected list, open item 5), unchecked"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: square, intent: select }
+    expect:
+      - { part: control, role: checkbox, name: "Select", checked: false, visible: true }
+      - { part: indicator, visible: false }
+    screenshot: true
+
+  - name: "small square select control (multi-inspector selected list, open item 5), checked"
+    props: { checked: true, ariaLabel: "Select", size: sm, shape: square, intent: select }
+    expect:
+      - { part: control, role: checkbox, name: "Select", checked: true, visible: true }
+      - { part: indicator, visible: true }
+    screenshot: true
+
+  - name: "press toggles a done check on and back off"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    steps:
+      - { action: press, part: control }
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: false }
+      - { event: checkedChange, times: 2, last: { checked: false } }
+
+  - name: "press picks a round select check"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    steps:
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: true }
+      - { event: checkedChange, times: 1, last: { checked: true } }
+
+  - name: "press checks a round done check"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: round, intent: done }
+    steps:
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: true }
+      - { event: checkedChange, times: 1, last: { checked: true } }
+
+  - name: "Space toggles a done check"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    steps:
+      - { action: key, part: control, key: Space }
+    expect:
+      - { part: control, checked: true }
+      - { event: checkedChange, times: 1, last: { checked: true } }
+
+  - name: "Space toggles a select check"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    steps:
+      - { action: key, part: control, key: Space }
+    expect:
+      - { part: control, checked: true }
+      - { event: checkedChange, times: 1, last: { checked: true } }
+
+  - name: "focus-visible ring on a done check"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    steps:
+      - { action: focus, part: control }
+    expect:
+      - { part: control, focused: true }
+    screenshot: true
+
+  - name: "focus-visible ring on a round select check"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    steps:
+      - { action: focus, part: control }
+    expect:
+      - { part: control, focused: true }
+    screenshot: true
+
+  - name: "hover on a done check"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done }
+    steps:
+      - { action: hover, part: control }
+    screenshot: true
+
+  - name: "hover on the task row holding a round select check (border is drawn on the row, not the control)"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select }
+    steps:
+      - { action: hover, part: row }
+    screenshot: { part: row }
+
+  - name: "disabled check ignores a press"
+    props: { checked: false, ariaLabel: "Mark done", size: sm, shape: square, intent: done, disabled: true }
+    steps:
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: false, disabled: true }
+      - { event: checkedChange, times: 0 }
+    screenshot: true
+
+  - name: "disabled checked done check ignores a press"
+    props: { checked: true, ariaLabel: "Mark done", size: sm, shape: round, intent: done, disabled: true }
+    steps:
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: true, disabled: true }
+      - { event: checkedChange, times: 0 }
+    screenshot: true
+
+  - name: "disabled select check ignores a press"
+    props: { checked: false, ariaLabel: "Select", size: sm, shape: round, intent: select, disabled: true }
+    steps:
+      - { action: press, part: control }
+    expect:
+      - { part: control, checked: false, disabled: true }
+      - { event: checkedChange, times: 0 }
+    screenshot: true
