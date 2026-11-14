@@ -1,48 +1,95 @@
 # How the app.contextmenus contract was written, and what its props make the harness do
 
-Basis and merge
-- Draft A is only "// placeholder" with "Notes A: placeholder". It has no parts, tests or notes, so it was dropped with no content lost. Draft B is the working contract.
-- I could not open any spec file in this merge (only the structured output tool was available). Every citation to spec/inventory, spec/features, spec/screens and spec/decisions is carried over from Draft B and the critique unchecked. Those claims remain unverified.
-- Critique fixes applied: decision 10 Enter-on-focused-accept tests (Move to Trash, Delete list, Delete project); Escape, scrim and Tab focus-trap tests on the Move to Trash sheet (F06-067/068/069); Cancel-keeps test split out for Delete list and Delete project; sheetCancel focus asserted for Delete project; ArrowLeft return test (F06-046 path); focus-return checks after tab menu and project dropdown Escape (F06-088); toast Undo and close parts and tests (F06-093/094, F07-077/078); bulk delete toast check (F07-034); record tests for the row menu and the delete sheet (F06-103); splitViewToggle changed to role switch with checked (critique suggestion); subtask Escape test types text first; F06-090 added to the left-out list; owner-only rule (decision 9) added to the left-out list; New project test asserts the Create button.
+BASED ON
+- Draft A and Draft B (both as given in the task), and the critic's list, whose fixes are applied. I did not open any spec file. Source references (feature ids, decision numbers, notes replies, spec/screens/web.md data) are taken from the drafts and the critique as written, not re-checked.
 
-Harness meaning of props
-- dataset (string, default standard): the harness signs in as the demo account on the real API and loads that data set before the first step. Allowed values: standard, empty, nolists, long. The app then opens on Home > Errands with no menu open. No other prop exists because every menu is opened by a step, and the format offers no context props for this screen.
-- The format gives no per-test props, so no test uses a non-default dataset. Empty, nolists and long therefore never run. Flagged for the rebuild.
+HARNESS MEANING OF THE PROPS
+- dataset (string, default standard): the harness signs in as the demo account and loads the named demo data set (spec/screens/web.md) before it mounts the screen. These tests use standard only (Home: Errands, Reading, Garden; Spring launch: Website, Press kit). The other demo sets are not used here, so they are not listed as values; the Draft B clamp test that needed long was dropped (see below).
+- No other context prop. The screen starts with no menu open and opens on Home > Errands by itself, so no list, project or open prop is set.
+- keyboard: false is set explicitly (Draft B had none). The automatic keyboard check would expect Enter on Move, Delete list and Delete project to act like a press, which contradicts decision 10. Keyboard paths are written as explicit tests.
+- viewports 1180x760 and colorSchemes [light] (no dark state recorded).
 
-Conflicts and how they were handled
-- Exact text match: the critique asks for "Reading list" only (F06-076 selection-on-focus rule). The fields used here offer contains only, and I did not invent an exact-match field. The rename test still uses contains, so "ReadingReading list" would pass. Left open for the rebuild.
-- Bulk actions: critique cites decision 6 (bulk bar is the one bulk place). Draft B and its notes use the bulk More menu. Not resolved. Bulk-bar features F07-058 to F07-064 are untested here and need a bulk-bar contract or a citation that decision 6 is superseded.
-- Click on a submenu row: F06-046 says a click does nothing. Draft B follows the notes decision that a click opens the submenu. Kept on the notes decision, unverified.
-- Right-click openers (F06-042, F06-052, F07-065): left out on the basis of the web mapping in notes. The critique could not confirm the notes line. Kept and flagged.
-- "Create" button label: Draft B said labels are not asserted. The critique's F06-102 reference gives the label, so the test asserts it. Flagged.
-- Dark scheme: decisions 16 and 17 make Theme per account on the web, but no dark state is recorded. colorSchemes stays light. Dark is not measured.
+SCOPE
+- The contract is for the web build. No only: field is used, because the format's allowed fields for only were not confirmed; the scope is stated in the header instead. Desktop right-click is not contracted here.
 
-Left out on purpose (with reason)
-- F06-039 clamp and F06-049 submenu flip: horizontal room was checked at x 830, 348 and 112 inside 1180 px. Vertical room is not checked: the window is 760 px tall and a low row in the long data set could open a menu near the bottom edge. No test exercises the long set, so this is not covered.
-- F06-043 and F06-090 blur or resize dismissal: no action in the format blurs or resizes the window.
-- F06-044 menu above sheets: a sheet is modal on the web, so no menu opens over it.
-- F06-051 disabled Move to list when no other list exists: reaching it needs deleting Reading and Garden and parts for Garden that neither draft has. The disabled-versus-hidden behaviour is not recorded, so no field can be chosen. Not tested.
-- Disabled tab menu items: not recorded in any state.
-- F07-053 Copy as Markdown: no action reads the clipboard. The Copy test checks only that the menu closes.
-- Shortcut hints on rows: no recorded state shows one.
-- Trace and do actions: no trace test is written and no do actions are used. Motion is covered by the record tests.
-- Hover colours and dividers: covered by the hover screenshots only.
-- F07-031, F07-032, F07-036 (subtask parents in delete and selection): the parent-with-subtask parts and the expected wording are not in either draft and cannot be invented. Not tested.
-- F07-076 (done count after deleting a done task): Post the parcel's done state is not confirmed in the drafts, so the 2/8 to 1/7 expectation is unverified. Not tested.
-- F07-089 (delete button on each tab): tabDelete covers the Errands tab only. The button on other tabs is not confirmed as a part. Omission noted.
-- Owner-only rename and delete (decision 9): no non-owner data set exists in the dataset values, so the non-owner case cannot be tested.
+DROPPED (and why)
+- Right-click tests (Draft B: right-click opens the row menu at the pointer; right-click outside closes it; reference row-context-menu by right-click). Right-click is not an opener on web (Draft A, notes reply), and the do: contextClick action is not in the action list of contract-format.txt. The checkBike part went with them. The row-context-menu reference state is now screenshotted on More on Book bike service (web opener for the same menu).
+- Bottom-edge clamp test (Draft B, long data set, do: scroll), and the moreLastRow and taskList parts: scroll is not in the action list. The long data set is therefore unused.
+- Draft B: "Enter with an empty subtask title dismisses the composer". No feature record was cited for it, and the critic found none. Drop until a record is cited.
+- Draft B: tabErrands and tabGarden text checks in the tab-menu test. They are list tabs visible without any menu, so they do not test the menu. tabErrands and tabWebsite parts are replaced by firstTab. tabGarden is kept as a visibility check after deletes.
+- Draft B: Control+KeyA select-all for the rename. Select-all is not in the input vocabulary and the macOS mapping is unknown. The rename test types the new title and checks the exact result (see uncertain item b).
+- Draft A: selected checks on projectHome and projectSpringLaunch. selected may not be measured on menu rows. The current project is checked through the switcher text instead.
+- Draft A: exact Delete project headline text and the Rename project accept label, both from source text not in the recorded inventory. Replaced by headline contains "Spring launch"; no label check on those two.
+- Draft B: "puts it back" in the Move to Trash hint. The recorded wording (F07-079 title) is "puts a trashed task back"; that string is used, with contains, because the shortcut key name differs by platform.
+- Draft B: the bulk menu for a multi-selection is not in the contract (see open conflict 2).
+- Draft B: the "generated name" check on New project was reduced. The vocabulary has no value-matching check, so only the accessible name (label) is checked. The generated value is not checked.
+- Draft A: bulk menu was not dropped as settled; it is an open conflict, not a decision.
 
-Uncertain items kept from Draft B (flagged, not verified)
-- Rename task commit key assumed Enter (F07-054 has none).
-- Open in split view result inferred from the label. Asserted as splitViewToggle checked.
-- Spring launch switch assumes the switcher shows Spring launch and the first tab becomes Website (demo data).
-- Project rename sheet prefilled with the project name, modelled on F06-100.
-- Bulk Mark 2 done expects "4/8", assuming the picked rows have no subtasks in the demo data.
-- Buy groceries assumed expanded, so the subtask input shows under it.
-- Focus return to More after Escape is asserted for the row menu and now also for the tab menu and project dropdown (F06-088 overlay rule, unverified for those two).
-- Sheet headlines "Move to Trash?" (F07-070) and "Move 2 tasks to Trash?" (notes); toast "Moved to Trash" (F06-098).
-- Icon glyph names may appear as text in labels, so labels are matched with contains.
-- The hover-highlight check has no format field and relies on the screenshot only.
+MERGED (same behaviour in both drafts; most exact values kept, both sources noted)
+- Task menu five items: A "More on Book bike service" and B "More opens the row menu with its five items".
+- Tab menu four items: A and B.
+- Project switcher opens: A and B (Home, Spring launch, New project, projectMore, projectMoreSpring).
+- Move to list submenu (click): A and B reference screenshot.
+- Escape on the row menu, Escape on the submenu (A and B; second Escape closes the menu), ArrowLeft (A and B).
+- ArrowRight focuses the first list (A and B); Enter moves (A's version, which also checks the task arrives in Reading).
+- Delete sheet: opens with Cancel focused (A and B), Cancel button and Escape (A and B), Enter does not confirm (B), Move with toast (A and B), Undo (A and B), Dismiss (B), scrim (B), two deletes in a row (added).
+- Rename list: prefilled (A and B; exact "Reading"), Enter renames (A "Book club" and B "Reads" are the same test; kept A's value, with an exact check), empty name (A; focus step added).
+- Delete list sheet: names the list and count (A and B; exact detail, Cancel focused), Cancel (B), removes the tab (A and B), close X (B).
+- Project: rename prefilled (B), rename via accept (A; "Spring fair"), rename via Enter (B; "Spring 2027"), delete sheet (A and B), delete removes (A and B).
+- New project: sheet (A and B), create (A's sheet accept and B's create), Enter adds (B), empty name (B; focus step added), Escape (B).
 
-Keyboard
-- keyboard: true measures parts on screen at mount only (per critique). Menu items, sheet buttons and the subtask input are not on screen at mount. Their Enter and Escape behaviour is covered by the explicit key steps in the tests, not by the keyboard check.
+ADDED FROM THE CRITIC (not in either draft)
+- Escape from the task menu returns focus to its More button (F06-088, as cited by the critic; verify).
+- Escape and outside press on the tab menu.
+- Escape and Enter tests on the Delete list sheet and the Delete project sheet (decision 10; Cancel focus of decision 13 is checked on the Delete project sheet and the Delete list sheet).
+- Space on the Move button reached by Tab (the Draft A test only focused the button).
+- Outside press on the project dropdown was already in Draft A; kept.
+- Toast replacement with two deletes (F06-096).
+- record: true on two tests (More on Pick up prescription; Delete task opens the Move to Trash sheet) for F06-103. The record field form is assumed from the critic's wording; verify.
+- Exact text checks on each renamed value (task, list, project) as the critic asked.
+- Focus step before Backspace in the Rename list and New project tests.
+- Hover highlight screenshot (Draft B; F06-050, F06-057).
+
+PART RENAMES (A names kept where both drafts had a part; B's names removed)
+- A menu -> rowMenu (B rowMenu). A more -> moreGroceries. B moreBike -> moreBikeService; B rowBike -> rowBikeService; B copy, addSubtask, rename, moveToList, deleteTask -> menuCopy, menuAddSubtask, menuRename, menuMoveToList, menuDelete; A moveTarget and moveTargetGarden -> moveReading and moveGarden (B names, clearer about the list); B moveSubmenu -> moveSubmenu. B projectRename and projectDelete -> menuProjectRename, menuProjectDelete. B nameField -> sheetInput. B cancel, create, moveConfirm, deleteListConfirm, deleteProjectConfirm -> sheetCancel and sheetAccept (A). B titleEdit -> titleInput (A). B subtaskComposer -> subtaskInput (A). B tabCloseReading and toastDismiss kept. B tabWebsite and tabErrands -> firstTab.
+
+NOT COVERED ON PURPOSE (with reason)
+- Right-click on web (F06-042, F06-052, F07-065): open conflict 1; no contract action.
+- Bottom-edge clamp (F06-039): needs a scroll action not in the vocabulary.
+- Submenu side flip (F06-049): the widest submenu ends near x 1139, short of the 1176 limit at 1180x760.
+- Move to list disabled (F06-051): no one-list project in the demo data has a task to open a menu from.
+- Window blur and resize (F06-043): no action can cause them.
+- Focus trap (F06-069): the Tab order of sheet buttons is not recorded.
+- Count label on a single delete (F07-031): wording not recorded.
+- Dice (F06-079, F06-080): no part for a Dice control; the critic asked for a check only if Dice is on the New project sheet, which is not confirmed.
+- Export list and Open in split view results: not recorded; only the menu closing is checked.
+- Toast timer (F06-095): no wait step.
+- Multi-selection bulk menu: open conflict 2. The multi-context-menu reference state is therefore not covered; the single-row menu on Cut a spare key is screenshotted under its own name (single-row-task-menu).
+- Dark colour scheme: none recorded.
+- Drag and drop (F07-039 to F07-045): excluded by the rule that drag acts only on sliders.
+
+OPEN CONFLICTS (decisions needed; decisions.md has no numbered entries for these, and a contract cannot cite the review notes)
+1. Web right-click. The critic notes that web.md keeps the reference behaviour except where web.md or decisions.md say otherwise, so F06-042, F06-052 and F07-065 still apply on web unless a numbered decision drops right-click. This contract tests More only.
+2. Bulk menu for a multi-selection (notes reply) versus decision 6 (bulk actions in one place only). Decision 6 does not clearly cover right-click menus. Unresolved.
+3. Move to list opens on click (overrides F06-046, where a click does nothing). Marked "open:" in the test name.
+4. Escape and ArrowLeft return from the submenu to the parent (overrides F06-040 as written). Marked "open:".
+5. More buttons on the tab rows and project rows (web additions from the notes). Their rest visibility is not recorded; only the Reading tab More is tested.
+6. Owner-only rename and delete of projects (decision 9). The demo account owns both projects, so no non-owner case is testable.
+7. Title edit: whether it commits on Enter, and whether typed text replaces the existing text (F07-054, F06-075). Several exact checks depend on this.
+Action: add numbered entries to decisions.md (or web.md) for items 1 to 5, then remove the "open:" marks.
+
+UNCERTAIN, TO VERIFY IN THE REBUILD OR THE HARNESS
+a. The sheets (Move to Trash, Rename list, Delete list, Rename project, Delete project, New project) must be mounted with this screen; otherwise every sheet step fails.
+b. Typed text replaces the pre-filled or selected text in the title editor, Rename list, Rename project and New project (F06-075, F07-054). Exact checks will fail if it appends.
+c. Enter commits the title edit (commit key not recorded).
+d. Picking a project-row item closes the dropdown; the tests reopen it with projectSwitch.
+e. Absent parts: visible false on moveErrands (never present), rowEggs before creation, and rowPrescription and rowBikeService after a move or delete. This assumes the harness reports an absent part as not visible; if not, these checks are not measured.
+f. Key names Space, Tab, Backspace, Escape, Enter, ArrowLeft and ArrowRight follow the harness vocabulary (unchecked against platforms.yaml). The named inputs (dismiss, submit, confirm) are not used because the format's own example uses raw key names.
+g. The record: true field form (see added items).
+h. subtaskTitle: the demo data may already hold a subtask under Book bike service (Draft B said "the first subtask"); the test checks for the subtask it adds, so the check holds either way if the new one shows.
+i. The exact container of the Move to Trash hint text (sheetDetail) is assumed.
+j. Exact text checks on rowPrescription, rowBikeService, tabReading and projectSpringLaunch assume the row or tab text is the title only. If rows carry more text, these become contains checks.
+k. Delete list headline uses contains "Delete “Reading”?" from Draft A (quotes as given).
+l. rowEggs is not in the demo data; the test creates it. moreGroceries is the first row More button (Buy groceries for the week).
+m. The toast replacement test assumes the second delete's More stays reachable while the first toast is up.
+n. The Delete list and Delete project Escape and Enter tests, and the Move Tab-then-Space test, follow the critic's wording; their steps have not been run.

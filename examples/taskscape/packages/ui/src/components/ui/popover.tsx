@@ -132,7 +132,7 @@ export const PopoverEditor = React.forwardRef<HTMLInputElement, React.InputHTMLA
         autoComplete="off"
         aria-autocomplete="list"
         aria-expanded={ctx.open}
-        aria-controls={ctx.listId}
+        aria-controls={ctx.open ? ctx.listId : undefined}
         aria-activedescendant={ctx.open && ctx.active >= 0 ? ctx.optionId(ctx.active) : undefined}
         className={cn(
           "h-[1.75rem] w-full min-w-0 rounded-(--radius-field) border border-edge-2 bg-surface-3 px-2 text-[0.929rem] text-content-1 outline-none placeholder:text-content-3 focus-visible:ring-2 focus-visible:ring-focus-1",
@@ -188,11 +188,17 @@ export interface PopoverItemProps extends React.HTMLAttributes<HTMLDivElement> {
 export const PopoverItem = React.forwardRef<HTMLDivElement, PopoverItemProps>(
   function PopoverItem({ index, className, children, onMouseDown, onMouseEnter, ...props }, ref) {
     const ctx = usePopover("PopoverItem");
-    if (index >= ctx.count) return null;
+    const self = React.useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => self.current as HTMLDivElement);
     const highlighted = index === ctx.active;
+    // Keeps the highlighted row in view when the list scrolls (rows past the 196px cap).
+    React.useEffect(() => {
+      if (highlighted) self.current?.scrollIntoView?.({ block: "nearest" });
+    }, [highlighted]);
+    if (index >= ctx.count) return null;
     return (
       <div
-        ref={ref}
+        ref={self}
         role="option"
         id={ctx.optionId(index)}
         data-slot="row"

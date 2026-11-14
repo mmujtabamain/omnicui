@@ -1,12 +1,11 @@
-import { PaneGroup } from "../components/ui/pane-group";
+import { PaneGroup, PaneGroupAside, PaneGroupSplit, PaneGroupTask } from "../components/ui/pane-group";
 
-function Demo({ title, lines }: { title: string; lines: string[] }) {
+function DemoRows({ prefix, count }: { prefix: string; count: number }) {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-1.5 p-3">
-      <div className="truncate text-[1rem] font-semibold text-content-1">{title}</div>
-      {lines.map((line) => (
-        <div key={line} className="truncate text-[0.929rem] text-content-2">
-          {line}
+    <div className="flex flex-col">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="border-b border-edge-1 px-3 py-2 text-[0.929rem] text-content-1">
+          {prefix} {i + 1}
         </div>
       ))}
     </div>
@@ -15,17 +14,18 @@ function Demo({ title, lines }: { title: string; lines: string[] }) {
 
 function PaneGroupHarness({ emit, ...props }: any) {
   return (
-    <div className="flex h-screen min-h-0 w-full">
-      <PaneGroup
-        {...props}
-        taskLabel="Tasks"
-        splitLabel="Split"
-        asideLabel="Preview"
-        taskContent={<Demo title="Tasks" lines={["Write the quarterly plan", "Review the budget", "Call the vendor"]} />}
-        splitContent={<Demo title="Split" lines={["Notes for the review", "Open questions"]} />}
-        asideContent={<Demo title="Preview" lines={["Selected task", "Due Friday"]} />}
-        onLayoutChanged={(layout) => emit("layoutChanged", layout)}
-      />
+    <div className="flex h-[min(36rem,100vh)] w-full min-w-0">
+      <PaneGroup {...props} onLayoutChanged={(layout) => emit("layoutChanged", layout)}>
+        <PaneGroupTask heading="Tasks">
+          <DemoRows prefix="Task" count={12} />
+        </PaneGroupTask>
+        <PaneGroupSplit heading="Notes">
+          <DemoRows prefix="Note" count={8} />
+        </PaneGroupSplit>
+        <PaneGroupAside heading="Preview">
+          <div className="px-3 py-2 text-[0.929rem] text-content-2">Preview of the selected task.</div>
+        </PaneGroupAside>
+      </PaneGroup>
     </div>
   );
 }

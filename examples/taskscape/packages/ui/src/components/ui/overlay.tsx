@@ -5,7 +5,7 @@ import { cn } from "../../lib/utils";
 
 /** The scrim. Desktop draws none: the platform rule is applied at the md breakpoint. */
 const overlayScrimVariants = cva(
-  "pointer-events-none fixed inset-0 z-(--z-index-overlay) animate-[fade-in_var(--duration-fast)_var(--ease-standard)_both]",
+  "fixed inset-0 z-(--z-index-overlay) animate-[fade-in_var(--duration-fast)_var(--ease-standard)_both]",
   {
     variants: {
       scrim: {
@@ -88,7 +88,8 @@ export const Overlay = React.forwardRef<HTMLDivElement, OverlayProps>(function O
           data-slot="layer"
           aria-modal="true"
           onOpenAutoFocus={() => {
-            openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            const active = document.activeElement;
+            openerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();

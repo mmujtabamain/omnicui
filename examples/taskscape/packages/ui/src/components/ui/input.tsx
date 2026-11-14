@@ -45,11 +45,15 @@ type FieldElement = HTMLInputElement | HTMLTextAreaElement;
 
 export interface InputProps
   extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    "size" | "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "onKeyDown" | "onMouseDown" | "onMouseUp" | "spellCheck"
+    React.HTMLAttributes<HTMLElement>,
+    | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "onKeyDown" | "onMouseDown" | "onMouseUp"
+    | "onSubmit" | "onCancel" | "onCommit" | "onValueChange"
   > {
   /** Controlled text. */
   value?: string;
+  name?: string;
+  autoFocus?: boolean;
+  disabled?: boolean;
   placeholder?: string;
   /** Accessible name. */
   ariaLabel?: string;
@@ -91,6 +95,12 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
   const seenRequest = React.useRef(editRequest);
   const atRest = mode === "inline" && !editing;
 
+  // Starting an inline edit (a click or a changed editRequest) opens a new editing session.
+  const startEditing = () => {
+    settled.current = false;
+    setEditing(true);
+  };
+
   const setRef = React.useCallback(
     (el: FieldElement | null) => {
       fieldRef.current = el;
@@ -104,7 +114,7 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
   React.useEffect(() => {
     if (seenRequest.current === editRequest) return;
     seenRequest.current = editRequest;
-    if (mode === "inline" && !disabled) setEditing(true);
+    if (mode === "inline" && !disabled) startEditing();
   }, [editRequest, mode, disabled]);
 
   // Entering edit focuses the field and, with a value, selects all of it.
@@ -127,7 +137,7 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
     if (mode === "inline" && !editing && !disabled) {
       // Stop the browser placing a caret: the effect above focuses and selects the whole text.
       e.preventDefault();
-      setEditing(true);
+      startEditing();
     }
   };
 
@@ -138,19 +148,23 @@ export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
   const handleFocus = (e: React.FocusEvent<FieldElement>) => {
     const byPointer = pointerDown.current;
     pointerDown.current = false;
-    settled.current = false;
-    if (mode === "inline" && !editing) setEditing(true);
+    // A readonly inline field is focusable but does not start editing on focus alone.
+    if (mode !== "inline") settled.current = false;
     if (selectOnFocus && !byPointer && e.currentTarget.value !== "") e.currentTarget.select();
   };
 
   const handleBlur = (e: React.FocusEvent<FieldElement>) => {
-    if (mode === "inline") setEditing(false);
+    if (mode === "inline") {
+      if (!editing) return;
+      setEditing(false);
+    }
     commitOnce(e.currentTarget.value.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<FieldElement>) => {
     if (stopKeyPropagation) e.stopPropagation();
-    if (e.nativeEvent.isComposing) return;
+    // A readonly inline field at rest has no session: keys do not submit, commit or cancel (blur does not either).
+    if (e.nativeEvent.isComposing || atRest) return;
     if (e.key === "Enter" && (multiline || !e.shiftKey)) {
       // Enter never inserts a line break; Shift+Enter on a single line does nothing.
       e.preventDefault();

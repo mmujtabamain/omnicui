@@ -1,11 +1,13 @@
 import { Icon } from "../components/ui/icon";
 import { InputGroup } from "../components/ui/input-group";
 
-function InputGroupHarness({ emit: _emit, ...props }: any) {
-  const search = props.tone === "search";
+function InputGroupHarness(props: any) {
+  const rest = { ...props };
+  delete rest.emit;
+  const search = rest.tone === "search";
   return (
     <InputGroup
-      {...props}
+      {...rest}
       inputLabel={search ? "Search tasks" : "Sheet name"}
       placeholder={search ? "Search" : "Name"}
       leading={search || props.shape === "bar" ? <Icon name="search" size={props.size === "sm" ? 14 : 16} /> : undefined}

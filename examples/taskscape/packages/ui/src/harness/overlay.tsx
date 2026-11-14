@@ -4,10 +4,17 @@ import { Overlay, OverlayTitle } from "../components/ui/overlay";
 
 function OverlayHarness({ emit, open: initialOpen, ...props }: any) {
   const [open, setOpen] = useState(Boolean(initialOpen));
+  // A fill layer is the whole window: its fixture column is centred and kept narrow.
+  const column = props.placement === "fill" ? "mx-auto flex h-full w-[min(18rem,100%)] flex-col justify-center gap-2 p-3" : "flex flex-col gap-2 p-3";
   return (
-    <div className="flex flex-col items-start gap-2 p-3">
-      <Button data-slot="opener" variant="outline" label="Open layer" onClick={() => setOpen(true)} />
-      <Button data-slot="outside" variant="outline" label="Outside" className="pointer-events-auto" />
+    <>
+      <div className="fixed top-3 left-3 flex flex-col items-start gap-2">
+        <Button data-slot="opener" variant="outline" label="Open layer" onClick={() => setOpen(true)} />
+      </div>
+      {/* Above the scrim, so a press on it is a press on the page outside the layer. */}
+      <div className="fixed bottom-3 left-3 z-(--z-index-modal)">
+        <Button data-slot="outside" variant="outline" label="Outside" style={{ pointerEvents: "auto" }} />
+      </div>
       <Overlay
         {...props}
         open={open}
@@ -17,7 +24,7 @@ function OverlayHarness({ emit, open: initialOpen, ...props }: any) {
         }}
         onDismiss={() => emit("dismissed", {})}
       >
-        <div className="flex flex-col gap-2 p-3">
+        <div className={column}>
           <OverlayTitle>Overlay</OverlayTitle>
           <input
             data-slot="field"
@@ -30,7 +37,7 @@ function OverlayHarness({ emit, open: initialOpen, ...props }: any) {
           </div>
         </div>
       </Overlay>
-    </div>
+    </>
   );
 }
 

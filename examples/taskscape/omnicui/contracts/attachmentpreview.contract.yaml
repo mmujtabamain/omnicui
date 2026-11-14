@@ -181,15 +181,9 @@ tests:
     screenshot: true
     except: [desktop]
 
-  - name: pdf failure switches to the EmptyState card
-    # Ideal behaviour. Neither current design passes onError to the embed.
-    props: { kind: pdf, src: "fixtures/missing.pdf", name: "Missing.pdf" }
-    steps: []
-    expect:
-      - { part: fallback, visible: true }
-      - { part: pdf, visible: false }
-      - { event: error, times: 1, last: { kind: pdf } }
-    except: [desktop]
+  # Left out: a failed PDF never reaches the fallback. The embed fires no error event in any
+  # browser, so neither design can tell (the spec's open question); a PDF that fails shows the
+  # browser's own message instead.
 
   - name: text kind shows selectable text with no loading state
     props: { kind: text, text: "Line one\nLine two", name: "notes.txt" }

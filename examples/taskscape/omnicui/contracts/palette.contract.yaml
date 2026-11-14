@@ -1,346 +1,425 @@
-# Behaviour contract for the command palette, web build (contract id app.palette).
-# The harness mounts this screen alone, signed in as the demo account on the real API.
-# The palette is the open screen, so it starts open. There is no open prop.
-
-id: "app.palette"
+# Contract app.palette: the web command palette (Ctrl/Cmd+K or the title-bar control, decision 7).
+# Merged from two drafts with the critic's fixes applied.
+# The harness mounts the palette open, so every test starts from the palette state.
+#
+# Reference states: palette (empty query), palette-search (query "new"), palette-no-match (query "zzzz").
+# Web: the reference look is kept (web.md), including the soft scrim. A press outside the panel is not testable here (see notes).
+# Not in this contract: the opener, the desktop separate window (no scrim, blur dismissal), and drag (no drag on this screen).
+# drag: none on this screen, so no drag-and-drop tests.
+# keyboard: not set. Rows are not focusable; the highlight is an index driven through the search input,
+# so Enter, ArrowUp, ArrowDown, Tab and Escape are all pressed on the search part.
+# Web hint glyphs are unresolved (see notes), so no test asserts a hint.
+id: app.palette
 
 props:
-  dataset:
-    type: string
-    default: "standard"   # demo data set loaded before mounting: "standard", "empty" or "nolists". ("long" is in spec/screens/web.md but no test here uses it.)
-  task:
-    type: string
-    default: ""           # title of a task in the focused list (Errands in "standard") that the harness selects in app state before mounting; "" selects nothing, so no Delete row shows
+  # Data set loaded before mount, signed in as the demo account. Allowed: standard (default), empty, nolists, long.
+  # No test varies it: the other data sets have no palette reference (see notes).
+  dataset: { type: string, default: standard }
+  # "" (default) = no task selected, so no Delete row is listed. Otherwise the exact title of a task in the
+  # focused list (standard: "Buy groceries for the week", in Errands, the open list). The harness selects that task
+  # the way a user does, then mounts the palette, so the Delete row is listed. A title not in the data set is a harness error.
+  task: { type: string, default: "" }
 
 events:
-  # Emitted by the palette itself: onClose first, then run (CommandPalette.tsx:63-68 per the draft sources).
-  closed:
-    command:
-      type: string        # label of the row that ran just before the palette closed; "" when the palette was dismissed without running a row
+  # Harness-only event, not in the reference. The rebuild emits it on every command run (row click or Enter)
+  # with the row's visible text, after the panel has closed. Escape emits nothing. See notes.
+  ran:
+    label: { type: string }
 
 parts:
-  panel:              { role: generic }   # aria: dialog. The palette card: 490 px wide, top edge at 12vh, max height 60vh, no footer, no close button
-  scrim:              { role: generic }   # no ARIA role. Full-window dim layer behind the card (soft dim, no blur). Checked for visibility only; a press on it is not expressible
-  search:             { role: textbox }   # the command input, focused on open; placeholder "Run a command or jump to…"
-  results:            { role: generic }   # aria: listbox. Scrolling list of group headings and rows; scrolls at the 60vh cap
-  groupHeading:       { role: generic }   # no ARIA role. The first group heading: "View" in palette, "Task" in palette-search. Shown in capitals by CSS
-  groupHeadingTask:   { role: generic }   # no ARIA role. The "Task" group heading
-  groupHeadingManage: { role: generic }   # no ARIA role. The "Manage" group heading
-  emptyMessage:       { role: generic }   # no ARIA role. "No matching commands", shown only when no row matches
-  row:                { role: button }    # aria: option. The first command row. selected = the highlighted row (aria-selected). Every row is 32px tall, with or without a hotkey
-  rowSplit:           { role: button }    # aria: option. "Toggle split view", index 1 in palette
-  rowNewList:         { role: button }    # aria: option. "New list" (Manage group in palette; index 1 in palette-search)
-  rowNewProject:      { role: button }    # aria: option. "New project" (index 2 in palette-search)
-  rowSearchList:      { role: button }    # aria: option. "Search this list" (Task group, index 7 in palette)
-  rowSettings:        { role: button }    # aria: option. "Settings", index 13 in palette, below the 60vh cap
-
-viewports:
-  - { width: 1180, height: 760 }          # the window the inventory measured (scrim at [0,0,1180,760]); 60vh cap = 456 px
-
-colorSchemes: [ light ]                   # the reference has no dark state; dark classes exist in code (CommandPalette.tsx:84,89) but were not captured
-
-keyboard: false                           # rows are options driven from the search input: Enter on search runs the active row (F06-009). Row Enter/Space is not a control, so the generic keyboard test does not apply
+  # Command input (TextInput, bare), focused on open. Placeholder "Run a command or jump to…". Its text is its value.
+  search: { role: textbox }
+  # Dim layer behind the panel (web reference). aria: none. Only its visibility is checked; a press on it is not expressible.
+  scrim: { role: generic }
+  # Palette panel (Overlay root, 490 px wide, top at 91 px, max height 60vh, overflow hidden). aria: dialog.
+  # Visible in every state; not visible = the palette has closed.
+  panel: { role: generic }
+  # Scrolling list holding group headings and rows. aria: listbox. Scrolls past the 60vh cap (456 px at 1180x760).
+  results: { role: generic }
+  # First command row (MenuItem, 32 px tall, one height for hotkey and no-hotkey rows). aria: option; drawn as a button.
+  # Text includes its label and any key letter (hint modifiers are icons with no text node).
+  row: { role: button }
+  # Third row, "Swap panes", on screen without scrolling in the palette state. aria: option.
+  rowSwapPanes: { role: button }
+  # Last row in the palette state: jump row "Spring launch" (Go to project). Below the 60vh cap, so it scrolls into view. aria: option.
+  rowSpringLaunch: { role: button }
+  # "Delete “<task title>”" (Task group, no accelerator), listed only when a task is selected. aria: option.
+  # Optional: absent from the default tests, so checks on it may be skipped there.
+  rowDelete: { role: button, optional: true }
+  # Group headings (Label as div, shown in capitals by CSS). aria: none. Shown only when a new group begins.
+  # Match case-insensitively. The Go-to-list and Go-to-project headings are below the cap at open, so they are asserted only after scrolling.
+  groupView: { role: generic }
+  groupTask: { role: generic }
+  groupManage: { role: generic }
+  groupGoList: { role: generic }
+  groupGoProject: { role: generic }
+  # "No matching commands" (Label as p), shown only when no rows match. aria: none.
+  emptyMessage: { role: generic }
 
 tests:
-  - name: "F08-046 F06-001 opens with the input focused and the first command highlighted"
+  - name: opens with the input focused, the groups listed, and matches the palette reference
     steps: []
     expect:
       - { part: search, focused: true }
-      - { part: row, selected: true }
-      - { part: row, text: { contains: "Toggle preview" } }
-
-  - name: "F06-002 F08-043 a dim scrim and a card near the top (layout checked by screenshot)"
-    steps: []
-    expect:
       - { part: scrim, visible: true }
       - { part: panel, visible: true }
-      - { part: search, visible: true }
-      - { part: results, visible: true }
-    screenshot: true                      # centring and the 12vh top edge are checked only by this screenshot; palette state: 5 headings and 19 rows
-
-  - name: "F06-005 F08-044 an empty query lists every command under its group headings"
-    steps: []
-    expect:
-      - { part: groupHeading, text: { matches: "(?i)^view$" } }
-      - { part: groupHeadingTask, text: { matches: "(?i)^task$" } }
-      - { part: groupHeadingManage, text: { matches: "(?i)^manage$" } }
       - { part: row, text: { contains: "Toggle preview" } }
+      - { part: groupView, text: { matches: "(?i)^view$" } }
+      - { part: groupTask, text: { matches: "(?i)^task$" } }
+      - { part: groupManage, text: { matches: "(?i)^manage$" } }
+      - { part: emptyMessage, visible: false }
+    screenshot: true
 
-  - name: "F06-004 the filter ignores case and the spaces around the query"
-    steps: [ { action: type, part: search, text: "  NEW  " } ]
-    expect:
-      - { part: row, text: { contains: "New task" } }
-      - { part: rowNewList, text: { contains: "New list" } }
-      - { part: rowNewProject, text: { contains: "New project" } }
-
-  - name: "F06-004 F06-015 earlier matches rank first, and a group heading returns when the group changes"
-    steps: [ { action: type, part: search, text: "LIST" } ]
-    expect:
-      - { part: row, text: { contains: "New list" } }             # Manage group, ranked first
-      - { part: rowSearchList, text: { contains: "Search this list" } }   # Task group, after New list
-      - { part: groupHeading, text: { matches: "(?i)^manage$" } }
-      - { part: groupHeadingTask, text: { matches: "(?i)^task$" } }       # the Task heading returns mid-list
-
-  - name: "F06-006 typing resets the highlight to the first row"
-    steps:
-      - { action: key, part: search, key: ArrowDown }
-      - { action: type, part: search, text: "new" }
-    expect:
-      - { part: row, selected: true }
-      - { part: row, text: { contains: "New task" } }
-
-  - name: "F06-007 ArrowDown moves the highlight down one row"
-    steps: [ { action: key, part: search, key: ArrowDown } ]
-    expect:
-      - { part: rowSplit, selected: true }
-      - { part: row, selected: false }
-
-  - name: "F06-007 ArrowDown stops at the last row"
+  - name: typing new filters to three commands under two groups and matches the palette-search reference
     steps:
       - { action: type, part: search, text: "new" }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
     expect:
-      - { part: rowNewProject, selected: true }
+      - { part: search, text: "new" }
+      - { part: groupView, visible: false }
+      - { part: groupGoList, visible: false }
+      - { part: groupGoProject, visible: false }
+      - { part: groupTask, text: { matches: "(?i)^task$" } }
+      - { part: groupManage, text: { matches: "(?i)^manage$" } }
+      - { part: row, text: { contains: "New task" } }
+      - { part: results, text: { contains: "New project" } }
+      - { part: emptyMessage, visible: false }
+    screenshot: true
 
-  - name: "F06-008 ArrowUp moves the highlight up and stops at the first row"
+  - name: typing a query resets the highlight to the first row
     steps:
       - { action: key, part: search, key: ArrowDown }
       - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowUp }
-      - { action: key, part: search, key: ArrowUp }
-      - { action: key, part: search, key: ArrowUp }
+      - { action: type, part: search, text: "new" }
+      - { action: key, part: search, key: Enter }
     expect:
-      - { part: row, selected: true }
-      - { part: rowSplit, selected: false }
+      - { event: ran, times: 1, last: { label: "New task" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-009 Enter runs the highlighted command and closes the palette"
-    steps: [ { action: key, part: search, key: Enter } ]
-    expect:
-      - { event: closed, times: 1, last: { command: "Toggle preview" } }
-
-  - name: "F06-010 Enter with no results does nothing and keeps the palette open"
+  - name: a query with no match shows the empty message and no rows, and matches the palette-no-match reference
     steps:
       - { action: type, part: search, text: "zzzz" }
-      - { action: key, part: search, key: Enter }
     expect:
-      - { part: emptyMessage, visible: true }
-      - { part: emptyMessage, text: "No matching commands" }
       - { part: search, text: "zzzz" }
-      - { part: search, focused: true }
-      - { event: closed, times: 0 }       # no close event; times 0 is not confirmed in the format
-
-  - name: "F06-011 a click on a row runs that command and closes the palette"
-    steps: [ { action: press, part: row } ]
-    expect:
-      - { event: closed, times: 1, last: { command: "Toggle preview" } }
-
-  - name: "F06-012 hovering a row moves the highlight to it"
-    steps: [ { action: hover, part: rowSplit } ]
-    expect:
-      - { part: rowSplit, selected: true }
-      - { part: row, selected: false }
-
-  - name: "F06-013 the highlighted row scrolls into view inside the capped list"
-    steps:
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: ArrowDown }
-    expect:
-      - { part: rowSettings, selected: true }
-      - { part: rowSettings, visible: true }   # may not respect the 60vh clip of the list; the screenshot is the backstop
-    screenshot: true                          # the list has scrolled so Settings is in view
-
-  - name: "F06-014 a query that matches nothing shows the empty message (palette-no-match state)"
-    steps: [ { action: type, part: search, text: "zzzz" } ]
-    expect:
       - { part: emptyMessage, text: "No matching commands" }
-      - { part: emptyMessage, visible: true }
+      - { part: row, visible: false }
+      - { part: groupView, visible: false }
     screenshot: true
 
-  - name: "F08-047 F06-016 the search state shows the three matches, first highlighted (palette-search state)"
-    steps: [ { action: type, part: search, text: "new" } ]   # query "new" from the screenshot; the inventory records "ne" (open item)
+  - name: ArrowDown and Enter do nothing when nothing matches
+    steps:
+      - { action: type, part: search, text: "zzzz" }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: Enter }
     expect:
-      - { part: row, selected: true }
-      - { part: row, text: { contains: "New task" } }
-      - { part: rowNewList, text: { contains: "New list" } }
-      - { part: rowNewProject, text: { contains: "New project" } }
-      - { part: groupHeadingTask, text: { matches: "(?i)^task$" } }
-      - { part: groupHeadingManage, text: { matches: "(?i)^manage$" } }   # Manage heading between New task and New list
+      - { event: ran, times: 0 }
+      - { part: panel, visible: true }
+      - { part: search, text: "zzzz" }
+      - { part: emptyMessage, text: "No matching commands" }
+      - { part: row, visible: false }
+
+  - name: a query typed in capitals runs its matching row
+    steps:
+      - { action: type, part: search, text: "PREVIEW" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle preview" } }
+      - { part: panel, visible: false }
+
+  - name: Enter runs the highlighted row, which starts on the first row
+    steps:
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle preview" } }
+      - { part: panel, visible: false }
+
+  - name: clicking a row runs it and closes the palette
+    steps:
+      - { action: press, part: row }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle preview" } }
+      - { part: panel, visible: false }
+
+  - name: ArrowDown moves the highlight down one row
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle split view" } }
+      - { part: panel, visible: false }
+
+  - name: ArrowUp moves the highlight back up
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle split view" } }
+      - { part: panel, visible: false }
+
+  - name: ArrowUp stops at the first row
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: ArrowUp }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Toggle preview" } }
+      - { part: panel, visible: false }
+
+  - name: hovering a row moves the highlight onto it
+    steps:
+      - { action: hover, part: rowSwapPanes }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Swap panes" } }
+      - { part: panel, visible: false }
+
+  - name: ArrowDown moves the highlight to the last row and stops there
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Spring launch" } }
+      - { part: panel, visible: false }
+
+  - name: the last row scrolls into view after moving down the list
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: ArrowDown }
+    expect:
+      - { part: rowSpringLaunch, visible: true }
+      - { part: groupGoProject, text: { matches: "(?i)^go to project$" } }
+      - { part: panel, visible: true }
+
+  - name: Escape closes the palette without running a command
+    steps:
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { event: ran, times: 0 }
+      - { part: panel, visible: false }
+
+  - name: Escape closes the palette from a filtered list without running a command
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { event: ran, times: 0 }
+      - { part: panel, visible: false }
+
+  - name: clearing the query restores every command and matches the groups at open
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: key, part: search, key: Backspace }
+      - { action: key, part: search, key: Backspace }
+      - { action: key, part: search, key: Backspace }
+    expect:
+      - { part: search, text: "" }
+      - { part: row, text: { contains: "Toggle preview" } }
+      - { part: groupView, text: { matches: "(?i)^view$" } }
+      - { part: groupManage, text: { matches: "(?i)^manage$" } }
     screenshot: true
 
-  - name: "F06-018 Escape closes the palette without running a command"
-    steps: [ { action: key, part: search, key: Escape } ]
-    expect:
-      - { event: closed, times: 1, last: { command: "" } }
-
-  - name: "F06-019 Tab keeps focus inside the palette"
-    steps: [ { action: key, part: search, key: Tab } ]
-    expect:
-      - { part: search, focused: true }   # assumes the input is the only tab stop; Shift+Tab not tested (open item)
-
-  - name: "F06-020 runs Toggle preview"
-    steps:
-      - { action: type, part: search, text: "preview" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Toggle preview" } }
-
-  - name: "F06-021 runs Toggle split view"
-    steps:
-      - { action: type, part: search, text: "split view" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Toggle split view" } }
-
-  - name: "F06-022 runs Swap panes (no hotkey hint)"
-    steps:
-      - { action: type, part: search, text: "swap" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Swap panes" } }
-
-  - name: "F06-023 runs Show / hide completed"
-    steps:
-      - { action: type, part: search, text: "completed" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Show / hide completed" } }
-
-  - name: "F06-024 runs Collapse all"
-    steps:
-      - { action: type, part: search, text: "collapse" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Collapse all" } }
-
-  - name: "F06-025 runs Expand all"
-    steps:
-      - { action: type, part: search, text: "expand" }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Expand all" } }
-
-  - name: "F06-026 runs New task in the focused list"
+  - name: New task row runs from its label
     steps:
       - { action: type, part: search, text: "new task" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "New task" } }
+      - { event: ran, times: 1, last: { label: "New task" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-027 runs Search this list"
+  - name: Show / hide completed row runs its command
     steps:
-      - { action: type, part: search, text: "search" }
+      - { action: type, part: search, text: "completed" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Search this list" } }
+      - { event: ran, times: 1, last: { label: "Show / hide completed" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-028 runs Undo"
+  - name: Collapse all row runs its command
+    steps:
+      - { action: type, part: search, text: "collapse" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Collapse all" } }
+      - { part: panel, visible: false }
+
+  - name: Expand all row runs its command
+    steps:
+      - { action: type, part: search, text: "expand" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Expand all" } }
+      - { part: panel, visible: false }
+
+  - name: Search this list row runs its command
+    steps:
+      - { action: type, part: search, text: "search this" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Search this list" } }
+      - { part: panel, visible: false }
+
+  - name: Undo row runs its command
     steps:
       - { action: type, part: search, text: "undo" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Undo" } }
+      - { event: ran, times: 1, last: { label: "Undo" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-029 runs Redo"
+  - name: Redo row runs its command
     steps:
       - { action: type, part: search, text: "redo" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Redo" } }
+      - { event: ran, times: 1, last: { label: "Redo" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-030 runs New list"
+  - name: New list row runs its command
     steps:
       - { action: type, part: search, text: "new list" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "New list" } }
+      - { event: ran, times: 1, last: { label: "New list" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-031 runs New project"
+  - name: New project row runs its command
     steps:
       - { action: type, part: search, text: "new project" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "New project" } }
+      - { event: ran, times: 1, last: { label: "New project" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-032 runs Open Trash (no hotkey hint)"
+  - name: Open Trash runs from its label
     steps:
-      - { action: type, part: search, text: "trash" }
+      - { action: type, part: search, text: "Open Trash" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Open Trash" } }
+      - { event: ran, times: 1, last: { label: "Open Trash" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-033 runs Settings"
+  - name: Settings row runs its command
     steps:
       - { action: type, part: search, text: "settings" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Settings" } }
+      - { event: ran, times: 1, last: { label: "Settings" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-034 the Delete row names the selected task"
-    props: { task: "Book bike service" }      # the label's quote style is unconfirmed (open item)
-    steps: [ { action: type, part: search, text: "delete" } ]
+  - name: a go-to-list jump row runs from its label
+    steps:
+      - { action: type, part: search, text: "reading" }
+      - { action: key, part: search, key: Enter }
     expect:
-      - { part: row, text: { contains: "Delete “Book bike service”" } }
+      - { event: ran, times: 1, last: { label: "Reading" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-034 runs Delete for the selected task"
-    props: { task: "Book bike service" }
+  - name: Errands jump row runs from its label
+    steps:
+      - { action: type, part: search, text: "Errands" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Errands" } }
+      - { part: panel, visible: false }
+
+  - name: the Home go-to-project row runs from its label
+    steps:
+      - { action: type, part: search, text: "home" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Home" } }
+      - { part: panel, visible: false }
+
+  - name: Spring launch jump row runs from its label
+    steps:
+      - { action: type, part: search, text: "Spring launch" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: ran, times: 1, last: { label: "Spring launch" } }
+      - { part: panel, visible: false }
+
+  - name: Delete row appears for the selected task
+    props: { task: "Buy groceries for the week" }
+    steps:
+      - { action: type, part: search, text: "delete" }
+    expect:
+      - { part: rowDelete, text: { contains: "Delete “Buy groceries for the week”" } }
+
+  - name: Delete row runs for the selected task and closes the palette
+    props: { task: "Buy groceries for the week" }
     steps:
       - { action: type, part: search, text: "delete" }
       - { action: key, part: search, key: Enter }
     expect:
-      - { event: closed, times: 1, last: { command: "Delete “Book bike service”" } }
+      - { event: ran, times: 1, last: { label: "Delete “Buy groceries for the week”" } }
+      - { part: panel, visible: false }
 
-  - name: "F06-034 no Delete row when no task is selected"
-    steps: [ { action: type, part: search, text: "delete" } ]
+  - name: Delete row is absent when no task is selected
+    steps:
+      - { action: type, part: search, text: "delete" }
     expect:
       - { part: emptyMessage, text: "No matching commands" }
+      - { part: rowDelete, visible: false }
 
-  - name: "F06-035 Go to list runs a list other than the active one"
+  - name: Tab and Shift+Tab keep focus in the palette
     steps:
-      - { action: type, part: search, text: "reading" }      # "reading" / "Reading" is the critic's example; confirm it exists in the standard data set
-      - { action: key, part: search, key: Enter }
+      - { action: key, part: search, key: Tab }
+      - { action: key, part: search, key: Tab }
+      - { action: key, part: search, key: Tab }
+      - { action: key, part: search, key: "Shift+Tab" }
     expect:
-      - { event: closed, times: 1, last: { command: "Reading" } }
+      - { part: search, focused: true }
+      - { part: panel, visible: true }
 
-  - name: "F06-035 Go to list follows the active project (one list, Inbox)"
-    props: { dataset: "empty" }
+  - name: a press inside the panel does not dismiss it
     steps:
-      - { action: type, part: search, text: "inbox" }
-      - { action: key, part: search, key: Enter }
+      - { action: press, part: search }
     expect:
-      - { event: closed, times: 1, last: { command: "Inbox" } }
+      - { part: panel, visible: true }
 
-  - name: "F06-035 Go to list has no rows when the project has no lists"
-    props: { dataset: "nolists" }
-    steps: [ { action: type, part: search, text: "errands" } ]
-    expect:
-      - { part: emptyMessage, text: "No matching commands" }
+viewports:
+  - { width: 1180, height: 760 }
 
-  - name: "F06-036 Go to project selects a project other than the active one"
-    steps:
-      - { action: type, part: search, text: "spring" }        # "Spring launch" is the critic's example; confirm it exists in the standard data set
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { event: closed, times: 1, last: { command: "Spring launch" } }
-
-  - name: "F06-037 ArrowDown with no results highlights nothing and Enter does nothing"
-    steps:
-      - { action: type, part: search, text: "zzzz" }
-      - { action: key, part: search, key: ArrowDown }
-      - { action: key, part: search, key: Enter }
-    expect:
-      - { part: emptyMessage, visible: true }
-      - { part: search, text: "zzzz" }
-      - { event: closed, times: 0 }       # no close event; times 0 is not confirmed in the format
+colorSchemes: [ light ]

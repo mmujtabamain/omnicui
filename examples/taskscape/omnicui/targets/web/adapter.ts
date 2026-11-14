@@ -150,19 +150,92 @@ async function axNode(part: string) {
   return nodes[0];
 }
 
+// The named actions (do:) beyond back, contextMenu and togglePlayback. `with` holds their options.
+type Loc = Awaited<ReturnType<typeof locate>>;
+/** A point of the part where the part itself (not something inside it) is what a press would hit. */
+async function ownPoint(loc: Loc) {
+  const pt = await loc.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    for (const fy of [0.04, 0.5, 0.96, 0.25, 0.75]) for (const fx of [0.04, 0.96, 0.5, 0.25, 0.75]) {
+      const x = r.left + r.width * fx, y = r.top + r.height * fy;
+      if (document.elementFromPoint(x, y) === el) return { x, y };
+    }
+    return null;
+  });
+  if (pt) return pt;
+  // Content fills the part (a scroll area's viewport): its bottom-left corner is the blank end.
+  const box = await loc.boundingBox();
+  if (!box) throw new RpcError(STEP_FAILED, "the part is not on screen");
+  return { x: box.x + 6, y: box.y + box.height - 6 };
+}
+async function dispatchDrag(loc: Loc, types: string[], data: Record<string, string>, file: string | null, point?: { x: number; y: number }) {
+  const handle = await page.evaluateHandle(async ([data, file]) => {
+    const dt = new DataTransfer();
+    for (const [k, v] of Object.entries(data)) dt.setData(k, v);
+    if (file) { const b = await (await fetch(`/fixtures/${file}`)).blob(); dt.items.add(new File([b], file, { type: b.type })); }
+    return dt;
+  }, [data, file] as const);
+  const box = await loc.boundingBox();
+  const at = point ?? (box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : { x: 0, y: 0 });
+  for (const type of types) await loc.dispatchEvent(type, { dataTransfer: handle, clientX: at.x, clientY: at.y, bubbles: true, cancelable: true });
+}
+const DO: Record<string, (loc: Loc, w: Record<string, any>) => Promise<void>> = {
+  // A press on the part where nothing inside it is: the scrim around a dialog, the blank end of a list.
+  async pressOutside(loc, w) { const pt = await ownPoint(loc); await page.mouse.click(pt.x, pt.y, { button: w.button === "right" ? "right" : "left" }); },
+  async pressBlank(loc, w) { const pt = await ownPoint(loc); await page.mouse.click(pt.x, pt.y, { button: w.button === "right" ? "right" : "left" }); },
+  async doubleClick(loc) { await loc.dblclick(); },
+  // direction up|down|left|right; by wheel (default), line or page; to start|end scrolls all the way.
+  async scroll(loc, w) {
+    await scrollOnce(loc, w);
+    // Scrolling ends when the page says so (scrollend), or after a quiet moment.
+    await page.evaluate(() => new Promise<void>((done) => { const t = setTimeout(done, 400); document.addEventListener("scrollend", () => { clearTimeout(t); setTimeout(done, 50); }, { once: true, capture: true }); }));
+  },
+};
+async function scrollOnce(loc: Loc, w: Record<string, any>) {
+    const dir = w.direction ?? "down", sign = dir === "up" || dir === "left" ? -1 : 1, horizontal = dir === "left" || dir === "right";
+    if (w.by === "wheel" || (!w.by && !w.to)) {
+      const box = await loc.boundingBox();
+      if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      for (let i = 0; i < (w.to ? 40 : 1); i++) await page.mouse.wheel(horizontal ? sign * 100 : 0, horizontal ? 0 : sign * 100);
+      return;
+    }
+    await loc.evaluate((el, [w, sign, horizontal]: any) => {
+      const scrollable = (e: Element) => { const s = getComputedStyle(e); return /(auto|scroll)/.test(horizontal ? s.overflowX : s.overflowY) && (horizontal ? e.scrollWidth > e.clientWidth : e.scrollHeight > e.clientHeight); };
+      const target = (scrollable(el) ? el : [...el.querySelectorAll("*")].find(scrollable)) as HTMLElement | undefined;
+      if (!target) throw new Error("nothing in this part scrolls");
+      const size = horizontal ? target.clientWidth : target.clientHeight;
+      const by = w.to ? sign * 1e7 : w.by === "page" ? sign * size * 0.9 : sign * 40;
+      target.scrollBy(horizontal ? { left: by } : { top: by });
+    }, [w, sign, horizontal]);
+}
+const DO_DRAG: typeof DO = {
+  // Drag and drop as the page sees it (HTML5 events with a DataTransfer).
+  async dragOver(loc) { await dispatchDrag(loc, ["dragenter", "dragover"], { "text/plain": "" }, null); },
+  async dragNearEdge(loc, w) {
+    const box = await loc.boundingBox();
+    if (!box) return;
+    const e = w.edge ?? "bottom", at = { x: box.x + box.width / 2, y: e === "top" ? box.y + 4 : e === "bottom" ? box.y + box.height - 4 : box.y + box.height / 2 };
+    if (e === "left") at.x = box.x + 4; if (e === "right") at.x = box.x + box.width - 4;
+    await dispatchDrag(loc, ["dragenter", "dragover"], { "text/plain": "" }, null, at);
+  },
+  async drop(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], { "text/plain": String(w.taskId ?? ""), "application/x-taskscape-task": String(w.taskId ?? "") }, null); },
+  async dropAttachment(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], {}, w.file ?? "photo.png"); },
+};
+Object.assign(DO, DO_DRAG);
+
 const OMNICUI_ROLES = new Set(["button", "switch", "checkbox", "slider", "textbox", "status", "heading", "generic"]);
 const ROLE: Record<string, string> = {
   // pressed to act or to choose
   link: "button", menuitem: "button", menuitemradio: "button", menuitemcheckbox: "button", option: "button", tab: "button",
   treeitem: "button", combobox: "button", PopUpButton: "button", ToggleButton: "button", DisclosureTriangle: "button",
-  // checked on and off
-  radio: "checkbox",
+  // one choice of several, like a tab or an option
+  radio: "button",
   // typed into
   searchbox: "textbox", spinbutton: "textbox", TextField: "textbox", textbox: "textbox",
-  // moved along a range (a focusable splitter is one too)
-  separator: "slider", scrollbar: "slider",
+  // a value along a range (a focusable splitter, a progress bar)
+  separator: "slider", scrollbar: "slider", progressbar: "slider",
   // announced
-  progressbar: "status", alert: "status", log: "status", timer: "status", meter: "status",
+  alert: "status", log: "status", timer: "status", meter: "status",
 };
 const prop = (node: any, name: string) => node?.properties?.find((p: any) => p.name === name)?.value?.value;
 
@@ -170,6 +243,21 @@ const prop = (node: any, name: string) => node?.properties?.find((p: any) => p.n
 const playwrightKey = (key: string) => key.split("+").map((k) => (k === "Space" ? " " : k)).join("+");
 
 type Params = Record<string, any>;
+
+/** A named action (do:), as a step of its own or inside a trace or a recording. */
+async function doAction(p: Params) {
+  if (p.name === "back") await page.goBack({ waitUntil: "commit" });
+  // contextMenu: a right click on the part, as a mouse user opens a context menu.
+  else if (p.name === "contextMenu") await (await locate(p.part)).click({ button: "right" });
+  // togglePlayback: what the media element's own play/pause control does.
+  else if (p.name === "togglePlayback") await (await locate(p.part)).evaluate(async (el) => {
+    const m = (el.matches("video, audio") ? el : el.querySelector("video, audio")) as HTMLMediaElement | null;
+    if (!m) throw new Error("no video or audio element in this part");
+    if (m.paused) await m.play().catch(() => {}); else m.pause();
+  });
+  else if (p.name in DO) await DO[p.name](await locate(p.part), p.with ?? {});
+  else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
+}
 
 async function step(method: string, p: Params, settled = true) {
   switch (method) {
@@ -185,7 +273,18 @@ async function step(method: string, p: Params, settled = true) {
       }
       break;
     }
-    case "hover": await (await locate(p.part)).hover(); break;
+    // The pointer goes to the part's centre, as a user's would, without waiting for the part to be
+    // visible or free (a drop line shows only during a drag; a 1px rule is under its padding).
+    // A part that is not rendered (an aside that is closed) has nowhere to be hovered: nothing happens.
+    case "hover": {
+      const loc = page.locator(selector(p.part)).first();
+      if ((await page.locator(selector(p.part)).count()) === 0) break;
+      const box = await loc.boundingBox();
+      if (!box) break;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      break;
+    }
+    case "do": await doAction(p); break;
     case "focus": await (await locate(p.part)).focus(); break;
     // The key goes wherever focus really is, so a part that can't be focused fails honestly.
     // A key with no part goes to whatever has focus.
@@ -222,7 +321,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async advertise() {
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback"],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback", ...Object.keys(DO).map((n) => `do.${n}`)],
       cannot: {
         "do.scroll": "not implemented in this target yet",
         "do.swipe": "a desktop browser has no swipe",
@@ -263,16 +362,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   // API routing answers with popstate); contextMenu is a right click; togglePlayback plays or pauses
   // the part's video or audio.
   async do(p) {
-    if (p.name === "back") await page.goBack({ waitUntil: "commit" });
-    // contextMenu: a right click on the part, as a mouse user opens a context menu.
-    else if (p.name === "contextMenu") await (await locate(p.part)).click({ button: "right" });
-    // togglePlayback: what the media element's own play/pause control does.
-    else if (p.name === "togglePlayback") await (await locate(p.part)).evaluate(async (el) => {
-      const m = (el.matches("video, audio") ? el : el.querySelector("video, audio")) as HTMLMediaElement | null;
-      if (!m) throw new Error("no video or audio element in this part");
-      if (m.paused) await m.play().catch(() => {}); else m.pause();
-    });
-    else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
+    await doAction(p);
     await settle();
     return null;
   },
@@ -290,7 +380,10 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     // hidden: a 1×1 box that clips its content), which is left out here.
     if (p.field === "text") return loc.evaluate((el) => {
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return el.value;
+      // Left out: what only a screen reader gets, and what is hidden from it (an icon's ligature
+      // name draws a glyph, not text).
       const hidden = [...el.querySelectorAll<HTMLElement>("*")].filter((d) => {
+        if (d.getAttribute("aria-hidden") === "true") return true;
         const r = d.getBoundingClientRect(), s = getComputedStyle(d);
         return r.width <= 1 && r.height <= 1 && (s.overflow === "hidden" || s.clip !== "auto" || s.clipPath !== "none");
       });
@@ -308,11 +401,17 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       case "name": return node?.name?.value ?? null;
       case "checked": { const v = prop(node, "checked"); return v === undefined ? null : v === "true" || v === true; }
       case "disabled": return prop(node, "disabled") === true;
-      case "value": { const v = node?.value?.value ?? prop(node, "valuenow"); return v === undefined ? null : Number(v); }
+      // Chromium keeps aria-valuenow as a 32-bit float (0.7 reads back 0.699999988): round to 6 places.
+      case "value": { const v = node?.value?.value ?? prop(node, "valuenow"); return v === undefined ? null : Math.round(Number(v) * 1e6) / 1e6; }
       // Chromium's role names are WAI-ARIA's, except a few of its own.
       // omnicui's roles are eight (button, switch, checkbox, slider, textbox, status, heading, generic):
       // each ARIA role is answered as the one of them a user would take it for.
-      case "role": { const r = String(node?.role?.value ?? ""); if (r === "separator" && !prop(node, "focusable")) return "generic"; return ROLE[r] ?? (OMNICUI_ROLES.has(r.toLowerCase()) ? r.toLowerCase() : "generic"); }
+      case "role": {
+        const r = String(node?.role?.value ?? "");
+        if (r === "separator" && !prop(node, "focusable")) return "generic";
+        // A combobox that takes typing (cmdk's input, an autocomplete) is typed into; one that only opens a list is pressed.
+        if (r === "combobox" && prop(node, "editable")) return "textbox";
+        return ROLE[r] ?? (OMNICUI_ROLES.has(r.toLowerCase()) ? r.toLowerCase() : "generic"); }
     }
     throw new RpcError(STEP_FAILED, `unknown field ${p.field}`);
   },
@@ -356,7 +455,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       };
       requestAnimationFrame(frame);
     }, [selector(p.part), p.point, p.property ?? "position"] as const);
-    for (const s of p.steps) await step(s.method, s);
+    for (const s of p.steps ?? []) await step(s.method, s);
     await page.waitForTimeout(150);
     const samples: Record<string, number>[] = await page.evaluate(() => {
       const t = (window as any).__trace;
@@ -385,7 +484,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       ms += 16;
     };
     for (let i = 0; i < 4; i++) await shot();
-    for (const s of p.steps) {
+    for (const s of p.steps ?? []) {
       inputs.push(ms);
       await step(s.method, s, false);
       // Hold what the step started at its start; getAnimations() flushes style, so transitions

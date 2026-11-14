@@ -39,6 +39,7 @@ id: ui.panegroup
 # sliders, and their keys are tested explicitly below.
 
 props:
+  width: { type: integer, default: 0 }   # the group's width in px; 0 fills its container (the harness sets it, for the narrow tests)
   direction: { type: string, default: row }      # "row" or "column". row: panes side by side (width), pixel limits apply. column: panes stacked (height); percent minimums only.
   split: { type: boolean, default: false }       # true: shows the split pane and the taskResizer, between the task pane and the aside.
   asideHidden: { type: boolean, default: false } # true: preview hidden. The aside and the asideResizer are not shown; the other panes take the width.
@@ -59,9 +60,9 @@ parts:
   asideResizer: { role: slider, optional: true, same: { default: layout } }      # aria: separator (focusable window splitter). Name: "Resize preview". Shown when the aside is shown. Value: position in percent.
 
 viewports:
-  - { width: 320, height: 240 }    # narrow: in row the aside is hidden (under 600 px)
-  - { width: 1000, height: 700 }   # wide: the aside is shown; 1000 px makes the percent limits whole numbers
-  - { width: 1280, height: 720 }   # desktop: the aside limits are 21.9 to 32.8 percent here, so exact aside values differ
+  - { width: 1000, height: 700 }   # the aside is shown; 1000 px makes the percent limits whole numbers
+# A narrow group is tested with the width prop (the group's own width), so every expectation holds
+# at the one viewport: the aside's visibility depends on the group, not the window.
 
 colorSchemes: [light, dark]
 
@@ -76,7 +77,7 @@ tests:
       - { part: taskPane, visible: true }
       - { part: aside, visible: true }
       - { part: asideResizer, visible: true }
-      - { part: asideResizer, role: generic }
+      - { part: asideResizer, role: slider }
     screenshot: true
 
   - name: "column: aside stacked under the task pane"
@@ -87,7 +88,7 @@ tests:
       - { part: taskPane, visible: true }
       - { part: aside, visible: true }
       - { part: asideResizer, visible: true }
-      - { part: asideResizer, role: generic }
+      - { part: asideResizer, role: slider }
     screenshot: true
 
   - name: "split: split pane between the task pane and the aside"
@@ -137,7 +138,7 @@ tests:
     screenshot: true
 
   - name: "narrow window hides the aside and keeps the task and split panes with the task handle"
-    props: { split: true }
+    props: { split: true, width: 320 }
     steps:
       - { action: hover, part: taskPane }
     expect:
@@ -149,7 +150,7 @@ tests:
     screenshot: true
 
   - name: "narrow window: aside hidden under 600 px"
-    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    props: { direction: row, split: false, asideHidden: false, noLists: false, width: 320 }
     expect:
       - { part: taskPane, visible: true }
     screenshot: true
@@ -160,7 +161,7 @@ tests:
       - { action: focus, part: taskResizer }
     expect:
       - { part: taskResizer, focused: true }
-      - { part: taskResizer, role: generic }
+      - { part: taskResizer, role: slider }
       - { part: taskResizer, name: "Resize panes" }
 
   - name: "ArrowRight moves the task handle by 5 percent"
@@ -314,7 +315,7 @@ tests:
       - { action: focus, part: asideResizer }
     expect:
       - { part: asideResizer, focused: true }
-      - { part: asideResizer, role: generic }
+      - { part: asideResizer, role: slider }
 
   - name: "dragging the aside handle right stops at 280 px"
     props: { direction: row, split: false, asideHidden: false, noLists: false }

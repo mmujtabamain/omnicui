@@ -1,450 +1,496 @@
-# Merged contract for the Title bar screen (app.appbar).
-# Both drafts were placeholders, so this is written from the critique's fixes only.
-id: "app.appbar"
-
-# Props: the start state the harness sets before the screen mounts.
+id: app.appbar
+# Title bar of the web app: the top bar (46px in the reference) with no window chrome.
+# Left to right: project switcher pill, list tabs for the active project with New list, then the toolbar:
+# reduced-motion indicator (only when On), Swap panes (only while split is on), Split view, preview toggle,
+# Trash, command palette, Settings, and the account button last.
+# Web drops the traffic lights, the Windows caption buttons, the drag grip and the drag region.
+# The bar emits request events for project and list actions; the sheets (rename, create, delete confirmations)
+# own the commits and are tested in a sheet contract. Inline list rename commits on the bar itself (listRenamed).
 props:
-  dataset:
-    type: string
-    default: standard
-    # Allowed values: standard, empty, nolists, long. The harness loads that demo data set
-    # before mounting. The title bar takes no other prop; it mounts alone as the demo account.
-
-colorSchemes: [light, dark]
-# viewports: not declared. The title bar's sizes are in the inventory, which this merge could not read.
-# Until they are added, the default 320x240 applies, which is wrong for a title bar.
-
+  dataset: { type: string, default: standard }   # standard | empty | nolists (demo data sets; see notes)
+  reducedMotion: { type: string, default: "off" }   # "on" | "off" | "system" (account Reduced motion choice set before mount; the indicator shows only for On)
+events:
+  projectSelected: { name: { type: string } }
+  projectRenameRequested: { name: { type: string } }
+  projectDeleteRequested: { name: { type: string } }
+  projectCreateRequested: { activeProject: { type: string } }
+  listCreateRequested: { project: { type: string } }
+  listSelected: { name: { type: string } }
+  listRenamed: { name: { type: string } }
+  listRenameRequested: { name: { type: string } }
+  listDeleteRequested: { name: { type: string } }
+  listExportRequested: { name: { type: string } }
+  splitToggled: { active: { type: boolean } }
+  panesSwapped: { left: { type: string } }
+  previewToggled: { open: { type: boolean } }
+  trashOpened: { open: { type: boolean } }
+  paletteOpened: { open: { type: boolean } }
+  settingsOpened: { open: { type: boolean } }
+  signOutRequested: { signedIn: { type: boolean } }
 parts:
-  # Project switcher and project menu (desktop and web)
-  projectSwitcher: { role: button }  # the project pill; its text is the active project name
-  projectMenu: { role: generic }  # aria: menu (the project dropdown)
-  rowHome: { role: button }  # aria: menuitem; first project row (Home in standard data)
-  rowSpringLaunch: { role: button }  # aria: menuitem; Spring launch in standard data
-  renameProjectButton: { role: button }  # shown on hover; first row instance
-  deleteProjectButton: { role: button }  # shown on hover; first row instance
-  newProjectButton: { role: button }
-  rollNameButton: { role: button }  # rolls another project name
-  projectNameInput: { role: textbox }  # rename and create project prompt
-  deleteDialog: { role: generic }  # aria: dialog; project and list delete confirmation
-  cancelButton: { role: button }  # default focus (decision 13)
-  confirmDeleteButton: { role: button }  # the danger button (decision 12)
-
-  # Tabs and lists (desktop and web)
-  tabStrip: { role: generic }  # aria: tablist
-  tabErrands: { role: button, optional: true }        # aria: tab; one tab per list is not measured
-  tabReading: { role: button, optional: true }        # aria: tab
-  tabGarden: { role: button, optional: true }         # aria: tab
-  tabInbox: { role: button, optional: true }          # aria: tab
-  closeTabErrands: { role: button, optional: true }   # close button on the Errands tab
-  newListButton: { role: button }
-  rollListNameButton: { role: button }  # rolls another list name
-  listNameInput: { role: textbox }  # new list prompt
-  noListsMessage: { role: status }  # no-lists copy; exact text is not in the spec
-
-  # Split, preview, settings (desktop and web)
-  splitToggle: { role: switch }  # checked = split view on; disabled on nolists
-  swapButton: { role: button }  # visible only while split view is on
-  previewToggle: { role: button }  # selected = preview on
-  settingsButton: { role: button, optional: true }    # desktop only; on web Settings is in the account menu
-  settingsDialog: { role: generic }  # aria: dialog; Settings modal (web 640x520)
-  settingsCloseButton: { role: button }
-  motionSystem: { role: button }  # reduced-motion choice (decision 16), segmented control
-  motionOn: { role: button }
-  motionOff: { role: button }  # Web only
-  accountButton: { role: button, optional: true }     # shows the account initial
-  accountMenu: { role: generic, optional: true }      # aria: menu
-  accountMenuEmail: { role: generic, optional: true } # shows the account email
-  accountMenuSettings: { role: button, optional: true }   # aria: menuitem
-  accountMenuSignOut: { role: button, optional: true }    # aria: menuitem
-  paletteButton: { role: button, optional: true }     # search and commands (decision 7)
-  trashAside: { role: generic, optional: true }       # Trash in the aside (decision 8)
-
-  # Both targets
-  trashButton: { role: button }  # decision 1
-
-  # Desktop only, drawn by the OS (no screenshot comparison)
-  trafficClose: { role: button, optional: true }      # macOS
-  trafficMinimize: { role: button, optional: true }   # macOS
-  trafficZoom: { role: button, optional: true }       # macOS
-  captionMinimize: { role: button, optional: true }   # Windows
-  captionMaximize: { role: button, optional: true }   # Windows
-  captionClose: { role: button, optional: true }      # Windows
-
+  projectSwitcher: { role: button }   # name Switch project; text is the active project name
+  projectMenu: { role: generic }   # aria: menu; popover under the pill
+  projectRow: { role: button }   # aria: menuitem; first project row (Home); selected = active project
+  projectRowSpring: { role: button }   # aria: menuitem; second project row (Spring launch)
+  projectRename: { role: button }   # name Rename project; edit icon on the first row; always visible, no hover needed
+  projectDelete: { role: button }   # name Delete project; delete icon on the first row; danger variant; always visible
+  projectDeleteSpring: { role: button }   # name Delete project; delete icon on the Spring launch row; always visible
+  projectNew: { role: button }   # aria: menuitem; New project row below the divider
+  listTabs: { role: generic }   # aria: tablist; the tab strip
+  listTab: { role: button }   # aria: tab; first tab (Errands in standard); selected = active list
+  listTabReading: { role: button }   # aria: tab; second tab (Reading in standard)
+  listTabGarden: { role: button }   # aria: tab; third tab (Garden in standard)
+  listTabDelete: { role: button }   # name Delete list; the close x on the first tab
+  listRenameInput: { role: textbox }   # inline rename field; present only while a tab is being renamed
+  newList: { role: button }   # name New list
+  tabMenu: { role: generic }   # aria: menu; list context menu
+  tabMenuRename: { role: button }   # aria: menuitem
+  tabMenuSplit: { role: button }   # aria: menuitem; Open in split view, or Close split when split is on
+  tabMenuExport: { role: button }   # aria: menuitem
+  tabMenuDelete: { role: button }   # aria: menuitem
+  paneMarker: { role: generic }   # aria: img; pane icon on a tab, shown only while split is on
+  splitView: { role: button }   # aria: button with aria-pressed; name Split view, or Close split view while on
+  swapPanes: { role: button }   # name Swap panes; shown only while split is on
+  previewToggle: { role: button }   # aria: button with aria-pressed; name Hide preview panel, or Show preview panel when hidden
+  trashButton: { role: button }   # web: Trash icon button (label not in the spec)
+  paletteButton: { role: button }   # web: search and commands button (label not in the spec)
+  settingsButton: { role: button }   # name contains Settings (a shortcut hint may follow)
+  accountButton: { role: button }   # web: account button at the end of the bar, shows the initial of the name
+  accountMenu: { role: generic }   # aria: menu; shows the email, Settings and Sign out
+  accountEmail: { role: generic }   # aria: none; the account email in the menu (plain text)
+  accountSettings: { role: button }   # aria: menuitem; Settings
+  accountSignOut: { role: button }   # aria: menuitem; Sign out
+  reducedMotionStatus: { role: status }   # shown only while reduced motion is on; hover tooltip Reduced motion is on
+viewports: [ { width: 1180, height: 160 }, { width: 820, height: 160 } ]   # 1180 main window; 820 narrow window; 160 tall so the project menu (to y 154) is in view
+colorSchemes: [ light ]   # no dark state is recorded for this bar
+keyboard: true
 tests:
-  # Project switcher and menu (F02-004 to F02-010)
-  - name: "switcher shows Home and the Errands tab is selected"
-    # F02-004, F02-063
+  - name: main default shows the project, the lists and the toolbar
+    steps: []
     expect:
-      - { part: projectSwitcher, text: "Home" }
-      - { part: tabErrands, selected: true }
-
-  - name: "project menu opens and marks the active row"
-    # F02-005, F02-009
+      - { part: projectSwitcher, name: "Switch project", text: { contains: "Home" } }
+      - { part: listTab, selected: true, text: { contains: "Errands" } }
+      - { part: listTabReading, selected: false, text: { contains: "Reading" } }
+      - { part: listTabGarden, selected: false, text: { contains: "Garden" } }
+      - { part: listTabDelete, name: "Delete list", visible: true }
+      - { part: newList, name: "New list", visible: true }
+      - { part: splitView, name: "Split view", selected: false, visible: true }
+      - { part: swapPanes, visible: false }
+      - { part: paneMarker, visible: false }
+      - { part: previewToggle, name: { contains: "Hide preview panel" }, selected: true, visible: true }
+      - { part: paletteButton, visible: true }
+      - { part: trashButton, visible: true }
+      - { part: settingsButton, name: { contains: "Settings" }, visible: true }
+      - { part: accountButton, visible: true }
+      - { part: projectMenu, visible: false }
+      - { part: reducedMotionStatus, visible: false }
+    screenshot: true
+  - name: cmd held leaves the bar as it is
+    steps:
+      - { input: modifierHold }
+    expect:
+      - { part: splitView, name: "Split view", visible: true }
+      - { part: settingsButton, name: { contains: "Settings" } }
+      - { part: listTab, selected: true }
+    screenshot: true
+  - name: project menu opens with both projects and visible rename and delete
     steps:
       - { action: press, part: projectSwitcher }
     expect:
       - { part: projectMenu, visible: true }
-      - { part: rowHome, selected: true }
-
-  - name: "Escape closes the project menu"
-    # F02-006
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: Escape }  # generic projectMenu takes no key; the pill that opened the menu takes it
-    expect:
-      - { part: projectMenu, visible: false }
-
-  - name: "a press outside the project menu closes it"
-    # F02-006
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: previewToggle }  # was tabStrip (generic, takes no press); previewToggle is a button outside the menu
-    expect:
-      - { part: projectMenu, visible: false }
-
-  - name: "pressing the project pill again closes the project menu"
-    # F02-006. Reading chosen: a second press toggles the menu closed. The other reading (stays open) is not tested.
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: projectSwitcher }
-    expect:
-      - { part: projectMenu, visible: false }
-
-  - name: "selecting a project changes the switcher text and the selected row"
-    # F02-007, F02-009
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: rowSpringLaunch }
-      - { action: press, part: projectSwitcher }
-    expect:
-      - { part: projectSwitcher, text: "Spring launch" }
-      - { part: rowSpringLaunch, selected: true }
-      - { part: rowHome, selected: false }
-
-  - name: "row rename and delete buttons show on hover"
-    # F02-010
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: hover, part: rowHome }
-    expect:
-      - { part: renameProjectButton, visible: true }
-      - { part: deleteProjectButton, visible: true }
-
-  - name: "rename project through the prompt, Enter accepts"
-    # F02-011
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: renameProjectButton }
-      - { action: type, part: projectNameInput, text: "Household" }
-      - { action: key, part: projectNameInput, key: Enter }
-    expect:
-      - { part: projectSwitcher, text: "Household" }
-
-  - name: "new project prompt starts with a random name of the expected shape"
-    # F02-013, F02-014. The exact name is random, so only the shape is checked.
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: newProjectButton }
-    expect:
-      - { part: projectNameInput, text: { matches: '^[A-Za-z][A-Za-z ]*$' } }
-
-  - name: "roll another project name keeps the expected shape"
-    # F02-014. Only the shape is checked; the value changes on each roll.
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: newProjectButton }
-      - { action: press, part: rollNameButton }
-    expect:
-      - { part: projectNameInput, text: { matches: '^[A-Za-z][A-Za-z ]*$' } }
-
-  - name: "new project prompt creates the typed name, Enter accepts"
-    # F02-013
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: newProjectButton }
-      - { action: type, part: projectNameInput, text: "Garden plan" }
-      - { action: key, part: projectNameInput, key: Enter }
-    expect:
-      - { part: projectSwitcher, text: "Garden plan" }
-
-  - name: "delete project: Enter on the dialog does not delete, Cancel has focus"
-    # F02-012, decision 10, decision 13
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: deleteProjectButton }
-      - { action: key, part: cancelButton, key: Enter }  # generic deleteDialog takes no key; the focused default is Cancel (decision 13)
-    expect:
-      - { part: cancelButton, focused: true }
-      - { part: rowHome, visible: true }
-
-  - name: "delete project: Tab to the danger button, press it, project removed"
-    # F02-012, decision 10, decision 12, decision 13
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: deleteProjectButton }
-      - { action: key, part: cancelButton, key: Tab }
-      - { action: press, part: confirmDeleteButton }
-    expect:
-      - { part: rowHome, visible: false }
-
-  - name: "Escape cancels the project delete dialog"
-    # F02-012, decision 10
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: deleteProjectButton }
-      - { action: key, part: cancelButton, key: Escape }  # generic deleteDialog takes no key; the focused default is Cancel
-    expect:
-      - { part: deleteDialog, visible: false }
-      - { part: rowHome, visible: true }
-
-  # Tabs and lists (F02-035 to F02-062)
-  - name: "pressing a tab selects it"
-    # F02-035, F02-036, F02-039, F09-065
-    steps:
-      - { action: press, part: tabReading }
-    expect:
-      - { part: tabReading, selected: true }
-      - { part: tabErrands, selected: false }
-
-  - name: "focused and hovered tabs show their state"
-    # F02-037, F02-038 (focus ring and separators). Colours are checked by the screenshot.
-    steps:
-      - { action: focus, part: tabReading }
-      - { action: hover, part: tabGarden }
-    expect:
-      - { part: tabReading, focused: true }
+      - { part: projectRow, selected: true, text: { contains: "Home" } }
+      - { part: projectRowSpring, selected: false, text: { contains: "Spring launch" } }
+      - { part: projectRename, name: "Rename project", visible: true }
+      - { part: projectDelete, name: "Delete project", visible: true }
+      - { part: projectDeleteSpring, visible: true }
+      - { part: projectNew, text: { contains: "New project" }, visible: true }
+    trace:
+      - { part: projectMenu, property: opacity }
     screenshot: true
-
-  - name: "close button on a tab removes its list after confirmation"
-    # F02-052, F02-049. Assumes the tab close button opens the list delete confirmation; verify against F02-049 before use.
+  - name: Escape closes the project menu
     steps:
-      - { action: press, part: closeTabErrands }
-      - { action: key, part: cancelButton, key: Tab }
-      - { action: press, part: confirmDeleteButton }
+      - { action: press, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: Escape }
     expect:
-      - { part: tabErrands, visible: false }
-
-  - name: "new list prompt creates a tab"
-    # F02-057
+      - { part: projectMenu, visible: false }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+  - name: a press outside the project menu closes it
+    # the outside press lands on the preview toggle; the press is assumed to pass through, so the preview toggles once
     steps:
-      - { action: press, part: newListButton }
-      - { action: type, part: listNameInput, text: "Plants" }
-      - { action: key, part: listNameInput, key: Enter }
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: previewToggle }
     expect:
-      - { part: tabStrip, text: { matches: 'Plants' } }
-
-  - name: "new list prompt starts with a random adjective and noun"
-    # F02-015. Only the shape is checked.
+      - { part: projectMenu, visible: false }
+      - { event: previewToggled, times: 1, last: { open: false } }
+  - name: choosing another project switches the pill and the list tabs
     steps:
-      - { action: press, part: newListButton }
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectRowSpring }
     expect:
-      - { part: listNameInput, text: { matches: '^[A-Za-z]+ [A-Za-z]+$' } }
-
-  - name: "roll another list name keeps the expected shape"
-    # F02-015. Only the shape is checked.
+      - { part: projectMenu, visible: false }
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+      - { part: listTab, selected: true, text: { contains: "Website" } }
+      - { part: listTabReading, visible: false }
+      - { event: projectSelected, times: 1, last: { name: "Spring launch" } }
+  - name: switching project clears the split pane
     steps:
-      - { action: press, part: newListButton }
-      - { action: press, part: rollListNameButton }
+      - { action: press, part: splitView }
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectRowSpring }
     expect:
-      - { part: listNameInput, text: { matches: '^[A-Za-z]+ [A-Za-z]+$' } }
-
-  - name: "no-lists state disables split and shows the message"
-    # F02-062, F02-016, F09-068, F09-069. Exact copy is not in the spec, so the text is matched.
+      - { part: splitView, selected: false }
+      - { part: swapPanes, visible: false }
+  - name: the next project chord cycles and wraps
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketRight" }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketRight" }
+    expect:
+      - { part: projectSwitcher, text: { contains: "Home" } }
+      - { event: projectSelected, times: 2, last: { name: "Home" } }
+  - name: the previous project chord wraps to the last project
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketLeft" }
+    expect:
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+      - { event: projectSelected, times: 1, last: { name: "Spring launch" } }
+  - name: rename project asks for a new name and keeps the project
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectRename }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { event: projectRenameRequested, times: 1, last: { name: "Home" } }
+      - { event: projectSelected, times: 0 }
+  - name: delete project asks for confirmation and keeps the project
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectDelete }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { event: projectDeleteRequested, times: 1, last: { name: "Home" } }
+      - { event: projectSelected, times: 0 }
+  - name: delete on the Spring launch row asks for its delete and keeps the project
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectDeleteSpring }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { event: projectDeleteRequested, times: 1, last: { name: "Spring launch" } }
+      - { event: projectSelected, times: 0 }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+  - name: New project in the menu asks to create a project and does not switch to it
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: press, part: projectNew }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { event: projectCreateRequested, times: 1, last: { activeProject: "Home" } }
+      - { event: projectSelected, times: 0 }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+  - name: New list asks to create a list in the active project
+    steps:
+      - { action: press, part: newList }
+    expect:
+      - { part: newList, visible: true }
+      - { event: listCreateRequested, times: 1, last: { project: "Home" } }
+  - name: the new list chord asks to create a list in the active project
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+KeyN" }
+    expect:
+      - { event: listCreateRequested, times: 1, last: { project: "Home" } }
+  - name: clicking a tab makes it the active list
+    steps:
+      - { action: press, part: listTabGarden }
+    expect:
+      - { part: listTabGarden, selected: true }
+      - { part: listTab, selected: false }
+      - { event: listSelected, times: 1, last: { name: "Garden" } }
+    screenshot: true
+  - name: hovering a tab shows its hover state
+    steps:
+      - { action: hover, part: listTabReading }
+    expect:
+      - { part: listTab, selected: true }
+      - { part: listTabReading, selected: false, visible: true }
+    screenshot: true
+  - name: keyboard focus moves onto a tab
+    steps:
+      - { action: focus, part: listTabReading }
+    expect:
+      - { part: listTabReading, focused: true }
+      - { part: listTab, focused: false }
+  - name: the next list chord cycles through the lists and wraps to the first
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
+    expect:
+      - { part: listTab, selected: true, text: { contains: "Errands" } }
+      - { event: listSelected, times: 3, last: { name: "Errands" } }
+  - name: the previous list chord wraps to the last list
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowLeft" }
+    expect:
+      - { part: listTabGarden, selected: true }
+      - { event: listSelected, times: 1, last: { name: "Garden" } }
+  - name: the list number chord selects the second tab
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, part: projectSwitcher, key: "Alt+Digit2" }
+    expect:
+      - { part: listTabReading, selected: true }
+      - { event: listSelected, times: 1, last: { name: "Reading" } }
+  - name: the tab delete button asks for the delete and keeps the tab
+    steps:
+      - { action: press, part: listTabDelete }
+    expect:
+      - { event: listDeleteRequested, times: 1, last: { name: "Errands" } }
+      - { event: listSelected, times: 0 }
+      - { part: listTab, visible: true, text: { contains: "Errands" } }
+  - name: double-click on a tab opens the inline name field with focus
+    # double-click is two presses with times 2 (the format has no double-click action)
+    steps:
+      - { action: press, part: listTab, times: 2 }
+    expect:
+      - { part: listRenameInput, focused: true, text: "Errands" }
+  - name: Enter commits an inline rename
+    steps:
+      - { action: press, part: listTab, times: 2 }
+      - { action: key, part: listRenameInput, key: End }
+      - { action: key, part: listRenameInput, key: "Shift+Home" }
+      - { action: type, part: listRenameInput, text: "Chores" }
+      - { action: key, part: listRenameInput, key: Enter }
+    expect:
+      - { part: listRenameInput, visible: false }
+      - { part: listTab, text: { contains: "Chores" } }
+      - { event: listRenamed, times: 1, last: { name: "Chores" } }
+  - name: Escape cancels an inline rename
+    steps:
+      - { action: press, part: listTab, times: 2 }
+      - { action: key, part: listRenameInput, key: End }
+      - { action: key, part: listRenameInput, key: "Shift+Home" }
+      - { action: type, part: listRenameInput, text: "Chores" }
+      - { action: key, part: listRenameInput, key: Escape }
+    expect:
+      - { part: listRenameInput, visible: false }
+      - { part: listTab, text: { contains: "Errands" } }
+      - { event: listRenamed, times: 0 }
+  - name: leaving the inline field commits the rename
+    steps:
+      - { action: press, part: listTab, times: 2 }
+      - { action: key, part: listRenameInput, key: End }
+      - { action: key, part: listRenameInput, key: "Shift+Home" }
+      - { action: type, part: listRenameInput, text: "Chores" }
+      - { action: focus, part: projectSwitcher }
+    expect:
+      - { part: listTab, text: { contains: "Chores" } }
+      - { event: listRenamed, times: 1, last: { name: "Chores" } }
+  - name: an empty inline name keeps the list name
+    steps:
+      - { action: press, part: listTab, times: 2 }
+      - { action: key, part: listRenameInput, key: End }
+      - { action: key, part: listRenameInput, key: "Shift+Home" }
+      - { action: key, part: listRenameInput, key: Backspace }
+      - { action: key, part: listRenameInput, key: Enter }
+    expect:
+      - { part: listTab, text: { contains: "Errands" } }
+      - { event: listRenamed, times: 0 }
+  - name: the tab menu opens with its four list actions
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+    expect:
+      - { part: tabMenu, visible: true }
+      - { part: tabMenuRename, text: { contains: "Rename" } }
+      - { part: tabMenuSplit, text: { contains: "Open in split view" } }
+      - { part: tabMenuExport, text: { contains: "Export list" } }
+      - { part: tabMenuDelete, text: { contains: "Delete list" } }
+    screenshot: true
+  - name: Escape closes the tab menu
+    steps:
+      - { action: key, part: listTab, key: ContextMenu }
+      - { action: key, part: listTab, key: Escape }
+    expect:
+      - { part: tabMenu, visible: false }
+  - name: a press outside the tab menu closes it
+    # the outside press lands on the Garden tab, which is assumed to pass through and select Garden
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: listTabGarden }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { event: listSelected, times: 1, last: { name: "Garden" } }
+  - name: menu Rename asks for the rename and does not open the inline field
+    steps:
+      - { action: key, part: listTab, key: ContextMenu }
+      - { action: press, part: tabMenuRename }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: listRenameInput, visible: false }
+      - { event: listRenameRequested, times: 1, last: { name: "Errands" } }
+  - name: menu Export list asks for an export
+    steps:
+      - { action: key, part: listTab, key: ContextMenu }
+      - { action: press, part: tabMenuExport }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { event: listExportRequested, times: 1, last: { name: "Errands" } }
+  - name: menu Delete list asks for the delete
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: tabMenuDelete }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { event: listDeleteRequested, times: 1, last: { name: "Reading" } }
+      - { part: listTabReading, visible: true, text: { contains: "Reading" } }
+  - name: menu split item opens the list in the split pane
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: tabMenuSplit }
+      - { action: key, part: listTabReading, key: ContextMenu }
+    expect:
+      - { part: tabMenuSplit, text: { contains: "Close split" } }
+      - { part: splitView, name: "Close split view" }
+      - { part: swapPanes, visible: true }
+      - { part: paneMarker, visible: true }
+      - { part: listTab, selected: true }
+      - { event: splitToggled, times: 1, last: { active: true } }
+  - name: menu split item closes the split pane for that list
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: tabMenuSplit }
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: tabMenuSplit }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: splitView, name: "Split view", selected: false }
+      - { part: swapPanes, visible: false }
+      - { part: paneMarker, visible: false }
+      - { event: splitToggled, times: 2, last: { active: false } }
+  - name: Swap panes swaps the two panes
+    steps:
+      - { action: key, part: listTabReading, key: ContextMenu }
+      - { action: press, part: tabMenuSplit }
+      - { action: press, part: swapPanes }
+    expect:
+      - { part: swapPanes, visible: true }
+      - { event: panesSwapped, times: 1, last: { left: "Reading" } }
+  - name: a tab click with split on does not swap the panes
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: listTabGarden }
+    expect:
+      - { part: splitView, selected: true }
+      - { event: panesSwapped, times: 0 }
+  - name: Split view button opens and closes the split pane
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: splitView }
+    expect:
+      - { part: splitView, name: "Split view", selected: false }
+      - { part: swapPanes, visible: false }
+      - { part: paneMarker, visible: false }
+      - { event: splitToggled, times: 2, last: { active: false } }
+  - name: split on shows Swap panes and the pane markers
+    steps:
+      - { action: press, part: splitView }
+    expect:
+      - { part: splitView, name: "Close split view", selected: true }
+      - { part: swapPanes, name: "Swap panes", visible: true }
+      - { part: paneMarker, visible: true }
+      - { event: splitToggled, times: 1, last: { active: true } }
+    screenshot: true
+  - name: Split view is disabled with no lists
     props: { dataset: nolists }
-    expect:
-      - { part: splitToggle, disabled: true }
-      - { part: noListsMessage, visible: true }
-      - { part: noListsMessage, text: { matches: '.+' } }
-
-  # Split and preview (F02-016 to F02-018, F09-069 to F09-073)
-  - name: "swap button is hidden until split view is on"
-    # F02-017
-    expect:
-      - { part: swapButton, visible: false }
-
-  - name: "split toggle on shows the swap button"
-    # F02-016, F02-017
     steps:
-      - { action: press, part: splitToggle }
+      - { action: press, part: splitView }
     expect:
-      - { part: splitToggle, checked: true }
-      - { part: swapButton, visible: true }
-
-  - name: "split toggle off hides the swap button"
-    # F02-016, F02-017
-    steps:
-      - { action: press, part: splitToggle }
-      - { action: press, part: splitToggle }
-    expect:
-      - { part: splitToggle, checked: false }
-      - { part: swapButton, visible: false }
-
-  - name: "preview toggle shows its selected state"
-    # F02-018
-    steps:
-      - { action: press, part: previewToggle }
-    expect:
-      - { part: previewToggle, selected: true }
-
-  - name: "pressing preview again clears its selected state"
-    # F02-018
-    steps:
-      - { action: press, part: previewToggle }
-      - { action: press, part: previewToggle }
-    expect:
-      - { part: previewToggle, selected: false }
-
-  # Settings (F02-019, F02-021, F09-075)
-  - name: "desktop: settings button opens the settings dialog"
-    # F02-019, F09-075. The shortcut hint is not measured (tooltip text is not on screen until hover).
-    only: [desktop]
-    steps:
-      - { action: press, part: settingsButton }
-    expect:
-      - { part: settingsDialog, visible: true }
-
-  - name: "desktop: Escape closes the settings dialog"
-    # F02-019
-    only: [desktop]
-    steps:
-      - { action: press, part: settingsButton }
-      - { action: key, part: settingsCloseButton, key: Escape }  # generic settingsDialog takes no key; its close button does
-    expect:
-      - { part: settingsDialog, visible: false }
-
-  - name: "web: Settings opens from the account menu and Escape closes it"
-    # web.md: the web drops the standalone Settings button; Settings sits in the account menu
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-      - { action: press, part: accountMenuSettings }
-      - { action: key, part: settingsCloseButton, key: Escape }  # generic settingsDialog takes no key; its close button does
-    expect:
-      - { part: settingsDialog, visible: false }
-
-  - name: "web: settings close button closes the Settings modal"
-    # web.md: closed by Escape or the close button
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-      - { action: press, part: accountMenuSettings }
-      - { action: press, part: settingsCloseButton }
-    expect:
-      - { part: settingsDialog, visible: false }
-
-  - name: "web: motion choice in Settings shows the selected option"
-    # F02-021, decision 16 (System, On, Off). The location of the segmented control is an assumption (the Settings dialog).
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-      - { action: press, part: accountMenuSettings }
-      - { action: press, part: motionOn }
-    expect:
-      - { part: motionOn, selected: true }
-      - { part: motionSystem, selected: false }
-
-  # Web account menu and palette (web.md, decision 7)
-  - name: "web: account button shows an initial and the menu lists email, Settings and Sign out"
-    # web.md. The initial and the email shape are matched; the demo account name is not in the spec.
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-    expect:
-      - { part: accountButton, text: { matches: '^[A-Z]$' } }
-      - { part: accountMenuEmail, text: { matches: '^[^@ ]+@[^@ ]+$' } }
-      - { part: accountMenuSettings, text: "Settings" }
-      - { part: accountMenuSignOut, text: "Sign out" }
-
-  - name: "web: palette button is visible in the title bar"
-    # decision 7
-    only: [web]
-    expect:
-      - { part: paletteButton, visible: true }
-
-  - name: "web: Ctrl/Cmd+K opens the search and commands palette"
-    # decision 7. Per-platform forms: Control+K on Windows and Linux, Meta+K on macOS (platforms.yaml, not verified here).
-    only: [web]
-    steps:
-      - { action: key, part: paletteButton, key: Control+K }
+      - { part: splitView, disabled: true }
+      - { part: listTab, visible: false }
+      - { part: listTabs, visible: true }
+      - { part: newList, visible: true }
+      - { event: splitToggled, times: 0 }
     screenshot: true
-
-  # Trash (decision 1, decision 8)
-  - name: "trash button is visible on both targets"
-    # decision 1
+  - name: a single list shows as the one active tab
+    props: { dataset: empty }
+    steps: []
     expect:
-      - { part: trashButton, visible: true }
-
-  - name: "web: trash button shows the Trash list in the aside"
-    # decision 8. Desktop opens Trash in its own window; that is not asserted here.
-    only: [web]
+      - { part: listTab, selected: true, text: { contains: "Inbox" } }
+      - { part: listTabReading, visible: false }
+  - name: the preview toggle hides the preview panel
+    steps:
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, name: { contains: "Show preview panel" }, selected: false }
+      - { event: previewToggled, times: 1, last: { open: false } }
+  - name: the preview toggle shows the preview panel again
+    steps:
+      - { action: press, part: previewToggle }
+      - { action: press, part: previewToggle }
+    expect:
+      - { part: previewToggle, name: { contains: "Hide preview panel" }, selected: true }
+      - { event: previewToggled, times: 2, last: { open: true } }
+  - name: Trash button opens the trash
     steps:
       - { action: press, part: trashButton }
     expect:
-      - { part: trashAside, visible: true }
-
-  # Desktop window chrome (OS-drawn; part checks only)
-  - name: "desktop: macOS traffic lights are present"
-    # F02-023 to F02-033. The platform draws these, so only the parts are checked, not a screenshot.
-    only: [desktop]
+      - { event: trashOpened, times: 1, last: { open: true } }
+  - name: command palette button opens the palette
+    steps:
+      - { action: press, part: paletteButton }
     expect:
-      - { part: trafficClose, role: button, visible: true }
-      - { part: trafficMinimize, role: button, visible: true }
-      - { part: trafficZoom, role: button, visible: true }
-
-  - name: "desktop: Windows caption buttons are present"
-    # F02-023 to F02-033. The platform draws these, so only the parts are checked, not a screenshot.
-    only: [desktop]
-    expect:
-      - { part: captionMinimize, role: button, visible: true }
-      - { part: captionMaximize, role: button, visible: true }
-      - { part: captionClose, role: button, visible: true }
-
-  # Reference states (one screenshot test each)
-  - name: "reference: title bar with standard data"
-    # F02-022, F02-034 (inactive grey and dark-mode colours, both schemes)
-    screenshot: true
-
-  - name: "reference: project menu open"
-    steps:
-      - { action: press, part: projectSwitcher }
-    screenshot: true
-
-  - name: "reference: delete project confirmation"
-    # decision 12 (danger colour on delete, accent blue only for primary action and selection)
-    steps:
-      - { action: press, part: projectSwitcher }
-      - { action: press, part: deleteProjectButton }
-    screenshot: true
-
-  - name: "reference: no-lists state"
-    props: { dataset: nolists }
-    screenshot: true
-
-  - name: "reference: split view on"
-    steps:
-      - { action: press, part: splitToggle }
-    screenshot: true
-
-  - name: "reference: preview on"
-    steps:
-      - { action: press, part: previewToggle }
-    screenshot: true
-
-  - name: "web reference: account menu open"
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-    screenshot: true
-
-  - name: "web reference: settings dialog"
-    only: [web]
-    steps:
-      - { action: press, part: accountButton }
-      - { action: press, part: accountMenuSettings }
-    screenshot: true
-
-  - name: "desktop reference: settings dialog"
-    only: [desktop]
+      - { event: paletteOpened, times: 1, last: { open: true } }
+  - name: Settings button opens the settings
     steps:
       - { action: press, part: settingsButton }
+    expect:
+      - { part: settingsButton, name: { contains: "Settings" } }
+      - { event: settingsOpened, times: 1, last: { open: true } }
+  - name: account menu shows the email, Settings and Sign out
+    steps:
+      - { action: press, part: accountButton }
+    expect:
+      - { part: accountMenu, visible: true }
+      - { part: accountEmail, text: { contains: "@" } }
+      - { part: accountSettings, text: { contains: "Settings" } }
+      - { part: accountSignOut, text: { contains: "Sign out" } }
+    screenshot: true
+  - name: account menu Settings opens the settings
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountSettings }
+    expect:
+      - { part: accountMenu, visible: false }
+      - { event: settingsOpened, times: 1, last: { open: true } }
+  - name: Sign out asks the app to sign the account out
+    # only the request is checked; the sign-out itself is outside this bar
+    steps:
+      - { action: press, part: accountButton }
+      - { action: press, part: accountSignOut }
+    expect:
+      - { part: accountMenu, visible: false }
+      - { event: signOutRequested, times: 1, last: { signedIn: true } }
+  - name: reduced-motion indicator shows when the setting is on
+    props: { reducedMotion: "on" }
+    steps:
+      - { action: hover, part: reducedMotionStatus }
+    expect:
+      - { part: reducedMotionStatus, visible: true, name: { contains: "Reduced motion is on" } }
+    screenshot: true
+  - name: every bar control stays on screen at the narrow width
+    steps: []
+    expect:
+      - { part: listTabs, visible: true }
+      - { part: projectSwitcher, visible: true }
+      - { part: newList, visible: true }
+      - { part: splitView, visible: true }
+      - { part: previewToggle, visible: true }
+      - { part: paletteButton, visible: true }
+      - { part: trashButton, visible: true }
+      - { part: settingsButton, visible: true }
+      - { part: accountButton, visible: true }
     screenshot: true

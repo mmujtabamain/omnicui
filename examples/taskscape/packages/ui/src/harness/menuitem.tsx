@@ -1,87 +1,96 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, type CSSProperties } from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { MenuItem } from "../components/ui/menu-item";
 
-/** Demo lists a submenu row offers. */
-const LISTS = ["Inbox", "Today", "Someday"];
-
-const SIBLING_CLASS =
-  "flex h-[2.143rem] items-center px-space-6 text-[0.929rem] text-content-1 outline-none data-[disabled]:opacity-40 data-[highlighted]:bg-wash-2";
+const noop = () => {};
 
 /**
- * The row sits in a Menu panel, as it does in the app (Radix mounts rows only inside one). The panel is
- * held open and the row takes focus on open, so the test drives it. Plain Radix rows around it are the
- * harness-only siblings for the focus and arrow-key tests.
+ * Style for the harness-only rows the tests press, focus and arrow to. Each is a real box, so a press reaches it,
+ * but nothing is drawn: opacity 0, placed below the panel (the Content is positioned), one slot per row so no two overlap.
  */
-function MenuItemHarness({ emit, selection = "action", checked = false, value = "", label = "Item", rowActions = false, ...props }: any) {
-  const radio = selection === "radio";
-  const [group, setGroup] = useState<string>(checked ? value : "");
-  const rowRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    // Project rows rest with their actions hidden; focus-within would reveal them, so only the other rows take focus here.
-    if (!rowActions) rowRef.current?.focus();
-  }, []);
+function unseen(slot: number): CSSProperties {
+  return { position: "absolute", left: 0, right: 0, top: `calc(100% + ${slot * 2}rem)`, height: "1.857rem", opacity: 0 };
+}
 
-  const main = (
-    <MenuItem
-      ref={rowRef}
-      selection={selection}
-      value={value}
-      label={label}
-      rowActions={rowActions}
-      {...props}
-      onSelect={() => emit("activated", { value: radio ? value : "", label })}
-      onSubmenuToggle={(open: boolean) => emit("submenuToggled", { open })}
-      onRenameAction={() => emit("renamePressed", { label })}
-      onDeleteAction={() => emit("deletePressed", { label })}
-      submenu={LISTS.map((name) => (
-        <div key={name} role="menuitem" tabIndex={-1} className={SIBLING_CLASS.replace("text-content-1", "text-content-2")}>
-          {name}
-        </div>
-      ))}
-    />
+/** The row is mounted in an open menu, as the product does; Radix needs its Menu around the row. */
+function MenuItemHarness({ emit, selection = "action", trailing = "none", checked = false, value = "", label = "Item", ...props }: any) {
+  const isRadio = selection === "radio";
+  const rowValue = isRadio ? String(value) : "";
+  const rowLabel = String(label);
+  // The group's chosen radio value. The row's checked prop seeds it, so a press on a sibling unchecks the row.
+  const [chosen, setChosen] = useState<string | null>(isRadio && checked ? rowValue : null);
+
+  // Submenu rows carry their own data-slot, so the row part is only the row under test.
+  const submenu = (
+    <>
+      <MenuItem data-slot="submenuItem" label="Inbox" />
+      <MenuItem data-slot="submenuItem" label="Today" />
+      <MenuItem data-slot="submenuItem" label="Someday" />
+    </>
   );
 
-  const sibling = (slot: string, text: string, rowValue: string, disabled = false) =>
-    radio ? (
-      <DropdownMenuPrimitive.RadioItem key={slot} data-slot={slot} value={rowValue} disabled={disabled} textValue={text} className={SIBLING_CLASS}>
+  // Harness-only siblings are plain Radix items, so their text is not a second label part of the row.
+  const sibling = (slot: string, index: number, text: string, disabled: boolean) => (
+    <DropdownMenuPrimitive.Item data-slot={slot} disabled={disabled} onSelect={noop} style={unseen(index)}>
+      {text}
+    </DropdownMenuPrimitive.Item>
+  );
+  const radioSibling = (slot: string, index: number, text: string, optionValue: string, disabled = false) => (
+    <DropdownMenuPrimitive.RadioGroup key={slot} value={chosen === optionValue ? "on" : "off"} onValueChange={noop}>
+      <DropdownMenuPrimitive.RadioItem
+        data-slot={slot}
+        value="on"
+        disabled={disabled}
+        onSelect={() => setChosen(optionValue)}
+        style={unseen(index)}
+      >
         {text}
       </DropdownMenuPrimitive.RadioItem>
-    ) : (
-      <DropdownMenuPrimitive.Item key={slot} data-slot={slot} disabled={disabled} textValue={text} className={SIBLING_CLASS}>
-        {text}
-      </DropdownMenuPrimitive.Item>
-    );
+    </DropdownMenuPrimitive.RadioGroup>
+  );
 
   const rows = (
     <>
-      {sibling("previous", "Paste", "paste")}
-      {main}
-      {sibling("disabledSibling", "Archived lists", "archived", true)}
-      {sibling("sibling", radio ? "Last 30 days" : "Move to list", "30d")}
+      {isRadio ? radioSibling("previous", 0, "Last 90 days", "90d") : sibling("previous", 0, "Paste", false)}
+      <MenuItem
+        {...props}
+        selection={selection}
+        trailing={trailing}
+        label={label}
+        value={rowValue}
+        checked={isRadio && chosen === rowValue}
+        submenu={trailing === "submenu" ? submenu : undefined}
+        onSelect={() => {
+          if (isRadio) setChosen(rowValue);
+          emit("activated", { value: rowValue, label: rowLabel });
+        }}
+        onSubmenuToggle={(open: boolean) => emit("submenuToggled", { open })}
+        onRename={() => emit("renamePressed", { label: rowLabel })}
+        onDelete={() => emit("deletePressed", { label: rowLabel })}
+      />
+      {isRadio
+        ? radioSibling("disabledSibling", 1, "Last 14 days", "14d", true)
+        : sibling("disabledSibling", 1, "Archived lists", true)}
+      {isRadio ? radioSibling("sibling", 2, "Last 30 days", "30d") : sibling("sibling", 2, "Move to list", false)}
     </>
   );
 
   return (
-    <DropdownMenuPrimitive.Root open modal={false}>
+    <DropdownMenuPrimitive.Root open modal={false} onOpenChange={noop}>
       <DropdownMenuPrimitive.Trigger asChild>
-        <span className="block h-px w-px" />
+        <div className="block h-0" />
       </DropdownMenuPrimitive.Trigger>
       <DropdownMenuPrimitive.Content
+        side="bottom"
         align="start"
         sideOffset={4}
-        className="z-(--z-index-menu) flex min-w-[12rem] w-[16rem] flex-col rounded-(--radius-panel) border border-edge-1 bg-surface-3 p-space-5 shadow-menu outline-none"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="relative z-(--z-index-menu) w-[17.5rem] rounded-(--radius-panel) bg-surface-3 p-space-5 shadow-menu outline-none"
       >
-        {radio ? (
-          <DropdownMenuPrimitive.RadioGroup
-            aria-label="Date range"
-            data-slot="group"
-            value={group}
-            onValueChange={setGroup}
-            className="flex flex-col"
-          >
+        {isRadio ? (
+          <div role="group" aria-label="Date range" data-slot="group">
             {rows}
-          </DropdownMenuPrimitive.RadioGroup>
+          </div>
         ) : (
           rows
         )}

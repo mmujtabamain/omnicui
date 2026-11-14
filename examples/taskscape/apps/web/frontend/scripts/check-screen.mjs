@@ -55,7 +55,8 @@ const s = results.summary;
 console.log(`CONTRACT: ${s.pass} pass, ${s.fail} fail, ${s.broken} broken, ${s.notMeasured} not measured, ${s.notApplicable} not applicable`);
 for (const r of results.results) {
   if (["pass", "not applicable"].includes(r.status)) continue;
-  if (r.status !== "not measured") ok = false;
+  // Not measured and not advertised (an action this target cannot do: a swipe in a desktop browser) are reported, not failed.
+  if (!["not measured", "not advertised"].includes(r.status)) ok = false;
   console.log(`- ${r.status.toUpperCase()} ${r.test}: ${(r.messages ?? []).join(" / ").slice(0, 500)}`);
   const errs = (r.stderr ?? []).filter((l) => /error|failed/i.test(l)).slice(0, 2);
   for (const l of errs) console.log(`    ${l.slice(0, 300)}`);

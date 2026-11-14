@@ -1,24 +1,28 @@
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 import { Icon } from "./icon";
 
 /**
- * Geometry in rem (1rem = 14px). Default rows are 30px with a 13px/19.5px label; large rows and the
- * action row are 32px with a 13.5px/20.25px label. The label inherits the row's text colour.
+ * Row geometry at 1rem = 14px. The default row is 30px with a 13px/19.5px label; the large row and the
+ * action row are 32px with a 13.5px/20.25px label. Padding is the task menu's (px-space-6, py-space-4).
  */
-export const menuItemVariants = cva(
+const ignore = () => {};
+
+const menuItemVariants = cva(
   [
-    "relative flex w-full min-w-0 cursor-default select-none items-center gap-space-5 px-space-6 py-space-4 font-normal outline-none",
-    "rounded-(--radius-field) transition-colors duration-(--duration-fast) ease-standard",
+    "relative flex w-full min-w-0 cursor-default select-none items-center gap-space-5 px-space-6 py-space-4 text-left font-normal outline-none",
+    "rounded-(--radius-field) focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1",
     "data-[disabled]:pointer-events-none data-[disabled]:opacity-40",
-    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1",
   ],
   {
     variants: {
-      variant: { item: "", action: "" },
+      variant: {
+        item: "",
+        action: "rounded-none border-t border-edge-1",
+      },
       tone: {
         default: "text-content-1 data-[highlighted]:bg-wash-2",
         danger: "text-danger-500 data-[highlighted]:bg-danger-100",
@@ -28,62 +32,77 @@ export const menuItemVariants = cva(
         large: "h-[2.286rem] text-[0.964rem] leading-[1.446rem]",
       },
     },
+    compoundVariants: [{ variant: "action", className: "h-[2.286rem] text-[0.964rem] leading-[1.446rem]" }],
     defaultVariants: { variant: "item", tone: "default", size: "default" },
   },
 );
 
-export interface MenuItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, "children" | "onSelect" | "value" | "size" | "disabled"> {
-  /** item: ordinary row. action: separated footer row, full width, 32px, leading icon. */
-  variant?: "item" | "action";
-  tone?: "default" | "danger";
-  /** radio: a 14px check slot is always reserved; the row sits in a RadioGroup and shows the check when its value is the group's. */
+export { menuItemVariants };
+
+type MenuItemVariants = VariantProps<typeof menuItemVariants>;
+
+export interface MenuItemProps extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, "children" | "onSelect"> {
+  variant?: MenuItemVariants["variant"];
+  tone?: MenuItemVariants["tone"];
+  size?: MenuItemVariants["size"];
+  /** radio rows sit in a labelled group and show a check when checked. */
   selection?: "action" | "radio";
-  /** submenu: a trailing chevron; press, hover, ArrowRight, Enter or Space open the submenu. */
+  /** submenu rows open a submenu instead of running. */
   trailing?: "none" | "submenu";
-  size?: "default" | "large";
-  /** Leading Material Symbols name, 15px. Empty for no icon. */
+  /** Leading icon name, 15px. "" for none. */
   icon?: string;
-  label?: string;
+  label?: React.ReactNode;
   truncate?: boolean;
-  disabled?: boolean;
-  /** Radio rows only: the value this row sets in its group. */
+  checked?: boolean;
+  /** The value a radio row sets in its group. */
   value?: string;
-  /** Project rows: hover- and focus-revealed rename and delete buttons, siblings of the row. */
+  /** Project rows: rename and delete buttons revealed on hover or focus, as siblings of the row. */
   rowActions?: boolean;
-  /** The submenu content, shown while a submenu row is open. */
+  /** The submenu's content, shown while a submenu row is open. */
   submenu?: React.ReactNode;
+  /** The row ran its action (not for submenu rows). */
   onSelect?: (event: Event) => void;
+  /** A submenu row opened (true) or closed (false). */
   onSubmenuToggle?: (open: boolean) => void;
-  onRenameAction?: () => void;
-  onDeleteAction?: () => void;
+  onRename?: () => void;
+  onDelete?: () => void;
 }
 
+/**
+ * One row of a Menu, on Radix DropdownMenu.Item (RadioItem for radio rows). Must sit inside a
+ * DropdownMenu.Content. The ref goes to the row (data-slot="row"); the wrapper holds the row's
+ * submenu and rename and delete siblings.
+ */
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
   {
-    variant = "item", tone = "default", selection = "action", trailing = "none", size = "default",
-    icon = "", label = "Item", truncate = false, disabled = false, value = "",
-    rowActions = false, submenu, onSelect, onSubmenuToggle, onRenameAction, onDeleteAction,
-    onKeyDown, onPointerMove, className, ...props
+    variant = "item", tone = "default", size = "default", selection = "action", trailing = "none",
+    icon = "", label = "Item", truncate = false, checked = false, value = "", rowActions = false,
+    disabled = false, submenu, onSelect, onSubmenuToggle, onRename, onDelete,
+    className, onKeyDown, onPointerEnter, onPointerMove, onBlur, ...props
   },
   ref,
 ) {
   const [open, setOpen] = React.useState(false);
   const openRef = React.useRef(false);
-  const radio = selection === "radio";
-  const hasSubmenu = trailing === "submenu";
-  const geometry = variant === "action" || size === "large" ? "large" : "default";
+  // Radix moves focus onto a row the pointer is over. That focus is not keyboard focus: the spec's hover is a
+  // wash only, so the row drops its focus ring while the pointer holds it, and the ring returns when the row
+  // loses focus and keyboard focus reaches it.
+  const [pointerHighlight, setPointerHighlight] = React.useState(false);
+  const isRadio = selection === "radio";
+  const isSubmenu = trailing === "submenu";
+  const iconTone = tone === "danger" ? "danger" : "muted";
 
-  // Opening only: a press, hover, ArrowRight, Enter or Space opens the submenu and never runs the row.
+  // The callback fires only on a change, so a hover followed by a press is one opening.
   const setSubmenu = (next: boolean) => {
-    if (next === openRef.current) return;
+    if (openRef.current === next || (next && disabled)) return;
     openRef.current = next;
     setOpen(next);
     onSubmenuToggle?.(next);
   };
 
+  // A submenu row never runs its action: press, Enter and Space open the submenu (APG parent item).
   const handleSelect = (event: Event) => {
-    if (hasSubmenu) {
+    if (isSubmenu) {
       event.preventDefault();
       setSubmenu(true);
       return;
@@ -93,7 +112,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
-    if (!hasSubmenu || event.defaultPrevented) return;
+    if (!isSubmenu || event.defaultPrevented) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
       setSubmenu(true);
@@ -103,96 +122,82 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
     }
   };
 
+  const handlePointerEnter = (event: React.PointerEvent<HTMLDivElement>) => {
+    onPointerEnter?.(event);
+    if (isSubmenu && event.pointerType === "mouse") setSubmenu(true);
+  };
+
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     onPointerMove?.(event);
-    if (hasSubmenu && !disabled) setSubmenu(true);
+    setPointerHighlight(true);
+  };
+
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    onBlur?.(event);
+    setPointerHighlight(false);
   };
 
   const content = (
     <>
-      {radio && (
-        <span aria-hidden="true" className="inline-flex size-[1rem] shrink-0 items-center justify-center">
-          <DropdownMenuPrimitive.ItemIndicator className="flex items-center justify-center">
-            <Icon data-slot="check" name="check" size={15} weight={900} tone="accent" className="shrink-0" />
-          </DropdownMenuPrimitive.ItemIndicator>
+      {isRadio && (
+        <span className="flex w-4 shrink-0 items-center justify-center">
+          {checked && <Icon data-slot="check" name="check" size={15} weight={900} tone="accent" />}
         </span>
       )}
-      {icon !== "" && (
-        <Icon data-slot="icon" name={icon} size={15} weight={300} tone={tone === "danger" ? "danger" : "muted"} className="shrink-0" />
-      )}
+      {icon !== "" && <Icon data-slot="icon" name={icon} size={15} weight={300} tone={iconTone} />}
       <span data-slot="label" className={cn("min-w-0 flex-1", truncate && "truncate")}>
         {label}
       </span>
-      {hasSubmenu && <Icon data-slot="chevron" name="chevron_right" size={15} weight={300} tone="muted" className="shrink-0" />}
+      {isSubmenu && <Icon data-slot="chevron" name="chevron_right" size={15} weight={300} tone={iconTone} />}
     </>
   );
 
-  const rowClass = cn(
-    menuItemVariants({ variant, tone, size: geometry }),
-    rowActions && "flex-1",
-    className,
-  );
-  const rowCommon = {
+  const rowProps = {
     "data-slot": "row",
+    "data-value": isRadio ? value : undefined,
+    className: cn(
+      menuItemVariants({ variant, tone, size }),
+      pointerHighlight && "focus-visible:ring-0",
+      rowActions && "pr-[4rem]",
+      className,
+    ),
     disabled,
-    textValue: label,
-    "aria-haspopup": hasSubmenu ? ("menu" as const) : undefined,
-    "aria-expanded": hasSubmenu ? open : undefined,
-    className: rowClass,
     onSelect: handleSelect,
     onKeyDown: handleKeyDown,
+    onPointerEnter: handlePointerEnter,
     onPointerMove: handlePointerMove,
+    onBlur: handleBlur,
+    ...(isSubmenu ? { "aria-haspopup": "menu" as const, "aria-expanded": open } : {}),
     ...props,
   };
 
-  const item = radio ? (
-    <DropdownMenuPrimitive.RadioItem ref={ref} {...rowCommon} value={value}>
-      {content}
-    </DropdownMenuPrimitive.RadioItem>
+  // Radix RadioItem reads its checked state from the group's value; "on" and "off" make that the checked prop.
+  const row = isRadio ? (
+    <DropdownMenuPrimitive.RadioGroup value={checked ? "on" : "off"} onValueChange={ignore}>
+      <DropdownMenuPrimitive.RadioItem ref={ref} value="on" {...rowProps}>
+        {content}
+      </DropdownMenuPrimitive.RadioItem>
+    </DropdownMenuPrimitive.RadioGroup>
   ) : (
-    <DropdownMenuPrimitive.Item ref={ref} {...rowCommon}>
+    <DropdownMenuPrimitive.Item ref={ref} {...rowProps}>
       {content}
     </DropdownMenuPrimitive.Item>
   );
 
-  const body = rowActions ? (
-    <div className="group/row flex min-w-0 items-center">
-      {item}
-      <Button
-        data-slot="renameAction"
-        icon="edit"
-        shape="icon"
-        size="sm"
-        reveal="row"
-        ariaLabel={`Rename ${label}`}
-        description="Rename"
-        className="shrink-0"
-        onClick={() => onRenameAction?.()}
-      />
-      <Button
-        data-slot="deleteAction"
-        icon="delete"
-        shape="icon"
-        size="sm"
-        reveal="row"
-        ariaLabel={`Delete ${label}`}
-        description="Delete"
-        className="shrink-0"
-        onClick={() => onDeleteAction?.()}
-      />
-    </div>
-  ) : (
-    item
-  );
-
-  if (!hasSubmenu || !open) return body;
-
   return (
-    <>
-      {body}
-      <div data-slot="submenu" role="menu" aria-label={label} className="flex flex-col pl-[1.25rem]">
-        {submenu}
-      </div>
-    </>
+    <div className="group/row relative">
+      {row}
+      {isSubmenu && open && (
+        <div role="menu" data-slot="submenu" className="ml-space-7 mt-space-3 flex flex-col gap-space-3 rounded-(--radius-field) bg-surface-3 p-space-4 shadow-menu">
+          {submenu}
+        </div>
+      )}
+      {rowActions && (
+        <div className="absolute inset-y-0 right-space-5 flex items-center gap-space-3">
+          <Button data-slot="renameAction" ariaLabel="Rename" description="Rename" icon="edit" shape="icon" size="sm" variant="ghost" tone="muted" reveal="row" onClick={onRename} />
+          <Button data-slot="deleteAction" ariaLabel="Delete" description="Delete" icon="delete" shape="icon" size="sm" variant="ghost" tone="muted" reveal="row" onClick={onDelete} />
+        </div>
+      )}
+    </div>
   );
 });

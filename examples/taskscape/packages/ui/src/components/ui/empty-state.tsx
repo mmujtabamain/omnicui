@@ -11,7 +11,7 @@ import { Icon } from "./icon";
 export const emptyStateVariants = cva("flex min-w-0 flex-col items-center text-center", {
   variants: {
     scope: {
-      pane: "h-full w-full justify-center bg-surface-2 px-4",
+      pane: "min-h-full flex-1 w-full justify-center bg-surface-2 px-4",
       list: "pt-24 pb-10 px-4",
     },
     surface: {

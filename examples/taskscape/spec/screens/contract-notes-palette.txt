@@ -1,60 +1,61 @@
-# How the app.commandpalette contract was written, and what its props make the harness do
+# How the app.palette contract was written, and what its props make the harness do
 
-Based on: Draft B, the only complete draft, plus the critique. Draft A is a placeholder ("// placeholder replaced below", "Notes A: placeholder") with no parts, props, events or tests, so it adds nothing to the union and is dropped. Draft B cited files (spec/inventory/command-palette.json, features-command-palette.txt, spec/features/area-06.json and area-08.json, spec/screens/notes-command-palette.txt, spec/screens/web.md, spec/decisions.md, spec/library/contract-format.txt, index.txt, CommandPalette.tsx, palette.ts). This merge had no file access, so no claim was re-checked against source. Items the critique says need a source check are kept and listed under open items, not marked verified.
+Based on: Draft A (palette tests, rowDelete, the optional-part and dataset/task props, the left-out list) and Draft B (the ran event, the scrim and results parts, the hover-then-Enter test, the Delete run test, the left-out list with reasons), with the critic's fixes applied. Both drafts cite the same sources: spec/inventory/command-palette.json (1180x760 measurements, label and placeholder text, the 19 palette rows in five groups), the palette feature records F06-001..F06-037, F06-083..F06-090, F08-010, F08-043..F08-049, F08-061, decisions 7 and 18, review notes 1, 5, 6, 11, 12, 13, 14, 15, 16, and spec/screens/web.md. Source files were not reopened for this merge; the facts come from the drafts and the critique.
 
-Harness meaning of props:
-- dataset: before mounting, the harness loads that demo data set for the demo account. "standard" (open project Home, open list Errands), "empty" (one list, Inbox), "nolists" (project with no lists). "long" exists in spec/screens/web.md but no test here uses it, so it is left out of the allowed-values comment.
-- task: the harness selects the task with this title in the focused list (Errands in standard) in app state before mounting, so the Delete row shows. "" selects nothing, so no Delete row. A title missing from the chosen data set should be reported as a harness error (proposal; the format gives no rule for this).
-- The palette mounts open. There is no open prop.
+Harness meaning of the props:
+- dataset: the harness signs in as the demo account, loads the named data set (standard default; empty, nolists, long allowed), and mounts the palette open with an empty query. No test varies it, because the other data sets have no palette reference. The prop is kept because the screen contract always declares dataset.
+- task: "" selects nothing, so no Delete row is listed. A title makes the harness select that task in the focused list the way a user does, then mount the palette, so the Delete row is listed. The title must exist in the data set, or it is a harness error. Draft A used "Rewrite the hero section" (Website, in the Spring launch project), which would switch project and could change the Go-to-list rows. The merge uses "Buy groceries for the week" (Errands, the open list), per the critique.
 
-Event closed: the palette emits it itself, onClose first and then run. command is the label of the row that ran, or "" when dismissed without running a row. Open: whether the harness can observe this emit is unverified. If it cannot, command must be dropped and about 30 tests need changes.
+Harness meaning of the event ran: a harness-only event, not in the reference. The rebuild emits it on every command run (row click or Enter) with the row's visible text, after the panel has closed. Escape emits nothing. Parent decision needed: the reference target cannot emit it, so event expectations fail or are unmeasured there. If the event stays, the event tests should be restricted to the web target, but the format's syntax for that is not confirmed here. It is kept because it is the only way to observe which row ran and which row is highlighted, and the critique's first fix depends on it.
 
-Critique fixes applied:
-- Header: the screen-id conflict is resolved; the contract id app.commandpalette is used.
-- Parts: added groupHeadingTask and groupHeadingManage. The LIST search now checks the Task heading returning mid-list (Search this list is Task, after New list in Manage). The palette-search test checks the Manage heading between New task and New list.
-- F06-013 scroll test: added a visible check on rowSettings with a comment that visible may not respect the 60vh clip; the screenshot stays as the backstop. F08-049 was removed from the test name, because the feature title ("Palette list runs past its panel") describes overflow and the full record was not read. F08-049 is no longer claimed as covered.
-- F06-010 and F06-037: added { event: closed, times: 0 } to assert that no close happens. Format support for times 0 is unconfirmed.
-- F06-035 and F06-036: replaced the tests that selected the already-active list (errands) and project (home) with non-active ones: "reading" to Reading and "spring" to Spring launch. These names are the critique's examples and are unverified against the data set.
-- F06-002: renamed to say layout is checked by screenshot; centring and the 12vh top edge are screenshot-only.
-- dataset comment: "long" removed from the allowed values, as no test uses it.
-- Delete label "Delete “Book bike service”": kept, with the quote style flagged as unconfirmed.
-- Tab test: kept, with a comment on the unverified single-tab-stop assumption.
-- Hover and press actions on rows: kept as drafted; the format's accepted action list was not checked.
-- Screenshot tests (F06-002, F06-013, F06-014, F08-047): hint glyphs will differ from the desktop reference by design. No mask field was added, because mask support in the format was not confirmed.
+Format assumptions:
+- Key steps take no times. Repeated presses are written as separate steps (Draft A's ArrowDown 25, Up 5, Down 3, Backspace 3, Tab 3; Draft B's ArrowDown 18). The 19-step run is the clamp test, based on Draft B's count that Spring launch is the 19th row (index 18).
+- rowDelete is optional. Draft A's comment says checks on an optional part are skipped when it is absent. The rowDelete visible:false check is kept as the critique asks, but it may be skipped. The emptyMessage check in the same test carries the absence claim.
+- scrim is a generic part, so only its visibility is checked. Its outside press is not expressible (a generic part accepts only hover). Mapping it to button would invent a role. Parent decision: add an outside-press action or a button-role scrim, or leave the scrim to the screenshot.
+- The row role is button, with aria option in the comments, per the inventory's elements.json. The panel is generic with aria dialog, and results is generic with aria listbox.
 
-Dropped:
-- Draft A (placeholder, no content).
-- Draft B header line "screen id command-palette" (conflicts with the contract id).
-- Draft B tests "F06-035 Go to list shows the lists of the active project" (errands, already active) and "F06-036 Go to project selects that project" (home, already active). Replaced as above.
-- Draft B test name tail "F08-049" in the scroll test.
-- "long" from the dataset comment.
+Merge: the union of both drafts' tests, with duplicates and wrong checks removed.
 
-Kept from Draft B and left out on purpose (reasons from Draft B, not re-checked):
-- Scrim press dismissal (F06-018 second half, F08-048): a press on a generic scrim is not expressible; Escape covers dismissal.
-- F06-003 catalog rebuild timing: not observable from the palette.
-- F06-016 row icons and chevron fallback: icons are not parts; screenshot only.
-- F06-017, F08-045, F08-071/072 hint glyphs: screenshot only (see open items).
-- F06-084, F06-086 stacking and portal placement: not observable.
-- F06-087, F08-061 app key map and overlay depth counter: the main window, not mounted here.
-- F06-088 focus return to the opener and F06-089 focus parking on the scrim: the opener is outside this screen, and the input takes focus on open.
-- F08-010, F08-043 opener: the web opener is a title-bar control plus Ctrl/Cmd+K (decision 7), part of the app shell.
-- F06-038 to F06-057 context menu, F06-058 to F06-082 sheets and prompts, F06-083 dim levels (screenshot), F06-091 to F06-103 toasts and recordings, F08-001 to F08-009, F08-011 to F08-042, F08-050 to F08-082: other screens.
-- Drag and drop: none on this screen.
+Dropped (with reason):
+- keyboard: true (Draft A): the generated Enter and Space checks would press rows, which are not focusable.
+- Constant-text highlight checks (Draft A: row "Toggle preview" in the reset, ArrowUp and hover tests; rowSpringLaunch text in the ArrowDown test): they pass whether or not the highlight moved. Replaced by ran-event checks.
+- Draft A "Enter after a typed query runs its first match": duplicate of the reset test, which also ends with Enter after "new" running New task.
+- Draft B "matching is by substring, not fuzzy" (tgl): the rule is not sourced in the allowed sources, and tgl would match under fuzzy matching.
+- Draft B do: scroll on results: the action is not confirmed for a generic part, and note 15 (cited) concerns web shortcuts, not palette scrolling. The keyboard-driven scroll test covers scrolling.
+- Draft B groupHeading: duplicate of groupView.
+- Draft B separate palette-state and palette-search screenshot tests: merged into the opening and typing tests, so each reference state keeps one screenshot.
+- Draft B typed "preview", "split" and "swap" run tests: covered by the first-row Enter test, the ArrowDown test and the hover test.
+- Draft B "Enter with no results" test: merged into Draft A's combined no-match test.
+- Draft B "Enter runs the highlighted row" typed variant, and "the highlighted row scrolls into view and Enter runs it": merged into the 19-step clamp test and the scroll-visibility test.
+- Draft A groupGoList and groupGoProject visible headings at open and in the clearing test: clipped below the 60vh cap, so removed. groupGoProject is asserted only after scrolling.
+- Draft B "matching ignores case" is kept as a plain match test (capitals query), with the rule flagged as unconfirmed.
 
-Open items (unverified; check before shipping):
-1. Hint text or icon: F08-078 says "kbd element with spoken label" (text), while F08-045 and F08-074 say icons. Decision 18 values (New task Alt+N, New list Alt+Shift+N, Search this list "/") are therefore not asserted. If the hint is text, add a hint part per row and assert them.
-2. New project hint: "treat Cmd+Shift+P like the reserved chords" is not in decisions.md. Check whether the chord is browser-reserved; if not, keep the reference hint and cite decision 18.
-3. Palette-search query: the inventory records "ne", the screenshot shows "new". Tests use "new". Confirm from the baseline screenshot.
-4. selected on option-mapped buttons: confirm the web target reports aria-selected; otherwise the highlight tests (about eight) fail and only screenshots remain.
-5. times 0 on the closed event: confirm the format accepts it.
-6. Hover and press actions: confirm the format accepts them on these parts.
-7. Delete label quote style: confirm the exact label string against the inventory or app.
-8. F08-049 full record: the title describes overflow; the scroll-in-cap test may not cover it. Needs a separate check.
-9. Blur dismissal on web: no decision source. Decide whether overlays dismiss on blur, and mark F06-090 applicability; no test is possible either way.
-10. Tab order: the input is assumed to be the only tab stop; Shift+Tab is not tested.
-11. Delete row position: code order (after Settings, before Go to list) versus the feature title (after built-in commands). No test depends on it; the spec should be aligned.
-12. Names "Reading" (F06-035) and "Spring launch" (F06-036) must exist in the standard data set; confirm.
-13. Visible check and the 60vh clip: confirm whether the harness visible check respects the scroll container's clip.
-14. "/" hint on Search this list while the palette input is focused: the shortcut cannot fire from inside the palette; decide whether the hint is shown.
-15. Dark scheme: dark classes exist (CommandPalette.tsx:84,89) but were not captured; light only until decided.
-16. Harness wiring of the closed event (see above).
+Conflicts and how they were resolved:
+- Task title: Draft A "Rewrite the hero section" vs Draft B "Buy groceries for the week". Took Buy groceries (see task above).
+- Delete row: Draft A has a rowDelete part, Draft B has none. Added rowDelete as an optional part.
+- F06-090 (window blur or resize dismissal): Draft A says it is desktop-only per the review; Draft B says dismissOnWindowChange is the context menu's setting per the inventory. Kept Draft B's reason because it is the more precise source. The conflict is unverified; Draft A's reason is recorded here.
+- Matching rule: case-insensitive matching appears only in the capitals test. Substring-only matching was dropped. The rule is unconfirmed in the cited records.
+- Web hints conflict: decision 18 gives web defaults of Alt+N (New task), Alt+Shift+N (New list) and "/" (Search this list). Review notes 5 and 6 say ⌘F, ⌘N and ⌘⇧N are not shown on web rows, ⌘Z and ⌘⇧Z stay, and the rest must be checked in the browser. Not reconciled, so no hint is asserted. Screenshots compare the reference hint column and may differ on web. Needs a decision from the spec owner.
+- Row height: the [both] review sets 32 px for every row; the reference's no-hotkey rows are 30 px. Screenshots will differ by design.
+- Errands (Draft A, jump row) and Home (Draft B, go-to-project row): both kept as separate runs. The Errands group is not asserted.
+
+Left out, with reasons:
+- Opener (Ctrl/Cmd+K, title-bar control, F08-010): belongs to the app shell; the palette is mounted open.
+- Scrim press dismissal (F06-018, the scrim half of F08-048): format gap (see scrim above).
+- F06-003 (catalog built once per open): no visible output; reopening needs the opener.
+- F06-016, F06-017, F08-045 (icons, hint glyphs): icons carry no text, so only the screenshot covers them.
+- F06-087 (depth counter), F06-088 (focus returns to the opener), F06-089 (focus parked on the scrim, which never fires because the input takes focus on open), F08-061 (app key map while open): effects are on the app outside the palette or on the opener, which this harness does not mount.
+- F06-019 (overlay focus trap): not observable standalone. The Tab test checks that focus stays on the search input.
+- F06-021..F06-033 (command effects): each run test checks the event label and that the panel closed. Effects belong to the target screens. Settings (F06-033) now has a run test. The other commands use the same close path, so they are not each re-tested.
+- F06-090: see the conflict above.
+- F08-043 (top placement at 12vh, centred): covered by the opening screenshot only; not asserted in text.
+- Wheel scrolling: no wheel action in the format.
+- Dark scheme: no dark reference exists, so light only. The code has dark classes.
+- Desktop separate window, no scrim, blur dismissal: not this web contract.
+- Context menu, sheets, toasts and overlays: other screens.
+- Events other than ran: the inventory declares none for the palette.
+- Drag-and-drop: none on this screen.
+
+Open items, not asserted:
+- Delete row label "Delete “<task title>”" comes from the review notes and F08-044. Its icon is unresolved (review note 13, palette source not opened). Its placement after Settings under the Task heading is from notes, not a recording. Both drafts agreed on the label, which stays an assumption to confirm.
+- The ran event and the matching rule need the parent decision above before the contract is final.

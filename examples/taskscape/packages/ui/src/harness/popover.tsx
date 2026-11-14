@@ -10,10 +10,20 @@ function PopoverHarness({ emit, maxItems = 6, anchorX = 0, anchorY = 0 }: any) {
   const [measured, setMeasured] = useState({ x: 0, y: 0 });
   const editor = useRef<HTMLInputElement>(null);
 
-  // Without an explicit anchor, the caret sits at the editor's bottom-left.
+  // Without an explicit anchor, the caret sits at the editor's bottom-left, and follows scroll and resize.
   useLayoutEffect(() => {
-    const r = editor.current?.getBoundingClientRect();
-    if (r) setMeasured({ x: r.left, y: r.bottom });
+    const measure = () => {
+      const r = editor.current?.getBoundingClientRect();
+      if (r)
+        setMeasured((prev) => (prev.x === r.left && prev.y === r.bottom ? prev : { x: r.left, y: r.bottom }));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
   }, []);
   const caret = anchorX || anchorY ? { x: anchorX, y: anchorY } : measured;
 

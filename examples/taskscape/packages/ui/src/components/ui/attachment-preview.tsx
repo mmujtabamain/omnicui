@@ -105,7 +105,7 @@ export const AttachmentPreview = React.forwardRef<HTMLDivElement, AttachmentPrev
       </div>
 
       <div className={cn(loading ? "flex" : "hidden", "items-center gap-1.5 text-content-3")}>
-        <Icon name="progress_activity" size={16} tone="inherit" className="animate-spin" />
+        <Icon data-slot="spinner" name="progress_activity" size={16} tone="inherit" className="animate-spin" />
         <span data-slot="loading" role="status" className="text-[0.929rem]">
           Loading...
         </span>
@@ -143,7 +143,7 @@ export const AttachmentPreview = React.forwardRef<HTMLDivElement, AttachmentPrev
           data-slot="audio"
           className={cn(attachmentPreviewVariants({ kind: "audio" }), "flex", failed && "hidden")}
         >
-          <Icon data-slot="glyph" name="audio_file" size={40} weight={200} tone="inherit" className="text-content-3" />
+          <Icon data-part="ui.attachmentpreview.glyph" data-slot="glyph" label="Audio" name="audio_file" size={40} weight={200} tone="inherit" className="text-content-3" />
           <audio
             src={src || undefined}
             aria-label={name}
