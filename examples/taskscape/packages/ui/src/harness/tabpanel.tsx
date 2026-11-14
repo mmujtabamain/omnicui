@@ -1,13 +1,13 @@
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { TabPanel } from "../components/ui/tab-panel";
 
+// Sized for the 640 x 520 desktop window: with scroll on, the pane overflows by about one
+// row, so one scroll step (about 100px) reaches the bottom edge, as the atBottom tests need.
 const SECTIONS = [
   { title: "General", rows: [["Launch at login", "On"], ["Show in menu bar", "On"], ["Language", "English"]] },
   { title: "Startup", rows: [["Open last workspace", "On"], ["Restore windows", "Off"], ["Startup sound", "Off"]] },
   { title: "Appearance", rows: [["Theme", "System"], ["Density", "Comfortable"], ["Reduce motion", "Off"]] },
-  { title: "Notifications", rows: [["Task reminders", "On"], ["Daily summary", "Off"], ["Badge count", "On"]] },
-  { title: "Shortcuts", rows: [["Quick add", "Mod+K"], ["Open settings", "Mod+,"], ["Toggle sidebar", "Mod+B"]] },
-  { title: "Privacy", rows: [["Share usage data", "Off"], ["Crash reports", "On"], ["Clear history", "Never"]] },
+  { title: "Notifications", rows: [["Task reminders", "On"]] },
 ];
 
 function Group({ title, rows }: { title: string; rows: string[][] }) {

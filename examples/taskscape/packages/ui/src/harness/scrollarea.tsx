@@ -23,7 +23,7 @@ function ScrollAreaHarness({ emit, ...props }: any) {
             className={
               horizontal
                 ? "flex h-[13rem] w-[10rem] shrink-0 items-start border-r border-edge-1 p-3"
-                : "flex h-[2.5rem] shrink-0 items-center border-b border-edge-1 px-3"
+                : "mx-3 flex h-[2.5rem] shrink-0 items-center border-b border-edge-1 px-3"
             }
           >
             Task {i + 1}

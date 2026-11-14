@@ -12,9 +12,12 @@ function DemoRows({ prefix, count }: { prefix: string; count: number }) {
   );
 }
 
-function PaneGroupHarness({ emit, ...props }: any) {
+function PaneGroupHarness({ emit, width = 0, ...props }: any) {
   return (
-    <div className="flex h-[min(36rem,100vh)] w-full min-w-0">
+    <div
+      className="flex h-[min(36rem,100vh)] min-w-0 max-w-full shrink-0"
+      style={width > 0 ? { width: `${width}px` } : { width: "100%" }}
+    >
       <PaneGroup {...props} onLayoutChanged={(layout) => emit("layoutChanged", layout)}>
         <PaneGroupTask heading="Tasks">
           <DemoRows prefix="Task" count={12} />

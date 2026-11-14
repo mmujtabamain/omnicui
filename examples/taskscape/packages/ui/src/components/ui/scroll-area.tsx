@@ -109,16 +109,20 @@ export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(func
   React.useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
+    // A scroll settles at scrollend where the browser fires it, otherwise once it has been still for SETTLE_MS.
+    const settle = () => {
+      window.clearTimeout(settleRef.current);
+      if (!scrollingRef.current) return;
+      scrollingRef.current = false;
+      callbacks.current.onScrollingChanged?.(false);
+    };
     const onScroll = () => {
       if (!scrollingRef.current) {
         scrollingRef.current = true;
         callbacks.current.onScrollingChanged?.(true);
       }
       window.clearTimeout(settleRef.current);
-      settleRef.current = window.setTimeout(() => {
-        scrollingRef.current = false;
-        callbacks.current.onScrollingChanged?.(false);
-      }, SETTLE_MS);
+      settleRef.current = window.setTimeout(settle, SETTLE_MS);
       const atEnd = horizontal
         ? el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
         : el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
@@ -128,8 +132,10 @@ export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(func
       }
     };
     el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scrollend", settle);
     return () => {
       el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("scrollend", settle);
       window.clearTimeout(settleRef.current);
     };
   }, [horizontal, scrollbar]);

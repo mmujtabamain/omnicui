@@ -14,6 +14,13 @@ export type ToastSwipeDirection = "up" | "down" | "left" | "right";
  */
 const NO_HOTKEY = ["NoHotkey"];
 
+/**
+ * Radix runs its own close timer and also pauses it on window blur, so a toast can stay open
+ * forever. The widget owns the timeout instead (see Toast below); Radix gets the largest delay
+ * a browser timer accepts, so its timer never fires.
+ */
+const RADIX_TIMER_OFF = 2147483647;
+
 /** Bottom-edge list: full width, centred, 20px (1.429rem) above the window bottom. */
 export const toastViewportVariants = cva(
   "pointer-events-none fixed inset-x-0 z-(--z-index-popover) m-0 flex list-none flex-col items-center p-0 outline-none",
@@ -168,6 +175,44 @@ export function Toast({
   const reason = React.useRef<ToastDismissReason | null>(null);
   const rootRef = React.useRef<HTMLLIElement>(null);
   const label = failed ? "Try again" : actionLabel;
+  const [hovered, setHovered] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
+  const paused = hovered || focused;
+  const remaining = React.useRef(duration);
+  const expired = React.useRef(false);
+  const callbacks = React.useRef({ onOpenChange, onDismissed });
+
+  React.useEffect(() => {
+    callbacks.current = { onOpenChange, onDismissed };
+  });
+
+  React.useEffect(() => {
+    if (!open) {
+      setHovered(false);
+      setFocused(false);
+    }
+  }, [open]);
+
+  // Auto-dismiss: counts down while open and not hovered or focused; the time left carries across a pause.
+  React.useEffect(() => {
+    if (!open) {
+      remaining.current = duration;
+      expired.current = false;
+      return undefined;
+    }
+    if (paused || expired.current) return undefined;
+    const started = Date.now();
+    const timer = window.setTimeout(() => {
+      expired.current = true;
+      remaining.current = 0;
+      callbacks.current.onDismissed?.("timeout");
+      callbacks.current.onOpenChange?.(false);
+    }, remaining.current);
+    return () => {
+      window.clearTimeout(timer);
+      remaining.current = Math.max(0, remaining.current - (Date.now() - started));
+    };
+  }, [open, paused, duration]);
 
   return (
     <ToastPrimitive.Provider swipeDirection={swipeDirection} label="Notifications">
@@ -176,8 +221,14 @@ export function Toast({
         ref={rootRef}
         forceMount
         open={open}
-        duration={duration}
+        duration={RADIX_TIMER_OFF}
         tone={tone}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+        }}
         reducedMotion={reducedMotion}
         onOpenChange={(next) => {
           if (!next) {

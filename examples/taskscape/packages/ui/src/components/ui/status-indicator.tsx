@@ -71,7 +71,7 @@ export const StatusIndicator = React.forwardRef<HTMLSpanElement, StatusIndicator
       <TooltipPrimitive.Portal forceMount>
         <TooltipPrimitive.Content
           data-slot="tooltip"
-          role="status"
+          role="tooltip"
           side="top"
           sideOffset={6}
           collisionPadding={6}

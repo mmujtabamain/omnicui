@@ -26,6 +26,7 @@
 id: ui.toast
 
 props:
+  awaitTimeout: { type: boolean, default: false }   # test only: the harness reports itself busy until the toast closes, so the test sees the timeout happen
   open: { type: boolean, default: false }              # controlled visibility; false is the idle state (nothing mounted)
   message: { type: string, default: "" }               # notice text (proposed copy; the inventory has none)
   actionLabel: { type: string, default: "Undo" }       # label of the single action; reads "Try again" while failed is true
@@ -206,7 +207,7 @@ tests:
       - { event: dismissed, times: 0 }
 
   - name: auto-dismisses after duration
-    props: { open: true, message: "Saved", duration: 1000 }
+    props: { open: true, message: "Saved", duration: 1000, awaitTimeout: true }
     steps: []
     expect:
       - { event: dismissed, times: 1, last: { reason: timeout } }
