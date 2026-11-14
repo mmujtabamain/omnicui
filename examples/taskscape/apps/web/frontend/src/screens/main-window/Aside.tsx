@@ -45,7 +45,9 @@ export function Aside({ mode, width, picked, previewId, draftListId, draftListNa
     );
   } else if (mode === "filter") {
     body = (
-      <div data-part="app.mainwindow.filterPanel" className="flex min-h-0 flex-1 flex-col">
+      // The filter panel is a whole window of its own (its title bar, list tabs and task panes come with it). Here
+      // only its Filter & Sort column shows: the window's own title bar and its panes are hidden from this aside.
+      <div data-part="app.mainwindow.filterPanel" className="flex min-h-0 flex-1 flex-col [&_[data-slot=titleBar]]:hidden [&_[data-slot=body]>div:first-child]:hidden">
         <FilterPanel />
       </div>
     );
@@ -69,7 +71,7 @@ export function Aside({ mode, width, picked, previewId, draftListId, draftListNa
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
-            <Icon name="left_click" size={28} tone="muted" />
+            <Icon name="ads_click" size={28} tone="muted" />
             <Text data-part="app.mainwindow.previewEmpty" as="div" tone="secondary" className="mt-2 font-display text-[1.071rem] font-medium">
               No task selected
             </Text>
