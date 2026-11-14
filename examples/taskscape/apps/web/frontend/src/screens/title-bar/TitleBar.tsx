@@ -374,6 +374,7 @@ export function TitleBar({ emit }: TitleBarProps) {
             icon="swap_horiz"
             iconSize={19}
             size="xl"
+            shape="icon"
             variant="ghost"
             tone="muted"
             onClick={swapPanes}
@@ -386,6 +387,7 @@ export function TitleBar({ emit }: TitleBarProps) {
           icon="vertical_split"
           iconSize={19}
           size="xl"
+          shape="icon"
           variant="ghost"
           tone="muted"
           active={splitOn}
@@ -401,6 +403,7 @@ export function TitleBar({ emit }: TitleBarProps) {
           icon={previewOpen ? "right_panel_close" : "right_panel_open"}
           iconSize={19}
           size="xl"
+          shape="icon"
           variant="ghost"
           tone="muted"
           active={previewOpen}
@@ -414,6 +417,7 @@ export function TitleBar({ emit }: TitleBarProps) {
           icon="delete"
           iconSize={19}
           size="xl"
+          shape="icon"
           variant="ghost"
           tone="muted"
           onClick={openTrash}
@@ -426,6 +430,7 @@ export function TitleBar({ emit }: TitleBarProps) {
           icon="search"
           iconSize={19}
           size="xl"
+          shape="icon"
           variant="ghost"
           tone="muted"
           onClick={openPalette}
@@ -438,6 +443,7 @@ export function TitleBar({ emit }: TitleBarProps) {
           icon="settings"
           iconSize={19}
           size="xl"
+          shape="icon"
           variant="ghost"
           tone="muted"
           onClick={openSettings}

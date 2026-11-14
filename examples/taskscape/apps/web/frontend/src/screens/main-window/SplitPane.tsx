@@ -70,11 +70,11 @@ export function SplitPane({ listId }: { listId: Id }) {
   return (
     <div
       data-part="app.mainwindow.splitPane"
-      className="flex min-h-0 min-w-0 flex-1 flex-col"
+      className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface-2"
       onPointerDownCapture={() => useUi.setState({ activePane: 1 })}
     >
       <div className="flex shrink-0 items-center gap-2 px-[1rem] pt-[0.714rem] pb-[0.5rem]">
-        <div className="flex h-[2.5rem] min-w-0 flex-1 items-center gap-[0.357rem] rounded-full bg-wash-2 pr-[0.357rem] pl-[0.643rem] focus-within:ring-2 focus-within:ring-focus-1">
+        <div className="flex h-[2.5rem] min-w-0 flex-1 items-center gap-[0.357rem] rounded-(--radius-control) bg-surface-0 pr-[0.643rem] pl-[0.643rem] focus-within:ring-2 focus-within:ring-focus-1">
           <Icon name="search" size={18} tone="muted" />
           <Input
             data-part="app.mainwindow.splitSearch"
@@ -138,7 +138,7 @@ export function SplitPane({ listId }: { listId: Id }) {
         ))}
       </div>
 
-      <div className="flex h-[2.143rem] shrink-0 items-center gap-2 border-t border-edge-1 bg-surface-2 pr-[0.857rem] pl-[0.857rem]">
+      <div className="flex h-[2.286rem] shrink-0 items-center gap-2 border-t border-edge-2 bg-surface-2 pr-[0.857rem] pl-[0.857rem]">
         <Text
           data-part="app.mainwindow.splitFooterDoneCount"
           as="span"
@@ -147,11 +147,12 @@ export function SplitPane({ listId }: { listId: Id }) {
           tone="muted"
           case="uppercase"
           numeric="tabular"
+          className="shrink-0 whitespace-nowrap"
         >
-          {`${done} / ${total} done`}
+          {`${done}/${total} done`}
         </Text>
         <ProgressBar className="ml-auto" value={done} max={Math.max(total, 1)} ariaLabel="Done progress" />
-        <Text as="span" size="xs" weight="semibold" tone="secondary" numeric="tabular">
+        <Text as="span" size="xs" weight="semibold" tone="secondary" numeric="tabular" className="w-8 shrink-0 whitespace-nowrap text-right">
           {`${pct}%`}
         </Text>
       </div>

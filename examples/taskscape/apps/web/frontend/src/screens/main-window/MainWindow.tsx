@@ -255,7 +255,7 @@ export function MainWindow() {
   };
 
   return (
-    <div data-part="app.mainwindow.window" className="flex h-screen w-screen flex-col overflow-hidden bg-surface-0 text-content-1">
+    <div data-part="app.mainwindow.window" className="flex h-screen w-screen flex-col overflow-hidden bg-surface-1 text-content-1">
       <div data-part="app.mainwindow.titleBar" className="flex shrink-0 flex-col">
         <TitleBar emit={barEmit} />
       </div>

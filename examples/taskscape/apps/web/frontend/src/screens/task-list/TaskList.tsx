@@ -42,7 +42,7 @@ export interface TaskListProps {
 const P = (part: string) => `app.tasklist.${part}`;
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 const FOOTER =
-  "flex h-[2.143rem] shrink-0 items-center gap-2 border-t border-edge-1 bg-surface-2 pl-[0.857rem] pr-[0.857rem]";
+  "flex h-[2.286rem] shrink-0 items-center gap-2 border-t border-edge-2 bg-surface-2 pl-[0.857rem] pr-[0.857rem]";
 
 /**
  * A pointer over a submenu row opens its submenu, as a hover does in the reference. The row takes the ArrowRight
@@ -501,7 +501,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             shape="icon"
             tone="muted"
             icon="more_horiz"
-            iconSize={16}
+            iconSize={17}
             ariaLabel="More"
           />
         }
@@ -696,10 +696,10 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   );
 
   return (
-    <div className={cx("flex h-full min-h-0 min-w-0 flex-1 flex-col", split && "border-r border-edge-1")}>
+    <div className={cx("flex h-full min-h-0 min-w-0 flex-1 flex-col bg-surface-2", split && "border-r border-edge-1")}>
       <div className="flex shrink-0 items-center gap-2 px-[1rem] pb-[0.5rem] pt-[0.714rem]">
         <div
-          className="flex h-[2.5rem] min-w-0 flex-1 items-center gap-[0.357rem] rounded-full bg-wash-2 pl-[0.643rem] pr-[0.357rem] focus-within:ring-2 focus-within:ring-focus-1"
+          className="flex h-[2.5rem] min-w-0 flex-1 items-center gap-[0.357rem] rounded-(--radius-control) bg-surface-0 pl-[0.643rem] pr-[0.643rem] focus-within:ring-2 focus-within:ring-focus-1"
           onKeyDown={onSearchKey}
         >
           <Icon name="search" size={18} tone="muted" />
@@ -835,6 +835,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("bulkDone")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="muted"
             icon="task_alt"
             ariaLabel="Mark done"
@@ -845,6 +846,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("bulkUndone")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="muted"
             icon="radio_button_unchecked"
             ariaLabel="Mark not done"
@@ -864,6 +866,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
                 data-part={P("bulkMove")}
                 variant="ghost"
                 size="footer"
+                width="content"
                 tone="muted"
                 icon="arrow_forward"
                 ariaLabel="Move to list"
@@ -890,6 +893,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("bulkCopy")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="muted"
             icon="content_copy"
             ariaLabel="Copy"
@@ -900,6 +904,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("bulkDelete")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="danger"
             icon="delete"
             ariaLabel="Delete"
@@ -914,6 +919,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("bulkClear")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="muted"
             icon="close"
             ariaLabel="Clear"
@@ -927,6 +933,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("sortFilter")}
             variant="ghost"
             size="footer"
+            width="content"
             tone="muted"
             icon="tune"
             ariaLabel="Sort & filter"
@@ -943,11 +950,12 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             tone="muted"
             case="uppercase"
             numeric="tabular"
+            className="shrink-0 whitespace-nowrap"
           >
             {`${done}/${total} done`}
           </Text>
           <ProgressBar className="ml-auto" value={done} max={Math.max(total, 1)} ariaLabel="Done progress" />
-          <Text data-part={P("percent")} as="span" size="xs" weight="semibold" tone="secondary" numeric="tabular">
+          <Text data-part={P("percent")} as="span" size="xs" weight="semibold" tone="secondary" numeric="tabular" className="w-8 shrink-0 whitespace-nowrap text-right">
             {`${pct}%`}
           </Text>
       </div>

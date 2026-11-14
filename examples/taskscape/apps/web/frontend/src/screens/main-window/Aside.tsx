@@ -70,9 +70,9 @@ export function Aside({ mode, width, picked, previewId, draftListId, draftListNa
             />
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[0.357rem] px-4 text-center">
             <Icon name="ads_click" size={28} tone="muted" />
-            <Text data-part="app.mainwindow.previewEmpty" as="div" tone="secondary" className="mt-2 font-display text-[1.071rem] font-medium">
+            <Text data-part="app.mainwindow.previewEmpty" as="div" tone="secondary" className="font-display text-[1.071rem] font-medium">
               No task selected
             </Text>
             <Text as="div" tone="muted" className="text-[0.893rem]">

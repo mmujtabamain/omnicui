@@ -111,7 +111,7 @@ export function TaskRow(p: RowProps) {
       : "border-content-1 bg-surface-3"
     : p.picked
       ? "border-accent-500 bg-accent-500 text-on-accent"
-      : "border-content-1 bg-surface-3";
+      : "border-edge-3";
   const glyph = p.optionHeld
     ? t.done
       ? <Icon name="check" size={14} weight={700} tone="inherit" />
@@ -131,8 +131,8 @@ export function TaskRow(p: RowProps) {
         p.onContext(row);
       }}
       className={cx(
-        "group/row relative flex min-h-[2.286rem] items-center gap-[0.643rem] rounded-(--radius-field) pr-[0.714rem] text-content-1",
-        // A plain row is 32px tall; a row with a note line takes the note's 46px, as in the reference.
+        "group/row relative flex min-h-[2.25rem] items-center gap-[0.786rem] rounded-(--radius-field) pr-[0.643rem] text-content-1",
+        // A plain row is 31.5px tall (min-h-9); a row with a note line takes the note's 46px, as in the reference.
         note !== "" ? "py-[0.429rem]" : "py-0",
         indentClass(row.depth),
         tinted ? "bg-selection-1" : "hover:bg-wash-1",
@@ -152,7 +152,7 @@ export function TaskRow(p: RowProps) {
       >
         <span
           className={cx(
-            "flex size-[1.286rem] items-center justify-center border",
+            "flex size-[1.143rem] items-center justify-center border",
             p.optionHeld ? "rounded-(--radius-field)" : "rounded-full",
             fill,
           )}

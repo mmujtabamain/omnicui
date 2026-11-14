@@ -357,7 +357,7 @@ function ListTab({
             tone="muted"
             icon="more_horiz"
             iconSize={15}
-            className="my-auto shrink-0"
+            className="my-auto shrink-0 opacity-0 transition-opacity group-hover/tab:opacity-100 focus-visible:opacity-100"
           />
         }
       >
