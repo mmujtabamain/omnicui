@@ -38,7 +38,9 @@ Widgets that compose other parts inside them (Dialog, Toast) take a `parts` map 
 
 Every part the contract lists is the element with `data-part="app.<contract name>.<part>"`, e.g.
 `data-part="app.tasklist.search"`. Widgets pass `data-part` through to their root, so put it on
-the widget itself (`<Button data-part="app.trash.emptyTrash" …/>`). The test reads the role, name,
+the widget itself (`<Button data-part="app.trash.emptyTrash" …/>`). One element can carry several
+names, space-separated (`data-part="app.tasklist.more app.contextmenus.moreGroceries"`): a contract
+for the whole window adds its names next to the screen's, it never replaces them. The test reads the role, name,
 state and text from the accessibility tree, so the widget's own semantics must be right.
 
 ## The harness entry

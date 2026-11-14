@@ -242,7 +242,8 @@ tests:
       - { action: type, part: subtaskInput, text: "Buy eggs" }
       - { action: key, part: subtaskInput, key: Enter }
     expect:
-      - { part: subtaskInput, visible: false }
+      # F01-084: Enter with text adds the subtask and keeps the composer open, empty, for the next one.
+      - { part: subtaskInput, visible: true, text: "" }
       - { part: rowEggs, text: { contains: "Buy eggs" } }
 
   - name: "Escape cancels the subtask composer and adds nothing"
@@ -263,7 +264,7 @@ tests:
       - { action: type, part: subtaskInput, text: "Renew passport" }
       - { action: key, part: subtaskInput, key: Enter }
     expect:
-      - { part: subtaskInput, visible: false }
+      - { part: subtaskInput, visible: true, text: "" }
       - { part: subtaskTitle, text: { contains: "Renew passport" } }
 
   # Rename from the task menu
@@ -395,7 +396,7 @@ tests:
       - { part: rowMenu, visible: false }
       - { part: sheetHeadline, text: "Move to Trash?" }
       - { part: sheetDetail, text: { contains: "Book bike service" } }
-      - { part: sheetDetail, text: { contains: "puts a trashed task back" } }
+      - { part: sheetDetail, text: { contains: "puts it back" } }   # the reference's "— ⌘Z puts it back.", with the platform's chord
       - { part: sheetAccept, text: { contains: "Move" } }
       - { part: sheetCancel, focused: true }
       - { part: rowBikeService, visible: true }

@@ -118,7 +118,8 @@ export function ListTabs(props: ListTabsProps) {
               pane={pane}
               markerPart={index === markerIndex ? "app.appbar.paneMarker" : undefined}
               tabPart={tabPartFor(index, list.name)}
-              deletePart={index === 0 ? "app.appbar.listTabDelete" : undefined}
+              deletePart={index === 0 ? "app.appbar.listTabDelete" : list.name === "Reading" ? "app.appbar.listTabCloseReading" : undefined}
+              morePart={list.name === "Reading" ? "app.appbar.tabMoreReading" : undefined}
               onSelect={props.onSelect}
               onStartRename={props.onStartRename}
               onCommitRename={props.onCommitRename}
@@ -181,6 +182,7 @@ interface ListTabProps {
   markerPart?: string;
   tabPart?: string;
   deletePart?: string;
+  morePart?: string;
   onSelect(list: TaskList): void;
   onStartRename(list: TaskList): void;
   onCommitRename(list: TaskList, name: string): void;
@@ -195,12 +197,14 @@ interface ListTabProps {
 }
 
 function ListTab({
-  list, index, selected, renaming, dropOver, splitOn, pane, markerPart, tabPart, deletePart,
+  list, index, selected, renaming, dropOver, splitOn, pane, markerPart, tabPart, deletePart, morePart,
   onSelect, onStartRename, onCommitRename, onCancelRename, onRenameRequest, onDelete, onExport, onSplit,
   onDragOver, onDragLeave, onDrop,
 }: ListTabProps) {
   const tabRef = React.useRef<HTMLDivElement>(null);
+  // The menu opened by the tab itself (a context-menu press) and the one opened by the More button.
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [moreOpen, setMoreOpen] = React.useState(false);
   const [anchor, setAnchor] = React.useState({ x: 0, y: 0 });
   const [dragging, setDragging] = React.useState(false);
   // The draft is the field's text; it starts from the list name each time a rename begins.
@@ -278,7 +282,22 @@ function ListTab({
     </div>
   );
 
-  // The tab box holds the tab (the menu trigger) and its close x, so the x sits inside the tab's edges.
+  // The menu's rows, shared by the two menus that open it: the tab's own press and the More button.
+  const tabItems = (
+    <div data-part="app.appbar.tabMenu" className="flex flex-col">
+      <MenuItem data-part="app.appbar.tabMenuRename" label="Rename" onSelect={() => onRenameRequest(list)} />
+      <MenuItem
+        data-part="app.appbar.tabMenuSplit"
+        label={splitOn ? "Close split" : "Open in split view"}
+        onSelect={() => onSplit(list)}
+      />
+      <MenuItem data-part="app.appbar.tabMenuExport" label="Export list" onSelect={() => onExport(list)} />
+      <MenuItem data-part="app.appbar.tabMenuDelete" tone="danger" label="Delete list" onSelect={() => onDelete(list)} />
+    </div>
+  );
+
+  // The tab box holds the tab (a context-menu press opens its menu) and the More button, which opens the
+  // same menu, and its close x, so the x sits inside the tab's edges.
   // Middle-click deletes the list (aux button 1); the delete is still confirmed by its sheet.
   return (
     <div
@@ -320,16 +339,29 @@ function ListTab({
         ariaLabel="List menu"
         trigger={tab}
       >
-        <div data-part="app.appbar.tabMenu" className="flex flex-col">
-          <MenuItem data-part="app.appbar.tabMenuRename" label="Rename" onSelect={() => onRenameRequest(list)} />
-          <MenuItem
-            data-part="app.appbar.tabMenuSplit"
-            label={splitOn ? "Close split" : "Open in split view"}
-            onSelect={() => onSplit(list)}
+        {tabItems}
+      </Menu>
+      <Menu
+        open={moreOpen}
+        onOpenChange={(open) => setMoreOpen(open)}
+        placement="control"
+        width="tab"
+        ariaLabel="List menu"
+        trigger={
+          <Button
+            data-part={morePart}
+            ariaLabel="More"
+            variant="ghost"
+            size="sm"
+            shape="icon"
+            tone="muted"
+            icon="more_horiz"
+            iconSize={15}
+            className="my-auto shrink-0"
           />
-          <MenuItem data-part="app.appbar.tabMenuExport" label="Export list" onSelect={() => onExport(list)} />
-          <MenuItem data-part="app.appbar.tabMenuDelete" tone="danger" label="Delete list" onSelect={() => onDelete(list)} />
-        </div>
+        }
+      >
+        {tabItems}
       </Menu>
       <Button
         data-part={deletePart}

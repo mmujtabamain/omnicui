@@ -1,6 +1,7 @@
 // SheetHost: the one sheet that is up, as a card over a soft scrim (web: in-page dialog), and the
 // "Moved to Trash" toast. Accept performs the write itself, then resolves the sheet; a failed
 // write keeps the sheet open with an inline line.
+import { formatAccel } from "@taskscape/ui/lib/platform";
 import * as React from "react";
 import { Button } from "@taskscape/ui/button";
 import { DialogButton, dialogButtonVariants } from "@taskscape/ui/dialog-button";
@@ -201,7 +202,7 @@ function configFor(spec: SheetSpec, projectLists: TaskList[] | undefined): Confi
     case "deleteConfirm":
       return {
         glyph: "delete", danger: true, title: "Move to Trash?",
-        detail: `“${spec.task.title}” can be restored from Trash.`,
+        detail: `“${spec.task.title}” — ${formatAccel("Mod+Z")} puts it back.`,
         accept: "Move to Trash", instead: false, prompt: null,
       };
   }

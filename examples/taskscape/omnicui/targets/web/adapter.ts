@@ -127,12 +127,14 @@ async function settle() {
   });
 }
 
-// A part ("ui.button.label") is the element whose data-part is its full name or, shadcn's
+// A part ("ui.button.label") is the element whose data-part has its full name or, shadcn's
 // convention, whose data-slot is its own name ("label"). data-part settles a clash with a nested widget.
 const quote = (s: string) => s.replace(/"/g, '\\"');
 const selector = (part: string) => {
   const own = part.slice(part.lastIndexOf(".") + 1);
-  return `[data-part="${quote(part)}"], [data-slot="${quote(own)}"]`;
+  // data-part may hold several names, space-separated, when contracts of different scope (a screen
+  // and the whole window) name the same element.
+  return `[data-part~="${quote(part)}"], [data-slot="${quote(own)}"]`;
 };
 
 async function locate(part: string) {

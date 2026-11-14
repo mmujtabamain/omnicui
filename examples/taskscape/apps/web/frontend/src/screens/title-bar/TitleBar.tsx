@@ -305,6 +305,9 @@ export function TitleBar({ emit }: TitleBarProps) {
                 project={project}
                 active={project.id === activeProject?.id}
                 part={index === 0 ? "app.appbar.projectRow" : index === 1 ? "app.appbar.projectRowSpring" : undefined}
+                morePart={index === 0 ? "app.appbar.projectMore" : index === 1 ? "app.appbar.projectMoreSpring" : undefined}
+                menuRenamePart={index === 1 ? "app.appbar.menuProjectRename" : undefined}
+                menuDeletePart={index === 1 ? "app.appbar.menuProjectDelete" : undefined}
                 renamePart={index === 0 ? "app.appbar.projectRename" : undefined}
                 deletePart={index === 0 ? "app.appbar.projectDelete" : index === 1 ? "app.appbar.projectDeleteSpring" : undefined}
                 onPick={() => pickProject(project)}

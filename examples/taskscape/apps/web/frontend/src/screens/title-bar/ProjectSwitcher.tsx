@@ -1,8 +1,10 @@
-// One row of the project menu: the project name (a menuitem), and always-visible rename and delete
-// buttons beside it. The menu itself lives in TitleBar.tsx.
+// One row of the project menu: the project name (a menuitem), always-visible rename and delete buttons beside
+// it, and a More button whose menu holds the same two actions. The menu itself lives in TitleBar.tsx.
 import * as React from "react";
 import { Button } from "@taskscape/ui/button";
 import { Icon } from "@taskscape/ui/icon";
+import { Menu } from "@taskscape/ui/menu";
+import { MenuItem } from "@taskscape/ui/menu-item";
 import { Text } from "@taskscape/ui/text";
 import type { Project } from "../../api/types";
 
@@ -12,6 +14,9 @@ export interface ProjectRowProps {
   active: boolean;
   /** Test part names; only the first and second rows carry them. */
   part?: string;
+  morePart?: string;
+  menuRenamePart?: string;
+  menuDeletePart?: string;
   renamePart?: string;
   deletePart?: string;
   onPick(): void;
@@ -19,7 +24,10 @@ export interface ProjectRowProps {
   onDelete(): void;
 }
 
-export function ProjectRow({ project, active, part, renamePart, deletePart, onPick, onRename, onDelete }: ProjectRowProps) {
+export function ProjectRow({
+  project, active, part, morePart, menuRenamePart, menuDeletePart, renamePart, deletePart, onPick, onRename, onDelete,
+}: ProjectRowProps) {
+  const [moreOpen, setMoreOpen] = React.useState(false);
   return (
     <div className="flex items-center pr-[0.357rem]">
       <div
@@ -65,6 +73,28 @@ export function ProjectRow({ project, active, part, renamePart, deletePart, onPi
         tone="danger"
         onClick={onDelete}
       />
+      <Menu
+        open={moreOpen}
+        onOpenChange={(open) => setMoreOpen(open)}
+        placement="control"
+        width="content"
+        ariaLabel="Project actions"
+        trigger={
+          <Button
+            data-part={morePart}
+            ariaLabel="More"
+            icon="more_horiz"
+            iconSize={16}
+            shape="icon"
+            size="sm"
+            variant="ghost"
+            tone="muted"
+          />
+        }
+      >
+        <MenuItem data-part={menuRenamePart} label="Rename project" icon="edit" onSelect={onRename} />
+        <MenuItem data-part={menuDeletePart} label="Delete project" icon="delete" tone="danger" onSelect={onDelete} />
+      </Menu>
     </div>
   );
 }
