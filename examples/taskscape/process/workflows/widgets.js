@@ -6,7 +6,7 @@ export const meta = {
 
 // args: { root, widgets: [{ name, contract, file, spec, uses? }] }
 //   root: examples/taskscape; name: PaneFooter; contract: panefooter; file: pane-footer (no .tsx);
-//   spec: the widget spec JSON; uses: other components/ui files it composes (kebab names); note: extra instructions.
+//   spec: the widget spec JSON (default spec/library/widgets/<name>.json); uses: other components/ui files it composes (kebab names); note: extra instructions.
 const OPTS = { model: 'haiku', effort: 'high', agentType: 'ts-builder' }
 const RESULT = {
   type: 'object',
@@ -23,7 +23,7 @@ const files = (w) => `${ui}/src/components/ui/${w.file}.tsx and ${ui}/src/harnes
 const reads = (w) => [
   `${ui}/AGENTS.md (the conventions: follow them exactly)`,
   `${args.root}/omnicui/contracts/${w.contract}.contract.yaml (the contract the widget must pass)`,
-  `${w.spec} (the widget spec: purpose, variants with measured sizes and colours, states, keyboard, open questions)`,
+  `${w.spec ?? `${args.root}/spec/library/widgets/${w.name}.json`} (the widget spec: purpose, variants with measured sizes and colours, states, keyboard, open questions)`,
   `${ui}/src/styles/tokens.css (the only colours, radii, shadows and motion you may use)`,
   `${ui}/src/components/ui/button.tsx and ${ui}/src/harness/button.tsx (a finished widget, for the conventions)`,
   ...(w.uses ?? []).map((u) => `${ui}/src/components/ui/${u}.tsx (a widget you compose)`),

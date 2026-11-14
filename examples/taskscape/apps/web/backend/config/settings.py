@@ -6,6 +6,8 @@ DEBUG            "1" for local development
 ALLOWED_HOSTS    comma-separated
 MEDIA_ROOT       where uploads go (default: media/ next to manage.py)
 DEMO_RESET       "1" routes POST api/demo/reset (screen tests and recordings only)
+FRONTEND_DIST    the built web app, served at / (optional)
+TRUST_PROXY      "1" behind a TLS-terminating proxy (trusts X-Forwarded-Proto)
 ALERT_WEBHOOK_URL, ALERT_WEBHOOK_TOKEN   where production errors are posted (optional)
 """
 import os
@@ -21,6 +23,9 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is required when DEBUG is off")
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+# Behind a proxy that terminates TLS, trust its X-Forwarded-Proto so https requests are seen as such.
+if os.environ.get("TRUST_PROXY") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -67,6 +72,8 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+# The built web app (apps/web/frontend/dist), served from this origin when set.
+FRONTEND_DIST = os.environ.get("FRONTEND_DIST", "")
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024

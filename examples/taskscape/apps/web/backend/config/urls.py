@@ -2,8 +2,7 @@ import importlib
 import logging
 
 from django.conf import settings
-from django.conf.urls.static import static
-from django.urls import include, path
+from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 
 from accounts import api as accounts
@@ -42,5 +41,11 @@ if settings.DEMO_RESET:
     from planner.demo import api as demo_api
 
     urlpatterns.insert(0, path("api/demo/reset", demo_api.reset))
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Stored attachment files, to their owner only.
+from planner.media import attachment_file  # noqa: E402
+
+urlpatterns.append(re_path(r"^media/(?P<path>.+)$", attachment_file))
+if settings.FRONTEND_DIST:
+    from config import frontend
+
+    urlpatterns += [re_path(r"^assets/(?P<path>.+)$", frontend.asset), re_path(r"^(?!api/|media/)(?P<path>.*)$", frontend.index)]
