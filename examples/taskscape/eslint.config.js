@@ -5,6 +5,11 @@ export default [
   { ignores: ["**/node_modules/**", "**/dist/**"] },
   ...tseslint.configs.recommended.map((c) => ({ ...c, files: ["**/*.{ts,tsx}"] })),
   {
+    // A leading underscore marks a deliberately unused name (a prop taken out of the spread).
+    files: ["**/*.{ts,tsx}"],
+    rules: { "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true }] },
+  },
+  {
     // Harness entries take whatever props a contract test sets.
     files: ["**/src/harness/**/*.tsx"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
