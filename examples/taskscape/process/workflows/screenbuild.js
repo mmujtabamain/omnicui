@@ -75,7 +75,8 @@ ${rules(s)}`
 phase('Build')
 return await pipeline(
   args.screens,
-  (s) => agent(builder(s), { ...OPTS, schema: RESULT, label: `build ${s.id}`, phase: 'Build' }),
+  // A repair (s.repair: what was built and what still fails) skips the build and goes to an independent fixer.
+  (s) => (s.repair ? { passed: false, summary: s.repair, needs: '' } : agent(builder(s), { ...OPTS, schema: RESULT, label: `build ${s.id}`, phase: 'Build' })),
   async (B, s) => {
     const first = B ? `${B.passed ? 'passed' : 'not passing'}. ${B.summary}${B.needs ? ` Needs: ${B.needs}` : ''}` : 'nothing (the first builder did not finish).'
     const X = await agent(fixer(s, first), { ...OPTS, schema: RESULT, label: `fix ${s.id}`, phase: 'Fix' })

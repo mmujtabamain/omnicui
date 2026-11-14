@@ -4,6 +4,10 @@ import type { Id } from "../api/types";
 
 export type Aside = "preview" | "trash" | "filter" | "none";
 
+/** The preview panel width in px; its divider clamps to this range (F09-027). */
+export const PREVIEW_MIN = 280;
+export const PREVIEW_MAX = 420;
+
 export interface UiState {
   projectId: Id | null;
   /** The active list of each pane; two panes in split view. */
@@ -16,6 +20,10 @@ export interface UiState {
   aside: Aside;
   paletteOpen: boolean;
   settingsOpen: boolean;
+  /** The list a new-task draft is started in; null when no draft is open (at most one, F09-051). */
+  draftListId: Id | null;
+  /** The preview panel width in px, between PREVIEW_MIN and PREVIEW_MAX. */
+  previewWidth: number;
   setProject(id: Id | null): void;
   openList(id: Id | null, pane?: number): void;
   split(on: boolean): void;
@@ -24,7 +32,13 @@ export interface UiState {
   setAside(a: Aside): void;
   setPalette(open: boolean): void;
   setSettings(open: boolean): void;
+  /** Starts a draft in the list; it shows in the aside and no row is added until it is committed. */
+  startDraft(listId: Id): void;
+  setDraft(listId: Id | null): void;
+  setPreviewWidth(px: number): void;
 }
+
+const clampWidth = (px: number) => Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, px));
 
 export const useUi = create<UiState>((set) => ({
   projectId: null,
@@ -35,7 +49,9 @@ export const useUi = create<UiState>((set) => ({
   aside: "preview",
   paletteOpen: false,
   settingsOpen: false,
-  setProject: (projectId) => set({ projectId, panes: [null], activePane: 0, selection: [], previewId: null }),
+  draftListId: null,
+  previewWidth: 322,
+  setProject: (projectId) => set({ projectId, panes: [null], activePane: 0, selection: [], previewId: null, draftListId: null }),
   openList: (id, pane) => set((s) => {
     const i = pane ?? s.activePane;
     const panes = [...s.panes];
@@ -48,4 +64,7 @@ export const useUi = create<UiState>((set) => ({
   setAside: (aside) => set({ aside }),
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setSettings: (settingsOpen) => set({ settingsOpen }),
+  startDraft: (listId) => set({ draftListId: listId, previewId: null, selection: [], aside: "preview" }),
+  setDraft: (draftListId) => set({ draftListId }),
+  setPreviewWidth: (px) => set({ previewWidth: clampWidth(px) }),
 }));

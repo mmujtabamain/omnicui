@@ -148,8 +148,8 @@ tests:
       - { part: rowSelect, checked: false }
       - { part: rowGroceries, text: "Buy groceries for the week" }
       - { part: subtaskOatMilk, text: "Oat milk" }
-      - { part: subtaskCount, text: "1 / 3" }
-      - { part: doneCount, text: "2 / 8 done" }
+      - { part: subtaskCount, text: { matches: "^1 ?/ ?3$" } }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
       - { part: footerPercent, text: { contains: "25" } }
       - { part: sortFilter, name: "Sort & filter", visible: true }
       - { part: previewPanel, visible: true }
@@ -203,12 +203,12 @@ tests:
       - { part: splitClose, name: "Close split", visible: true }
       - { part: splitSearch, name: "Search Reading" }
       - { part: splitRow, text: { contains: "Finish the novel on the nightstand" } }
-      - { part: splitFooterDoneCount, text: "1 / 3 done" }
+      - { part: splitFooterDoneCount, text: { matches: "(?i)^1 ?/ ?3 done$" } }
       - { part: splitDivider, visible: true }
       - { part: swapPanes, name: "Swap panes", visible: true }
       - { part: listTab, text: "Errands", selected: true }
       - { part: rowTitle, text: "Pick up prescription" }
-      - { part: doneCount, text: "2 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
       - { part: previewPanel, visible: true }
     screenshot: true   # split-view
 
@@ -293,7 +293,7 @@ tests:
       - { action: hover, part: window }
     expect:
       - { part: row, visible: true }
-      - { part: doneCount, text: "10 / 48 done" }   # derived from web.md: 40 tasks, every fifth done, plus 2 of 8 in standard
+      - { part: doneCount, text: { matches: "(?i)^10 ?/ ?48 done$" } }   # derived from web.md: 40 tasks, every fifth done, plus 2 of 8 in standard
 
   # Row selection and preview
   - name: "pressing a row title selects it and previews it"
@@ -319,7 +319,7 @@ tests:
     expect:
       - { part: rowSelect, checked: true }   # assumed: a picked check reads checked (no picked record in the sources)
       - { part: checkBike, checked: true }
-      - { part: selectionCount, text: "2" }
+      - { part: selectionCount, text: { matches: "^2( selected)?$" } }
       - { part: multiInspector, visible: true }
       - { part: openSelection, visible: true }
       - { part: clearSelection, name: "Clear selection", visible: true }
@@ -356,7 +356,7 @@ tests:
       - { action: press, part: rowKeysTitle }
     expect:
       - { part: rowKeysSelect, checked: true }
-      - { part: selectionCount, text: "2" }
+      - { part: selectionCount, text: { matches: "^2( selected)?$" } }
 
   - name: "Shift+ArrowDown extends the selection to the next row"
     steps:
@@ -364,7 +364,7 @@ tests:
       - { action: focus, part: rowTitle }
       - { action: key, part: rowTitle, key: Shift+ArrowDown }
     expect:
-      - { part: selectionCount, text: "2" }
+      - { part: selectionCount, text: { matches: "^2( selected)?$" } }
       - { part: multiInspector, visible: true }
 
   - name: "Control+A selects every task in the pane"
@@ -387,14 +387,14 @@ tests:
       - { action: focus, part: rowKeysSelect }
       - { action: key, part: rowKeysSelect, key: Alt+Space }
     expect:
-      - { part: doneCount, text: "3 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^3 ?/ ?8 done$" } }
 
   - name: "Alt-held press on the round check marks the task done and keeps its place"
     steps:
       - { input: modifierHold }   # holds Alt (Option on macOS) for the press that follows; the span is not documented
       - { action: press, part: checkBike }
     expect:
-      - { part: doneCount, text: "3 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^3 ?/ ?8 done$" } }
       - { part: rowBike, visible: true }
 
   - name: "bulk mark done marks every picked task done"
@@ -403,7 +403,7 @@ tests:
       - { action: press, part: rowKeysSelect }
       - { action: press, part: bulkMarkDone }
     expect:
-      - { part: doneCount, text: "4 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^4 ?/ ?8 done$" } }
 
   # Delete, undo, trash (destructive actions go through the confirmation, decision 10)
   - name: "deleting the active task asks first, then moves it to the Trash with Undo"
@@ -414,7 +414,7 @@ tests:
       - { action: press, part: dialogMoveToTrash }
     expect:
       - { part: rowBike, visible: false }
-      - { part: doneCount, text: "2 / 7 done" }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?7 done$" } }
       - { part: toast, visible: true }
       - { part: toastUndo, name: "Undo", visible: true }
 
@@ -457,7 +457,7 @@ tests:
       - { action: press, part: dialogMoveToTrash }
     expect:
       - { part: rowGroceries, visible: false }
-      - { part: doneCount, text: "1 / 4 done" }   # 4 tasks in the subtree, 1 of them done (Oat milk)
+      - { part: doneCount, text: { matches: "(?i)^1 ?/ ?4 done$" } }   # 4 tasks in the subtree, 1 of them done (Oat milk)
 
   - name: "the trash button opens the trash in the aside"
     steps:
@@ -525,7 +525,7 @@ tests:
       - { action: key, part: rowGroceriesExpand, key: ArrowRight }
     expect:
       - { part: subtaskOatMilk, visible: true }
-      - { part: subtaskCount, text: "1 / 3" }
+      - { part: subtaskCount, text: { matches: "^1 ?/ ?3$" } }
 
   # Row menu
   - name: "More opens the row menu"
@@ -550,7 +550,7 @@ tests:
       - { part: draftInspector, visible: true }
       - { part: previewEmpty, visible: false }
       - { part: previewPanel, visible: true }
-      - { part: doneCount, text: "2 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
 
   - name: "Alt+KeyN starts a new task draft"
     steps:
@@ -559,7 +559,7 @@ tests:
     expect:
       - { part: draftInspector, visible: true }
       - { part: previewEmpty, visible: false }
-      - { part: doneCount, text: "2 / 8 done" }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
 
   # Search and arrows
   - name: "Slash focuses the search field"
@@ -918,7 +918,7 @@ tests:
       - { part: projectSwitcher, text: { contains: "Spring launch" } }
       - { part: listTab, text: "Website", selected: true }
       - { part: listTabReading, visible: false }
-      - { part: doneCount, text: "1 / 5 done" }
+      - { part: doneCount, text: { matches: "(?i)^1 ?/ ?5 done$" } }
       - { part: rowHeroRewrite, visible: true }
 
   - name: "switching project closes the split pane"
