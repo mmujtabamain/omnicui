@@ -1,0 +1,261 @@
+# Merged omnicui contract for the Trash pane (id app.trash), web build.
+# Sources named by the drafts: spec/inventory/trash.json, spec/inventory/features-trash.txt,
+# spec/inventory/area-07.json feature records, spec/screens/notes-trash.txt, spec/screens/web.md,
+# spec/decisions.md, spec/library/contract-format.txt, spec/library/index.txt.
+id: app.trash
+
+props:
+  # Demo data set the harness loads before mounting the pane alone. standard holds two trashed roots:
+  # "Call the printer about samples" (Website, 30 minutes ago) and "Print the old flyer" (Errands, 2 days ago).
+  # Other values: empty, nolists, long. Only standard is used by these tests.
+  dataset: { type: string, default: standard }
+  # "" means no stale item. Any other value is a task title: after the list has rendered, the harness purges
+  # the trashed root with that title through the API from a second session (no UI), so the row still shown in
+  # this pane is stale (changed elsewhere, decision 14). Used only by the two stale tests at the end.
+  staleTitle: { type: string, default: "" }
+
+events:
+  # restored: count is the number of root ids sent in one restore call (Restore all sends both roots in one call; one row sends 1).
+  restored: { count: { type: integer } }
+  # purged: count is the number of items removed by one purge or empty call (Empty clears both demo items; one row sends 1).
+  purged: { count: { type: integer } }
+  # closed: fired by the pane's onClose. pane is the harness label "trash" (onClose carries no value in the sources read).
+  closed: { pane: { type: string } }
+
+parts:
+  pane: { role: generic }                           # outer pane div (the web aside)
+  title: { role: heading }                          # TitleBar label, text "Trash"
+  closeControl: { role: button }                    # red close light, name "Close Trash"; the only live light in the pane (kept, see notes)
+  minimizeLight: { role: button, optional: true }   # reference only, inert; dropped in both builds (F07-082); used only as a screenshot mask
+  fullscreenLight: { role: button, optional: true } # reference only, inert; dropped in both builds (F07-082); used only as a screenshot mask
+  list: { role: generic }                           # aria: list; container of the trash rows
+  actionStrip: { role: generic }                    # aria: toolbar; holds Restore all and Empty, rendered only when at least one root is trashed
+  restoreAll: { role: button }                      # "Restore all"; default action; hidden when the trash is empty
+  emptyTrash: { role: button }                      # "Empty" (icon delete_forever); destructive, danger colour at rest (review note 1); hidden when the trash is empty
+  emptyState: { role: generic }                     # EmptyState, text "Trash is empty" when there are no roots
+  notice: { role: status, optional: true }          # web only (decision 14): short inline message at the top of the pane after a stale or failed restore or purge
+  row: { role: generic }                            # aria: listitem. The first trash row in list order; positional, so tests do not rely on backend order
+  restoreItem: { role: button }                     # first row's Restore; shown on row hover or focus within the row
+  purgeItem: { role: button }                       # first row's Delete permanently; destructive, immediate
+  rowPrinter: { role: generic }                     # aria: listitem. The row "Call the printer about samples"
+  metaPrinter: { role: generic }                    # meta line "Website · deleted <time>"; masked in screenshots (relative time differs)
+  restorePrinter: { role: button }                  # Restore on the printer row
+  purgePrinter: { role: button }                    # Delete permanently on the printer row; destructive, immediate
+  rowFlyer: { role: generic }                       # aria: listitem. The row "Print the old flyer"
+  metaFlyer: { role: generic }                      # meta line "Errands · deleted <time>"; masked in screenshots (relative time differs)
+  restoreFlyer: { role: button }                    # Restore on the flyer row
+  purgeFlyer: { role: button }                      # Delete permanently on the flyer row; destructive, immediate (decision 12)
+  emptySheet: { role: generic }                     # aria: dialog. The Empty Trash confirmation sheet, rendered by the app's sheet host
+  emptySheetTitle: { role: heading }                # sheet headline "Empty Trash?"
+  emptySheetDetail: { role: generic }               # sheet detail "<n> tasks deleted for good. No undo."
+  cancelEmpty: { role: button }                     # "Cancel"; default focus in the sheet (decision 13)
+  confirmEmpty: { role: button }                    # "Empty Trash"; destructive accept; Enter does not confirm (decision 10)
+
+tests:
+  - name: opens with both trashed roots and the bulk actions shown
+    props: { dataset: standard }
+    steps: []
+    expect:
+      - { part: pane, visible: true }
+      - { part: title, text: "Trash" }
+      - { part: closeControl, name: "Close Trash" }
+      - { part: list, visible: true }
+      - { part: actionStrip, visible: true }
+      - { part: restoreAll, name: "Restore all" }
+      - { part: restoreAll, text: { contains: "Restore all" } }
+      - { part: emptyTrash, name: { contains: "Empty" } }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: metaPrinter, text: { contains: "Website · deleted" } }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+      - { part: metaFlyer, text: { contains: "Errands · deleted" } }
+      - { part: emptyState, visible: false }
+      - { part: notice, visible: false }
+    screenshot: { mask: [minimizeLight, fullscreenLight, emptyTrash, purgeItem, purgePrinter, purgeFlyer, metaPrinter, metaFlyer] }
+
+  - name: hovering the flyer row reveals its two row actions
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: rowFlyer }
+    expect:
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+      - { part: restoreFlyer, name: "Restore" }
+      - { part: restoreFlyer, visible: true }
+      - { part: purgeFlyer, name: "Delete permanently" }
+      - { part: purgeFlyer, visible: true }
+    trace:
+      - { part: restoreFlyer, property: opacity }
+    screenshot: { mask: [minimizeLight, fullscreenLight, emptyTrash, purgeItem, purgePrinter, purgeFlyer, metaPrinter, metaFlyer] }
+
+  - name: keyboard focus on a row's Restore reveals the row actions (web)
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreFlyer }
+    expect:
+      - { part: restoreFlyer, focused: true }
+      - { part: purgeFlyer, visible: true }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+    screenshot: { mask: [minimizeLight, fullscreenLight, emptyTrash, purgeItem, purgePrinter, purgeFlyer, metaPrinter, metaFlyer] }
+
+  - name: restoring the flyer row removes it and leaves the printer row
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: rowFlyer }
+      - { action: press, part: restoreFlyer }
+    expect:
+      - { part: rowFlyer, visible: false }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: restoreAll, visible: true }
+      - { part: notice, visible: false }
+      - { part: emptySheetTitle, visible: false }
+      - { event: restored, times: 1, last: { count: 1 } }
+
+  - name: Restore all moves both roots out and shows the empty state
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: restoreAll }
+    expect:
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: restoreAll, visible: false }
+      - { part: emptyTrash, visible: false }
+      - { part: actionStrip, visible: false }
+      - { part: row, visible: false }
+      - { part: emptySheetTitle, visible: false }
+      - { event: restored, times: 1, last: { count: 2 } }
+
+  - name: Delete permanently on the flyer row purges it at once, with no sheet
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: rowFlyer }
+      - { action: press, part: purgeFlyer }
+    expect:
+      - { part: emptySheet, visible: false }
+      - { part: rowFlyer, visible: false }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: emptyTrash, visible: true }
+      - { event: purged, times: 1, last: { count: 1 } }
+
+  - name: row restore and delete permanently empty the trash one row at a time
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: row }
+      - { action: press, part: purgeItem }
+      - { action: hover, part: row }
+      - { action: press, part: restoreItem }
+    expect:
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: emptyTrash, visible: false }
+      - { part: actionStrip, visible: false }
+      - { part: emptySheetTitle, visible: false }
+
+  - name: Empty asks first, names the count, and focuses Cancel
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+    expect:
+      - { part: emptySheetTitle, text: "Empty Trash?" }
+      - { part: emptySheetDetail, text: { matches: "^2 tasks deleted for good\\. No undo\\.$" } }
+      - { part: cancelEmpty, name: { contains: "Cancel" } }
+      - { part: cancelEmpty, focused: true }
+      - { part: confirmEmpty, name: { contains: "Empty Trash" } }
+      - { part: confirmEmpty, text: { contains: "Empty Trash" } }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+
+  - name: Enter on the focused Empty Trash button does not confirm (web, decision 10)
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+      - { action: focus, part: confirmEmpty }
+      - { action: key, part: confirmEmpty, key: Enter }
+    expect:
+      - { part: emptySheetTitle, text: "Empty Trash?" }
+      - { part: emptySheetDetail, text: { matches: "^2 tasks deleted for good\\. No undo\\.$" } }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+      - { part: rowPrinter, visible: true }
+
+  - name: Space on the focused Empty Trash button empties the trash
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+      - { action: focus, part: confirmEmpty }
+      - { action: key, part: confirmEmpty, key: Space }
+    expect:
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: emptySheetTitle, visible: false }
+      - { part: emptyTrash, visible: false }
+      - { event: purged, times: 1, last: { count: 2 } }
+
+  - name: Escape cancels the Empty sheet and deletes nothing
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+      - { action: key, part: cancelEmpty, key: Escape }
+    expect:
+      - { part: emptySheetTitle, visible: false }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+      - { part: restoreAll, visible: true }
+
+  - name: Cancel button closes the Empty sheet and deletes nothing
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+      - { action: press, part: cancelEmpty }
+    expect:
+      - { part: emptySheetTitle, visible: false }
+      - { part: rowPrinter, text: { contains: "Call the printer about samples" } }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+      - { part: restoreAll, visible: true }
+
+  - name: Empty Trash confirmed by a press empties the trash
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+      - { action: press, part: confirmEmpty }
+    expect:
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: emptySheetTitle, visible: false }
+      - { part: restoreAll, visible: false }
+      - { part: emptyTrash, visible: false }
+      - { event: purged, times: 1, last: { count: 2 } }
+
+  - name: Empty counts every trashed item and reads singular at one
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: rowFlyer }
+      - { action: press, part: restoreFlyer }
+      - { action: press, part: emptyTrash }
+    expect:
+      - { part: emptySheetTitle, text: "Empty Trash?" }
+      - { part: emptySheetDetail, text: { matches: "^1 task deleted for good\\. No undo\\.$" } }
+
+  - name: the red close light closes the pane
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: closeControl }
+    expect:
+      - { event: closed, times: 1, last: { pane: "trash" } }
+
+  - name: Restore on a row changed elsewhere reloads the list and shows an inline message (web, decision 14)
+    props: { dataset: standard, staleTitle: "Call the printer about samples" }
+    steps:
+      - { action: hover, part: rowPrinter }
+      - { action: press, part: restorePrinter }
+    expect:
+      - { part: notice, visible: true }
+      - { part: rowPrinter, visible: false }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+
+  - name: Delete permanently on a row changed elsewhere reloads the list and shows an inline message (web, decision 14)
+    props: { dataset: standard, staleTitle: "Call the printer about samples" }
+    steps:
+      - { action: hover, part: rowPrinter }
+      - { action: press, part: purgePrinter }
+    expect:
+      - { part: notice, visible: true }
+      - { part: rowPrinter, visible: false }
+      - { part: rowFlyer, text: { contains: "Print the old flyer" } }
+
+keyboard: true
+viewports: [ { width: 319, height: 715 } ]
+colorSchemes: [ light ]

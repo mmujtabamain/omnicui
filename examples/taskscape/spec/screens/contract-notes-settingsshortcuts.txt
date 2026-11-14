@@ -1,0 +1,77 @@
+# How the app.settingsshortcuts contract was written, and what its props make the harness do
+
+Based on: Draft A (inventory settings-shortcuts.json, features-settings-shortcuts.txt, area-10.json F10-009 to F10-077, area-08.json F08-051 to F08-085, notes-settings-shortcuts.txt, web.md, decisions.md, contract-format.txt, library/index.txt) and Draft B (the same inventory, features and format files, area-10.json F10-006 to F10-077, area-08.json F08-052 to F08-078, review notes, web.md, decisions.md, widget index). No critique with verified answers was supplied, so every conflict was settled by the draft with the more precise source, and each is listed below. No source files were opened in this merge.
+
+Harness meaning of props and events:
+- dataset (string, default standard; values standard, empty, nolists, long): the harness signs in as the demo account and loads that data set before mounting. The Shortcuts pane does not read it, so every test runs on standard.
+- No section or context prop: the harness mounts the Settings dialog already on the Shortcuts tab. Draft B asked for a section prop if the harness cannot do this; that contingency is not adopted, following Draft A's decision. If the harness cannot start on this tab, a section prop must be added and the first test changed.
+- bindingChanged event: fires on each save, reset, unbind or discard. label is the row title (for example "New task"); accel is the saved combo ("Alt+N", "Alt+Shift+N"), or "" when the row is unbound.
+- Key inputs appear in two spellings, kept exactly as each draft wrote them: "Alt+J" style (Draft A) and "Alt+KeyK", "Shift+Alt+KeyK", "Control+KeyF" style (Draft B). The harness must accept both. If it reports KeyN rather than N, the accel values in the event expectations must change.
+
+Conflicts and how they were settled:
+1. colorSchemes: Draft A gives [light] because the reference has no dark Shortcuts state; Draft B gives [light, dark] and cites no dark source. Kept [light].
+2. Keycap names: Draft A uses regexes that accept Alt or Option; Draft B uses name objects with default and macos keys plus a why field. Kept the regex form in every test. Draft B's name objects and why fields are dropped. Mod chords use Ctrl or Command, as in Draft B, per F08-071 and F08-072.
+3. Scrolling: Draft A used a do: scroll step with to: end, which uses a key other than action and was flagged uncertain by Draft A itself. Replaced with an action: focus on keycapRedo (Draft B's method); browsers scroll the focused element into view, which is assumed.
+4. Group heading: Draft A uses the plain text "Main window"; Draft B uses a case-insensitive regex. Kept Draft A's plain text, assuming the CSS uppercase does not change the text content.
+5. Tab order: Draft B expects Tab from the New task keycap to reach the Search keycap. Draft A lists New list as the next row but gives no order. Draft B's expectation is kept but is unverified.
+6. Browser-reserved refusal: Draft A scopes Control+T to Windows and Linux and Meta+T to macOS. Draft B's Control+KeyF test has no platform scope and leaves the macOS mapping unspecified. Kept Draft B's test, scoped to Windows and Linux; the macOS form for the Search row is not tested.
+7. Reset opacity: Draft A left F10-049 out and checks only visibility; Draft B has a trace. Kept Draft B's trace, which has no timing because the sources give none.
+8. Heading: Draft A keeps the title heading; Draft B marks it unverified on web. Kept as a heading, flagged as uncertain.
+9. The conflicting parts, renamed to Draft A's names: settingsWindow to dialog, clearSearch to searchClear, shortcutsBadge to shortcutsMatches, emptyState to noMatch, groupHeading to groupMain, error to shortcutError, groupDiscard to discardGroup. Added from Draft B: rowUndo, keycapSwitchList1, keycapPrevTab, keycapPrevProject, keycapUndo, keycapRedo.
+10. bindingChanged event (Draft A only) is kept; Draft B has no events, so nothing was lost.
+
+Dropped tests as duplicates (kept test's name is listed first):
+- Draft B opens-test: merged into the first test (search name, dialog visible).
+- Draft B ArrowDown from About, ArrowDown wrap to General, ArrowUp wrap to About: all three are covered by the Draft A arrow test; its expects were extended with tabShortcuts focused false.
+- Draft B "Clicking a section shows its pane...": merged into the General-then-Shortcuts test, with the rowRedo hidden check kept.
+- Draft B "Clicking a keycap starts recording": merged into the pressing-the-keycap test (reset hidden added).
+- Draft B "The clear button appears and empties": duplicate of the clear-button test.
+- Draft B "Pressing a section that has matches narrows": duplicate of the clicking-Shortcuts-while-searching test.
+- Draft B "Editing a scoped search...": duplicate of the editing-a-scoped-query test (Draft A uses End then Backspace; this is the Backspace-only variant).
+- Draft B "Pressing a section with no matches clears": duplicate of the no-matches section test.
+- Draft B "Escape clears a query first": duplicate of Draft A's Escape test (rowNewTask visible added).
+- Draft B "Escape with an empty search closes": duplicate of Draft A's test.
+- Draft B "A bare modifier key does not end the recording": subset of Draft A's test.
+- Draft B "Escape cancels a recording": duplicate of Draft A's test (reset hidden added).
+- Draft B "Clicking the recording keycap again cancels": duplicate of Draft A's test (reset hidden added).
+- Draft B "The title bar undo discards every change": duplicate of Draft A's test (reset hidden added).
+- Draft B "The Main window group undo": duplicate of Draft A's test (event kept from Draft A).
+- Draft B "The discard controls appear once a shortcut has changed": duplicate of the combo-records test (discardAll name "Discard changes" added there).
+- Draft B "The web default chords are shown with their spoken names": merged into the web-defaults test, with the Draft B regexes for Ctrl and Command and the bracket character.
+- Draft B "Scrolling to the end hides the intro and the first row": merged into the scroll test (rowNewTask hidden).
+- Draft B "Tab reaches only the selected section": kept as its own test (it is not a duplicate).
+
+Kept Draft B tests not in Draft A (their parts are new): focused search takes focus; Tab from search reaches only the selected section; typing a second query (undo) with the clear button and count; matching ignores case; every word must match with the trimmed quote; a row found by combo text; shortcut rows searchable while About is open; a modifier-ordered combo; a combo that stays after leaving and returning; Backspace and Delete on other rows; per-row reset after a rebind; reset opacity trace; the Control+KeyF refusal; Tab from a keycap; pane animation (record).
+
+Left out, union of both drafts, with reasons:
+- Window chrome, traffic lights, drag region, minimize and fullscreen (web.md drops the chrome; F10-029).
+- Settings Ctrl or Cmd+F focus shortcut (F10-025 and the Cmd+F part of F10-026; removed on web by review note 19).
+- Capture tab, Global group, Capture bar group, the "work anywhere in macOS" hint (decision 15, review notes 16 to 19). Their absence is checked only by screenshots.
+- Desktop size 1180 x 760 and its screenshots; web references or masked comparisons are needed.
+- F10-001 (window size is the viewport; the fade-in is not a contract behaviour).
+- F10-030 cross-launch persistence (no reload step); F10-032 seeding stored values (no step can do it).
+- F10-031 failed write, F10-053 failed load, F10-048 backend duplicate-binding text: need a failing API or an unspecified message. Only the browser-reserved refusal is asserted.
+- F10-050 open-time versus default: the harness starts at defaults, so the two cannot be told apart. The group and title undo tests still check the restore.
+- F10-036 to F10-040, F10-056 to F10-068, F10-069 to F10-073: other panes or desktop-only (data folder, path, theme, reduced motion, capture mode, about, restore defaults).
+- F10-010 and F10-016: visual states with no reference; checked by focus and click only.
+- F10-029 close glyph and the changed-group dot: visual or unspecified (the undo icon replaces the dot).
+- F08-040 to F08-042, F08-060, F08-062 to F08-064, F08-067 to F08-069 (key vocabulary, source-only), F08-078 (DOM detail), F08-079 to F08-081 (KeyAction not used here), F08-083 to F08-085 (Capture bar and screenshot bindings, removed on web).
+- Drag and drop: drag acts only on slider parts, and this pane has none.
+- Roving tabIndex (F10-007): parts have no tabIndex field; the behaviour is checked through focus only.
+- Account scoping of shortcuts: unspecified (decision 17 names only theme, reduced motion and show completed), so no cross-account test.
+- Colours: not asserted; the screenshots carry them.
+- Refusal wording: not specified; only the red line's visibility and the absence of a saved change are checked.
+
+Uncertain items (union of both drafts):
+- The heading "Settings" is kept as a heading part although web.md does not name it as dropped.
+- The no-match section test assumes About has no row matching "new".
+- Scrolling by focus assumes the browser scrolls the focused keycap into view.
+- The intro text is assumed to be the reference text on web (F10-022).
+- Whether a refused combo ends recording is not asserted.
+- A part that is not rendered (filtered row, hidden reset, undo or clear button) counts as visible: false. A row scrolled out of view is treated as visible: false.
+- The accel string "Alt+N" and the combo-text search "alt+n" are assumed (F10-051 keywords).
+- Keycap accessible names are the spoken labels, with Option or Command on macOS and Alt or Ctrl elsewhere; regexes accept both.
+- The group undo's accessible name is not verified.
+- The reset opacity trace has no timing.
+- The Tab-order expectation from New task to Search is unverified (conflict 5).
+- The only field added beyond Draft A's vocabulary is "only", which Draft A used; Draft B's why field was dropped.

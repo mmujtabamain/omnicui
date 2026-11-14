@@ -1,0 +1,185 @@
+id: "app.toasthost"
+
+# Toast: the single-slot undo notice pinned bottom-centre of the main window. It renders nothing when no notice is set.
+# Mounted alone by the harness (format rule): the Toast component, the toast store and the demo account on the real API.
+# The screen has no control that starts a delete, so the props make the harness run the delete through the app's own commands first.
+
+props:
+  dataset:
+    type: string
+    default: standard        # standard, empty, nolists or long (spec/screens/web.md). The tests use standard.
+  bulkTrash:
+    type: integer
+    default: 0               # 0 to 5. Applied first. The harness selects the first n root tasks of Errands in visual order, confirms the bulk sheet by clicking its danger button, and moves them (notice "<n> moved to Trash", roots only). 0 = none.
+  trash:
+    type: string
+    default: ""              # "" = no delete. Else the title of one Errands task, moved to Trash through the single Move to Trash sheet, confirmed by clicking its Move button (decision 10: Enter does not confirm). Applied after bulkTrash; its notice replaces any bulk notice.
+  trashAgain:
+    type: string
+    default: ""              # "" = none. Else the title of a second Errands task, moved to Trash the same way straight after trash; its notice replaces the first. Only meaningful with trash set.
+  undoFails:
+    type: boolean
+    default: false           # true: the first Undo request the harness sees fails with an API error; later Undo requests succeed. Web build only (decision 11).
+
+events:
+  undone:
+    count: { type: integer }   # number of root tasks the Undo restored: 1 for a single delete, n for a bulk delete
+    title: { type: string }    # title of the first restored root task, as the API returns it. Emitted only when the Undo request succeeds; never on a failed Undo or on Dismiss.
+  dismissed:
+    via: { type: string }      # "dismiss" when the Dismiss button closes the notice; "undo" when Undo succeeded (Toast.tsx:29-32 dismisses after the action). Not emitted on a failed Undo.
+
+parts:
+  notice: { role: generic }    # the pill (Surface, lift elevation). Not on screen when no notice is set. Reference: 225x41 at x 477, y 702 in a 1180x760 window.
+  message: { role: status }    # aria: status (assumed, see notes). Label with "Moved to Trash", "<n> moved to Trash" or, after a failed Undo, the error text.
+  undo: { role: button }       # ToolbarButton with the undo icon. Name "Undo"; becomes "Try again" after a failed Undo (web, decision 11).
+  dismiss: { role: button }    # IconButton with the close icon. Name "Dismiss", from its title, which is also its tooltip.
+
+viewports:
+  - { width: 1180, height: 760 }   # 1180 measured on the toast strip; 760 from the "1180x760 window" note (F07-029). See notes.
+
+colorSchemes: [ light ]            # the inventory has no dark capture of the toast
+keyboard: true                     # adds Enter and Space checks on the undo and dismiss buttons
+
+tests:
+  - name: "no notice when nothing was deleted"
+    props: { dataset: standard }
+    steps: []
+    expect:
+      - { part: notice, visible: false }
+      - { part: message, visible: false }
+      - { part: undo, visible: false }
+      - { part: dismiss, visible: false }
+    screenshot: true
+
+  - name: "a single delete shows Moved to Trash with Undo and Dismiss"
+    props: { dataset: standard, trash: "Cut a spare key" }
+    steps: []
+    expect:
+      - { part: notice, visible: true }
+      - { part: message, text: "Moved to Trash" }
+      - { part: undo, name: "Undo", visible: true }
+      - { part: dismiss, name: "Dismiss", visible: true }
+    screenshot: true
+
+  - name: "a parent task with subtasks still gives the single-delete message"
+    props: { dataset: standard, trash: "Buy groceries for the week" }
+    steps: []
+    expect:
+      - { part: message, text: "Moved to Trash" }
+      - { part: undo, name: "Undo", visible: true }
+
+  - name: "a bulk delete shows the count of root tasks"
+    props: { dataset: standard, bulkTrash: 2 }   # the two roots are Buy groceries for the week and Pick up prescription; their subtasks do not count
+    steps: []
+    expect:
+      - { part: message, text: "2 moved to Trash" }
+      - { part: undo, name: "Undo", visible: true }
+    screenshot: true
+
+  - name: "a newer delete replaces the notice"
+    props: { dataset: standard, bulkTrash: 2, trash: "Cut a spare key" }   # bulkTrash is applied first, then trash replaces it
+    steps: []
+    expect:
+      - { part: notice, visible: true }
+      - { part: message, text: "Moved to Trash" }
+    # The 6 s timer restart is not checked here: the step vocabulary has no wait, so see the record test.
+
+  - name: "Undo restores the task and removes the notice"
+    props: { dataset: standard, trash: "Cut a spare key" }
+    steps:
+      - { action: press, part: undo }
+    expect:
+      - { part: notice, visible: false }
+      - { event: undone, times: 1, last: { count: 1, title: "Cut a spare key" } }
+      - { event: dismissed, times: 1, last: { via: "undo" } }
+    screenshot: true   # after-undo state. The existing reference capture still shows the notice and is stale: re-record before use.
+
+  - name: "Undo on a bulk notice restores every root it trashed"
+    props: { dataset: standard, bulkTrash: 2 }
+    steps:
+      - { action: press, part: undo }
+    expect:
+      - { part: notice, visible: false }
+      - { event: undone, times: 1, last: { count: 2, title: "Buy groceries for the week" } }
+      - { event: dismissed, times: 1, last: { via: "undo" } }
+
+  - name: "Undo runs from the keyboard"
+    props: { dataset: standard, trash: "Book bike service" }
+    steps:
+      - { action: focus, part: undo }
+      - { action: key, part: undo, key: Enter }
+    expect:
+      - { part: notice, visible: false }
+      - { event: undone, times: 1, last: { count: 1, title: "Book bike service" } }
+
+  - name: "Tab moves keyboard focus from Undo to Dismiss"
+    props: { dataset: standard, trash: "Cut a spare key" }
+    steps:
+      - { action: focus, part: undo }
+      - { action: key, part: undo, key: Tab }
+    expect:
+      - { part: dismiss, focused: true }
+      - { part: undo, focused: false }
+      - { part: notice, visible: true }
+
+  - name: "Dismiss closes the notice and leaves the task in Trash"
+    props: { dataset: standard, trash: "Cut a spare key" }
+    steps:
+      - { action: press, part: dismiss }
+    expect:
+      - { part: notice, visible: false }
+      - { event: dismissed, times: 1, last: { via: "dismiss" } }
+      - { event: undone, times: 0 }
+    screenshot: true
+
+  - name: "a failed Undo on the web keeps the notice open and offers Try again"
+    only: [web]
+    props: { dataset: standard, trash: "Cut a spare key", undoFails: true }
+    steps:
+      - { action: press, part: undo }
+    expect:
+      - { part: notice, visible: true }
+      - { part: undo, name: "Try again" }
+      - { part: dismiss, visible: true }
+      - { part: message, text: { matches: "\\S" } }   # the error copy is not settled in the decisions; only a non-empty message is checked
+      - { event: undone, times: 0 }
+      - { event: dismissed, times: 0 }
+    screenshot: true
+
+  - name: "Try again after a failed Undo restores the task"
+    only: [web]
+    props: { dataset: standard, trash: "Cut a spare key", undoFails: true }
+    steps:
+      - { action: press, part: undo }
+      - { action: press, part: undo }   # the second press is on the same part, now named Try again
+    expect:
+      - { part: notice, visible: false }
+      - { event: undone, times: 1, last: { count: 1, title: "Cut a spare key" } }
+      - { event: dismissed, times: 1, last: { via: "undo" } }
+
+  - name: "Dismiss after a failed Undo closes the notice"
+    only: [web]
+    props: { dataset: standard, trash: "Cut a spare key", undoFails: true }
+    steps:
+      - { action: press, part: undo }
+      - { action: press, part: dismiss }
+    expect:
+      - { part: notice, visible: false }
+      - { event: dismissed, times: 1, last: { via: "dismiss" } }
+      - { event: undone, times: 0 }
+
+  - name: "a second delete replaces the first notice, and Undo restores only the latest task"
+    props: { dataset: standard, trash: "Book bike service", trashAgain: "Cut a spare key" }
+    steps:
+      - { action: press, part: undo }
+    expect:
+      - { part: notice, visible: false }
+      - { event: undone, times: 1, last: { count: 1, title: "Cut a spare key" } }
+      - { event: dismissed, times: 1, last: { via: "undo" } }
+
+  - name: "the notice clears on its own after 6 seconds"
+    props: { dataset: standard, trash: "Cut a spare key" }
+    steps:
+      - { action: hover, part: notice }   # the motion-starting step; the entrance (animate-rise) and the timed exit should both be in the clip
+    record: true
+    # Reference timer: 6000 ms, not paused by hover or focus (spec/screens/notes-toast.txt). The clip must run past 6 s. The no-pause behaviour is a gap for the web spec: a decision is needed.

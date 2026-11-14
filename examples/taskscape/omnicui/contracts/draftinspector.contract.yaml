@@ -1,0 +1,171 @@
+# Draft inspector, web build (app.draftinspector).
+# The new-task draft in the right preview panel: the draft header row (title, breadcrumb,
+# Discard draft) and the Start with block (Note, Image, hint).
+# Mounted alone: the task list pane, search row, New task button, footer, title bar and
+# sheet host belong to other screens and are not parts here. Window controls and the drag
+# grip are dropped on web (decisions.md 2). The completion ring placeholder is removed in
+# both builds (notes-draft-inspector.txt).
+id: app.draftinspector
+
+props:
+  dataset: { type: string, default: standard }   # demo data set: standard, empty, nolists or long (web.md). The harness signs in as the demo account and loads this set. Every test here uses standard.
+  list: { type: string, default: Errands }       # name of the list in the Home project that the new draft targets: Errands, Reading or Garden in standard (draft B gives Inbox for the empty set; not checked here). "" starts the draft with no target list, so the breadcrumb has no list part. A name only, never a list id.
+
+events:
+  draftAction:
+    action: { type: string }   # "commit", "cancel" or "note": the draft action the screen ran, reported once it passed the draftBusy guard. Image has no action value yet, so no test expects an event for Image.
+    title: { type: string }    # the title passed to the action; "" when the field is empty or the action is cancel
+
+parts:
+  title: { role: textbox }        # html: textarea. Draft title, placeholder "Untitled", focused on mount
+  breadcrumb: { role: generic }   # aria: navigation. html: div. folder_open icon, project name, then "/ <list>" when a list is set
+  discardDraft: { role: button }  # icon close in both builds (tooltip "Discard draft")
+  startWith: { role: generic }    # html: span. Section label "Start with", rendered uppercase by CSS. Not a heading.
+  noteButton: { role: button }    # dashed "Note" button, add icon size 16
+  imageButton: { role: button }   # web slot that replaces Screenshot (decisions.md 5): dashed "Image" button, icon size 16
+  hint: { role: generic }         # html: p (no ARIA role). Helper paragraph under the buttons
+
+tests:
+  - name: new draft opens with the title focused and empty, with the Start with block
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }   # no-op: the title is already focused on mount; gives the test a step
+    expect:
+      - { part: title, focused: true, text: "" }
+      - { part: breadcrumb, text: { contains: "Home" } }
+      - { part: breadcrumb, text: { matches: "/ Errands$" } }
+      - { part: startWith, text: { matches: "(?i)^start with$" } }
+      - { part: noteButton, name: { contains: "Note" } }
+      - { part: imageButton, name: { contains: "Image" } }
+      - { part: discardDraft, name: { contains: "Discard draft" } }
+      - { part: hint, text: { contains: "the task is created the moment it has something in it." } }   # tail clause only; the lead clause is not decided
+    screenshot: true   # reference state new-task-draft
+
+  - name: typing a title shows it and keeps the draft open
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+    expect:
+      - { part: title, focused: true, text: "Water the plants" }
+      - { part: discardDraft, visible: true }
+      - { part: noteButton, visible: true }
+      - { part: imageButton, visible: true }
+      - { event: draftAction, times: 0 }   # typing reports no draft action
+    screenshot: true   # reference state new-task-typed
+
+  - name: a long title wraps onto several lines and the field grows
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Pick up the prescription from the pharmacy counter before it closes at six, and post the parcel to Mum on the way home" }
+    expect:
+      - { part: title, focused: true, text: { contains: "on the way home" } }
+    screenshot: true   # the growth to the scroll height is judged by the screenshot
+
+  - name: Enter commits the typed title
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "commit", title: "Water the plants" } }
+      - { part: title, visible: false }   # from draft B; the closing after a commit is not stated in draft A
+
+  - name: Shift+Enter also commits (the handler does not check shiftKey)
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: key, part: title, key: "Shift+Enter" }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "commit", title: "Water the plants" } }
+
+  - name: Escape drops a typed draft and passes no title
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: key, part: title, key: Escape }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "cancel", title: "" } }
+      - { part: title, visible: false }   # from draft B; the draft closing is not stated in draft A
+
+  - name: Escape on an untouched draft drops it
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: key, part: title, key: Escape }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "cancel", title: "" } }
+
+  - name: Discard draft drops a typed title without a second action
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: press, part: discardDraft }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "cancel", title: "" } }   # times 1: the title did not blur into a commit first (mouse-down is prevented)
+      - { part: title, visible: false }   # from draft B
+
+  - name: Tab away from a typed title commits it
+    props: { dataset: standard, list: Errands }
+    steps:   # Tab stands in for a click-away: this screen has no outside part to press, so focus leaves the title and blur runs the commit
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: key, part: title, key: Tab }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "commit", title: "Water the plants" } }
+
+  - name: Tab away from an empty draft still runs an empty commit
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: key, part: title, key: Tab }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "commit", title: "" } }   # the screen writes nothing for an empty title (F04-118); the write is decided in the command layer, so only the call is seen here. Same case as draft B's click-away with no title.
+
+  - name: Enter on an empty draft still runs the commit, with an empty title
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "commit", title: "" } }   # converted from draft B (F04-118, which expected no write). Inferred from the empty-commit rule above, not stated for Enter. Uncertain.
+
+  - name: Note creates the task with the typed title, and the unmount blur adds no second action
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: type, part: title, text: "Water the plants" }
+      - { action: press, part: noteButton }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "note", title: "Water the plants" } }   # the draft unmounts after the note; its blur commit is swallowed by the draftBusy guard (F04-119)
+      - { part: title, visible: false }
+
+  - name: Note with no title passes an empty title (Untitled is applied by the command)
+    props: { dataset: standard, list: Errands }
+    steps:
+      - { action: focus, part: title }
+      - { action: press, part: noteButton }
+    expect:
+      - { event: draftAction, times: 1, last: { action: "note", title: "" } }
+      - { part: title, visible: false }
+
+  - name: draft with no list shows the project-only or dash breadcrumb
+    props: { dataset: standard, list: "" }
+    steps:
+      - { action: focus, part: title }   # no-op: the title is already focused on mount; gives the test a step
+    expect:
+      - { part: breadcrumb, text: { matches: "(—|Home)$" } }   # uncertain: the code shows an em dash when the project cannot be resolved; the inventory records 'Home' or '—'
+      - { part: title, focused: true }
+    screenshot: true
+
+viewports:
+  - { width: 323, height: 714 }   # the preview panel, derived from measured boxes (not stated in the inventory)
+
+colorSchemes: [light]   # the reference has no dark state (both recorded states are light)
+
+keyboard: true   # Enter and Space on noteButton, imageButton and discardDraft do what a press does; Image opens a file chooser, which the harness must dismiss

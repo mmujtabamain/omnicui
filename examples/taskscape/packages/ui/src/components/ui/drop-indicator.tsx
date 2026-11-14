@@ -16,8 +16,8 @@ const dropIndicatorVariants = cva("shrink-0 bg-content-1", {
     },
     visible: {
       true: "",
-      // Kept in the layout (so the list does not jump) but not painted: nothing is drawn.
-      false: "invisible",
+      // Not rendered: display none draws nothing and takes no space.
+      false: "hidden",
     },
   },
   defaultVariants: { target: "row", visible: false },

@@ -38,8 +38,8 @@ export type InputMode = "inline" | "draft" | "bare";
 
 export interface InputProps
   extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    "size" | "value" | "defaultValue" | "onChange" | "onKeyDown" | "onFocus" | "onBlur" | "onMouseDown" | "onMouseUp"
+    React.InputHTMLAttributes<Element>,
+    "size" | "value" | "defaultValue" | "onChange" | "onKeyDown" | "onFocus" | "onBlur" | "onMouseDown" | "onMouseUp" | "onSubmit"
   > {
   value?: string;
   size?: Size;

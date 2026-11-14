@@ -85,8 +85,8 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(funct
       className={cn(checkboxVariants({ size, shape, intent }), className)}
       {...props}
     >
-      {/* Always mounted so the control keeps its glyph box; invisible while unchecked. */}
-      <CheckboxPrimitive.Indicator forceMount data-slot="indicator" className="flex items-center justify-center data-[state=unchecked]:invisible">
+      {/* Always mounted; hidden (display none) while unchecked, so it is not visible. */}
+      <CheckboxPrimitive.Indicator forceMount data-slot="indicator" className="flex items-center justify-center data-[state=unchecked]:hidden">
         {glyph}
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>

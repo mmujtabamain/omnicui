@@ -1,0 +1,791 @@
+id: "app.filterpanel"
+
+# Filter & Sort panel with the title bar and task list pane it sits beside.
+# Web build: no window controls or drag grip (decision 2). No events declared.
+# Drag-and-drop is not tested (no slider parts).
+
+props:
+  dataset: { type: string, default: standard }    # standard | empty | nolists | long. Demo data set the harness loads for the demo account before mounting.
+  panel: { type: string, default: open }          # open | closed. open: mounts with the panel open on the active list (Errands in standard). closed: mounts with the panel closed, so the preview column shows its empty state.
+  showCompleted: { type: boolean, default: true } # true | false. The account's Show completed tasks setting (stored as show_completed, F05-037). false: the harness stores it off before mounting, so done tasks are hidden while Show is All.
+
+viewports: [ { width: 1180, height: 760 } ]
+colorSchemes: [ light, dark ]
+keyboard: true
+
+parts:
+  # Title bar (web: no window controls, no drag grip)
+  projectSwitch: { role: button }            # name "Switch project", text "Home". No name or text check
+  listTabErrands: { role: button }           # aria: tab. Errands list tab; selected while it is the active list
+  listTabReading: { role: button }           # aria: tab. Reading list tab; selecting it retargets the panel
+  listTabGarden: { role: button }            # aria: tab. Garden list tab; not tested
+  newList: { role: button }                  # name "New list"; not tested
+  splitView: { role: button }                # toggle with aria-pressed; name "Split view"
+  hidePreview: { role: button }              # name "Hide preview panel" (web: no shortcut hint, review note)
+  settings: { role: button }                 # name "Settings" (web: no shortcut hint, review note)
+  trashButton: { role: button }              # title-bar Trash (decision 1); label not in the spec, no name or text check
+  paletteButton: { role: button }            # decision 7; label not in the spec, no name or text check
+  accountButton: { role: button }            # web account button; label not in the spec, no name or text check
+
+  # Task list pane
+  searchField: { role: textbox }             # placeholder "Search Errands" (F05-056); accessible name not asserted
+  searchOptions: { role: button }            # tune icon, name "Search options". Opens the scope and fields menu, not this panel (review reply 2)
+  searchCount: { role: generic }             # direct match count; shown only while the query is non-blank (F05-059)
+  searchClear: { role: button }              # name "Clear search"; shown only while the query is non-blank (F05-032)
+  newTask: { role: button }                  # name "New task"; used as the start point of the slash-key test
+  scopeWholeProject: { role: button }        # aria: menuitem. Whole project item of the Search options menu (review reply 2)
+  fieldsNotesOnly: { role: button }          # aria: menuitem. Notes only item of the Search options menu (review reply 2)
+  row: { role: generic }                     # aria: listitem. The first task row (Pick up prescription at rest)
+  rowPickUp: { role: generic }               # aria: listitem. Pick up prescription (note "Counter closes at 6")
+  rowBike: { role: generic }                 # aria: listitem. Book bike service
+  rowGroceries: { role: generic }            # aria: listitem. Buy groceries for the week (parent, expanded at rest)
+  rowSourdough: { role: generic }            # aria: listitem. Sourdough loaf (child of Buy groceries)
+  rowOatMilk: { role: generic }              # aria: listitem. Oat milk (done child of Buy groceries)
+  rowPost: { role: generic }                 # aria: listitem. Post the parcel to Mum (done)
+  rowReturnLibrary: { role: generic }        # aria: listitem. Return library books (Reading; shown in whole-project scope)
+  rowMore: { role: button }                  # the More button on the first row, name "More"
+  subtaskToggle: { role: button }            # chevron on a parent row. Name "Expand" when collapsed, "Collapse" when expanded (review reply 7)
+  subtaskCount: { role: generic }            # done/total of the visible children on a parent row (F05-037, F05-066). Removed while a search is active (F05-067), see notes
+  doneCheck: { role: checkbox }              # round check on a task row; name "Select"
+  emptyState: { role: status }               # EmptyState in the task list: "Nothing here yet" (no search) or "No matches in Errands" (search, F05-061)
+  noMatchHint: { role: generic }             # "Try a different search or scope" (no-match state)
+  sortAndFilter: { role: button }            # footer ViewControl, name "Sort & filter". Toggles the panel (F05-062, F05-063). Text gains "Filtered" while a view is active
+  doneCount: { role: generic }               # footer done count, DOM text "2/8 done" (F05-037 source check). Ignores search and filters (F05-065)
+  donePercent: { role: generic }             # footer percentage, DOM text "25%"
+  progressBar: { role: generic }             # aria: progressbar; no text, not asserted (screenshot only)
+  groupHeadingErrands: { role: heading }     # group heading in whole-project search
+  groupHeadingReading: { role: heading }     # group heading in whole-project search
+  previewEmpty: { role: status }             # PreviewPanel EmptyState "No task selected", shown while the panel is closed
+
+  # Filter & Sort panel (preview column)
+  panelTitle: { role: heading }              # "Filter & Sort"
+  panelSubtitle: { role: generic }           # "Errands" at rest; "No list open" with no target; names joined with ", " when split
+  closeButton: { role: button }              # header close, name "Close"
+  sectionSort: { role: heading }             # "Sort" (CSS uppercases)
+  sectionShow: { role: heading }             # "Show"
+  sectionRefine: { role: heading }           # "Refine"
+  sectionDate: { role: heading }             # "Date"
+  summary: { role: status }                  # "Showing 8 of 8 tasks", "Nothing to filter", or split "Errands 8/8 · Reading 3/3"
+  sortMenu: { role: button }                 # MenuButton; its text is the current sort label, "Manual" at rest
+  sortManual: { role: button }               # aria: menuitem. "Manual"
+  sortCreated: { role: button }              # aria: menuitem. "Date created"
+  sortUpdated: { role: button }              # aria: menuitem. "Date updated"
+  sortAlphabetical: { role: button }         # aria: menuitem. "Alphabetical"
+  sortDoneLast: { role: button }             # aria: menuitem. "Done last"
+  sortAscending: { role: button }            # name "Ascending"; disabled while sort is Manual
+  sortDescending: { role: button }           # name "Descending"; disabled while sort is Manual
+  clearSort: { role: button }                # name "Clear sort"; shown while sort is non-default (direction rule disputed, see notes)
+  showAll: { role: button }                  # aria: segment. "All"
+  showActive: { role: button }               # aria: segment. "Active"
+  showDone: { role: button }                 # aria: segment. "Done"
+  clearShow: { role: button }                # name "Clear show"
+  notesAny: { role: button }                 # refine row Notes, segment "Any" (size md, review reply 15)
+  notesWith: { role: button }                # aria: segment. "With"
+  notesWithout: { role: button }             # aria: segment. "Without"
+  attachmentsAny: { role: button }           # refine row Attachments, segment "Any"
+  attachmentsWith: { role: button }          # aria: segment. "With"
+  attachmentsWithout: { role: button }       # aria: segment. "Without"
+  subtasksAny: { role: button }              # refine row Subtasks, segment "Any"
+  subtasksWith: { role: button }             # aria: segment. "With"
+  subtasksWithout: { role: button }          # aria: segment. "Without"
+  clearRefine: { role: button }              # name "Clear refine"; shown while a refine row is not Any
+  dateCreated: { role: button }              # aria: segment. Date field "Created"
+  dateUpdated: { role: button }              # aria: segment. "Updated"
+  dateRangeButton: { role: button }          # MenuButton; its text is the range label, "Any time" at rest
+  rangeAnyTime: { role: button }             # aria: menuitem. "Any time"
+  rangeLast24Hours: { role: button }         # aria: menuitem. "Last 24 hours"
+  rangeLast7Days: { role: button }           # aria: menuitem. "Last 7 days"
+  rangeLast30Days: { role: button }          # aria: menuitem. "Last 30 days"
+  rangeCustom: { role: button }              # aria: menuitem. "Custom…" (reveals the day stepper)
+  clearDate: { role: button }                # name "Clear date"; shown only while the range is not Any time
+  daysCaption: { role: generic }             # "Within the last"; custom range only
+  daysFewer: { role: button }                # name "Fewer days"; custom range only
+  daysInput: { role: textbox }               # day count, 1 to 365, starts at 7 (F05-017); custom range only
+  daysMore: { role: button }                 # name "More days"; custom range only
+  daysUnit: { role: generic }                # "days"; custom range only
+  resetButton: { role: button }              # ToolbarButton "Reset"; disabled unless a view is active (F05-050)
+  doneButton: { role: button }               # primary "Done"; closes the panel
+
+tests:
+  # Reference state filter-panel: panel open on Errands, default data (both colour schemes)
+  - name: "opens on the default view of Errands"
+    steps: []
+    expect:
+      - { part: panelTitle, text: "Filter & Sort" }
+      - { part: panelSubtitle, text: "Errands" }
+      - { part: sectionSort, text: { matches: '(?i)^sort$' } }
+      - { part: listTabErrands, selected: true }
+      - { part: listTabReading, selected: false }
+      - { part: sortMenu, text: { contains: "Manual" } }
+      - { part: sortAscending, disabled: true }
+      - { part: sortDescending, disabled: true }
+      - { part: clearSort, visible: false }
+      - { part: showAll, selected: true }
+      - { part: showActive, selected: false }
+      - { part: clearShow, visible: false }
+      - { part: notesAny, selected: true }
+      - { part: attachmentsAny, selected: true }
+      - { part: subtasksAny, selected: true }
+      - { part: clearRefine, visible: false }
+      - { part: dateCreated, selected: true }
+      - { part: dateUpdated, selected: false }
+      - { part: dateRangeButton, text: { contains: "Any time" } }
+      - { part: clearDate, visible: false }
+      - { part: daysCaption, visible: false }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+      - { part: donePercent, text: { matches: '^25 ?%$' } }
+      - { part: row, text: { contains: "Pick up prescription" } }
+      - { part: rowGroceries, visible: true }
+      - { part: rowOatMilk, visible: true }
+      - { part: subtaskToggle, name: "Collapse" }
+      - { part: subtaskCount, text: { matches: '^1 ?/ ?3$' } }
+      - { part: rowMore, name: "More" }
+      - { part: searchCount, visible: false }
+      - { part: searchClear, visible: false }
+      - { part: resetButton, disabled: true }
+      - { part: settings, name: "Settings" }
+      - { part: hidePreview, name: "Hide preview panel" }
+      - { part: closeButton, name: "Close" }
+    # Refine segments are masked: review reply 15 moves them to the md size, so their reference pixels differ by design.
+    screenshot: { mask: [notesAny, notesWith, notesWithout, attachmentsAny, attachmentsWith, attachmentsWithout, subtasksAny, subtasksWith, subtasksWithout] }
+
+  - name: "Close hides the panel and leaves the empty preview"
+    steps:
+      - { action: press, part: closeButton }
+    expect:
+      - { part: panelTitle, visible: false }
+      - { part: previewEmpty, text: { contains: "No task selected" } }
+      - { part: sortAndFilter, visible: true }
+
+  - name: "Sort & filter opens the panel in the preview column"
+    props: { panel: closed }
+    steps:
+      - { action: press, part: sortAndFilter }
+    expect:
+      - { part: panelTitle, text: "Filter & Sort" }
+      - { part: panelSubtitle, text: "Errands" }
+      - { part: previewEmpty, visible: false }
+
+  - name: "Sort & filter a second time closes the panel"
+    props: { panel: closed }
+    steps:
+      - { action: press, part: sortAndFilter }
+      - { action: press, part: sortAndFilter }
+    expect:
+      - { part: panelTitle, visible: false }
+      - { part: previewEmpty, visible: true }
+
+  - name: "Done closes the panel and keeps the filter"
+    steps:
+      - { action: press, part: showActive }
+      - { action: press, part: doneButton }
+    expect:
+      - { part: panelTitle, visible: false }
+      - { part: previewEmpty, text: { contains: "No task selected" } }
+      - { part: rowPost, visible: false }
+      - { part: sortAndFilter, text: { contains: "Filtered" } }
+
+  - name: "Hide preview panel closes the column with the panel"
+    steps:
+      - { action: press, part: hidePreview }
+    expect:
+      - { part: panelTitle, visible: false }
+
+  # Reference state completed-hidden: panel closed, done rows hidden by the setting
+  - name: "closed panel with completed tasks hidden"
+    props: { panel: closed, showCompleted: false }
+    steps: []
+    expect:
+      - { part: panelTitle, visible: false }
+      - { part: previewEmpty, text: { contains: "No task selected" } }
+      - { part: rowPost, visible: false }
+      - { part: rowOatMilk, visible: false }
+      - { part: sortAndFilter, visible: true }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+    screenshot: true
+
+  - name: "completed tasks off hides done rows while Show is All"
+    props: { showCompleted: false }
+    steps: []
+    expect:
+      - { part: showAll, selected: true }
+      - { part: rowPost, visible: false }
+      - { part: rowOatMilk, visible: false }
+      - { part: summary, text: "Showing 6 of 8 tasks" }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+
+  # Sort
+  - name: "sort menu lists the five modes"
+    steps:
+      - { action: press, part: sortMenu }
+    expect:
+      - { part: sortManual, name: "Manual", visible: true }
+      - { part: sortCreated, name: "Date created", visible: true }
+      - { part: sortUpdated, name: "Date updated", visible: true }
+      - { part: sortAlphabetical, name: "Alphabetical", visible: true }
+      - { part: sortDoneLast, name: "Done last", visible: true }
+
+  - name: "Escape closes the sort menu and keeps the sort"
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: key, part: sortAlphabetical, key: Escape }
+    expect:
+      - { part: sortAlphabetical, visible: false }
+      - { part: sortMenu, text: { contains: "Manual" } }
+      - { part: panelTitle, visible: true }
+
+  - name: "Alphabetical re-sorts the rows and enables the direction"
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortAlphabetical }
+    expect:
+      - { part: sortMenu, text: { contains: "Alphabetical" } }
+      - { part: sortAscending, disabled: false }
+      - { part: sortAscending, selected: true }
+      - { part: sortDescending, selected: false }
+      - { part: row, text: { contains: "Book bike service" } }
+      - { part: clearSort, visible: true }
+      - { part: sortAlphabetical, visible: false }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+
+  - name: "Descending reverses the alphabetical order"
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortAlphabetical }
+      - { action: press, part: sortDescending }
+    expect:
+      - { part: sortDescending, selected: true }
+      - { part: sortAscending, selected: false }
+      - { part: row, text: { contains: "Post the parcel to Mum" } }
+
+  - name: "Manual with Descending keeps both arrows disabled and reverses the stored order"
+    # F05-043 edge (visibility.ts:157-160). Derived from source, not checked on screen (see notes).
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortAlphabetical }
+      - { action: press, part: sortDescending }
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortManual }
+    expect:
+      - { part: sortMenu, text: { contains: "Manual" } }
+      - { part: sortDescending, disabled: true }
+      - { part: sortAscending, disabled: true }
+      - { part: sortDescending, selected: false }
+      - { part: row, text: { contains: "Buy groceries for the week" } }
+
+  - name: "Clear sort restores Manual order and direction"
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortAlphabetical }
+      - { action: press, part: sortDescending }
+      - { action: press, part: clearSort }
+    expect:
+      - { part: sortMenu, text: { contains: "Manual" } }
+      - { part: sortAscending, disabled: true }
+      - { part: sortDescending, disabled: true }
+      - { part: sortDescending, selected: false }
+      - { part: row, text: { contains: "Pick up prescription" } }
+      - { part: clearSort, visible: false }
+
+  # Show filter
+  - name: "Show Active hides done rows and the count follows at once"
+    steps:
+      - { action: press, part: showActive }
+    expect:
+      - { part: showActive, selected: true }
+      - { part: showAll, selected: false }
+      - { part: rowPost, visible: false }
+      - { part: rowOatMilk, visible: false }
+      - { part: rowBike, visible: true }
+      - { part: summary, text: "Showing 6 of 8 tasks" }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+      - { part: clearShow, visible: true }
+      - { part: sortAndFilter, text: { contains: "Filtered" } }
+      - { part: resetButton, disabled: false }
+
+  - name: "Clear show returns the filter to All"
+    steps:
+      - { action: press, part: showActive }
+      - { action: press, part: clearShow }
+    expect:
+      - { part: showAll, selected: true }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+      - { part: clearShow, visible: false }
+      - { part: rowPost, visible: true }
+      - { part: resetButton, disabled: true }
+
+  - name: "Show Done keeps done tasks and the parents that hold them"
+    steps:
+      - { action: press, part: showDone }
+    expect:
+      - { part: showDone, selected: true }
+      - { part: rowBike, visible: false }
+      - { part: rowPost, visible: true }
+      - { part: rowGroceries, visible: true }
+      - { part: rowOatMilk, visible: true }
+      - { part: summary, text: "Showing 3 of 8 tasks" }
+
+  # Refine
+  - name: "Notes With keeps only tasks that have notes"
+    steps:
+      - { action: press, part: notesWith }
+    expect:
+      - { part: notesWith, selected: true }
+      - { part: notesAny, selected: false }
+      - { part: rowPickUp, visible: true }
+      - { part: rowBike, visible: false }
+      - { part: summary, text: "Showing 1 of 8 tasks" }
+      - { part: clearRefine, visible: true }
+      - { part: notesWithout, text: "Without" }
+
+  - name: "Notes Without hides the tasks that have notes"
+    steps:
+      - { action: press, part: notesWithout }
+    expect:
+      - { part: notesWithout, selected: true }
+      - { part: rowPickUp, visible: false }
+      - { part: rowBike, visible: true }
+      - { part: summary, text: "Showing 7 of 8 tasks" }
+
+  - name: "Subtasks With keeps the parent and hides its children"
+    steps:
+      - { action: press, part: subtasksWith }
+    expect:
+      - { part: subtasksWith, selected: true }
+      - { part: rowGroceries, visible: true }
+      - { part: rowOatMilk, visible: false }
+      - { part: rowSourdough, visible: false }
+      - { part: summary, text: "Showing 1 of 8 tasks" }
+
+  - name: "Subtasks Without keeps a parent whose child passes"
+    # F05-039: the parent fails 'none' but stays because its children pass.
+    steps:
+      - { action: press, part: subtasksWithout }
+    expect:
+      - { part: subtasksWithout, selected: true }
+      - { part: rowGroceries, visible: true }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+
+  - name: "Attachments With shows the empty list when no task has attachments"
+    steps:
+      - { action: press, part: attachmentsWith }
+    expect:
+      - { part: attachmentsWith, selected: true }
+      - { part: emptyState, text: { contains: "Nothing here yet" } }
+      - { part: row, visible: false }
+      - { part: summary, text: "Showing 0 of 8 tasks" }
+
+  - name: "Clear refine resets all three refine rows"
+    steps:
+      - { action: press, part: notesWith }
+      - { action: press, part: subtasksWith }
+      - { action: press, part: attachmentsWith }
+      - { action: press, part: clearRefine }
+    expect:
+      - { part: notesAny, selected: true }
+      - { part: subtasksAny, selected: true }
+      - { part: attachmentsAny, selected: true }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+      - { part: clearRefine, visible: false }
+      - { part: rowBike, visible: true }
+
+  # Date
+  - name: "Updated alone does not enable Reset or the Date clear"
+    steps:
+      - { action: press, part: dateUpdated }
+    expect:
+      - { part: dateUpdated, selected: true }
+      - { part: dateCreated, selected: false }
+      - { part: resetButton, disabled: true }
+      - { part: clearDate, visible: false }
+      - { part: dateRangeButton, text: { contains: "Any time" } }
+      - { part: daysCaption, visible: false }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+
+  - name: "Last 7 days shows Clear date and enables Reset"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeLast7Days }
+    expect:
+      - { part: dateRangeButton, text: { contains: "Last 7 days" } }
+      - { part: clearDate, visible: true }
+      - { part: summary, text: { matches: '^Showing \d+ of 8 tasks$' } }
+      - { part: resetButton, disabled: false }
+
+  - name: "Clear date restores Created and Any time and turns Reset off"
+    steps:
+      - { action: press, part: dateUpdated }
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeLast7Days }
+      - { action: press, part: clearDate }
+    expect:
+      - { part: dateRangeButton, text: { contains: "Any time" } }
+      - { part: dateCreated, selected: true }
+      - { part: dateUpdated, selected: false }
+      - { part: clearDate, visible: false }
+      - { part: resetButton, disabled: true }
+
+  - name: "Custom range shows the day stepper at 7"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+    expect:
+      - { part: daysCaption, text: "Within the last" }
+      - { part: daysInput, text: "7" }
+      - { part: daysUnit, text: "days" }
+      - { part: daysFewer, visible: true }
+      - { part: daysMore, visible: true }
+      - { part: dateRangeButton, text: { contains: "Custom" } }
+
+  - name: "Day stepper moves by one and stops at 1"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: press, part: daysMore }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+    expect:
+      - { part: daysInput, text: "1" }
+
+  - name: "Plus and minus move the day count by one"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: press, part: daysMore }
+      - { action: press, part: daysFewer }
+      - { action: press, part: daysFewer }
+    expect:
+      - { part: daysInput, text: "6" }
+
+  - name: "an emptied day count becomes 1 at once"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: focus, part: daysInput }
+      - { action: key, part: daysInput, key: Backspace }
+    expect:
+      - { part: daysInput, text: "1" }
+
+  - name: "Typed days are clamped to 365 by the stepper"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: type, part: daysInput, text: "999" }
+      - { action: press, part: daysMore }
+    expect:
+      - { part: daysInput, text: "365" }
+
+  - name: "a typed day count is clamped to 365"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: focus, part: daysInput }
+      - { action: key, part: daysInput, key: Backspace }
+      - { action: type, part: daysInput, text: "400" }
+    expect:
+      - { part: daysInput, text: "365" }
+
+  - name: "Clear date resets the day count to 7"
+    steps:
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+      - { action: type, part: daysInput, text: "999" }
+      - { action: press, part: clearDate }
+      - { action: press, part: dateRangeButton }
+      - { action: press, part: rangeCustom }
+    expect:
+      - { part: daysInput, text: "7" }
+
+  # Reset
+  - name: "Reset clears every target view"
+    steps:
+      - { action: press, part: showActive }
+      - { action: press, part: dateUpdated }
+      - { action: press, part: resetButton }
+    expect:
+      - { part: showAll, selected: true }
+      - { part: dateCreated, selected: true }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+      - { part: resetButton, disabled: true }
+      - { part: clearShow, visible: false }
+
+  - name: "Reset clears the stored view and keeps the search text"
+    # Reset clears the view only (F05-024); the query stays in the search field.
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+      - { action: press, part: showActive }
+      - { action: press, part: resetButton }
+    expect:
+      - { part: showAll, selected: true }
+      - { part: searchField, text: "b" }
+      - { part: searchCount, text: "2" }
+      - { part: summary, text: "Showing 2 of 8 tasks" }
+      - { part: resetButton, disabled: true }
+
+  - name: "Reset puts the sort back to Manual and the stored row order is intact"
+    # F05-052: sorting never rewrites the stored order. Reset is enabled by a sort change (see notes).
+    steps:
+      - { action: press, part: sortMenu }
+      - { action: press, part: sortAlphabetical }
+      - { action: press, part: resetButton }
+    expect:
+      - { part: sortMenu, text: { contains: "Manual" } }
+      - { part: row, text: { contains: "Pick up prescription" } }
+      - { part: resetButton, disabled: true }
+
+  # Search (task list pane)
+  - name: "search field takes focus"
+    steps:
+      - { action: focus, part: searchField }
+    expect:
+      - { part: searchField, focused: true }
+    screenshot: true
+
+  - name: "typing filters the rows, hides the done ones and shows the match count"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+    expect:
+      - { part: searchCount, text: "2" }
+      - { part: searchClear, visible: true }
+      - { part: searchOptions, name: "Search options" }
+      - { part: row, text: { contains: "Book bike service" } }
+      - { part: rowBike, visible: true }
+      - { part: rowGroceries, visible: true }
+      - { part: rowPickUp, visible: false }
+      - { part: rowPost, visible: false }
+      - { part: rowOatMilk, visible: false }
+      - { part: subtaskToggle, visible: false }
+      - { part: subtaskCount, visible: false }
+      - { part: summary, text: "Showing 2 of 8 tasks" }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+    screenshot: true
+
+  - name: "a query with no match shows the empty state"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "zzzz" }
+    expect:
+      - { part: emptyState, text: { contains: "No matches in Errands" } }
+      - { part: noMatchHint, text: "Try a different search or scope" }
+      - { part: searchCount, text: "0" }
+      - { part: rowBike, visible: false }
+      - { part: rowGroceries, visible: false }
+      - { part: summary, text: "Showing 0 of 8 tasks" }
+      - { part: panelTitle, visible: true }
+      - { part: doneCount, text: { matches: '(?i)^2 ?/ ?8 done$' } }
+    screenshot: true
+
+  - name: "Clear search restores every row"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "zzzz" }
+      - { action: press, part: searchClear }
+    expect:
+      - { part: searchClear, visible: false }
+      - { part: searchCount, visible: false }
+      - { part: emptyState, visible: false }
+      - { part: rowBike, visible: true }
+      - { part: subtaskToggle, visible: true }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+
+  - name: "the clear search button empties the query and the rows return"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+      - { action: press, part: searchClear }
+    expect:
+      - { part: searchField, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+      - { part: rowPost, visible: true }
+
+  - name: "Escape empties the search"
+    # F05-032 names Escape in the store comment; the key wiring is not in the listed source (uncertain).
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+      - { action: key, part: searchField, key: Escape }
+    expect:
+      - { part: searchField, text: "" }
+      - { part: rowPost, visible: true }
+
+  - name: "a whitespace-only query turns no filter on"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: " " }
+    expect:
+      - { part: searchClear, visible: false }
+      - { part: searchCount, visible: false }
+      - { part: summary, text: "Showing 8 of 8 tasks" }
+
+  - name: "a search and Show Done combine, and the count ignores Show"
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+      - { action: press, part: showDone }
+    expect:
+      - { part: searchCount, text: "2" }
+      - { part: rowBike, visible: false }
+      - { part: rowGroceries, visible: true }
+      - { part: rowOatMilk, visible: false }
+      - { part: summary, text: "Showing 1 of 8 tasks" }
+
+  - name: "a matching subtask keeps its parent"
+    # F05-030. The parent-counter check was dropped because the drafts disagree (see notes).
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "sourdough" }
+    expect:
+      - { part: rowGroceries, visible: true }
+      - { part: rowSourdough, visible: true }
+      - { part: rowBike, visible: false }
+      - { part: searchCount, text: "1" }
+
+  - name: "a collapsed parent still shows its matching subtask while searching"
+    # Source only: TaskRow.tsx:110 forces the parent expanded while searching (F05-046).
+    steps:
+      - { action: press, part: subtaskToggle }
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "sourdough" }
+    expect:
+      - { part: rowSourdough, visible: true }
+
+  - name: "Notes only matches the note text"
+    steps:
+      - { action: press, part: searchOptions }
+      - { action: press, part: fieldsNotesOnly }
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "counter" }
+    expect:
+      - { part: rowPickUp, visible: true }
+      - { part: rowBike, visible: false }
+      - { part: searchCount, text: "1" }
+
+  - name: "Whole project scope groups the matches by list"
+    # Decision 3: matches are grouped under their list names; the count covers every group.
+    steps:
+      - { action: press, part: searchOptions }
+      - { action: press, part: scopeWholeProject }
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "b" }
+    expect:
+      - { part: groupHeadingErrands, text: { contains: "Errands" } }
+      - { part: groupHeadingReading, text: { contains: "Reading" } }
+      - { part: rowReturnLibrary, text: { contains: "Return library books" } }
+      - { part: rowBike, visible: true }
+      - { part: searchCount, text: "3" }
+
+  - name: "search options opens its menu and not the panel"
+    props: { panel: closed }
+    steps:
+      - { action: press, part: searchOptions }
+    expect:
+      - { part: scopeWholeProject, visible: true }
+      - { part: panelTitle, visible: false }
+
+  - name: "the slash key focuses the search field"
+    # Decision 18 (web): "/" focuses search when no text field has focus. The seed letter is not asserted.
+    steps:
+      - { action: focus, part: newTask }
+      - { action: key, part: newTask, key: Slash }
+    expect:
+      - { part: searchField, focused: true }
+
+  # Parent rows
+  - name: "a parent row collapses to Expand and hides its subtasks"
+    steps:
+      - { action: press, part: subtaskToggle }
+    expect:
+      - { part: subtaskToggle, name: "Expand" }
+      - { part: rowOatMilk, visible: false }
+      - { part: rowSourdough, visible: false }
+      - { part: subtaskCount, visible: true }
+
+  - name: "a collapsed parent row expands to Collapse and shows its subtasks"
+    steps:
+      - { action: press, part: subtaskToggle }
+      - { action: press, part: subtaskToggle }
+    expect:
+      - { part: subtaskToggle, name: "Collapse" }
+      - { part: rowOatMilk, visible: true }
+      - { part: rowSourdough, visible: true }
+
+  # Done check
+  - name: "a done row shows its round check checked"
+    # TaskRow.tsx:376 (source, F05-064) sets checked from task.done. The inventory recorded aria-pressed false (see notes).
+    steps: []
+    expect:
+      - { part: doneCheck, checked: true }
+      - { part: rowPost, text: { contains: "Post the parcel to Mum" } }
+
+  # Lists, split, and other data sets
+  - name: "the Reading tab retargets the panel"
+    steps:
+      - { action: press, part: listTabReading }
+    expect:
+      - { part: panelSubtitle, text: "Reading" }
+      - { part: listTabReading, selected: true }
+      - { part: listTabErrands, selected: false }
+      - { part: summary, text: "Showing 3 of 3 tasks" }
+
+  - name: "split view shows both lists and a count for each"
+    steps:
+      - { action: press, part: splitView }
+    expect:
+      - { part: splitView, selected: true }
+      - { part: panelSubtitle, text: { contains: "Errands" } }
+      - { part: panelSubtitle, text: { contains: "Reading" } }
+      - { part: summary, text: { contains: "Errands 8/8" } }
+      - { part: summary, text: { contains: "Reading 3/3" } }
+
+  - name: "split view edits both panes as one"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: showActive }
+    expect:
+      - { part: summary, text: { contains: "Errands 6/8" } }
+      - { part: summary, text: { contains: "Reading 2/3" } }
+      - { part: showActive, selected: true }
+
+  - name: "split view applies one Show filter to both panes"
+    steps:
+      - { action: press, part: splitView }
+      - { action: press, part: showDone }
+    expect:
+      - { part: showDone, selected: true }
+      - { part: summary, text: { contains: "Errands 3/8" } }
+      - { part: summary, text: { contains: "Reading 1/3" } }
+
+  - name: "no lists: No list open and Nothing to filter"
+    props: { dataset: nolists }
+    steps: []
+    expect:
+      - { part: panelSubtitle, text: "No list open" }
+      - { part: summary, text: "Nothing to filter" }
+      - { part: resetButton, disabled: true }
+
+  - name: "empty list shows zero and the empty state"
+    props: { dataset: empty }
+    steps: []
+    expect:
+      - { part: panelSubtitle, text: "Inbox" }
+      - { part: summary, text: "Showing 0 of 0 tasks" }
+      - { part: emptyState, text: { contains: "Nothing here yet" } }
+
+  - name: "long list counts every task"
+    props: { dataset: long }
+    steps: []
+    expect:
+      - { part: summary, text: "Showing 48 of 48 tasks" }
+
+# Events: none declared. Close and Done are checked through what is on screen.

@@ -28,6 +28,8 @@ export const StatusIndicator = React.forwardRef<HTMLSpanElement, StatusIndicator
   ref,
 ) {
   const [open, setOpen] = React.useState(false);
+  // An inactive cell is hidden, so a tooltip open on it closes with it and does not reappear on its own.
+  if (!active && open) setOpen(false);
   // Set on a touch tap: the click that follows the tap must not close the tooltip it just opened.
   const tapRef = React.useRef(false);
 

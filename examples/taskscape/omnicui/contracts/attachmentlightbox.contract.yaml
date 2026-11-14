@@ -1,0 +1,326 @@
+id: app.attachmentlightbox
+
+# Web build of the Attachment lightbox: a full-window overlay inside the page (web.md).
+# Mounted alone by the harness, signed in as the demo account on the real API.
+# Dropped on the web: Reveal in Finder (web.md; review note [web]).
+# Not tested: a click on the empty stage (no testable part, see notes), the transient Loading state,
+# the video, audio, PDF and text branches, the single-attachment state, and the image error fallback.
+# Drag and drop is left out: this screen has no slider parts.
+
+props:
+  # dataset: demo data set. standard | empty | nolists | long (web.md). This screen uses standard. Default standard.
+  dataset: { type: string, default: standard }
+  # task: title of the task whose attachments the lightbox steps through. Allowed: "Rewrite the hero section"
+  # (Spring launch > Website in the standard set, 2 attachments). The harness loads that task and mounts the lightbox over its attachments.
+  task: { type: string, default: "Rewrite the hero section" }
+  # attachment: file name the lightbox opens on. Allowed: "hero-sketch.png" (index 1 of 2, an image)
+  # or "Brand brief" (index 0 of 2, a remote link that shows the No inline preview card).
+  attachment: { type: string, default: "hero-sketch.png" }
+
+events:
+  # closed: emitted when the lightbox closes. via: "button" (close button) or "escape" (Escape key).
+  # name: the file name showing when it closed.
+  closed:
+    via: { type: string }
+    name: { type: string }
+  # openedExternally: emitted on each api.openAttachment call (top bar button or card button). name: the attachment's file name.
+  openedExternally:
+    name: { type: string }
+  # renamed: emitted after the rename is saved. name: the new full file name, e.g. "hero-sketch-v2.png".
+  renamed:
+    name: { type: string }
+  # removed: emitted after api.deleteAttachment succeeds. name: the removed attachment's file name.
+  removed:
+    name: { type: string }
+  # stepped: contract-only observation point, emitted after a chevron press or an arrow key step.
+  # name: the file name shown after the step.
+  stepped:
+    name: { type: string }
+
+parts:
+  # top bar, icon only, title "Open externally". Same shared widget as fallbackOpen (review note [both]).
+  openExternally: { role: button }
+  # top bar, icon only, title "Rename".
+  rename: { role: button }
+  # top bar, icon only, title "Remove attachment". Danger colour at rest; danger background and white glyph on hover (review decision).
+  remove: { role: button }
+  # top bar, icon only, title "Close  Esc". aria: none beyond the title.
+  close: { role: button }
+  # chevron at the left edge of the stage, title "Previous". Drawn only with more than one attachment. Size h-11 w-11 (38.5px at 1rem = 14px).
+  previous: { role: button }
+  # chevron at the right edge of the stage, title "Next". Drawn only with more than one attachment. Wraps; still drawn on the last item.
+  next: { role: button }
+  # top bar position, text "{index+1} / {count}". Drawn only with more than one attachment.
+  counter: { role: generic }
+  # top bar file name. Its native tooltip is the full name (not tested). Its text is the file name.
+  fileName: { role: generic }
+  # file-type glyph in the top bar. Ligature text is not checked, only visibility.
+  kindIcon: { role: generic }
+  # aria: img. Inline preview for an image attachment, alt = file name. Visible only for image attachments.
+  image: { role: generic }
+  # attachment name inside the No inline preview card (remote links).
+  fallbackName: { role: generic }
+  # the text "No inline preview" inside the card.
+  fallbackStatus: { role: generic }
+  # card button with the open_in_new icon and the text "Open externally". Same shared widget as openExternally.
+  fallbackOpen: { role: button }
+  # base name of the rename prompt, pre-filled. The extension is shown in the sheetTail part beside it.
+  renameField: { role: textbox }
+  # extension shown as a tail beside the rename field, for example ".png". Not drawn for remote links.
+  sheetTail: { role: generic }
+  # headline of the rename or the remove sheet ("Rename attachment" or "Remove attachment?"). aria: heading.
+  sheetHeading: { role: heading }
+  # detail line of the sheet.
+  sheetDetail: { role: generic }
+  # "Cancel" in the sheet. The default focus of the remove sheet (decision 13).
+  sheetCancel: { role: button }
+  # "Rename" in the rename sheet, "Remove" in the remove sheet (danger button, decision 10).
+  sheetAccept: { role: button }
+
+tests:
+  - name: opens on the image at 2 of 2 with the top bar actions
+    steps:
+      - { action: hover, part: image }
+    expect:
+      - { part: counter, text: "2 / 2" }
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: kindIcon, visible: true }
+      - { part: image, visible: true }
+      - { part: previous, name: "Previous", visible: true }
+      - { part: next, name: "Next", visible: true }
+      - { part: openExternally, name: "Open externally", visible: true }
+      - { part: rename, name: "Rename", visible: true }
+      - { part: remove, name: "Remove attachment", visible: true }
+      - { part: close, name: { contains: "Close" }, visible: true }
+    screenshot: true
+
+  - name: Next from the last attachment wraps to the first, which is a link card
+    steps:
+      - { action: press, part: next }
+    expect:
+      - { part: counter, text: "1 / 2" }
+      - { part: fileName, text: "Brand brief" }
+      - { part: fallbackName, text: "Brand brief" }
+      - { part: fallbackStatus, text: "No inline preview" }
+      - { part: image, visible: false }
+      - { event: stepped, times: 1, last: { name: "Brand brief" } }
+      - { event: closed, times: 0 }
+    screenshot: true
+
+  - name: Previous from the first attachment wraps to the last
+    props: { attachment: "Brand brief" }
+    steps:
+      - { action: press, part: previous }
+    expect:
+      - { part: counter, text: "2 / 2" }
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: image, visible: true }
+      - { event: stepped, times: 1, last: { name: "hero-sketch.png" } }
+      - { event: closed, times: 0 }
+
+  - name: ArrowRight and ArrowLeft step through the attachments and wrap
+    steps:
+      - { action: key, part: next, key: ArrowRight }
+      - { action: key, part: previous, key: ArrowLeft }
+      - { action: key, part: previous, key: ArrowLeft }
+    expect:
+      - { part: counter, text: "1 / 2" }
+      - { part: fileName, text: "Brand brief" }
+      - { event: stepped, times: 3, last: { name: "Brand brief" } }
+      - { event: closed, times: 0 }
+
+  - name: chevron presses keep the lightbox open
+    steps:
+      - { action: press, part: next }
+      - { action: press, part: previous }
+    expect:
+      - { part: counter, text: "2 / 2" }
+      - { part: fileName, text: "hero-sketch.png" }
+      - { event: stepped, times: 2, last: { name: "hero-sketch.png" } }
+      - { event: closed, times: 0 }
+
+  - name: Enter on the Next button steps forward
+    steps:
+      - { action: key, part: next, key: Enter }
+    expect:
+      - { part: counter, text: "1 / 2" }
+      - { part: fileName, text: "Brand brief" }
+      - { event: stepped, times: 1, last: { name: "Brand brief" } }
+
+  - name: a remote link shows the no-preview card instead of an image
+    props: { attachment: "Brand brief" }
+    steps: []
+    expect:
+      - { part: fileName, text: "Brand brief" }
+      - { part: counter, text: "1 / 2" }
+      - { part: fallbackName, text: "Brand brief" }
+      - { part: fallbackStatus, text: "No inline preview" }
+      - { part: fallbackOpen, visible: true }
+      - { part: image, visible: false }
+      - { part: rename, visible: true }
+      - { part: remove, visible: true }
+    screenshot: true
+
+  - name: Escape closes the lightbox
+    steps:
+      - { action: key, part: close, key: Escape }
+    expect:
+      - { event: closed, times: 1, last: { via: "escape", name: "hero-sketch.png" } }
+
+  - name: the close button closes the lightbox
+    steps:
+      - { action: press, part: close }
+    expect:
+      - { event: closed, times: 1, last: { via: "button", name: "hero-sketch.png" } }
+
+  - name: Open externally in the top bar calls the app and leaves the lightbox open
+    steps:
+      - { action: press, part: openExternally }
+    expect:
+      - { event: openedExternally, times: 1, last: { name: "hero-sketch.png" } }
+      - { part: counter, text: "2 / 2" }
+
+  - name: Open externally on the link card
+    props: { attachment: "Brand brief" }
+    steps:
+      - { action: press, part: fallbackOpen }
+    expect:
+      - { event: openedExternally, times: 1, last: { name: "Brand brief" } }
+      - { part: fallbackStatus, text: "No inline preview" }
+
+  - name: the rename prompt opens on the base name with the stored-file detail
+    steps:
+      - { action: press, part: rename }
+    expect:
+      - { part: sheetHeading, text: "Rename attachment" }
+      - { part: sheetDetail, text: "The stored file is renamed to match." }
+      - { part: renameField, text: "hero-sketch" }
+      - { part: renameField, focused: true }
+      - { part: sheetTail, text: ".png" }
+      - { part: sheetCancel, text: "Cancel" }
+      - { part: sheetAccept, text: "Rename" }
+    screenshot: true
+
+  - name: the rename prompt on a link says only the label changes
+    props: { attachment: "Brand brief" }
+    steps:
+      - { action: press, part: rename }
+    expect:
+      - { part: sheetHeading, text: "Rename attachment" }
+      - { part: sheetDetail, text: "Renames the label only — the linked file is untouched." }
+      - { part: renameField, text: "Brand brief" }
+    screenshot: true
+
+  - name: Enter in the rename prompt renames the attachment
+    steps:
+      - { action: press, part: rename }
+      - { action: type, part: renameField, text: "-v2" }
+      - { action: key, part: renameField, key: Enter }
+    expect:
+      - { event: renamed, times: 1, last: { name: "hero-sketch-v2.png" } }
+      - { part: fileName, text: "hero-sketch-v2.png" }
+      - { part: counter, text: "2 / 2" }
+      - { part: sheetHeading, visible: false }
+
+  - name: the Rename button in the prompt renames the attachment
+    steps:
+      - { action: press, part: rename }
+      - { action: type, part: renameField, text: "-v2" }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { event: renamed, times: 1, last: { name: "hero-sketch-v2.png" } }
+      - { part: fileName, text: "hero-sketch-v2.png" }
+
+  - name: Escape cancels the rename prompt and keeps the name
+    steps:
+      - { action: press, part: rename }
+      - { action: key, part: renameField, key: Escape }
+    expect:
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: counter, text: "2 / 2" }
+      - { part: sheetHeading, visible: false }
+      - { event: renamed, times: 0 }
+
+  - name: Enter with an unchanged name leaves the file name as it was
+    steps:
+      - { action: press, part: rename }
+      - { action: key, part: renameField, key: Enter }
+    expect:
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: counter, text: "2 / 2" }
+      - { event: renamed, times: 0 }
+
+  - name: Remove opens the confirmation with Cancel focused
+    steps:
+      - { action: press, part: remove }
+    expect:
+      - { part: sheetHeading, text: "Remove attachment?" }
+      - { part: sheetDetail, text: "“hero-sketch.png” — attachments skip the Trash." }
+      - { part: sheetCancel, text: "Cancel", focused: true }
+      - { part: sheetAccept, text: "Remove" }
+      - { event: removed, times: 0 }
+    screenshot: true
+
+  - name: Cancel in the remove confirmation keeps the attachment
+    steps:
+      - { action: press, part: remove }
+      - { action: press, part: sheetCancel }
+    expect:
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: counter, text: "2 / 2" }
+      - { part: sheetHeading, visible: false }
+      - { event: removed, times: 0 }
+
+  - name: Escape cancels the remove confirmation
+    steps:
+      - { action: press, part: remove }
+      - { action: key, part: sheetCancel, key: Escape }
+    expect:
+      - { part: fileName, text: "hero-sketch.png" }
+      - { part: sheetHeading, visible: false }
+      - { event: removed, times: 0 }
+
+  - name: Enter on the focused Remove button does not confirm the removal
+    steps:
+      - { action: press, part: remove }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Enter }
+    expect:
+      - { part: sheetAccept, focused: true }
+      - { part: sheetHeading, text: "Remove attachment?" }
+      - { part: fileName, text: "hero-sketch.png" }
+      - { event: removed, times: 0 }
+
+  - name: Space on the focused Remove button removes the attachment
+    steps:
+      - { action: press, part: remove }
+      - { action: key, part: sheetCancel, key: Tab }
+      - { action: key, part: sheetAccept, key: Space }
+    expect:
+      - { event: removed, times: 1, last: { name: "hero-sketch.png" } }
+
+  - name: pressing Remove in the confirmation removes the attachment
+    steps:
+      - { action: press, part: remove }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { event: removed, times: 1, last: { name: "hero-sketch.png" } }
+
+  - name: hovering Next shows its hover fill
+    steps:
+      - { action: hover, part: next }
+    expect:
+      - { part: next, visible: true }
+    screenshot: true
+
+  - name: hovering Remove shows the danger background
+    steps:
+      - { action: hover, part: remove }
+    expect:
+      - { part: remove, visible: true }
+    screenshot: true
+
+viewports: [ { width: 1180, height: 760 } ]
+# The reference has no dark state for this screen, so light only.
+colorSchemes: [ light ]
+keyboard: true

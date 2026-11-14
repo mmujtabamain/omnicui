@@ -1,0 +1,481 @@
+# Behaviour contract for the web "Settings: Shortcuts" screen (id app.settingsshortcuts).
+# Web behaviour only. spec/screens/web.md and spec/decisions.md (15, 17, 18, 19) override the desktop reference.
+id: "app.settingsshortcuts"
+
+props:
+  # dataset: standard (default), empty, nolists, long. The shortcut list does not depend on project
+  # data, so every test runs on standard. No other props: the harness mounts the Settings dialog
+  # on the Shortcuts tab, signed in as the demo account.
+  dataset: { type: string, default: standard }
+
+events:
+  # Emitted each time a shortcut is saved, reset, unbound or discarded.
+  bindingChanged:
+    label: { type: string }   # row title, e.g. "New task"
+    accel: { type: string }   # saved combo, e.g. "Alt+N"; "" when the row is unbound
+
+parts:
+  dialog: { role: generic }            # aria: dialog. Modal Settings dialog over the main window
+  title: { role: heading }             # "Settings"
+  close: { role: button }              # the dialog's close button (its name is not asserted)
+  discardAll: { role: button }         # title-bar undo, aria-label "Discard changes"; shown only while a setting or shortcut differs from its open-time value
+  search: { role: textbox }            # placeholder "Search", aria-label "Search settings"
+  searchClear: { role: button }        # aria-label "Clear search"; shown while the query is non-empty (spaces count)
+  tabGeneral: { role: button }         # aria: tab
+  tabShortcuts: { role: button }       # aria: tab; selected while this pane is open. Only the selected tab is a tab stop (F10-007)
+  tabAbout: { role: button }           # aria: tab
+  shortcutsMatches: { role: status }   # match-count badge on the Shortcuts tab while searching; counts matching rows
+  pane: { role: generic }              # aria: tabpanel. The scrolling content below the sidebar
+  intro: { role: generic }             # muted line above the groups; hidden while searching; scrolls out of view
+  groupMain: { role: heading }         # "Main window" group heading; "Shortcuts · Main window" while searching
+  discardGroup: { role: button }       # undo icon in the group header; shown only while the Main window group has a change (replaces the dot, review note 12)
+  row: { role: generic }               # any shortcut row; the first is New task
+  rowNewTask: { role: generic }
+  rowNewList: { role: generic }
+  rowNewProject: { role: generic }
+  rowUndo: { role: generic }
+  rowRedo: { role: generic }           # last row of the Main window group
+  keycap: { role: button }             # any keycap; the first is New task; clicking it starts recording. Name is the spoken combo (F08-075). Text "Type shortcut…" while recording, "None" when unbound
+  keycapNewTask: { role: button }
+  keycapNewList: { role: button }
+  keycapSearch: { role: button }
+  keycapSwitchList1: { role: button }
+  keycapPrevTab: { role: button }
+  keycapPrevProject: { role: button }
+  keycapUndo: { role: button }
+  keycapRedo: { role: button }
+  reset: { role: button }              # per-row revert to the default; shown only for a row that differs from its default and is not recording
+  shortcutError: { role: status }      # aria: alert. Red line under the row whose change was refused or failed
+  noMatch: { role: status }            # empty state "No settings match"; subtitle "Nothing here for “<trimmed query>”."
+
+viewports:
+  - { width: 640, height: 520 }        # decision 19 and web.md: the Settings dialog is 640 x 520
+
+colorSchemes: [ light ]                # the reference has no dark Shortcuts state
+
+keyboard: true                         # buttons: Enter and Space must do what a press does
+# No drag-and-drop tests: drag acts only on slider parts and this pane has none.
+
+tests:
+  - name: opens on the Shortcuts tab with the Main window rows
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: dialog, visible: true }
+      - { part: title, text: "Settings" }
+      - { part: tabShortcuts, selected: true }
+      - { part: tabGeneral, selected: false }
+      - { part: tabAbout, selected: false }
+      - { part: search, name: "Search settings", text: "" }
+      - { part: intro, visible: true, text: "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel." }
+      - { part: groupMain, text: "Main window" }
+      - { part: rowNewTask, visible: true, text: { contains: "New task" } }
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: discardAll, visible: false }
+      - { part: discardGroup, visible: false }
+      - { part: shortcutsMatches, visible: false }
+    screenshot: true
+
+  - name: scrolling to the end hides the intro and shows the last row
+    steps:
+      # Focusing the last keycap scrolls the pane to its end (browser focus scrolling is assumed).
+      - { action: focus, part: keycapRedo }
+    expect:
+      - { part: intro, visible: false }
+      - { part: rowRedo, visible: true }
+      - { part: rowRedo, text: { contains: "Redo" } }
+      - { part: rowNewTask, visible: false }
+    screenshot: true
+
+  - name: arrow keys move between the sections and wrap at the ends
+    steps:
+      - { action: focus, part: tabShortcuts }
+      - { action: key, part: tabShortcuts, key: ArrowDown }   # to About
+      - { action: key, part: tabAbout, key: ArrowDown }       # wraps to General
+      - { action: key, part: tabGeneral, key: ArrowUp }       # wraps back to About
+    expect:
+      - { part: tabAbout, selected: true }
+      - { part: tabAbout, focused: true }
+      - { part: tabGeneral, selected: false }
+      - { part: tabShortcuts, selected: false }
+      - { part: tabShortcuts, focused: false }
+
+  - name: selecting General and then Shortcuts again returns the pane to the top
+    steps:
+      - { action: focus, part: keycapRedo }
+      - { action: press, part: tabGeneral }
+      - { action: press, part: tabShortcuts }
+    expect:
+      - { part: tabShortcuts, selected: true }
+      - { part: intro, visible: true }
+      - { part: rowNewTask, visible: true }
+      - { part: rowRedo, visible: false }
+
+  - name: Pane content animates in when a section is opened
+    steps:
+      - { action: press, part: tabGeneral }
+      - { action: press, part: tabShortcuts }
+    record: true
+
+  - name: The focused search field takes keyboard focus
+    steps:
+      - { action: focus, part: search }
+    expect:
+      - { part: search, focused: true }
+
+  - name: Tab from the search field reaches only the selected section
+    steps:
+      - { action: focus, part: search }
+      - { action: key, part: search, key: Tab }
+    expect:
+      - { part: tabShortcuts, focused: true }
+      - { part: tabGeneral, focused: false }
+      - { part: tabAbout, focused: false }
+
+  - name: a query filters the shortcut rows live and counts them on the tab
+    steps:
+      - { action: type, part: search, text: "new" }
+    expect:
+      - { part: search, text: "new" }
+      - { part: intro, visible: false }
+      - { part: groupMain, text: "Shortcuts · Main window" }
+      - { part: rowNewTask, visible: true }
+      - { part: rowNewList, visible: true }
+      - { part: rowNewProject, visible: true }
+      - { part: rowRedo, visible: false }
+      - { part: shortcutsMatches, text: "3" }
+
+  - name: typing a second query filters live, shows the clear button and labels the results
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "undo" }
+    expect:
+      - { part: search, text: "undo" }
+      - { part: searchClear, visible: true, name: "Clear search" }
+      - { part: intro, visible: false }
+      - { part: groupMain, text: "Shortcuts · Main window" }
+      - { part: rowUndo, visible: true, text: { contains: "Undo" } }
+      - { part: rowNewTask, visible: false }
+      - { part: shortcutsMatches, text: "1" }
+
+  - name: matching ignores case
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "UNDO" }
+    expect:
+      - { part: rowUndo, visible: true }
+      - { part: rowNewTask, visible: false }
+
+  - name: every word must match, and the empty state quotes the trimmed query
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "  undo redo " }
+    expect:
+      - { part: noMatch, visible: true }
+      - { part: noMatch, text: { contains: "No settings match" } }
+      - { part: noMatch, text: { contains: "Nothing here for “undo redo”." } }
+      - { part: rowUndo, visible: false }
+      - { part: rowNewTask, visible: false }
+      - { part: intro, visible: false }
+
+  - name: a row is found by its combo text
+    # Assumes the stored accel string is "Alt+N" (keywords are "shortcut hotkey key binding <accel>", F10-051).
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "alt+n" }
+    expect:
+      - { part: rowNewTask, visible: true, text: { contains: "New task" } }
+      - { part: rowUndo, visible: false }
+
+  - name: a query with no match shows the empty state
+    steps:
+      - { action: type, part: search, text: "zzqq" }
+    expect:
+      - { part: noMatch, visible: true }
+      - { part: noMatch, text: { contains: "No settings match" } }
+      - { part: noMatch, text: { contains: "zzqq" } }
+      - { part: intro, visible: false }
+      - { part: rowNewTask, visible: false }
+      - { part: shortcutsMatches, visible: false }
+
+  - name: a query of spaces counts as a query and shows the clear button
+    steps:
+      - { action: type, part: search, text: "   " }
+    expect:
+      - { part: searchClear, visible: true }
+      - { part: intro, visible: true }
+      - { part: rowNewTask, visible: true }
+
+  - name: the clear button empties the query and returns the normal view
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: press, part: searchClear }
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: intro, visible: true }
+      - { part: rowNewTask, visible: true }
+
+  - name: clicking Shortcuts while searching keeps the query and drops the section prefix
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: press, part: tabShortcuts }
+    expect:
+      - { part: search, text: "new" }
+      - { part: tabShortcuts, selected: true }
+      - { part: groupMain, text: "Main window" }
+      - { part: rowRedo, visible: false }
+
+  - name: editing a scoped query returns to the all-section results with the prefix
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: press, part: tabShortcuts }
+      - { action: focus, part: search }
+      - { action: key, part: search, key: End }
+      - { action: key, part: search, key: Backspace }
+    expect:
+      - { part: search, text: "ne" }
+      - { part: groupMain, text: "Shortcuts · Main window" }
+
+  - name: clicking a section with no matches clears the search
+    # Assumes About has no row that matches "new", so About is dimmed and clicking it clears the search.
+    steps:
+      - { action: type, part: search, text: "new" }
+      - { action: press, part: tabAbout }
+      - { action: press, part: tabShortcuts }
+    expect:
+      - { part: search, text: "" }
+      - { part: intro, visible: true }
+      - { part: rowNewTask, visible: true }
+      - { part: searchClear, visible: false }
+
+  - name: shortcut rows are searchable while another section is open
+    steps:
+      - { action: press, part: tabAbout }
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "undo" }
+    expect:
+      - { part: tabAbout, selected: true }
+      - { part: rowUndo, visible: true, text: { contains: "Undo" } }
+
+  - name: Escape clears the query and keeps Settings open
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "new" }
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { part: search, text: "" }
+      - { part: dialog, visible: true }
+      - { part: intro, visible: true }
+      - { part: rowNewTask, visible: true }
+
+  - name: Escape with an empty search closes Settings
+    steps:
+      - { action: focus, part: search }
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { part: dialog, visible: false }
+
+  - name: the close button closes Settings
+    steps:
+      - { action: press, part: close }
+    expect:
+      - { part: dialog, visible: false }
+
+  - name: pressing the keycap starts recording and shows the prompt
+    steps:
+      - { action: press, part: keycapNewTask }
+    expect:
+      - { part: keycapNewTask, text: "Type shortcut…" }
+      - { part: intro, visible: true }
+      - { part: dialog, visible: true }
+      - { part: reset, visible: false }
+    screenshot: true
+
+  - name: a bare modifier is ignored while recording
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Shift }
+    expect:
+      - { part: keycapNewTask, text: "Type shortcut…" }
+      - { event: bindingChanged, times: 0 }
+
+  - name: a combo records the new shortcut, saves it and shows the revert
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+J" }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) J$" } }
+      - { part: reset, visible: true }
+      - { part: discardAll, visible: true, name: "Discard changes" }
+      - { part: discardGroup, visible: true }
+      - { event: bindingChanged, times: 1, last: { label: "New task", accel: "Alt+J" } }
+
+  - name: a combo with several modifiers is saved in fixed modifier order
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Shift+Alt+KeyK" }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) Shift K$" } }
+      - { part: reset, visible: true }
+
+  - name: a recorded combo stays after leaving and returning to the pane
+    # In-screen persistence only. Persistence across launches is not reachable by these steps.
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+KeyK" }
+      - { action: press, part: tabAbout }
+      - { action: press, part: tabShortcuts }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) K$" } }
+      - { part: reset, visible: true }
+
+  - name: Escape cancels recording without changing the binding or closing Settings
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Escape }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: dialog, visible: true }
+      - { part: reset, visible: false }
+      - { event: bindingChanged, times: 0 }
+
+  - name: a second click on the recording keycap cancels recording
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: press, part: keycapNewTask }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: reset, visible: false }
+      - { event: bindingChanged, times: 0 }
+
+  - name: Backspace unbinds the row and the keycap shows None
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Backspace }
+    expect:
+      - { part: keycapNewTask, text: "None" }
+      - { part: reset, visible: true }
+      - { event: bindingChanged, times: 1, last: { label: "New task", accel: "" } }
+
+  - name: Delete also unbinds the row
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Delete }
+    expect:
+      - { part: keycapNewTask, text: "None" }
+      - { event: bindingChanged, times: 1, last: { label: "New task", accel: "" } }
+
+  - name: Backspace and Delete also unbind other rows
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Backspace }
+      - { action: press, part: keycapSearch }
+      - { action: key, part: keycapSearch, key: Delete }
+    expect:
+      - { part: keycapNewTask, text: "None" }
+      - { part: keycapSearch, text: "None" }
+      - { part: reset, visible: true }
+
+  - name: the revert after unbinding restores the default combo
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Backspace }
+      - { action: hover, part: rowNewTask }
+      - { action: press, part: reset }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: reset, visible: false }
+      - { part: discardAll, visible: false }
+      - { event: bindingChanged, last: { label: "New task", accel: "Alt+N" } }
+
+  - name: the per-row reset puts a changed shortcut back to its default
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+KeyK" }
+      - { action: press, part: reset }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: reset, visible: false }
+
+  - name: the per-row reset fades in when its row is hovered
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+KeyK" }
+      - { action: hover, part: search }
+      - { action: hover, part: keycapNewTask }
+    # No timing: the sources do not give the fade duration.
+    trace:
+      - { part: reset, property: opacity }
+
+  - name: the title-bar undo restores every change made in this session
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+J" }
+      - { action: press, part: discardAll }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: discardAll, visible: false }
+      - { part: discardGroup, visible: false }
+      - { part: reset, visible: false }
+
+  - name: the Main window undo restores this session's changes in the group
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Alt+J" }
+      - { action: press, part: discardGroup }
+    expect:
+      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: discardGroup, visible: false }
+      - { part: discardAll, visible: false }
+      - { event: bindingChanged, last: { label: "New task", accel: "Alt+N" } }
+
+  - name: web defaults use Alt chords for the commands the browser reserves, with their spoken names
+    # Mod is Ctrl off macOS and Command on macOS (F08-071, F08-072). In the regexes, [[] is a literal "[".
+    steps:
+      - { action: hover, part: rowNewList }
+    expect:
+      - { part: rowNewList, text: { contains: "New list" } }
+      - { part: keycapNewList, name: { matches: "^(Alt|Option) Shift N$" } }
+      - { part: keycapSearch, name: { matches: "/" } }
+      - { part: keycapSwitchList1, name: { matches: "^(Alt|Option) 1$" } }
+      - { part: keycapPrevTab, name: { matches: "^(Alt|Option) Shift Left arrow$" } }
+      - { part: keycapPrevProject, name: { matches: "^(Alt|Option) Shift [[]$" } }
+      - { part: keycapUndo, name: { matches: "^(Ctrl|Command) Z$" } }
+      - { part: keycapRedo, name: { matches: "^(Ctrl|Command) Shift Z$" } }
+
+  - name: Tab moves from one row's keycap to the next row in list order
+    steps:
+      - { action: focus, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: Tab }
+    expect:
+      - { part: keycapSearch, focused: true }
+      - { part: keycapNewTask, focused: false }
+
+  - name: a browser-reserved combo is refused with a red line under the row on Windows and Linux
+    only: [ linux, windows ]
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Control+T" }
+    expect:
+      - { part: shortcutError, visible: true }
+      - { event: bindingChanged, times: 0 }
+
+  - name: a browser-reserved combo is refused with a red line under the row on macOS
+    only: [ macos ]
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: "Meta+T" }
+    expect:
+      - { part: shortcutError, visible: true }
+      - { event: bindingChanged, times: 0 }
+
+  - name: a browser-reserved search chord is refused on Windows and Linux
+    only: [ linux, windows ]
+    steps:
+      - { action: press, part: keycapSearch }
+      - { action: key, part: keycapSearch, key: "Control+KeyF" }
+    expect:
+      - { part: shortcutError, visible: true }
+      - { part: keycapSearch, name: { matches: "/" } }
+      - { event: bindingChanged, times: 0 }

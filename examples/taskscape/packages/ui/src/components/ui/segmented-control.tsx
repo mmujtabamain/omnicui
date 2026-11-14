@@ -53,7 +53,9 @@ const segmentVariants = cva(
 
 const SEGMENT_SLOTS = ["firstSegment", "secondSegment", "thirdSegment"] as const;
 
-const ARROW_KEYS = new Set(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"]);
+/** WAI-ARIA APG: Right and Down move to the next segment, Left and Up to the previous; both wrap. */
+const NEXT_KEYS = new Set(["ArrowRight", "ArrowDown"]);
+const PREVIOUS_KEYS = new Set(["ArrowLeft", "ArrowUp"]);
 
 export interface SegmentedControlOption {
   value: string;
@@ -99,8 +101,9 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
 ) {
   const showIcon = shape === "icon" || variant === "surfaceThumb";
   const showLabel = shape === "text";
-  // Set while an arrow key is down, so a segment that takes focus from the arrow selects itself.
-  const arrowDown = React.useRef(false);
+  const select = (next: string) => {
+    if (next !== value) onValueChange?.(next);
+  };
 
   return (
     <RadioGroupPrimitive.Root
@@ -109,15 +112,21 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
       aria-label={ariaLabel}
       value={value}
       disabled={disabled}
-      loop
-      onValueChange={(next: string) => {
-        if (next !== value) onValueChange?.(next);
-      }}
+      onValueChange={select}
       onKeyDownCapture={(event) => {
-        if (ARROW_KEYS.has(event.key)) arrowDown.current = true;
-      }}
-      onKeyUpCapture={() => {
-        arrowDown.current = false;
+        // Arrows move focus and select the segment reached, wrapping at both ends; Radix's own
+        // arrow handling does not select on keyboard focus here, so the root does both.
+        const step = NEXT_KEYS.has(event.key) ? 1 : PREVIOUS_KEYS.has(event.key) ? -1 : 0;
+        if (step === 0) return;
+        const segments = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]'));
+        const at = segments.indexOf(event.target as HTMLElement);
+        if (at < 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const next = (at + step + segments.length) % segments.length;
+        segments[next].focus();
+        const option = options[next];
+        if (option) select(option.value);
       }}
       className={cn(
         segmentedControlVariants({ tone, variant }),
@@ -133,15 +142,8 @@ export const SegmentedControl = React.forwardRef<HTMLDivElement, SegmentedContro
           aria-label={option.label}
           data-slot={SEGMENT_SLOTS[index]}
           className={segmentVariants({ tone, size, shape })}
-          onFocus={(event) => {
-            if (arrowDown.current) event.currentTarget.click();
-          }}
         >
-          {showIcon && option.icon && (
-            <span aria-hidden="true" className="inline-flex shrink-0">
-              <Icon name={option.icon} size={15} tone="inherit" />
-            </span>
-          )}
+          {showIcon && option.icon && <Icon name={option.icon} size={15} tone="inherit" className="shrink-0" />}
           {showLabel && option.label}
         </RadioGroupPrimitive.Item>
       ))}

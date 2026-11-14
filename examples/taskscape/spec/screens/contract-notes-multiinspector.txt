@@ -1,0 +1,49 @@
+# How the app.multiinspector contract was written, and what its props make the harness do
+
+Basis: merged from Draft A and Draft B exactly as given in the task. I had no file-reading tool, so I did not open spec/ or source files. Every fact comes from the two drafts' stated readings (A: multi-inspector.json, F04-017 to F04-032, notes-multi-inspector.txt, decision 6, web.md; B: the same plus F04-098 to F04-110).
+
+Harness meaning of each prop (merged):
+- dataset: sign in as the demo account and load this demo data set on the real API before mounting. Allowed: standard | empty | nolists | long. This screen uses standard only (long was needed only by the dropped scroll test).
+- list: given by name. Makes this list the focused pane before mounting (the pane the selection store reads and whose header and row actions act on). Only Errands is used.
+- selection: four | two. The harness selects the named tasks by title in that list, in list order, in the stores, then mounts MultiInspector with them as its tasks. The harness does not set the active (peeked) row (see conflict 2).
+
+Part naming (one set, clearer names used everywhere):
+- A title (row title) became rowTitle; B title (the "N tasks selected" paragraph) became headline, so no name is used twice.
+- A clear became clearSelection (B's name). A sectionLabel kept over B section.
+- A check became rowCheck. A listBadge and B rowList became rowListBadge. A openOne and B rowOpen became rowOpen.
+- B doneRowCheck and doneRowTitle became parcelCheck and parcelTitle (A's names). They name the task, not a state, and the row is absent in the two state. The optional flag is dropped because the two-state test checks parcelCheck visible false.
+- B's inspector, lastRowTitle and selectedList are kept. A's row and count, headline, tally are kept.
+
+Tests:
+- Merged the two "four selected" and "two selected" tests (A and B both had them): union of expects, with the screenshot kept on both reference states (shift four, cmd-two two).
+- Merged the duplicate "checking an open task" tests (A and B both pressed the first checkbox in four): union of expects.
+- Merged the duplicate "unchecking a done task" tests (both pressed the parcel checkbox in four): union of expects, including B's parcel title check.
+- Merged the duplicate "hover reveals Open" tests and the duplicate "Open narrows the selection" tests: union of expects and trace.
+- Merged the open-task title peek test (A and B) with B's inspector visible check.
+- Kept unique tests: A's two-task checkbox test, A's Space test, A's done-title peek test, and A's Clear test expanded with B's inspector check.
+- Dropped the screenshot flags on the hover and peek tests (B had them). Each screenshot needs a reference state; A reports none exists for hover (the B recordings show no hover frame) or for peek (the peek highlight appears only at mount). Hover is now checked by expect plus trace; peek by expects.
+- Dropped B's scroll test (long dataset, step "do: scroll ... with: direction down", expecting "Errand number 40"). Reasons: its step uses "do:" and "with:" instead of the "action:" form that the hard rules require, scroll is not among the named inputs and no harness scroll action is confirmed, and "Errand number 40" as the last row is inferred from web.md ordering. The selection value "all" went with it. Reinstate once the harness scroll action and the long data order are confirmed. The selectedList part is kept as a region.
+
+Conflicts:
+1. Viewport. A gives 320 x 714 (taken from the B bounds); B gives 319 x 715 (taken from the tree box, A). Chose 320 x 714, the value A used. The two differ by one pixel.
+2. Active row at mount. A says the harness should not set the active row, because the reference highlight of the last row is uncertain and the screenshots may not match. B says the harness makes Cut a spare key active. Chose A, because B gives no source for setting it and A cites the reference state. Consequence: if the rebuild picks another row, the highlight in the two screenshot tests may not match the reference. If the reference must match, the harness needs a way to set the last row active, which the format does not provide. Flag for review.
+3. Events. Both say none. Omitted.
+
+Left out on purpose (both drafts agree):
+- Verb grid F04-020 to F04-025 (Done, Undone, Move, Copy, Delete, Move list picker, Copied feedback, Delete confirmation): decision 6 puts bulk verbs only in the bulk bar. The reference screenshots still show the grid, so the reference must be re-captured after decision 6 or the comparison will differ in that area.
+- Bulk bar (F04-103 to F04-109, F07-058 to F07-064): not rendered by MultiInspector.tsx. Its Clear is a different control from the header Clear selection.
+- Task list pane, title bar, search bar, Resizer and PreviewPanel container: other screens, or main-window.
+- Window controls, drag grip, project switcher, list tabs, split view, hide panel, settings, search options, New task: title-bar and task-list screens; web drops the window chrome (decision 2).
+- F04-099 to F04-102 (selection gestures and task-row look) and F04-110 (single-task inspector): other screens.
+- Tooltips (Mark done / Mark not done, Clear selection, Open, full-title tooltip): the format has no tooltip field. Accessible names are checked where the title is the only label.
+- Dark colour scheme: no dark reference, so colorSchemes is [light].
+- Drag and drop: none on this screen. Web differences (web.md, decisions 1 to 20): none apply. The title-bar ⌘\ and ⌘, hints are tooltips.
+
+Uncertain (marked for review):
+- Open and Clear selection expects assume the inspector is gone after the selection narrows to one task (F04-032) or empties (F04-019). The landing screen is unverified. If the harness keeps MultiInspector mounted with one or zero tasks, change those expects.
+- The inspector part assumes the root has a data-part element in the rebuild. If it does not, drop the inspector expects; the headline and count expects still cover the same behaviour.
+- The "SELECTED" label is matched case-insensitively because CSS uppercases it.
+- headline, tally, count, row and selectedList are generic (plain text or plain divs; no ARIA role).
+- The strike-through and muted done title (F04-029) cannot be checked through the part fields. The four-state screenshot is the only check.
+- A checkbox's accessible name equals its title tooltip ("Mark done" / "Mark not done"). The rebuild must use that text as the name. Checked true means the task is done; the name is the action the user would take.
+- keyboard: true adds generated Enter and Space tests for buttons and checkboxes. The explicit Space test is kept for the checkbox state.

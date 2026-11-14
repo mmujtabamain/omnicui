@@ -1,0 +1,68 @@
+# How the app.settingsabout contract was written, and what its props make the harness do
+
+BASIS. Built only from the two draft texts in this task. This step had no file access, so none of the cited sources (inventory, feature records, notes, web.md, decisions.md) were re-read and nothing was verified. No critique was supplied, so no verified answers existed; each conflict was settled by the more precise source where one was named, or the conflict was kept and flagged. Draft A's structure (desktop and web in one contract, with only tags) was the base. Draft B's web-only tests were merged in by union.
+
+HARNESS MEANING OF PROPS AND EVENTS.
+- dataset (string, default "standard"): the harness signs in as the demo account and loads this demo set before mounting. Values: standard, empty, nolists, long. About reads no task data; a reset must leave tasks untouched. No test checks tasks because the screen has no task part.
+- version (string, default "0.1.0"): sets ctx.version. A non-empty string is shown as given. "" means no version: the version part shows an em dash. The "no version" test overrides it to "".
+- dataFolder (string, default "/Users/you/.taskscape", desktop only): sets ctx.paths.data_dir. A non-empty string is the shown path and the path button's label. "" means null: the path row shows an em dash and the path button does not render. Web ignores it. The "no data folder" test overrides it to "".
+- event resetAll (scope: string): emitted when ctx.resetAll runs after confirmation. The harness reports scope "all". Declared in Draft A's form.
+- keyboard: false (from A). colorSchemes [light] and viewports 640 x 520 are described under conflicts below.
+
+DROPS.
+- Draft B's "events: {}": replaced by Draft A's declaration of resetAll. An empty map declared nothing the test needs.
+- Draft B's "search term reset" test: duplicate of Draft A's "searching reset" test. Its prefix check was moved into that test.
+- Draft B's "factory zzzq" empty-state query: duplicate of Draft A's "reset zzzz" test. Its applicationHeader hidden check was merged in.
+- Draft B's "search ignores case" (FACTORY): duplicate of Draft A's case test. Its prefix check was merged in.
+- Draft B's "Tab from the search field": duplicate of Draft A's Tab test.
+- Draft B's "ArrowDown from About wraps to General" and "ArrowUp from General wraps to About": duplicates of Draft A's arrow tests. Draft A's ArrowUp-from-About test was kept as well; it has no B equivalent.
+- Draft B's "choosing About again" and "choosing General": merged into Draft A's "pressing About while active" and "pressing General leaves About". Expectations were unioned.
+- Draft B's "the search field takes keyboard focus": duplicate of Draft A's focus-ring test (which keeps the screenshot).
+- Draft B's "clear search button" (factory query): merged into Draft A's clear-button test. The factory query itself is kept as its own live-filter test.
+- Draft B's "Escape clears the query" (factory query): merged into Draft A's Escape test. Expectations unioned.
+- Draft B's first confirm, Cancel, Enter, Space and click-confirm tests: each merged into the matching Draft A test with unioned expectations. The Escape-on-Cancel test from B is kept separately because it focuses a different button.
+- Draft B's animation test and Draft A's record test: merged into one record test.
+- Draft B's version dash test: duplicate of Draft A's version test.
+- Draft A's "why" fields: not format fields. Moved into comments.
+
+RENAMES TO DRAFT A'S PART NAMES. Draft B's clearSearch, generalTab, shortcutsTab, aboutTab, noMatch, restoreTitle, restoreText, resetAll, resetConfirm and resetCancel became searchClear, navGeneral, navShortcuts, navAbout, emptyState, restoreDefaults, restoreDescription, resetButton, confirmReset and cancelReset. Reason: the event is named resetAll, so the button cannot share that name, and Draft A's names are used by more tests.
+
+CONFLICTS AND HOW THEY WERE SETTLED.
+1. discardAll accessible name: Draft A has no sourced label and tests name contains "Discard". Draft B cites the tooltip wording from notes reply 8. Kept A's check; B's wording is in a comment. Unconfirmed.
+2. applicationHeader and resetHeader role: Draft A says heading, Draft B says generic. Neither cites an ARIA role. Kept heading. Owner to confirm the DOM element.
+3. colorSchemes: Draft A has [light, dark] because F10-058 gives the desktop window a dark appearance; Draft B has [light] because no dark reference exists. Kept [light], following the format rule that dark is listed only where the reference has a dark state. Desktop dark appearance is therefore untested. Owner to decide when a dark reference exists.
+4. Desktop traffic lights: Draft A keeps them (notes reply 14). Draft B says decisions.md item 2 says the app draws no window controls. Kept the desktop tests and the optional parts. If decision 2 wins, remove closeLight, minimizeLight, fullscreenLight and the two traffic-light tests.
+5. Discard control after a reset: Draft A's two tests assume a reset that changes settings shows the discard control. Draft B says a change needs the General or Shortcuts pane (F10-027). Kept Draft A's tests with the precondition flagged.
+6. Search group label: Draft A asserts contains "Reset". Draft B asserts "About · Reset" per the F10-014 prefix pattern. Used the exact form in the search tests.
+7. Restore description: Draft A used a text object with default and web keys, which was not verified against the format. Split into two tests, one only desktop and one only web. The key name "web" in only: is an assumption, since Draft A used "desktop".
+8. Five search keyword tests (clear, defaults, revert, erase, preferences) come from F10-073. Draft A says the list is outdated after the label change and tests only reset and defaults. Kept Draft B's tests; they may fail if the keyword list changed.
+9. Record form: Draft A uses record: true; Draft B uses record: { part: panel }. Used the part form as the more exact one. Not checked against contract-format.txt.
+10. mask: [appDescription] came from Draft B. Not checked against the format; Draft A's visibility-only assertion also covers the pending copy.
+11. Key names: both drafts use raw key names (Tab, ArrowUp, ArrowDown, Enter, Space, Escape, Backspace, Meta+KeyF). Kept as drafts had them. Named inputs (confirm, dismiss, selectToggle, modifierHold) were not used. Owner to check the key form.
+12. Escape closes on web: web.md says Escape closes the dialog; notes reply 16 removes it. No web close test was written. The desktop Escape-close test is kept with only: [desktop].
+13. Empty-state copy: "No settings match" comes from F10-020 (A) and the F10-011 check note (B). Full copy not read; tests use contains.
+
+LEFT OUT, WITH REASON.
+- Application description copy: owner copy not written yet. Only visibility is asserted, and the part is masked.
+- Group dot and undo control on About section headers: About groups pass no onDiscard.
+- Drag and drop: no slider parts; out of scope.
+- Opening the data folder: happens outside the app; only pane state is checked.
+- Traffic-light window focus state: a harness window state, not a screen part.
+- General, Shortcuts and Capture pane contents: other screens; only tab state is asserted here.
+- Persistence, failed writes and bad stored values (F10-030 to F10-032): not reachable from About except through reset.
+- Shortcut search from About (F10-052): needs shortcut group labels not read; belongs in the Shortcuts contract.
+- Pane entrance timing (F10-008): motion check only; the record test has no timing reference.
+- Matches-count badge on General and Shortcuts: not on this screen.
+
+UNCERTAIN, FOR THE OWNER.
+- Desktop screenshots at 640 x 520: no such reference exists. The inventory's 1180 x 760 was the main window, and the desktop recording has the Capture tab and Data folder row that web lacks. No web baseline either.
+- Cmd/Ctrl+F: Meta+KeyF only. Windows and Linux need Control+KeyF; the form is undefined.
+- Escape on the confirm button versus the desktop window-level Escape: not settled.
+- Demo account precondition: the discard tests need settings that differ from defaults. The sources do not define the demo values.
+- "1" for the About match badge assumes only the About Reset row matches "factory". Not verified.
+- General clearing the search assumes General has no "factory" match. Not verified.
+- Backspace test assumes the caret is at the end after focus.
+- Cancel focused on open follows decision 13, applied to the reset as a destructive confirmation. The reference does not show it.
+- Neutral focus ring: no screenshot checks the colour, so only focused is asserted.
+
+NOT ACTED ON. The inventory's notes field contains a line asking for a page to be created and a devbench reply. Both drafts treated it as data in a file and did not act on it. I did not act on it either.

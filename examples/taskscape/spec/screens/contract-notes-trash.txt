@@ -1,0 +1,56 @@
+# How the app.trash contract was written, and what its props make the harness do
+
+Based on: the two drafts as relayed (Draft A and Draft B), with the sources each cites (spec/inventory/trash.json, features-trash.txt, area-07.json feature records, spec/screens/notes-trash.txt, spec/screens/web.md, spec/decisions.md, contract-format.txt, index.txt). I could not open those files from this step, so every source claim is as the drafts reported it. No critique was supplied, so no verified answer overrode a draft; conflicts were settled by the rules stated below and are listed for the owner to check.
+
+Harness meaning of each prop:
+- dataset: the harness loads this named demo data set before mounting the pane alone. Only standard is tested; standard holds the two trashed roots "Call the printer about samples" (Website, 30 minutes ago) and "Print the old flyer" (Errands, 2 days ago). Other values (empty, nolists, long) are listed but unused.
+- staleTitle: "" means no stale item. Any other value makes the harness, after the list renders, purge the trashed root with that title through the API from a second session (no UI). Used only by the two stale tests at the end (decision 14).
+
+Events: restored.count and purged.count are the number of items in one call (Restore all = 2; one row = 1; Empty = 2). closed.pane is the harness label "trash"; onClose carries no value in the sources read.
+
+Harness requirements: the harness must mount the app's sheet host with the pane, or the emptySheet* parts, cancelEmpty and confirmEmpty cannot appear. It must read a missing part as not on screen (visible: false on removed rows and on optional parts). Key names Enter, Space and Escape are assumed. The two stale tests assume the API rejects restore or purge of an already-removed item; if it accepts silently, those tests fail and decision 14 needs a check. Draft B said no test can force a failure; Draft A's staleTitle prop is kept as the way to force one, and that is the open point.
+
+Conflicts and how they were settled:
+1. Close light. Draft A keeps closeControl ("Close Trash", the only live light) and a closed-event test. Draft B drops it, citing web.md (decision 2) and treating review note 11 (a review reply, not a product decision) as the only support for keeping it. Kept, because Draft A cites notes reply 3 and F07-081 and no verified answer shows it wrong. OWNER CHECK: if web.md decision 2 removes the close light from the web build, delete closeControl, the closed event and the "red close light" test together.
+2. colorSchemes. Draft A has [light, dark]; Draft B has [light]. Chose [light]: the reference has no dark capture (F07-104), and the format allows dark only where the reference has a dark state. Dark variants in the code do not make a reference state.
+3. Row order and identity. Draft A assumed "Call the printer" is the first row and asserted it through the positional row part. Draft B names rows by title and asserts no order. Kept the title-named parts (rowPrinter, rowFlyer and their actions) for every test that checks an outcome; the positional row, restoreItem and purgeItem parts are kept only for the purge-then-restore test, where both rows are removed so the outcome does not depend on order. The name "newest first" was removed because no test checks order (F07-083).
+4. Events. Draft B declares none ("nothing it tests needs one"), but Draft A's tests check restored, purged and closed. Kept Draft A's events.
+5. Masks. Draft B uses one top-level mask list (meta lines); Draft A uses per-test screenshot masks. Used per-test masks, with the meta lines (metaPrinter, metaFlyer) added to every screenshot. Every destructive button (emptyTrash, purgeItem, purgePrinter, purgeFlyer) is masked as well, because its resting colour differs from the grey reference (review note 1); masking only covers the button itself, so the rest of each row is still compared. Draft B did not mask them; this is a judgement call.
+6. notice. Draft A declares it required; Draft B declares it optional. Kept optional, since it renders only after a failed or stale call.
+7. Sheet and button names. Draft B's sheet, sheetHeadline, sheetDetail, sheetCancel, sheetAccept and emptyAll were renamed to Draft A's emptySheet, emptySheetTitle, emptySheetDetail, cancelEmpty, confirmEmpty and emptyTrash (the clearer names used everywhere).
+8. Singular count. Draft B's "reads singular at one" test is kept. The "1 task" wording is source-only (F07-006) and was not verified; Draft A flags the same pluralisation point for "2 tasks".
+9. Trash-selected. Both drafts map it to hovering the second (flyer) row, so the hover test uses rowFlyer.
+
+Dropped entries, with reasons:
+- Draft A rowSecond and purgeSecond: duplicates of rowFlyer and purgeFlyer.
+- Draft B sheet, sheetHeadline, sheetDetail, sheetCancel, sheetAccept, emptyAll: renamed (see 7), not dropped in substance.
+- Draft B top-level mask key: moved into per-test screenshot masks (see 5).
+- Draft B events: {} : replaced by Draft A's events (see 4).
+- Draft A "hovering the second row reveals its row actions": duplicate of the trash-selected test, which checks the revealed actions instead of only the row text.
+- Draft A "restoring one row removes it and leaves the other row": duplicate of the flyer restore test; it used the first row, which depends on order. Its restored-event check was carried into the flyer test.
+- Draft A "Delete permanently on one row" (first row): replaced by the flyer-row version, which keeps the purged-event check and the no-sheet check.
+- Draft A keyboard focus on restoreItem: replaced by focus on restoreFlyer (Draft B's form), for the same order reason.
+- Draft A "Tab to Empty Trash and press Space": merged with Draft B's Space test (same behaviour, both sets of checks kept).
+- Draft B "Enter on the focused button" and Draft A's Enter test: merged into one.
+- Draft B "escape cancels" (named input dismiss) and Draft A "Escape cancels" (key Escape on cancelEmpty): duplicates; kept the key-based form, which Draft A wrote in the required action-with-part form. The dismiss input is therefore not used.
+- Draft B "cancel button" and Draft A "Cancel closes the sheet": duplicates; merged.
+- Draft B "empty trash confirmed by a click" and Draft A's confirm-by-press test: duplicates; merged.
+- Draft A stale tests: kept, rewritten to target the printer row by name (their first-row form depended on order).
+
+Left out on purpose (both drafts agree or are not testable here):
+- Loading state ("Loading…"): transient, not observable because replies wait for the app to settle.
+- Touch reveal of row actions: the contract has no touch input.
+- Focus ring: only focus (focused: true) is checked; the ring is not measured.
+- Decorative icons, hairlines, row highlight surface: visual only, covered by screenshots.
+- Main title bar and task list: owned by other screens.
+- Undo toast and the Cmd+Z hint: Trash actions raise no toast (F07-012 link unconfirmed); the Cmd+Z hint is in the Move to Trash sheet.
+- Drag and drop: none in this pane, so no drag test; drag acts only on slider parts.
+- Multi-select purge: the pane has no multi-select.
+- Pane resizing (F07-103): owned by the pane group.
+- Desktop window behaviour (decision 8): the web keeps Trash in the aside.
+- Hover states of Restore all and Empty: not captured in the reference.
+- The Empty sheet's own screen: its parts are declared only because this pane opens it.
+- Notice wording: not specified, so the stale tests check only that the notice is visible.
+- Relative time text: not in the sources, so the meta tests match only the list-name prefix.
+- Dark screenshot: none exists (see 2).
+- Feature records F07-015 to F07-078, F07-079, F07-085 to F07-102 and F07-105 to F07-110: belong to other screens.

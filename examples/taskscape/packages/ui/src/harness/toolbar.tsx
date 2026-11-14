@@ -22,10 +22,10 @@ const ACTIONS: Record<string, { icon: string; label: string }[]> = {
 
 const SLOTS = ["first", "second", "third"];
 
-function ToolbarHarness({ emit: _emit, placement = "inline", ariaLabel, count, ...props }: any) {
+function ToolbarHarness({ placement = "inline", ariaLabel, count }: any) {
   const actions = ACTIONS[placement] ?? ACTIONS.inline;
   return (
-    <Toolbar placement={placement} ariaLabel={ariaLabel} count={count} {...props}>
+    <Toolbar placement={placement} ariaLabel={ariaLabel} count={count}>
       {actions.map((action, i) => (
         <ToolbarItem asChild key={SLOTS[i]}>
           <Button

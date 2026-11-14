@@ -38,7 +38,7 @@ export const Switch = React.forwardRef<React.ComponentRef<typeof SwitchPrimitive
           className={cn(
             "group/switch relative inline-flex h-[1.357rem] w-[2.5rem] shrink-0 items-center rounded-full border border-transparent p-[0.1rem] outline-none",
             "bg-edge-3 transition-[background-color] duration-(--duration-fast) ease-standard",
-            "data-[state=checked]:bg-accent-500 hover:data-[state=unchecked]:bg-wash-2",
+            "data-[state=checked]:bg-accent-500 hover:data-[state=checked]:bg-accent-600 hover:data-[state=unchecked]:bg-content-3",
             "focus-visible:ring-2 focus-visible:ring-focus-1 focus-visible:ring-offset-0",
             "disabled:pointer-events-none disabled:opacity-45",
             className,
@@ -50,7 +50,8 @@ export const Switch = React.forwardRef<React.ComponentRef<typeof SwitchPrimitive
             className={cn(
               "pointer-events-none block h-[1rem] w-[1rem] translate-x-0 rounded-full bg-on-accent shadow-lift",
               "transition-transform duration-(--duration-fast) ease-standard",
-              "data-[state=checked]:translate-x-[1.3rem]",
+              // Travel = track content width (2.5rem - 2px border - 0.2rem padding) minus thumb (1rem) = 1.157rem.
+              "data-[state=checked]:translate-x-[1.157rem]",
             )}
           />
         </SwitchPrimitive.Root>

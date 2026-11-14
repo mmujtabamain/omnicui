@@ -1,0 +1,162 @@
+# Behaviour contract for the multi-select inspector (app.multiinspector).
+# The screen is the body of the preview panel when more than one task is selected.
+# Source: MultiInspector.tsx, as described in spec/inventory/multi-inspector.json.
+# spec/decisions.md decision 6 applies: no bulk verb grid here. Done, Undone, Move, Copy and
+# Delete live only in the bulk bar, so no verb button is a part of this screen.
+# Drag and drop: none on this screen (the Resizer belongs to main-window; no slider part here).
+# Events: none declared. Results are read from visible text, checked state and visibility.
+id: "app.multiinspector"
+
+props:
+  # Demo data set: standard | empty | nolists | long (spec/screens/web.md).
+  # This screen needs standard, where Errands holds the four tasks used here.
+  dataset: { type: string, default: standard }
+  # Name of the list whose pane is focused (given by name, not id). Only Errands is used.
+  list: { type: string, default: Errands }
+  # Selection the harness sets up by task title, in list order: four | two.
+  # four: Pick up prescription, Post the parcel to Mum (done), Book bike service, Cut a spare key.
+  # two:  Book bike service, Cut a spare key, neither done.
+  selection: { type: string, default: four }
+
+parts:
+  count: { role: generic }            # Badge with the number of selected tasks, "4" or "2" (aria: none)
+  headline: { role: generic }         # Label as="p": "4 tasks selected" (aria: none)
+  tally: { role: generic }            # Label as="p", muted: "1 done / 4" (aria: none)
+  clearSelection: { role: button }    # header IconButton (icon close), name "Clear selection"
+  sectionLabel: { role: generic }     # SectionHeader "Selected" (CSS uppercases it)
+  selectedList: { role: generic }     # scrolling list of the selected-task rows
+  row: { role: generic }              # first selected-task row (plain div; aria: none); hovering it reveals rowOpen
+  rowCheck: { role: checkbox }        # first row's done Checkbox (size sm); name "Mark done" or "Mark not done"
+  rowTitle: { role: button }          # first row's title, Label as="button"; press peeks the task
+  rowListBadge: { role: generic }     # first row's list-name Badge (aria: none)
+  rowOpen: { role: button }           # first row's Open IconButton, name "Open"; opacity 0 until row hover
+  parcelCheck: { role: checkbox }     # checkbox of the "Post the parcel to Mum" row (done in four only)
+  parcelTitle: { role: button }       # title of the "Post the parcel to Mum" row
+  lastRowTitle: { role: button }      # title of the last row in list order ("Cut a spare key" in both states)
+  inspector: { role: generic }        # MultiInspector root; not shown when fewer than two tasks are selected
+
+keyboard: true
+
+viewports:
+  - { width: 320, height: 714 }
+
+colorSchemes: [ light ]
+
+tests:
+  - name: four selected tasks show the count, headline, tally and rows
+    props: { selection: four }
+    steps: []
+    expect:
+      - { part: count, text: "4" }
+      - { part: headline, text: "4 tasks selected" }
+      - { part: tally, text: "1 done / 4" }
+      - { part: sectionLabel, text: { matches: "(?i)^selected$" } }
+      - { part: rowTitle, text: "Pick up prescription", name: "Pick up prescription" }
+      - { part: rowListBadge, text: "Errands" }
+      - { part: rowCheck, checked: false, name: "Mark done" }
+      - { part: parcelTitle, text: "Post the parcel to Mum" }
+      - { part: parcelCheck, checked: true, name: "Mark not done" }
+      - { part: lastRowTitle, text: "Cut a spare key" }
+      - { part: clearSelection, name: "Clear selection", visible: true }
+    screenshot: true
+
+  - name: two selected tasks show the two-task headline and tally
+    props: { selection: two }
+    steps: []
+    expect:
+      - { part: count, text: "2" }
+      - { part: headline, text: "2 tasks selected" }
+      - { part: tally, text: "0 done / 2" }
+      - { part: rowTitle, text: "Book bike service" }
+      - { part: rowListBadge, text: "Errands" }
+      - { part: rowCheck, checked: false, name: "Mark done" }
+      - { part: lastRowTitle, text: "Cut a spare key" }
+      - { part: parcelCheck, visible: false }
+    screenshot: true
+
+  - name: checking an open task marks it done and the tally follows
+    props: { selection: four }
+    steps:
+      - { action: press, part: rowCheck }
+    expect:
+      - { part: rowCheck, checked: true, name: "Mark not done" }
+      - { part: tally, text: "2 done / 4" }
+      - { part: headline, text: "4 tasks selected" }
+
+  - name: unchecking a done task marks it not done and the tally follows
+    props: { selection: four }
+    steps:
+      - { action: press, part: parcelCheck }
+    expect:
+      - { part: parcelCheck, checked: false, name: "Mark done" }
+      - { part: parcelTitle, text: "Post the parcel to Mum" }
+      - { part: tally, text: "0 done / 4" }
+      - { part: count, text: "4" }
+
+  - name: checking a task in the two-task selection updates its tally
+    props: { selection: two }
+    steps:
+      - { action: press, part: rowCheck }
+    expect:
+      - { part: rowCheck, checked: true, name: "Mark not done" }
+      - { part: tally, text: "1 done / 2" }
+      - { part: headline, text: "2 tasks selected" }
+
+  - name: Space on the focused checkbox marks the task done
+    props: { selection: four }
+    steps:
+      - { action: focus, part: rowCheck }
+      - { action: key, part: rowCheck, key: Space }
+    expect:
+      - { part: rowCheck, checked: true, focused: true }
+      - { part: tally, text: "2 done / 4" }
+
+  - name: pressing a done task's title peeks it and keeps all four selected
+    props: { selection: four }
+    steps:
+      - { action: press, part: parcelTitle }
+    expect:
+      - { part: count, text: "4" }
+      - { part: headline, text: "4 tasks selected" }
+      - { part: tally, text: "1 done / 4" }
+      - { part: parcelCheck, checked: true }
+
+  - name: pressing an open task's title peeks it and keeps the selection
+    props: { selection: four }
+    steps:
+      - { action: press, part: rowTitle }
+    expect:
+      - { part: count, text: "4" }
+      - { part: headline, text: "4 tasks selected" }
+      - { part: tally, text: "1 done / 4" }
+      - { part: rowCheck, checked: false }
+      - { part: inspector, visible: true }
+
+  - name: hovering a selected row reveals its Open button
+    props: { selection: four }
+    steps:
+      - { action: hover, part: row }
+    trace:
+      - { part: rowOpen, property: opacity }
+    expect:
+      - { part: rowOpen, name: "Open", visible: true }
+
+  - name: Open on a hovered row narrows the selection to that one task
+    props: { selection: four }
+    steps:
+      - { action: hover, part: row }
+      - { action: press, part: rowOpen }
+    expect:
+      - { part: headline, visible: false }
+      - { part: count, visible: false }
+      - { part: inspector, visible: false }
+
+  - name: Clear selection empties the selection and the inspector leaves
+    props: { selection: four }
+    steps:
+      - { action: press, part: clearSelection }
+    expect:
+      - { part: row, visible: false }
+      - { part: headline, visible: false }
+      - { part: clearSelection, visible: false }
+      - { part: inspector, visible: false }

@@ -30,7 +30,12 @@ def cmd_write(paths):
             y = y.split("\n", 1)[1].rsplit("```", 1)[0]
         y = "\n".join(l for l in y.split("\n") if not l.startswith("//"))
         name = r["id"].split(".", 1)[1]
-        open(os.path.join(CONTRACTS, f"{name}.contract.yaml"), "w").write(y.rstrip() + "\n")
+        path = os.path.join(CONTRACTS, f"{name}.contract.yaml")
+        # A screen and a widget can share a name (app.toast, ui.toast): never overwrite another id's contract.
+        if os.path.exists(path) and f"id: {r['id']}" not in open(path).read().replace('"', ""):
+            print("NAME TAKEN", name, "by another contract; not written:", r["id"])
+            continue
+        open(path, "w").write(y.rstrip() + "\n")
         print("wrote", name)
 
 
@@ -83,6 +88,10 @@ def cmd_mechanical():
         # A drag names both axes: { action: drag, dx: 40 } becomes { action: drag, dx: 40, dy: 0 }.
         s = re.sub(r"(action:\s*drag\b[^}\n]*?\bdx:\s*-?[\d.]+)(?![^}\n]*\bdy:)", r"\1, dy: 0", s)
         s = re.sub(r"(action:\s*drag\b)(?![^}\n]*\bdx:)([^}\n]*\bdy:)", r"\1, dx: 0\2", s)
+        # A top-level notes: block (a merger's remarks) is not a contract field: keep it as comments.
+        m = re.search(r"\n(notes|remarks):\s*\|?[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", s)
+        if m:
+            s = s[:m.start() + 1] + "\n".join(("# " + l if l.strip() else l) for l in s[m.start() + 1:m.end()].split("\n")) + s[m.end():]
         lines, out, in_props = s.split("\n"), [], False
         for line in lines:
             if re.match(r"^props:\s*$", line):

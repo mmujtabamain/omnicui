@@ -1,0 +1,81 @@
+# How the app.filterpanel contract was written, and what its props make the harness do
+
+Based on: Draft A (inventory spec/inventory/filter-panel.json regions and states, features-filter-panel.txt, notes-filter-panel.txt, web.md, and area-05 records read selectively) and Draft B (the same inventory, the full area-05.json, notes-filter-panel.txt, web.md, decisions.md). No critique verdict was supplied, so conflicts follow the rule of keeping the entry with the precise source and recording the conflict here. Nothing was run; this is a merge of the two drafts on paper.
+
+Harness props, merged meaning:
+- dataset (standard | empty | nolists | long, default standard): the harness signs in as the demo account and loads that data set before mounting. standard is Home with Errands (8 tasks), Reading (3) and Garden; the app opens on Home > Errands. long is standard plus 40 more Errands tasks (48).
+- panel (open | closed, default open): open mounts the screen with the panel open on the active list (Errands in standard). closed mounts it with the panel closed, so the preview column shows the PreviewPanel empty state. Draft B had the harness press Sort & filter once after sign-in for open; the merged contract uses the mount prop instead, because the harness sets the start state and test steps are the only actions a test takes. Recorded as a conflict below.
+- showCompleted (true default): true leaves the account's Show completed tasks setting on. false makes the harness store show_completed off for the demo account before mounting (F05-037), so done rows are hidden while Show is All. Only the stored setting is set; no Show value is set, because F05-035 is not recorded.
+- No events are declared. Close and Done are checked through what is on screen.
+
+Roles: every ARIA role is mapped onto the allowed set, and the real role is in each part's comment (tab, menuitem, listitem, progressbar, segment). Segmented items are button with selected. The round check is checkbox. The progress bar is generic with no text check. Expectation keys used: text (exact, contains, matches), selected, disabled, focused, visible, checked, name. Only text was shown in contract-format.txt among the drafts' sources, so the other keys and the contains and matches forms are assumed (see uncertain list).
+
+Naming: one name per concept. Chosen from A: listTabErrands, listTabReading, searchField, subtaskToggle, subtaskCount (for B's groceriesToggle and groceriesCounter), sortMenu (B's text, A's sortButton dropped), sortManual, sortCreated, sortUpdated, sortAlphabetical, sortDoneLast, summary, panelSubtitle, closeButton, clearSort, clearShow, clearRefine, clearDate, dateRangeButton, rangeAnyTime, rangeLast7Days, rangeCustom, daysInput, resetButton, doneButton, doneCount, donePercent, previewEmpty (as status), emptyState. Chosen from B: sortAndFilter (A's sortFilterButton), sortAscending and sortDescending (new names for A's sortAsc and sortDesc and B's asc and desc), rowPickUp, rowSourdough, rowReturnLibrary, rowMore, doneCheck, noMatchHint, groupHeadingErrands, groupHeadingReading, newTask, scopeWholeProject, fieldsNotesOnly, sectionSort, sectionShow, sectionRefine, sectionDate. Added from B with no test (kept as screen controls, no name or text check because their labels are not in the spec): projectSwitch, listTabGarden, newList, trashButton, paletteButton, accountButton, progressBar.
+
+Drops and changes, with reasons:
+- Draft B test "web title bar names carry no shortcut hint": duplicate of the name checks in the first test (hidePreview, settings).
+- Draft B no-list test (press Sort & filter with the panel closed): duplicate of Draft A's no-list test. Its button press is uncertain (B's own note 2). Draft A's version kept, with the Reset-disabled check from B added.
+- Draft B test "completed-hidden: Show All with the setting off" (opened by a press): duplicates Draft A's completed-off test and the closed-panel test. The open press is already covered by the Sort & filter test.
+- Draft B test "completed-hidden state at rest" (screenshot): same reference state as Draft A's closed-panel test, which carries the screenshot.
+- Draft B's groceriesCounter "0 / 2" in the completed-hidden state: dropped, because Draft A says the counter's count is not asserted in the show or completed-off states (it counts visible children, F05-037).
+- Draft B's counter check during the "sourdough" search (0 / 1): dropped (conflict below).
+- Draft A's first-row check in the Show Done test (row is Post the parcel): dropped. The first visible row depends on stored order, which is not recorded; rowPost visible is kept.
+- Draft A's first-row check in the Notes Without test (row is Post the parcel): replaced by rowBike visible true and rowPickUp visible false. Derived: Notes With shows only Pick up (1 of 8), so Book bike service has no notes and is shown under Notes Without.
+- Draft A's "Done closes the panel" and Draft B's "Done closes the panel and keeps the filter": merged into one test.
+- Draft A's "Close" and Draft B's "the close button": merged.
+- Draft A's "typing filters rows" and Draft B's "typing a query filters" (with screenshot): merged; the screenshot kept.
+- Draft A's "search field takes focus" and Draft B's "focusing the search field shows its focus ring": merged; the screenshot kept.
+- Draft A's "Updated alone" and Draft B's "Date field Updated": merged.
+- Draft A's "Clear date resets the field" and Draft B's "Clear date restores Created": merged.
+- Draft A's "Last 7 days" and Draft B's "a date range turns Reset on": merged on Draft A's version (adds the summary pattern).
+- Draft A's "Custom range" and Draft B's version: merged on Draft A's (adds the stepper value and B's Custom label check).
+- Draft A's "Clear refine" and Draft B's: merged. The test now presses all three refine rows, so the name "all three refine rows" holds.
+- Draft A's and Draft B's disclosure tests: merged into the two Draft A tests, adding B's rowSourdough checks.
+- Draft A's "Subtasks With" and Draft B's version: merged, adding B's rowSourdough hidden check.
+- Draft B's "the clear search button" and Draft A's "Clear search restores every row": both kept (different queries and assertions).
+- Draft B's "Escape empties the search" kept (see conflicts).
+- Repeated presses: Draft A's and Draft B's times key was removed and each press written as its own step, because the key is not in the format the drafts were given; that is uncertain.
+- Draft B's "Done" test with a filter set: kept as the merged Done test.
+
+Conflicts (recorded, not silently resolved):
+1. Subtask counter during a search: Draft A says it is removed while a search is active (F05-067), and asserts subtaskCount hidden for the query "b". Draft B asserts a counter of 0 / 1 for "sourdough" and cites F05-067 for keeping it. Kept Draft A's rule; the 0 / 1 check is dropped. Unresolved; check F05-067.
+2. Subtask toggle during a search: Draft A hides it for "b" (where the parent itself matches); Draft B asserts it visible for "sourdough". Kept only the hidden check for "b"; the sourdough toggle check is dropped.
+3. Subtask counter in the completed-hidden state: Draft B asserts 0 / 2; Draft A says the count is not asserted in those states. Number dropped.
+4. clearSort visibility: Draft A says shown while Sort is non-default; Draft B says shown while sort or direction is non-default. Kept Draft A's text; the Manual-with-Descending test does not assert clearSort.
+5. Reset enable rule: Draft A says Reset is disabled unless a view is active (F05-050). Draft B's test presses Reset after a sort change alone and expects the sort back to Manual, which needs Reset enabled. Kept that test; flagged. Review reply 12 leaves direction out of the Reset rule, while F05-050 counts it.
+6. Split subtitle and summary order: Draft B asserts exact "Errands, Reading" and "Errands 8/8 · Reading 3/3"; Draft A uses contains because the order is not recorded. Used contains for both, with the count strings inside.
+7. Done counter and percent text: the inventory shows "2 / 8 done" and "25 %"; the source shows "2/8 done" and "25%" (F05-037, F05-065). The regexes accept both spacings.
+8. Round check on done rows: Draft B cites source (TaskRow.tsx:376, F05-064) for checked true; the inventory recorded aria-pressed false on all rows. Kept the test, flagged.
+9. Dark colour scheme: Draft A says the reference has a dark state (F05-026); Draft B says the recordings have no dark state but the code writes dark variants. Both drafts give light and dark; kept.
+10. "Filtered" text on Sort & filter: Draft B only, no source check in Draft A. Kept, flagged.
+11. Trash title-bar button: Draft A leaves Trash out as another screen; Draft B's decision 1 places a Trash button in this title bar. Kept as a part with no test.
+12. Escape clears the search (F05-032): Draft A leaves it out because the key wiring is not in the listed files; Draft B keeps it citing the store comment. Kept, flagged.
+13. Panel open mechanism: described under panel above. Draft B's press-after-sign-in is not used.
+14. Manual with Descending: Draft B asserts the first row is Buy groceries and that the Descending segment reads not selected (visibility.ts:157-160). Draft A said this edge is not tested. Kept, flagged; the first-row check is unverified.
+
+Left out, and why:
+- Drag and drop: no slider parts; no drag test.
+- Window controls and the drag grip: the web draws none (decision 2).
+- Round check Option or Alt done toggle (decision 9): the format lists modifierHold and selectToggle as named inputs, but neither draft shows the step syntax that carries them, so no such step is written. A rebuild that knows the syntax can add the test.
+- focusSearch seed letter (F05-033): trigger not in the listed files.
+- Menu exclusivity: scrim behaviour not recorded.
+- Accent dot, hover and focus visuals (except the focus screenshot), search-options shift (F05-060), highlight (F05-058), strike animation (F05-064), status dot (F05-023), dark colours beyond the dark screenshot run: visual only.
+- Date window arithmetic (F05-040) and stale cutoff (F05-041): not recorded; the Last 7 days test checks the label and a count pattern only.
+- Date created, updated and Done last order (F05-043): demo timestamps do not change the first row, so not tested.
+- Flattened keyboard order (F05-045): no key step named by the feature.
+- Undone-count badge (F05-048): not rendered in any recording.
+- Persistence (F05-053): needs a reload, which the steps cannot do.
+- Focus the other pane (F05-055): keyboard command outside this screen.
+- Settings window, sheets, New list, list-tab close, row menus: other screens.
+- Refine segment size: review reply 15 moves the refine segments to md, so the reference screenshot masks all nine.
+
+Uncertain, to check when the rebuild runs:
+- Expectation keys and forms (selected, disabled, focused, visible, checked, name, text contains and matches) are assumed; the drafts show text only.
+- Repeated presses are written out in full (times was removed).
+- Derived counts with no recording: Show Done 3 of 8, Notes Without 7 of 8, Subtasks Without 8 of 8, Subtasks With 1 of 8, Show Active 6 of 8, split counts, Attachments With 0 of 8, long 48 of 48 (8 plus 40 from web.md).
+- The Custom label check on the date range button text (Draft B only).
+- The textbox accessible name is not asserted (placeholder "Search Errands" from the screenshot and F05-056).
+- Refine Without text check: asserts only the text "Without".
+- Escape clears search (F05-032) and the "/" focus test (decision 18; seed letter not asserted).
+- The collapsed-parent search test relies on source (TaskRow.tsx:110).
+- Test-count note: the merged contract has 60 tests, all with at least one expect or screenshot.

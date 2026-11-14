@@ -71,7 +71,8 @@ export const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(function 
   const isPressed = pressed ?? inner;
   const glyph = isPressed && pressedIcon !== "" ? pressedIcon : icon;
   const name = ariaLabel !== "" ? ariaLabel : shape === "text" ? label : "";
-  const tip = shortcut !== "" ? formatAccel(shortcut) : "";
+  // The contract writes Meta; formatAccel maps Mod to Cmd on macOS and Ctrl elsewhere.
+  const tip = shortcut !== "" ? formatAccel(shortcut.replace(/\bMeta\b/g, "Mod")) : "";
 
   return (
     <Tooltip content={tip}>

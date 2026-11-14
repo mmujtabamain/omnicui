@@ -1,0 +1,51 @@
+# How the app.toasthost contract was written, and what its props make the harness do
+
+Based on: Draft A (spec/inventory/toast.json, spec/inventory/features-toast.txt, spec/features/area-06.json and area-07.json, spec/screens/notes-toast.txt, decisions 10 and 11, spec/screens/web.md) and Draft B (the same inventory and feature files, spec/library/contract-format.txt, spec/library/index.txt, and the review replies). No separate critique text was supplied, so the "verified answer" rule was applied by source precision: where a conflict was not settled by a cited source, the more exact source was kept and the conflict is listed below.
+
+Harness meaning of every prop (applied in this order):
+- dataset: loads the named demo set (standard, empty, nolists, long) for the demo account before anything else. Tests use standard.
+- bulkTrash (0 to 5, default 0): selects the first n root tasks of Errands in visual order, opens bulk Delete, clicks the danger button of the "Move n task(s) to Trash?" sheet, and moves them. Notice reads "<n> moved to Trash" (roots only; subtasks do not count). Applied first.
+- trash (string, default ""): moves the named Errands task to Trash through the single Move to Trash sheet, confirmed by clicking its Move button (Enter does not confirm, decision 10). Notice reads "Moved to Trash" and replaces any earlier notice. Applied after bulkTrash.
+- trashAgain (string, default ""): straight after trash, moves a second named Errands task to Trash the same way; its notice replaces the first. Only meaningful with trash set.
+- undoFails (boolean, default false): the first Undo request the harness sees fails with an API error; later Undo requests succeed. Web build only (decision 11).
+Events: undone (count, title) is emitted by the harness only when the Undo request succeeds, count = roots restored, title = first restored root as the API returns it. dismissed (via) is observed by the harness: "dismiss" for the Dismiss button, "undo" after a successful Undo (Toast.tsx:29-32). Neither event has a reference recording; the harness must observe the app's restore and dismiss calls.
+
+Merged from both drafts:
+- Tests: the union of 27 entries reduced to 15 by merging the 8 duplicates (single delete, bulk count, no notice, Undo restore, Dismiss, failed Undo, Try again, Dismiss after failed Undo). Kept from A only: newer delete replaces the notice, Undo on a bulk notice, Tab focus, and the 6 s record test. Kept from B only: parent task with subtasks, Undo from the keyboard (Enter), and the second delete with trashAgain.
+- Parts: identical in both (notice generic; message, undo, dismiss as listed). Kept as-is.
+- Events: both drafts' undone kept as A's shape (count and title), which covers bulk undo. B's dismissed event added.
+- The three web-only failed-Undo tests keep only: [web] (from A), since decision 11 and undoFails are web-only.
+
+Dropped or changed, with reasons:
+- Draft A mount (task list pane with overlay, signed in on the real API): dropped in favour of mount-alone (Draft B). The format requires a screen to be mounted alone; A's mount is not a context prop the format allows. The reference screenshot still shows the footer, so the screenshot baseline must be checked against that.
+- Draft B prop trashMany: renamed to bulkTrash (A's name, the feature term "bulk delete"). Same meaning.
+- Draft B undone { task }: dropped. It cannot express a bulk undo count, and A's count and title cover the single case too.
+- Draft B expect field role: dropped. The role is declared once on the part.
+- Draft B matchers name { contains: "Undo" } and text { contains: "Try again" }: replaced by exact names "Undo" and "Try again" (A's form). Only exact name strings and the matches text check appear in the verified drafts.
+- Draft A viewport height derivation (pill bottom 743 plus bottom-5): dropped as the stated reason. 743 plus 20 px is 763, not 760, so the derivation does not reconcile. The height 760 comes from the F07-029 "1180x760 window" note.
+- Draft B duplicate tests: merged into A's tests (see above). B's duplicate Dismiss-after-failed-Undo test folded into A's test, keeping B's dismissed check.
+- Draft B "Absent when a toast has no action" comment: dropped. No no-action variant exists in the evidence.
+
+Conflicts recorded (not settled by a verified source):
+1. Mount: A (task list pane with overlay) vs B (Toast alone). Chose B, because the format mounts screens alone. Re-check the screenshot baseline against the reference, which includes the footer.
+2. Viewport height: 760 (B, F07-029) vs derived 760 (A, does not reconcile). Chose 760 from the precise source.
+3. Message role: both drafts assume status (the Radix Toast root is cited, but Toast.tsx is a plain div). Unverified.
+4. After-undo reference capture: still shows the notice and the restored count differs (7 in the tree, 8 in the screenshot). Toast.tsx:29-32 and the decision say the notice is removed, so the Undo test follows the code. The baseline must be re-recorded before use.
+5. Confirm-button names: B's "Move" (single sheet) and the bulk danger button are cited to the sheets; A only says "single delete through the real API". Kept B's detail, unverified.
+6. Non-format items carried from A: the hover action on the record test and the only: [web] field. Neither is in the listed action or field vocabulary of these rules. Kept because both are used in A; the critique should check them against the format.
+7. Name checks assume the Material Symbols glyph is aria-hidden. Otherwise Undo's accessible name would include glyph text.
+8. The record test assumes the harness clip runs past 6 s, and the hover step is what starts motion (the notice entrance and the timed exit). No expect is needed because record satisfies the rule.
+
+Left out on purpose:
+- Escape closing the notice: Toast has no Escape behaviour in the inventory, so none is asserted.
+- Hover, pressed and focus looks of Undo and Dismiss: undefined in Toast.tsx and not captured. Focus is tested through the focused field; keyboard: true adds Enter and Space checks.
+- Timer restart on replacement (F06-096) and Dismiss cancelling the timer (F06-097): the step vocabulary has no wait, so neither can be observed. The replacement test checks content only.
+- Timer pausing on hover or focus: the reference does not pause, which is a gap for the web spec. Nothing in decisions.md settles it; the record test follows the reference and flags it for a decision.
+- Footer placement (pill never covers Sort and filter or the percentage): belongs to the main-window screen test. Geometry is not in the test vocabulary, and no extra viewport was invented.
+- Cmd+Z hint: the toast has no hint element (notes-toast.txt, web item 1). No negative text check is possible.
+- Drag and drop: not applicable to this screen.
+- Dark colour scheme: no dark capture in the inventory.
+- Exact error copy after a failed Undo: not in the spec (decision 11). The test checks non-empty text only. Needs a decision.
+- The "Delete N task(s)" Undo command label (F07-030, F07-031): command label, never displayed (F07-021).
+- Icon widgets (undo and close glyphs): part of the buttons, no behaviour of their own, so not parts.
+- Trash restore and purge (F07-012 to F07-014) and progress counts (F07-076): they happen on the Trash pane and task list, not on this screen.

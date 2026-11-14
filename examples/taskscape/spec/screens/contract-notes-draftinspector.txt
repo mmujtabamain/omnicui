@@ -1,0 +1,47 @@
+# How the app.draftinspector contract was written, and what its props make the harness do
+
+Based on: the two drafts only. I had no tools and read no spec files, so every source fact below comes from the notes the drafts cite (spec/inventory/draft-inspector.json, features-draft-inspector.txt, F04 records, notes-draft-inspector.txt, web.md, decisions.md 2, 5, 10, 18). Draft A's wording was used where both drafts gave the same fact.
+
+Merged meaning of each prop (the harness reads these):
+- dataset (default standard): the harness signs in as the demo account and loads that data set. Every test uses standard. The empty set's list is Inbox per draft B; this is only a comment, not tested.
+- list (default Errands): the harness starts a new draft that targets the named list in the Home project, by name and never by id. The draft is mounted alone, so the harness does not open the task list pane. "" starts the draft with no target list, so the breadcrumb has no list part.
+
+Event draftAction (draft A's form kept): emitted once per draft action the screen runs, after the draftBusy guard. action is "commit", "cancel" or "note". title is the title passed, or "" when the field is empty or the action is cancel. Draft B's event taskCreated (title, how) is dropped: it only counts creations, so the cancel and empty-commit cases cannot be expressed, and its how value "image" has no decided action string. "No write" is therefore not checked directly; it is implied by the event fields.
+
+Parts: draft A's names are used everywhere. Dropped from draft B: newTask, search, taskList, doneCount. They belong to the task list screen, are not rendered when this draft is mounted alone, and draft A leaves them out for the same reason. Draft B's startWith role heading is changed to generic, because the source is an html span (draft A). Draft B's aria navigation for breadcrumb is kept as a comment on a generic part. Draft B's note, image and discard are renamed noteButton, imageButton and discardDraft.
+
+Viewport: draft A's 323 x 714 is kept, because it is this screen's own panel (x 860 to 1182, y 46 to 760). Draft B's 1180 x 760 is dropped because it is the whole window, which includes chrome outside this screen. Conflict not resolved: draft B measures the panel as 319 px at x 861 and draft A as about 323 px at x 860. Both are derived from measured boxes, so the panel size should be measured directly.
+
+Mask: draft B's mask [discard, image, hint] is dropped. Draft B says the reference shots predate decision 5 and the close glyph, while draft A asks the screenshot to judge the glyph. Masking would also hide the glyph and the Image slot, so the screenshot test has no check on them. The screenshots will warn on the glyph and the Image slot until the references are regenerated. This conflict is recorded here.
+
+Steps: no step list is empty. Draft A's steps: [] in two tests became a no-op focus on title (draft B's approach) because an empty steps list may not be accepted.
+
+Merge of the tests:
+- Draft A tests 1 to 14 are kept as written (their expect blocks are kept, with draft B's extras added where marked below).
+- Draft B "opens focused and empty": merged into the first A test. Draft B's taskList and doneCount checks are dropped (parts outside this screen). Its startWith name check became a text check, as in A. Its hint visible check is covered by A's hint text check.
+- Draft B "typing fills the title and writes no row": merged into the A typing test as event times 0.
+- Draft B "a long title wraps": dropped as a duplicate of A's long-title test. A's text is kept.
+- Draft B "Enter commits": merged into A's Enter test. The title visible false check is kept but flagged: it is from draft B, and draft A only states the unmount for note. Draft B's taskList and doneCount checks are dropped.
+- Draft B "Escape drops a typed draft": merged into A's Escape test. The title visible false check is kept and flagged for the same reason.
+- Draft B "click away from a titled draft commits": dropped. It focuses the search part, which is outside this screen. A's Tab stand-in test covers the same commit. F04-005 is marked uncertain in the records; the click-away is tested only through Tab.
+- Draft B "click away from an untitled draft drops it": dropped as a duplicate of A's Tab-away-from-empty test (same empty commit, different stand-in). Its expectation of no event is not carried over, because draft A's rule is that the empty commit is reported.
+- Draft B "Enter on an untitled draft drops it": kept as a new test, converted to an event commit with title "" and times 1 (see Enter on an empty draft). Uncertain: the Enter path on an empty draft is inferred from draft A's empty-commit rule, not stated.
+- Draft B "Discard draft drops a typed draft": merged into A's Discard test. The title visible false check is kept and flagged.
+- Draft B "Note with a typed title": merged into A's Note test. The title visible false check comes from A's statement that the draft unmounts after note. Draft B's taskList and doneCount checks are dropped.
+- Draft B "Note with no title creates an Untitled task": merged into A's Note-no-title test. The stored title "Untitled" cannot be read through the event (the event carries ""), and draft B's taskList check is outside this screen, so it is dropped.
+- Draft B "New task button starts a fresh draft" and "Alt+N": dropped. They belong to the task list screen (decision 18, F04-098), and the newTask part is not on this screen. Their record step for F04-014 is dropped with them: no step on this screen starts the entrance motion, so no record or trace step is valid here. F04-014 is not tested.
+
+Open or uncertain (kept as written):
+- The web helper copy: draft A pins only the tail clause "the task is created the moment it has something in it."; the lead clause is undecided.
+- The Image action has no event action string, so no test expects an event for Image. The Image button is checked only by its name.
+- Keyboard Enter and Space on imageButton open a file chooser. The harness must dismiss it. Image file picking and paste are not tested.
+- The no-list breadcrumb: matches (—|Home)$ accepts either form, as draft A states.
+- The empty-state text "" assumes the placeholder "Untitled" is not read as text.
+- The visible false checks added from draft B (commit, cancel, discard, and the empty Enter) are not stated in draft A. They should be confirmed once the draft's behaviour after a commit or a cancel is known.
+
+Left out on purpose:
+- Title bar (ProjectSwitcher, ListTabs, Split view, Hide preview, Settings, window controls, drag grip) and the web account button: chrome outside this screen, and the window controls are dropped on web.
+- Task list pane, search row, New task button, footer and their parts: the task list screen (F04-098 and decision 18 belong there).
+- Features F04-017 to F04-097 and the rest of the list in draft B: multi-select, attachments, notes, subtasks, lightbox, task inspector, row menus. Other screens.
+- Drag-and-drop: not tested, since the only drag-capable parts are sliders, and this screen has none.
+- Dark colour scheme: the reference has no dark state.

@@ -1,0 +1,457 @@
+id: "app.settingsabout"
+# Settings: About. One contract for two builds of the same screen.
+# Desktop: the Settings window (640 x 520) with window chrome, the Capture tab and the Data folder row.
+# Web: the Settings dialog (640 x 520) with no window chrome, no Capture tab and no Data folder row.
+# Parts and tests marked only: [desktop] or only: [web] apply to one build. Unmarked tests run on both.
+
+props:
+  # Demo data set the harness loads after it signs in as the demo account.
+  # One of standard, empty, nolists, long (spec/screens/web.md). About reads no task data; a reset must leave tasks untouched.
+  dataset:
+    type: string
+    default: "standard"
+  # Value of ctx.version shown in the version row. "" means no version is set, so the row shows an em dash.
+  version:
+    type: string
+    default: "0.1.0"
+  # Desktop only: ctx.paths.data_dir. "" means null: the row shows an em dash and no path button renders.
+  # The web build has no data folder row and ignores this prop.
+  dataFolder:
+    type: string
+    default: "/Users/you/.taskscape"
+
+events:
+  # Fired when the confirmed reset runs (ctx.resetAll). The harness reports scope as "all".
+  # The event name and scope value are contract labels; the sources do not name them.
+  resetAll: { scope: { type: string } }
+
+keyboard: false   # The automatic keyboard test would make Enter confirm the reset, which decision 10 forbids. Explicit key tests are below.
+
+colorSchemes: [ light ]   # The reference has no dark state, so the baseline is light only. Desktop dark appearance (F10-058) is untested; see notes.
+
+viewports: [ { width: 640, height: 520 } ]   # Settings window minimum and default (decision 19) and the web modal size (web.md). The inventory's 1180 x 760 is the main window's size.
+
+mask: [ appDescription ]   # Owner copy for the description row is not written yet, so it is kept out of pixel comparison.
+
+parts:
+  window: { role: generic }   # aria: dialog on web. Desktop: the SettingsWindow frame. Web: the Settings dialog. Visible while the window is open.
+  closeLight: { role: button, optional: true }   # Desktop only. Accessible name "Close". Enabled.
+  minimizeLight: { role: button, optional: true }   # Desktop only. Accessible name "Minimize". Inert, so disabled.
+  fullscreenLight: { role: button, optional: true }   # Desktop only. Accessible name "Full Screen". Inert, so disabled.
+  title: { role: heading }   # The "Settings" h1: desktop title bar label or web page heading.
+  discardAll: { role: button }   # Desktop: title-bar undo. Web: page heading row. Shown only after a change since the window opened. No sourced accessible name; tests use name contains "Discard". Draft B cites the tooltip "Discard every change made since this window opened" (notes reply 8), not confirmed.
+  search: { role: textbox }   # aria: searchbox on web. Placeholder "Search". Accessible name "Search settings".
+  searchClear: { role: button }   # Accessible name "Clear search". Shown only while the query is non-empty.
+  navGeneral: { role: button }   # aria: tab. Desktop and web.
+  navCapture: { role: button, optional: true }   # aria: tab. Desktop only.
+  navShortcuts: { role: button }   # aria: tab. Desktop and web.
+  navAbout: { role: button }   # aria: tab. Accessible name "About". Selected when the screen opens.
+  aboutMatches: { role: generic }   # Recessed match count badge on the About tab while a query is active.
+  panel: { role: generic }   # aria: tabpanel. The About content box (aria-controls settings-panel-about).
+  emptyState: { role: generic }   # Shown when the query matches nothing. Copy "No settings match" (F10-020); full text not read, so tests use contains.
+  applicationHeader: { role: heading }   # SectionHeader "Application". CSS uppercases it; matched case-insensitively.
+  resetHeader: { role: heading }   # SectionHeader "Reset". While searching it takes the section prefix "About · Reset" (F10-014).
+  appName: { role: generic }   # "Taskscape".
+  appDescription: { role: generic }   # Description row. Owner copy still to be supplied (notes, both builds); only visibility is asserted.
+  version: { role: generic }   # ctx.version, or an em dash when none is set. Monospace on desktop per draft A's source; not asserted.
+  dataFolderPath: { role: generic, optional: true }   # Desktop only. The data folder path, or an em dash when null.
+  pathButton: { role: button, optional: true }   # Desktop only. Text is the path. Accessible name "Open <path> in the file manager". Absent when the path is null.
+  restoreDefaults: { role: generic }   # Row title "Restore defaults". This is the search anchor.
+  restoreDescription: { role: generic }   # Row description. Differs by build (see tests).
+  resetButton: { role: button }   # Idle trigger "Reset all settings…" (with the ellipsis character).
+  confirmReset: { role: button }   # Danger button "Reset all settings". Shown only while confirming.
+  cancelReset: { role: button }   # Button "Cancel". Shown only while confirming.
+
+tests:
+  - name: opens on About with the app name, version, reset row and idle reset control
+    steps: []
+    expect:
+      - { part: navAbout, selected: true }
+      - { part: navAbout, name: "About" }
+      - { part: navGeneral, selected: false }
+      - { part: navShortcuts, selected: false }
+      - { part: title, text: "Settings" }
+      - { part: search, name: "Search settings" }
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: applicationHeader, text: { matches: "(?i)^application$" } }
+      - { part: appName, text: "Taskscape" }
+      - { part: appDescription, visible: true }
+      - { part: version, text: "0.1.0" }
+      - { part: resetHeader, text: { matches: "(?i)^reset$" } }
+      - { part: restoreDefaults, text: "Restore defaults" }
+      - { part: restoreDescription, visible: true }
+      - { part: resetButton, text: "Reset all settings…" }
+      - { part: resetButton, name: "Reset all settings…" }
+      - { part: confirmReset, visible: false }
+      - { part: cancelReset, visible: false }
+      - { part: discardAll, visible: false }
+      - { part: aboutMatches, visible: false }
+    screenshot: true
+
+  - name: restore defaults description on desktop
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: restoreDescription, text: "Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched." }
+
+  - name: restore defaults description on web drops capture
+    only: [web]
+    steps: []
+    expect:
+      - { part: restoreDescription, text: "Puts appearance and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched." }
+
+  - name: Tab from the search field reaches only the About tab
+    steps: [ { action: focus, part: search }, { action: key, part: search, key: Tab } ]
+    expect:
+      - { part: navAbout, focused: true }
+      - { part: navGeneral, focused: false }
+      - { part: navShortcuts, focused: false }
+
+  - name: ArrowUp on About selects and focuses Shortcuts
+    steps: [ { action: focus, part: navAbout }, { action: key, part: navAbout, key: ArrowUp } ]
+    expect:
+      - { part: navShortcuts, selected: true }
+      - { part: navShortcuts, focused: true }
+      - { part: navAbout, selected: false }
+      - { part: applicationHeader, visible: false }
+
+  - name: ArrowDown on About wraps to General
+    steps: [ { action: focus, part: navAbout }, { action: key, part: navAbout, key: ArrowDown } ]
+    expect:
+      - { part: navGeneral, selected: true }
+      - { part: navGeneral, focused: true }
+      - { part: navAbout, selected: false }
+
+  - name: ArrowUp on General wraps to About
+    steps: [ { action: press, part: navGeneral }, { action: focus, part: navGeneral }, { action: key, part: navGeneral, key: ArrowUp } ]
+    expect:
+      - { part: navAbout, selected: true }
+      - { part: navAbout, focused: true }
+      - { part: navGeneral, selected: false }
+
+  - name: Enter on a focused tab selects it
+    steps: [ { action: focus, part: navShortcuts }, { action: key, part: navShortcuts, key: Enter } ]
+    expect:
+      - { part: navShortcuts, selected: true }
+      - { part: navAbout, selected: false }
+      - { part: applicationHeader, visible: false }
+
+  - name: pressing General leaves About
+    steps: [ { action: press, part: navGeneral } ]
+    expect:
+      - { part: navGeneral, selected: true }
+      - { part: navAbout, selected: false }
+      - { part: applicationHeader, visible: false }
+      - { part: appName, visible: false }
+      - { part: restoreDefaults, visible: false }
+      - { part: resetButton, visible: false }
+
+  - name: pressing Shortcuts shows that pane instead of About
+    steps: [ { action: press, part: navShortcuts } ]
+    expect:
+      - { part: navShortcuts, selected: true }
+      - { part: applicationHeader, visible: false }
+
+  - name: pressing Capture shows that pane (desktop only)
+    only: [desktop]
+    steps: [ { action: press, part: navCapture } ]
+    expect:
+      - { part: navCapture, selected: true }
+      - { part: navAbout, selected: false }
+
+  - name: pressing About while it is active changes nothing
+    steps: [ { action: press, part: navAbout } ]
+    expect:
+      - { part: navAbout, selected: true }
+      - { part: applicationHeader, visible: true }
+      - { part: appName, text: "Taskscape" }
+      - { part: appName, visible: true }
+
+  - name: switching back to About plays the pane entrance
+    steps: [ { action: press, part: navGeneral }, { action: press, part: navAbout } ]
+    record: { part: panel }
+    expect:
+      - { part: applicationHeader, visible: true }
+
+  - name: focusing the search field shows the neutral focus ring
+    steps: [ { action: focus, part: search } ]
+    expect:
+      - { part: search, focused: true }
+    screenshot: true
+
+  - name: typing a query shows the clear button
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "reset" } ]
+    expect:
+      - { part: search, text: "reset" }
+      - { part: searchClear, visible: true }
+    screenshot: true
+
+  - name: the clear button empties the query and restores every group
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "reset" }, { action: press, part: searchClear } ]
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: applicationHeader, visible: true }
+      - { part: appName, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^reset$" } }
+      - { part: resetButton, visible: true }
+
+  - name: Escape clears the query first and keeps the window open
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "reset" }, { action: key, part: search, key: Escape } ]
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: window, visible: true }
+      - { part: appName, visible: true }
+      - { part: navAbout, selected: true }
+
+  - name: Escape with an empty search closes the Settings window (desktop)
+    only: [desktop]
+    steps: [ { action: focus, part: search }, { action: key, part: search, key: Escape } ]
+    expect:
+      - { part: window, visible: false }
+
+  - name: Command-F or Ctrl-F focuses the search field (desktop)
+    only: [desktop]
+    # Meta+KeyF is the macOS form. Windows and Linux need Control+KeyF; the per-platform form is not defined in the sources (uncertain).
+    steps: [ { action: focus, part: navAbout }, { action: key, part: navAbout, key: Meta+KeyF } ]
+    expect:
+      - { part: search, focused: true }
+
+  - name: typing a query filters every section live and labels the result group
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "factory" } ]
+    expect:
+      - { part: search, text: "factory" }
+      - { part: searchClear, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+      - { part: restoreDefaults, visible: true }
+      - { part: restoreDefaults, text: "Restore defaults" }
+      - { part: applicationHeader, visible: false }
+      - { part: appName, visible: false }
+      - { part: aboutMatches, text: "1" }
+      - { part: emptyState, visible: false }
+
+  - name: searching reset finds the Restore defaults row and its group
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "reset" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetButton, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: search is case-insensitive and needs every word to match
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "RESET DEFAULTS" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetButton, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: a query with an unmatched word shows the empty state
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "reset zzzz" } ]
+    expect:
+      - { part: emptyState, visible: true }
+      - { part: emptyState, text: { contains: "No settings match" } }
+      - { part: restoreDefaults, visible: false }
+      - { part: resetButton, visible: false }
+      - { part: applicationHeader, visible: false }
+    screenshot: true
+
+  - name: search term clear finds the Restore defaults row
+    # Keyword list from F10-073 is not confirmed against the new label (uncertain).
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "clear" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: search term defaults finds the Restore defaults row
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "defaults" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: search term revert finds the Restore defaults row
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "revert" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: search term erase finds the Restore defaults row
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "erase" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: search term preferences finds the Restore defaults row
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "preferences" } ]
+    expect:
+      - { part: restoreDefaults, visible: true }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: clicking About while searching keeps the query and drops the section prefix
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "factory" }, { action: press, part: navAbout } ]
+    expect:
+      - { part: search, text: "factory" }
+      - { part: navAbout, selected: true }
+      - { part: resetHeader, text: { matches: "(?i)^reset$" } }
+      - { part: restoreDefaults, visible: true }
+
+  - name: editing the query after a narrowed search returns to all-section results
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "factory" }, { action: press, part: navAbout }, { action: focus, part: search }, { action: key, part: search, key: Backspace } ]
+    expect:
+      - { part: search, text: "factor" }
+      - { part: resetHeader, text: { matches: "(?i)^about · reset$" } }
+
+  - name: clicking a section with no matches clears the search
+    steps: [ { action: focus, part: search }, { action: type, part: search, text: "factory" }, { action: press, part: navGeneral } ]
+    expect:
+      - { part: search, text: "" }
+      - { part: navGeneral, selected: true }
+      - { part: appName, visible: false }
+      - { part: restoreDefaults, visible: false }
+
+  - name: the first press asks for confirmation in place with Cancel focused
+    # Cancel is focused by default under decision 13. Applied to the reset confirmation as a destructive confirmation.
+    steps: [ { action: press, part: resetButton } ]
+    expect:
+      - { part: resetButton, visible: false }
+      - { part: confirmReset, visible: true }
+      - { part: confirmReset, text: "Reset all settings" }
+      - { part: confirmReset, name: "Reset all settings" }
+      - { part: cancelReset, visible: true }
+      - { part: cancelReset, text: "Cancel" }
+      - { part: cancelReset, focused: true }
+      - { event: resetAll, times: 0 }
+    screenshot: true
+
+  - name: Cancel returns to the single button and runs nothing
+    steps: [ { action: press, part: resetButton }, { action: press, part: cancelReset } ]
+    expect:
+      - { part: resetButton, visible: true }
+      - { part: resetButton, text: "Reset all settings…" }
+      - { part: confirmReset, visible: false }
+      - { part: cancelReset, visible: false }
+      - { part: appName, visible: true }
+      - { event: resetAll, times: 0 }
+
+  - name: Escape with Cancel focused cancels without resetting
+    steps: [ { action: press, part: resetButton }, { action: key, part: cancelReset, key: Escape } ]
+    expect:
+      - { part: resetButton, visible: true }
+      - { part: confirmReset, visible: false }
+      - { event: resetAll, times: 0 }
+
+  - name: clicking Reset all settings confirms and runs the reset
+    steps: [ { action: press, part: resetButton }, { action: press, part: confirmReset } ]
+    expect:
+      - { event: resetAll, times: 1, last: { scope: "all" } }
+      - { part: resetButton, visible: true }
+      - { part: confirmReset, visible: false }
+      - { part: appName, visible: true }
+      - { part: restoreDefaults, visible: true }
+
+  - name: a reset that changes settings shows the discard control
+    # Precondition: the demo account must start with settings that differ from defaults. The sources do not define the demo values (uncertain).
+    # Draft B says a change needs the General or Shortcuts pane (F10-027); this test assumes the reset itself counts (conflict).
+    steps: [ { action: press, part: resetButton }, { action: press, part: confirmReset } ]
+    expect:
+      - { part: discardAll, visible: true }
+      - { part: discardAll, name: { contains: "Discard" } }
+    screenshot: true
+
+  - name: the discard control reverts the change and hides again
+    # Same precondition as the test above. Tasks are not affected by any reset.
+    steps: [ { action: press, part: resetButton }, { action: press, part: confirmReset }, { action: press, part: discardAll } ]
+    expect:
+      - { part: discardAll, visible: false }
+      - { part: resetButton, visible: true }
+
+  - name: Enter on the reset button opens the confirmation
+    steps: [ { action: focus, part: resetButton }, { action: key, part: resetButton, key: Enter } ]
+    expect:
+      - { part: confirmReset, visible: true }
+      - { part: cancelReset, focused: true }
+      - { event: resetAll, times: 0 }
+
+  - name: Enter on the confirm button does not reset (decision 10)
+    steps: [ { action: press, part: resetButton }, { action: focus, part: confirmReset }, { action: key, part: confirmReset, key: Enter } ]
+    expect:
+      - { part: confirmReset, visible: true }
+      - { part: resetButton, visible: false }
+      - { event: resetAll, times: 0 }
+
+  - name: Space on the focused confirm button runs the reset
+    steps: [ { action: press, part: resetButton }, { action: focus, part: confirmReset }, { action: key, part: confirmReset, key: Space } ]
+    expect:
+      - { event: resetAll, times: 1, last: { scope: "all" } }
+      - { part: resetButton, visible: true }
+      - { part: resetButton, name: "Reset all settings…" }
+      - { part: confirmReset, visible: false }
+      - { part: appName, visible: true }
+      - { part: restoreDefaults, visible: true }
+
+  - name: Escape on the confirm button cancels without resetting (decision 10)
+    # Desktop: the window-level Escape (close with no search) may also run here. Not settled by the sources (uncertain).
+    steps: [ { action: press, part: resetButton }, { action: focus, part: confirmReset }, { action: key, part: confirmReset, key: Escape } ]
+    expect:
+      - { part: resetButton, visible: true }
+      - { part: confirmReset, visible: false }
+      - { event: resetAll, times: 0 }
+
+  - name: the data folder row shows the path and an open control (desktop only)
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: dataFolderPath, text: "/Users/you/.taskscape" }
+      - { part: pathButton, text: "/Users/you/.taskscape" }
+      - { part: pathButton, name: { matches: "^Open .+ in the file manager$" } }
+    screenshot: true
+
+  - name: pressing the path opens the folder and leaves the About pane as it was (desktop only)
+    # The file manager opens outside the app, so only the pane state is checked.
+    only: [desktop]
+    steps: [ { action: press, part: pathButton } ]
+    expect:
+      - { part: navAbout, selected: true }
+      - { part: applicationHeader, visible: true }
+
+  - name: no data folder shows a dash and no path button (desktop only)
+    only: [desktop]
+    props: { dataFolder: "" }
+    steps: []
+    expect:
+      - { part: dataFolderPath, text: "—" }
+      - { part: pathButton, visible: false }
+    screenshot: true
+
+  - name: no version shows a dash
+    props: { version: "" }
+    steps: []
+    expect:
+      - { part: version, text: "—" }
+    screenshot: true
+
+  - name: the title bar lights show close enabled and minimize and full screen inert (desktop only)
+    # Draft B says decisions.md item 2 removes drawn window controls; draft A keeps them per notes reply 14 (conflict).
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: closeLight, name: "Close" }
+      - { part: closeLight, disabled: false }
+      - { part: minimizeLight, name: "Minimize" }
+      - { part: minimizeLight, disabled: true }
+      - { part: fullscreenLight, name: "Full Screen" }
+      - { part: fullscreenLight, disabled: true }
+    screenshot: true
+
+  - name: pressing the close light closes the window (desktop only)
+    only: [desktop]
+    steps: [ { action: press, part: closeLight } ]
+    expect:
+      - { part: window, visible: false }
+
+# notes: |
+#   BASED ON: spec/inventory/settings-about.json, spec/screens/notes-settings-about.txt, spec/screens/web.md, spec/decisions.md, and the feature records listed in the merge notes.
+#   PROPS: dataset (standard, empty, nolists, long) is the demo set loaded for the demo account. version sets ctx.version; "" shows an em dash. dataFolder sets ctx.paths.data_dir on desktop; "" makes it null (em dash, no path button). Web ignores it.
+#   EVENT: resetAll is emitted when the confirmed reset runs; scope is "all". The event and scope names are contract labels.
+#   DESKTOP AND WEB: one contract. Only: [desktop] marks window chrome, the Capture tab, the data folder row, the close and Cmd/Ctrl+F tests. Web has no Capture tab, no data folder row, no traffic lights and no Cmd/Ctrl+F binding. Web close is not tested (notes reply 16 against web.md).
+#   LEFT OUT: Application description copy (owner copy pending); group dot and section header undo (About groups pass no onDiscard); drag (no slider parts); opening the data folder (outside the app); General, Shortcuts and Capture pane contents (other screens); persistence and failed writes (not reachable from About except through reset).

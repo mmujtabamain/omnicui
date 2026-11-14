@@ -5,7 +5,7 @@ const TASKS = Array.from({ length: 16 }, (_, i) => `task-${i + 1}`);
 function ScrollAreaHarness({ emit, ...props }: any) {
   const horizontal = props.orientation === "horizontal";
   return (
-    <div className="h-full w-full">
+    <div className="h-screen w-screen">
       <ScrollArea
         {...props}
         onScrollingChanged={(scrolling: boolean) => emit("scrollingChanged", { scrolling })}

@@ -32,12 +32,14 @@ export const Toolbar = React.forwardRef<HTMLDivElement, ToolbarProps>(function T
   { placement = "inline", ariaLabel = "Toolbar", count = 1, className, children, ...props },
   ref,
 ) {
-  if (placement !== "inline" && count < 1) return null;
+  // The strip and footer stay mounted but hidden while there is nothing to act on.
+  const hidden = placement !== "inline" && count < 1;
   return (
     <ToolbarPrimitive.Root
       ref={ref}
       data-slot="toolbar"
       aria-label={ariaLabel}
+      hidden={hidden}
       className={cn(toolbarVariants({ placement }), className)}
       {...props}
     >

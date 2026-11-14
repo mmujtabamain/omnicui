@@ -1,0 +1,65 @@
+# How the app.attachmentlightbox contract was written, and what its props make the harness do
+
+Based on: both drafts (A and B), which cite spec/inventory/attachment-lightbox.json, spec/inventory/features-attachment-lightbox.txt, spec/features/area-04.json (F04-052 to F04-070), spec/screens/notes-attachment-lightbox.txt, spec/screens/web.md and spec/decisions.md (10: Enter does not confirm destructive sheets, Enter accepts prompt sheets, Escape cancels; 13: Cancel is the default focus). No critique text was supplied with the task, so no verified answer was available. Conflicts were resolved by keeping the entry with the more precise source, and each conflict is listed below. I did not read any source file myself; the merge is from the two drafts' own citations.
+
+Props (harness meaning):
+- dataset: the demo data set the harness signs in with. standard is the one this screen uses; empty, nolists and long also exist in web.md.
+- task: the harness loads this task (Rewrite the hero section, Spring launch > Website in the standard set) and mounts the lightbox over its attachments. It is the only task with attachments in web.md.
+- attachment: the harness opens the lightbox on the attachment with this file name. It must be one of the task's two attachments: hero-sketch.png (index 1 of 2, an image) or Brand brief (index 0 of 2, a remote link showing the No inline preview card). Index order is deduced from the inventory state (index=1, count 2) and the order web.md lists them. Names are used, never ids.
+
+Events (observation points; the reference has only callbacks, so names and payloads are this contract's):
+- closed: via is "button" or "escape". Draft B's name payload is kept as a second field.
+- openedExternally, renamed, removed: name is the string payload, as in draft A.
+- stepped: this is draft B's addition, kept as a contract-only observation point. B declared it with an integer index; here it is a string name to stay within the string type used by the other events. Tests that used B's index 0 and 1 now assert the file name instead.
+
+Merged parts (names):
+- fileName (draft A) is draft B's name. kindIcon is draft B's, kept because the inventory (F04-057) names the kind icon. sheetTail is draft B's, kept because the extension tail is a real part (A describes it but has no part for it). sheetHeading and renameField are draft A's names; draft B's sheetHeadline and sheetInput are the same parts under other names.
+- Dropped: draft B's stage part (role button on a plain div with onClick), and its test "a press on the empty stage closes the lightbox". Reasons: the role is not a real button; the press action targets the part's centre, which the media covers (draft A's point); draft B's own notes say generic parts accept only hover. The click-on-stage case stays unresolved and needs a point-press form.
+
+Merged tests (duplicates merged, not lost):
+- Opening test: draft A's version, with draft B's kindIcon visibility check added.
+- Next and Previous wrap tests: draft A's versions, with draft B's stepped and closed-times checks added.
+- Arrow keys: draft A's version (keys sent to the chevrons), with a stepped count of 3 added. Draft B's keys on the close button were dropped as an unsound way to send arrow keys.
+- Enter on Next: kept from draft B (new coverage).
+- Remote link card: kept from draft B (new coverage, F04-068).
+- Escape and close button: draft A's, with draft B's name payload added to last.
+- Rename tests: draft A's, with draft B's exact detail strings and sheetTail check added. The rename Enter test keeps draft A's "-v2" append; draft B's "hero-sketch-v2" with clear-first is dropped as an assumption that conflicts with A's (see conflicts).
+- Unchanged-name and Escape-cancel rename tests: draft A's, with draft B's renamed times 0 check added.
+- Remove sheet: draft B's exact detail text kept; draft A's contains-check is replaced by it.
+- Enter and Space on Remove: draft B's Tab-focus variant kept, because the default focus is Cancel (decision 13); draft A's direct key on the Remove button without moving focus is dropped as an unfocused key test. A's Enter variant and B's Enter variant are the same test; the Tab-based version is kept.
+- Escape cancels removal: draft A's, with draft B's removed times 0 check added.
+- Hover tests: draft A's (draft B's hover-remove test duplicates it).
+- Dropped as duplicates: draft B's opening test (merged into A's first test), draft B's Previous test (merged into A's), draft B's hover-remove test (A's kept), draft B's unchanged and cancel tests (merged), and draft B's Escape rename test (merged).
+
+Conflicts:
+1. Open externally (main item to confirm). Draft B says web.md drops "opening files in the OS" and removes openExternally and fallbackOpen. Draft A keeps both, and its notes say settled web decisions drop only Reveal in Finder. Draft B's own notes say the notes file (the screen-specific notes) keeps Open externally as the only way out. Kept (draft A and the notes file are the more precise sources for this screen). If web.md truly drops it, remove openExternally, fallbackOpen, the two openExternally tests and the openedExternally event.
+2. Rename typing: draft A types "-v2" and assumes the caret is at the end of the pre-filled base name (uncertain 1 in draft A). Draft B assumes the harness clears the field first and types "hero-sketch-v2". The sources do not say which. Kept A's version; if type appends, it works. If type replaces, the rename tests fail for a reason unrelated to the screen.
+3. Keyboard: draft A sets keyboard: true; draft B leaves it off because its stage part is not focusable. The stage part is dropped, so keyboard: true is kept. It adds parity tests for visible buttons only.
+4. Escape while a sheet is open: which layer takes it is not stated (draft A uncertain 7). The sheet Escape tests check only that nothing was renamed or removed, and that the sheet closed.
+
+Left out on purpose:
+- Reveal in Finder: dropped on web (web.md; review note [web]).
+- Click on the empty stage: unresolved, see the dropped stage part above.
+- Loading: transient; the reply waits until the source has resolved (F04-059).
+- Video, audio, PDF, text/code branches and the "Couldn't read this file" card: no such attachment exists in the demo data.
+- Single-attachment state (counter and chevrons hidden): no demo task has one attachment.
+- Image error fallback: the demo data cannot force a broken image.
+- Arrow keys with native media or text focused: no such control exists in the demo data.
+- Drag and drop: not on this screen; drag acts only on slider parts, and this screen has none.
+- Desktop-only scrim removal and separate window: the web keeps the full-window dim.
+- Native title tooltips (file name, Close "Esc"): not checkable with the expect fields.
+- Kind mapping for other file kinds (F04-066, F04-067): checked only through the screenshots.
+- Trace and record: no motion is specified for this screen, so none is tested.
+
+Uncertain (carried from both drafts, for review):
+- The rename prompt's focus on renameField is inferred from the dialog focus trap, not stated.
+- Whether an unchanged rename closes the prompt is not stated; that test asserts only the file name, counter and renamed times 0.
+- After removal the sources say only "then onDeleted"; the removal tests assert the removed event only.
+- The sheet Cancel label is assumed to be "Cancel" (decision 13 names it as default focus, not its text).
+- Accessible names come from the title attributes in the inventory; if icon glyph text is added to the name, the exact name checks fail.
+- hero-sketch.png is treated as a stored file, so the stored-file rename detail applies (inferred from web uploads, decision 5).
+- colorSchemes is light only: the reference records no dark state, although the card code has dark classes.
+- Screenshot risk: the screen-alone mount does not render the dimmed main window behind the scrim, so the harness must mount over a neutral page or the backdrop will differ.
+- Top bar height (45.5px) and chevron size (38.5px) are described in comments only; the contract has no pixel-size checks.
+- times: 0 in an event expect (meaning no event fired) is assumed to be allowed; it is used in several tests.
+- The visible field is assumed to be checked only as true.

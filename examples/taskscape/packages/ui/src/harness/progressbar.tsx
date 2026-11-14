@@ -1,8 +1,9 @@
 import { ProgressBar } from "../components/ui/progress-bar";
 
-// emit is the omnicui bridge, not a prop of the bar: keep it off the DOM root.
-function ProgressBarHarness({ emit, ...props }: any) {
-  return <ProgressBar {...props} />;
+// Pass only the bar's own props: emit is the omnicui bridge and must not reach the DOM root.
+// Undefined props fall back to the widget's defaults.
+function ProgressBarHarness({ value, max, ariaLabel, tone, className }: any) {
+  return <ProgressBar value={value} max={max} ariaLabel={ariaLabel} tone={tone} className={className} />;
 }
 
 export default { id: "ui.progressbar", Component: ProgressBarHarness, events: [] };
