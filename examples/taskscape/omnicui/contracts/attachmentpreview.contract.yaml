@@ -1,0 +1,215 @@
+# One widget, five kinds. The kind prop picks the element:
+#   image -> img, video -> video, audio -> audio panel, pdf -> embedded viewer, text -> pre.
+# States: loading (part loading, text "Loading..."), loaded (event loaded),
+#         playing (event playing, autoPlay), error (event error; fallback card shown).
+id: ui.attachmentpreview
+
+props:
+  kind:
+    type: string
+    # enum: [image, video, audio, pdf, text]
+    default: image
+    # description: "Preview type: image, video, audio, pdf or text."
+  src:
+    type: string
+    # description: "Attachment URL (web, served from the server) or path (desktop, read from disk)."
+  name:
+    type: string
+    # description: "Alt text for the image kind; accessible label for every other kind."
+  autoPlay:
+    type: boolean
+    default: true
+    # description: "Starts playback on mount for video and audio."
+  text:
+    type: string
+    # description: "Text content for the text kind. Shown up to 262144 characters."
+
+events:
+  loaded:
+    kind: { type: string }
+  playing:
+    kind: { type: string }
+  error:
+    kind: { type: string }
+
+parts:
+  loading: { role: status }
+  image: { role: generic, optional: true, same: { default: pixels, mobile: [layout, colours] } }
+  video: { role: generic, optional: true, same: { default: [layout, colours] } }
+  audio: { role: generic, optional: true, same: { default: [layout, colours] } }
+  glyph: { role: generic, optional: true }
+  pdf: { role: generic, optional: true, same: { default: layout, desktop: none } }
+  text: { role: generic, optional: true }
+  fallback: { role: status }
+
+same: pixels
+
+viewports:
+  default:
+    - { width: 640, height: 480 }
+    - { width: 480, height: 300 }
+    - { width: 1024, height: 768 }
+  mobile:
+    - { width: 360, height: 640 }
+
+colorSchemes: [light, dark]
+
+tests:
+  - name: image kind shows the attachment and hides loading and fallback
+    props: { kind: image, src: "fixtures/photo.png", name: "Photo.png" }
+    steps:
+      - { action: hover, part: image }
+    expect:
+      - { part: image, role: generic, visible: true }
+      - { part: loading, visible: false }
+      - { part: fallback, visible: false }
+      - { event: loaded, times: 1, last: { kind: image } }
+      - { event: error, times: 0 }
+    screenshot: true
+
+  - name: omitted kind is image
+    props: { src: "fixtures/photo.png", name: "Photo.png" }
+    steps:
+      - { action: hover, part: image }
+    expect:
+      - { part: image, role: generic, visible: true }
+      - { event: loaded, times: 1, last: { kind: image } }
+
+  - name: image loading shows Loading... until the attachment loads
+    # Needs a fixture that holds the response open and does not report the app as busy.
+    props: { kind: image, src: "fixtures/held-open.png", name: "Slow.png" }
+    steps:
+      - { action: hover, part: loading }
+    expect:
+      - { part: loading, visible: true }
+      - { part: loading, text: "Loading..." }
+      - { part: image, visible: false }
+
+  - name: image failure switches to the EmptyState card
+    props: { kind: image, src: "fixtures/missing.png", name: "Missing.png" }
+    steps: []
+    expect:
+      - { part: fallback, visible: true }
+      - { part: image, visible: false }
+      - { part: loading, visible: false }
+      - { event: error, times: 1, last: { kind: image } }
+    screenshot: true
+
+  - name: video plays on mount when autoPlay is omitted
+    props: { kind: video, src: "fixtures/clip.mp4", name: "Clip.mp4" }
+    steps:
+      - { action: hover, part: video }
+    expect:
+      - { part: video, visible: true }
+      - { event: loaded, times: 1, last: { kind: video } }
+      - { event: playing, times: 1, last: { kind: video } }
+    record: { part: video }
+    allCombinations: true
+
+  - name: video with autoPlay false stays paused on mount
+    props: { kind: video, src: "fixtures/clip.mp4", name: "Clip.mp4", autoPlay: false }
+    steps:
+      - { action: hover, part: video }
+    expect:
+      - { part: video, visible: true }
+      - { part: fallback, visible: false }
+      - { event: playing, times: 0 }
+      - { event: error, times: 0 }
+    record: { part: video }
+    screenshot: true
+
+  - name: video native play control starts playback
+    # Native controls are exposed by the platform; this drives the play action they map to.
+    props: { kind: video, src: "fixtures/clip.mp4", name: "Clip.mp4", autoPlay: false }
+    steps: [ { do: togglePlayback, part: video } ]
+    expect:
+      - { event: playing, times: 1, last: { kind: video } }
+
+  - name: video failure switches to the EmptyState card
+    props: { kind: video, src: "fixtures/missing.mp4", name: "Missing.mp4" }
+    steps: []
+    expect:
+      - { part: fallback, visible: true }
+      - { part: video, visible: false }
+      - { event: error, times: 1, last: { kind: video } }
+
+  - name: audio panel plays on mount when autoPlay is omitted
+    props: { kind: audio, src: "fixtures/voice-note.mp3", name: "Voice note.mp3" }
+    steps:
+      - { action: hover, part: audio }
+    expect:
+      - { part: audio, visible: true }
+      - { event: loaded, times: 1, last: { kind: audio } }
+      - { event: playing, times: 1, last: { kind: audio } }
+    record: { part: audio }
+    allCombinations: true
+
+  - name: audio with autoPlay false stays paused on mount, showing its glyph and controls
+    props: { kind: audio, src: "fixtures/voice-note.mp3", name: "Voice note.mp3", autoPlay: false }
+    steps:
+      - { action: hover, part: audio }
+    expect:
+      - { part: audio, visible: true }
+      - { part: glyph, visible: true }
+      - { event: playing, times: 0 }
+      - { event: error, times: 0 }
+    record: { part: audio }
+    screenshot: true
+
+  - name: audio native play control starts playback
+    props: { kind: audio, src: "fixtures/voice-note.mp3", name: "Voice note.mp3", autoPlay: false }
+    steps: [ { do: togglePlayback, part: audio } ]
+    expect:
+      - { event: playing, times: 1, last: { kind: audio } }
+
+  - name: audio failure switches to the EmptyState card
+    props: { kind: audio, src: "fixtures/missing.mp3", name: "Missing.mp3" }
+    steps: []
+    expect:
+      - { part: fallback, visible: true }
+      - { part: audio, visible: false }
+      - { event: error, times: 1, last: { kind: audio } }
+
+  - name: pdf kind embeds the viewer without falling back
+    props: { kind: pdf, src: "fixtures/report.pdf", name: "Report.pdf" }
+    steps:
+      - { action: hover, part: pdf }
+    expect:
+      - { part: pdf, visible: true }
+      - { part: fallback, visible: false }
+      - { event: error, times: 0 }
+    screenshot: true
+    except: [desktop]
+
+  - name: pdf failure switches to the EmptyState card
+    # Ideal behaviour. Neither current design passes onError to the embed.
+    props: { kind: pdf, src: "fixtures/missing.pdf", name: "Missing.pdf" }
+    steps: []
+    expect:
+      - { part: fallback, visible: true }
+      - { part: pdf, visible: false }
+      - { event: error, times: 1, last: { kind: pdf } }
+    except: [desktop]
+
+  - name: text kind shows selectable text with no loading state
+    props: { kind: text, text: "Line one\nLine two", name: "notes.txt" }
+    steps: []
+    expect:
+      - { part: text, text: { contains: "Line two" } }
+      - { part: loading, visible: false }
+      - { event: loaded, times: 1, last: { kind: text } }
+
+  - name: text kind screenshot
+    props: { kind: text, text: "Line one\nLine two\nLine three", name: "notes.txt" }
+    steps: []
+    screenshot: true
+
+  - name: text kind shows its content in a preformatted block
+    props: { kind: text, text: "Invoice 2026\nTotal: 42.00" }
+    steps:
+      - { action: hover, part: text }
+    expect:
+      - { part: text, text: { contains: "Total: 42.00" } }
+      - { part: text, visible: true }
+      - { event: error, times: 0 }
+    screenshot: true

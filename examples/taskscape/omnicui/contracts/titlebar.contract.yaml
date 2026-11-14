@@ -1,0 +1,327 @@
+id: ui.titlebar
+
+# Variants and states are props. Slots (controls, trailing, the children area) are parts,
+# or boolean fixture props that render known children, because a test cannot set ReactNode.
+props:
+  scope: { type: string, default: window }            # window | pane
+  controls: { type: string, default: none }           # leading | none
+  title: { type: string, default: "" }
+  titleAs: { type: string, default: div }             # div | h1 | h2
+  projectName: { type: string, default: "" }
+  windowFocused: { type: boolean, default: true }     # desktop window focus: lights or greys the controls
+  projectMenuOpen: { type: boolean, default: false }
+  scrolled: { type: boolean, default: false }
+  recording: { type: boolean, default: false }
+  withProjectSwitcher: { type: boolean, default: false }
+  withTabs: { type: boolean, default: false }
+  withTrailing: { type: boolean, default: false }
+
+events:
+  projectMenuChanged:
+    open: { type: boolean }
+  maximizeToggled:
+    maximized: { type: boolean }
+
+# Declared roles are the default case (window scope, titleAs div, controls none).
+# banner, menu, tablist and none are not in the format's role list, so those parts declare
+# generic, and tests check the reported role with an explicit role field.
+parts:
+  bar:
+    role: generic
+    same: { default: pixels, mobile: [layout, colours] }
+  title:
+    role: generic                        # reports heading when titleAs is h1 or h2
+    same: { default: pixels, mobile: [layout, colours] }
+  controls:
+    role: generic
+    optional: true                       # present when controls is leading
+    same: { default: pixels, mobile: none }
+  close:
+    role: button
+    optional: true
+    same: { default: pixels, mobile: none }
+  minimize:
+    role: button
+    optional: true
+    same: { default: pixels, mobile: none }
+  maximize:
+    role: button
+    optional: true
+    same: { default: pixels, mobile: none }
+  projectSwitcher:
+    role: button
+    optional: true
+  projectMenu:
+    role: generic
+    optional: true
+  tabs:
+    role: generic
+    optional: true
+  trailing:
+    role: button
+    optional: true                       # the withTrailing fixture renders a Discard button
+    same: { default: pixels, mobile: none }
+  recordingStatus:
+    role: status
+    optional: true
+  contentSlot:
+    role: generic                        # children: tabs, toolbars, project switcher, pane title content
+    same: none
+
+same: pixels
+mask: [contentSlot]
+keyboard: true
+colorSchemes: [light, dark]
+
+viewports:
+  default:
+    - { width: 1180, height: 600 }
+    - { width: 820, height: 600 }        # narrow
+  mobile:
+    - { width: 360, height: 640 }
+
+tests:
+  - name: window scope is a top-level banner that shows its title
+    props: { scope: window, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: bar, role: generic }
+      - { part: title, role: generic }
+      - { part: title, text: Settings, visible: true }
+    screenshot: true
+
+  - name: titleAs h1 makes the title the level-one heading
+    props: { scope: window, titleAs: h1, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: title, role: heading, text: Settings }
+    screenshot: true
+
+  - name: titleAs h2 in a pane makes the title a heading
+    props: { scope: pane, titleAs: h2, title: Trash }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: title, role: heading, text: Trash }
+    screenshot: true
+
+  - name: pane scope is an in-pane header with no landmark role
+    props: { scope: pane, title: Trash }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: bar, role: generic }
+      - { part: title, text: Trash, visible: true }
+    screenshot: true
+
+  - name: leading window controls are close, minimize and maximize buttons
+    only: [desktop]
+    props: { controls: leading, scope: window, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: controls, visible: true }
+      - { part: close, role: button, name: Close, visible: true }
+      - { part: minimize, role: button, name: Minimize, visible: true }
+      - { part: maximize, role: button, name: { default: Maximize, macos: Zoom }, visible: true, why: "the macOS green traffic light is named Zoom" }
+      - { part: title, text: Settings, visible: true }
+    screenshot: true
+
+  - name: pane with leading controls shows only the close traffic light
+    only: [desktop]
+    props: { controls: leading, scope: pane, title: Trash }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: controls, visible: true }
+      - { part: close, role: button, name: Close, visible: true }
+      - { part: minimize, visible: false }
+      - { part: maximize, visible: false }
+      - { part: title, text: Trash, visible: true }
+    screenshot: true
+
+  - name: window controls are lit while the window has focus
+    only: [desktop]
+    props: { controls: leading, scope: window, windowFocused: true, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: close, visible: true }
+    screenshot: { part: controls }
+
+  - name: window controls are grey while the window is blurred
+    only: [desktop]
+    props: { controls: leading, scope: window, windowFocused: false, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: close, visible: true }
+    screenshot: { part: controls }
+
+  - name: an open project menu does not move the bar or its title
+    props: { scope: window, projectMenuOpen: true, title: Project }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: bar, role: generic }
+      - { part: title, text: Project, visible: true }
+    screenshot: true
+
+  - name: scrolled window bar keeps its title and shows the scrolled edge
+    props: { scope: window, scrolled: true, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: title, text: Settings, visible: true }
+    screenshot: true
+
+  - name: scrolled pane header keeps its title and shows the scrolled edge
+    props: { scope: pane, scrolled: true, title: Trash }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: title, text: Trash, visible: true }
+    screenshot: true
+
+  - name: recording shows a status that says Recording
+    props: { scope: window, recording: true, title: Capture }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: recordingStatus, role: status, text: Recording, visible: true }
+    screenshot: true
+
+  - name: header with project switcher and list tabs
+    props: { title: omnicui, withProjectSwitcher: true, withTabs: true, projectName: omnicui }
+    screenshot: true
+
+  - name: web header shows the switcher and tabs
+    only: [web]
+    props: { title: omnicui, withProjectSwitcher: true, withTabs: true, projectName: omnicui }
+    expect:
+      - { part: bar, role: generic }
+      - { part: projectSwitcher, role: button, visible: true }
+      - { part: tabs, role: generic, visible: true }
+
+  - name: trailing slot shows a named Discard button
+    props: { title: Settings, withTrailing: true }
+    expect:
+      - { part: trailing, role: button, name: Discard, visible: true }
+    screenshot: true
+
+  - name: pressing the project switcher opens its menu
+    props: { withProjectSwitcher: true, projectName: omnicui }
+    steps:
+      - { action: press, part: projectSwitcher }
+    expect:
+      - { part: projectMenu, visible: true }
+      - { event: projectMenuChanged, times: 1, last: { open: true } }
+
+  - name: Enter on the focused project switcher opens its menu
+    props: { withProjectSwitcher: true, projectName: omnicui }
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, key: Enter }
+    expect:
+      - { part: projectMenu, visible: true }
+      - { event: projectMenuChanged, times: 1, last: { open: true } }
+
+  - name: Space on the focused project switcher opens its menu
+    props: { withProjectSwitcher: true, projectName: omnicui }
+    steps:
+      - { action: focus, part: projectSwitcher }
+      - { action: key, key: Space }
+    expect:
+      - { part: projectMenu, visible: true }
+      - { event: projectMenuChanged, times: 1, last: { open: true } }
+
+  - name: Escape closes the menu and returns focus to the switcher
+    props: { withProjectSwitcher: true, projectName: omnicui }
+    steps:
+      - { action: press, part: projectSwitcher }
+      - { action: key, key: Escape }
+    expect:
+      - { part: projectMenu, visible: false }
+      - { part: projectSwitcher, focused: true }
+      - { event: projectMenuChanged, times: 2, last: { open: false } }
+
+  - name: the bar itself is never a tab stop
+    props: { title: Settings, withProjectSwitcher: true }
+    steps:
+      - { action: key, key: Tab }
+    expect:
+      - { part: projectSwitcher, focused: true }
+
+  - name: double-click on the drag region toggles maximize
+    only: [desktop]
+    props: { controls: leading, scope: window, title: Settings }
+    steps:
+      - { do: doubleClick, part: bar }
+    expect:
+      - { event: maximizeToggled, times: 1, last: { maximized: true } }
+
+  - name: a pane header does not drag or maximize on double-click
+    only: [desktop]
+    props: { scope: pane, title: Trash }
+    steps:
+      - { do: doubleClick, part: bar }
+    expect:
+      - { event: maximizeToggled, times: 0 }
+
+  - name: the web app header has no drag region and emits no maximize event
+    only: [web]
+    props: { controls: none, scope: window, title: Main }
+    steps:
+      - { do: doubleClick, part: bar }
+    expect:
+      - { event: maximizeToggled, times: 0 }
+
+  - name: at 820 wide the switcher, tabs and title stay on screen
+    props: { title: Settings, withProjectSwitcher: true, withTabs: true, projectName: omnicui }
+    expect:
+      - { part: projectSwitcher, visible: true }
+      - { part: tabs, visible: true }
+      - { part: title, visible: true }
+
+  - name: title and controls stay on screen at every window width
+    only: [desktop]
+    props: { controls: leading, scope: window, title: Settings }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: title, text: Settings, visible: true }
+      - { part: close, visible: true }
+      - { part: maximize, visible: true }
+    screenshot: true
+
+  - name: the bar takes no focus, so the first Tab lands on the leading control
+    only: [desktop]
+    props: { controls: leading, scope: window, title: Settings }
+    steps:
+      - { action: key, key: Tab }
+    expect:
+      - { part: close, focused: true }
+
+  - name: defaults are a window banner with no controls
+    props: {}
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: bar, role: generic }
+      - { part: title, role: generic }
+      - { part: controls, visible: false }
+      - { part: recordingStatus, visible: false }
+    screenshot: true
+
+  - name: controls none renders no window or pane controls
+    props: { controls: none, scope: window, title: Main }
+    steps:
+      - { action: hover, part: title }
+    expect:
+      - { part: controls, visible: false }
+      - { part: close, visible: false }
+      - { part: minimize, visible: false }
+      - { part: maximize, visible: false }
+    screenshot: true

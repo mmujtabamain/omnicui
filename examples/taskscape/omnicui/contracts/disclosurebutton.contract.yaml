@@ -1,0 +1,237 @@
+# ui.disclosurebutton contract, merged from Draft A and Draft B with the critique's fixes applied.
+#
+# Not asserted or unverified (the format has no field for these, or the spec is open):
+# - aria-expanded: no field in the format, so the disclosure state is not checked. The state is
+#   inferred only from the accessible name below. Add an expanded-state field to docs/SPEC.md first.
+# - Accessible name Expand/Collapse changes with state. This departs from the APG disclosure pattern,
+#   which carries state in aria-expanded with a constant name. Raise with the widget author.
+# - Chevron rotation (-90 degrees, 100ms) is not traceable: trace properties are position, opacity,
+#   scale only. The rotation tests are visual clips only, with no angle or duration asserted.
+# - The hover and focus reveal is checked by an opacity trace with no timing, so no fade duration or
+#   easing is asserted.
+# - Focus within the row (widget open item 2) is untested: the row is role generic (hover only) and the
+#   fixture has no focusable row child.
+# - Double-click (dblclick) is untested: the two-press test sends two clicks, not a dblclick event.
+# - Tab order is untested: the fixture has no preceding focusable part to send Tab from.
+# - The hidden tests assert visible: false on a part that is not rendered. The format does not define
+#   how an absent part is asserted, so these checks are unverified.
+# - Widget open item 1 (bare chevron icon row in the catalogue, possibly a toggle): no test yet.
+# - Widget open item 3 (18px box under the 24x24 CSS px target minimum, WCAG 2.2 SC 2.5.8): size is not
+#   checkable with the format; unverified.
+
+id: ui.disclosurebutton
+
+props:
+  expanded: { type: boolean, default: false }
+  hidden: { type: boolean, default: false }
+
+events:
+  expandedChanged:
+    expanded: { type: boolean }
+  rowOpened: {}   # emitted by the task-row fixture when the row opens; this control must never cause it
+
+parts:
+  disclosure: { role: button, same: { default: pixels } }
+  row: { role: generic }   # the task row the fixture mounts the control in; hover scope
+
+colorSchemes: [light, dark]
+
+keyboard: true
+
+tests:
+  # Collapsed state: name and visibility. Merged from A "collapsed control is visible and not rotated",
+  # B "collapsed by default, labelled Expand", B "collapsed chevron stays visible without hover",
+  # B "screenshot collapsed". "Not rotated" is not checkable and is dropped from the name.
+  - name: collapsed control is visible and labelled Expand
+    props: { expanded: false }
+    steps: []
+    expect:
+      - { part: disclosure, role: button }
+      - { part: disclosure, name: Expand }
+      - { part: disclosure, visible: true }
+    screenshot: { part: disclosure }
+
+  # Expanded state at rest. Merged from A "expanded control is named Collapse", B "expanded, labelled
+  # Collapse", and B "screenshot expanded at rest". The at-rest screenshot shows the chevron-hidden
+  # rendering outside row hover.
+  - name: expanded control at rest is visible and labelled Collapse
+    props: { expanded: true }
+    steps: []
+    expect:
+      - { part: disclosure, role: button }
+      - { part: disclosure, name: Collapse }
+      - { part: disclosure, visible: true }
+    screenshot: { part: disclosure }
+
+  # Merged from A "hidden control is not rendered when the row has no visible children" and B
+  # "hidden when the row has no visible children" and B "screenshot hidden (no control rendered)".
+  # The visible: false check is unverified (see header).
+  - name: hidden control is not rendered when the row has no visible children
+    props: { hidden: true, expanded: false }
+    steps: []
+    expect:
+      - { part: disclosure, visible: false }
+    screenshot: { part: row }
+
+  # Merged from A "hidden wins over expanded" and B "hidden wins over expanded". Unverified as above.
+  - name: hidden wins over expanded
+    props: { hidden: true, expanded: true }
+    steps: []
+    expect:
+      - { part: disclosure, visible: false }
+
+  # Hover on the row. Merged from A "expanded control is revealed on row hover", A "expanded control
+  # fades in on row hover", and B "expanded chevron is revealed on row hover" and B "screenshot expanded
+  # on row hover". Renamed: visible: true is only a presence check, so the reveal is a visual check
+  # (opacity trace and screenshot). No fade timing is asserted.
+  - name: expanded control on row hover is a visual check (opacity trace and screenshot)
+    props: { expanded: true }
+    steps:
+      - { action: hover, part: row }
+    expect:
+      - { part: disclosure, visible: true }
+      - { part: disclosure, name: Collapse }
+    trace:
+      - { part: disclosure, property: opacity }
+    screenshot: { part: disclosure }
+
+  # Keyboard focus on the expanded control itself. Merged from A "expanded control is revealed by
+  # keyboard focus in the row", A "focus-visible ring on the expanded control", B "expanded chevron is
+  # revealed when the control takes keyboard focus", and B "screenshot keyboard focus-visible". Renamed
+  # so it does not claim the focus-within row rule (open item 2).
+  - name: expanded control takes keyboard focus and is shown (visual check of the reveal)
+    props: { expanded: true }
+    steps:
+      - { action: focus, part: disclosure }
+    expect:
+      - { part: disclosure, focused: true }
+      - { part: disclosure, visible: true }
+    trace:
+      - { part: disclosure, property: opacity }
+    screenshot: { part: disclosure }
+
+  # Focus ring on the collapsed control. Merged from A "focus-visible ring on the collapsed control" and
+  # A "focus reaches the control in tab order". Renamed: no Tab key is sent, so tab order is not checked.
+  # The collapsed focus screenshot was missing from Draft B and is added here.
+  - name: collapsed control takes keyboard focus (focus ring in screenshot)
+    props: { expanded: false }
+    steps:
+      - { action: focus, part: disclosure }
+    expect:
+      - { part: disclosure, role: button }
+      - { part: disclosure, focused: true }
+    screenshot: { part: disclosure }
+
+  # Pointer press, collapsed to expanded. Merged from A "press expands and emits expandedChanged",
+  # A "press does not open the row", and B "press on collapsed expands and does not open the row".
+  - name: press on collapsed expands, emits expandedChanged, and does not open the row
+    props: { expanded: false }
+    steps:
+      - { action: press, part: disclosure }
+    expect:
+      - { part: disclosure, name: Collapse }
+      - { event: expandedChanged, times: 1, last: { expanded: true } }
+      - { event: rowOpened, times: 0 }
+
+  # Pointer press, expanded to collapsed. Merged from A "press collapses and emits expandedChanged" and
+  # B "press on expanded collapses and does not open the row".
+  - name: press on expanded collapses, emits expandedChanged, and does not open the row
+    props: { expanded: true }
+    steps:
+      - { action: press, part: disclosure }
+    expect:
+      - { part: disclosure, name: Expand }
+      - { event: expandedChanged, times: 1, last: { expanded: false } }
+      - { event: rowOpened, times: 0 }
+
+  - name: each press toggles
+    props: { expanded: false }
+    steps:
+      - { action: press, part: disclosure, times: 3 }
+    expect:
+      - { part: disclosure, name: Collapse }
+      - { event: expandedChanged, times: 3, last: { expanded: true } }
+      - { event: rowOpened, times: 0 }
+
+  # Renamed from "double-click toggles twice and does not open the row". Two press actions send two
+  # clicks, not a dblclick event, so the dblclick handler is untested (see header).
+  - name: two presses toggle twice and do not open the row
+    props: { expanded: false }
+    steps:
+      - { action: press, part: disclosure, times: 2 }
+    expect:
+      - { part: disclosure, name: Expand }
+      - { event: expandedChanged, times: 2, last: { expanded: false } }
+      - { event: rowOpened, times: 0 }
+
+  # Enter key. Merged from A "Enter toggles the control" and B "Enter on focused collapsed control expands
+  # without opening the row". B used input: confirm under an Enter name; this test sends the Enter key
+  # itself, and rowOpened times 0 is added as in B.
+  - name: Enter toggles the control and does not open the row
+    props: { expanded: false }
+    steps:
+      - { action: focus, part: disclosure }
+      - { action: key, part: disclosure, key: Enter }
+    expect:
+      - { part: disclosure, focused: true }
+      - { part: disclosure, name: Collapse }
+      - { event: expandedChanged, times: 1, last: { expanded: true } }
+      - { event: rowOpened, times: 0 }
+
+  # Space key. Merged from A "Space toggles the control" and B "Space on focused collapsed control expands
+  # without opening the row".
+  - name: Space toggles the control and does not open the row
+    props: { expanded: false }
+    steps:
+      - { action: focus, part: disclosure }
+      - { action: key, part: disclosure, key: Space }
+    expect:
+      - { part: disclosure, focused: true }
+      - { part: disclosure, name: Collapse }
+      - { event: expandedChanged, times: 1, last: { expanded: true } }
+      - { event: rowOpened, times: 0 }
+
+  # Both ways from the keyboard. From B; the Enter step now sends the Enter key, not input: confirm.
+  - name: Enter then Space toggle both ways from the keyboard
+    props: { expanded: false }
+    steps:
+      - { action: focus, part: disclosure }
+      - { action: key, part: disclosure, key: Enter }
+      - { action: key, part: disclosure, key: Space }
+    expect:
+      - { part: disclosure, name: Expand }
+      - { event: expandedChanged, times: 2, last: { expanded: false } }
+      - { event: rowOpened, times: 0 }
+
+  # The one test named for the confirm input. From A; rowOpened times 0 added as the critique requires.
+  - name: confirm input toggles the control and does not open the row
+    props: { expanded: true }
+    steps:
+      - { action: focus, part: disclosure }
+      - { input: confirm }
+    expect:
+      - { part: disclosure, name: Expand }
+      - { event: expandedChanged, times: 1, last: { expanded: false } }
+      - { event: rowOpened, times: 0 }
+
+  # Merged from A "expanding rotates the chevron to -90 in 100ms" and B "chevron rotates -90 when the row
+  # expands". Renamed: the check is a visual clip only; the angle and 100ms duration are not asserted.
+  - name: expanding animates the chevron (visual clip only; angle and 100ms not asserted)
+    props: { expanded: false }
+    steps:
+      - { action: press, part: disclosure }
+    expect:
+      - { part: disclosure, name: Collapse }
+    record: { part: disclosure }
+    allCombinations: true
+
+  # Merged from A "collapsing rotates the chevron back to 0 in 100ms" and B "chevron rotates back to 0
+  # when the row collapses". Renamed as above.
+  - name: collapsing animates the chevron back (visual clip only; angle and 100ms not asserted)
+    props: { expanded: true }
+    steps:
+      - { action: press, part: disclosure }
+    expect:
+      - { part: disclosure, name: Expand }
+    record: { part: disclosure }
+    allCombinations: true

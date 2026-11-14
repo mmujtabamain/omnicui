@@ -1,0 +1,145 @@
+id: ui.inlinecomposer
+
+# Single-line title input inserted under a parent task row to add a subtask.
+# Design geometry, verified by the screenshot tests:
+#   row height 36px; left inset = depth * 24 + 6;
+#   leading icon subdirectory_arrow_right, size 15, weight 300.
+
+props:
+  kind: { type: string, default: child }          # the only recorded value is child
+  depth: { type: number, default: 0 }             # indent level
+  autoFocus: { type: boolean, default: true }     # focus the field on mount
+
+events:
+  submitted: { title: { type: string } }          # Enter with a non-empty title; title is trimmed
+  dismissed: {}                                   # empty Enter, Escape, or blur
+
+parts:
+  field: { role: textbox }                        # the input; the wrapper has no role
+  icon: { role: generic }                         # decorative leading icon, kind child
+
+same: pixels
+viewports:
+  - { width: 320, height: 240 }
+colorSchemes: [light, dark]
+
+tests:
+  - name: "kind defaults to child and the field is visible"
+    steps: []
+    expect:
+      - { part: field, role: textbox }
+      - { part: field, name: "Subtask title" }
+      - { part: field, text: "" }
+      - { part: field, visible: true }
+      - { part: icon, visible: true }
+
+  - name: "mounts with the field focused when autoFocus is true"
+    props: { autoFocus: true }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+
+  - name: "does not take focus on mount when autoFocus is false"
+    props: { autoFocus: false }
+    steps: []
+    expect:
+      - { part: field, focused: false }
+      - { part: field, visible: true }
+
+  - name: "typing shows the text in the field"
+    steps:
+      - { action: type, part: field, text: "Buy milk" }
+    expect:
+      - { part: field, text: "Buy milk" }
+      - { part: field, focused: true }
+
+  - name: "Enter with a title submits it and clears the field"
+    steps:
+      - { action: type, part: field, text: "Buy milk" }
+      - { input: confirm }
+    expect:
+      - { part: field, text: "" }
+      - { part: field, focused: true }
+      - { part: field, visible: true }
+      - { event: submitted, times: 1, last: { title: "Buy milk" } }
+
+  - name: "composer stays shown and focused for the next subtask"
+    steps:
+      - { action: type, part: field, text: "Buy milk" }
+      - { input: confirm }
+      - { action: type, part: field, text: "Call Ana" }
+      - { input: confirm }
+    expect:
+      - { part: field, text: "" }
+      - { part: field, focused: true }
+      - { event: submitted, times: 2, last: { title: "Call Ana" } }
+
+  - name: "title is trimmed before it is submitted"
+    steps:
+      - { action: type, part: field, text: "  Buy milk  " }
+      - { input: confirm }
+    expect:
+      - { event: submitted, times: 1, last: { title: "Buy milk" } }
+
+  - name: "Enter on an empty field dismisses"
+    steps:
+      - { input: confirm }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: "Enter on a whitespace-only field dismisses"
+    steps:
+      - { action: type, part: field, text: "   " }
+      - { input: confirm }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: "Escape with typed text dismisses"
+    steps:
+      - { action: type, part: field, text: "draft" }
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: "Escape on an empty field dismisses"
+    steps:
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: "moving focus out of the field dismisses"
+    steps:
+      - { action: type, part: field, text: "draft" }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: "depth 0 matches the design"
+    props: { kind: child, depth: 0 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: icon, visible: true }
+
+  - name: "depth 2 is indented (2 * 24 + 6 = 54px)"
+    props: { kind: child, depth: 2 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: field, visible: true }
+      - { part: icon, visible: true }
+
+  - name: "unfocused child composer matches the design"
+    props: { kind: child, depth: 1, autoFocus: false }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: field, focused: false }
+
+  - name: "typed title in the child composer matches the design"
+    props: { kind: child, depth: 1, autoFocus: true }
+    steps:
+      - { action: type, part: field, text: "Buy milk" }
+    screenshot: true
+    expect:
+      - { part: field, text: "Buy milk" }

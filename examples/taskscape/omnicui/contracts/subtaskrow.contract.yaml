@@ -1,0 +1,234 @@
+# contracts/subtaskrow.contract.yaml
+id: ui.subtaskrow
+
+# A subtask row in the task inspector's Subtasks section. Compact 28px row,
+# a square checkbox (done toggle) and a separate title button (select).
+# done is controlled: the checkbox shows the done prop, a press emits
+# toggled with the next value, and the fixture writes that value back to done
+# the way a parent would.
+
+props:
+  title: { type: string, default: "" }
+  done: { type: boolean, default: false }
+  # Nesting level. Left padding is 6px at depth 0 and 18px more per level
+  # (24px at 1, 42px at 2, 60px at 3). Spec open item 4 is kept as recorded;
+  # confirm against the reference.
+  depth: { type: number, default: 0 }
+
+events:
+  # onToggleDone(done): fired by a checkbox press, with the new state.
+  toggled: { done: { type: boolean } }
+  # onSelectTask(): fired by a title press, or Enter on the focused title.
+  selected: {}
+
+parts:
+  # Role generic: listitem is not in the part-role vocabulary, so the row is
+  # generic and the tests assert role: generic on it. The hover wash sits on
+  # its rounded field.
+  row: { role: generic }
+  # Square checkbox (kept as recorded; open item 2). aria-checked comes from the
+  # checkbox role. Name contains the title, so it reads "Draft notes, checkbox".
+  checkbox: { role: checkbox }
+  # Selects this subtask on press or Enter.
+  title: { role: button }
+  # Nested list of child SubtaskRow items. Present only when the item has children.
+  children: { role: generic, optional: true }
+
+same: pixels
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 960, height: 240 }
+
+colorSchemes: [light, dark]
+
+# Space on the checkbox and Enter/Space on the title must match a press.
+keyboard: true
+
+tests:
+  - name: undone row shows an unchecked checkbox and the title button
+    props: { title: "Draft notes", done: false, depth: 0 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: row, role: generic }
+      - { part: checkbox, role: checkbox, checked: false, name: { contains: "Draft notes" } }
+      - { part: title, role: button, name: "Draft notes", text: "Draft notes" }
+
+  - name: done row shows a checked checkbox and a struck-through muted title
+    props: { title: "Draft notes", done: true, depth: 0 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: checkbox, checked: true }
+      - { part: title, role: button, text: "Draft notes" }
+
+  - name: pressing the checkbox marks an undone subtask done
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: press, part: checkbox }
+    expect:
+      - { part: checkbox, checked: true }
+      - { event: toggled, times: 1, last: { done: true } }
+      - { event: selected, times: 0 }
+
+  - name: pressing the checkbox twice returns to undone
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: press, part: checkbox, times: 2 }
+    expect:
+      - { part: checkbox, checked: false }
+      - { event: toggled, times: 2, last: { done: false } }
+
+  - name: pressing the checkbox of a done subtask marks it undone
+    props: { title: "Draft notes", done: true }
+    steps:
+      - { action: press, part: checkbox }
+    expect:
+      - { part: checkbox, checked: false }
+      - { event: toggled, times: 1, last: { done: false } }
+
+  - name: pressing the title selects the subtask and does not toggle it
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: press, part: title }
+    expect:
+      - { event: selected, times: 1 }
+      - { event: toggled, times: 0 }
+      - { part: checkbox, checked: false }
+
+  - name: pressing the title of a done subtask selects it and keeps it done
+    props: { title: "Draft notes", done: true }
+    steps:
+      - { action: press, part: title }
+    expect:
+      - { event: selected, times: 1 }
+      - { event: toggled, times: 0 }
+      - { part: checkbox, checked: true }
+
+  - name: Space on the focused checkbox toggles it
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: checkbox }
+      - { action: key, part: checkbox, key: Space }
+    expect:
+      - { part: checkbox, checked: true }
+      - { event: toggled, times: 1, last: { done: true } }
+
+  - name: Tab moves focus from the checkbox to the title button
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: checkbox }
+      - { action: key, part: checkbox, key: Tab }
+    expect:
+      - { part: title, focused: true }
+      - { part: checkbox, focused: false }
+
+  - name: Shift+Tab moves focus from the title button back to the checkbox
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: title }
+      - { action: key, part: title, key: "Shift+Tab" }
+    expect:
+      - { part: checkbox, focused: true }
+
+  - name: Enter on the focused title button selects the subtask
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: title }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: selected, times: 1 }
+      - { event: toggled, times: 0 }
+
+  - name: Enter on the checkbox does not toggle it (APG and Radix list Space only)
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: checkbox }
+      - { action: key, part: checkbox, key: Enter }
+    expect:
+      - { part: checkbox, checked: false }
+      - { event: toggled, times: 0 }
+
+  - name: pointer press on the checkbox leaves no focus ring
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: press, part: checkbox }
+    expect:
+      - { part: checkbox, checked: true }
+      - { event: toggled, times: 1, last: { done: true } }
+    screenshot: true
+
+  - name: keyboard focus shows the focus ring on the checkbox
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: checkbox }
+    screenshot: true
+    expect:
+      - { part: checkbox, focused: true }
+
+  - name: keyboard focus shows the focus ring on the title button
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: focus, part: title }
+    screenshot: true
+    expect:
+      - { part: title, focused: true }
+
+  - name: hovering the row shows the wash-1 background
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: hover, part: row }
+    screenshot: true
+    expect:
+      - { part: row, visible: true }
+
+  - name: pressing the checkbox toggles done three times and emits toggled, not selected
+    props: { title: "Draft notes", done: false }
+    steps:
+      - { action: press, part: checkbox, times: 3 }
+    expect:
+      - { part: checkbox, checked: true }
+      - { event: toggled, times: 3, last: { done: true } }
+      - { event: selected, times: 0 }
+
+  - name: Space on the checkbox unchecks a done subtask
+    props: { title: "Draft notes", done: true }
+    steps:
+      - { action: focus, part: checkbox }
+      - { action: key, part: checkbox, key: Space }
+    expect:
+      - { part: checkbox, checked: false }
+      - { event: toggled, times: 1, last: { done: false } }
+
+  - name: depth 0 uses 6px left padding
+    props: { title: "Draft notes", done: false, depth: 0 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: checkbox, visible: true }
+      - { part: title, visible: true }
+
+  - name: depth 1 adds one 18px indent step (24px)
+    props: { title: "Draft notes", done: false, depth: 1 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: checkbox, visible: true }
+      - { part: title, visible: true }
+
+  - name: depth 2 adds two 18px indent steps (42px)
+    props: { title: "Draft notes", done: false, depth: 2 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: checkbox, visible: true }
+      - { part: title, visible: true }
+
+  - name: depth 3 adds three 18px indent steps (60px)
+    props: { title: "Draft notes", done: false, depth: 3 }
+    steps: []
+    screenshot: true
+    expect:
+      - { part: checkbox, visible: true }
+      - { part: title, visible: true }

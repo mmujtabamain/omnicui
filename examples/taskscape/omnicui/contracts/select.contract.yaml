@@ -1,0 +1,506 @@
+# contracts/select.contract.yaml
+# ui.select: single choice from a list, with the current value shown on the trigger.
+# Replaces the filter field menu button. Used for the sort mode and the date range.
+#
+# Pattern: select-only combobox (trigger role combobox, listbox popup, option items).
+# Web base: Radix Select (shadcn/ui Select). The trigger is a neutral Button-style field.
+#
+# Decisions and deviations (each test has a line here behind it):
+#  - Radix moves DOM focus into the option items. APG select-only keeps focus on the combobox and
+#    shows the highlight through aria-activedescendant. focused: true on options therefore checks
+#    the Radix model, not APG.
+#  - Enter and Space on the closed trigger open the listbox with the current item highlighted and
+#    selected, the same as a press (keyboard: true requires Enter and Space to match a press).
+#    This overrides Radix's Enter, which focuses the first item.
+#  - Home and End move to the first and last option. Space in the open listbox selects the
+#    highlighted option, as Enter does.
+#  - Arrow keys do not wrap: the highlight stops at the first and last option.
+#  - Printable characters on the closed trigger open the listbox on the first matching option
+#    without changing the value. Repeating a letter moves to the next option that starts with it (APG).
+#  - Escape closes without a change and returns focus to the trigger.
+#  - Options are fixed presets: sort (five modes) and dateRange (five ranges). The form Select's
+#    options array is covered elsewhere, not by this contract.
+#  - Custom... reports its choice only. Its custom-range sheet is a separate component and is not
+#    verified here.
+#  - The check mark on the current item is covered by the open-listbox screenshots only. No part is
+#    declared for it.
+#  - The spec gives no motion timing or easing, so the motion traces check the property only.
+#    No duration or easing is asserted.
+#  - Options are parts by position (option1 to option5). Labels are checked in order by text.
+#  - Each key step names the option that holds focus just before the key (the trigger when closed).
+#  - Confirm and dismiss are sent as the keys Enter and Escape, not as platforms.yaml inputs.
+id: ui.select
+
+props:
+  value: { type: string }                       # current item value (controlled); required, no default
+  optionSet: { type: string, default: sort }    # sort | dateRange: fixed preset of five options
+  leadingIcon: { type: string, default: "" }    # trigger glyph name; "" means no glyph (sort: drag_indicator, dateRange: schedule)
+  fullWidth: { type: boolean, default: true }   # the field fills the panel width
+  disabled: { type: boolean, default: false }   # disabled trigger
+  ariaLabel: { type: string }                   # accessible name of the field (for example "Sort"); required, no default
+
+events:
+  valueChanged: { value: { type: string } }     # fired once per user pick; carries the item value; the caller decides what to do with it
+
+parts:
+  trigger: { role: button }                     # the field; ARIA role combobox (checked with role: button)
+  current: { role: generic }                    # label of the current item, shown on the trigger
+  icon: { role: generic, optional: true }       # leading glyph; absent when leadingIcon is ""
+  listbox: { role: generic }                    # ARIA role listbox (checked with role: generic); present only while open
+  # option items by position, ARIA role option; both sets have exactly five
+  option1: { role: button }                     # sort: Manual | dateRange: Any time
+  option2: { role: button }                     # sort: Date created | dateRange: Last 24 hours
+  option3: { role: button }                     # sort: Date updated | dateRange: Last 7 days
+  option4: { role: button }                     # sort: Alphabetical | dateRange: Last 30 days
+  option5: { role: button }                     # sort: Done last | dateRange: Custom...
+
+same: pixels                                    # same on web and desktop
+keyboard: true
+colorSchemes: [light, dark]
+viewports:
+  - { width: 320, height: 640 }                 # taller than 240 so the five-option listbox fits without collision repositioning
+  - { width: 480, height: 640 }
+  - { width: 1024, height: 768 }
+
+tests:
+  # ---- closed state and labels ----
+  - name: closed sort field shows the current mode and its glyph
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps: []
+    expect:
+      - { part: trigger, role: button }
+      - { part: trigger, name: Sort }
+      - { part: current, text: "Date created" }
+      - { part: icon, visible: true }
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: true
+
+  - name: closed date range field shows the current range and its glyph
+    props: { optionSet: dateRange, value: last7Days, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps: []
+    expect:
+      - { part: trigger, name: "Date range" }
+      - { part: current, text: "Last 7 days" }
+      - { part: icon, visible: true }
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: true
+
+  - name: field without a leading glyph shows only its value
+    props: { optionSet: sort, value: manual, ariaLabel: Sort }
+    steps: []
+    expect:
+      - { part: current, text: "Manual" }
+      - { part: icon, visible: false }
+      - { part: listbox, visible: false }
+    screenshot: true
+
+  - name: sort glyph is drag_indicator
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps: []
+    expect:
+      - { part: icon, visible: true }
+    screenshot: { part: icon }
+
+  - name: date range glyph is schedule
+    props: { optionSet: dateRange, value: last7Days, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps: []
+    expect:
+      - { part: icon, visible: true }
+    screenshot: { part: icon }
+
+  # ---- opening by pointer ----
+  - name: press opens the listbox with the current item checked and focused
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, role: generic, visible: true }
+      - { part: option2, role: button, name: "Date created", selected: true, focused: true }
+      - { part: option1, role: button, selected: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: true
+
+  - name: sort list has its five options in order
+    props: { optionSet: sort, value: manual, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: option1, text: "Manual" }
+      - { part: option2, text: "Date created" }
+      - { part: option3, text: "Date updated" }
+      - { part: option4, text: "Alphabetical" }
+      - { part: option5, text: "Done last" }
+
+  - name: date range list has its five options in order
+    props: { optionSet: dateRange, value: anyTime, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: option1, text: "Any time" }
+      - { part: option2, text: "Last 24 hours" }
+      - { part: option3, text: "Last 7 days" }
+      - { part: option4, text: "Last 30 days" }
+      - { part: option5, text: "Custom..." }
+
+  # ---- opening by keyboard ----
+  - name: Enter opens the listbox with the current item highlighted and selected
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: key, part: trigger, key: Enter }
+    expect:
+      - { part: listbox, visible: true }
+      - { part: option2, focused: true, selected: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: Space opens the listbox with the current item highlighted
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: key, part: trigger, key: Space }
+    expect:
+      - { part: listbox, visible: true }
+      - { part: option2, focused: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: ArrowDown opens the listbox with the current item highlighted
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: key, part: trigger, key: ArrowDown }
+    expect:
+      - { part: listbox, visible: true }
+      - { part: option2, focused: true }
+      - { event: valueChanged, times: 0 }
+
+  # ---- moving the highlight ----
+  - name: ArrowDown moves the highlight to the next item
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: ArrowDown }
+    expect:
+      - { part: option3, focused: true }
+      - { part: option2, focused: false }
+
+  - name: ArrowUp moves the highlight back to the previous item
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: ArrowUp }
+    expect:
+      - { part: option2, focused: true }
+      - { part: option3, focused: false }
+
+  - name: ArrowDown and ArrowUp move the highlight one option at a time from the first item
+    props: { optionSet: sort, value: manual, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: ArrowDown }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: ArrowUp }
+    expect:
+      - { part: option2, focused: true }
+      - { part: option3, focused: false }
+
+  - name: the highlight stops at the last option and does not wrap
+    props: { optionSet: sort, value: manual, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: ArrowDown }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: ArrowDown }
+      - { action: key, part: option4, key: ArrowDown }
+      - { action: key, part: option5, key: ArrowDown }
+      - { action: key, part: option5, key: ArrowDown }
+    expect:
+      - { part: option5, focused: true }
+      - { part: option1, focused: false }
+
+  - name: the highlight stops at the first option and does not wrap
+    props: { optionSet: sort, value: manual, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: ArrowUp }
+    expect:
+      - { part: option1, focused: true }
+      - { part: option5, focused: false }
+
+  - name: End moves the highlight to the last item
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: End }
+    expect:
+      - { part: option5, focused: true }
+      - { part: option2, focused: false }
+
+  - name: Home moves the highlight to the first item
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: End }
+      - { action: key, part: option5, key: Home }
+    expect:
+      - { part: option1, focused: true }
+
+  # ---- type-ahead ----
+  - name: typing on the closed trigger opens it on the matching item without changing the value
+    props: { optionSet: sort, value: manual, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: key, part: trigger, key: "D" }
+      - { action: key, part: option2, key: "o" }
+      - { action: key, part: option5, key: "n" }
+      - { action: key, part: option5, key: "e" }
+    expect:
+      - { part: listbox, visible: true }
+      - { part: option5, focused: true }                  # "Done" matches Done last
+      - { event: valueChanged, times: 0 }
+
+  - name: typing in the open listbox moves the highlight to the first matching item
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: "A" }
+      - { action: key, part: option4, key: "l" }
+    expect:
+      - { part: option4, focused: true }                  # "Al" matches Alphabetical
+      - { event: valueChanged, times: 0 }
+
+  - name: typing the first letters of an option jumps to it
+    props: { optionSet: sort, value: manual, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: "D" }
+      - { action: key, part: option2, key: "o" }
+    expect:
+      - { part: option5, focused: true }                  # "Do" matches Done last
+      - { event: valueChanged, times: 0 }
+
+  - name: a two-letter prefix jumps to the first option that starts with it
+    props: { optionSet: sort, value: manual, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: "D" }
+      - { action: key, part: option2, key: "a" }
+    expect:
+      - { part: option2, focused: true }                  # "Da" matches Date created
+      - { event: valueChanged, times: 0 }
+
+  - name: repeating a letter moves to the next option that starts with it
+    props: { optionSet: sort, value: manual, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option1, key: "D" }          # highlights Date created
+      - { action: key, part: option2, key: "D" }          # repeated letter: next option starting with D
+    expect:
+      - { part: option3, focused: true }                  # Date updated
+      - { event: valueChanged, times: 0 }
+
+  # ---- choosing and closing ----
+  - name: Enter selects the highlighted item, closes and returns focus to the trigger
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: Enter }
+    expect:
+      - { event: valueChanged, times: 1, last: { value: dateUpdated } }
+      - { part: listbox, visible: false }
+      - { part: trigger, focused: true }
+      - { part: current, text: "Date created" }           # controlled: the label follows the value prop, not the pick
+
+  - name: Space selects the highlighted item, closes and returns focus to the trigger
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: Space }
+    expect:
+      - { event: valueChanged, times: 1, last: { value: dateUpdated } }
+      - { part: listbox, visible: false }
+      - { part: trigger, focused: true }
+
+  - name: Escape closes without a change and returns focus to the trigger
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: ArrowDown }
+      - { action: key, part: option3, key: Escape }
+    expect:
+      - { part: listbox, visible: false }
+      - { part: trigger, focused: true }
+      - { part: current, text: "Date created" }
+      - { event: valueChanged, times: 0 }
+
+  - name: pressing an item selects it and closes the listbox
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: press, part: option4 }
+    expect:
+      - { event: valueChanged, times: 1, last: { value: alphabetical } }
+      - { part: listbox, visible: false }
+      - { part: trigger, focused: true }
+
+  - name: picking the current item closes the listbox without an event
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: press, part: option2 }
+    expect:
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: pressing the trigger again closes the listbox without an event
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger, times: 2 }
+    expect:
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: the trigger keeps the value prop until the caller changes it
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: press, part: option4 }
+    expect:
+      - { event: valueChanged, times: 1, last: { value: alphabetical } }
+      - { part: current, text: "Date created" }
+
+  - name: Custom reports the custom choice and closes, its range sheet is out of scope
+    props: { optionSet: dateRange, value: last7Days, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps:
+      - { action: press, part: trigger }
+      - { action: press, part: option5 }
+    expect:
+      - { event: valueChanged, times: 1, last: { value: custom } }
+      - { part: listbox, visible: false }
+
+  # ---- disabled ----
+  - name: a disabled trigger cannot be focused or opened by a press
+    props: { optionSet: sort, value: manual, leadingIcon: drag_indicator, ariaLabel: Sort, disabled: true }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: press, part: trigger }
+    expect:
+      - { part: trigger, disabled: true }
+      - { part: trigger, focused: false }
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: a disabled trigger does not open from a press or from keys
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort, disabled: true }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: trigger, key: Enter }
+      - { action: key, part: trigger, key: ArrowDown }
+    expect:
+      - { part: trigger, disabled: true }
+      - { part: trigger, focused: false }
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+
+  # ---- hover and focus ----
+  - name: hovering the closed trigger washes it and does not open it
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: hover, part: trigger }
+    expect:
+      - { part: listbox, visible: false }
+    screenshot: { part: trigger }
+
+  - name: keyboard focus shows the focus ring on the trigger
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: focus, part: trigger }
+    expect:
+      - { part: trigger, focused: true }
+    screenshot: { part: trigger }
+
+  - name: a pointer press does not leave a focus ring on the trigger
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+      - { action: key, part: option2, key: Escape }
+    expect:
+      - { part: listbox, visible: false }
+      - { event: valueChanged, times: 0 }
+    screenshot: { part: trigger }
+
+  - name: a disabled trigger shows no hover wash
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort, disabled: true }
+    steps:
+      - { action: hover, part: trigger }
+    expect:
+      - { part: trigger, disabled: true }
+    screenshot: { part: trigger }
+
+  # ---- screenshots: each variant and state, at every viewport and colour scheme ----
+  - name: open sort listbox
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, visible: true }
+    screenshot: true
+
+  - name: open date range listbox
+    props: { optionSet: dateRange, value: last7Days, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, visible: true }
+    screenshot: true
+
+  - name: open date range listbox with the first option checked
+    props: { optionSet: dateRange, value: anyTime, leadingIcon: schedule, ariaLabel: "Date range" }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, visible: true }
+      - { part: option1, selected: true }
+    screenshot: true
+
+  - name: disabled sort field
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort, disabled: true }
+    steps: []
+    expect:
+      - { part: trigger, disabled: true }
+    screenshot: true
+
+  - name: fullWidth true fills the panel width
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort, fullWidth: true }
+    steps: []
+    expect:
+      - { part: trigger, visible: true }
+    screenshot: { part: trigger }
+
+  - name: fullWidth false hugs the content width
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort, fullWidth: false }
+    steps: []
+    expect:
+      - { part: trigger, visible: true }
+    screenshot: { part: trigger }
+
+  # ---- motion ----
+  - name: open fades and scales the listbox in
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, visible: true }
+    trace:
+      - { part: listbox, property: opacity }
+      - { part: listbox, property: scale }
+    allCombinations: true
+
+  - name: open listbox clip
+    props: { optionSet: sort, value: dateCreated, leadingIcon: drag_indicator, ariaLabel: Sort }
+    steps:
+      - { action: press, part: trigger }
+    expect:
+      - { part: listbox, visible: true }
+    record: { part: listbox }
+    allCombinations: true

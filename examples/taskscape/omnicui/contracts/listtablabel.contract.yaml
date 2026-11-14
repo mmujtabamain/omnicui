@@ -1,0 +1,208 @@
+# ui.listtablabel: label-only list tab (inspectors, filter panel, trash).
+# Text name of an open list shown beside the active one. Label-only looks: no drag, rename or delete.
+# Behaviour follows WAI-ARIA APG tabs (role tab in a tablist) and Radix Tabs, except where the decisions below differ.
+#
+# Decisions:
+# - selected is host-controlled. The widget never changes it. A press on an inactive tab emits select and leaves selected as the host set it.
+# - Activation is manual: select is emitted only by press, Enter or Space on the tab. Radix defaults to automatic (OPEN 12).
+# - Close x is rendered only when closable and selected are both true. close never emits select.
+# - surface raised is valid only with selected true.
+# - Keep-open on multi-inspector and whether close removes the list belong to the host contract (OPEN 7). They are not tested here.
+#
+# Unresolved catalogue items are marked OPEN. Tests do not assert them, except where a test says otherwise.
+# OPEN 1: tracking-[0.01em] on main-window but not draft-inspector. Styling, not a prop. Left to screenshots.
+# OPEN 2: close x presence on main-window, draft-inspector and trash is unrecorded. Size and colour are unrecorded. Close x is specified only by the props rule (closable with selected).
+# OPEN 3: 1px frame offset (211-308 vs 212-309). Not tested.
+# OPEN 4: row 12 points to a 'see close entry' that does not exist. Close x comes from the look field only.
+# OPEN 5: hairline frame around the active label is styling of selected=true, not a prop. Covered by the active-label screenshots.
+# OPEN 6: thin vertical separators between tabs belong to the tab group container, not this widget.
+# OPEN 7: whether close removes the list or only the inspector tab is unrecorded. The widget only emits close; the host decides, including keep-open on multi-inspector.
+# OPEN 8: '?' components on multi-inspector, filter-panel and trash. Not mapped with certainty. The format has no screen selector, so multi-inspector and filter-panel share the close x screenshot. Trash has no screen-specific test.
+# OPEN 9: ARIA role not recorded in the look. The tab role is proposed (APG tabs pattern). The part declares role button for interaction. The AT-reported role tab is checked with the role field on the tab part.
+# OPEN 10: hover and focus looks not recorded. The focus ring and hover are not screenshot-tested. Focus checks show that focus is present, not what it looks like.
+# OPEN 11: from the active tab, Tab reaches the close x, which is a tab stop inside the tab group. APG expects Tab to leave the tablist. This is recorded as a deviation; the last test locks it in. The alternative is to place the close x outside the tablist group (group component to decide).
+# OPEN 12: activation mode is manual here. Radix defaults to automatic. Owner to confirm. If automatic is chosen, arrow focus must emit select on the tablist fixture.
+# OPEN 13: roving tabindex, arrow keys, Home and End need a tablist fixture with two or more ListTabLabel parts, in its own contract. The format has no tabindex field, so none of this is asserted here.
+# OPEN 14: an absent optional part (close, paneMarker) is skipped by the runner. A visible false check on such a part does not prove it is hidden on targets that lack it. Confirm with the runner.
+# OPEN 15: positions (active label at x 249 in split view, close x at x 280 on filter panel) are covered by screenshots only, not asserted.
+# OPEN 16: the surface enum ('flat' | 'raised') is not validated by the format (no enum type). The rule raised only with selected true is in comments only.
+
+id: ui.listtablabel
+
+props:
+  name: { type: string }                          # list name; no default. Truncates at max-w-40 (160px)
+  selected: { type: boolean, default: false }     # true = active tab; false = inactive tab; host-controlled
+  surface: { type: string, default: flat }        # 'flat' | 'raised'; raised only with selected true (draft-inspector active tab); see OPEN 16
+  paneMarker: { type: boolean, default: false }   # split view: decorative blue marker before the name; not in the accessible name
+  closable: { type: boolean, default: false }     # shows close x; applies only when selected true
+
+events:
+  select: {}     # press, Enter or Space on the tab. Arrow keys only move focus (OPEN 13)
+  close: {}      # press, Enter or Space on close x; rendered only when closable and selected; never emits select
+
+parts:
+  tab: { role: button }                            # the tab element; AT role tab, checked with the role field (OPEN 9)
+  close: { role: button, optional: true }          # sibling of tab, outside the tab element; present only when closable and selected
+  paneMarker: { role: generic, optional: true }    # decorative; present only when paneMarker is true; not in the accessible name. Hidden-from-AT is not checked here
+
+keyboard: true
+same: pixels
+colorSchemes: [ light, dark ]
+viewports: [ { width: 320, height: 240 } ]
+
+tests:
+  # states and roles
+  - name: active tab shows its list name and is selected
+    props: { name: Inbox, selected: true }
+    expect:
+      - { part: tab, text: Inbox }
+      - { part: tab, name: Inbox }
+      - { part: tab, role: button }
+      - { part: tab, selected: true }
+      - { part: close, visible: false }
+
+  - name: inactive tab shows its list name, has the tab role and is not selected
+    props: { name: Inbox, selected: false }
+    expect:
+      - { part: tab, text: Inbox }
+      - { part: tab, name: Inbox }
+      - { part: tab, role: button }
+      - { part: tab, selected: false }
+
+  - name: defaults apply when only the name is set
+    props: { name: Inbox }
+    expect:
+      - { part: tab, selected: false }
+      - { part: close, visible: false }
+      - { part: paneMarker, visible: false }
+
+  # screenshots of states and variants (every viewport x colour scheme)
+  - name: screenshot inactive flat label
+    props: { name: Inbox, selected: false, surface: flat }
+    screenshot: true
+
+  - name: screenshot active flat label
+    # the hairline frame around the active label is covered here (OPEN 5)
+    props: { name: Inbox, selected: true, surface: flat }
+    screenshot: true
+
+  - name: raised surface is shown on the active draft-inspector tab
+    props: { name: Inbox, selected: true, surface: raised }
+    expect:
+      - { part: tab, selected: true }
+      - { part: tab, text: Inbox }
+    screenshot: true
+
+  # split view
+  - name: pane marker does not change the list name
+    # split view main window; the active label sits right of the marker (position not asserted, OPEN 15)
+    props: { name: Inbox, selected: true, paneMarker: true }
+    expect:
+      - { part: paneMarker, visible: true }
+      - { part: tab, name: Inbox }
+      - { part: tab, text: Inbox }
+    screenshot: true
+
+  - name: inactive tab in the reading pane carries the pane marker
+    props: { name: Inbox, selected: false, paneMarker: true }
+    expect:
+      - { part: paneMarker, visible: true }
+      - { part: tab, selected: false }
+    screenshot: true
+
+  # long names
+  - name: a long name is shown with its start intact
+    props: { name: "Quarterly planning and archive review 2026", selected: false }
+    expect: [ { part: tab, text: { contains: "Quarterly planning" } } ]
+
+  - name: screenshot long name truncates at max-w-40 (160px)
+    props: { name: "Quarterly planning and archive review 2026", selected: true }
+    expect: [ { part: tab, visible: true } ]
+    screenshot: true
+
+  # close x
+  - name: close x shows on a closable active tab
+    # multi-inspector and filter panel share these props (OPEN 8)
+    props: { name: Inbox, selected: true, closable: true }
+    expect:
+      - { part: close, visible: true }
+      - { part: close, role: button }
+      - { part: close, name: { contains: Close } }
+    screenshot: true
+
+  - name: close x is hidden when the tab is not closable
+    props: { name: Inbox, selected: true, closable: false }
+    expect: [ { part: close, visible: false } ]
+
+  - name: close x is hidden on an inactive tab even when closable
+    props: { name: Archive, selected: false, closable: true }
+    expect: [ { part: close, visible: false } ]
+    screenshot: true
+
+  - name: close x sits outside the tab so the tab name excludes it
+    props: { name: Inbox, selected: true, closable: true }
+    expect: [ { part: tab, name: Inbox } ]
+
+  - name: a press on close x closes and does not select
+    props: { name: Inbox, selected: true, closable: true }
+    steps: [ { action: press, part: close } ]
+    expect:
+      - { event: close, times: 1 }
+      - { event: select, times: 0 }
+
+  # pointer
+  - name: a press selects the list and the widget leaves selected as the host set it
+    props: { name: Inbox, selected: false }
+    steps: [ { action: press, part: tab } ]
+    expect:
+      - { event: select, times: 1 }
+      - { part: tab, selected: false }
+
+  - name: each press emits select once
+    props: { name: Inbox, selected: false }
+    steps: [ { action: press, part: tab, times: 3 } ]
+    expect: [ { event: select, times: 3 } ]
+
+  # keyboard (keyboard: true also checks Enter and Space against a press on each button)
+  - name: Enter on the focused tab selects it
+    props: { name: Inbox, selected: false }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Enter }
+    expect: [ { event: select, times: 1 } ]
+
+  - name: Space on the focused tab selects it
+    props: { name: Inbox, selected: false }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Space }
+    expect: [ { event: select, times: 1 } ]
+
+  - name: Enter on the focused close x closes the list and does not select
+    props: { name: Inbox, selected: true, closable: true }
+    steps:
+      - { action: focus, part: close }
+      - { action: key, part: close, key: Enter }
+    expect:
+      - { event: close, times: 1 }
+      - { event: select, times: 0 }
+
+  - name: Space on the focused close x closes the list
+    props: { name: Inbox, selected: true, closable: true }
+    steps:
+      - { action: focus, part: close }
+      - { action: key, part: close, key: Space }
+    expect: [ { event: close, times: 1 } ]
+
+  - name: focus reaches the tab and shows focus
+    props: { name: Inbox, selected: true }
+    steps: [ { action: focus, part: tab } ]
+    expect: [ { part: tab, focused: true } ]
+
+  - name: Tab from the active tab reaches the close x
+    # recorded deviation from APG, which expects Tab to leave the tablist (OPEN 11)
+    props: { name: Inbox, selected: true, closable: true }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Tab }
+    expect: [ { part: close, focused: true } ]

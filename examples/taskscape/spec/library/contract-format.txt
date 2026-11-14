@@ -1,0 +1,122 @@
+A contract: contracts/<name>.contract.yaml
+
+  id: ui.counter                       lower-case words joined by dots; a part's id is <id>.<part>
+  props:  { start: { type: integer, default: 0 } }    types: string, integer, number, boolean
+  events: { changed: { count: { type: integer } } }
+  parts:  { value: { role: status }, increment: { role: button } }
+  tests:
+    - name: each press adds one
+      props: { start: 0 }
+      steps:  [ { action: press, part: increment, times: 3 } ]       times: 1–100
+              actions: press, focus, key (key:), type (text:), drag (dx:, dy:), hover; or
+              { do: swipe, part: row, with: { direction: left } }: an action the targets define
+              and advertise as do.<name> (scroll, swipe, refresh, back, pick…)
+      expect: [ { part: value, text: "3" }, { event: changed, times: 3, last: { count: 3 } } ]
+              text and name: "3" exactly, or { contains: "3" }, or { matches: "^3\\b" } (RE2);
+              text is what the part shows (text only a screen reader gets is left out)
+              per platform, with a reason: { part: back, name: { default: Back, ios: Trails },
+                why: "…" }: a platform exception, listed and counted
+              steps: { input: back } sends each target its platform's form of an input named
+              in platforms.yaml (next to contracts/): back: { default: { key: Alt+ArrowLeft },
+              macos: { key: Meta+BracketLeft }, android: { do: back }, ios: none }
+      screenshot: true                 at every viewport × colour scheme; or
+                  { mask: [part…] }    leave those parts out, wherever either target shows them
+                  { part: toolbar }    compare only that part's box on each target
+      trace: [ { part: value, point: center, timing: { duration: 200ms, easing: ease-out } },
+               { part: value, property: opacity } ]          property: position, opacity, scale
+      record: true                     a clip, compared by its visual progress; { part: x }: of
+                                       that part's box only
+      allCombinations: true            traces and the clip at every viewport × colour scheme
+      only: [desktop]                  run only on these platforms; except: [ios] not on these
+                                       (elsewhere: not applicable)
+  viewports:    [ { width: 320, height: 240, props: { … } } ]         default 320×240; props: every test's at that size
+                or per platform: { default: [ … ], mobile: [ { width: 360, height: 640 } ] }
+  colorSchemes: [ light, dark ]                                       default light
+  keyboard:     true                   Enter/Space must do what a press does (see below)
+  mask:         [ part… ]              parts left out of every screenshot comparison
+  same:         pixels                 what parts hold the same between targets of one design
+  parts: { title: { role: heading, same: { default: pixels, mobile: [layout, colours] } } }
+                                       per part and platform: pixels, layout, colours, motion or
+                                       none; a pair compares what both promised
+  parts: { thumb: { role: generic, optional: true } }   some targets or designs have it, some don't:
+                                       where it isn't, masks, crops, traces, clips and checks on
+                                       it are skipped (with a note); a test whose steps act on it
+                                       is not measured
+  thresholds:   { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms,
+                  palette: 15%, direction: 30deg, layout: 10% }   (the defaults)
+
+Names (props, events, parts, event fields) are camelCase: a lower-case letter, then letters and
+digits. card-number is refused; write cardNumber.
+
+Roles, what a test can check on a part of each, and the actions it accepts:
+  button    fields: disabled, focused, name, role, selected, text, visible
+            actions: focus, hover, key, press
+  checkbox  fields: checked, disabled, focused, name, role, text, visible
+            actions: focus, hover, key, press
+  generic   fields: role, text, visible
+            actions: hover
+  heading   fields: name, role, text, visible
+            actions: hover
+  slider    fields: disabled, focused, name, role, value, visible
+            actions: drag, focus, hover, key, press
+  status    fields: name, role, text, visible
+            actions: hover
+  switch    fields: checked, disabled, focused, name, role, text, visible
+            actions: focus, hover, key, press
+  textbox   fields: disabled, focused, name, role, text, visible
+            actions: focus, hover, key, press, type
+  role     the role assistive technology reports (WAI-ARIA), compared with the value given
+  visible  the part has a size on screen and is inside the viewport (needs the target's bounds)
+  focused  the part has keyboard focus
+  selected a button that stays chosen: a chip, a tab, a segment (targets that advertise selected)
+
+How targets are compared (warnings, never failures, unless check --fail-on says so):
+  screenshots  every pair of targets of one design (design: in target.yaml; most share the
+               default), at every combination; the worst combination is reported.
+               area      how much of the drawn area differs (a pixel differs when no pixel within
+                         2 px of it in the other screenshot has its colour)
+               strength  how far off in colour the recoloured pixels are, on average (100% = black
+                         against white); pixels only displaced are left out
+               shift     how far the differing pixels moved: the median distance to the nearest
+                         pixel of the same colour, up to 8 px. Shown, but by default it never
+                         warns: anti-aliasing alone reaches 3–7 px
+               spot      how concentrated the difference is: the share of the worst 24×24 px spot
+                         that is strongly off in colour, with no pixel of its colour within 4 px.
+                         Glyph noise spreads thinly and displaced edges have their colour nearby;
+                         a wrong word, colour or opacity is concentrated, so this finds them
+  colours      targets of different designs (a phone layout and a desktop one, a redesign) aren't
+               compared pixel by pixel, but by their design language: the colours they fill
+               areas with. palette is the share of one's drawing in colours the other design
+               uses in none of its screenshots at that colour scheme (another background: 100%)
+  layout       parts held to layout but not pixels (same: [layout]): each part's box relative
+               to the component, scaled to its width; another reading order is 100%
+  platforms    a selector is a target, an OS (linux, windows, macos, ios, android), a form
+               (target.yaml platform: desktop, web, mobile, tablet), a design, or default; the
+               most specific wins. Regions a target says its platform drew (a title bar, a status
+               bar) are left out of every comparison
+  traces       a point's position (or, with property: opacity or scale, a part's), lined up, then
+               compared at 10%, 20%, … 90% of the change, against each other and against the
+               named timing (threshold: timing); and where each point went: two that move
+               more than 30° apart warn (threshold: direction)
+  clips        record: true. Each clip becomes its visual progress: how far the picture has gone
+               from its first frame to its last, over time. Compared like traces (threshold:
+               motion), so a fade, a blur or a colour change is compared too, on every target,
+               whatever its frame rate. Traces and clips are taken at the first viewport × colour
+               scheme only, unless the test says allCombinations: true. A change that goes out and
+               comes back (a spring, a hover in and out) is measured out and back
+  keyboard     keyboard: true adds, for every button (Enter, Space), switch and checkbox (Space),
+               a test that the key does what a pointer press does: same events, same state.
+               "not measured" when the part isn't on screen when the component mounts (give a
+               sheet or a dialog a component of its own) or the press changes nothing. A target
+               may advertise the keys its platform uses: keys: { button: [Enter] }
+  visibility   a part whose text, name, value or checked state was read while it had no size on
+               screen (targets that report bounds)
+
+Thresholds far below the defaults make every comparison warn: correct renderings by different
+toolkits differ by up to 26% of area and by up to about 1.6% in spot; the same easing measured on
+two toolkits by 5–15 ms, and the same clip by up to 30 ms. Try them on saved screenshots with: omnicui compare a.png b.png --diff d.png
+
+Every reply waits until the UI has settled: nothing animating, events processed, and the app not
+busy (for example, waiting for a network reply), when the app tells its target so.
+
+The full specification: docs/SPEC.md

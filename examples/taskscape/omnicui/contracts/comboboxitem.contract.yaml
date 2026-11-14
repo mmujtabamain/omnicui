@@ -1,0 +1,332 @@
+id: ui.comboboxitem
+
+# One option row in a listbox popup whose DOM focus stays in a text field
+# (the palette search input, or the rich text editor for mentions).
+# Role option (WAI-ARIA APG combobox with listbox popup).
+# Context palette: CommandPalette rows (commands, or jump to list/project).
+# Context mention: attachment candidates in the mention Popover.
+#
+# Geometry (palette row 488 px wide at x 346 to 834; icon 16 px at x 355; label at x 378;
+# row height 30, or 32 with a hotkey; mention icon 15 px, weight 300) is measured. The format
+# has no size field, so it is covered only by the screenshot tests below.
+# Open items kept as measured: palette active wash oklch(0.6 0.2 255 / 0.1) and the mention
+# selection-1 token are not props or parts values here; screenshots compare them as measured.
+
+props:
+  context: { type: string, default: palette }   # palette | mention; sets geometry, highlight token, commit behaviour
+  icon: { type: string, default: "" }           # 16px in palette, 15px weight 300 in mention
+  label: { type: string, default: "" }          # row text; truncates (runtime data for jump rows)
+  value: { type: string, default: "" }          # text the palette filter matches; never shown on the row
+  id: { type: string, default: "" }             # option id; the host references it from aria-activedescendant
+  shortcut: { type: string, default: "" }       # e.g. Mod+Shift+Period; palette only; empty = no trailing element
+  active: { type: boolean, default: false }     # the highlighted row (arrow keys, hover, or index 0 on palette open)
+
+events:
+  # highlighted is an addition to the widget catalogue (which lists onSelect only). The list owns the active state.
+  picked: { id: { type: string } }        # palette: run or jump, then the host closes; mention: insert chip plus trailing space
+  highlighted: { id: { type: string } }   # this row became active by pointer or arrow keys
+
+parts:
+  # Host text field (palette search input or editor), supplied by the harness; the key and type steps act on it.
+  # Declared textbox because the format has no combobox role, so aria-expanded and
+  # aria-activedescendant are not checked here.
+  input: { role: textbox }
+  # The listbox option. Declared button, the nearest listed role with press and selected.
+  # Its ARIA role is checked with { role: button }. aria-selected is the row's selected state.
+  row: { role: button, same: { default: pixels } }
+  icon: { role: generic, same: { default: pixels } }
+  label: { role: generic, same: { default: layout } }
+  shortcut: { role: generic, optional: true, same: { default: layout } }
+
+colorSchemes: [ light, dark ]
+
+# One viewport for both contexts: the palette row is 488 px wide and cannot be visible at 320 px.
+viewports: [ { width: 640, height: 240 } ]
+
+# keyboard is not set. The row takes no focus, so keyboard: true would only generate button
+# Enter and Space tests that do not describe this widget. Keys are tested through the input below.
+
+tests:
+  # Role, name and content
+  - name: "palette row is an option named by its label"
+    props: { context: palette, icon: list, label: Errands, value: "errands tasks", id: jump-errands, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, role: button }
+      - { part: row, name: Errands }
+      - { part: row, selected: false }
+      - { part: label, text: Errands }
+      - { part: icon, visible: true }
+      - { part: row, visible: true }
+
+  - name: "mention row is an option named by its label"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, role: button }
+      - { part: row, name: "notes.md" }
+      - { part: row, selected: false }
+      - { part: icon, visible: true }
+
+  - name: "long palette label truncates inside the row"
+    props: { context: palette, icon: list, label: "Export all errands and reading notes from the last twelve months to a CSV archive", value: export, id: cmd-export, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: label, text: { contains: "Export all errands" } }
+      - { part: label, visible: true }
+      - { part: row, visible: true }
+
+  - name: "long palette label truncates inside the active row"
+    props: { context: palette, icon: play, label: "Run the full monthly reconciliation and export every ledger to the shared drive", value: reconcile, id: cmd-reconcile, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: label, text: { contains: "Run the full monthly" } }
+      - { part: label, visible: true }
+      - { part: row, selected: true }
+
+  - name: "long mention label truncates inside the row"
+    props: { context: mention, icon: file, label: "quarterly-financial-summary-final-revised-v7-signed-by-the-board.pdf", value: "quarterly-financial-summary-final-revised-v7-signed-by-the-board.pdf", id: att-summary, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: label, text: { contains: "quarterly-financial" } }
+      - { part: label, visible: true }
+      - { part: row, visible: true }
+
+  - name: "value is not shown on the row"
+    props: { context: palette, icon: folder, label: Errands, value: "errands jump list", id: jump-errands, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, text: Errands }
+
+  # Pointer states and commits
+  - name: "hover makes the row active"
+    props: { context: palette, label: Garden, icon: leaf, value: garden, id: jump-garden, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: hover, part: row }
+    expect:
+      - { event: highlighted, times: 1, last: { id: jump-garden } }
+      - { part: row, selected: true }
+      - { part: input, focused: true }
+
+  - name: "mention hover makes the row active"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: hover, part: row }
+    expect:
+      - { event: highlighted, times: 1, last: { id: att-notes } }
+      - { part: row, selected: true }
+      - { part: input, focused: true }
+
+  - name: "pointer press runs a palette row"
+    props: { context: palette, icon: plus, label: "New errand", value: "new errand create", id: cmd-new-errand, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: press, part: row }
+    expect:
+      - { event: picked, times: 1, last: { id: cmd-new-errand } }
+
+  - name: "mention press inserts the row and keeps editor focus"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: press, part: row }
+    expect:
+      - { event: picked, times: 1, last: { id: att-notes } }
+      - { part: input, focused: true }
+
+  # Keyboard: arrows reach the row, Enter/Tab commit, Escape cancels.
+  # The arrow tests run in the list harness the host supplies: the input forwards the arrow key
+  # to the list, which sets active on this row. Move them to the list contract when it exists.
+  - name: "ArrowDown reaches the row"
+    props: { context: palette, label: Reading, icon: book, value: reading, id: jump-reading, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: key, part: input, key: ArrowDown }
+    expect:
+      - { event: highlighted, times: 1, last: { id: jump-reading } }
+      - { part: row, selected: true }
+      - { part: input, focused: true }
+
+  - name: "ArrowUp reaches the row"
+    props: { context: palette, label: Reading, icon: book, value: reading, id: jump-reading, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: key, part: input, key: ArrowUp }
+    expect:
+      - { event: highlighted, times: 1, last: { id: jump-reading } }
+      - { part: input, focused: true }
+
+  - name: "arrow keys move the highlight away again"
+    props: { context: palette, label: Garden, icon: leaf, value: garden, id: jump-garden, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: key, part: input, key: ArrowDown }
+      - { action: key, part: input, key: ArrowUp }
+    expect:
+      - { part: row, selected: false }
+      - { part: input, focused: true }
+
+  - name: "Enter runs the active palette row"
+    props: { context: palette, label: "Go to Home", icon: home, value: home, id: jump-home, active: true }
+    steps: [ { action: key, part: input, key: Enter } ]
+    expect:
+      - { event: picked, times: 1, last: { id: jump-home } }
+
+  - name: "Enter does nothing when the palette row is not active"
+    props: { context: palette, label: "Go to Home", icon: home, value: home, id: jump-home, active: false }
+    steps: [ { action: key, part: input, key: Enter } ]
+    expect:
+      - { event: picked, times: 0 }
+
+  - name: "a row reached by hover is run by Enter"
+    props: { context: palette, label: "Spring launch", icon: rocket, value: "spring launch", id: jump-spring, active: false }
+    steps:
+      - { action: focus, part: input }
+      - { action: hover, part: row }
+      - { action: key, part: input, key: Enter }
+    expect:
+      - { event: picked, times: 1, last: { id: jump-spring } }
+
+  # Negative checks: the row does not run. Closing the palette is the host's job, not tested here.
+  - name: "Escape does not run the palette row"
+    props: { context: palette, label: "New errand", icon: plus, value: "new errand", id: cmd-new-errand, active: true }
+    steps: [ { action: key, part: input, key: Escape } ]
+    expect:
+      - { event: picked, times: 0 }
+
+  - name: "Tab does not run a palette row"
+    props: { context: palette, label: "New errand", icon: plus, value: "new errand", id: cmd-new-errand, active: true }
+    steps: [ { action: key, part: input, key: Tab } ]
+    expect:
+      - { event: picked, times: 0 }
+
+  - name: "Enter inserts the active mention row and keeps editor focus"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: true }
+    steps: [ { action: key, part: input, key: Enter } ]
+    expect:
+      - { event: picked, times: 1, last: { id: att-notes } }
+      - { part: input, focused: true }
+
+  # Tab commit is a deliberate divergence from APG: Tab normally leaves the combobox, and the
+  # popup table has no Tab entry. See notes.
+  - name: "Tab inserts the active mention row and keeps editor focus"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: true }
+    steps: [ { action: key, part: input, key: Tab } ]
+    expect:
+      - { event: picked, times: 1, last: { id: att-notes } }
+      - { part: input, focused: true }
+
+  - name: "Escape does not insert the mention row"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: true }
+    steps: [ { action: key, part: input, key: Escape } ]
+    expect:
+      - { event: picked, times: 0 }
+
+  - name: "active mention row is selected"
+    props: { context: mention, icon: file, label: report.pdf, value: report.pdf, id: att-report, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, selected: true }
+
+  # Shortcut (palette only). Mod = Command on macOS, Control elsewhere.
+  # The key Mod+Shift+Period is an assumption of this contract, chosen to avoid the browser-reserved
+  # combinations (Ctrl+N new window, Ctrl+K browser search). Open item 7 stays open until real key values exist.
+  # Key tail is not checked: the HotkeyHint rendering is not known.
+  - name: "hotkey row shows its shortcut and keeps its name"
+    props: { context: palette, label: "Save draft", icon: save, value: "save draft", shortcut: "Mod+Shift+Period", id: cmd-save, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: shortcut, visible: true }
+      - { part: row, name: "Save draft" }
+
+  - name: "active palette row with a hotkey is selected"
+    props: { context: palette, label: "New errand", icon: plus, value: "new errand", shortcut: "Mod+Shift+Period", id: cmd-new-errand, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, selected: true }
+      - { part: shortcut, visible: true }
+
+  - name: "shortcut uses Command on macOS"
+    only: [macos]
+    props: { context: palette, label: "Save draft", icon: save, value: "save draft", shortcut: "Mod+Shift+Period", id: cmd-save, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: shortcut, text: { contains: "⌘" } }
+
+  - name: "shortcut uses Control off macOS"
+    except: [macos]
+    props: { context: palette, label: "Save draft", icon: save, value: "save draft", shortcut: "Mod+Shift+Period", id: cmd-save, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: shortcut, text: { contains: "Ctrl" } }
+
+  # Mention has no shortcut element, so absence is checked through the row text (the optional
+  # shortcut part is skipped where it is absent).
+  - name: "mention ignores a shortcut"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, shortcut: "Mod+Shift+Period", id: att-notes, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, text: "notes.md" }
+
+  # Screenshots: each variant and state, at light and dark (colorSchemes)
+  - name: "palette row at rest"
+    props: { context: palette, label: Errands, icon: list, value: errands, id: jump-errands, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, visible: true }
+      - { part: row, selected: false }
+    screenshot: true
+
+  - name: "palette row active"
+    props: { context: palette, label: Errands, icon: list, value: errands, id: jump-errands, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, visible: true }
+      - { part: row, selected: true }
+    screenshot: true
+
+  - name: "palette hotkey row at rest"
+    props: { context: palette, label: "Save draft", icon: save, value: "save draft", shortcut: "Mod+Shift+Period", id: cmd-save, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: shortcut, visible: true }
+    screenshot: true
+
+  - name: "palette hotkey row active"
+    props: { context: palette, label: "Save draft", icon: save, value: "save draft", shortcut: "Mod+Shift+Period", id: cmd-save, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: shortcut, visible: true }
+      - { part: row, selected: true }
+    screenshot: true
+
+  - name: "palette long label active"
+    props: { context: palette, label: "Export all errands and reading notes from the last twelve months to a CSV archive", icon: list, value: export, id: cmd-export, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, visible: true }
+    screenshot: true
+
+  - name: "mention row at rest"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, visible: true }
+    screenshot: true
+
+  - name: "mention row active"
+    props: { context: mention, icon: file-text, label: notes.md, value: notes.md, id: att-notes, active: true }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: row, visible: true }
+      - { part: row, selected: true }
+    screenshot: true
+
+  - name: "mention long label at rest"
+    props: { context: mention, icon: file, label: "quarterly-financial-summary-final-revised-v7-signed-by-the-board.pdf", value: "quarterly-financial-summary-final-revised-v7-signed-by-the-board.pdf", id: att-summary, active: false }
+    steps: [ { action: focus, part: input } ]
+    expect:
+      - { part: label, visible: true }
+    screenshot: true

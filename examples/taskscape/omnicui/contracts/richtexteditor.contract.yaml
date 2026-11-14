@@ -1,0 +1,658 @@
+# RichTextEditor contract, merged from drafts A and B and corrected per the critique.
+#
+# Variants (props): saved note = floating toolbar, sm. Add-note draft = md with a
+#   floating toolbar (inferred, open item 1). Capture notes (desktop quick-capture
+#   window) = docked toolbar, capped, and desktop only.
+#
+# Named inputs used here. platforms.yaml must define each one for every target:
+#   toggleBold       Mod+B      default Control+KeyB, macos Meta+KeyB
+#   toggleItalic     Mod+I      default Control+KeyI, macos Meta+KeyI
+#   toggleUnderline  Mod+U      default Control+KeyU, macos Meta+KeyU
+#   submit           Mod+Enter  default Control+Enter, macos Meta+Enter
+# Action: every target that runs this contract must advertise do.dropAttachment.
+# Plain keys (Tab, Shift+Tab, Enter, Shift+Enter, Escape, Backspace, ArrowRight,
+#   ArrowDown) are sent as key steps.
+#
+# Serialisation (open item 9; convention adopted here):
+#   value: the rich document as a string. Test seeds are plain text, and a newline
+#     separates paragraphs.
+#   mentions: a JSON array of {"id", "name"}; id is the attachment's file name.
+#     ATTACH_ONE = [{"id":"report.pdf","name":"report.pdf"}]
+#     ATTACH_TWO = ATTACH_ONE plus {"id":"photo.png","name":"photo.png"}
+#
+# Tab model (open item 2; adopted from the critique, to be confirmed): the formatting
+#   bar comes before the editor in DOM and focus order, in both toolbar modes. It is
+#   one tab stop. Shift+Tab from the editor enters at its first button, Tab from a
+#   button returns to the editor, and arrow keys move within the bar. Tab from the
+#   editor leaves the widget. blurred fires only when focus leaves the whole widget.
+#
+# Roles: the role list has no toolbar, listbox or option. So formatting, mentionList
+#   and mentionOption are declared generic, and their reported role is checked with
+#   the role field. The bar's accessible name cannot be checked (open item 7).
+#
+# Optional parts (placeholder, mentionList, mentionOption, mentionChip): checks on an
+#   absent part are skipped. mentionList must stay mounted while closed (hidden), so
+#   that visible: false is measured.
+#
+# Open items:
+#   1. The add-note toolbar mode is inferred as floating. Its screenshots are provisional.
+#   2. The Tab model above is adopted but not yet recorded as decided.
+#   3. Mod+B/I/U and Mod+Enter on web: the browser shortcut conflict is undecided. Those
+#      tests exclude web (except: [web]) until it is decided.
+#   4. Escape closing an open mention list before cancelling is pending. That test is
+#      marked as pending.
+#   5. The disabled look is not recorded. Only behavioural disabled tests exist; there is
+#      no disabled screenshot.
+#   6. mentionChip is a button inside a textbox. ARIA 1.2 may make textbox children
+#      presentational. Not verified here; the chip semantics need a decision.
+#   7. The toolbar's accessible name cannot be checked. Add a name check once the role
+#      allows it.
+#   8. The Backspace test focuses the editor but does not control the caret after a chip.
+#   9. Rich-document serialisation is host-defined and not tested; only the seed
+#      convention above is.
+#  10. Floating-bar buttons are hidden at mount, so keyboard parity for them is not measured.
+#  11. The maxLength default of 2000 is not exercised. Promotion on blur with
+#      document.hasFocus() is host-tested.
+#  12. Absence checks on optional parts are skipped. The chip-removal test depends on one.
+
+id: ui.richtexteditor
+
+props:
+  value: { type: string, default: "" }                 # rich document as a string; the start value when uncontrolled
+  toolbar: { type: string, default: floating }         # floating | docked
+  size: { type: string, default: sm }                  # sm | md | capped
+  placeholder: { type: string, default: "" }
+  autoFocus: { type: boolean, default: false }
+  maxLength: { type: integer, default: 2000 }
+  submitOnModEnter: { type: boolean, default: false }  # true only where the host handles Mod+Enter (capture)
+  escapeCancels: { type: boolean, default: false }     # true only where the host handles Escape (capture); unset, Escape does nothing
+  collapseWhenEmpty: { type: boolean, default: false } # capture only
+  mentions: { type: string, default: "" }              # attachment list as JSON (see header)
+  disabled: { type: boolean, default: false }          # not in the catalogue (open item 5)
+  ariaLabel: { type: string }                          # required; the accessible name of the textbox
+
+events:
+  changed: { value: { type: string }, paragraphs: { type: integer } }  # every change; the host debounces autosave
+  blurred: { value: { type: string } }                # fires when focus leaves the whole widget
+  submitted: {}                                       # only when submitOnModEnter is set
+  cancelled: {}                                       # only when escapeCancels is set; the last changed event carries the content
+  linkRequested: {}
+  attachmentDropped: { file: { type: string } }
+  mentionOpened: { id: { type: string } }
+
+parts:
+  editor: { role: textbox }
+  placeholder: { role: generic, optional: true }
+  formatting: { role: generic }                       # reports role toolbar
+  bold: { role: button }
+  italic: { role: button }
+  underline: { role: button }
+  strikethrough: { role: button }
+  bulletList: { role: button }
+  orderedList: { role: button }
+  link: { role: button }
+  mentionList: { role: generic, optional: true }      # reports role listbox while open
+  mentionOption: { role: generic, optional: true }    # reports role option
+  mentionChip: { role: button, optional: true }
+
+same: pixels
+
+keyboard: true
+
+colorSchemes: [light, dark]
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 640, height: 480 }
+  - { width: 900, height: 600 }
+
+tests:
+  # Value, seeding and fields
+  - name: "value seeds the editor without a change event"
+    props: { ariaLabel: "Note body", value: "Saved note text" }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: editor, text: { contains: "Saved note text" } }
+      - { event: changed, times: 0 }
+
+  - name: "filled editor shows its content"
+    props: { ariaLabel: "Note body", value: "Remember milk" }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: editor, text: { contains: "Remember milk" } }
+
+  - name: "empty editor shows the placeholder, and the editor text is empty"
+    props: { ariaLabel: "New note", placeholder: "Write a note ... (drop an attachment to @mention it)" }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: placeholder, text: { contains: "Write a note" } }
+      - { part: editor, text: "" }
+
+  - name: "placeholder goes once text is typed"
+    props: { ariaLabel: "New note", placeholder: "Write a note ... (drop an attachment to @mention it)" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "x" }
+    expect:
+      - { part: placeholder, visible: false }
+
+  - name: "typing fills the editor and emits changed on every change"
+    props: { ariaLabel: "Note body" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "ab" }
+    expect:
+      - { part: editor, text: { contains: "ab" } }
+      - { part: editor, focused: true }
+      - { event: changed, times: 2, last: { value: { contains: "ab" } } }
+
+  - name: "editor is a textbox named by ariaLabel"
+    props: { ariaLabel: "Note body" }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: editor, role: textbox, name: "Note body" }
+
+  - name: "autoFocus focuses the editor on open"
+    props: { ariaLabel: "New note", autoFocus: true }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: editor, focused: true }
+
+  - name: "maxLength stops input at the limit"
+    props: { ariaLabel: "Note body", maxLength: 5 }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "abcdefgh" }
+    expect:
+      - { part: editor, text: { matches: "^abcde$" } }
+      - { event: changed, times: 5, last: { value: { contains: "abcde" } } }
+
+  - name: "disabled editor takes no focus or input, and its buttons are disabled"
+    props: { ariaLabel: "Note body", disabled: true, value: "Locked" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "x" }
+    expect:
+      - { part: editor, disabled: true }
+      - { part: editor, focused: false }
+      - { part: editor, text: "Locked" }
+      - { part: bold, disabled: true }
+      - { part: link, disabled: true }
+      - { event: changed, times: 0 }
+
+  # Floating toolbar: shown and hidden by trace and by screenshot of its box
+  - name: "floating toolbar fades and scales in on focus"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps: [ { action: focus, part: editor } ]
+    expect:
+      - { part: editor, focused: true }
+      - { part: formatting, role: generic }
+    trace:
+      - { part: formatting, property: opacity }
+      - { part: formatting, property: scale }
+    allCombinations: true
+
+  - name: "floating toolbar fades out when focus leaves the widget"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Tab }
+    expect:
+      - { part: editor, focused: false }
+      - { event: blurred, times: 1 }
+    trace:
+      - { part: formatting, property: opacity }
+      - { part: formatting, property: scale }
+    allCombinations: true
+
+  - name: "floating toolbar box is hidden while the editor is idle"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps: [ { action: hover, part: editor } ]
+    screenshot: { part: formatting }
+
+  - name: "floating toolbar box after focus"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps: [ { action: focus, part: editor } ]
+    screenshot: { part: formatting }
+
+  - name: "floating toolbar box after focus leaves the widget"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Tab }
+    screenshot: { part: formatting }
+
+  - name: "floating toolbar show, as a clip of the bar"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps: [ { action: focus, part: editor } ]
+    expect:
+      - { part: formatting, role: generic }
+    record: { part: formatting }
+
+  # Toolbar placement and focus order (Tab model, header)
+  - name: "docked toolbar is shown above the text without focus"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: formatting, role: generic }
+      - { part: formatting, visible: true }
+      - { part: bold, visible: true }
+
+  - name: "Shift+Tab from the editor moves to the first toolbar button (floating)"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Shift+Tab }
+    expect:
+      - { part: bold, focused: true }
+      - { part: editor, focused: false }
+
+  - name: "Shift+Tab from the editor moves to the first toolbar button (docked)"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Shift+Tab }
+    expect:
+      - { part: bold, focused: true }
+
+  - name: "moving from the editor into the toolbar does not emit blurred"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Shift+Tab }
+    expect:
+      - { part: bold, focused: true }
+      - { event: blurred, times: 0 }
+
+  - name: "Tab from the toolbar returns focus to the editor"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Shift+Tab }
+      - { action: key, part: bold, key: Tab }
+    expect:
+      - { part: editor, focused: true }
+      - { part: bold, focused: false }
+
+  - name: "arrow keys move focus between toolbar buttons"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Shift+Tab }
+      - { action: key, part: bold, key: ArrowRight }
+      - { action: key, part: italic, key: ArrowRight }
+    expect:
+      - { part: underline, focused: true }
+      - { part: bold, focused: false }
+
+  - name: "toolbar buttons have their accessible names"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps: [ { action: hover, part: formatting } ]
+    expect:
+      - { part: formatting, role: generic }
+      - { part: bold, name: "Bold" }
+      - { part: italic, name: "Italic" }
+      - { part: underline, name: "Underline" }
+      - { part: strikethrough, name: "Strikethrough" }
+      - { part: bulletList, name: "Bulleted list" }
+      - { part: orderedList, name: "Numbered list" }
+      - { part: link, name: "Link" }
+
+  - name: "pressing a toolbar button keeps focus in the editor"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: press, part: bold }
+    expect:
+      - { part: editor, focused: true }
+      - { part: bold, focused: false }
+      - { part: bold, selected: true }
+
+  # Marks and lists
+  - name: "bold, italic, underline and strikethrough toggle on"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "Hi" }
+      - { action: press, part: bold }
+      - { action: press, part: italic }
+      - { action: press, part: underline }
+      - { action: press, part: strikethrough }
+    expect:
+      - { part: bold, selected: true }
+      - { part: italic, selected: true }
+      - { part: underline, selected: true }
+      - { part: strikethrough, selected: true }
+      - { part: editor, focused: true }
+
+  - name: "pressing a toggled-on mark again turns it off"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: press, part: bold }
+      - { action: press, part: bold }
+    expect:
+      - { part: bold, selected: false }
+
+  - name: "bulleted list button makes the paragraph a bulleted list"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "one" }
+      - { action: press, part: bulletList }
+    expect:
+      - { part: bulletList, selected: true }
+      - { part: orderedList, selected: false }
+
+  - name: "numbered list button makes the paragraph a numbered list"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "one" }
+      - { action: press, part: orderedList }
+    expect:
+      - { part: orderedList, selected: true }
+
+  - name: "link button asks the host to open the link dialog"
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: press, part: link }
+    expect:
+      - { event: linkRequested, times: 1 }
+
+  # Mod shortcuts: named inputs (header); web excluded until open item 3 is decided
+  - name: "Mod+B, Mod+I and Mod+U toggle bold, italic and underline"
+    except: [web]
+    props: { ariaLabel: "Note body", toolbar: floating }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "Hi" }
+      - { input: toggleBold }
+      - { input: toggleItalic }
+      - { input: toggleUnderline }
+    expect:
+      - { part: bold, selected: true }
+      - { part: italic, selected: true }
+      - { part: underline, selected: true }
+
+  # Keyboard: text input
+  - name: "Enter starts a new paragraph"
+    props: { ariaLabel: "Note body" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "one" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "two" }
+    expect:
+      - { part: editor, text: { matches: "one\\s+two" } }
+      - { event: changed, last: { paragraphs: 2 } }
+
+  - name: "Shift+Enter inserts a line break inside the paragraph"
+    props: { ariaLabel: "Note body" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "one" }
+      - { action: key, part: editor, key: Shift+Enter }
+      - { action: type, part: editor, text: "two" }
+    expect:
+      - { part: editor, text: { matches: "one\\s+two" } }
+      - { event: changed, last: { paragraphs: 1 } }
+
+  # Keyboard: submit and cancel
+  - name: "Escape does nothing when escapeCancels is not set"
+    props: { ariaLabel: "Note body", escapeCancels: false }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "x" }
+      - { action: key, part: editor, key: Escape }
+    expect:
+      - { event: cancelled, times: 0 }
+      - { part: editor, focused: true }
+      - { part: editor, text: { contains: "x" } }
+
+  - name: "Escape cancels when escapeCancels is set"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped, escapeCancels: true }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "x" }
+      - { action: key, part: editor, key: Escape }
+    expect:
+      - { event: cancelled, times: 1 }
+      - { event: changed, last: { value: { contains: "x" } } }
+
+  - name: "Escape closes the mention list before it can cancel (pending open item 4)"
+    only: [desktop]
+    props: { ariaLabel: "New note", mentions: '[{"id":"report.pdf","name":"report.pdf"}]', escapeCancels: true }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+      - { action: key, part: editor, key: Escape }
+    expect:
+      - { part: mentionList, visible: false }
+      - { part: editor, focused: true }
+      - { event: cancelled, times: 0 }
+
+  - name: "Mod+Enter submits when submitOnModEnter is set"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped, submitOnModEnter: true }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "note" }
+      - { input: submit }
+    expect:
+      - { event: submitted, times: 1 }
+      - { event: changed, last: { value: { contains: "note" } } }
+
+  - name: "plain Enter does not submit when submitOnModEnter is set"
+    only: [desktop]
+    props: { ariaLabel: "Note body", submitOnModEnter: true }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Enter }
+    expect:
+      - { event: submitted, times: 0 }
+      - { part: editor, focused: true }
+
+  - name: "Mod+Enter does nothing when submitOnModEnter is not set"
+    props: { ariaLabel: "Note body", submitOnModEnter: false }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "note" }
+      - { input: submit }
+    expect:
+      - { event: submitted, times: 0 }
+      - { part: editor, focused: true }
+
+  # @mention
+  - name: "typing @ opens the mention list and keeps focus in the editor"
+    props: { ariaLabel: "New note", placeholder: "Write a note ... (drop an attachment to @mention it)", size: md, mentions: '[{"id":"report.pdf","name":"report.pdf"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+    expect:
+      - { part: mentionList, visible: true }
+      - { part: mentionList, role: generic }
+      - { part: mentionOption, role: button }
+      - { part: mentionOption, text: { contains: "report.pdf" } }
+      - { part: editor, focused: true }
+
+  - name: "mention list closes when focus leaves the editor"
+    props: { ariaLabel: "New note", size: md, mentions: '[{"id":"report.pdf","name":"report.pdf"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+      - { action: key, part: editor, key: Tab }
+    expect:
+      - { part: mentionList, visible: false }
+
+  - name: "a query with no matches closes the mention list"
+    props: { ariaLabel: "New note", mentions: '[{"id":"report.pdf","name":"report.pdf"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@zzz" }
+    expect:
+      - { part: mentionList, visible: false }
+
+  - name: "Enter inserts the highlighted mention"
+    props: { ariaLabel: "New note", mentions: '[{"id":"report.pdf","name":"report.pdf"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+      - { action: key, part: editor, key: Enter }
+    expect:
+      - { part: mentionChip, text: { contains: "report.pdf" } }
+      - { part: mentionList, visible: false }
+
+  - name: "ArrowDown then Enter inserts the second mention"
+    props: { ariaLabel: "New note", mentions: '[{"id":"report.pdf","name":"report.pdf"},{"id":"photo.png","name":"photo.png"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+      - { action: key, part: editor, key: ArrowDown }
+      - { action: key, part: editor, key: Enter }
+    expect:
+      - { part: mentionChip, text: { contains: "photo.png" } }
+      - { part: mentionList, visible: false }
+
+  # Drop-to-attach and chips
+  - name: "dropping an attachment inserts a mention chip"
+    props: { ariaLabel: "New note", placeholder: "Write a note ... (drop an attachment to @mention it)", size: md }
+    steps:
+      - { action: focus, part: editor }
+      - { do: dropAttachment, part: editor, with: { file: "report.pdf" } }
+    expect:
+      - { event: attachmentDropped, times: 1, last: { file: "report.pdf" } }
+      - { part: mentionChip, text: { contains: "report.pdf" } }
+      - { part: mentionChip, visible: true }
+
+  - name: "pressing a mention chip opens its attachment"
+    props: { ariaLabel: "New note", size: md }
+    steps:
+      - { action: focus, part: editor }
+      - { do: dropAttachment, part: editor, with: { file: "report.pdf" } }
+      - { action: press, part: mentionChip }
+    expect:
+      - { event: mentionOpened, times: 1, last: { id: "report.pdf" } }
+
+  - name: "Backspace after a mention chip removes the chip as one unit"
+    props: { ariaLabel: "New note" }
+    steps:
+      - { action: focus, part: editor }
+      - { do: dropAttachment, part: editor, with: { file: "report.pdf" } }
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Backspace }
+    expect:
+      - { part: mentionChip, visible: false }
+
+  # Capture-only collapse (desktop)
+  - name: "collapseWhenEmpty collapses the editor on blur while empty"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped, collapseWhenEmpty: true, placeholder: "Notes ..." }
+    steps:
+      - { action: focus, part: editor }
+      - { action: key, part: editor, key: Tab }
+    expect:
+      - { part: editor, visible: false }
+      - { event: blurred, times: 1, last: { value: "" } }
+
+  - name: "collapseWhenEmpty keeps the editor open when it has content"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped, collapseWhenEmpty: true, placeholder: "Notes ..." }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "draft" }
+      - { action: key, part: editor, key: Tab }
+    expect:
+      - { part: editor, visible: true }
+      - { event: blurred, times: 1, last: { value: { contains: "draft" } } }
+
+  # Blur
+  - name: "blur emits blurred with the content"
+    props: { ariaLabel: "Note body" }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "draft" }
+      - { action: key, part: editor, key: Tab }
+    expect:
+      - { event: blurred, times: 1, last: { value: { contains: "draft" } } }
+
+  # Screenshots (add-note toolbar mode is inferred, open item 1)
+  - name: "saved note, floating toolbar, sm, idle"
+    props: { ariaLabel: "Note body", toolbar: floating, size: sm, value: "Saved note text" }
+    steps: [ { action: hover, part: editor } ]
+    screenshot: true
+
+  - name: "saved note, floating toolbar, sm, focused"
+    props: { ariaLabel: "Note body", toolbar: floating, size: sm, value: "Saved note text" }
+    steps: [ { action: focus, part: editor } ]
+    screenshot: true
+
+  - name: "add-note draft, floating toolbar (inferred), md, empty"
+    props: { ariaLabel: "New note", toolbar: floating, size: md, placeholder: "Write a note ... (drop an attachment to @mention it)" }
+    steps: [ { action: hover, part: editor } ]
+    screenshot: true
+
+  - name: "add-note draft, floating toolbar (inferred), md, mention list open"
+    props: { ariaLabel: "New note", toolbar: floating, size: md, placeholder: "Write a note ... (drop an attachment to @mention it)", mentions: '[{"id":"report.pdf","name":"report.pdf"}]' }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "@" }
+    screenshot: true
+
+  - name: "capture notes, docked toolbar, capped, empty"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped, placeholder: "Notes ..." }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: formatting, role: generic }
+      - { part: formatting, visible: true }
+    screenshot: true
+
+  - name: "capture notes, docked toolbar, capped, grows to its maximum height"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", toolbar: docked, size: capped }
+    steps:
+      - { action: focus, part: editor }
+      - { action: type, part: editor, text: "1" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "2" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "3" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "4" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "5" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "6" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "7" }
+      - { action: key, part: editor, key: Enter }
+      - { action: type, part: editor, text: "8" }
+    expect:
+      - { part: editor, text: { contains: "8" } }
+    screenshot: true
+
+  - name: "capped editor box grows with seeded content up to its maximum"
+    only: [desktop]
+    props: { ariaLabel: "Capture notes", size: capped, value: "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10" }
+    steps: [ { action: hover, part: editor } ]
+    expect:
+      - { part: editor, text: { contains: "line 10" } }
+    screenshot: { part: editor }
+
+  - name: "sm editor box"
+    props: { ariaLabel: "Note body", size: sm }
+    steps: [ { action: hover, part: editor } ]
+    screenshot: { part: editor }
+
+  - name: "md editor box"
+    props: { ariaLabel: "Note body", size: md }
+    steps: [ { action: hover, part: editor } ]
+    screenshot: { part: editor }

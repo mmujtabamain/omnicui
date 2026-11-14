@@ -1,0 +1,256 @@
+id: ui.overlay
+
+# Modal layer shell: Radix Dialog root, Portal, scrim, focus trap, Escape capture,
+# dismissal routed to onDismiss (the harness wires onDismiss to set open false,
+# as the command palette and the lightbox do).
+# App content (palette panel, lightbox stage, Dialog card) is not part of this contract.
+# Enum values are listed in comments because the format has no enum type.
+
+props:
+  open:          { type: boolean, default: false }     # controlled; closed means not mounted
+  placement:     { type: string, default: center }     # top | fill | center
+  scrim:         { type: string, default: dim }        # dim | strong; no scrim is drawn on desktop
+  dismissOn:     { type: string, default: outside }    # outside | none
+  captureEscape: { type: boolean, default: true }      # lightbox value unverified (from a code comment); see tests
+
+events:
+  # onOpenChange(open). Emitted with open false on dismissal. Whether open true is emitted when an
+  # opener opens the layer is not recorded, so tests after an opener press assert the last value only.
+  openChanged: { open: { type: boolean } }
+  dismissed: {}                                        # onDismiss(), no arguments
+
+parts:
+  # Radix Content, aria-modal=true. The role table has no dialog role, so the layer is declared
+  # generic and the dialog role is checked as the reported role (field role). Confirm against docs/SPEC.md.
+  layer:   { role: generic, same: { default: pixels, desktop: [layout, colours] } }
+  # Radix Overlay; absent on desktop
+  scrim:   { role: generic, optional: true, same: { default: pixels } }
+  # Accessible name of the layer when rendered; the lightbox may use aria-label instead
+  title:   { role: heading, optional: true }
+  # Harness fixture parts, rendered as the layer's content and beside it, not by Overlay itself.
+  field:   { role: textbox }                           # first tabbable element inside the layer
+  action:  { role: button }                            # last tabbable element inside the layer
+  outside: { role: button }                            # outside the panel; on web the scrim covers it, so a press is a press on the scrim
+  opener:  { role: button }                            # trigger outside the layer
+
+keyboard: true                                         # NOTE: a pointer press on outside dismisses on web, Enter on it does not, so its parity test cannot match; left as an open exception
+mask: [ field ]
+
+viewports:
+  default: [ { width: 1280, height: 800 }, { width: 320, height: 240 } ]
+  mobile: [ { width: 360, height: 640 } ]
+
+colorSchemes: [ light, dark ]
+
+tests:
+  # States
+  - name: closed layer is not mounted
+    props: { open: false }
+    expect:
+      - { part: layer, visible: false }
+      - { part: scrim, visible: false }
+
+  - name: open layer is a modal dialog
+    props: { open: true }
+    expect:
+      - { part: layer, role: generic }
+      - { part: layer, visible: true }
+
+  - name: opener press opens the layer and focus moves to the first field
+    props: { open: false }
+    steps:
+      - { action: press, part: opener }
+    expect:
+      - { part: layer, visible: true }
+      - { part: layer, role: generic }
+      - { part: field, focused: true }
+      - { part: opener, focused: false }
+
+  - name: title, when rendered, is a visible heading
+    props: { open: true }
+    expect:
+      - { part: title, role: heading }
+      - { part: title, visible: true }
+
+  # Focus management
+  - name: focus moves to the first focusable element on open
+    props: { open: true }
+    expect:
+      - { part: field, focused: true }
+
+  - name: Tab moves forward inside the layer
+    props: { open: true }
+    steps:
+      - { action: key, key: Tab }
+    expect:
+      - { part: action, focused: true }
+      - { event: dismissed, times: 0 }
+
+  - name: Tab on the last control wraps to the first and never leaves the layer
+    props: { open: true }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, key: Tab }
+    expect:
+      - { part: field, focused: true }
+      - { part: outside, focused: false }
+
+  - name: Shift+Tab on the first control wraps to the last
+    props: { open: true }
+    steps:
+      - { action: key, key: Shift+Tab }
+    expect:
+      - { part: action, focused: true }
+      - { part: field, focused: false }
+
+  - name: Escape closes the layer and returns focus to the opener
+    props: { open: false }
+    steps:
+      - { action: focus, part: opener }
+      - { action: key, key: Enter }
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { event: openChanged, last: { open: false } }
+      - { part: layer, visible: false }
+      - { part: opener, focused: true }
+
+  - name: outside press closes the layer and returns focus to the opener
+    props: { open: false, dismissOn: outside }
+    steps:
+      - { action: focus, part: opener }
+      - { action: key, key: Enter }
+      - { action: press, part: outside }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { event: openChanged, last: { open: false } }
+      - { part: layer, visible: false }
+      - { part: opener, focused: true }
+    except: [desktop]
+
+  # Escape
+  - name: Escape calls onDismiss and reports open false
+    props: { open: true, captureEscape: true }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { part: layer, visible: false }
+
+  # Departure from the WAI-ARIA dialog pattern (Escape closes the dialog): with captureEscape false,
+  # Overlay leaves Escape to the content. No test yet shows that the content closes the layer; that
+  # needs a content fixture (open item).
+  - name: captureEscape false leaves Escape to the content
+    props: { open: true, captureEscape: false }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 0 }
+      - { event: openChanged, times: 0 }
+      - { part: layer, visible: true }
+
+  - name: Escape still dismisses when dismissOn is none
+    props: { open: true, dismissOn: none, captureEscape: true }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { part: layer, visible: false }
+
+  # Pointer
+  - name: press inside the layer does not dismiss
+    props: { open: true }
+    steps:
+      - { action: press, part: field }
+      - { action: press, part: action }
+    expect:
+      - { event: dismissed, times: 0 }
+      - { part: layer, visible: true }
+
+  - name: press outside the layer dismisses when dismissOn is outside
+    props: { open: true, dismissOn: outside }
+    steps:
+      - { action: press, part: outside }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { part: layer, visible: false }
+    except: [desktop]
+
+  - name: press outside the layer does nothing when dismissOn is none
+    props: { open: true, dismissOn: none }
+    steps:
+      - { action: press, part: outside }
+    expect:
+      - { event: dismissed, times: 0 }
+      - { part: layer, visible: true }
+    except: [desktop]
+
+  # Variants (screenshots run at every viewport and at light and dark)
+  - name: defaults are center placement, dim scrim, outside dismissal and Escape captured
+    props: { open: true }
+    expect:
+      - { part: layer, visible: true }
+      - { part: scrim, visible: true }
+    screenshot: true
+
+  - name: placement top with dim scrim (command palette)
+    props: { open: true, placement: top, scrim: dim, dismissOn: outside, captureEscape: true }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    except: [desktop]
+
+  - name: placement fill with dim scrim
+    props: { open: true, placement: fill, scrim: dim }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    except: [desktop]
+
+  - name: placement center with dim scrim (dialog card)
+    props: { open: true, placement: center, scrim: dim }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+
+  # Screenshot only: the claimed blur is not asserted; the test checks the screenshot against its baseline.
+  - name: strong scrim over a center card
+    props: { open: true, placement: center, scrim: strong }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    except: [desktop]
+
+  - name: lightbox shell, fill placement with strong scrim and no outside dismissal
+    props: { open: true, placement: fill, scrim: strong, dismissOn: none, captureEscape: true }   # captureEscape unverified; see notes
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    except: [desktop]
+
+  # Desktop draws no scrim. Absence of the optional scrim is not asserted by expect (skipped where absent);
+  # these tests are screenshot-only.
+  - name: desktop layer with dim scrim value (no scrim drawn)
+    props: { open: true, placement: center, scrim: dim }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    only: [desktop]
+
+  - name: desktop layer with strong scrim value (no scrim drawn)
+    props: { open: true, placement: center, scrim: strong }
+    expect:
+      - { part: layer, visible: true }
+    screenshot: true
+    only: [desktop]
+
+  # Timing of the opening fade is not yet recorded in overlays.json; the trace is compared across targets only.
+  - name: opening fades the scrim and the layer in
+    props: { open: false }
+    steps:
+      - { action: press, part: opener }
+    trace:
+      - { part: scrim, property: opacity }
+      - { part: layer, property: opacity }
