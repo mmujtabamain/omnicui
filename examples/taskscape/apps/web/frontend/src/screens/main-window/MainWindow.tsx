@@ -5,7 +5,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@taskscape/ui/button";
-import { Overlay } from "@taskscape/ui/overlay";
+import { Overlay, OverlayTitle } from "@taskscape/ui/overlay";
 import { Resizer } from "@taskscape/ui/resizer";
 import { Scrim } from "@taskscape/ui/scrim";
 import { Text } from "@taskscape/ui/text";
@@ -337,6 +337,8 @@ export function MainWindow() {
             }}
             className="w-[min(45.714rem,calc(100%-2rem))] overflow-hidden"
           >
+            {/* The dialog's name for assistive technology; the page draws its own visible heading. */}
+            <OverlayTitle className="sr-only">Settings</OverlayTitle>
             <div className="relative flex h-[min(37.143rem,calc(100dvh-2rem))] min-h-0 flex-col overflow-hidden">
               <SettingsDialog />
               <div className="absolute top-[0.571rem] right-[0.571rem] z-(--z-index-raised)">

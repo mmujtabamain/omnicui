@@ -6,6 +6,7 @@ import { Text } from "@taskscape/ui/text";
 import * as ep from "../../api/endpoints";
 import { useWrite } from "../../api/queries";
 import type { Id, Task } from "../../api/types";
+import { useUi } from "../../state/ui";
 import type { Emit } from "./events";
 import { plainText } from "./plain";
 import { noteTagger, useDomParts } from "./parts";
@@ -268,6 +269,14 @@ export function NotesSection({
 }) {
   const [adding, setAdding] = React.useState(false);
   const [draftId, setDraftId] = React.useState<Id | null>(null);
+  // Opened from a new-task draft's Note button: start the new note at once.
+  const noteFor = useUi((s) => s.noteFor);
+  React.useEffect(() => {
+    if (noteFor === task.id) {
+      setAdding(true);
+      useUi.setState({ noteFor: null });
+    }
+  }, [noteFor, task.id]);
   const notes = task.note_items;
   // The stored HTML is read as its text (see plain.ts); the editor edits that text.
   const count = notes.length;

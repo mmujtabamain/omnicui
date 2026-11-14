@@ -19,6 +19,8 @@ export interface UiState {
   selection: Id[];
   /** The task shown in the inspector. */
   previewId: Id | null;
+  /** A task whose inspector should open with a new note ready to type (the draft's Note button). */
+  noteFor: Id | null;
   aside: Aside;
   paletteOpen: boolean;
   settingsOpen: boolean;
@@ -33,6 +35,8 @@ export interface UiState {
   split(on: boolean): void;
   select(ids: Id[]): void;
   preview(id: Id | null): void;
+  /** Shows the task and opens a new note on it. */
+  previewWithNote(id: Id): void;
   setAside(a: Aside): void;
   setPalette(open: boolean): void;
   setSettings(open: boolean): void;
@@ -52,6 +56,7 @@ export const useUi = create<UiState>((set) => ({
   activePane: 0,
   selection: [],
   previewId: null,
+  noteFor: null,
   aside: "preview",
   paletteOpen: false,
   settingsOpen: false,
@@ -68,6 +73,7 @@ export const useUi = create<UiState>((set) => ({
   split: (on) => set((s) => (on ? { panes: [s.panes[0], s.panes[1] ?? s.panes[0]], activePane: 1 } : { panes: [s.panes[s.activePane]], activePane: 0 })),
   select: (selection) => set({ selection }),
   preview: (previewId) => set({ previewId }),
+  previewWithNote: (id) => set({ previewId: id, noteFor: id, draftListId: null, selection: [], aside: "preview" }),
   setAside: (aside) => set({ aside }),
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setSettings: (settingsOpen) => set({ settingsOpen }),

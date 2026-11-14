@@ -233,7 +233,9 @@ function scan(
 function insertMention(view: PMView, menu: Menu, item: RichTextMention) {
   const node = view.state.schema.nodes.mention?.create({ id: item.id, label: item.name });
   if (!node) return;
-  view.dispatch(view.state.tr.replaceWith(menu.from, menu.to, node));
+  // The chip is followed by a space, so typing goes on as text after it (F03-043).
+  const tr = view.state.tr.replaceWith(menu.from, menu.to, node);
+  view.dispatch(tr.insertText(" ", menu.from + node.nodeSize));
   view.focus();
 }
 
@@ -358,6 +360,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
     onOpenMention,
   };
 
+  const pointerFocus = React.useRef(false);
   const [format, setFormat] = React.useState<Format>(NO_FORMAT);
   const [empty, setEmpty] = React.useState(true);
   const [length, setLength] = React.useState(0);
@@ -597,7 +600,21 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
         <CharacterCounter data-slot="counter" count={length} limit={maxLength} className="mb-0.5 self-end" />
       )}
       <div className="relative min-w-0">
-        <EditorContent editor={editor} className={richTextFieldVariants({ size })} />
+        <EditorContent
+          editor={editor}
+          className={richTextFieldVariants({ size })}
+          // Focus from the keyboard (Tab, or the app focusing the note) puts the caret at the end, so typing
+          // continues the note; a pointer press keeps the caret where it was pressed.
+          onPointerDownCapture={() => {
+            pointerFocus.current = true;
+          }}
+          onFocusCapture={() => {
+            if (!pointerFocus.current && editor && editor.state.selection.from <= 1) {
+              requestAnimationFrame(() => editor.commands.setTextSelection(editor.state.doc.content.size));
+            }
+            pointerFocus.current = false;
+          }}
+        />
         {placeholder !== "" && (
           <div data-slot="placeholder" hidden={!empty} className={richTextPlaceholderVariants({ size })}>
             {placeholder}

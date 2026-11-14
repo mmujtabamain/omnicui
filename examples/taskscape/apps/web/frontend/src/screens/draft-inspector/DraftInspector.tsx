@@ -11,6 +11,7 @@ import { Text } from "@taskscape/ui/text";
 import * as ep from "../../api/endpoints";
 import { useWrite } from "../../api/queries";
 import type { Id } from "../../api/types";
+import { useUi } from "../../state/ui";
 
 export type DraftAction = "commit" | "cancel" | "note";
 
@@ -36,18 +37,23 @@ export function DraftInspector({ listId, projectName, listName, onAction, onImag
   const picking = React.useRef(false);
 
   const createTask = useWrite(ep.tasks.create);
-  const addNote = useWrite(ep.notes.create);
   const uploadFile = useWrite(ep.attachments.upload);
 
   const run = (action: DraftAction, value: string) => {
     if (busy.current) return;
     busy.current = true;
     if (action === "commit" && value !== "" && listId != null) createTask.mutate([listId, value]);
-    if (action === "note" && listId != null)
+    // Note creates the task, then opens it in the inspector with a new note ready to type.
+    if (action === "note" && listId != null) {
       createTask
         .mutateAsync([listId, value === "" ? "Untitled" : value])
-        .then((task) => addNote.mutate([task.id, ""]))
+        .then((task) => {
+          onAction?.(action, value);
+          useUi.getState().previewWithNote(task.id);
+        })
         .catch(() => undefined);
+      return;
+    }
     onAction?.(action, value);
   };
 
