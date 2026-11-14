@@ -12,6 +12,19 @@ import { cn } from "../../lib/utils";
  * above the 4px inset. Only a menu taller than the window itself scrolls. Widths are the measured pixels
  * at 1rem = 14px: task 152px, tab 156px, project min 210px.
  */
+/** Stops the mouse events that follow an outside pointerdown, once, before anything sees them. */
+function swallowRestOfPress() {
+  const types = ["mousedown", "mouseup", "click"] as const;
+  const stop = (e: Event) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.type === "click") done();
+  };
+  const done = () => types.forEach((t) => window.removeEventListener(t, stop, true));
+  types.forEach((t) => window.addEventListener(t, stop, true));
+  window.setTimeout(done, 1000);
+}
+
 export const menuPanelVariants = cva(
   "z-(--z-index-dropdown) flex flex-col max-h-[calc(100vh-1.143rem)] overflow-y-auto rounded-(--radius-panel) bg-surface-3 py-space-3 text-content-1 shadow-menu outline-none animate-panel-in",
   {
@@ -177,9 +190,8 @@ export function Menu({
     if (next !== lift) setLift(next);
   };
 
-  // Modal: a press outside closes the menu and goes no further (it does not reach what is under it).
   return (
-    <DropdownMenuPrimitive.Root open={open} onOpenChange={handleRootChange} modal>
+    <DropdownMenuPrimitive.Root open={open} onOpenChange={handleRootChange} modal={false}>
       {control ? (
         triggerNode && <DropdownMenuPrimitive.Trigger asChild>{triggerNode}</DropdownMenuPrimitive.Trigger>
       ) : (
@@ -205,9 +217,13 @@ export function Menu({
           className={menuPanelVariants({ width })}
           onKeyDown={onContentKeyDown}
           onEscapeKeyDown={onEscape}
-          onPointerDownOutside={() => {
+          onPointerDownOutside={(event) => {
             reasonRef.current = "outside";
             outsideRef.current = true;
+            // A press outside closes the menu and goes no further: the rest of that press (mousedown,
+            // mouseup, click) never reaches what is under it. The menu stays non-modal, so the page
+            // is not hidden from assistive technology while it is open.
+            if (event.detail.originalEvent.button === 0) swallowRestOfPress();
           }}
           onFocusOutside={() => {
             reasonRef.current = "blur";

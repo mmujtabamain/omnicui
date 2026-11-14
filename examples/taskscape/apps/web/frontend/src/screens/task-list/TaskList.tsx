@@ -1,6 +1,6 @@
 // The task list pane (contract app.tasklist): the search bar, the task tree of the active list (or the matches
 // grouped by list), the empty states, and the footer with the done stats or the bulk bar.
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
+import { createRef, Fragment, useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Button } from "@taskscape/ui/button";
 import { EmptyState } from "@taskscape/ui/empty-state";
@@ -51,6 +51,14 @@ const FOOTER =
  */
 const openSubmenuOnHover = (e: SyntheticEvent<HTMLElement>) => {
   e.currentTarget.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+};
+
+/**
+ * A pointer over a plain row closes the submenu open on the Move to list row, as a Radix submenu closes when the
+ * pointer enters a sibling item. The row takes the ArrowLeft that closes a submenu row (MenuItem's own keyboard path).
+ */
+const closeSubmenuOnHover = (moveRow: { current: HTMLElement | null }) => () => {
+  moveRow.current?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }));
 };
 
 /** Contract parts on rows, by title (the rows the tests name). */
@@ -485,6 +493,8 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   const rowMenu = (row: RowModel, parts: RowParts) => {
     const t = row.task;
     const targets = activeLists.filter((l) => l.id !== row.listId);
+    const moveRow = createRef<HTMLDivElement>();
+    const closeMove = closeSubmenuOnHover(moveRow);
     return (
       <Menu
         open={menuFor === t.id}
@@ -507,15 +517,32 @@ export function TaskList({ split = false, emit }: TaskListProps) {
         }
       >
         <div data-part={P("rowMenu")} className="flex flex-col">
-          <MenuItem data-part={P("menuCopy")} label="Copy" icon="content_copy" onSelect={() => copyTasks([t.id])} />
+          <MenuItem
+            data-part={P("menuCopy")}
+            label="Copy"
+            icon="content_copy"
+            onPointerEnter={closeMove}
+            onPointerMove={closeMove}
+            onSelect={() => copyTasks([t.id])}
+          />
           <MenuItem
             data-part={P("menuAddSubtask")}
             label="Add subtask"
             icon="subdirectory_arrow_right"
+            onPointerEnter={closeMove}
+            onPointerMove={closeMove}
             onSelect={() => setComposing(t.id)}
           />
-          <MenuItem data-part={P("menuRename")} label="Rename" icon="edit" onSelect={() => setRenaming(t.id)} />
           <MenuItem
+            data-part={P("menuRename")}
+            label="Rename"
+            icon="edit"
+            onPointerEnter={closeMove}
+            onPointerMove={closeMove}
+            onSelect={() => setRenaming(t.id)}
+          />
+          <MenuItem
+            ref={moveRow}
             data-part={P("menuMoveToList")}
             label="Move to list"
             icon="arrow_forward"
@@ -543,6 +570,8 @@ export function TaskList({ split = false, emit }: TaskListProps) {
               data-part={P("menuPromote")}
               label="Promote to top level"
               icon="north_west"
+              onPointerEnter={closeMove}
+              onPointerMove={closeMove}
               onSelect={() => move.mutate([t.id, { parent: null }])}
             />
           )}
@@ -552,6 +581,8 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             label="Delete task…"
             icon="delete"
             tone="danger"
+            onPointerEnter={closeMove}
+            onPointerMove={closeMove}
             onSelect={() => remove(t)}
           />
         </div>

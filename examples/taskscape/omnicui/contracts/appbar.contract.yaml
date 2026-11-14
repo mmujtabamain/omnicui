@@ -115,13 +115,14 @@ tests:
       - { part: projectMenu, visible: false }
       - { part: projectSwitcher, text: { contains: "Home" } }
   - name: a press outside the project menu closes it
-    # the outside press lands on the preview toggle; the press is assumed to pass through, so the preview toggles once
+    # The outside press lands where the preview toggle is; it only closes the menu and goes no further
+    # (F07-071; the same rule as the task and tab menus), so the preview does not toggle.
     steps:
       - { action: press, part: projectSwitcher }
       - { action: press, part: previewToggle }
     expect:
       - { part: projectMenu, visible: false }
-      - { event: previewToggled, times: 1, last: { open: false } }
+      - { event: previewToggled, times: 0 }
   - name: choosing another project switches the pill and the list tabs
     steps:
       - { action: press, part: projectSwitcher }

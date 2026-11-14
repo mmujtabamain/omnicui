@@ -15,11 +15,14 @@ import type { TaskList } from "../../api/types";
 const TASK_MIME = "application/x-taskscape-task";
 const TAB_MIME = "application/x-taskscape-list-tab";
 
-/** Test part name of a tab: the first tab is listTab; Reading and Garden have their own names. */
-function tabPartFor(index: number, name: string): string | undefined {
+/**
+ * Test part name of a tab: the first tab is listTab; Reading and Garden have their own names. `role` is the
+ * list's test role (by list id, see ListTabs), so a rename of the list keeps its part.
+ */
+function tabPartFor(index: number, role: string | undefined): string | undefined {
   if (index === 0) return "app.appbar.listTab";
-  if (name === "Reading") return "app.appbar.listTabReading";
-  if (name === "Garden") return "app.appbar.listTabGarden";
+  if (role === "Reading") return "app.appbar.listTabReading";
+  if (role === "Garden") return "app.appbar.listTabGarden";
   return undefined;
 }
 
@@ -63,6 +66,15 @@ export function ListTabs(props: ListTabsProps) {
   const markerIndex = [leftIndex, rightIndex].filter((index) => index >= 0).sort((a, b) => a - b)[0] ?? -1;
   // The index of the tab (or the end zone, lists.length) the drag is over.
   const [dropAt, setDropAt] = React.useState<number | null>(null);
+  // The test role of each list's tab, by list id, taken when the list first shows under its name. A rename
+  // changes the name but not the list, so the tab keeps its part.
+  const roles = React.useRef(new Map<number, string>());
+  for (const list of lists) {
+    const taken = Array.from(roles.current.values());
+    if (!roles.current.has(list.id) && (list.name === "Reading" || list.name === "Garden") && !taken.includes(list.name)) {
+      roles.current.set(list.id, list.name);
+    }
+  }
 
   const dragOver = (at: number) => (event: React.DragEvent) => {
     if (!takesDrop(event)) return;
@@ -117,9 +129,9 @@ export function ListTabs(props: ListTabsProps) {
               splitOn={splitOn}
               pane={pane}
               markerPart={index === markerIndex ? "app.appbar.paneMarker" : undefined}
-              tabPart={tabPartFor(index, list.name)}
-              deletePart={index === 0 ? "app.appbar.listTabDelete" : list.name === "Reading" ? "app.appbar.listTabCloseReading" : undefined}
-              morePart={list.name === "Reading" ? "app.appbar.tabMoreReading" : undefined}
+              tabPart={tabPartFor(index, roles.current.get(list.id))}
+              deletePart={index === 0 ? "app.appbar.listTabDelete" : roles.current.get(list.id) === "Reading" ? "app.appbar.listTabCloseReading" : undefined}
+              morePart={roles.current.get(list.id) === "Reading" ? "app.appbar.tabMoreReading" : undefined}
               onSelect={props.onSelect}
               onStartRename={props.onStartRename}
               onCommitRename={props.onCommitRename}
