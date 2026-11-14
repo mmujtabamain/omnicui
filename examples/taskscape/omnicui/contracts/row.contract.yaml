@@ -1,0 +1,144 @@
+# Row: background and layout of one list row. Content comes in as the caller's
+# children. The parent list owns the role, the selection and the gesture (Control-click
+# on Windows and the web, Command-click on macOS). Row only paints.
+#
+# Fill, per row:
+#   idle       no fill
+#   hover      wash-1 fill, unless the row is selected; reveals the Open child on multi-select rows
+#   selected   selection-1 fill when tone is selection, wash-1 when tone is wash;
+#              a selected row keeps its fill while hovered
+#
+# Not contract props:
+#   children   the format has no ReactNode type; the children slot is the part "content",
+#              and the caller's Open control is the optional part "open"
+#   highlighted (last multi-select row) not a prop: reason and visual treatment unverified;
+#              add it only once verified
+#   trash row selected tone (wash or selection) unverified; the test for the wash-toned
+#              selected row pins only that a selected row keeps its fill while hovered
+id: ui.row
+
+props:
+  shape: { type: string, default: inset }      # 'inset': rounded-field, px-4 (14px), gap-5 (17.5px); multi-select and trash rows. 'full-bleed': square, no radius, edge to edge, x 0 to 860 (task-list selection band)
+  tone: { type: string, default: selection }   # 'selection': the selected fill is selection-1. 'wash': the selected fill is wash-1 (trash row). Tone changes only the selected fill; hover is wash-1 for unselected rows of either tone
+  density: { type: string, default: md }       # 'md': 31.5px (h-9 at 1rem = 14px), multi-select rows. 'sm': 28px (h-8), refine rows
+  selected: { type: boolean, default: false }  # true paints the selected fill
+  indent: { type: number, default: 0 }         # pixels: depth times 24 for task rows
+
+parts:
+  row: { role: generic }                       # aria: none. The row surface: fill, radius, height, hover. The list owns the role.
+  content: { role: generic }                   # aria: none. The children slot, shifted by indent.
+  open: { role: button, optional: true }       # aria: button. The caller's Open control, multi-select rows only. Shown on hover and when it has keyboard focus. Absent on other rows, where its checks are skipped.
+
+events: {}          # no events: selection belongs to the list; Open's press belongs to the Open child
+
+mask: [ open ]      # the Open control is drawn by its own widget
+same: pixels
+keyboard: true      # Enter/Space on the Open child must do what a press does; skipped where absent
+colorSchemes: [ light, dark ]
+viewports: [ { width: 860, height: 240 } ]
+
+tests:
+  - name: idle row has no fill
+    props: {}
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: inset is the default shape with a radius and 14px side padding
+    props: { shape: inset }
+    steps: []
+    screenshot: true
+
+  - name: inset shape is rounded and inset from the list edge
+    props: { shape: inset, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: full-bleed selected band spans the list edge to edge with no radius
+    props: { shape: full-bleed, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: selection tone paints the selection band when selected
+    props: { tone: selection, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: wash tone paints the wash on hover and reveals the Open child where present
+    props: { tone: wash }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { part: row, visible: true }
+      - { part: open, visible: true }          # skipped where the row has no Open child
+    screenshot: true
+
+  - name: selection-tone row paints the wash on hover while not selected
+    props: { tone: selection, selected: false }
+    steps: [ { action: hover, part: row } ]
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: md density is 31.5px tall
+    props: { density: md, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: sm density is 28px tall
+    props: { density: sm, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: indent of 24px is one depth level
+    props: { indent: 24 }
+    steps: []
+    screenshot: true
+
+  - name: indent moves the content by depth times 24px
+    props: { indent: 48, selected: true }
+    steps: []
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: indent of 72px is depth three
+    props: { indent: 72 }
+    steps: []
+    screenshot: true
+
+  - name: multi-select row keeps its selection fill while hovered
+    props: { shape: inset, tone: selection, density: md, selected: true }
+    steps: [ { action: hover, part: row } ]
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: wash-toned selected row keeps its wash fill while hovered
+    props: { tone: wash, selected: true }      # trash tone unverified; this checks the hover rule only
+    steps: [ { action: hover, part: row } ]
+    screenshot: true
+
+  - name: trash row shows the wash on hover
+    props: { shape: inset, tone: wash, density: md }
+    steps: [ { action: hover, part: row } ]
+    expect: [ { part: row, visible: true } ]
+    screenshot: true
+
+  - name: hover reveals the Open child
+    props: { shape: inset, density: md }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { part: open, visible: true }
+      - { part: open, name: Open }
+    trace: [ { part: open, property: opacity } ]
+    allCombinations: true
+
+  - name: focusing the Open child reveals it for keyboard users
+    props: { shape: inset, density: md }
+    steps: [ { action: focus, part: open } ]
+    expect:
+      - { part: open, focused: true }
+      - { part: open, visible: true }
+    screenshot: true                           # WCAG 1.4.13: a hover-only reveal is not enough; Open is masked, so the expect carries the check

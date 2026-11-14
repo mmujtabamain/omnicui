@@ -1,0 +1,306 @@
+# contracts/commandpalette.contract.yaml
+# ui.commandpalette: the command palette container. A dialog-style card with its own search input
+# (combobox, keeps focus), a listbox of rows (options), and a scroll region.
+# Container, not a catalogue row. The card is held to layout (same: layout): its screenshots compare the box only.
+# Not expressible in this format: items and commands (arrays from getCommands, including the context
+# palette's items, which are not tested) and children. The harness supplies the arrays. Callbacks
+# (onSelect, onClose, onActiveChange) are the events below. children are the search and list parts.
+# Keyboard: not set. Rows are not tab stops. DOM focus stays in the search input and the highlight moves
+# with aria-activedescendant (WAI-ARIA combobox with listbox popup). Enter on the search runs the highlighted
+# row and Space types (both tested below). A press on a row is tested below. keyboard: true would test
+# buttons on the rows, which is the wrong model for this widget.
+# ARIA mapping: declared kinds follow the format; the real ARIA role is in each part's comment and asserted
+# through the role field. panel = dialog, search = combobox, list = listbox, rows = option, emptyMessage = status.
+# Not measured: aria-expanded and aria-activedescendant (not format fields); aria-modal (asserted only once the
+# spec decides whether the web palette is modal); the dialog's accessible name (generic has no name field);
+# the top edge (y 91) and the scrim and dimming (not stated in the spec, and full-viewport screenshots would
+# measure the palette's pixels too); focus return to the opener (the opener is outside this container; needs
+# the opener's contract); the opening shortcut (web key, desktop global hotkey, browser-shortcut precedence;
+# useAppKeyboard not read); result-count announcements (sr-only text, not in the format); reduced motion (no
+# animation in the spec).
+# The spec's states list contains "open" twice. One open state is tested below.
+
+id: ui.commandpalette
+
+props:
+  presentation: { type: string, default: overlay }   # overlay | window. overlay: centred near the top over Scrim soft. window: desktop dialog window, undecided, provisional tests only.
+  open: { type: boolean, default: true }             # false: not rendered (the closed state).
+  query: { type: string, default: "" }               # initial filter text. Typing filters inside the palette; the spec has no query-change callback, so typed text is not reported.
+  activeIndex: { type: integer, default: 0 }         # starting highlight index; 0 on open. Arrow keys and pointer move it (activeChange).
+  ariaLabel: { type: string, default: "Command palette" }   # accessible name of the dialog (aria-label).
+  commandSet: { type: string, default: all }         # test hook, not in the spec's prop list: all = the full getCommands set; many = more rows than the 456px panel shows. The spec must list this hook, or the harness must supply the fixture.
+
+events:
+  activeChange: { index: { type: integer } }         # onActiveChange: arrow keys or pointer move the highlight.
+  select: { index: { type: integer } }               # onSelect: Enter on the search, or a press on a row, runs that row.
+  close: { reason: { type: string } }                # onClose: "escape" (Escape pressed) or "select" (a row ran, then the palette closes). Decided here from the keyboard line and onSelect text; the onClose prop text says Escape only and needs updating to match.
+
+parts:
+  panel: { role: generic, same: { default: layout } }   # aria: dialog, named by ariaLabel (name not testable on generic). The 490px card, held to layout; reference sizes 490x456 all, 490x184 filtered, 490x109 no match.
+  search: { role: textbox }                              # aria: combobox; named (any non-empty name); has focus while open; aria-controls the list; aria-activedescendant names the highlighted row (not measured).
+  list: { role: generic }                                # aria: listbox. The scroll region: rows scroll inside it. A row cut off at the list edge is caught by the list screenshot, not by visible.
+  firstRow: { role: button }                             # aria: option. The row at index 0.
+  secondRow: { role: button }                            # aria: option. The row at index 1.
+  thirdRow: { role: button }                             # aria: option. The row at index 2.
+  lastRow: { role: button }                              # aria: option. The last row in the list.
+  emptyMessage: { role: status }                         # aria: status. Shown only when no row matches. Required: a target without it fails.
+
+tests:
+  - name: opens with search focused and the first row active
+    props: { open: true }
+    steps: []
+    expect:
+      - { part: panel, visible: true }
+      - { part: search, focused: true }
+      - { part: search, text: "" }
+      - { part: list, visible: true }
+      - { part: firstRow, visible: true }
+      - { part: firstRow, selected: true }
+      - { part: emptyMessage, visible: false }
+
+  - name: closed palette is not rendered
+    props: { open: false }
+    steps: []
+    expect:
+      - { part: panel, visible: false }
+      - { part: search, visible: false }
+
+  - name: palette exposes the WAI-ARIA roles dialog, combobox, listbox and option
+    steps: []
+    expect:
+      - { part: panel, role: generic }
+      - { part: search, role: button }
+      - { part: list, role: generic }
+      - { part: firstRow, role: button }
+
+  - name: search input has an accessible name
+    steps: []
+    expect:
+      - { part: search, name: { matches: "\\S" } }
+
+  - name: query prop filters the rows on open
+    props: { query: "trash" }
+    steps: []
+    expect:
+      - { part: search, text: "trash" }
+      - { part: firstRow, text: { contains: "Trash" } }
+      - { part: firstRow, selected: true }
+      - { part: emptyMessage, visible: false }
+
+  - name: query prop with no match shows the message, no row, and focus stays in the search
+    props: { query: "zzqx" }
+    steps: []
+    expect:
+      - { part: emptyMessage, visible: true }
+      - { part: emptyMessage, text: { matches: "^No " } }
+      - { part: firstRow, visible: false }
+      - { part: search, focused: true }
+
+  - name: typing filters the rows and highlights the first match
+    steps:
+      - { action: type, part: search, text: "trash" }
+    expect:
+      - { part: search, text: "trash" }
+      - { part: firstRow, text: { contains: "Trash" } }
+      - { part: firstRow, selected: true }
+
+  - name: typing after moving the highlight resets it to the first match (proposed, not in the spec)
+    steps:
+      - { action: key, part: search, key: ArrowDown, times: 2 }
+      - { action: type, part: search, text: "trash" }
+    expect:
+      - { part: firstRow, selected: true }
+      - { event: activeChange, last: { index: 0 } }
+
+  - name: typed text with no match shows the message and no row
+    steps:
+      - { action: type, part: search, text: "zzqx" }
+    expect:
+      - { part: emptyMessage, visible: true }
+      - { part: emptyMessage, text: { matches: "^No " } }
+      - { part: firstRow, visible: false }
+      - { part: panel, visible: true }
+      - { part: search, focused: true }
+
+  - name: no match means Enter runs nothing and the palette stays open
+    steps:
+      - { action: type, part: search, text: "zzqx" }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: select, times: 0 }
+      - { event: close, times: 0 }
+      - { part: panel, visible: true }
+      - { part: search, focused: true }
+
+  - name: typed spaces go into the search and run nothing
+    steps:
+      - { action: type, part: search, text: "open trash" }
+    expect:
+      - { part: search, text: "open trash" }
+      - { event: select, times: 0 }
+      - { event: close, times: 0 }
+
+  - name: ArrowDown moves the highlight one row and keeps focus in the search
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+    expect:
+      - { event: activeChange, times: 1, last: { index: 1 } }
+      - { part: secondRow, selected: true }
+      - { part: firstRow, selected: false }
+      - { part: secondRow, visible: true }
+      - { part: search, focused: true }
+
+  - name: ArrowUp on the first row keeps it active
+    steps:
+      - { action: key, part: search, key: ArrowUp }
+    expect:
+      - { event: activeChange, times: 0 }
+      - { part: firstRow, selected: true }
+      - { part: search, focused: true }
+
+  - name: ArrowUp from a lower row moves the highlight up one
+    props: { activeIndex: 2 }
+    steps:
+      - { action: key, part: search, key: ArrowUp }
+    expect:
+      - { event: activeChange, times: 1, last: { index: 1 } }
+      - { part: secondRow, selected: true }
+      - { part: thirdRow, selected: false }
+
+  - name: activeIndex sets the starting highlight
+    props: { activeIndex: 1 }
+    steps: []
+    expect:
+      - { part: secondRow, selected: true }
+      - { part: firstRow, selected: false }
+
+  - name: ArrowDown stops at the last row (no wrap, proposed, not in the spec)
+    steps:
+      - { action: key, part: search, key: ArrowDown, times: 100 }
+    expect:
+      - { part: lastRow, selected: true }
+      - { part: firstRow, selected: false }
+      - { part: search, focused: true }
+
+  - name: a long list keeps the highlighted row in view
+    props: { commandSet: many }
+    steps:
+      - { action: key, part: search, key: ArrowDown, times: 100 }
+    expect:
+      - { part: list, visible: true }
+      - { part: lastRow, selected: true }
+      - { part: lastRow, visible: true }
+
+  - name: Enter with no arrow keys runs the first row and closes
+    steps:
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: select, times: 1, last: { index: 0 } }
+      - { event: close, times: 1, last: { reason: select } }
+
+  - name: Enter after one ArrowDown runs the second row and closes
+    steps:
+      - { action: key, part: search, key: ArrowDown }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: select, times: 1, last: { index: 1 } }
+      - { event: close, times: 1, last: { reason: select } }
+
+  - name: Enter after two ArrowDowns runs the third row and closes
+    steps:
+      - { action: key, part: search, key: ArrowDown, times: 2 }
+      - { action: key, part: search, key: Enter }
+    expect:
+      - { event: select, times: 1, last: { index: 2 } }
+      - { event: close, times: 1, last: { reason: select } }
+
+  - name: Escape closes without running a row
+    steps:
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { event: close, times: 1, last: { reason: escape } }
+      - { event: select, times: 0 }
+
+  - name: Tab keeps focus in the palette
+    steps:
+      - { action: key, part: search, key: Tab }
+    expect:
+      - { part: search, focused: true }
+      - { part: panel, visible: true }
+      - { event: close, times: 0 }
+
+  - name: hover moves the highlight to the row under the pointer
+    steps:
+      - { action: hover, part: secondRow }
+    expect:
+      - { part: secondRow, selected: true }
+      - { part: search, focused: true }
+      - { event: activeChange, times: 1, last: { index: 1 } }
+
+  - name: hover on the highlighted row changes nothing
+    steps:
+      - { action: hover, part: firstRow }
+    expect:
+      - { part: search, focused: true }
+      - { event: activeChange, times: 0 }
+
+  - name: a press on the first row runs it and closes
+    steps:
+      - { action: press, part: firstRow }
+    expect:
+      - { event: select, times: 1, last: { index: 0 } }
+      - { event: close, times: 1, last: { reason: select } }
+
+  - name: a press on the second row runs it and closes
+    steps:
+      - { action: press, part: secondRow }
+    expect:
+      - { event: select, times: 1, last: { index: 1 } }
+      - { event: close, times: 1, last: { reason: select } }
+
+  - name: window presentation is a dialog window on desktop (provisional)
+    only: [desktop]
+    props: { presentation: window }
+    steps: []
+    expect:
+      - { part: panel, visible: true }
+      - { part: panel, role: generic }
+      - { part: search, focused: true }
+
+  - name: overlay presentation, all commands (panel box)
+    props: { presentation: overlay }
+    steps: []
+    screenshot: { part: panel }
+
+  - name: palette-search, filtered (panel box)
+    props: { query: "trash" }
+    steps: []
+    screenshot: { part: panel }
+
+  - name: palette-no-match (panel box)
+    props: { query: "zzqx" }
+    steps: []
+    screenshot: { part: panel }
+
+  - name: scrolled, rows exceed the panel height (panel box)
+    props: { commandSet: many }
+    steps: []
+    screenshot: { part: panel }
+
+  - name: scrolled list, highlighted row at the bottom (list box, clipping check)
+    props: { commandSet: many }
+    steps:
+      - { action: key, part: search, key: ArrowDown, times: 100 }
+    screenshot: { part: list }
+
+  - name: window presentation on desktop (provisional)
+    only: [desktop]
+    props: { presentation: window }
+    steps: []
+    screenshot: { part: panel }
+
+viewports:
+  default: [ { width: 1280, height: 800 } ]
+  mobile: [ { width: 360, height: 640 } ]
+
+colorSchemes: [light, dark]

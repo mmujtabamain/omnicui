@@ -1,0 +1,488 @@
+id: ui.menu
+
+# Menu: the one role=menu floating panel for every menu in the app (project
+# panel, task row context menu, list tab menu, attachment menu, search scope
+# and fields menu, filter sort and date menu, and the Move to list submenu).
+#
+# Behaviour follows the WAI-ARIA APG menu pattern, with these decisions:
+#   - keyboard open focuses the first enabled row; Tab does not enter the menu
+#   - Enter and Space activate a row; Enter, Space and Right on a submenu row open it
+#   - Left or Escape closes a submenu and returns focus to its row
+#   - Home and End jump to the first and last enabled rows; letters do typeahead
+#   - Escape closes the menu and returns focus to its opener
+#   - arrows do not wrap: Up on the first enabled row and Down on the last keep focus
+#   - Up on a control trigger does nothing (APG's optional Up-opens-last is not supported)
+#   - the one divergence from APG: arrow keys skip disabled rows (APG keeps them focusable)
+#   - menus never dim the page
+#   - Shift+F10 and the ContextMenu key open a cursor menu. The base ContextMenu does not
+#     provide them, so the implementation must add them as design requirements.
+#
+# Rows are the caller's choice. The format cannot express children, items or
+# element refs, so the test harness renders this fixed row set. Each row id is
+# its part name, and pick events carry that id. Navigation order is the order
+# below; the arrows skip the separator and disabled rows.
+#   first        "Open"          menuitem
+#   second       "Rename"        menuitem
+#   separator                    separator, not focusable
+#   disabledRow  "Delete"        menuitem, disabled
+#   submenu      "Move to list"  menuitem with a submenu; submenuPanel holds submenuFirst "Inbox"
+#   choice       "Compact"       menuitemradio (a project radio row)
+#   last         "Trash"         menuitem
+# trigger is the element that opened the menu. outside is a button elsewhere on the page.
+#
+# Brief props not in this contract: items, children, anchorRef and anchor. The rows are
+# fixed by the harness, and placement plus trigger replace anchor and anchorRef.
+# onPick and onOpenChange are the events pick and openChange. onDismiss is folded into
+# openChange as its reason field.
+#
+# Right-click (do: contextMenu on trigger) opens the cursor menu. Targets must advertise
+# do.contextMenu. Suppression of the native browser menu cannot be checked by the format.
+
+props:
+  # Controlled open state. false means closed: the panel is not rendered.
+  open: { type: boolean, default: false }
+  # One of cursor, control, submenu, anchored (the format has no enum; the harness must
+  # reject other values). cursor: at the pointer, clamped to the viewport with a 4px inset.
+  # control: below the trigger (x = trigger left, y = trigger bottom + offset). submenu:
+  # beside the hovered parent row, not clamped; flips left when it would overflow the
+  # window (only nested panels use it). anchored: at the pointer position, as cursor is;
+  # kept as its own value because the brief lists it as a variant.
+  placement: { type: string, default: cursor }
+  # One of content, task, tab, project. content: sized by its rows. task: 152px.
+  # tab: 156px. project: min-width 210px.
+  width: { type: string, default: content }
+  # Gap below the trigger for control placement, in px. The project panel passes 7.
+  offset: { type: number, default: 4 }
+  # Pointer x and y in px for cursor and anchored placement.
+  pointX: { type: number, default: 0 }
+  pointY: { type: number, default: 0 }
+  # Whether activating a row closes the menu. true unless the caller says otherwise.
+  closeOnSelect: { type: boolean, default: true }
+  # Accessible name. Required from callers; the fixture always passes one, and the default
+  # only keeps fixtures valid. No test reads it: generic has no name field.
+  ariaLabel: { type: string, default: Menu }
+
+events:
+  # Fired on every open change, from any cause. reason is keyboard or pointer when opening,
+  # and escape, outside, tab, select, blur or resize when closing. blur and resize are
+  # reasons the target fires, but the format's actions cannot blur the window or resize
+  # the viewport, so no test checks them.
+  openChange:
+    open: { type: boolean }
+    reason: { type: string }
+  # Fired when a row is activated, after the menu closes if closeOnSelect applies. id is the
+  # row's part name. The order against openChange is not measured.
+  pick:
+    id: { type: string }
+
+parts:
+  # aria: menu. The floating panel. Not rendered while closed. Its size is held to layout.
+  panel: { role: generic, same: { default: layout } }
+  # aria: button with aria-haspopup=menu and aria-expanded. The element that opened the
+  # menu. Absent for submenu placement.
+  trigger: { role: button, optional: true }
+  # aria: menuitem
+  first: { role: button }
+  # aria: menuitem
+  second: { role: button }
+  # aria: separator. Not focusable.
+  separator: { role: generic }
+  # aria: menuitem with aria-disabled=true. Arrow keys skip it. Cannot be activated.
+  disabledRow: { role: button }
+  # aria: menuitem with aria-haspopup=menu and aria-expanded.
+  submenu: { role: button }
+  # aria: menu. The nested panel, rendered only while the submenu is open.
+  submenuPanel: { role: generic, optional: true }
+  # aria: menuitem inside submenuPanel.
+  submenuFirst: { role: button, optional: true }
+  # aria: menuitemradio. Its checked state is the selected field.
+  choice: { role: button }
+  # aria: menuitem
+  last: { role: button }
+  # Not part of the menu. A plain button elsewhere on the page, for outside press.
+  outside: { role: button }
+
+keyboard: true
+
+viewports:
+  # 480x320, not the 320x240 default: the measured project panel sits at x 112
+  # and is 210px wide, which needs more than 320px of window.
+  - { width: 480, height: 320 }
+
+colorSchemes: [light, dark]
+
+tests:
+  # Variants. Every placement value and every width value appears in at least one
+  # screenshot test, at every viewport and colour scheme. submenu placement is shown by
+  # the open submenu panel, the only place it applies.
+  - name: cursor placement at content width
+    props: { open: true, placement: cursor, width: content, pointX: 200, pointY: 120 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true }, { part: first, name: Open }, { part: last, name: Trash } ]
+
+  - name: cursor placement at task width
+    props: { open: true, placement: cursor, width: task, pointX: 200, pointY: 120 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true } ]
+
+  - name: cursor placement at tab width
+    props: { open: true, placement: cursor, width: tab, pointX: 200, pointY: 120 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true } ]
+
+  - name: control placement at content width with offset 4
+    props: { open: true, placement: control, width: content, offset: 4 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true }, { part: trigger, visible: true } ]
+
+  - name: control placement at project width with offset 7
+    props: { open: true, placement: control, width: project, offset: 7 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true }, { part: trigger, visible: true } ]
+
+  - name: anchored placement at content width
+    props: { open: true, placement: anchored, width: content, pointX: 40, pointY: 40 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true } ]
+
+  - name: open submenu panel is placed beside its row
+    props: { open: true, placement: cursor, width: content, pointX: 200, pointY: 120 }
+    screenshot: true
+    steps:
+      - { action: focus, part: submenu }
+      - { action: key, part: submenu, key: ArrowRight }
+    expect:
+      - { part: submenuPanel, visible: true }
+      - { part: submenuFirst, name: Inbox }
+
+  - name: submenu panel flips left near the right edge of the viewport
+    props: { open: true, placement: cursor, width: content, pointX: 476, pointY: 40 }
+    screenshot: true
+    steps:
+      - { action: focus, part: submenu }
+      - { action: key, part: submenu, key: ArrowRight }
+    expect:
+      - { part: panel, visible: true }
+      - { part: submenuPanel, visible: true }
+
+  - name: cursor placement is clamped inside the viewport at the corner
+    props: { open: true, placement: cursor, width: content, pointX: 476, pointY: 316 }
+    screenshot: true
+    steps: [ { action: hover, part: panel } ]
+    expect: [ { part: panel, visible: true } ]
+
+  # Opening: pointer, keyboard, right-click, and the cursor keys.
+  - name: closed menu is not rendered
+    steps: [ { action: focus, part: trigger } ]
+    expect:
+      - { part: panel, visible: false }
+      - { event: openChange, times: 0 }
+
+  - name: press on trigger opens a control menu
+    props: { placement: control, width: content, offset: 4 }
+    steps: [ { action: press, part: trigger } ]
+    expect:
+      - { part: panel, visible: true }
+      - { event: openChange, times: 1, last: { open: true, reason: pointer } }
+
+  - name: Enter on trigger opens and focuses the first enabled row
+    props: { placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: Enter } ]
+    expect:
+      - { part: first, focused: true }
+      - { event: openChange, times: 1, last: { open: true, reason: keyboard } }
+
+  - name: Space on trigger opens and focuses the first enabled row
+    props: { placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: Space } ]
+    expect:
+      - { part: first, focused: true }
+      - { event: openChange, times: 1, last: { open: true, reason: keyboard } }
+
+  - name: ArrowDown on trigger opens and focuses the first enabled row
+    props: { placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: ArrowDown } ]
+    expect:
+      - { part: first, focused: true }
+      - { event: openChange, times: 1, last: { open: true, reason: keyboard } }
+
+  - name: Shift+F10 on trigger opens a cursor menu from the keyboard
+    props: { placement: cursor, width: content, pointX: 200, pointY: 120 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: Shift+F10 } ]
+    expect:
+      - { part: first, focused: true }
+      - { event: openChange, times: 1, last: { open: true, reason: keyboard } }
+
+  - name: ContextMenu key opens a cursor menu from the keyboard
+    props: { placement: cursor, width: content, pointX: 200, pointY: 120 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: ContextMenu } ]
+    expect:
+      - { part: first, focused: true }
+      - { event: openChange, times: 1, last: { open: true, reason: keyboard } }
+
+  - name: right-click on the trigger opens a cursor menu at the pointer
+    props: { placement: cursor, width: content, pointX: 200, pointY: 120 }
+    steps: [ { do: contextMenu, part: trigger } ]
+    expect:
+      - { part: panel, visible: true }
+      - { event: openChange, times: 1, last: { open: true, reason: pointer } }
+
+  # Roles and names. Real ARIA roles are checked through the role field.
+  - name: panel and rows have their ARIA roles and names
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first } ]
+    expect:
+      - { part: panel, role: generic }
+      - { part: first, role: button, name: Open, focused: true }
+      - { part: second, role: button, name: Rename }
+      - { part: separator, role: generic }
+      - { part: disabledRow, role: button, name: Delete, disabled: true }
+      - { part: submenu, role: button, name: Move to list }
+      - { part: choice, role: button, name: Compact }
+      - { part: last, role: button, name: Trash }
+
+  # Row navigation. Arrows skip the separator and disabled rows, and do not wrap.
+  - name: ArrowDown skips the separator and the disabled row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: second }, { action: key, part: second, key: ArrowDown } ]
+    expect:
+      - { part: submenu, focused: true }
+      - { part: disabledRow, focused: false }
+      - { part: disabledRow, disabled: true }
+
+  - name: ArrowUp skips the disabled row and the separator
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: submenu }, { action: key, part: submenu, key: ArrowUp } ]
+    expect:
+      - { part: second, focused: true }
+
+  - name: ArrowDown on the last row keeps focus on it
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: last }, { action: key, part: last, key: ArrowDown } ]
+    expect:
+      - { part: last, focused: true }
+
+  - name: ArrowUp on the first row keeps focus on it
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first }, { action: key, part: first, key: ArrowUp } ]
+    expect:
+      - { part: first, focused: true }
+
+  - name: Home moves focus to the first enabled row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: last }, { action: key, part: last, key: Home } ]
+    expect:
+      - { part: first, focused: true }
+
+  - name: End moves focus to the last enabled row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first }, { action: key, part: first, key: End } ]
+    expect:
+      - { part: last, focused: true }
+
+  - name: a letter moves focus to the next row that starts with it
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first }, { action: key, part: first, key: m } ]
+    expect:
+      - { part: submenu, focused: true }
+
+  - name: the letter c moves focus to the radio row Compact
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first }, { action: key, part: first, key: c } ]
+    expect:
+      - { part: choice, focused: true }
+
+  # Activation and closeOnSelect.
+  - name: Enter activates a row and closes the menu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: second }, { action: key, part: second, key: Enter } ]
+    expect:
+      - { event: pick, times: 1, last: { id: second } }
+      - { event: openChange, times: 1, last: { open: false, reason: select } }
+      - { part: panel, visible: false }
+
+  - name: Space activates a row and closes the menu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: second }, { action: key, part: second, key: Space } ]
+    expect:
+      - { event: pick, times: 1, last: { id: second } }
+      - { event: openChange, times: 1, last: { open: false, reason: select } }
+      - { part: panel, visible: false }
+
+  - name: press on a row picks it and closes the menu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: press, part: second } ]
+    expect:
+      - { event: pick, times: 1, last: { id: second } }
+      - { part: panel, visible: false }
+
+  - name: a radio row picks and closes the menu with closeOnSelect true
+    props: { open: true, placement: control, width: project, offset: 7, closeOnSelect: true }
+    steps: [ { action: press, part: choice } ]
+    expect:
+      - { event: pick, times: 1, last: { id: choice } }
+      - { event: openChange, times: 1, last: { open: false, reason: select } }
+      - { part: panel, visible: false }
+
+  - name: a radio row shows its checked state after it is picked
+    props: { open: true, placement: control, width: project, offset: 7, closeOnSelect: false }
+    steps: [ { action: press, part: choice } ]
+    expect:
+      - { event: pick, times: 1, last: { id: choice } }
+      - { part: choice, selected: true }
+      - { part: panel, visible: true }
+      - { event: openChange, times: 0 }
+
+  - name: with closeOnSelect false a picked row keeps the menu open
+    props: { open: true, placement: control, width: content, offset: 4, closeOnSelect: false }
+    steps: [ { action: press, part: second } ]
+    expect:
+      - { event: pick, times: 1, last: { id: second } }
+      - { event: openChange, times: 0 }
+      - { part: panel, visible: true }
+
+  - name: a disabled row cannot be activated
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: press, part: disabledRow } ]
+    expect:
+      - { event: pick, times: 0 }
+      - { part: panel, visible: true }
+
+  # Submenus.
+  - name: ArrowRight on a submenu row opens it and focuses its first row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: submenu }, { action: key, part: submenu, key: ArrowRight } ]
+    expect:
+      - { part: submenuPanel, visible: true }
+      - { part: submenuPanel, role: generic }
+      - { part: submenuFirst, focused: true }
+      - { event: pick, times: 0 }
+
+  - name: Enter on a submenu row opens it and focuses its first row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: submenu }, { action: key, part: submenu, key: Enter } ]
+    expect:
+      - { part: submenuPanel, visible: true }
+      - { part: submenuFirst, focused: true }
+      - { part: panel, visible: true }
+      - { event: pick, times: 0 }
+
+  - name: press on a submenu row opens it without picking
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: press, part: submenu } ]
+    expect:
+      - { part: submenuPanel, visible: true }
+      - { event: pick, times: 0 }
+      - { part: panel, visible: true }
+
+  - name: hovering a submenu row opens it for pointer users
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: hover, part: submenu } ]
+    expect:
+      - { part: submenuPanel, visible: true }
+
+  - name: ArrowLeft in a submenu closes it and returns focus to its row
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: submenu }
+      - { action: key, part: submenu, key: ArrowRight }
+      - { action: key, part: submenuFirst, key: ArrowLeft }
+    expect:
+      - { part: submenuPanel, visible: false }
+      - { part: submenu, focused: true }
+      - { part: panel, visible: true }
+
+  - name: Escape in a submenu closes only the submenu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: submenu }
+      - { action: key, part: submenu, key: ArrowRight }
+      - { action: key, part: submenuFirst, key: Escape }
+    expect:
+      - { part: submenuPanel, visible: false }
+      - { part: submenu, focused: true }
+      - { part: panel, visible: true }
+      - { event: openChange, times: 0 }
+
+  - name: Tab in a submenu closes the whole menu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: submenu }
+      - { action: key, part: submenu, key: ArrowRight }
+      - { action: key, part: submenuFirst, key: Tab }
+    expect:
+      - { part: submenuPanel, visible: false }
+      - { part: panel, visible: false }
+      - { event: openChange, times: 1, last: { open: false, reason: tab } }
+
+  # Closing: Escape, Tab, outside press.
+  - name: Escape closes a control menu and returns focus to its trigger
+    props: { placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: Enter }
+      - { action: key, part: first, key: Escape }
+    expect:
+      - { part: trigger, focused: true }
+      - { part: panel, visible: false }
+      - { event: openChange, times: 2, last: { open: false, reason: escape } }
+
+  - name: Escape closes a cursor menu and returns focus to the element focused before it opened
+    props: { placement: cursor, width: content, pointX: 200, pointY: 120 }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: Shift+F10 }
+      - { action: key, part: first, key: Escape }
+    expect:
+      - { part: trigger, focused: true }
+      - { part: panel, visible: false }
+      - { event: openChange, times: 2, last: { open: false, reason: escape } }
+
+  - name: Escape on a mounted open menu closes it and reports escape
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: Escape }
+    expect:
+      - { part: panel, visible: false }
+      - { event: openChange, times: 1, last: { open: false, reason: escape } }
+
+  - name: Tab closes the menu
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: first }, { action: key, part: first, key: Tab } ]
+    expect:
+      - { event: openChange, times: 1, last: { open: false, reason: tab } }
+      - { part: panel, visible: false }
+
+  - name: press outside the menu closes it
+    props: { placement: control, width: content, offset: 4 }
+    steps:
+      - { action: focus, part: trigger }
+      - { action: key, part: trigger, key: Enter }
+      - { action: press, part: outside }
+    expect:
+      - { event: openChange, times: 2, last: { open: false, reason: outside } }
+      - { part: panel, visible: false }
+
+  - name: press outside a mounted open menu closes it
+    props: { open: true, placement: control, width: content, offset: 4 }
+    steps: [ { action: press, part: outside } ]
+    expect:
+      - { part: panel, visible: false }
+      - { event: openChange, times: 1, last: { open: false, reason: outside } }
+
+  # Motion. The clip is compared by visual progress, so it does not depend on which
+  # property animate-sheet-in changes. No opacity trace is asserted.
+  - name: opening records the panel's entrance
+    props: { placement: control, width: content, offset: 4 }
+    steps: [ { action: focus, part: trigger }, { action: key, part: trigger, key: Enter } ]
+    record: { part: panel }
+    allCombinations: true
+
+keyboard: true

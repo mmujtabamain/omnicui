@@ -68,7 +68,7 @@ ROLE_MAP = {
     "listbox": "generic", "list": "generic", "listitem": "generic", "toolbar": "generic", "menu": "generic",
     "tree": "generic", "tablist": "generic", "tabpanel": "generic", "dialog": "generic", "alertdialog": "generic",
     "banner": "generic", "img": "generic", "group": "generic", "region": "generic", "separator": "generic",
-    "progressbar": "status", "alert": "status", "log": "status", "tooltip": "status", "searchbox": "textbox",
+    "progressbar": "status", "none": "generic", "presentation": "generic", "radio": "checkbox", "radiogroup": "generic", "navigation": "generic", "main": "generic", "complementary": "generic", "contentinfo": "generic", "article": "generic", "figure": "generic", "grid": "generic", "row": "generic", "gridcell": "generic", "cell": "generic", "status": "status", "textbox": "textbox", "alert": "status", "log": "status", "tooltip": "status", "searchbox": "textbox",
 }
 
 
@@ -79,7 +79,7 @@ def cmd_mechanical():
         p = os.path.join(CONTRACTS, f)
         s = o = open(p).read()
         s = "\n".join(l for l in s.split("\n") if not l.startswith("//"))
-        s = re.sub(r"(role:\s*)([a-z]+)", lambda m: m.group(1) + ROLE_MAP.get(m.group(2), m.group(2)) + (f"  # aria: {m.group(2)}" if m.group(2) in ROLE_MAP and "\n" not in m.group(0) and False else ""), s)
+        s = re.sub(r"(role:\s*)[\"']?([a-z]+)[\"']?", lambda m: m.group(1) + ROLE_MAP.get(m.group(2), m.group(2)) + (f"  # aria: {m.group(2)}" if m.group(2) in ROLE_MAP and "\n" not in m.group(0) and False else ""), s)
         lines, out, in_props = s.split("\n"), [], False
         for line in lines:
             if re.match(r"^props:\s*$", line):

@@ -1,0 +1,75 @@
+id: ui.tabpanel
+
+# TabPanel: the scrolling content pane of the active Settings section.
+# Base: Radix Tabs TabsContent, which is the tabpanel of a tablist.
+# ARIA pattern: WAI-ARIA Tabs (tabpanel). The accessible name comes from the
+# tab that controls the panel (aria-labelledby); that name is not testable on a
+# generic part, so it is covered by the tab contract, not here.
+
+props:
+  value: { type: string, default: "" }      # section id; the value of the tab that labels this panel
+  scroll: { type: boolean, default: true }  # true: the panel is the vertical scroll region (overflow-y auto) and takes keyboard focus when its content overflows; false: the panel does not scroll and does not take focus
+  tone: { type: string, default: surface-2 } # allowed values: surface-2 only (settings-general pane, px-8 py-7). The literal oklch(0.995 0.001 255) recorded by settings-shortcuts, settings-capture and settings-about is NOT a value until someone confirms it is intended.
+
+events:
+  scrolled: { atBottom: { type: boolean } } # emitted only when atBottom changes: true when the scroll position reaches the bottom edge, false when it leaves it
+
+parts:
+  panel: # aria: tabpanel
+    role: generic
+    same: { default: pixels, mobile: [layout, colours] }
+
+tests:
+  - name: panel is a tabpanel and is visible
+    props: { value: general }
+    steps: [ { action: hover, part: panel } ]
+    expect:
+      - { part: panel, role: generic }
+      - { part: panel, visible: true }
+
+  - name: scrolling down reaches the bottom and emits atBottom true
+    props: { scroll: true }
+    steps: [ { do: scroll, part: panel, with: { direction: down } } ]
+    expect:
+      - { event: scrolled, times: 1, last: { atBottom: true } }
+
+  - name: scrolling back up leaves the bottom and emits atBottom false
+    props: { scroll: true }
+    steps:
+      - { do: scroll, part: panel, with: { direction: down } }
+      - { do: scroll, part: panel, with: { direction: up } }
+    expect:
+      - { event: scrolled, times: 2, last: { atBottom: false } }
+
+  - name: a panel with scroll off never emits scrolled
+    props: { scroll: false }
+    steps: [ { do: scroll, part: panel, with: { direction: down } } ]
+    expect:
+      - { event: scrolled, times: 0 }
+
+  - name: surface-2 tone, default state
+    props: { tone: surface-2, scroll: true }
+    steps: [ { action: hover, part: panel } ]
+    screenshot: true
+
+  - name: surface-2 tone, scrolled to bottom
+    props: { tone: surface-2, scroll: true }
+    steps: [ { do: scroll, part: panel, with: { direction: down } } ]
+    screenshot: true
+
+  - name: scroll off, no scroll region
+    props: { tone: surface-2, scroll: false }
+    steps: [ { action: hover, part: panel } ]
+    screenshot: true
+
+viewports:
+  default: [ { width: 640, height: 520 } ]   # desktop Settings window: opens at 640 x 520, never smaller
+  mobile: [ { width: 360, height: 640 } ]    # web Settings route on a phone
+
+colorSchemes: [ light, dark ]
+
+# keyboard is not set: the contract has no button, switch or checkbox part, so
+# Enter and Space have nothing to match. The spec's keyboard behaviour (arrow and
+# page keys scroll the focused region; tabIndex 0 when it overflows) cannot be
+# expressed: generic parts have no focused field and accept only hover, so no
+# test can focus the panel or press a key on it.

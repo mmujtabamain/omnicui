@@ -1,0 +1,175 @@
+id: ui.toolbar
+
+# Toolbar: horizontal group of action buttons.
+# Base: Radix Toolbar. Role: toolbar (WAI-ARIA toolbar pattern).
+# One widget, three placements: inline (title bar tools), strip (Trash action strip),
+# footer (bulk action bar). The bulk bar replaces PaneFooter while rows are selected;
+# PaneFooter (the 32px stats footer) is a separate widget.
+
+props:
+  placement:
+    type: string
+    default: inline
+    # One of inline, strip, footer. Spacing and rule:
+    # inline: title bar tools. gap 1rem (14px), horizontal padding 1.5rem (21px), items centred, no rule.
+    # strip: Trash action strip. gap 0.75rem (10.5px), padding 1.25rem (17.5px) top and bottom and 1.5rem (21px) sides,
+    #   bottom border (edge-2), no shrinking. Rendered only while count is 1 or more.
+    # footer: bulk action bar. height 2.25rem (31.5px), top border, horizontal padding 1.5rem (21px), no surface fill.
+    #   Replaces PaneFooter while one or more rows are selected.
+  ariaLabel:
+    type: string
+    default: Toolbar
+    # Names the group (aria-label). Callers name each use, for example Title bar tools, Trash actions, Bulk actions.
+  count:
+    type: integer
+    default: 1
+    # Items the strip or footer acts on: roots in Trash, or rows selected. 0 means the strip and footer are not rendered.
+    # Inline ignores it.
+
+events: {}
+# The toolbar emits no events of its own. Each button emits its press through the Button contract.
+
+parts:
+  toolbar:
+    role: generic
+    # aria: toolbar. Group wrapper; roving focus moves between its buttons.
+  first:
+    role: button
+    # First button in the group. The test harness renders three buttons, in this order.
+  second:
+    role: button
+    # Second button in the group.
+  third:
+    role: button
+    # Third button in the group.
+
+keyboard: true
+colorSchemes: [light, dark]
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 960, height: 120 }
+same: pixels
+
+tests:
+  - name: inline placement is the title bar tool group
+    props: { placement: inline }
+    steps:
+      - { action: hover, part: toolbar }
+    expect:
+      - { part: toolbar, role: generic }
+      - { part: toolbar, visible: true }
+    screenshot: true
+
+  - name: strip placement is the Trash action strip
+    props: { placement: strip, count: 2 }
+    steps:
+      - { action: hover, part: toolbar }
+    expect:
+      - { part: toolbar, role: generic }
+      - { part: toolbar, visible: true }
+    screenshot: true
+
+  - name: footer placement is the bulk action bar
+    props: { placement: footer, count: 3, ariaLabel: "Bulk actions" }
+    steps:
+      - { action: hover, part: toolbar }
+    expect:
+      - { part: toolbar, role: generic }
+      - { part: toolbar, visible: true }
+    screenshot: true
+
+  - name: inline stays shown when count is zero
+    props: { placement: inline, count: 0 }
+    steps:
+      - { action: hover, part: toolbar }
+    expect:
+      - { part: toolbar, visible: true }
+
+  - name: strip is not rendered when there are no roots
+    props: { placement: strip, count: 0 }
+    expect:
+      - { part: toolbar, visible: false }
+
+  - name: footer is not rendered when no rows are selected
+    props: { placement: footer, count: 0 }
+    expect:
+      - { part: toolbar, visible: false }
+
+  - name: footer is shown while one row is selected
+    props: { placement: footer, count: 1 }
+    expect:
+      - { part: toolbar, visible: true }
+
+  - name: Right moves focus to the next button
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: ArrowRight }
+    expect:
+      - { part: second, focused: true }
+      - { part: first, focused: false }
+
+  - name: Left moves focus to the previous button
+    steps:
+      - { action: focus, part: second }
+      - { action: key, part: second, key: ArrowLeft }
+    expect:
+      - { part: first, focused: true }
+      - { part: second, focused: false }
+
+  - name: Right from the last button wraps to the first
+    steps:
+      - { action: focus, part: third }
+      - { action: key, part: third, key: ArrowRight }
+    expect:
+      - { part: first, focused: true }
+      - { part: third, focused: false }
+
+  - name: Left from the first button wraps to the last
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: ArrowLeft }
+    expect:
+      - { part: third, focused: true }
+      - { part: first, focused: false }
+
+  - name: End moves focus to the last button
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: End }
+    expect:
+      - { part: third, focused: true }
+      - { part: first, focused: false }
+
+  - name: Home moves focus to the first button
+    steps:
+      - { action: focus, part: third }
+      - { action: key, part: third, key: Home }
+    expect:
+      - { part: first, focused: true }
+      - { part: third, focused: false }
+
+  - name: Tab leaves the toolbar
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: Tab }
+    expect:
+      - { part: first, focused: false }
+      - { part: second, focused: false }
+
+  - name: roving focus works in the Trash strip
+    props: { placement: strip, count: 2 }
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: ArrowRight }
+    expect:
+      - { part: second, focused: true }
+      - { part: first, focused: false }
+
+  - name: roving focus works in the bulk bar
+    props: { placement: footer, count: 2 }
+    steps:
+      - { action: focus, part: first }
+      - { action: key, part: first, key: ArrowRight }
+    expect:
+      - { part: second, focused: true }
+      - { part: first, focused: false }

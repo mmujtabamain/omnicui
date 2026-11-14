@@ -1,0 +1,161 @@
+id: ui.mentionchip
+
+# MentionChip: inline @mention chip for an attachment inside a note body.
+# An inline atom: contenteditable="false", it cannot be typed into, and Backspace or Delete removes it as one unit.
+# It is a button because it is focusable, so Enter and Space open it too (WAI-ARIA APG button).
+# States (spec): present in note HTML only. The reference records no trees entry for it (count 0).
+# Look is not measured in the reference; the screenshot tests are kept because the brief asks for them.
+# The reference onOpen prop is the opened event: a contract prop cannot be a function.
+# Platform: the same on every target. No platform exceptions.
+
+props:
+  source: { type: string, default: local }     # local | remote. local: click, Enter or Space opens the attachment in the lightbox. remote: click calls the host's api.openAttachment.
+  name: { type: string, default: attachment }  # shown as @name
+
+events:
+  opened: { source: { type: string }, name: { type: string } }   # press, Enter or Space on the chip; source is local or remote; name is the attachment name
+  removed: { name: { type: string } }                              # Backspace or Delete on the focused chip; the chip leaves the note body as one unit
+
+parts:
+  chip: { role: button, same: pixels }   # aria: button. Focusable, so keyboard users can open it.
+
+keyboard: true
+colorSchemes: [ light, dark ]
+
+tests:
+  - name: local source opens the lightbox on press
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: press, part: chip }
+    expect:
+      - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
+
+  - name: remote source calls api.openAttachment on press
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: press, part: chip }
+    expect:
+      - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
+
+  - name: source defaults to local
+    props: { name: Report.pdf }
+    steps:
+      - { action: press, part: chip }
+    expect:
+      - { event: opened, times: 1, last: { source: local } }
+
+  - name: chip shows the attachment name as @name
+    props: { name: Report.pdf }
+    expect:
+      - { part: chip, text: "@Report.pdf" }
+      - { part: chip, name: "@Report.pdf" }
+      - { part: chip, role: button }
+      - { part: chip, visible: true }
+
+  - name: chip takes keyboard focus
+    props: { name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+    expect:
+      - { part: chip, focused: true }
+
+  - name: Enter on the focused local chip opens it
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Enter }
+    expect:
+      - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
+
+  - name: Space on the focused remote chip opens it
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Space }
+    expect:
+      - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
+
+  - name: Space opens a local chip
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: key, part: chip, key: Space }
+    expect:
+      - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
+
+  - name: Enter opens a remote chip
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: key, part: chip, key: Enter }
+    expect:
+      - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
+
+  - name: confirm input opens the focused chip
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { input: confirm }
+    expect:
+      - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
+
+  - name: Backspace removes a local chip as one unit
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Backspace }
+    expect:
+      - { part: chip, visible: false }
+      - { event: removed, times: 1, last: { name: Report.pdf } }
+      - { event: opened, times: 0 }
+
+  - name: Delete removes a local chip as one unit
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Delete }
+    expect:
+      - { part: chip, visible: false }
+      - { event: removed, times: 1, last: { name: Report.pdf } }
+      - { event: opened, times: 0 }
+
+  - name: Backspace removes a remote chip as one unit
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Backspace }
+    expect:
+      - { part: chip, visible: false }
+      - { event: removed, times: 1, last: { name: Report.pdf } }
+      - { event: opened, times: 0 }
+
+  - name: Delete removes a remote chip as one unit
+    props: { source: remote, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: Delete }
+    expect:
+      - { part: chip, visible: false }
+      - { event: removed, times: 1, last: { name: Report.pdf } }
+      - { event: opened, times: 0 }
+
+  - name: a typed character does not change the chip
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { action: key, part: chip, key: a }
+    expect:
+      - { part: chip, text: "@Report.pdf" }
+      - { part: chip, visible: true }
+      - { event: removed, times: 0 }
+      - { event: opened, times: 0 }
+
+  - name: local chip looks the same in light and dark
+    props: { source: local, name: Report.pdf }
+    screenshot: true
+    expect:
+      - { part: chip, visible: true }
+
+  - name: remote chip looks the same in light and dark
+    props: { source: remote, name: Report.pdf }
+    screenshot: true
+    expect:
+      - { part: chip, visible: true }

@@ -1,0 +1,232 @@
+id: ui.emptystate
+
+# EmptyState: a centred message shown in place of content: a pane with no lists or no list selected,
+# an inline list or trash with nothing to show, a settings search with no results, the aside with no
+# task selected, and the lightbox fallback card when a preview fails.
+# Built as shadcn's Empty composition (media, title, description, content) from plain elements.
+# The spec's ReactNode slots are carried as strings: icon is a glyph name, subtitle is text, and
+# actionLabel is the label of one button. The spec's description prop is the same slot as subtitle,
+# so it is not a second prop.
+# Roles: the message is generic text. Only the loading status region and the optional action button
+# carry a widget role.
+# Family: status (structure also).
+
+props:
+  scope:
+    type: string
+    default: "list"
+    # "pane": fills the whole task pane on the surface-2 fill, no icon. "list": inline in a scroll area,
+    # icon above a centred title and subtitle, list spacing (pt-24 pb-10).
+  surface:
+    type: string
+    default: "plain"
+    # "plain": no fill (list and aside). "card": surface-2 fill, rounded panel, px-10 py-12; the lightbox
+    # fallback card, which carries an action.
+  title:
+    type: string
+    default: ""
+    # Required in use. 15px medium, secondary text. Examples: "No lists yet", "Nothing here yet",
+    # "Trash is empty", "No settings match". While loading, the app passes "Loading…".
+  subtitle:
+    type: string
+    default: ""
+    # Optional muted 12.5px line. Empty means no subtitle. Carries the pane subtitle, the list hint with
+    # its shortcut, and the search query line ("Nothing here for “<query>”.", curly quotes). The reference's
+    # description is this same slot, so there is one prop. Plain text only: the format has no ReactNode
+    # type, so a keyboard shortcut cannot be marked up inside the string.
+  icon:
+    type: string
+    default: ""
+    # "" (no icon), "landscape" (landscape-style list icon), "delete" (trash in the muted token, not the
+    # danger colour), "search" (settings search), "search_off" (searching with no matches). Never shown for
+    # scope "pane" and not while loading.
+  iconSize:
+    type: number
+    default: 30
+    # Icon size in px. 30 for the list icon; the reference 28px trash size is folded to 30. The plain aside uses 28.
+  loading:
+    type: boolean
+    default: false
+    # true: the title is the loading text, the message is a status region with aria-busy "true", and no icon
+    # or subtitle is shown. The loading change is announced.
+  actionLabel:
+    type: string
+    default: ""
+    # Label of the optional action button (the reference's action ReactNode). "" means no button.
+    # Example: "Open externally".
+  className:
+    type: string
+    default: ""
+    # Layout escape hatch only. Not behaviour; no test.
+
+events: {}
+# None. The widget is presentational. A press on the action button is the caller's own button press, not an
+# event of this widget.
+
+same: pixels
+
+parts:
+  root: { role: generic }
+  # aria: none. The centred container. Its role does not change while loading; the live region is loadingStatus.
+  title: { role: generic }
+  # aria: none. Plain text, not a heading: the title is a message, not a section of the page. Visible in every
+  # state; holds "Loading…" while loading.
+  subtitle: { role: generic, optional: true, same: { default: layout } }
+  # aria: none. Present only when subtitle is set and not loading. Only its box is held to the same layout,
+  # because the hint wording differs by platform.
+  icon: { role: generic, optional: true }
+  # aria: none, decorative (aria-hidden). Present only for a non-empty icon, not in pane scope, not while loading.
+  loadingStatus: { role: status, optional: true }
+  # aria: status, aria-busy "true". Wraps the loading title; present only while loading. The status role is a
+  # polite live region, so the loading text is announced.
+  action: { role: button, optional: true }
+  # aria: button. Present only when actionLabel is set; an ordinary button.
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 640, height: 480 }
+  - { width: 960, height: 600 }
+# Union of both drafts: 320x240 and 640x480 from draft A, 320x240 and 960x600 from draft B.
+
+colorSchemes: [light, dark]
+
+keyboard: true
+# Only the action button takes focus; the message itself has no keyboard behaviour.
+
+tests:
+  - name: "pane with no lists shows the title and subtitle and no icon"
+    props: { scope: pane, title: "No lists yet", subtitle: "Create a list to start adding tasks" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, text: "No lists yet" }
+      - { part: subtitle, text: "Create a list to start adding tasks" }
+      - { part: icon, visible: false }
+    screenshot: true
+
+  - name: "pane scope ignores an icon that is passed"
+    props: { scope: pane, icon: landscape, title: "No lists yet" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, text: "No lists yet" }
+      - { part: icon, visible: false }
+
+  - name: "list scope shows the list icon above the title and the add-task hint on every platform"
+    props: { scope: list, icon: landscape, title: "Nothing here yet", subtitle: "Press + to add a task" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "Nothing here yet" }
+      - { part: subtitle, text: { contains: "add a task" } }
+    screenshot: true
+
+  # Web hint: no ⌘N, because the browser's new-window shortcut takes precedence.
+  - name: "list scope shows the icon, title and web hint"
+    only: [web]
+    props: { scope: list, icon: landscape, title: "Nothing here yet", subtitle: "Press + to add a task" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "Nothing here yet" }
+      - { part: subtitle, text: "Press + to add a task" }
+
+  # Desktop hint on macOS: platform modifier ⌘, with the capture clause (capture stays on desktop).
+  - name: "list hint on macOS names the platform modifier and the capture clause"
+    only: [macos]
+    props: { scope: list, icon: landscape, title: "Nothing here yet", subtitle: "Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: subtitle, text: "Press + or ⌘N to add a task, or ⌘↩ anywhere to capture one" }
+
+  # Desktop hint on Windows and Linux: platform modifier Ctrl.
+  - name: "list hint on Windows and Linux names Ctrl and the capture clause"
+    only: [windows, linux]
+    props: { scope: list, icon: landscape, title: "Nothing here yet", subtitle: "Press + or Ctrl+N to add a task, or Ctrl+↩ anywhere to capture one" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: subtitle, text: "Press + or Ctrl+N to add a task, or Ctrl+↩ anywhere to capture one" }
+
+  # The trash icon is neutral (muted token), not the danger colour.
+  - name: "trash empty state shows the neutral trash icon, title and no subtitle"
+    props: { scope: list, icon: delete, title: "Trash is empty" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "Trash is empty" }
+      - { part: subtitle, visible: false }
+    screenshot: true
+
+  # The list scope for this panel is a guess (see the spec's open items). The query is an example value.
+  - name: "settings search with no results quotes the query with curly quotes"
+    props: { scope: list, icon: search, title: "No settings match", subtitle: "Nothing here for “dark mode”." }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "No settings match" }
+      - { part: subtitle, text: "Nothing here for “dark mode”." }
+
+  # Code path only (open decision 8): not in any recorded tree, so no screenshot. "Work" is a placeholder
+  # for the list name.
+  - name: "searching with no matches names the list and shows the search_off icon"
+    props: { scope: list, icon: search_off, title: "No matches in Work" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "No matches in Work" }
+
+  # The plain aside look: no fill, 28px icon box.
+  - name: "no task selected uses the plain aside look at 28px"
+    props: { scope: list, surface: plain, iconSize: 28, icon: landscape, title: "No task selected", subtitle: "Select a task to see its details" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "No task selected" }
+      - { part: subtitle, text: "Select a task to see its details" }
+    screenshot: true
+
+  # The state is recorded without its own wording beyond the title.
+  - name: "no preview shows a title only"
+    props: { scope: list, title: "No preview available" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, text: "No preview available" }
+      - { part: action, visible: false }
+
+  # The lightbox fallback card, with the action button.
+  - name: "unreadable card shows its action as a button"
+    props: { surface: card, title: "Can’t preview this file", actionLabel: "Open externally" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, text: "Can’t preview this file" }
+      - { part: action, role: button }
+      - { part: action, text: "Open externally" }
+      - { part: action, name: "Open externally" }
+    screenshot: true
+
+  - name: "card without an action shows no button"
+    props: { surface: card, title: "Can’t preview this file" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: title, text: "Can’t preview this file" }
+      - { part: action, visible: false }
+
+  # The action is an ordinary button, so focus reaches it and Enter presses it.
+  - name: "action button takes keyboard focus on a card and Enter presses it"
+    props: { surface: card, title: "Can’t preview this file", actionLabel: "Open externally" }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, part: action, key: Enter }
+    expect:
+      - { part: action, focused: true }
+      - { part: action, text: "Open externally" }
+
+  # Loading: the title is the loading text, announced through the status region; no icon and no subtitle.
+  - name: "loading state is a status region with the loading title and no icon or subtitle"
+    props: { scope: list, loading: true, title: "Loading…", icon: delete, subtitle: "Not shown while loading" }
+    steps: [ { action: hover, part: title } ]
+    expect:
+      - { part: loadingStatus, role: status }
+      - { part: loadingStatus, text: "Loading…" }
+      - { part: title, text: "Loading…" }
+      - { part: icon, visible: false }
+      - { part: subtitle, visible: false }
+    screenshot: true

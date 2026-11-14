@@ -1,0 +1,160 @@
+id: ui.separator
+
+# Separator: a 1px hairline. Folds in MenuSeparator, the same widget with
+# decorative false inside a Menu. The Radix root (DropdownMenu.Separator or
+# ContextMenu.Separator) is supplied by Menu, not by this contract.
+# Built from Draft A with the critique's fixes applied (Draft B was a placeholder).
+# Open items (sizes, spacing, aria-orientation) are listed in the notes.
+
+props:
+  orientation: { type: string, default: horizontal }   # horizontal | vertical
+  length: { type: string, default: sm }                # xs | sm | full | fill; applies to vertical only; xs and sm sizes unresolved
+  inset: { type: string, default: none }               # none | menu | row | label; menu is an override of the shadcn base (unverified)
+  emphasis: { type: string, default: default }         # default | adjacent (edge-2 tone beside the focused list tab)
+  depth: { type: integer, default: 0 }                 # whole rows of nesting; used by inset row only; start offset is depth * 24 + 44 px
+  decorative: { type: boolean, default: true }         # true gives role none; false gives role separator
+  className: { type: string, default: "" }             # optional spacing override (web only)
+
+# The separator emits no events.
+events: {}
+
+parts:
+  # aria: none when decorative (the default); separator when not decorative (regions a reader needs, and rules inside a Menu).
+  # The declared role is the format category; the reported ARIA role is checked by the role field in the tests.
+  # Not focusable: no focus or key behaviour. Arrow-key skipping is tested in the Menu contract.
+  rule: { role: generic, same: { default: pixels } }
+
+tests:
+  - name: horizontal rule is the default and is decorative
+    props: {}
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: vertical rule uses the default length
+    props: { orientation: vertical }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Footer divider size is assumed, not measured; the xs size is unresolved (see notes).
+  - name: vertical length xs for footer dividers
+    props: { orientation: vertical, length: xs }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: vertical length full stretches to the parent height
+    props: { orientation: vertical, length: full }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: vertical length fill fills the parent with spacing inside it
+    props: { orientation: vertical, length: fill }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # length applies to vertical only, so this should match the default horizontal rule.
+  - name: horizontal rule ignores length
+    props: { orientation: horizontal, length: full }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Menu spacing is an override of the shadcn base and is unverified.
+  - name: menu inset sits inside a menu with spacing
+    props: { inset: menu }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Start offset is depth * 24 + 44 px (44 px at depth 0).
+  - name: row inset at depth 0 starts at the base offset
+    props: { inset: row, depth: 0 }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Start offset is depth * 24 + 44 px (116 px at depth 3).
+  - name: row inset at depth 3 starts further in
+    props: { inset: row, depth: 3 }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: depth has no effect outside row inset
+    props: { inset: none, depth: 3 }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: label inset runs from the section label to the pane edge
+    props: { inset: label }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Prop-only check. The focused-tab neighbour cases (full and fill) moved to the tab-strip contract,
+  # which must focus the tab and screenshot the strip.
+  - name: adjacent emphasis is shown with no focused neighbour
+    props: { orientation: vertical, length: full, emphasis: adjacent }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: non-decorative horizontal rule reports role separator
+    props: { decorative: false }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # The target should set aria-orientation vertical on this rule. The format has no field to check it,
+  # so that part is unmeasured; only the role is checked.
+  - name: non-decorative vertical rule reports role separator
+    props: { decorative: false, orientation: vertical }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Prop-level check only. Inside a Menu the role comes from Menu context; the Menu contract checks that.
+  - name: non-decorative rule with menu inset reports role separator
+    props: { decorative: false, inset: menu }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  # Web only. The value is a Tailwind class. A native target needs its own unit and its own test (not added).
+  - name: web className adds spacing and the rule stays shown
+    only: [web]
+    props: { className: "mt-4" }
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+  - name: hover leaves the rule unchanged
+    props: {}
+    steps:
+      - { action: hover, part: rule }
+    screenshot: true
+    expect:
+      - { part: rule, visible: true }
+      - { part: rule, role: generic }
+
+colorSchemes: [light, dark]

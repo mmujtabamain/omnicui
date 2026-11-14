@@ -1,0 +1,90 @@
+id: ui.dropindicator
+
+# Insertion marker drawn while a pointer drag is over a valid drop target.
+# Presentational: the drop result (move, reorder, drop onto a tab) is announced by the target that accepts it, never by this widget.
+# Colour: a drop token, not accent (accent is reserved for primary action and selection).
+# The token's value is not defined yet (open), so colour is not asserted here. Both targets render the same token, so pixels compare.
+# Keyboard: none. The indicator is not focusable and takes no keys, so keyboard: true is not set (nothing to check). Drag is pointer only.
+# A keyboard move path is a separate, open decision on the target. WCAG 2.5.7 requires a single-pointer alternative to drag moves, which belongs to the list, not to this indicator.
+# Behaviour sources: WAI-ARIA 1.2 (role none keeps content exposed; aria-hidden removes a subtree from the accessibility tree); WAI-ARIA 1.1 deprecated aria-dropeffect, so no standard drop role exists; React Aria DropIndicator (a hidden indicator is removed both visually and from assistive technology). No Radix or shadcn drop indicator exists.
+# Appears and disappears at once, with no enter or exit motion, so the cue does not flicker while the pointer crosses targets.
+# Sizes at 1rem = 14px: row and root line h-0.5 (0.125rem, 1.75px); tab bar h-6 w-1 (1.5rem by 0.25rem, 21px by 3.5px), fully rounded.
+# The root line is driven by the list's rootDropOver: the caller sets visible from it.
+
+props:
+  target: { type: string, default: row }      # 'row' | 'root' | 'tab': where it lands
+  edge: { type: string, default: before }     # 'before' | 'after': row only, ignored by root and tab
+  visible: { type: boolean, default: false }  # true while a drag is over the target; false draws nothing and hides it from assistive tech
+
+events: {}   # none: the drop is emitted by the target, not by the indicator
+
+parts:
+  indicator: { role: generic }             # aria: none, aria-hidden="true" (presentational); the whole drawn line or bar
+  dot: { role: generic, optional: true }   # aria: none; the dot at the left end of a row or root line; absent on tab
+
+same: pixels
+
+tests:
+  - name: defaults draw nothing (row, before, hidden)   # from: B
+    props: {}
+    steps: []
+    expect:
+      - { part: indicator, visible: false }
+
+  - name: row before shows the line with its dot above the task row   # from: A, B (merged; A's hover and role checks kept)
+    props: { target: row, edge: before, visible: true }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: true }
+      - { part: indicator, role: generic }
+      - { part: dot, visible: true }
+    screenshot: true
+
+  - name: row after shows the line with its dot below the task row   # from: A, B (merged; A's hover and role checks kept)
+    props: { target: row, edge: after, visible: true }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: true }
+      - { part: indicator, role: generic }
+      - { part: dot, visible: true }
+    screenshot: true
+
+  - name: row is hidden when no drag is over the target   # from: A, B (duplicate removed)
+    props: { target: row, edge: before, visible: false }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: false }
+
+  - name: root shows the full-width line with its dot at the list root   # from: A, B (merged; edge has no effect on root)
+    props: { target: root, edge: after, visible: true }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: true }
+      - { part: indicator, role: generic }
+      - { part: dot, visible: true }
+    screenshot: true
+
+  - name: root is hidden when the pointer is not over blank space   # from: A, B (duplicate removed)
+    props: { target: root, visible: false }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: false }
+
+  - name: tab shows the vertical bar on a tab divider or the end drop zone, with no dot   # from: A, B (merged; dot check skipped where the optional dot is absent)
+    props: { target: tab, visible: true }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: true }
+      - { part: indicator, role: generic }
+      - { part: dot, visible: false }
+    screenshot: true
+
+  - name: tab is hidden when no drag is over the target   # from: A, B (duplicate removed)
+    props: { target: tab, visible: false }
+    steps: [ { action: hover, part: indicator } ]
+    expect:
+      - { part: indicator, visible: false }
+
+colorSchemes: [ light, dark ]
+
+thresholds: { area: 30%, strength: 28%, shift: 8px, spot: 2%, timing: 20ms, motion: 40ms, palette: 15%, direction: 30deg, layout: 10% }

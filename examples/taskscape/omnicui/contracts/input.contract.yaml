@@ -1,0 +1,388 @@
+# Input (omnicui contract ui.input).
+# Single-line text entry with no chrome of its own. The host supplies the surface:
+# InputGroup or SearchField when wrapped, the tab bar for inline rename.
+# Same widget on desktop and web. The capture title exists only on desktop.
+# Base: shadcn Input (native input type=text). When multiline is true it renders a
+# textarea with aria-multiline=true instead.
+# Items marked "open:" are not settled and need confirmation from the source owner.
+id: ui.input
+
+props:
+  value: { type: string, default: "" }              # controlled text; the host updates it from valueChange
+  placeholder: { type: string, default: "" }        # shown while empty; inline rename passes "" (none); draft passes "Untitled"
+  ariaLabel: { type: string, default: "" }          # accessible name, required: the generator must refuse an empty value.
+                                                    # The format needs a default, so the default stays "" (see notes). Sheet fields pass the headline.
+  size: { type: string, default: md }               # allowed: inline, md, sm, display (the format has no enum; these comments are the only check)
+                                                    # inline: 14px on a 21px line, font-medium (open), max width 140px, ring-1 on focus.
+                                                    #         Focus ring contrast must meet WCAG 2.2 SC 1.4.11 at 3:1 (open: source item 1). No check here measures it.
+                                                    # md: 14px on a 21px line, full width of its host.
+                                                    # sm: 12px on an 18px line.
+                                                    # display: 18px, font-weight 600, 21px line (task inspector title).
+                                                    # Inside InputGroup or SearchField the owner's size wins. Inheritance is tested in the InputGroup contract, not here.
+  mode: { type: string, default: inline }           # allowed: inline, draft, bare (the format has no enum)
+                                                    # inline: readonly at rest, no fill, reads as text. Click or a changed editRequest enters editing (fill, ring, whole text selected).
+                                                    # draft: always editable, resting fill (new task title).
+                                                    # bare: always editable, no fill at rest (capture title, sheet name).
+  multiline: { type: boolean, default: false }      # textarea: one line grows to two (42px) by soft wrap, then scrolls. Enter never inserts a line break.
+                                                    # Shift+Enter behaves as Enter with no newline (decision, follows the source proposal; see tests).
+  autoFocus: { type: boolean, default: false }      # focus on mount
+  selectOnFocus: { type: boolean, default: false }  # on keyboard focus with a non-empty value, select all. Sheet names set true.
+  selectOnOpen: { type: boolean, default: true }    # on opening for editing with a non-empty value, select all. Default true (inline rename relies on it, catalogue line 125).
+  stopKeyPropagation: { type: boolean, default: false }  # true: every key stops at the field (inline rename). false: Tab, Enter and Escape bubble to app and window handlers.
+                                                    # Tab bubbles to the host, which opens notes (App.tsx:48-50). The field does not move focus itself (recorded override).
+  spellCheck: { type: boolean, default: true }      # sheet name fields set false
+  disabled: { type: boolean, default: false }       # disabled look; cannot take focus or input
+  editRequest: { type: integer, default: 0 }        # a changed value asks an inline title to enter editing (row F2 or Enter). A value present at mount does not start editing.
+                                                    # Source type is number or string. The format has no union, so integer is used (deviation from source, open).
+                                                    # The changed-value path is untested: the format has no step that changes a prop mid-test.
+  className: { type: string, default: "" }          # layout only, set from outside. No visual styling.
+                                                    # Host focus has no other path than autoFocus and editRequest (no inputRef: the format has no object type).
+
+events:
+  valueChange: { value: { type: string } }          # every change, raw and untrimmed (capture sets its draft title from this)
+  submit: { value: { type: string } }               # Enter without Shift, value trimmed. Capture saves, sheet accepts, inline rename submits too.
+                                                    # Shift+Enter on a single line: open (source item 7), see tests.
+  commit: { value: { type: string } }               # inline and draft only: Enter or blur, value trimmed. Inline host calls updateTask only if non-empty and changed, else reverts.
+                                                    # Draft host runs runDraftAction commit.
+                                                    # Decision: commit fires at most once per editing session, so a blur after Enter does not commit again.
+                                                    # An empty draft still emits commit with "" and the host decides (open: confirm).
+  cancel: {}                                        # Escape. Inline reverts, draft cancels, capture hides the bar. Empty payload not verified against docs/SPEC.md (open).
+  propagated: { key: { type: string } }             # TEST HOOK, not user-facing. Each target must emit it for a key that is not stopped. Used only to check stopKeyPropagation.
+
+parts:
+  field: { role: textbox }                          # aria: textbox. Native input type=text, or textarea with aria-multiline=true when multiline.
+                                                    # Inline at rest sets the native readonly attribute (this exposes aria-readonly). readonly is not a checkable field: screenshot-only.
+                                                    # Name from ariaLabel. The 42px box and the scroll are not checkable: screenshot-only.
+
+same: pixels
+colorSchemes: [ light, dark ]
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 720, height: 240 }
+
+tests:
+  - name: inline size, rename at rest shows the title as plain text
+    props: { size: inline, mode: inline, value: "Inbox", ariaLabel: "List name" }
+    steps: []
+    expect:
+      - { part: field, text: "Inbox" }
+      - { part: field, name: "List name" }
+      - { part: field, focused: false }
+    screenshot: true
+
+  - name: md size, capture title takes focus on open
+    only: [desktop]
+    props: { size: md, mode: bare, autoFocus: true, placeholder: "Capture a task", ariaLabel: "Capture title" }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "Capture title" }
+    screenshot: true
+
+  - name: md size, empty bare field shows its placeholder (placeholder is screenshot only)
+    props: { size: md, mode: bare, placeholder: "Name this list", ariaLabel: "New list name" }
+    steps: []
+    expect:
+      - { part: field, name: "New list name" }
+      - { part: field, focused: false }
+    screenshot: true
+
+  - name: md size, filled bare field
+    props: { size: md, mode: bare, value: "Groceries", ariaLabel: "List name" }
+    steps: []
+    expect:
+      - { part: field, text: "Groceries" }
+    screenshot: true
+
+  - name: sm size, standalone search field
+    props: { size: sm, mode: bare, placeholder: "Search settings", ariaLabel: "Search settings" }
+    steps: []
+    expect:
+      - { part: field, name: "Search settings" }
+    screenshot: true
+
+  - name: display size, task inspector title at rest
+    props: { size: display, mode: inline, value: "Renew passport", ariaLabel: "Task title" }
+    steps: []
+    expect:
+      - { part: field, text: "Renew passport" }
+      - { part: field, focused: false }
+    screenshot: true
+
+  - name: inline editing shows the fill and ring and focuses the field
+    props: { size: inline, mode: inline, value: "Inbox", ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+    expect:
+      - { part: field, focused: true }
+      - { part: field, text: "Inbox" }
+    screenshot: true
+
+  - name: inline click selects the whole title, so typing replaces it
+    props: { size: inline, mode: inline, value: "Inbox", ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Work" }
+    expect:
+      - { part: field, focused: true }
+      - { event: valueChange, last: { value: "Work" } }
+
+  - name: display size, editing selects the whole task title, so typing replaces it
+    props: { size: display, mode: inline, value: "Renew passport", ariaLabel: "Task title" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Pay passport" }
+    expect:
+      - { part: field, focused: true }
+      - { event: valueChange, last: { value: "Pay passport" } }
+    screenshot: true
+
+  - name: draft is always editable, autofocuses, and shows the Untitled placeholder (placeholder is screenshot only)
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "New task title" }
+    screenshot: true
+
+  - name: multiline title holds a two-line value (wrap and 42px height are screenshot only)
+    props: { size: display, mode: inline, multiline: true, value: "Reconcile the March statements with the bank export and the card receipts before Friday", ariaLabel: "Task title" }
+    steps: []
+    expect:
+      - { part: field, text: { contains: "Reconcile the March" } }
+    screenshot: true
+
+  - name: multiline title of three or more lines keeps its full text (stays 42px and scrolls, screenshot only)
+    props: { size: display, mode: inline, multiline: true, value: "Reconcile the March statements with the bank export, the card receipts, the mileage log and the vendor invoices before Friday", ariaLabel: "Task title" }
+    steps: []
+    expect:
+      - { part: field, text: { contains: "before Friday" } }
+    screenshot: true
+
+  - name: multiline Enter commits the trimmed title and inserts no line break
+    props: { size: md, mode: inline, multiline: true, ariaLabel: "Task title" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "  Buy milk  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: commit, times: 1, last: { value: "Buy milk" } }
+      - { event: submit, times: 1, last: { value: "Buy milk" } }
+      - { event: valueChange, last: { value: "  Buy milk  " } }
+
+  - name: multiline Shift+Enter behaves as Enter and inserts no line break (follows the source proposal, decision)
+    props: { size: md, mode: inline, multiline: true, ariaLabel: "Task title" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Buy" }
+      - { action: key, part: field, key: Shift+Enter }
+    expect:
+      - { event: valueChange, last: { value: "Buy" } }
+      - { event: submit, times: 1, last: { value: "Buy" } }
+      - { event: commit, times: 1, last: { value: "Buy" } }
+
+  - name: single-line Enter submits the trimmed value and reports the raw change (capture, desktop)
+    only: [desktop]
+    props: { size: md, mode: bare, autoFocus: true, ariaLabel: "Capture title" }
+    steps:
+      - { action: type, part: field, text: "  Buy milk  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: submit, times: 1, last: { value: "Buy milk" } }
+      - { event: valueChange, last: { value: "  Buy milk  " } }
+      - { event: propagated, last: { key: "Enter" } }
+
+  - name: sheet name Enter submits the trimmed value and reports the raw change (sheet, desktop and web)
+    props: { size: md, mode: bare, autoFocus: true, selectOnFocus: true, spellCheck: false, ariaLabel: "New list name" }
+    steps:
+      - { action: type, part: field, text: "  Buy milk  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: submit, times: 1, last: { value: "Buy milk" } }
+      - { event: valueChange, last: { value: "  Buy milk  " } }
+      - { event: propagated, last: { key: "Enter" } }
+
+  - name: "single-line Shift+Enter does not submit (open: source item 7, unconfirmed; capture, desktop)"
+    only: [desktop]
+    props: { size: md, mode: bare, autoFocus: true, ariaLabel: "Capture title" }
+    steps:
+      - { action: type, part: field, text: "Buy" }
+      - { action: key, part: field, key: Shift+Enter }
+    expect:
+      - { event: submit, times: 0 }
+
+  - name: Escape cancels and bubbles when not stopped (capture, desktop)
+    only: [desktop]
+    props: { size: md, mode: bare, autoFocus: true, ariaLabel: "Capture title" }
+    steps:
+      - { action: type, part: field, text: "Buy" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: propagated, last: { key: "Escape" } }
+
+  - name: Escape cancels and bubbles when not stopped (sheet, desktop and web)
+    props: { size: md, mode: bare, autoFocus: true, selectOnFocus: true, spellCheck: false, ariaLabel: "New list name" }
+    steps:
+      - { action: type, part: field, text: "Buy" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: propagated, last: { key: "Escape" } }
+
+  - name: Tab bubbles to the host when not stopped (capture, desktop)
+    only: [desktop]
+    props: { size: md, mode: bare, autoFocus: true, ariaLabel: "Capture title" }
+    steps:
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: propagated, last: { key: "Tab" } }
+
+  - name: Tab bubbles to the host when not stopped (sheet, desktop and web)
+    props: { size: md, mode: bare, autoFocus: true, selectOnFocus: true, spellCheck: false, ariaLabel: "New list name" }
+    steps:
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: propagated, last: { key: "Tab" } }
+
+  - name: inline Enter commits the trimmed title and stops every key
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "  Work  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: commit, times: 1, last: { value: "Work" } }
+      - { event: submit, times: 1, last: { value: "Work" } }
+      - { event: propagated, times: 0 }
+
+  - name: inline Escape reverts the text without committing and stops every key
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Work" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: commit, times: 0 }
+      - { event: propagated, times: 0 }
+      - { part: field, text: "Inbox" }
+      - { part: field, focused: false }
+
+  - name: inline blur by Tab commits the trimmed title
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "  Work  " }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: commit, times: 1, last: { value: "Work" } }
+      - { event: submit, times: 0 }
+      - { event: propagated, times: 0 }
+
+  - name: inline blur with no change still emits commit; the host decides
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: commit, times: 1, last: { value: "Inbox" } }
+
+  - name: inline Enter then Tab commits once in the editing session
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Work" }
+      - { action: key, part: field, key: Enter }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: commit, times: 1, last: { value: "Work" } }
+
+  - name: inline Escape then Tab does not commit
+    props: { size: inline, mode: inline, value: "Inbox", stopKeyPropagation: true, ariaLabel: "List name" }
+    steps:
+      - { action: press, part: field }
+      - { action: type, part: field, text: "Work" }
+      - { action: key, part: field, key: Escape }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: commit, times: 0 }
+
+  - name: draft Enter commits the trimmed draft
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps:
+      - { action: type, part: field, text: "  Plan trip  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: commit, times: 1, last: { value: "Plan trip" } }
+      - { event: cancel, times: 0 }
+
+  - name: draft Enter with only spaces commits an empty value and the host decides (open)
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps:
+      - { action: type, part: field, text: "   " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: commit, times: 1, last: { value: "" } }
+      - { event: cancel, times: 0 }
+
+  - name: draft Escape cancels without committing
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps:
+      - { action: type, part: field, text: "Plan trip" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: commit, times: 0 }
+
+  - name: draft blur by Tab commits the draft
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps:
+      - { action: type, part: field, text: "Plan trip" }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: commit, times: 1, last: { value: "Plan trip" } }
+
+  - name: draft Enter then Tab commits once
+    props: { size: md, mode: draft, autoFocus: true, placeholder: "Untitled", ariaLabel: "New task title" }
+    steps:
+      - { action: type, part: field, text: "Plan trip" }
+      - { action: key, part: field, key: Enter }
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { event: commit, times: 1, last: { value: "Plan trip" } }
+
+  - name: keyboard focus selects the whole value, so typing replaces it
+    props: { size: md, mode: bare, value: "Milk", selectOnFocus: true, ariaLabel: "Sheet name" }
+    steps:
+      - { action: focus, part: field }
+      - { action: type, part: field, text: "Eggs" }
+    expect:
+      - { part: field, focused: true }
+      - { event: valueChange, last: { value: "Eggs" } }
+
+  - name: sheet name with a value selects it on open and turns spell check off
+    props: { size: md, mode: bare, value: "Shopping", selectOnFocus: true, autoFocus: true, spellCheck: false, ariaLabel: "New list name" }
+    steps:
+      - { action: type, part: field, text: "Groceries" }
+    expect:
+      - { part: field, focused: true }
+      - { event: valueChange, last: { value: "Groceries" } }
+
+  - name: disabled field takes no focus and no input
+    props: { size: md, mode: bare, disabled: true, value: "Locked", ariaLabel: "List name" }
+    steps:
+      - { action: focus, part: field }
+      - { action: type, part: field, text: "x" }
+    expect:
+      - { part: field, disabled: true }
+      - { part: field, focused: false }
+      - { event: valueChange, times: 0 }
+    screenshot: true
+
+  - name: a value present at mount does not start inline editing
+    props: { size: inline, mode: inline, value: "Inbox", editRequest: 2, ariaLabel: "List name" }
+    steps: []
+    expect:
+      - { part: field, focused: false }

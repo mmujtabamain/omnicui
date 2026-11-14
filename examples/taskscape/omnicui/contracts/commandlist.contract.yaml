@@ -1,0 +1,176 @@
+# contracts/commandlist.contract.yaml
+# CommandList: scrolling list of command groups and rows (the palette results list).
+# Base: shadcn CommandList (cmdk) over a vertical ScrollArea. Same on desktop and web.
+# Real ARIA roles, mapped onto the format's part roles (hard rules):
+#   list container  -> generic   # aria: listbox, named by the palette input or an aria-label, never aria-hidden
+#   group           -> generic   # aria: group, labelled by its heading through aria-labelledby
+#   group label     -> heading   # aria: heading, visible text that names its group, not aria-hidden
+#   command row     -> button    # aria: option, one per row, not tab stops
+#   empty message   -> status    # aria: polite live region carrying emptyMessage
+# Focus stays in the palette input, which points aria-activedescendant at the active row.
+# keyboard is not set: rows never take DOM focus, so Enter and Space on a row are not a list
+# behaviour here. Those keys belong to CommandPalette.
+# groups (CommandGroup[]) and onPick are product API; the format has no array or function type,
+# so the fixture supplies the row count (rowCount) and onPick is the picked event.
+
+id: ui.commandlist
+
+props:
+  content:
+    type: string
+    default: rows          # "rows" = populated list of groups and rows; "empty" = emptyMessage only (variant axis)
+  activeId:
+    type: string
+    default: ""            # "" = no active row; otherwise the id of the active row, scrolled into view with block: nearest
+                           # instant, not animated, when reduced motion is On (or System with the OS asking for less motion)
+  emptyMessage:
+    type: string
+    default: "No results"  # shown when content is "empty"
+  rowCount:
+    type: integer
+    default: 6             # fixture only, 1 to 100: command rows cmd-01 ... cmd-NN, in groups "Tasks" and "Lists"
+
+events:
+  picked:
+    id:
+      type: string         # id of the row whose command ran; once per press (onPick)
+
+parts:
+  list:
+    role: generic          # aria: listbox; the scrolling region (overflow-y auto, min-h-0, flex-1, max 60vh); not rendered when content is empty
+    optional: true
+  firstGroup:
+    role: generic          # aria: group, named by firstGroupHeading through aria-labelledby; only with grouped content
+    optional: true
+  firstGroupHeading:
+    role: heading          # aria: group label ("Tasks")
+    optional: true
+  firstRow:
+    role: button           # aria: option; the row with id cmd-01
+    optional: true
+  lastRow:
+    role: button           # aria: option; the row with the highest id (cmd-rowCount)
+    optional: true
+  empty:
+    role: status           # aria: polite live region carrying emptyMessage; present only when content is empty
+    optional: true
+
+viewports:
+  default: [ { width: 320, height: 240 }, { width: 480, height: 320 }, { width: 640, height: 480 } ]
+  mobile: [ { width: 360, height: 640 } ]
+
+colorSchemes: [ light, dark ]
+
+same: pixels              # platform: Same; the list draws the same on desktop and web
+
+tests:
+  - name: "rows: the list, groups and rows are exposed"
+    props: { content: rows, rowCount: 6, activeId: "" }
+    steps: [ { action: hover, part: list } ]
+    expect:
+      - { part: list, role: generic }
+      - { part: firstGroup, role: generic }
+      - { part: firstGroupHeading, role: heading }
+      - { part: firstGroupHeading, text: "Tasks" }
+      - { part: firstRow, role: button }
+      - { part: firstRow, visible: true }
+      - { part: firstRow, focused: false }
+
+  - name: "rows: the active row is marked selected"
+    props: { content: rows, rowCount: 6, activeId: "cmd-01" }
+    steps: []
+    expect:
+      - { part: firstRow, selected: true }
+      - { part: lastRow, selected: false }
+
+  - name: "rows: a long list keeps the active row in view"
+    props: { content: rows, rowCount: 40, activeId: "cmd-40" }
+    steps: []
+    expect:
+      - { part: lastRow, visible: true }
+      - { part: lastRow, selected: true }
+
+  - name: "rows: a 100-row list keeps a row past the fold marked and in view"
+    props: { content: rows, rowCount: 100, activeId: "cmd-100" }
+    steps: []
+    expect:
+      - { part: lastRow, selected: true }
+      - { part: lastRow, visible: true }
+      - { part: lastRow, role: button }
+
+  - name: "rows: a 100-row list scrolls when its content exceeds 60vh"
+    props: { content: rows, rowCount: 100, activeId: "" }
+    steps: [ { action: hover, part: list } ]
+    expect:
+      - { part: list, visible: true }
+      - { part: firstRow, visible: true }
+
+  - name: "rows: a filtered list (palette-search) shows only its rows"
+    props: { content: rows, rowCount: 2, activeId: "cmd-01" }
+    steps: []
+    expect:
+      - { part: firstRow, selected: true }
+      - { part: lastRow, visible: true }
+
+  - name: "empty: the message replaces the rows (palette-no-match)"
+    props: { content: empty, emptyMessage: "No commands match" }
+    steps: []
+    expect:
+      - { part: empty, text: "No commands match" }
+      - { part: empty, role: status }
+      - { part: empty, visible: true }
+
+  - name: "empty: the message defaults to No results"
+    props: { content: empty }
+    steps: []
+    expect:
+      - { part: empty, text: "No results" }
+      - { part: empty, role: status }
+      - { part: empty, visible: true }
+
+  - name: "pick: a press runs the first row once"
+    props: { content: rows, rowCount: 6, activeId: "" }
+    steps: [ { action: press, part: firstRow } ]
+    expect:
+      - { event: picked, times: 1, last: { id: "cmd-01" } }
+
+  - name: "pick: a press on a row past the 60vh fold runs that row"
+    props: { content: rows, rowCount: 40, activeId: "" }
+    steps: [ { action: press, part: lastRow } ]
+    expect:
+      - { event: picked, times: 1, last: { id: "cmd-40" } }
+
+  - name: "screenshot: rows, populated"
+    props: { content: rows, rowCount: 6, activeId: "cmd-01" }
+    steps: []
+    screenshot: true
+
+  - name: "screenshot: rows, palette, no active row"
+    props: { content: rows, rowCount: 6, activeId: "" }
+    steps: [ { action: hover, part: list } ]
+    screenshot: true
+
+  - name: "screenshot: rows, palette-search"
+    props: { content: rows, rowCount: 2, activeId: "cmd-01" }
+    steps: []
+    screenshot: true
+
+  - name: "screenshot: rows, palette-search, no active row"
+    props: { content: rows, rowCount: 2, activeId: "" }
+    steps: [ { action: hover, part: list } ]
+    screenshot: true
+
+  - name: "screenshot: rows, scrolled past 60vh"
+    props: { content: rows, rowCount: 40, activeId: "cmd-40" }
+    steps: []
+    screenshot: true
+
+  - name: "screenshot: rows, 100 rows, active row mid-list and scrolled"
+    props: { content: rows, rowCount: 100, activeId: "cmd-60" }
+    steps: [ { action: hover, part: list } ]
+    screenshot: true
+
+  - name: "screenshot: empty, no match"
+    props: { content: empty, emptyMessage: "No commands match" }
+    steps: []
+    screenshot: true

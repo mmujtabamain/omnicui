@@ -1,0 +1,272 @@
+# contracts/ui.scrollarea.contract.yaml
+#
+# ScrollArea: the scroll container for the task list and the trash list.
+# Family: structure. Same on desktop and web.
+# Scrolling is native on both platforms. The widget sets the axis, whether the
+# scrollbar shows, the fill, the accessible name, and the task list's blank-space
+# behaviour (drop target, press on blank space).
+# Base: Radix ScrollArea (shadcn ScrollArea) when the bar is visible; plain
+# overflow when the bar is hidden.
+#
+# Idiom (WAI-ARIA APG landmark regions, axe scrollable-region-focusable, Radix ScrollArea):
+# - A region is a landmark only with an accessible name, so the region role is given
+#   only when label is set. Unlabelled, the region is a plain container.
+# - An overflowing region must be reachable by keyboard, so it takes tabIndex 0 when it
+#   overflows (proposed; generic parts have no focused field, so this is covered by the
+#   keyboard scroll tests rather than asserted directly).
+# - The bar shows while content overflows, not only on hover (Radix type "auto"), so the
+#   bar is discoverable by trackpad and touch.
+# - Native scroll keys (arrows, PageUp, PageDown, Home, End) and the wheel are the
+#   platform's own. The widget does not intercept them. Key tests are therefore written
+#   as scroll do-actions below.
+#
+# Callbacks are events here, because a prop may only be string, integer, number or boolean.
+# The scrolled content is a slot (children). firstRow and lastRow are test fixtures: the
+# first and last child of that content, laid out along the axis.
+#
+# Every part is generic. The only action generic accepts is hover, so scrolling and the
+# blank-space gestures are do-actions that every target advertises:
+#   scroll        direction: up | down | left | right; by: line | page | wheel;
+#                 or to: start | end (Home / End; start is top or left, end is bottom or right)
+#   pressBlank    a press on blank space, not on a data-task-id row
+#   dragOver      a row dragged over blank space, pointer still held; with taskId (optional)
+#   drop          release the dragged row over blank space; with taskId
+#   dragNearEdge  a row held near an edge of the region, pointer still held;
+#                 with edge: top | bottom (the list auto-scrolls)
+
+id: ui.scrollarea
+
+props:
+  # orientation: vertical | horizontal. Scroll axis. Horizontal is used by no widget here:
+  # the list tab strip is TabList with overflow scroll.
+  orientation: { type: string, default: vertical }
+  # scrollbar: native | hidden. Hidden still scrolls with wheel and trackpad.
+  scrollbar: { type: string, default: native }
+  # tone: base (no fill) | raised (bg-surface-2 with text-content-2).
+  tone: { type: string, default: base }
+  # label: accessible name. Empty means unlabelled: no region role, not a landmark.
+  label: { type: string, default: "" }
+  # overscroll: contain only (overscroll-contain, always applied).
+  overscroll: { type: string, default: contain }
+  # dropTarget: task list only. A row dropped on blank space moves to the list root.
+  dropTarget: { type: boolean, default: false }
+
+events:
+  # scrollingChanged: true when a scroll starts, false when it settles.
+  scrollingChanged: { scrolling: { type: boolean } }
+  # bottomChanged: true when the scroll reaches the bottom (or right) end, false when it leaves it.
+  bottomChanged: { atBottom: { type: boolean } }
+  # dropOverChanged: drop-over (rootDropOver) starts and ends while dragging over blank space.
+  dropOverChanged: { over: { type: boolean } }
+  # rootDropped: a row was dropped on blank space (dropTarget only); the list moves it to the root.
+  rootDropped: { taskId: { type: string } }
+  # pressBlank: a press on blank space (not a row). clearedSelection is always true: the list
+  # clears selection and focus on a blank press.
+  pressBlank: { clearedSelection: { type: boolean } }
+
+parts:
+  # aria: region when label is set; none otherwise. The scroll viewport.
+  region: { role: generic }
+  # test fixture: first child of the scrolled content (laid out along the axis).
+  firstRow: { role: generic }
+  # test fixture: last child of the scrolled content.
+  lastRow: { role: generic }
+  # aria: none. The scrollbar thumb, drawn or native; absent when the bar is hidden or content fits.
+  # A native and a drawn thumb differ in pixels; their box and place must match (layout).
+  thumb: { role: generic, optional: true, same: { default: layout } }
+
+same: pixels
+viewports: [ { width: 320, height: 240 } ]
+colorSchemes: [ light, dark ]
+
+tests:
+  - name: vertical base, unlabelled, overflowing, starts at the top
+    props: {}
+    steps: []
+    expect:
+      - { part: region, role: generic }
+      - { part: region, visible: true }
+      - { part: firstRow, visible: true }
+      - { part: lastRow, visible: false }
+    screenshot: true
+
+  - name: raised tone sits on surface-2 with content-2 text
+    props: { tone: raised }
+    steps: []
+    expect:
+      - { part: region, visible: true }
+    screenshot: true
+
+  - name: horizontal orientation lays rows out along the axis
+    props: { orientation: horizontal }
+    steps: []
+    expect:
+      - { part: firstRow, visible: true }
+      - { part: lastRow, visible: false }
+    screenshot: true
+
+  - name: horizontal region scrolls right by a page
+    props: { orientation: horizontal }
+    steps:
+      - { do: scroll, part: region, with: { direction: right, by: page } }
+    expect:
+      - { part: firstRow, visible: false }
+      - { event: scrollingChanged, times: 2, last: { scrolling: false } }
+
+  - name: horizontal, hidden bar and raised tone together
+    props: { orientation: horizontal, scrollbar: hidden, tone: raised }
+    steps:
+      - { action: hover, part: region }
+    expect:
+      - { part: region, visible: true }
+    screenshot: true
+
+  - name: hidden scrollbar shows no thumb and still scrolls
+    props: { scrollbar: hidden }
+    steps: []
+    expect:
+      - { part: region, visible: true }
+      - { part: thumb, visible: false }
+    screenshot: true
+
+  - name: hidden scrollbar still scrolls with the wheel and trackpad
+    props: { scrollbar: hidden }
+    steps:
+      - { do: scroll, part: region, with: { direction: down, to: end, by: wheel } }
+    expect:
+      - { part: lastRow, visible: true }
+      - { event: bottomChanged, times: 1, last: { atBottom: true } }
+
+  - name: wheel scrolls with the native bar shown
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, by: wheel } }
+    expect:
+      - { part: region, visible: true }
+
+  - name: Down arrow scrolls by one line and reports scrolling
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, by: line } }
+    expect:
+      - { event: scrollingChanged, times: 2, last: { scrolling: false } }
+
+  - name: scrolling state recorded while the region scrolls
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, by: line } }
+    record: { part: region }
+    expect:
+      - { part: region, visible: true }
+
+  - name: Page Down scrolls by a page
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, by: page } }
+    expect:
+      - { part: firstRow, visible: false }
+      - { part: lastRow, visible: false }
+      - { event: scrollingChanged, times: 2, last: { scrolling: false } }
+
+  - name: Page Up scrolls back by a page from the end
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, to: end } }
+      - { do: scroll, part: region, with: { direction: up, by: page } }
+    expect:
+      - { part: lastRow, visible: false }
+      - { part: firstRow, visible: false }
+
+  - name: End key scrolls to the end
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, to: end } }
+    expect:
+      - { part: lastRow, visible: true }
+      - { event: bottomChanged, times: 1, last: { atBottom: true } }
+
+  - name: Home key returns to the start
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, to: end } }
+      - { do: scroll, part: region, with: { direction: up, to: start } }
+    expect:
+      - { part: firstRow, visible: true }
+      - { part: lastRow, visible: false }
+      - { event: bottomChanged, times: 2, last: { atBottom: false } }
+
+  - name: scrolled to bottom (settings shortcuts) screenshot
+    props: {}
+    steps:
+      - { do: scroll, part: region, with: { direction: down, to: end } }
+    expect:
+      - { part: lastRow, visible: true }
+    screenshot: true
+
+  - name: drag near the bottom edge auto-scrolls the task list
+    props: { dropTarget: true }
+    steps:
+      - { do: dragNearEdge, part: region, with: { edge: bottom } }
+    record: { part: region }
+    expect:
+      - { part: region, visible: true }
+
+  - name: press on blank space emits pressBlank
+    props: {}
+    steps:
+      - { do: pressBlank, part: region }
+    expect:
+      - { event: pressBlank, times: 1, last: { clearedSelection: true } }
+
+  - name: each blank press emits pressBlank
+    props: {}
+    steps:
+      - { do: pressBlank, part: region }
+      - { do: pressBlank, part: region }
+    expect:
+      - { event: pressBlank, times: 2, last: { clearedSelection: true } }
+
+  - name: drop target at rest
+    props: { dropTarget: true }
+    steps:
+      - { action: hover, part: region }
+    expect:
+      - { part: region, visible: true }
+    screenshot: true
+
+  - name: dragging over blank space starts the drop-over state
+    props: { dropTarget: true }
+    steps:
+      - { do: dragOver, part: region }
+    expect:
+      - { event: dropOverChanged, times: 1, last: { over: true } }
+
+  - name: drop-over state screenshot
+    props: { dropTarget: true }
+    steps:
+      - { do: dragOver, part: region }
+    expect:
+      - { part: region, visible: true }
+    screenshot: true
+
+  - name: dropping on blank space moves the task to the root
+    props: { dropTarget: true }
+    steps:
+      - { do: dragOver, part: region }
+      - { do: drop, part: region, with: { taskId: task-1 } }
+    expect:
+      - { event: rootDropped, times: 1, last: { taskId: task-1 } }
+      - { event: dropOverChanged, times: 2, last: { over: false } }
+
+  - name: dropping on blank space does nothing when dropTarget is off
+    props: { dropTarget: false }
+    steps:
+      - { do: drop, part: region, with: { taskId: task-1 } }
+    expect:
+      - { event: rootDropped, times: 0 }
+
+  - name: a label makes the region a named region
+    props: { label: "Task list" }
+    steps: []
+    expect:
+      - { part: region, role: generic }

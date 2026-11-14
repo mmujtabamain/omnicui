@@ -1,0 +1,83 @@
+id: ui.matchhighlight
+
+# MatchHighlight: the inline highlight behind the text that matches the search
+# query, in task titles and note previews. It is its own widget because a highlight
+# is a separate job from a text label (ui.text excludes search highlights).
+#
+# Look: fill is the search-highlight token at 25% opacity in light and 30% in dark,
+# radius 3px. Text colour and font inherit from the surrounding text.
+#
+# OPEN (product decision): the spec gives accent-500 as the base, but accent is
+# reserved for primary action and selection. The fill needs its own non-accent
+# search-highlight token, which is not chosen yet. Until it is, the screenshots
+# compare the drawn fill as it is built, and no test names a colour value.
+#
+# Element: renders a mark element. HTML-AAM maps mark to the WAI-ARIA mark role.
+# This format has no mark role, so the part role is generic (see the comment on the part).
+#
+# Not interactive: no variants, no events, no keyboard behaviour, not focusable.
+# Matching rules (case, diacritics, substring or whole word) belong to the caller;
+# the widget only decides whether its text is highlighted.
+
+props:
+  query:
+    type: string
+    default: ""    # the search query; highlighted only when query.trim() is non-empty
+  text:
+    type: string
+    default: ""    # the matched text (the React children); the highlight part shows it
+
+events: {}
+
+parts:
+  highlight:
+    role: generic  # aria: mark (the mark element); the format has no mark role
+
+same: pixels
+
+colorSchemes: [light, dark]
+
+tests:
+  - name: "matched text is wrapped in the highlight when a query is set"
+    props: { query: "rep", text: "Rep" }
+    steps: []
+    expect:
+      - { part: highlight, visible: true }
+      - { part: highlight, text: "Rep" }
+      - { part: highlight, role: generic }
+    screenshot: true
+
+  - name: "no query: the text is shown with no highlight fill"
+    props: { query: "", text: "Rep" }
+    steps: []
+    expect:
+      - { part: highlight, visible: true }
+      - { part: highlight, text: "Rep" }
+    screenshot: true
+
+  - name: "whitespace-only query counts as no query"
+    props: { query: "   ", text: "Rep" }
+    steps: []
+    expect:
+      - { part: highlight, visible: true }
+      - { part: highlight, text: "Rep" }
+    screenshot: true
+
+  - name: "Enter and Escape change nothing: the highlight takes no keyboard input"
+    props: { query: "rep", text: "Rep" }
+    steps:
+      - { input: confirm }   # input names must be defined in platforms.yaml (not verified here)
+      - { input: dismiss }
+    expect:
+      - { part: highlight, visible: true }
+      - { part: highlight, text: "Rep" }
+    screenshot: true
+
+  - name: "hover adds no hover state to the highlight"
+    props: { query: "rep", text: "Rep" }
+    steps:
+      - { action: hover, part: highlight }
+    expect:
+      - { part: highlight, visible: true }
+      - { part: highlight, text: "Rep" }
+    screenshot: true

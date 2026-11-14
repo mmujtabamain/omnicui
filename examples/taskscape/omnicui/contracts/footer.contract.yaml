@@ -1,0 +1,178 @@
+id: ui.footer
+
+# Padded row at the foot of a sheet or dialog. It lays out the caller's actions
+# (Cancel, then the accept button) and draws the fill and the hairline.
+# It is layout only: no state, no events, no keys of its own. Its buttons are
+# Tab-reachable in DOM order, and DOM order is visual order.
+# Not in this contract: asChild (a React rendering detail) and children (content,
+# not a value type). The harness passes a Cancel and a Save button.
+# Stats footer, bulk bar, trash strip and capture footer are separate widgets.
+
+# density: bar | row
+#   bar: one line, px-6, one height of 2.25rem (the h-9 value; 31.5px at 1rem = 14px),
+#        replacing the h-8 and h-9 pair in PaneFooter. Default.
+#   row: padded sheet action row, py-5 px-6 gap-3 (1.25rem / 1.5rem / 0.75rem).
+# tone: base | raised
+#   base: window colour, no fill. Default.
+#   raised: bg-surface-2.
+# edge: top | bottom | none
+#   top: border-t edge-2, the sheet action row. Default.
+#   bottom: border-b edge-2. Kept for shape parity.
+#   none: no hairline.
+# drag: none | window
+#   none: no drag region. Default.
+#   window: the bar drags the window. Desktop only. The button areas are excluded
+#           from the drag region, so a press on a button presses it. Web: no drag
+#           region, the browser owns the window.
+props:
+  density: { type: string, default: bar }
+  tone: { type: string, default: base }
+  edge: { type: string, default: top }
+  drag: { type: string, default: none }
+
+# Emits no events. A press on a button is that button's event, owned by the button's contract.
+events: {}
+
+parts:
+  footer: { role: generic }   # aria: none. contentinfo applies only to a page-level footer, never inside a sheet or dialog
+  cancel: { role: button }    # aria: button. First action in DOM order; the harness supplies it
+  accept: { role: button }    # aria: button. Last action in DOM order; the harness supplies it
+
+tests:
+  - name: "defaults: one bar, base tone, top hairline, no drag"
+    props: {}
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: cancel, visible: true, text: "Cancel" }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "row density: padded sheet action row with a 12px-class gap"
+    props: { density: row }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: cancel, visible: true, text: "Cancel" }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "base tone: window colour with no fill"
+    props: { tone: base }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "raised tone: bg-surface-2 fill"
+    props: { tone: raised }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "top edge: border-t hairline above the row"
+    props: { edge: top }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+    screenshot: true
+
+  - name: "bottom edge: border-b hairline below the row"
+    props: { edge: bottom }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+    screenshot: true
+
+  - name: "no edge: no hairline"
+    props: { edge: none }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+    screenshot: true
+
+  - name: "combined: row, raised, no edge"
+    props: { density: row, tone: raised, edge: none }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: cancel, visible: true, text: "Cancel" }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "drag window: the bar is a window drag region (desktop only)"
+    only: [desktop]
+    props: { drag: window }
+    steps:
+      - { action: hover, part: footer }
+    expect:
+      - { part: footer, visible: true }
+      - { part: accept, visible: true, text: "Save" }
+    screenshot: true
+
+  - name: "drag window: dragging the bar moves the window and the buttons stay in the bar"
+    only: [desktop]
+    props: { drag: window }
+    # Desktop targets advertise do.dragWindow: it drags the window by dx, dy from the given part.
+    steps:
+      - { do: dragWindow, part: footer, with: { dx: 120, dy: 0 } }
+    expect:
+      - { part: footer, visible: true }
+      - { part: cancel, visible: true, text: "Cancel" }
+      - { part: accept, visible: true, text: "Save" }
+
+  - name: "drag window: a press on a button still presses it, not the drag"
+    only: [desktop]
+    props: { drag: window }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { part: accept, visible: true, text: "Save" }
+      - { part: footer, visible: true }
+
+  - name: "keyboard: Tab from Cancel reaches Save"
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Tab }
+    expect:
+      - { part: accept, focused: true }
+
+  - name: "keyboard: Shift+Tab from Save returns to Cancel"
+    steps:
+      - { action: focus, part: accept }
+      - { action: key, part: accept, key: "Shift+Tab" }
+    expect:
+      - { part: cancel, focused: true }
+
+  - name: "keyboard: Escape is not taken by the footer; Cancel keeps focus"
+    steps:
+      - { action: focus, part: cancel }
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { part: footer, visible: true }
+      - { part: cancel, focused: true }
+
+  - name: "keyboard focus: the focus ring is drawn on Save"
+    steps:
+      - { action: focus, part: accept }
+    expect:
+      - { part: accept, focused: true }
+    screenshot: true
+
+keyboard: true
+colorSchemes: [light, dark]
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 640, height: 240 }
+same: pixels

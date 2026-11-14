@@ -1,0 +1,409 @@
+# contracts/toggle.contract.yaml
+# Two-state button for panel, mode and formatting-mark switches (WAI-ARIA APG toggle button,
+# Radix Toggle, shadcn Toggle). Single owner of aria-pressed; the test format reads it through
+# the button field selected. The format lists selected for chips, tabs and segments; here it
+# means aria-pressed on a toggle button. Radix documents data-state and not aria-pressed, so
+# each target must confirm that aria-pressed is set. Replaces the pressed uses of IconButton
+# and ToolbarButton.
+#
+# Icon rule (use the same across the contract family): icon is the off glyph; pressedIcon,
+# when set, replaces it while pressed. Empty pressedIcon: icon is shown in both states.
+#
+# Constant label: the accessible name does not change with pressed (APG). The reference's
+# changing labels (Split view / Close split view) are open item 1; this file tests the
+# constant-label proposal.
+#
+# Shortcut: tooltip only. Meta is written literally, as platforms.yaml writes macOS Cmd; the
+# target shows Cmd on macOS and Ctrl elsewhere. The chord is the app's choice; on web it must
+# avoid browser-reserved combinations. That check belongs in the platform or app contract.
+# Meta+Backslash is used here because browsers do not use it by default.
+#
+# Tooltip tests are skipped where the optional tooltip part is absent (no shortcut, or the
+# target shows none).
+#
+# Open items (the spec lists 8; these drafts identify only these):
+#   item 1 (constant label): "icon shape keeps its name when pressed" and
+#     "text shape keeps its label when pressed" assert the proposal.
+#   item 3 (split view and preview on multi-inspector, filter panel and trash): not testable
+#     from this contract.
+#
+# Tab order across several toggles is not tested here: the format has no Tab action.
+
+id: ui.toggle
+
+props:
+  # Controlled pressed state. Absent: the toggle is uncontrolled and defaultPressed sets its
+  # start. Present: the toggle shows this value and changes only when the app updates it.
+  pressed: { type: boolean }
+  # Uncontrolled starting state, used when pressed is absent.
+  defaultPressed: { type: boolean, default: false }
+  # sm | md | lg. sm: 21px high, 12px label or 15px glyph. md: 24px high, 14px glyph, 5px radius.
+  # lg: 28px high, 19px glyph, 7px radius.
+  size: { type: string, default: sm }
+  # icon: square at the size height. text: label and icon, width follows the content.
+  shape: { type: string, default: icon }
+  # Glyph name, shown while off. Pair rule: pressedIcon, when set, is the glyph shown while on.
+  icon: { type: string, default: "" }
+  # Glyph shown while pressed. Empty: icon is shown in both states.
+  pressedIcon: { type: string, default: "" }
+  # Visible text for the text shape. Unused by the icon shape.
+  label: { type: string, default: "" }
+  # Accessible name, required for the icon shape. Constant: does not change with pressed.
+  ariaLabel: { type: string, default: "" }
+  # Shortcut shown in the tooltip only. Meta is Cmd on macOS and Ctrl elsewhere (the target maps
+  # it). Empty: no tooltip.
+  shortcut: { type: string, default: "" }
+  # Prevents default on mousedown so the editor keeps focus (rich-text marks at sm, capture-bar
+  # marks at md).
+  retainFocus: { type: boolean, default: false }
+  # Muted and inert: does not activate.
+  disabled: { type: boolean, default: false }
+
+events:
+  # Fired on click, Enter or Space with the value the toggle asks for. In controlled use the
+  # app decides whether the state changes.
+  pressedChange: { pressed: { type: boolean } }
+
+parts:
+  # aria-pressed. The label stays constant; the pressed state carries the meaning.
+  toggle: { role: button, same: { default: pixels } }
+  # Shortcut tooltip, shown on hover. Absent where the target shows none or shortcut is empty;
+  # its tests are skipped there.
+  tooltip: { role: generic, optional: true }
+
+keyboard: true
+colorSchemes: [ light, dark ]
+mask: [ tooltip ]
+
+tests:
+  # Defaults and state
+  - name: defaults are the sm size and icon shape, off
+    props: { ariaLabel: "Bold", icon: format_bold }
+    expect:
+      - { part: toggle, role: button }
+      - { part: toggle, selected: false }
+      - { part: toggle, name: "Bold" }
+    screenshot: true
+
+  - name: pressed true reports selected
+    props: { pressed: true, ariaLabel: "Bold", icon: format_bold }
+    expect:
+      - { part: toggle, selected: true }
+      - { part: toggle, name: "Bold" }
+
+  - name: press turns the toggle on and reports pressedChange
+    props: { size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: true }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  - name: each press flips the state, two presses
+    props: { ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle, times: 2 } ]
+    expect:
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 2, last: { pressed: false } }
+
+  - name: each press flips the state, three presses
+    props: { defaultPressed: false, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle, times: 3 } ]
+    expect:
+      - { part: toggle, selected: true }
+      - { event: pressedChange, times: 3, last: { pressed: true } }
+
+  - name: defaultPressed true, a press turns it off
+    props: { defaultPressed: true, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 1, last: { pressed: false } }
+
+  - name: controlled off, press asks for on and the state stays with the app
+    props: { pressed: false, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  - name: controlled on, press asks for off and the state stays with the app
+    props: { pressed: true, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: true }
+      - { event: pressedChange, times: 1, last: { pressed: false } }
+
+  # Keyboard
+  - name: Enter toggles
+    props: { ariaLabel: "Bold", icon: format_bold }
+    steps:
+      - { action: focus, part: toggle }
+      - { action: key, part: toggle, key: Enter }
+    expect:
+      - { part: toggle, selected: true }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  - name: Space toggles
+    props: { ariaLabel: "Bold", icon: format_bold }
+    steps:
+      - { action: focus, part: toggle }
+      - { action: key, part: toggle, key: Space }
+    expect:
+      - { part: toggle, selected: true }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  - name: arrow keys do nothing
+    props: { ariaLabel: "Bold", icon: format_bold }
+    steps:
+      - { action: focus, part: toggle }
+      - { action: key, part: toggle, key: ArrowRight }
+      - { action: key, part: toggle, key: ArrowDown }
+      - { action: key, part: toggle, key: ArrowLeft }
+    expect:
+      - { part: toggle, focused: true }
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 0 }
+
+  - name: focus action moves keyboard focus to the toggle
+    props: { ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+
+  # Disabled
+  - name: disabled toggle ignores press
+    props: { disabled: true, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, disabled: true }
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 0 }
+
+  - name: disabled toggle ignores Enter and Space
+    props: { disabled: true, ariaLabel: "Bold", icon: format_bold }
+    steps:
+      - { action: focus, part: toggle }
+      - { action: key, part: toggle, key: Enter }
+      - { action: key, part: toggle, key: Space }
+    expect:
+      - { part: toggle, disabled: true }
+      - { part: toggle, selected: false }
+      - { event: pressedChange, times: 0 }
+
+  # Names and labels (open item 1: constant label)
+  - name: icon shape keeps its name when pressed
+    props: { size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, name: "Split view" }
+      - { part: toggle, selected: true }
+
+  - name: text shape is named by its label, off
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    expect:
+      - { part: toggle, text: "Sort and filter" }
+      - { part: toggle, name: "Sort and filter" }
+      - { part: toggle, selected: false }
+
+  - name: text shape keeps its label when pressed
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, text: "Sort and filter" }
+      - { part: toggle, name: "Sort and filter" }
+      - { part: toggle, selected: true }
+
+  # Focus retention (rich-text marks at sm run on web too; capture-bar marks at md are desktop)
+  - name: retainFocus at sm, rich-text mark, keeps focus off the toggle
+    props: { retainFocus: true, size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: true }
+      - { part: toggle, focused: false }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  - name: retainFocus at md, capture-bar mark, keeps focus off the toggle
+    only: [desktop]
+    props: { retainFocus: true, size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, selected: true }
+      - { part: toggle, focused: false }
+      - { event: pressedChange, times: 1, last: { pressed: true } }
+
+  # Shortcut tooltip (platform split; skipped where the tooltip part is absent)
+  - name: shortcut tooltip shows Cmd on macOS
+    only: [macos]
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close, shortcut: "Meta+Backslash" }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: tooltip, text: { contains: "Cmd" } } ]
+
+  - name: shortcut tooltip shows Ctrl off macOS
+    except: [macos]
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close, shortcut: "Meta+Backslash" }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: tooltip, text: { contains: "Ctrl" } } ]
+
+  # Screenshots: sm text (label and icon), each state
+  - name: sm text, off, screenshot
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    expect:
+      - { part: toggle, visible: true }
+      - { part: toggle, selected: false }
+    screenshot: true
+
+  - name: sm text, on, screenshot
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    steps: [ { action: press, part: toggle } ]
+    expect: [ { part: toggle, selected: true } ]
+    screenshot: true
+
+  - name: sm text, hover, screenshot
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: toggle, visible: true } ]
+    screenshot: true
+
+  - name: sm text, focus-visible, screenshot
+    props: { size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+    screenshot: true
+
+  - name: sm text, disabled, screenshot
+    props: { disabled: true, size: sm, shape: text, icon: sort, label: "Sort and filter" }
+    expect: [ { part: toggle, disabled: true } ]
+    screenshot: true
+
+  # Screenshots: sm icon, each state
+  - name: sm icon, off, screenshot
+    props: { size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    expect:
+      - { part: toggle, visible: true }
+      - { part: toggle, selected: false }
+    screenshot: true
+
+  - name: sm icon, on, screenshot
+    props: { size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: press, part: toggle } ]
+    expect: [ { part: toggle, selected: true } ]
+    screenshot: true
+
+  - name: sm icon, hover, screenshot
+    props: { size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: toggle, visible: true } ]
+    screenshot: true
+
+  - name: sm icon, focus-visible, screenshot
+    props: { size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+    screenshot: true
+
+  - name: sm icon, disabled, off, screenshot
+    props: { disabled: true, size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    expect: [ { part: toggle, disabled: true } ]
+    screenshot: true
+
+  - name: sm icon, disabled, on, screenshot
+    props: { disabled: true, pressed: true, size: sm, shape: icon, ariaLabel: "Bold", icon: format_bold }
+    expect:
+      - { part: toggle, disabled: true }
+      - { part: toggle, selected: true }
+    screenshot: true
+
+  # Screenshots: md icon, capture-bar formatting marks (desktop only)
+  - name: md icon, off, screenshot
+    only: [desktop]
+    props: { size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    expect:
+      - { part: toggle, visible: true }
+      - { part: toggle, selected: false }
+    screenshot: true
+
+  - name: md icon, on, screenshot
+    only: [desktop]
+    props: { size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    steps: [ { action: press, part: toggle } ]
+    expect: [ { part: toggle, selected: true } ]
+    screenshot: true
+
+  - name: md icon, hover, screenshot
+    only: [desktop]
+    props: { size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: toggle, visible: true } ]
+    screenshot: true
+
+  - name: md icon, focus-visible, screenshot
+    only: [desktop]
+    props: { size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+    screenshot: true
+
+  - name: md icon, disabled, screenshot
+    only: [desktop]
+    props: { disabled: true, size: md, shape: icon, ariaLabel: "Italic", icon: format_italic }
+    expect: [ { part: toggle, disabled: true } ]
+    screenshot: true
+
+  # Screenshots: lg icon, title-bar split view
+  - name: lg icon, off, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    expect:
+      - { part: toggle, visible: true }
+      - { part: toggle, selected: false }
+    screenshot: true
+
+  - name: lg icon, on, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    steps: [ { action: press, part: toggle } ]
+    expect: [ { part: toggle, selected: true } ]
+    screenshot: true
+
+  - name: lg icon, hover, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: toggle, visible: true } ]
+    screenshot: true
+
+  - name: lg icon, focus-visible, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+    screenshot: true
+
+  - name: lg icon, disabled, screenshot
+    props: { disabled: true, size: lg, shape: icon, ariaLabel: "Split view", icon: split_view }
+    expect: [ { part: toggle, disabled: true } ]
+    screenshot: true
+
+  # Screenshots: lg icon pair, preview panel (icon is the off glyph, pressedIcon the on glyph)
+  - name: lg icon pair, off (shows right_panel_open), screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close }
+    expect: [ { part: toggle, selected: false } ]
+    screenshot: true
+
+  - name: lg icon pair, on (shows right_panel_close), screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close }
+    steps: [ { action: press, part: toggle } ]
+    expect: [ { part: toggle, selected: true } ]
+    screenshot: true
+
+  - name: lg icon pair, hover, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close }
+    steps: [ { action: hover, part: toggle } ]
+    expect: [ { part: toggle, visible: true } ]
+    screenshot: true
+
+  - name: lg icon pair, focus-visible, screenshot
+    props: { size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close }
+    steps: [ { action: focus, part: toggle } ]
+    expect: [ { part: toggle, focused: true } ]
+    screenshot: true
+
+  - name: lg icon pair, disabled, screenshot
+    props: { disabled: true, size: lg, shape: icon, ariaLabel: "Preview panel", icon: right_panel_open, pressedIcon: right_panel_close }
+    expect: [ { part: toggle, disabled: true } ]
+    screenshot: true

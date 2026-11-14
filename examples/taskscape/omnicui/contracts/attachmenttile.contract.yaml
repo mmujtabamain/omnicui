@@ -1,0 +1,170 @@
+id: ui.attachmenttile
+
+# AttachmentTile: one grid tile for one attachment.
+#   kind image: object-cover thumbnail (once loaded); click opens the lightbox at its index.
+#   kind link:  22px link glyph; click opens the link externally (api.openAttachment).
+# The tile is a native button (APG button pattern): Enter and Space activate it.
+# Right-click, the context-menu key and Shift+F10 open the caller's menu (APG menu pattern).
+# Menu items are caller-supplied MenuItem[]; the format cannot type that list, so it is not a prop.
+# Platform: web loads thumbnails from the server and opens links in a new tab; desktop reads local files.
+# The link tests check only that opened fires (how api.openAttachment opens a link on web is not read).
+
+props:
+  kind: { type: string, default: image }            # 'link' | 'image'. Content type (image shows a thumbnail, link shows a glyph).
+  name: { type: string, default: "" }               # Attachment name; the accessible name. Empty is a caller bug.
+  thumbnailSrc: { type: string, default: "" }       # Image kind only; ignored for link.
+  draggable: { type: boolean, default: true }       # Carries ATTACHMENT_MIME. Default true is an assumption: the reference drags into notes.
+
+events:
+  opened: { kind: { type: string } }                # 'image': lightbox at its index. 'link': link opened externally.
+  contextMenuOpened: { kind: { type: string } }     # 'image' | 'link'. Right-click, context-menu key or Shift+F10; the caller shows the menu for this kind.
+  dragStarted: { kind: { type: string } }           # 'image' | 'link'. ATTACHMENT_MIME drag began (copy effect).
+
+parts:
+  tile: { role: button }                            # aria: button (native). The whole tile; accessible name from the name prop.
+  thumb: { role: generic, optional: true }          # aria: img, alt empty (decorative). Image kind only.
+  glyph: { role: generic, optional: true }          # aria: none, decorative (aria-hidden). Link kind only; colour oklch(0.62 0.013 264).
+  overlay: { role: generic, optional: true }        # aria: none, decorative open_in_full. Appears on hover; shown for both kinds (assumption).
+
+same: pixels                                        # Thumbnail and glyph pixels match between web and desktop once loaded.
+colorSchemes: [ light, dark ]
+viewports: [ { width: 120, height: 120 } ]          # The tile is 94x94; a 120px canvas keeps it whole.
+keyboard: true                                      # Enter and Space must do what a press does.
+
+tests:
+  # Rest state, one screenshot per variant (every colour scheme is compared)
+  - name: image rest state shows the button role, its name and the thumbnail
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps: []
+    expect:
+      - { part: tile, role: button }
+      - { part: tile, name: "Site plan" }
+      - { part: thumb, visible: true }
+      - { part: overlay, visible: false }
+    screenshot: true
+
+  - name: link rest state shows the button role, its name and the glyph
+    props: { kind: link, name: "Roadmap" }
+    steps: []
+    expect:
+      - { part: tile, role: button }
+      - { part: tile, name: "Roadmap" }
+      - { part: glyph, visible: true }
+      - { part: overlay, visible: false }
+    screenshot: true
+
+  # Hover state (border-edge-3, open_in_full overlay)
+  - name: image hover shows the open_in_full overlay
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: hover, part: tile }
+    expect:
+      - { part: overlay, visible: true }
+    screenshot: true
+
+  - name: link hover shows the open_in_full overlay
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: hover, part: tile }
+    expect:
+      - { part: overlay, visible: true }
+    screenshot: true
+
+  # Focus-visible state
+  - name: image keyboard focus shows the focus ring
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: focus, part: tile }
+    expect:
+      - { part: tile, focused: true }
+    screenshot: true
+
+  - name: link keyboard focus shows the focus ring
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: focus, part: tile }
+    expect:
+      - { part: tile, focused: true }
+    screenshot: true
+
+  # Click (press) opens each kind
+  - name: image press opens the lightbox
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: press, part: tile, times: 1 }
+    expect:
+      - { event: opened, times: 1, last: { kind: image } }
+
+  - name: link press opens the link
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: press, part: tile, times: 1 }
+    expect:
+      - { event: opened, times: 1, last: { kind: link } }
+
+  # Keyboard: Enter and Space open each kind (native button)
+  - name: image opens on Enter
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: Enter }
+    expect:
+      - { event: opened, times: 1, last: { kind: image } }
+
+  - name: image opens on Space
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: Space }
+    expect:
+      - { event: opened, times: 1, last: { kind: image } }
+
+  - name: link opens on Enter
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: Enter }
+    expect:
+      - { event: opened, times: 1, last: { kind: link } }
+
+  - name: link opens on Space
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: Space }
+    expect:
+      - { event: opened, times: 1, last: { kind: link } }
+
+  # Context menu: right-click (pointer), context-menu key and Shift+F10 (keyboard)
+  - name: image right-click opens the context menu
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { do: contextMenu, part: tile }
+    expect:
+      - { event: contextMenuOpened, times: 1, last: { kind: image } }
+
+  - name: link right-click opens the context menu
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { do: contextMenu, part: tile }
+    expect:
+      - { event: contextMenuOpened, times: 1, last: { kind: link } }
+
+  - name: image Shift+F10 opens the context menu
+    props: { kind: image, name: "Site plan", thumbnailSrc: "fixtures/site-plan.png" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: Shift+F10 }
+    expect:
+      - { event: contextMenuOpened, times: 1, last: { kind: image } }
+
+  - name: link context-menu key opens the context menu
+    props: { kind: link, name: "Roadmap" }
+    steps:
+      - { action: focus, part: tile }
+      - { action: key, part: tile, key: ContextMenu }
+    expect:
+      - { event: contextMenuOpened, times: 1, last: { kind: link } }
+
+  # Dragging is left out: drag acts only on slider parts, and tile is a button.
+  # The draggable prop and the dragStarted event stay declared; no test drags the tile.

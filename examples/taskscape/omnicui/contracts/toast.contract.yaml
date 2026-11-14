@@ -1,0 +1,253 @@
+# Contract ui.toast: transient, non-blocking notice after an undoable action.
+# Base: Radix Toast (Provider, Viewport, Root, Action, Close). One Toast.Provider and one
+# Toast.Viewport per window. The store holds one toast at a time (store-level rule, not tested here).
+# Bottom-centre neutral pill; position and tone are the fixed look recorded in the catalogue.
+#
+# Proposals, not recorded in the widget: message copy, the Undo and Try again labels, the Close
+# name, the failed state and its copy, the reduced-motion prop, and every default except open,
+# position and tone.
+#
+# Failure model: every action press (Undo or Try again) asks to close (openChanged false,
+# dismissed with reason action). If the undo or retry fails, the app re-opens the toast with
+# failed true, and the failed tests start from that state. open is controlled, so the tests
+# check what the widget asks for.
+#
+# failed is shared by web and desktop (one widget, same pixels). Whether desktop can fail an
+# undo is open.
+#
+# The catalogue records only the idle (not mounted) state.
+#
+# Not measured here: the window-blur pause of the timer; click-through (the wrapper passes
+# clicks through except over the pill); the F8 hotkey scoped to the main window on desktop; a
+# toast raised from a separate sheet window (needs a companion component); the rule that a
+# second toast replaces the first; focus landing in the viewport list after F8 (the list has no
+# focus field); the announced text of Toast.Action altText (proposed: the label itself).
+
+id: ui.toast
+
+props:
+  open: { type: boolean, default: false }              # controlled visibility; false is the idle state (nothing mounted)
+  message: { type: string, default: "" }               # notice text (proposed copy; the inventory has none)
+  actionLabel: { type: string, default: "Undo" }       # label of the single action; reads "Try again" while failed is true
+  showAction: { type: boolean, default: true }         # false: no action control is rendered
+  failed: { type: boolean, default: false }            # proposal: the undo failed; the app re-opens the toast with failed true; errorMessage shows and the action reads "Try again"
+  errorMessage: { type: string, default: "Could not undo" }  # proposal: shown in place of message while failed is true
+  duration: { type: number, default: 5000 }            # auto-dismiss in ms (Radix default 5000); paused while hovered or focused; blur pause not tested here
+  focusHotkey: { type: string, default: "F8" }         # key that moves focus into the toast list; "" turns it off (Radix takes an array, so the implementation must guard the empty case); page-scoped on web, main window only on desktop (not measured here)
+  reducedMotion: { type: boolean, default: false }     # proposal: the app's Reduced motion setting (System follows the OS) resolved for this toast; true: no rise on entry; the widget does not record this setting
+  swipeDirection: { type: string, default: "down" }    # up, down, left or right; down for the bottom-edge pill (Radix default is right)
+  position: { type: string, default: "bottom-centre" } # the only value recorded in the catalogue
+  tone: { type: string, default: "neutral" }           # the only value recorded in the catalogue (floating popover tone)
+
+events:
+  openChanged: { open: { type: boolean } }             # fires whenever the widget asks for a new visibility, whatever the cause
+  dismissed: { reason: { type: string } }              # fires once per close; reason is one of timeout, swipe, close, escape, action
+  actioned: { label: { type: string } }                # the action was pressed; label is the text shown at that moment (Undo or Try again)
+
+parts:
+  viewport: { role: generic }                          # aria: list (Radix Toast.Viewport renders an ol); one per window; holds the focusHotkey target; no size while empty
+  toast: { role: status, same: { default: pixels } }   # aria: status (Radix Toast.Root); type background (polite) for the notice; failed state may use foreground (to verify)
+  message: { role: generic, same: { default: pixels } } # the notice text, or errorMessage while failed
+  action: { role: button, optional: true, same: { default: pixels } }  # aria: button (Radix Toast.Action); accessible name is its text; absent when showAction is false
+  close: { role: button, same: { default: pixels } }   # aria: button (Radix Toast.Close); accessible name Close
+
+keyboard: true
+
+same: pixels
+
+colorSchemes: [light, dark]
+
+viewports:
+  - { width: 1180, height: 763 }                       # recorded window: pill at y 702, 41 px tall, bottom-centre, 20 px bottom offset
+  - { width: 320, height: 240 }                        # narrow window: the pill must still fit centred
+
+tests:
+  - name: idle renders no toast
+    props: { open: false }
+    steps: []
+    expect:
+      - { part: toast, visible: false }
+      - { part: message, visible: false }
+      - { part: action, visible: false }
+
+  - name: shows the message, the Undo action and the close control
+    props: { open: true, message: "Task moved to Trash" }
+    steps: []
+    expect:
+      - { part: toast, role: status, visible: true }
+      - { part: message, text: "Task moved to Trash", visible: true }
+      - { part: action, role: button, name: Undo, text: Undo, visible: true }
+      - { part: close, role: button, name: Close, visible: true }
+
+  - name: no action control when showAction is false
+    props: { open: true, message: "Saved", showAction: false }
+    steps: []
+    expect:
+      - { part: message, text: "Saved" }
+      - { part: action, visible: false }
+
+  - name: failed toast shows the error and offers Try again
+    props: { open: true, message: "Task moved to Trash", failed: true }
+    steps: []
+    expect:
+      - { part: toast, visible: true }
+      - { part: message, text: "Could not undo" }
+      - { part: action, role: button, name: "Try again", text: "Try again", visible: true }
+
+  - name: pressing Undo runs the action and dismisses
+    props: { open: true, message: "Task moved to Trash" }
+    steps: [ { action: press, part: action } ]
+    expect:
+      - { event: actioned, times: 1, last: { label: Undo } }
+      - { event: dismissed, times: 1, last: { reason: action } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: pressing Try again after a failed undo asks again and closes
+    props: { open: true, message: "Task moved to Trash", failed: true }
+    steps: [ { action: press, part: action } ]
+    expect:
+      - { event: actioned, times: 1, last: { label: "Try again" } }
+      - { event: dismissed, times: 1, last: { reason: action } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: close control dismisses with reason close
+    props: { open: true, message: "Saved" }
+    steps: [ { action: press, part: close } ]
+    expect:
+      - { event: dismissed, times: 1, last: { reason: close } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: close still dismisses a failed toast
+    props: { open: true, message: "Task moved to Trash", failed: true }
+    steps: [ { action: press, part: close } ]
+    expect:
+      - { event: dismissed, times: 1, last: { reason: close } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: Escape dismisses while focus is in the toast
+    props: { open: true, message: "Saved" }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, part: action, key: Escape }
+    expect:
+      - { event: dismissed, times: 1, last: { reason: escape } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: Escape does nothing when focus is outside the toast
+    props: { open: true, message: "Saved" }
+    steps: [ { input: dismiss } ]                      # input name "dismiss" must be defined in platforms.yaml (not verified here)
+    expect:
+      - { event: dismissed, times: 0 }
+
+  - name: Enter on Undo runs it and dismisses
+    props: { open: true, message: "Saved" }
+    steps: [ { action: key, part: action, key: Enter } ]
+    expect:
+      - { event: actioned, times: 1, last: { label: Undo } }
+      - { event: dismissed, times: 1, last: { reason: action } }
+
+  - name: Space on close dismisses
+    props: { open: true, message: "Saved" }
+    steps: [ { action: key, part: close, key: Space } ]
+    expect:
+      - { event: dismissed, times: 1, last: { reason: close } }
+
+  - name: Tab moves from Undo to close
+    props: { open: true, message: "Saved" }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, part: action, key: Tab }
+    expect:
+      - { part: close, focused: true }
+      - { part: action, focused: false }
+
+  - name: F8 moves focus from Undo into the toast list
+    props: { open: true, message: "Saved" }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, part: action, key: F8 }         # the list has no focused field; Undo losing focus is the check
+    expect:
+      - { part: action, focused: false }
+
+  - name: an empty focusHotkey turns the list shortcut off
+    props: { open: true, message: "Saved", focusHotkey: "" }
+    steps:
+      - { action: focus, part: action }
+      - { action: key, part: action, key: F8 }
+    expect:
+      - { part: action, focused: true }
+
+  - name: showing the toast does not take focus
+    props: { open: true, message: "Saved" }
+    steps: []
+    expect:
+      - { part: action, focused: false }
+      - { part: close, focused: false }
+
+  - name: swipe in the dismiss direction dismisses
+    props: { open: true, message: "Saved" }
+    steps: [ { do: swipe, part: toast, with: { direction: down } } ]
+    expect:
+      - { event: dismissed, times: 1, last: { reason: swipe } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: hover pauses auto-dismiss
+    props: { open: true, message: "Saved", duration: 1000 }   # long enough to outlast the entry animation
+    steps: [ { action: hover, part: toast } ]
+    expect:
+      - { part: toast, visible: true }
+      - { event: dismissed, times: 0 }
+
+  - name: focus pauses auto-dismiss
+    props: { open: true, message: "Saved", duration: 1000 }
+    steps: [ { action: focus, part: action } ]
+    expect:
+      - { part: action, focused: true }
+      - { event: dismissed, times: 0 }
+
+  - name: auto-dismisses after duration
+    props: { open: true, message: "Saved", duration: 1000 }
+    steps: []
+    expect:
+      - { event: dismissed, times: 1, last: { reason: timeout } }
+      - { event: openChanged, times: 1, last: { open: false } }
+
+  - name: bottom-centre neutral pill, shown
+    props: { open: true, message: "Task moved to Trash", position: "bottom-centre", tone: "neutral" }
+    steps: []
+    screenshot: true
+
+  - name: pill without an action control
+    props: { open: true, message: "Saved", showAction: false }
+    steps: []
+    screenshot: true
+
+  - name: failed undo pill
+    props: { open: true, message: "Task moved to Trash", failed: true }
+    steps: []
+    screenshot: true
+
+  - name: reduced motion pill
+    props: { open: true, message: "Task moved to Trash", reducedMotion: true }
+    steps: []
+    screenshot: true
+
+  - name: pill rises into place on entry
+    props: { open: true, message: "Task moved to Trash" }
+    steps: []
+    screenshot: true                                   # no trace: the toast animates as it mounts and no step starts the motion; the settled pill is compared instead
+    allCombinations: true
+
+  - name: entry clip of the pill
+    props: { open: true, message: "Task moved to Trash" }
+    steps: []
+    record: { part: toast }
+    allCombinations: true
+
+  - name: reduced motion has no rise on entry
+    props: { open: true, message: "Task moved to Trash", reducedMotion: true }
+    steps: []
+    expect:
+      - { part: toast, visible: true }
+    screenshot: true                                   # no trace: the toast animates as it mounts and no step starts the motion; the settled pill is compared instead
+    record: { part: toast }

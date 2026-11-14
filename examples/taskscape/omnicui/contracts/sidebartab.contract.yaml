@@ -1,0 +1,235 @@
+# ui.sidebartab: one pane tab in the settings sidebar, a vertical tablist.
+# Merged from draft A (Radix Tabs TabsTrigger, orientation vertical) and draft B (WAI-ARIA tabs pattern).
+# Look: sidebar Tab, rounded MenuItem, 139x30, radius 4.375px. The Tab merge in ui.listtab is separate.
+# ARIA: the tab has role tab inside a tablist (aria-orientation vertical on the list).
+#   The format maps role tab to part role button; the real role is checked with role: button.
+#   Roving tabindex (selected 0, others -1) is not expressible in this format. It is verified only
+#   through the tablist (focus order, Tab key into the list), not in this contract.
+#
+# OPEN DECISION: activation mode is not recorded in the widget.
+#   Radix defaults to automatic, where arrow focus also selects. This contract does not assume either mode.
+#   Arrow-key behaviour is not tested here, because a lone tab has no sibling to move focus to.
+#   It belongs to a tablist contract (for example ui.sidebartablist) with two tabs.
+#   If manual is chosen, the implementation must pass activationMode="manual" to Tabs.
+#   Enter and Space select under either mode, so those tests hold either way.
+#
+# Events: select fires once when a tab that is not selected is pressed, or Enter or Space is pressed on it.
+#   Re-selecting the current pane emits nothing. pane is the pane label.
+#   Side effects of selecting General (scroll to top; keep the query only if this pane has matches)
+#   belong to the settings parent, not this tab. Test them in a settings fixture.
+#
+# Colours (PROPOSALS awaiting user choice; the widget lists the selected fill as open item 1):
+#   selected fill: accent oklch(0.6 0.2 255 / 0.1) (draft A).
+#   selected, not scoped fill: neutral oklch(0.32 0.02 262 / 0.09) (draft A). Accent stays for scoped selection.
+#   plain icon oklch(0.62 0.013 264), 16x16. plain label 400 13px/19.5px oklch(0.26 0.012 262).
+#   selected icon and label keep the plain colours; only the fill changes.
+#   Light values only. Dark values and theme token names are not recorded.
+#   dimmed: opacity 40 percent on the whole tab, no recolour. Row 25 colour conflict is open.
+#
+# Badge: trailing match count, shown only when a search has matches. Badge styling is NOT recorded
+#   (open item 4): no pill, colour or figure rules are asserted here.
+#   The source uses null for no badge; null maps to 0 here. The type is integer by format.
+#   The badge name rule is not recorded, so no test requires the count in the tab name.
+#
+# Open items (not tested here): hover and focus visuals are not recorded. Shortcuts on web (dropped if it
+#   holds global hotkeys) and Capture on web are unresolved. Whether the icon set is platform-specific is open.
+
+id: ui.sidebartab
+
+props:
+  icon: { type: string, default: "" }          # Icon name, 16x16: tune (General), screenshot_monitor (Capture), keyboard (Shortcuts), info (About).
+  label: { type: string, default: "" }         # Pane name.
+  selected: { type: boolean, default: false }  # Current pane: aria-selected true. Must match the Tabs root value; the parent sets it.
+  scoped: { type: boolean, default: true }     # false: selected during a search not scoped to this pane (General on settings search). Neutral fill (proposal).
+  dimmed: { type: boolean, default: false }    # true: the search has no matches on this pane. Opacity 40 percent. Still focusable and pressable (decision to confirm).
+  badge: { type: integer, default: 0 }         # Trailing match count when a search has matches. 0 hides the badge (source uses null).
+
+events:
+  select: { pane: { type: string } }           # Fired once when a tab that is not selected is pressed, or Enter or Space is pressed on it. pane is the label.
+
+parts:
+  tab: { role: button }                        # aria: tab. Checked through role, selected, focused, name, text.
+  icon: { role: generic }                      # aria: none. Decorative, hidden from assistive technology; 16x16.
+  label: { role: generic }                     # aria: none. Pane name.
+  badge: { role: generic, optional: true }     # aria: none. Present only when badge is above 0.
+
+tests:
+  - name: plain tab shows icon and label
+    props: { icon: tune, label: General, selected: false }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: false, name: General, text: General }
+      - { part: label, text: General }
+      - { part: icon, visible: true }
+
+  - name: selected tab is the current pane
+    props: { icon: tune, label: General, selected: true }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true, name: General, text: General }
+
+  - name: selected but not scoped keeps aria-selected
+    props: { icon: tune, label: General, selected: true, scoped: false }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true, text: General }
+
+  - name: dimmed tab keeps its label and can be pressed
+    props: { icon: info, label: About, dimmed: true }
+    steps:
+      - { action: press, part: tab, times: 1 }
+    expect:
+      - { part: tab, text: About }
+      - { event: select, times: 1, last: { pane: About } }
+
+  - name: dimmed tab shows its label
+    props: { icon: tune, label: General, selected: false, dimmed: true }
+    steps: []
+    expect:
+      - { part: label, text: General }
+      - { part: tab, selected: false }
+
+  - name: dimmed selected tab stays selected
+    props: { icon: tune, label: General, selected: true, dimmed: true }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true }
+
+  - name: badge shows the match count
+    props: { icon: tune, label: General, badge: 3 }
+    steps: []
+    expect:
+      - { part: badge, text: "3", visible: true }
+      - { part: tab, text: { contains: General } }
+      - { part: tab, name: { contains: General } }
+
+  - name: zero badge hides the count
+    props: { icon: keyboard, label: Shortcuts, badge: 0 }
+    steps: []
+    expect:
+      - { part: tab, name: Shortcuts, text: Shortcuts }
+
+  - name: press on an unselected tab emits select once
+    props: { icon: keyboard, label: Shortcuts, selected: false }
+    steps:
+      - { action: press, part: tab, times: 1 }
+    expect:
+      - { event: select, times: 1, last: { pane: Shortcuts } }
+
+  - name: press on the selected tab does nothing
+    props: { icon: tune, label: General, selected: true }
+    steps:
+      - { action: press, part: tab, times: 2 }
+    expect:
+      - { event: select, times: 0 }
+
+  - name: Enter selects an unselected tab and emits select once
+    props: { icon: info, label: About, selected: false }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Enter }
+    expect:
+      - { event: select, times: 1, last: { pane: About } }
+
+  - name: Space selects an unselected tab and emits select once
+    props: { icon: info, label: About, selected: false }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Space }
+    expect:
+      - { event: select, times: 1, last: { pane: About } }
+
+  - name: Enter on the selected tab does nothing
+    props: { icon: tune, label: General, selected: true }
+    steps:
+      - { action: focus, part: tab }
+      - { action: key, part: tab, key: Enter }
+    expect:
+      - { event: select, times: 0 }
+
+  - name: focus reaches an unselected tab
+    props: { icon: keyboard, label: Shortcuts, selected: false }
+    steps:
+      - { action: focus, part: tab }
+    expect:
+      - { part: tab, focused: true }
+
+  - name: focus reaches the selected tab
+    props: { icon: tune, label: General, selected: true }
+    steps:
+      - { action: focus, part: tab }
+    expect:
+      - { part: tab, focused: true }
+
+  - name: plain tab screenshot
+    props: { icon: tune, label: General, selected: false }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: false }
+      - { part: label, text: General }
+    screenshot: true
+
+  - name: selected tab screenshot
+    props: { icon: tune, label: General, selected: true }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true }
+    screenshot: true
+
+  - name: selected not scoped screenshot
+    props: { icon: tune, label: General, selected: true, scoped: false }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true }
+    screenshot: true
+
+  - name: dimmed tab screenshot
+    props: { icon: info, label: About, dimmed: true }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: false }
+    screenshot: true
+
+  - name: dimmed plain General tab screenshot
+    props: { icon: tune, label: General, selected: false, dimmed: true }
+    steps: []
+    expect:
+      - { part: label, text: General }
+    screenshot: true
+
+  - name: dimmed selected tab screenshot
+    props: { icon: tune, label: General, selected: true, dimmed: true }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: true }
+    screenshot: true
+
+  - name: plain tab with badge screenshot
+    props: { icon: tune, label: General, selected: false, badge: 3 }
+    steps: []
+    expect:
+      - { part: badge, text: "3", visible: true }
+    screenshot: true
+
+  - name: selected tab with badge screenshot
+    props: { icon: tune, label: General, selected: true, badge: 3 }
+    steps: []
+    expect:
+      - { part: badge, text: "3", visible: true }
+    screenshot: true
+
+  - name: plain tab with zero badge screenshot
+    props: { icon: tune, label: General, selected: false, badge: 0 }
+    steps: []
+    expect:
+      - { part: tab, role: button, selected: false }
+    screenshot: true
+
+viewports:
+  - { width: 320, height: 240 }
+
+colorSchemes: [light, dark]
+
+keyboard: true
+
+same: pixels

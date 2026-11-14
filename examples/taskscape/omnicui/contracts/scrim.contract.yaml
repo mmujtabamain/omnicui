@@ -1,0 +1,115 @@
+id: ui.scrim
+
+# Scrim: the full-window layer behind a modal, a menu or the lightbox.
+# Base: Radix Dialog Overlay (soft and strong-blur); a plain layer for none.
+# States: open (rendered) and closed (not rendered), carried by the open prop.
+# A press on the scrim outside the owner's panel dismisses the owning layer.
+# Escape belongs to the owning modal or menu, not to the scrim.
+# Web: under Dialog overlay, CommandPalette overlay and Lightbox overlay.
+# Desktop: no scrim for dialogs or sheets; the menu click-catcher is optional
+# (native menus are undecided). The scrim colour is a literal (bg-black/30), not a token.
+# keyboard is not set: the scrim takes no keys. Escape is tested below as "does not dismiss".
+# A scrim cannot be pressed through the generic role (its only action is hover), so the press
+# is the do.pressOutside action: a pointer press on the scrim at a point outside any panel.
+# Targets must advertise do.pressOutside; with: { button: right } is the secondary button.
+
+props:
+  # dim values (one of these strings):
+  #   soft: bg-black/30 (oklab 0 0 0 / 0.3), no blur. Used by sheets and the command palette.
+  #   strong-blur: strong dim plus backdrop blur, flex column, full window. Used by the attachment lightbox.
+  #   none: invisible full-window hit area under a menu; catches left and right clicks outside the menu.
+  dim: { type: string, default: soft }
+  # open values:
+  #   true: rendered.
+  #   false: not rendered at all (the closed state).
+  open: { type: boolean, default: true }
+
+events:
+  # Emitted on a press outside the panel (a mousedown on the scrim). No fields.
+  dismissed: {}
+
+parts:
+  scrim:
+    role: generic   # aria: none, aria-hidden="true": the layer is not exposed to assistive technology
+    optional: true  # absent where the platform draws no scrim (desktop dialogs and sheets)
+    same: { default: pixels, desktop: colours }  # desktop may draw the dim natively, so compare colours
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 1280, height: 800 }
+
+colorSchemes: [light, dark]
+
+tests:
+  - name: soft dim covers the window and is visible
+    props: { dim: soft, open: true }
+    steps: []
+    expect:
+      - { part: scrim, visible: true }
+    screenshot: true
+
+  - name: strong-blur dim covers the window and is visible
+    props: { dim: strong-blur, open: true }
+    steps: []
+    expect:
+      - { part: scrim, visible: true }
+    screenshot: true
+
+  - name: none covers the window with no paint and is visible
+    props: { dim: none, open: true }
+    steps: []
+    expect:
+      - { part: scrim, visible: true }
+    screenshot: true
+
+  - name: scrim is hidden from assistive technology and has no text
+    props: { dim: soft }
+    steps: []
+    expect:
+      - { part: scrim, role: generic }
+      - { part: scrim, text: "" }
+
+  - name: press outside dismisses the soft scrim
+    props: { dim: soft }
+    steps:
+      - { do: pressOutside, part: scrim }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: press outside dismisses the strong-blur lightbox
+    # Open question: whether a bare click on the lightbox scrim closes it is not confirmed.
+    # This test assumes it does; remove it if the lightbox decision is no.
+    props: { dim: strong-blur }
+    steps:
+      - { do: pressOutside, part: scrim }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: press outside dismisses the none hit area under a menu
+    props: { dim: none }
+    steps:
+      - { do: pressOutside, part: scrim }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: right press outside dismisses the none hit area under a menu
+    props: { dim: none }
+    steps:
+      - { do: pressOutside, part: scrim, with: { button: right } }
+    expect:
+      - { event: dismissed, times: 1 }
+
+  - name: escape does not dismiss the scrim
+    props: { dim: soft }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 0 }
+
+  - name: closed scrim is not rendered and does not dismiss
+    props: { open: false }
+    steps:
+      - { input: dismiss }
+    expect:
+      - { part: scrim, visible: false }
+      - { event: dismissed, times: 0 }

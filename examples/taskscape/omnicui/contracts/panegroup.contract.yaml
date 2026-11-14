@@ -1,0 +1,363 @@
+id: ui.panegroup
+
+# Contract for PaneGroup (ui.panegroup).
+# Resizable window body row: task pane, optional split pane, optional right aside,
+# separated by handles. Built on shadcn Resizable (react-resizable-panels, not Radix).
+# The group has no ARIA role (role: generic); its panes are generic in this format.
+#
+# Units (one rule for every size): every size is a percent of the group length
+# (width in row, height in column). Sizes are stored and reported in percent.
+# A pixel limit is converted to percent at the current group length on every layout
+# pass, so the aside's 280 to 420 px holds at every width (1000 px: 28 to 42 percent).
+#
+# Limits: task pane minimum 25 percent; split pane minimum 20 percent; aside 280 to 420 px
+# (row only). Column uses the percent minimums only.
+# Narrow (row only): the aside is hidden while the group is narrower than 600 px. The
+# asideHidden flag is kept; the aside returns above 600 px.
+#
+# Default sizes (first layout and reset):
+#   task and aside (no split): 70 / 30
+#   task and split (aside hidden or absent): 50 / 50
+#   task, split and aside: 40 / 30 / 30
+#   task only (no lists, or no split and no aside): 100
+#
+# Handles: taskResizer sits between the task pane and the pane to its right (the split
+# pane, shown only when split is true). Its value is the task pane's size.
+# asideResizer sits directly before the aside (between the split pane, or the task pane
+# when there is no split pane, and the aside). Its value is its position: percent of the
+# group from the start edge (left for row, top for column), which equals the size of
+# everything before it.
+#
+# Pointer: a drag moves a handle; the layout is reported once, on release. A double press
+# (double-click) on a handle resets the group to its defaults.
+# Keyboard: Left/Up move a handle toward the start, Right/Down toward the end, by 5 percent;
+# Shift with an arrow moves it by 10 percent. Home and End move a handle to its lowest and
+# highest position. Enter on taskResizer collapses the task pane to zero, and the next Enter
+# restores it to its previous size (APG window splitter behaviour). The group takes no keys;
+# handles are in the tab order and own their keys.
+# keyboard: true is not set: there is no button, switch or checkbox here. Handles are
+# sliders, and their keys are tested explicitly below.
+
+props:
+  direction: { type: string, default: row }      # "row" or "column". row: panes side by side (width), pixel limits apply. column: panes stacked (height); percent minimums only.
+  split: { type: boolean, default: false }       # true: shows the split pane and the taskResizer, between the task pane and the aside.
+  asideHidden: { type: boolean, default: false } # true: preview hidden. The aside and the asideResizer are not shown; the other panes take the width.
+  noLists: { type: boolean, default: false }     # true: no lists. Only the task pane is shown, at full size: no split pane, no aside, no handles.
+  autoSaveId: { type: string, default: "" }      # "" means no persistence. Otherwise the sizes are saved on this device under this key (per window, not per account) when a drag, key step, collapse or reset ends, and restored on mount with the limits re-applied at the current width.
+
+events:
+  layoutChanged:                                 # onLayout. Fires once per user change that moves sizes: a drag release, a key step (arrows, Shift+arrows, Home, End), an Enter collapse or restore, a double-press reset. Does not fire on a plain window resize.
+    task: { type: number }                       # percent of the group length. 0 when the task pane is collapsed.
+    split: { type: number }                      # percent of the group length. 0 when no split pane is shown.
+    aside: { type: number }                      # percent of the group length. 0 when no aside is shown.
+
+parts:
+  taskPane: { role: generic, same: { default: pixels } }                        # aria: region, labelled by the pane's heading. Always shown; hidden only while collapsed with Enter on taskResizer.
+  splitPane: { role: generic, optional: true, same: { default: pixels } }        # aria: region, labelled by the pane's heading. Shown when split is true and noLists is false.
+  aside: { role: generic, optional: true, same: { default: pixels } }            # aria: complementary. Shown when asideHidden is false and noLists is false; in row, only at 600 px or wider.
+  taskResizer: { role: slider, optional: true, same: { default: layout } }       # aria: separator (focusable window splitter). Name: "Resize panes". Shown when split is true and noLists is false. Value: the task pane's size, percent.
+  asideResizer: { role: slider, optional: true, same: { default: layout } }      # aria: separator (focusable window splitter). Name: "Resize preview". Shown when the aside is shown. Value: position in percent.
+
+viewports:
+  - { width: 320, height: 240 }    # narrow: in row the aside is hidden (under 600 px)
+  - { width: 1000, height: 700 }   # wide: the aside is shown; 1000 px makes the percent limits whole numbers
+  - { width: 1280, height: 720 }   # desktop: the aside limits are 21.9 to 32.8 percent here, so exact aside values differ
+
+colorSchemes: [light, dark]
+
+same: pixels
+
+tests:
+  - name: "row: task pane and aside side by side, no split"
+    props: { direction: row }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: aside, visible: true }
+      - { part: asideResizer, visible: true }
+      - { part: asideResizer, role: generic }
+    screenshot: true
+
+  - name: "column: aside stacked under the task pane"
+    props: { direction: column }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: aside, visible: true }
+      - { part: asideResizer, visible: true }
+      - { part: asideResizer, role: generic }
+    screenshot: true
+
+  - name: "split: split pane between the task pane and the aside"
+    props: { split: true }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: splitPane, visible: true }
+      - { part: aside, visible: true }
+      - { part: taskResizer, visible: true }
+      - { part: asideResizer, visible: true }
+    screenshot: true
+
+  - name: "aside hidden removes the aside and the handle that leads to it"
+    props: { asideHidden: true }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: aside, visible: false }
+      - { part: asideResizer, visible: false }
+      - { part: taskResizer, visible: false }
+    screenshot: true
+
+  - name: "aside hidden with split leaves one handle between the task pane and the split pane"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: splitPane, visible: true }
+      - { part: taskResizer, visible: true }
+      - { part: asideResizer, visible: false }
+      - { part: aside, visible: false }
+    screenshot: true
+
+  - name: "no lists: only the task pane, full size, no handles"
+    props: { noLists: true, split: true }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: splitPane, visible: false }
+      - { part: aside, visible: false }
+      - { part: taskResizer, visible: false }
+      - { part: asideResizer, visible: false }
+    screenshot: true
+
+  - name: "narrow window hides the aside and keeps the task and split panes with the task handle"
+    props: { split: true }
+    steps:
+      - { action: hover, part: taskPane }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: splitPane, visible: true }
+      - { part: taskResizer, visible: true }
+      - { part: aside, visible: false }
+      - { part: asideResizer, visible: false }
+    screenshot: true
+
+  - name: "narrow window: aside hidden under 600 px"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    expect:
+      - { part: taskPane, visible: true }
+    screenshot: true
+
+  - name: "focus moves onto the task handle, which is named"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+    expect:
+      - { part: taskResizer, focused: true }
+      - { part: taskResizer, role: generic }
+      - { part: taskResizer, name: "Resize panes" }
+
+  - name: "ArrowRight moves the task handle by 5 percent"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowRight }
+    expect:
+      - { part: taskResizer, value: 55 }
+      - { event: layoutChanged, times: 1, last: { task: 55, split: 45, aside: 0 } }
+
+  - name: "ArrowLeft moves the task handle back by 5 percent"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowLeft }
+    expect:
+      - { part: taskResizer, value: 45 }
+      - { event: layoutChanged, times: 1, last: { task: 45, split: 55, aside: 0 } }
+
+  - name: "Shift with ArrowRight moves the task handle by 10 percent"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: Shift+ArrowRight }
+    expect:
+      - { part: taskResizer, value: 60 }
+      - { event: layoutChanged, times: 1, last: { task: 60, split: 40, aside: 0 } }
+
+  - name: "arrow keys across the other axis do nothing in a row"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowDown }
+    expect:
+      - { part: taskResizer, value: 50 }
+
+  - name: "Home moves the task handle to the task pane floor of 25 percent"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: Home }
+    expect:
+      - { part: taskResizer, value: 25 }
+      - { event: layoutChanged, times: 1, last: { task: 25, split: 75, aside: 0 } }
+
+  - name: "End moves the task handle to the split pane floor of 20 percent"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: End }
+    expect:
+      - { part: taskResizer, value: 80 }
+      - { event: layoutChanged, times: 1, last: { task: 80, split: 20, aside: 0 } }
+
+  - name: "Enter collapses the task pane to zero"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: Enter }
+    expect:
+      - { part: taskPane, visible: false }
+      - { part: taskResizer, value: 0 }
+      - { event: layoutChanged, times: 1, last: { task: 0, split: 100, aside: 0 } }
+
+  - name: "Enter again restores the task pane to its previous position"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: Enter }
+      - { action: key, part: taskResizer, key: Enter }
+    expect:
+      - { part: taskPane, visible: true }
+      - { part: taskResizer, value: 50 }
+      - { event: layoutChanged, times: 2, last: { task: 50, split: 50, aside: 0 } }
+
+  - name: "column handle moves with ArrowDown"
+    props: { direction: column, split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowDown }
+    expect:
+      - { part: taskResizer, value: 55 }
+      - { event: layoutChanged, times: 1, last: { task: 55, split: 45, aside: 0 } }
+
+  - name: "column handle moves twice with ArrowDown"
+    props: { direction: column, split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowDown, times: 2 }
+    expect:
+      - { part: taskResizer, value: 60 }
+
+  - name: "column ignores ArrowLeft and ArrowRight"
+    props: { direction: column, split: true, asideHidden: true }
+    steps:
+      - { action: focus, part: taskResizer }
+      - { action: key, part: taskResizer, key: ArrowRight, times: 2 }
+      - { action: key, part: taskResizer, key: ArrowLeft }
+    expect:
+      - { part: taskResizer, value: 50 }
+
+  - name: "column: stacked panes with split"
+    props: { direction: column, split: true, asideHidden: true }
+    expect:
+      - { part: splitPane, visible: true }
+      - { part: taskResizer, visible: true }
+    screenshot: true
+
+  - name: "dragging the task handle changes the layout once on release"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: drag, part: taskResizer, dx: 40, dy: 0 }
+    expect:
+      - { event: layoutChanged, times: 1 }
+
+  - name: "dragging the column handle changes the layout once on release"
+    props: { direction: column, split: true, asideHidden: true }
+    steps:
+      - { action: drag, part: taskResizer, dx: 0, dy: 40 }
+    expect:
+      - { event: layoutChanged, times: 1 }
+
+  - name: "dragging the split-to-aside handle changes the layout once on release"
+    props: { split: true }
+    steps:
+      - { action: drag, part: asideResizer, dx: 40, dy: 0 }
+    expect:
+      - { event: layoutChanged, times: 1 }
+
+  - name: "dragging the aside handle with no split changes the layout once on release"
+    props: {}
+    steps:
+      - { action: drag, part: asideResizer, dx: -40, dy: 0 }
+    expect:
+      - { part: aside, visible: true }
+      - { event: layoutChanged, times: 1 }
+
+  - name: "double press resets the sizes to the defaults after a drag"
+    props: { split: true, asideHidden: true }
+    steps:
+      - { action: drag, part: taskResizer, dx: 60, dy: 0 }
+      - { action: press, part: taskResizer, times: 2 }
+    expect:
+      - { part: taskResizer, value: 50 }
+      - { event: layoutChanged, times: 2, last: { task: 50, split: 50, aside: 0 } }
+
+  - name: "split-to-aside handle takes focus"
+    props: { split: true }
+    steps:
+      - { action: focus, part: asideResizer }
+    expect:
+      - { part: asideResizer, focused: true }
+      - { part: asideResizer, role: generic }
+
+  - name: "dragging the aside handle right stops at 280 px"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    steps:
+      - { action: drag, part: asideResizer, dx: 600, dy: 0 }
+    expect:
+      - { part: asideResizer, value: 72 }
+      - { event: layoutChanged, last: { task: 72, split: 0, aside: 28 } }
+
+  - name: "dragging the aside handle left stops at 420 px"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    steps:
+      - { action: drag, part: asideResizer, dx: -600, dy: 0 }
+    expect:
+      - { part: asideResizer, value: 58 }
+      - { event: layoutChanged, last: { task: 58, split: 0, aside: 42 } }
+
+  - name: "dragging the task handle stops at the 25 percent task pane minimum"
+    props: { split: true, asideHidden: false, noLists: false }
+    steps:
+      - { action: drag, part: taskResizer, dx: -600, dy: 0 }
+    expect:
+      - { part: taskResizer, value: 25 }
+      - { event: layoutChanged, last: { task: 25, split: 45, aside: 30 } }
+
+  - name: "ArrowLeft moves the aside handle 5 percent"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    steps:
+      - { action: key, part: asideResizer, key: ArrowLeft }
+    expect:
+      - { part: asideResizer, value: 65 }
+      - { part: asideResizer, name: "Resize preview" }
+
+  - name: "Home moves the aside handle to its lowest position"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    steps:
+      - { action: key, part: asideResizer, key: Home }
+    expect:
+      - { part: asideResizer, value: 58 }
+
+  - name: "End moves the aside handle to its highest position"
+    props: { direction: row, split: false, asideHidden: false, noLists: false }
+    steps:
+      - { action: key, part: asideResizer, key: End }
+    expect:
+      - { part: asideResizer, value: 72 }

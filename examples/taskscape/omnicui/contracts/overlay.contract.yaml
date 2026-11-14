@@ -81,7 +81,7 @@ tests:
   - name: Tab moves forward inside the layer
     props: { open: true }
     steps:
-      - { action: key, key: Tab }
+      - { action: key, part: field, key: Tab }
     expect:
       - { part: action, focused: true }
       - { event: dismissed, times: 0 }
@@ -90,7 +90,7 @@ tests:
     props: { open: true }
     steps:
       - { action: focus, part: action }
-      - { action: key, key: Tab }
+      - { action: key, part: action, key: Tab }
     expect:
       - { part: field, focused: true }
       - { part: outside, focused: false }
@@ -98,7 +98,7 @@ tests:
   - name: Shift+Tab on the first control wraps to the last
     props: { open: true }
     steps:
-      - { action: key, key: Shift+Tab }
+      - { action: key, part: field, key: Shift+Tab }
     expect:
       - { part: action, focused: true }
       - { part: field, focused: false }
@@ -107,7 +107,7 @@ tests:
     props: { open: false }
     steps:
       - { action: focus, part: opener }
-      - { action: key, key: Enter }
+      - { action: key, part: opener, key: Enter }
       - { input: dismiss }
     expect:
       - { event: dismissed, times: 1 }
@@ -119,7 +119,7 @@ tests:
     props: { open: false, dismissOn: outside }
     steps:
       - { action: focus, part: opener }
-      - { action: key, key: Enter }
+      - { action: key, part: opener, key: Enter }
       - { action: press, part: outside }
     expect:
       - { event: dismissed, times: 1 }

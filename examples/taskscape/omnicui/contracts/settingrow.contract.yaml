@@ -1,0 +1,289 @@
+id: ui.settingrow
+
+# SettingRow: one settings line (title, optional description, control slot,
+# optional footnote, optional read-only value). Folds ShortcutRow and RefineRow.
+# The spec's ReactNode slots are carried as strings and booleans. `control` picks
+# the slot's content; the other props supply its text.
+#
+# Decisions (merged from two drafts; see the merge notes for the sources):
+# 1. Restore defaults uses the default Button, not danger. Product names danger for
+#    destructive actions only (delete list, delete project, move to Trash, empty
+#    Trash, delete permanently). Restore defaults touches no tasks. Flip to danger
+#    if it is read as destructive.
+# 2. Layouts: inline and stacked.
+# 3. Desktop only: Capture mode, Saved to, Data folder. No web row here. Any web
+#    storage row is a separate decision.
+# 4. Footnote tone note is plain text (role generic, linked by aria-describedby).
+#    Footnote tone error is the rebind error line, role status (polite live region),
+#    in the rebindError part. Alert (assertive) is for urgent messages only.
+# 5. Shortcut rows use min-height 36px, not a fixed height. The sm control is 28px.
+# 6. The error text uses the danger token. Flagged for sign-off.
+# 7. Default bindings belong to the HotkeyControl catalogue, not this widget. The
+#    recorder refuses browser-reserved chords; this row shows the refusal in its footnote.
+# 8. The scrolled state is pane state, not a row state, so it is not in this contract.
+#
+# Segmented options are a single-choice radio group (WAI-ARIA APG radio group):
+# arrow keys move focus and check the new radio. Segment parts are role button;
+# the real ARIA role (radio) is tested through the role field.
+
+props:
+  title: { type: string, default: "" }          # setting name; names the group and the control
+  description: { type: string, default: "" }    # supporting text; "" = no description
+  footnote: { type: string, default: "" }       # note or rebind error under the row; "" = none
+  footnoteTone: { type: string, default: note } # note | error (error = rebind error line)
+  layout: { type: string, default: inline }     # inline (title left, control or value right) | stacked (control on its own full-width line under the text)
+  size: { type: string, default: sm }           # sm: the only size
+  control: { type: string, default: none }      # none | toggle | segmented | pathButton | button | hotkey
+  checked: { type: boolean, default: false }    # initial toggle state when control is toggle
+  choices: { type: string, default: "System|Light|Dark" }  # segmented options, pipe-separated, in order
+  choice: { type: string, default: "" }         # selected segment label; for pathButton, the path shown; "" = none selected
+  icon: { type: boolean, default: false }       # leading predicate icon shown before the title
+  value: { type: string, default: "" }          # read-only trailing text (app version); "" = none
+  recording: { type: boolean, default: false }  # the hotkey control is recording a new chord
+  searchOnly: { type: boolean, default: false } # the row is the only search result, shown alone
+  tone: { type: string, default: primary }      # title tone: primary (row with a control) | secondary (read-only row)
+
+events:
+  changed: { value: { type: string } }          # a segment was picked; value is its label (Theme, Capture mode, Reduced motion, Notes)
+  toggled: { checked: { type: boolean } }       # the toggle was flipped
+
+parts:
+  row: { role: generic }                        # aria: group, named by title when a control is present; read-only rows have no group role
+  title: { role: generic }                      # the group's name, as text
+  description: { role: generic, optional: true }
+  icon: { role: generic, optional: true }       # leading predicate icon
+  control: { role: generic, optional: true }    # segmented container; aria: radiogroup
+  toggle: { role: switch, optional: true, same: { default: [layout, colours] } }        # Radix Switch; named by title; Space toggles
+  segmentOne: { role: button, optional: true, same: { default: [layout, colours] } }    # aria: radio in the radiogroup
+  segmentTwo: { role: button, optional: true, same: { default: [layout, colours] } }    # aria: radio in the radiogroup
+  segmentThree: { role: button, optional: true, same: { default: [layout, colours] } }  # aria: radio in the radiogroup; absent when there are two choices
+  button: { role: button, optional: true, same: { default: [layout, colours] } }        # pathButton (opens a local folder, desktop only), button (e.g. Restore defaults), or hotkey keycap (Enter starts recording); named by title
+  footnote: { role: generic, optional: true }   # note text; linked to the control by aria-describedby
+  rebindError: { role: status, optional: true } # aria: status (polite live region) inside the footnote; error tone only
+  value: { role: generic, optional: true }      # read-only trailing text
+
+same: pixels
+keyboard: true
+colorSchemes: [light, dark]
+
+viewports:
+  - { width: 640, height: 240 }
+  - { width: 320, height: 240 }
+
+tests:
+  - name: inline toggle row is a group named by its title, and the switch is named by it
+    props: { title: "Show completed tasks", description: "Shows finished tasks in each list.", layout: inline, control: toggle, checked: false }
+    steps: [ { action: hover, part: row } ]
+    expect:
+      - { part: row, role: generic }
+      - { part: toggle, name: "Show completed tasks", role: switch, checked: false, visible: true }
+      - { part: title, text: "Show completed tasks" }
+      - { part: description, text: "Shows finished tasks in each list." }
+    screenshot: true
+
+  - name: a press flips the switch and emits toggled
+    props: { title: "Show completed tasks", layout: inline, control: toggle, checked: false }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, checked: true }
+      - { event: toggled, times: 1, last: { checked: true } }
+    screenshot: true
+
+  - name: Space flips the switch and emits toggled
+    props: { title: "Show completed tasks", layout: inline, control: toggle, checked: false }
+    steps:
+      - { action: focus, part: toggle }
+      - { action: key, part: toggle, key: Space }
+    expect:
+      - { part: toggle, checked: true, focused: true }
+      - { event: toggled, times: 1, last: { checked: true } }
+
+  - name: focus lands on the control, because the row itself is not focusable
+    props: { title: "Show completed tasks", layout: inline, control: toggle, checked: false }
+    steps: [ { action: focus, part: toggle } ]
+    expect:
+      - { part: toggle, focused: true }
+
+  - name: stacked segmented row (Theme) puts the control under the title
+    props: { title: "Theme", layout: stacked, control: segmented, choices: "System|Light|Dark", choice: "System" }
+    steps: [ { action: hover, part: control } ]
+    expect:
+      - { part: row, role: generic }
+      - { part: title, text: "Theme" }
+      - { part: control, visible: true }
+      - { part: segmentOne, name: "System", role: checkbox, selected: true }
+      - { part: segmentTwo, name: "Light", role: checkbox, selected: false }
+      - { part: segmentThree, name: "Dark", role: checkbox, selected: false }
+    screenshot: true
+
+  - name: pressing a segment selects it and emits changed
+    props: { title: "Theme", layout: stacked, control: segmented, choices: "System|Light|Dark", choice: "System" }
+    steps: [ { action: press, part: segmentTwo } ]
+    expect:
+      - { part: segmentTwo, selected: true }
+      - { part: segmentOne, selected: false }
+      - { event: changed, times: 1, last: { value: "Light" } }
+
+  - name: arrow keys move focus to the next segment and select it (radio group)
+    props: { title: "Theme", layout: stacked, control: segmented, choices: "System|Light|Dark", choice: "System" }
+    steps:
+      - { action: focus, part: segmentOne }
+      - { action: key, part: segmentOne, key: ArrowRight }
+    expect:
+      - { part: segmentTwo, focused: true, selected: true }
+      - { part: segmentOne, selected: false }
+      - { event: changed, times: 1, last: { value: "Light" } }
+
+  - name: capture mode row is stacked, has no description, and shows its note as plain text
+    only: [desktop]
+    props: { title: "Capture mode", layout: stacked, control: segmented, choices: "Screen|Window", choice: "Screen", footnote: "Applies to new captures.", footnoteTone: note }
+    steps: [ { action: hover, part: footnote } ]
+    expect:
+      - { part: control, visible: true }
+      - { part: segmentOne, name: "Screen", selected: true }
+      - { part: footnote, text: "Applies to new captures.", visible: true }
+      - { part: rebindError, visible: false }
+    screenshot: true
+
+  - name: stacked path row names its button by the title and shows the folder
+    only: [desktop]
+    props: { title: "Saved to", description: "Where captures are saved.", layout: stacked, control: pathButton, choice: "~/Pictures/Taskscape" }
+    steps: []
+    expect:
+      - { part: button, role: button, name: "Saved to", visible: true }
+      - { part: button, text: { contains: "Taskscape" } }
+      - { part: description, text: "Where captures are saved." }
+    screenshot: true
+
+  - name: stacked path row opens a local folder when pressed
+    only: [desktop]
+    props: { title: "Saved to", layout: stacked, control: pathButton, choice: "~/Pictures/Taskscape" }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { part: button, text: { contains: "Taskscape" } }
+
+  - name: stacked path row for the data folder shows its path and description
+    only: [desktop]
+    props: { title: "Data folder", description: "Where Taskscape keeps its files.", layout: stacked, control: pathButton, choice: "~/Library/Taskscape" }
+    steps: []
+    expect:
+      - { part: button, role: button, name: "Data folder", visible: true }
+      - { part: button, text: { contains: "Taskscape" } }
+    screenshot: true
+
+  - name: stacked button row (Restore defaults) names its button by the title
+    props: { title: "Restore defaults", description: "Puts every setting back to its default.", layout: stacked, control: button }
+    steps: [ { action: focus, part: button } ]
+    expect:
+      - { part: title, text: "Restore defaults" }
+      - { part: button, role: button, name: "Restore defaults", text: "Restore defaults", focused: true, visible: true }
+    screenshot: true
+
+  - name: shortcut row shows its keycap in the control slot, inline, named by its title
+    props: { title: "New task", layout: inline, control: hotkey }
+    steps: [ { action: focus, part: button } ]
+    expect:
+      - { part: row, role: generic }
+      - { part: title, text: "New task" }
+      - { part: button, role: button, name: "New task", focused: true, visible: true }
+    screenshot: true
+
+  - name: rebind error shows in the footnote and as a live status
+    props: { title: "New task", layout: inline, control: hotkey, footnote: "Already used by New list.", footnoteTone: error }
+    steps: []
+    expect:
+      - { part: footnote, text: "Already used by New list.", visible: true }
+      - { part: rebindError, role: status, text: "Already used by New list.", visible: true }
+      - { part: button, role: button, name: "New task" }
+
+  - name: a browser-reserved chord shows its refusal as a live status
+    props: { title: "New task", layout: inline, control: hotkey, footnote: "The browser keeps that shortcut.", footnoteTone: error }
+    steps: []
+    expect:
+      - { part: footnote, text: { contains: "browser" } }
+      - { part: rebindError, role: status, text: { contains: "browser" }, visible: true }
+    screenshot: true
+
+  - name: recording keycap keeps its title as its name while it records
+    props: { title: "New task", layout: inline, control: hotkey, recording: true }
+    steps: []
+    expect:
+      - { part: button, role: button, name: "New task", visible: true }
+    screenshot: true
+
+  - name: Escape cancels a recording keycap and keeps focus on it
+    props: { title: "New task", layout: inline, control: hotkey, recording: true }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: button, focused: true }
+
+  - name: reduced motion is a three-way choice with its force note shown as plain text
+    props: { title: "Reduced motion", layout: inline, control: segmented, choices: "On|Off|System", choice: "System", footnote: "Your system asks for reduced motion, so it stays on.", footnoteTone: note }
+    steps: []
+    expect:
+      - { part: control, visible: true }
+      - { part: segmentThree, name: "System", selected: true }
+      - { part: footnote, text: "Your system asks for reduced motion, so it stays on.", visible: true }
+      - { part: rebindError, visible: false }
+    screenshot: true
+
+  - name: no footnote and no description when their conditions are not met
+    props: { title: "Show completed tasks", layout: inline, control: toggle, description: "", footnote: "" }
+    steps: []
+    expect:
+      - { part: description, visible: false }
+      - { part: footnote, visible: false }
+      - { part: rebindError, visible: false }
+
+  - name: read-only app info row shows the version on the right, with no control
+    props: { title: "Taskscape", layout: inline, control: none, value: "1.0.0", tone: secondary }
+    steps: []
+    expect:
+      - { part: row, role: generic }
+      - { part: title, text: "Taskscape" }
+      - { part: value, text: "1.0.0", visible: true }
+      - { part: toggle, visible: false }
+      - { part: segmentOne, visible: false }
+    screenshot: true
+
+  - name: desktop app info copy names the menu-bar capture bar (macOS)
+    only: [macos]
+    props: { title: "Taskscape", layout: inline, control: none, value: "1.0.0", description: "A macOS task manager with a menu-bar capture bar." }
+    steps: []
+    expect:
+      - { part: description, text: { contains: "menu-bar capture bar" } }
+
+  - name: refine row shows its icon before the title and its segmented control
+    props: { title: "Notes", layout: inline, control: segmented, choices: "Any|Yes|No", choice: "Any", icon: true }
+    steps: []
+    expect:
+      - { part: icon, visible: true }
+      - { part: title, text: "Notes" }
+      - { part: control, visible: true }
+      - { part: segmentOne, name: "Any", role: checkbox, selected: true }
+    screenshot: true
+
+  - name: a row shown alone as the only search result keeps its label and control
+    props: { title: "Show completed tasks", layout: inline, control: toggle, searchOnly: true }
+    steps: []
+    expect:
+      - { part: row, role: generic }
+      - { part: title, text: "Show completed tasks" }
+      - { part: toggle, visible: true }
+    screenshot: true
+
+  - name: a search-only row's switch still flips and emits toggled
+    props: { title: "Show completed tasks", layout: inline, control: toggle, searchOnly: true }
+    steps: [ { action: press, part: toggle } ]
+    expect:
+      - { part: toggle, checked: true }
+      - { event: toggled, times: 1, last: { checked: true } }
+
+  - name: secondary title tone on a row with a control
+    props: { title: "Show completed tasks", layout: inline, control: toggle, tone: secondary }
+    steps: []
+    expect:
+      - { part: title, text: "Show completed tasks", visible: true }
+    screenshot: true

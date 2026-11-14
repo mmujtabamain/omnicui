@@ -1,0 +1,257 @@
+id: ui.switch
+
+# Switch: an on/off setting that applies at once. It has no visible label of its own:
+# the row title names it, and ariaLabel carries that name.
+# Base: Radix Switch (a native button exposing role switch and aria-checked).
+# Name: ariaLabel must equal the row title text exactly ("Reduced motion" or "Show completed tasks").
+# An empty ariaLabel is a defect. WCAG 2.5.3 (Label in Name) expects the accessible name to contain the visible label.
+# Where the implementation allows, point the name at the visible row title (aria-labelledby) instead of a copied string. Not measured here.
+# No variants: Reduced motion and Show completed tasks differ only by ariaLabel.
+# Keys: Space toggles (required by the WAI-ARIA switch pattern, https://www.w3.org/WAI/ARIA/apg/patterns/switch/).
+#       Enter also toggles (optional in APG; given by the native button). Both are kept and tested.
+# Forced on = checked plus disabled, with a reason (Reduced motion only). Disabled ignores press, Space and Enter.
+# Look is not recorded, so the widget shares the tokens: layout and colours are held, pixels are not required (toolkits differ).
+# Open: whether a disabled switch leaves the Tab order or stays focusable with aria-disabled. Not recorded, so not tested.
+# Not measured: the app's reduced-motion setting has no input in this contract, so the thumb's instant change under it cannot be tested.
+# The thumb slide is traced below with no timing (timing is not recorded), so traces are compared against each other only.
+
+props:
+  checked: { type: boolean, default: false }     # on (aria-checked true) or off (false)
+  disabled: { type: boolean, default: false }    # no effect on press, Space or Enter; with checked true it is forced on (Reduced motion only)
+  reason: { type: string, default: "" }          # visible text shown only while forced on, e.g. the Low Power Mode copy; "" = no reason. Copy is the app's (not specified). Linking it to the switch (aria-describedby) is the expected mechanism and is not measured.
+  ariaLabel: { type: string, default: "" }       # required: the row title text, "Reduced motion" or "Show completed tasks"; becomes the accessible name. Empty is a defect.
+
+events:
+  changed:
+    checked: { type: boolean }                   # the new state, once per user toggle; never emitted while disabled. The app stores it as '1' or '0' (app storage, not measured)
+
+parts:
+  switch:
+    role: switch                                 # aria: switch (aria-checked)
+    same: { default: [layout, colours] }         # look not recorded; shared tokens; toolkits differ, so pixels are not required
+  thumb: { role: generic, optional: true }       # the sliding indicator; skipped where a target does not expose it
+  reason: { role: generic, optional: true }      # visible text, shown only while forced on
+
+colorSchemes: [ light, dark ]
+keyboard: true                                   # Space and Enter both toggle (see header)
+
+tests:
+  - name: off reads as off and is named by its row title
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps: []
+    expect:
+      - { part: switch, role: switch }
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: false }
+      - { part: switch, disabled: false }
+      - { part: switch, visible: true }
+      - { part: reason, visible: false }
+
+  - name: on reads as on and is named by its row title
+    props: { checked: true, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps: []
+    expect:
+      - { part: switch, role: switch }
+      - { part: switch, name: "Show completed tasks" }
+      - { part: switch, checked: true }
+      - { part: switch, disabled: false }
+      - { part: switch, visible: true }
+
+  - name: press turns an off switch on
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: true }
+      - { event: changed, times: 1, last: { checked: true } }
+
+  - name: press turns an on switch off
+    props: { checked: true, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, name: "Show completed tasks" }
+      - { part: switch, checked: false }
+      - { event: changed, times: 1, last: { checked: false } }
+
+  - name: two presses return an off switch to off
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: press, part: switch, times: 2 }
+    expect:
+      - { part: switch, checked: false }
+      - { event: changed, times: 2, last: { checked: false } }
+
+  - name: three presses end an off switch on
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: press, part: switch, times: 3 }
+    expect:
+      - { part: switch, checked: true }
+      - { event: changed, times: 3, last: { checked: true } }
+
+  - name: Space turns an off switch on
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: focus, part: switch }
+      - { action: key, part: switch, key: Space }
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: true, focused: true }
+      - { event: changed, times: 1, last: { checked: true } }
+
+  - name: Space turns an on switch off
+    props: { checked: true, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: focus, part: switch }
+      - { action: key, part: switch, key: Space }
+    expect:
+      - { part: switch, name: "Show completed tasks" }
+      - { part: switch, checked: false, focused: true }
+      - { event: changed, times: 1, last: { checked: false } }
+
+  - name: Enter turns an off switch on
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: focus, part: switch }
+      - { action: key, part: switch, key: Enter }
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: true, focused: true }
+      - { event: changed, times: 1, last: { checked: true } }
+
+  - name: Enter turns an on switch off
+    props: { checked: true, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: focus, part: switch }
+      - { action: key, part: switch, key: Enter }
+    expect:
+      - { part: switch, name: "Show completed tasks" }
+      - { part: switch, checked: false, focused: true }
+      - { event: changed, times: 1, last: { checked: false } }
+
+  - name: focus reaches an enabled switch and changes nothing
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: focus, part: switch }
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, focused: true }
+      - { part: switch, checked: false }
+      - { event: changed, times: 0 }
+
+  - name: disabled off ignores press
+    props: { checked: false, disabled: true, reason: "", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: false }
+      - { part: switch, disabled: true }
+      - { event: changed, times: 0 }
+
+  - name: disabled off ignores Space
+    props: { checked: false, disabled: true, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: key, part: switch, key: Space }
+    expect:
+      - { part: switch, checked: false }
+      - { event: changed, times: 0 }
+
+  - name: disabled off ignores Enter
+    props: { checked: false, disabled: true, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: key, part: switch, key: Enter }
+    expect:
+      - { part: switch, checked: false }
+      - { event: changed, times: 0 }
+
+  - name: disabled on ignores press and stays on
+    props: { checked: true, disabled: true, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, checked: true }
+      - { part: switch, disabled: true }
+      - { event: changed, times: 0 }
+
+  - name: forced on is checked and disabled, and shows its reason without a press
+    props: { checked: true, disabled: true, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps: []
+    expect:
+      - { part: switch, name: "Reduced motion" }
+      - { part: switch, checked: true }
+      - { part: switch, disabled: true }
+      - { part: reason, visible: true }
+      - { part: reason, text: "Low Power Mode is on" }
+
+  - name: forced on stays on when pressed, and keeps its reason
+    props: { checked: true, disabled: true, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, checked: true }
+      - { part: switch, disabled: true }
+      - { part: reason, text: "Low Power Mode is on" }
+      - { event: changed, times: 0 }
+
+  - name: forced on ignores Space
+    props: { checked: true, disabled: true, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: key, part: switch, key: Space }
+    expect:
+      - { part: switch, checked: true }
+      - { event: changed, times: 0 }
+
+  - name: forced on ignores Enter
+    props: { checked: true, disabled: true, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps:
+      - { action: key, part: switch, key: Enter }
+    expect:
+      - { part: switch, checked: true }
+      - { event: changed, times: 0 }
+
+  - name: reason stays hidden unless forced on
+    props: { checked: false, disabled: false, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps: []
+    expect:
+      - { part: switch, checked: false }
+      - { part: switch, disabled: false }
+      - { part: reason, visible: false }
+
+  - name: the thumb slides across the track when toggled
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: press, part: switch }
+    expect:
+      - { part: switch, checked: true }
+    trace:
+      - { part: thumb, point: center }
+    allCombinations: true
+
+  - name: off look, light and dark
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Reduced motion" }
+    steps: []
+    screenshot: true
+
+  - name: on look, light and dark
+    props: { checked: true, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps: []
+    screenshot: true
+
+  - name: disabled off look, light and dark
+    props: { checked: false, disabled: true, reason: "", ariaLabel: "Show completed tasks" }
+    steps: []
+    screenshot: true
+
+  - name: forced on look with reason, light and dark
+    props: { checked: true, disabled: true, reason: "Low Power Mode is on", ariaLabel: "Reduced motion" }
+    steps: []
+    screenshot: true
+
+  - name: focus-visible look, light and dark
+    props: { checked: false, disabled: false, reason: "", ariaLabel: "Show completed tasks" }
+    steps:
+      - { action: focus, part: switch }
+    screenshot: true

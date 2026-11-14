@@ -1,0 +1,137 @@
+# contracts/badge.contract.yaml
+#
+# Badge: a read-only inline mark. Pill or round with a count or label, or a 6px dot or 2px bar with no text.
+# Folds in Indicator (shape dot and bar).
+# Never interactive: not focusable, no hover, focus or press state, emits no events.
+# No keyboard: true, because there is no button, switch or checkbox part.
+#
+# Behaviour the tests cannot show:
+# - Pill and round (aria: none, reported as generic). The visible text is children. When srLabel is set,
+#   the visible text is aria-hidden="true" and srLabel is the only text a screen reader speaks, so the
+#   subtask count is not read twice ("1 / 3", then "1 of 3 subtasks done").
+# - dot and bar carry no text, are aria-hidden="true" and decorative. The owning control names the state
+#   (for example the filter button says "filters active").
+# - round is valid only with size lg. round with size md renders as pill.
+# - title is a hover tooltip only (native tooltip on desktop). Keyboard and screen reader users get
+#   srLabel, not title.
+# - The owner decides whether a count is shown. A badge is never rendered for a zero-visible-children
+#   subtask count, an unmatched settings search, or an attachment count of zero. These are consumer
+#   rules, not widget states, so no test covers them.
+# - Selection modifiers (Control on Windows and Linux, Command on macOS, Alt on web-less platforms per
+#   the spec) are handled by the owner. The badge itself does not change.
+
+id: ui.badge
+
+props:
+  tone:     { type: string,  default: outline }   # outline | recessed | accent | neutral. outline: grey bordered pill, muted text. recessed: muted filled chip, no border (settings match count; look unconfirmed). accent: filled accent blue, light text; marks selection only (the selected-task count, the active section dot); never use it for another count. neutral: bg-edge-3 grey, for the idle filter dot and idle StatusDot.
+  shape:    { type: string,  default: pill }      # pill | round | dot | bar. pill: rounded text or count. round: circle, only with size lg. dot: 6px circle, no text. bar: 2px by 16px, no text.
+  size:     { type: string,  default: md }        # md | lg. md: 11px text, 18px tall pill. lg: 13px text, 28px circle (selected count).
+  icon:     { type: boolean, default: false }     # true sets the icon to leading (paperclip for attachments). The icon glyph itself is supplied by the owner.
+  children: { type: string,  default: "" }        # visible count or label, for example "1 / 3", "4", "Errands". Empty for dot and bar.
+  title:    { type: string,  default: "" }        # hover tooltip. The subtask count passes "{done} of {total} subtasks done".
+  srLabel:  { type: string,  default: "" }        # visually hidden text, for example "1 of 3 subtasks done" or "1 match". The subtask count must always pass it.
+  visible:  { type: boolean, default: true }      # false hides a section dot when its section is inactive.
+
+events: {}   # none: read-only, emits nothing
+
+parts:
+  badge: { role: generic }                   # aria: none (a span with no role, reported as generic). Carries the count text, or nothing for dot and bar.
+  icon:  { role: generic, optional: true }   # aria: none, decorative (aria-hidden). The leading icon, present only when icon is true.
+
+colorSchemes: [ light, dark ]
+same: pixels   # same on web and desktop
+
+tests:
+  - name: outline is the default pill for the subtask count
+    props: { children: "1 / 3", title: "1 of 3 subtasks done", srLabel: "1 of 3 subtasks done" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "1 / 3" }, { part: badge, role: generic }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: recessed is the settings match count
+    props: { tone: recessed, children: "3", srLabel: "3 matches" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "3" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: accent is the selected-task count as a large round
+    props: { tone: accent, shape: round, size: lg, children: "3", srLabel: "3 tasks selected" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "3" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: lg keeps a two-digit count inside the 28px circle
+    props: { tone: accent, shape: round, size: lg, children: "12", srLabel: "12 tasks selected" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "12" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: neutral is the idle grey dot for a filter with no filter active
+    props: { tone: neutral, shape: dot }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: accent dot marks the active section
+    props: { tone: accent, shape: dot }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: bar is the draft accent caret
+    props: { tone: accent, shape: bar }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: pill holds the list name tag
+    props: { tone: outline, shape: pill, children: "Errands" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "Errands" }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: md is the 18px pill for a text count
+    props: { size: md, children: "4" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "4" }, { part: badge, role: generic }, { part: badge, visible: true } ]
+    screenshot: true
+
+  - name: leading icon sits before the attachment count
+    props: { icon: true, children: "2", srLabel: "2 attachments" }
+    steps: [ { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "2" }, { part: icon, visible: true } ]
+    screenshot: true
+
+  - name: hidden takes the section dot out of view
+    props: { shape: dot, tone: accent, visible: false }
+    steps: [ { input: confirm } ]
+    expect: [ { part: badge, visible: false } ]
+
+  - name: a modifier hold leaves the selected count unchanged
+    props: { tone: accent, shape: round, size: lg, children: "3", srLabel: "3 tasks selected" }
+    steps: [ { input: modifierHold }, { action: hover, part: badge } ]
+    expect: [ { part: badge, text: "3" }, { part: badge, visible: true } ]
+
+  - name: hover and the confirm and dismiss keys change nothing
+    props: { children: "4" }
+    steps:
+      - { action: hover, part: badge }
+      - { input: confirm }
+      - { input: dismiss }
+    expect:
+      - { part: badge, text: "4" }
+
+  - name: variant tone recessed with no srLabel
+    props: { tone: recessed, children: "3" }
+    steps: [ { action: hover, part: badge } ]
+    screenshot: true
+
+  - name: variant tone accent pill
+    props: { tone: accent, children: "3" }
+    steps: [ { action: hover, part: badge } ]
+    screenshot: true
+
+  - name: variant icon none
+    props: { icon: false, children: "2" }
+    steps: [ { action: hover, part: badge } ]
+    screenshot: true

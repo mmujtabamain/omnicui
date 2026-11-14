@@ -1,0 +1,190 @@
+# Contract for ui.commandinput: the input row at the top of the command palette.
+# A leading glyph, the query input, and a 1px bottom rule drawn by the row (the rule has no part of its own).
+# Base: shadcn CommandInput (cmdk), framed by an InputGroup shape bar. Replaces: command palette input row.
+# Families: structure, text.
+#
+# Role (proposed, not verified): the input is a combobox in the WAI-ARIA 1.2 list-autocomplete pattern,
+# with aria-autocomplete="list", aria-expanded, aria-controls and aria-activedescendant. The format has no
+# combobox role, so the input is a textbox part, and the tests check role: button through the role field.
+#
+# The widget filters nothing. The palette owns the listbox, the active row and matching. Matching
+# (case-insensitive substring on the label) and ranking (match index, earlier first, stable) are tested in the
+# palette contract, not here. The palette must use shouldFilter={false} or a substring filter; cmdk's default
+# fuzzy filter must not be used.
+#
+# Not measured by this contract:
+#  - the active row: reset to the first row when the query changes, ArrowDown capped at the last result,
+#    -1 with no results, ArrowUp floored at 0. Host-owned; tested in the palette contract.
+#  - Enter default prevented: no format field records it. Cover it in the palette or host test (for example,
+#    Enter inside a form host must not submit the form).
+#  - the no-results state: host-owned. The widget has no input for it.
+#  - aria-expanded, aria-controls and aria-activedescendant: supplied by the host; no test field can read them.
+#  - IME composition: not testable with the format.
+#
+# Open items:
+#  1. Escape: the spec is silent. The WAI-ARIA APG combobox pattern dismisses the popup and returns focus to
+#     the combobox, and may clear the value when no popup is shown. Decide it in the palette contract; no test here.
+#  2. Row height: h-11 measured 44px against 38.5px at 14px rem. Unresolved. The row and row-crop screenshots depend on it.
+#  3. Placeholder copy: the test values are taken from the draft and must be checked against the reference screenshot.
+#     The default is empty.
+#  4. Combobox role: inferred, see above.
+
+id: ui.commandinput
+
+props:
+  value: { type: string, default: "" }              # the query; controlled: the host passes it back on every queryChanged
+  placeholder: { type: string, default: "" }        # shown while the query is empty; the copy comes from the reference, not set here
+  leading: { type: string, default: icon }          # leading glyph; icon (the bolt glyph) is the only value in the spec
+  autoFocus: { type: boolean, default: true }       # takes focus when the palette opens
+  ariaLabel: { type: string, default: "" }          # accessible name; required, the palette root supplies it; an empty value is a host error
+  ariaExpanded: { type: boolean, default: false }   # true while the listbox is shown; supplied by the palette root
+  ariaControls: { type: string, default: "" }       # id of the listbox; supplied by the palette root
+  activeDescendantId: { type: string, default: "" } # id of the active option; empty means no active row; supplied by the host
+
+events:
+  queryChanged: { value: { type: string } }    # every user edit of the query
+  moveActive: { direction: { type: string } }  # "down" for ArrowDown, "up" for ArrowUp; emitted on every press, even with no results; the host clamps
+  submit: { value: { type: string } }          # Enter, default prevented; carries the query; the host runs the active row, or nothing with no results
+
+parts:
+  input: { role: textbox }                     # aria: combobox (proposed, see header)
+  leading: { role: generic, optional: true }   # aria: none; decorative glyph, hidden from assistive technology
+  row: { role: generic }                       # aria: none; the whole input row (glyph, input and the 1px bottom rule), used for box screenshots
+
+tests:
+  - name: input is a combobox named by the host label
+    props: { ariaLabel: "Search commands", placeholder: "Type a command" }
+    steps: [ { action: hover, part: input } ]
+    expect:
+      - { part: input, role: button }
+      - { part: input, name: "Search commands" }
+      - { part: input, visible: true }
+
+  - name: row, glyph and input are on screen with the icon variant
+    props: { leading: icon, ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect:
+      - { part: row, visible: true }
+      - { part: leading, visible: true }
+      - { part: input, visible: true }
+
+  - name: focused on open when autoFocus is set
+    props: { autoFocus: true, ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: input, focused: true } ]
+
+  - name: not focused on open when autoFocus is off
+    props: { autoFocus: false, ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: input, focused: false } ]
+
+  - name: empty query shows the placeholder
+    props: { value: "", placeholder: "Type a command", ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: input, text: { contains: "Type a command" } } ]
+
+  - name: typing reports each query; the host filters
+    props: { value: "", ariaLabel: "Search commands" }
+    steps: [ { action: type, part: input, text: "set" } ]
+    expect:
+      - { part: input, text: "set" }
+      - { event: queryChanged, times: 3, last: { value: "set" } }
+
+  - name: typing reports the query as typed
+    props: { value: "", ariaLabel: "Search commands" }
+    steps: [ { action: type, part: input, text: "pal" } ]
+    expect:
+      - { part: input, text: "pal" }
+      - { event: queryChanged, last: { value: "pal" } }
+
+  - name: Backspace to an empty query reports each shorter query
+    props: { value: "set", ariaLabel: "Search commands" }
+    steps: [ { action: key, part: input, key: Backspace, times: 3 } ]
+    expect:
+      - { part: input, text: "" }
+      - { event: queryChanged, times: 3, last: { value: "" } }
+
+  - name: deleting a character reports the shorter query
+    props: { value: "pal", ariaLabel: "Search commands" }
+    steps: [ { action: key, part: input, key: Backspace } ]
+    expect: [ { event: queryChanged, last: { value: "pa" } } ]
+
+  - name: ArrowDown is forwarded to the host as moveActive down on each press, and focus stays on the input
+    props: { value: "set", ariaLabel: "Search commands" }
+    steps: [ { action: key, part: input, key: ArrowDown, times: 3 } ]
+    expect:
+      - { event: moveActive, times: 3, last: { direction: "down" } }
+      - { part: input, focused: true }
+
+  - name: ArrowUp is forwarded to the host as moveActive up, and the query and focus stay
+    props: { value: "set", ariaLabel: "Search commands" }
+    steps: [ { action: key, part: input, key: ArrowUp } ]
+    expect:
+      - { event: moveActive, times: 1, last: { direction: "up" } }
+      - { part: input, text: "set" }
+      - { part: input, focused: true }
+
+  - name: typing after moving the active row reports the new query
+    props: { value: "", ariaLabel: "Search commands" }
+    steps:
+      - { action: key, part: input, key: ArrowDown, times: 2 }
+      - { action: type, part: input, text: "s" }
+    expect:
+      - { event: moveActive, times: 2, last: { direction: "down" } }
+      - { event: queryChanged, times: 1, last: { value: "s" } }
+
+  - name: Enter is forwarded as submit with the query, and keeps the query and focus
+    props: { value: "set", ariaLabel: "Search commands" }
+    steps: [ { action: key, part: input, key: Enter } ]
+    expect:
+      - { event: submit, times: 1, last: { value: "set" } }
+      - { part: input, text: "set" }
+      - { part: input, focused: true }
+
+  - name: arrows and Enter are forwarded even when the query matches nothing
+    props: { value: "zzzz", ariaLabel: "Search commands" }
+    steps:
+      - { action: key, part: input, key: ArrowDown }
+      - { action: key, part: input, key: Enter }
+    expect:
+      - { event: moveActive, times: 1, last: { direction: "down" } }
+      - { event: submit, times: 1, last: { value: "zzzz" } }
+      - { part: input, text: "zzzz" }
+
+  - name: empty state with placeholder and icon
+    props: { leading: icon, placeholder: "Type a command", value: "", ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: leading, visible: true } ]
+    screenshot: true
+
+  - name: focused on open with icon
+    props: { leading: icon, autoFocus: true, placeholder: "Type a command", ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: input, focused: true } ]
+    screenshot: true
+
+  - name: typed query with icon
+    props: { leading: icon, value: "set", autoFocus: true, ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: input, text: "set" } ]
+    screenshot: true
+
+  - name: input row box with a typed query
+    props: { leading: icon, value: "set", ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: row, visible: true } ]
+    screenshot: { part: row }
+
+  - name: icon variant row crop
+    props: { leading: icon, ariaLabel: "Search commands" }
+    steps: [ { action: hover, part: input } ]
+    expect: [ { part: row, visible: true } ]
+    screenshot: { part: row }
+
+colorSchemes: [ light, dark ]
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 640, height: 480 }
+
+same: pixels

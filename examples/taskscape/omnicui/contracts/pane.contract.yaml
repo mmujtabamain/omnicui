@@ -1,0 +1,193 @@
+id: ui.pane
+
+# Pane: one region of a PaneGroup. The children are content, not a prop: the task list,
+# PreviewPanel, TrashPane, FilterPanel, or the Settings search field and TabList.
+# A task pane (slot primary or split) takes its width from the group ratio. The aside host
+# (slot aside) takes a pixel width from previewWidth. The Settings sidebar is a slot primary
+# pane with width above 0 (a fixed px column, shrink-0). Beyond the spec: open and width.
+# Sentinel 0 on minSize, maxSize and width: slot default or group width (see each prop).
+#
+# Keyboard: none. The pane content owns its keys. The pane has no button, switch, checkbox,
+# slider or textbox part, so keyboard: true is not set.
+# Events: none. Width changes come from the group ratio, or from a pointer drag on Resizer
+# (a separate widget). The pane emits nothing of its own.
+
+props:
+  # slot: primary (left task pane, 100 percent unsplit or its ratio share when split),
+  #       split (second task pane, ratio share of the task area),
+  #       aside (right aside host for Preview, Trash or Filter; width from previewWidth)
+  slot: { type: string, default: primary }
+
+  # edge: none (no hairline; primary task pane), leading (1px border-l, edge colour 2; split pane
+  #       and aside), trailing (1px border-r, edge colour 2; Settings sidebar)
+  edge: { type: string, default: none }
+
+  # fill: none (transparent, takes the window colour; task panes),
+  #       surface (bg-surface-1, flex column, h-full, overflow hidden; split pane with surface,
+  #       aside, Settings sidebar, inspector, Trash, Filter)
+  fill: { type: string, default: none }
+
+  # as: div (generic, no landmark), aside (complementary landmark), nav (navigation landmark)
+  as: { type: string, default: div }
+
+  # ratio: share of the task area when split, clamped to 0.25 to 0.75 (primary and split)
+  ratio: { type: number, default: 0.5 }
+
+  # previewWidth: aside width in px, clamped to 280 to 420
+  previewWidth: { type: number, default: 320 }
+
+  # defaultSize: percent of the group: 100 unsplit, ratio times 100 when split; clamped to
+  # minSize and maxSize only when split (an unsplit primary at 100 is not clamped)
+  defaultSize: { type: number, default: 100 }
+
+  # minSize: lower clamp. 0 means the slot default: 25 (percent) for primary and split when
+  # split, 280 (px) for aside
+  minSize: { type: number, default: 0 }
+
+  # maxSize: upper clamp. 0 means the slot default: 75 (percent) for primary and split when
+  # split, 420 (px) for aside
+  maxSize: { type: number, default: 0 }
+
+  # shrink: true makes the pane shrink-0 (the aside and the Settings sidebar pass true);
+  # false lets it shrink (min-w-0 flex)
+  shrink: { type: boolean, default: false }
+
+  # open: false removes an aside host. The parent passes false when previewOpen, trashOpen
+  # and filterOpen are all false
+  open: { type: boolean, default: true }
+
+  # width: fixed px width, shrink-0, used when above 0 (Settings sidebar: 154 = w-44 at 14px rem).
+  # 0 means the width comes from the group
+  width: { type: number, default: 0 }
+
+events: {}
+
+parts:
+  # aria: complementary when as is aside, navigation when as is nav, generic when as is div
+  pane: { role: generic, same: { default: layout } }
+
+viewports:
+  - { width: 320, height: 240 }
+  - { width: 860, height: 715 }
+  - { width: 1200, height: 800 }
+
+colorSchemes: [ light, dark ]
+
+tests:
+  - name: unsplit primary fills the group
+    props: { slot: primary, defaultSize: 100, edge: none, fill: none, as: div }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: primary takes its ratio share when split
+    props: { slot: primary, ratio: 0.5, defaultSize: 50, edge: none, fill: none, as: div }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: split pane takes the second share with a leading hairline
+    props: { slot: split, ratio: 0.5, defaultSize: 50, edge: leading, fill: none, as: div }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: split pane with surface fill
+    props: { slot: split, edge: leading, fill: surface, ratio: 0.5, defaultSize: 50, as: div }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: split at the lower ratio bound
+    props: { slot: split, edge: leading, ratio: 0.25, defaultSize: 25 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: split at the upper ratio bound
+    props: { slot: split, edge: leading, ratio: 0.75, defaultSize: 75 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: ratio below the range clamps to 0.25 (25 percent)
+    props: { slot: split, edge: leading, ratio: 0.1, defaultSize: 10 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: ratio above the range clamps to 0.75 (75 percent)
+    props: { slot: split, edge: leading, ratio: 0.9, defaultSize: 90 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside is a complementary landmark with leading hairline and surface fill
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 319 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: aside host is a complementary landmark at the default width
+    props: { slot: aside, previewWidth: 320, shrink: true, edge: leading, fill: surface, as: aside }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+
+  - name: aside width above 420 px clamps to 420
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 999 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside width at 600 px clamps to 420
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 600 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside width below 280 px clamps to 280
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 200 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside width at 100 px clamps to 280
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 100 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside keeps its width at a narrow window
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 350 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: narrow window at the 420 px ceiling keeps the aside width and the task area yields
+    props: { slot: aside, as: aside, edge: leading, fill: surface, shrink: true, previewWidth: 420 }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: aside is not rendered when open is false
+    props: { slot: aside, as: aside, open: false }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: false } ]
+
+  - name: hover leaves the aside unchanged
+    props: { slot: aside, previewWidth: 320, shrink: true, edge: leading, fill: surface, as: aside }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true
+
+  - name: Settings sidebar is a navigation landmark with trailing hairline and surface fill
+    props: { as: nav, edge: trailing, fill: surface, width: 154, shrink: true }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true }, { part: pane, role: generic } ]
+    screenshot: true
+
+  - name: surface fill paints a full-height column for an unsplit primary
+    props: { slot: primary, defaultSize: 100, edge: none, fill: surface, as: div }
+    steps: [ { action: hover, part: pane } ]
+    expect: [ { part: pane, visible: true } ]
+    screenshot: true

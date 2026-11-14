@@ -1,0 +1,752 @@
+id: ui.button
+
+# Button: the one general action button. Merges ToolbarButton, IconButton, DashedButton,
+# TextButton and TileButton action uses. Role: button (native button element on web).
+# Not a toggle, so no pressed or pressedIcon (aria-pressed belongs to Toggle).
+# Not a menu or disclosure trigger, so no haspopup or expanded (MenuButton, DisclosureButton).
+# Props are scalars only (string, integer, number, boolean). Enum-like props are strings;
+# allowed values are listed beside each prop. The open questions are listed at the end of this file.
+
+props:
+  # variant: primary | neutral | outline | ghost | danger | strong | filled | dashed | link
+  variant: { type: string, default: ghost }
+  # size: sm | md | lg | default | footer | xl | step | dashedShort | dashedTall
+  # Heights: sm 21, md 24.5, lg 28, default 21 box, footer 25 by 19, xl 28 icon,
+  # step 39 media circle, dashedShort 35, dashedTall 84.
+  size: { type: string, default: md }
+  # tone: default | neutral | strong | accent | danger | done | muted
+  # neutral is an alias of default (the spec gives both the same resting colour).
+  # tone is ignored by the filled variants (primary, neutral, danger).
+  tone: { type: string, default: default }
+  # shape: text | icon | square | round
+  # icon is the icon-only square at the size height (the spec's size=icon form).
+  # label is required when shape is text, unless emptyLabel is set.
+  shape: { type: string, default: text }
+  # layout: inline | stacked
+  # stacked is the TileButton form: icon above label in an equal-size tile (team confirmation pending).
+  layout: { type: string, default: inline }
+  # surface: default | media (over photos and the lightbox)
+  surface: { type: string, default: default }
+  # reveal: always | row (opacity 0 until the row is hovered, focused within, or selected)
+  reveal: { type: string, default: always }
+  # width: full | half | content
+  # full is the default. content (width follows the label) is an added value kept for label-width toolbar buttons.
+  width: { type: string, default: full }
+  # hover: text (colour step) | wash (background wash)
+  hover: { type: string, default: text }
+  # icon: Material Symbols name, "" for none
+  icon: { type: string, default: "" }
+  # trailingIcon: Material Symbols name, "" for none (for example the MenuButton chevron)
+  trailingIcon: { type: string, default: "" }
+  # label: visible text; required when shape is text unless emptyLabel is set
+  label: { type: string, default: "" }
+  # ariaLabel: accessible name; required when shape is icon or the label is not descriptive. "" means the name comes from label.
+  ariaLabel: { type: string, default: "" }
+  # shortcut: accelerator such as "Mod+S", tooltip only. Mod is Command on macOS, Control elsewhere. Display only.
+  shortcut: { type: string, default: "" }
+  # busy: spinner replaces the icon; the button is disabled while true
+  busy: { type: boolean, default: false }
+  # feedbackLabel and feedbackIcon: shown in place of label and icon when non-empty. The caller owns the 1200 ms timer.
+  feedbackLabel: { type: string, default: "" }
+  feedbackIcon: { type: string, default: "" }
+  # errorText: "" for no error. Otherwise red text and error glyph; the text is the tooltip.
+  errorText: { type: string, default: "" }
+  # active: wash fill while a mark is on. Exposed as selected. Not a toggle: no aria-pressed (that belongs to Toggle).
+  active: { type: boolean, default: false }
+  # tabbable: false removes the button from the Tab order (tabIndex -1). Also covers focusable: false (see open).
+  tabbable: { type: boolean, default: true }
+  # disabled: muted, no pointer events, not focusable
+  disabled: { type: boolean, default: false }
+  # type: button | submit | reset. Default button, so a press inside a form does not submit.
+  type: { type: string, default: button }
+  # asChild: web only, the child becomes the button (Radix Slot). Desktop ignores.
+  asChild: { type: boolean, default: false }
+  # iconSize: px. 0 = size default (sm 14, default 16, lg 16, footer 14, xl 19, 17 on media, step 26)
+  iconSize: { type: integer, default: 0 }
+  # iconWeight: 300 | 400 | 500
+  iconWeight: { type: integer, default: 300 }
+  # radius: px. 0 = size default (4.375 for sm, default, lg, footer; 7 for xl)
+  radius: { type: number, default: 0 }
+  # keepFocusOnPress: pointer only; mousedown does not move focus away from a focused text field
+  keepFocusOnPress: { type: boolean, default: false }
+  # retainFocus: mousedown does not take focus (the draft title textarea stays focused)
+  retainFocus: { type: boolean, default: false }
+  # truncate: ellipsis when the label is wider than the box
+  truncate: { type: boolean, default: true }
+  # mono: monospace 11.5px / 17.25px, for paths
+  mono: { type: boolean, default: false }
+  # block: full-row hint style, left aligned and padded
+  block: { type: boolean, default: false }
+  # emptyLabel: muted dash shown when label is "" (the empty string is the empty-label rule)
+  emptyLabel: { type: string, default: "" }
+  # description: tooltip text
+  description: { type: string, default: "" }
+
+events:
+  # One per activation by pointer, Enter or Space. Never while disabled or busy.
+  activated:
+    count: { type: integer }
+
+parts:
+  button: { role: button, same: { default: pixels } }   # native button element; name from ariaLabel, else label
+  label: { role: generic, optional: true }              # aria: none; the visible text run (shows feedbackLabel while set)
+  icon: { role: generic, optional: true }               # aria: none; the leading glyph (feedbackIcon while feedback is set)
+  trailingIcon: { role: generic, optional: true }       # aria: none; the trailing glyph
+  spinner: { role: generic, optional: true }            # aria: none; shown while busy
+  tooltip: { role: generic, optional: true }            # aria: tooltip; opens on focus or hover; shows description, errorText or shortcut
+  feedback: { role: status, optional: true }            # aria: status; announces feedbackLabel
+  child: { role: button, optional: true }               # aria: link; web with asChild only: the child element is the button and navigates
+
+tests:
+  # Activation and focus
+  - name: press activates once
+    props: { label: "Copy task" }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { part: button, text: "Copy task" }
+      - { event: activated, times: 1, last: { count: 1 } }
+
+  - name: each press adds one
+    props: { variant: primary, label: Done }
+    steps: [ { action: press, part: button, times: 3 } ]
+    expect: [ { event: activated, times: 3, last: { count: 3 } } ]
+
+  - name: focus moves focus to the button
+    props: { label: "Copy task" }
+    steps: [ { action: focus, part: button } ]
+    expect: [ { part: button, focused: true } ]
+
+  - name: focus ring on keyboard focus
+    props: { label: "Copy task" }
+    steps: [ { action: focus, part: button } ]
+    screenshot: true
+
+  - name: focus-visible ring on the primary button
+    props: { variant: primary, label: Done }
+    steps: [ { action: focus, part: button } ]
+    expect: [ { part: button, focused: true } ]
+    screenshot: true
+
+  # Keyboard
+  - name: Enter activates
+    props: { label: "Copy task" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Enter }
+    expect: [ { event: activated, times: 1, last: { count: 1 } } ]
+
+  - name: Space activates
+    props: { label: "Copy task" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Space }
+    expect: [ { event: activated, times: 1, last: { count: 1 } } ]
+
+  - name: Escape does not activate and leaves focus
+    props: { label: "Copy task" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { event: activated, times: 0 }
+      - { part: button, focused: true }
+
+  - name: arrow keys do nothing
+    props: { label: "Copy task" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: ArrowDown }
+    expect:
+      - { event: activated, times: 0 }
+      - { part: button, focused: true }
+
+  # Variants
+  - name: primary accent fill
+    props: { variant: primary, label: Done, size: lg }
+    expect: [ { part: button, name: Done } ]
+    screenshot: true
+
+  - name: primary ignores tone danger
+    props: { variant: primary, tone: danger, label: Done, size: lg }
+    screenshot: true
+
+  - name: neutral fill
+    props: { variant: neutral, label: Cancel }
+    expect: [ { part: button, name: Cancel } ]
+    screenshot: true
+
+  - name: neutral ignores tone danger
+    props: { variant: neutral, tone: danger, label: Cancel }
+    screenshot: true
+
+  - name: outline white fill with border
+    props: { variant: outline, label: "Reset all settings", size: lg, width: full }
+    screenshot: true
+
+  - name: ghost, the default, no fill at rest
+    props: { variant: ghost, label: "Copy task" }
+    screenshot: true
+
+  - name: ghost default takes its name from the label
+    props: { label: Copy, icon: content_copy }
+    expect: [ { part: button, name: Copy } ]
+    screenshot: true
+
+  - name: danger solid fill
+    props: { variant: danger, label: Reset, size: lg }
+    expect: [ { part: button, name: Reset } ]
+    screenshot: true
+
+  - name: danger ignores tone accent
+    props: { variant: danger, tone: accent, label: Reset, size: lg }
+    screenshot: true
+
+  - name: strong ghost emphasis
+    props: { variant: strong, label: Restore, icon: restore }
+    expect: [ { part: button, name: Restore } ]
+    screenshot: true
+
+  - name: filled surface fill behind the glyph
+    props: { variant: filled, shape: icon, icon: add, ariaLabel: "More days", size: md }
+    screenshot: true
+
+  - name: filled round surface disc
+    props: { variant: filled, shape: round, icon: close, ariaLabel: "Delete note", size: default }
+    expect: [ { part: button, name: "Delete note" } ]
+    screenshot: true
+
+  - name: dashed empty-slot add action
+    props: { variant: dashed, label: "Add note", icon: add, size: dashedTall, width: full }
+    expect: [ { part: button, name: "Add note" } ]
+    screenshot: true
+
+  - name: link, no fill at rest
+    props: { variant: link, label: "Add link", size: md }
+    screenshot: true
+
+  - name: link untitled task name
+    props: { variant: link, label: "Untitled task" }
+    expect: [ { part: button, name: "Untitled task" } ]
+    screenshot: true
+
+  - name: link tone accent
+    props: { variant: link, tone: accent, label: "Add link" }
+    screenshot: true
+
+  - name: link size lg
+    props: { variant: link, size: lg, label: "Add link" }
+    screenshot: true
+
+  # Sizes
+  - name: size sm, 21px
+    props: { size: sm, label: Delete }
+    screenshot: true
+
+  - name: size sm footer delete with danger tone
+    props: { size: sm, label: Delete, icon: delete, tone: danger }
+    expect: [ { part: button, name: Delete } ]
+    screenshot: true
+
+  - name: size md, 24.5px, section header
+    props: { size: md, label: Note, icon: note_add }
+    expect: [ { part: button, name: Note } ]
+    screenshot: true
+
+  - name: size lg, 28px
+    props: { size: lg, label: "Delete list", icon: delete }
+    screenshot: true
+
+  - name: size lg bulk verb
+    props: { size: lg, label: Move, icon: drive_file_move }
+    expect: [ { part: button, name: Move } ]
+    screenshot: true
+
+  - name: size default, 21px box
+    props: { size: default, label: "Delete list tab", icon: delete, iconWeight: 500 }
+    screenshot: true
+
+  - name: size default row action
+    props: { size: default, label: "Delete list", icon: delete }
+    expect: [ { part: button, name: "Delete list" } ]
+    screenshot: true
+
+  - name: size footer, 25 by 19
+    props: { size: footer, shape: icon, icon: sort, ariaLabel: "Sort and filter" }
+    expect: [ { part: button, name: "Sort and filter" } ]
+    screenshot: true
+
+  - name: size xl, 28px icon
+    props: { size: xl, shape: icon, icon: settings, ariaLabel: Settings }
+    expect: [ { part: button, name: Settings } ]
+    screenshot: true
+
+  - name: size step, 39px media circle pager
+    props: { size: step, variant: filled, surface: media, shape: round, icon: chevron_right, ariaLabel: "Next image" }
+    expect: [ { part: button, name: "Next image" } ]
+    screenshot: true
+
+  - name: size dashedShort, 35px
+    props: { variant: dashed, size: dashedShort, label: "Add link", width: half }
+    screenshot: true
+
+  - name: size dashedShort is the half-width draft start
+    props: { variant: dashed, size: dashedShort, width: half, icon: add, label: Note }
+    expect: [ { part: button, name: Note } ]
+    screenshot: true
+
+  # Tones
+  - name: tone default resting grey
+    props: { tone: default, label: "Copy task" }
+    screenshot: true
+
+  - name: tone neutral looks the same as the default tone
+    props: { tone: neutral, label: Copy, icon: content_copy }
+    expect: [ { part: button, name: Copy } ]
+    screenshot: true
+
+  - name: tone strong, the emphasis text colour
+    props: { tone: strong, label: "Open task" }
+    expect: [ { part: button, name: "Open task" } ]
+    screenshot: true
+
+  - name: tone accent, the toast Undo colour
+    props: { tone: accent, label: Undo, size: md }
+    expect: [ { part: button, name: Undo } ]
+    screenshot: true
+
+  - name: tone danger red text
+    props: { tone: danger, label: "Empty Trash" }
+    screenshot: true
+
+  - name: tone danger red text for inline destructive actions
+    props: { tone: danger, label: Empty, icon: delete_forever }
+    expect: [ { part: button, name: Empty } ]
+    screenshot: true
+
+  - name: tone done
+    props: { tone: done, label: Done, size: md }
+    screenshot: true
+
+  - name: tone done, the done-lamp colour
+    props: { tone: done, label: Done, icon: check, size: lg }
+    expect: [ { part: button, name: Done } ]
+    screenshot: true
+
+  - name: tone muted, the hint colour
+    props: { tone: muted, label: "Notes hint", block: true }
+    expect: [ { part: button, name: "Notes hint" } ]
+    screenshot: true
+
+  # Shapes
+  - name: shape icon has an accessible name
+    props: { shape: icon, icon: close, ariaLabel: "Close", size: lg }
+    expect:
+      - { part: button, name: "Close" }
+      - { part: icon, visible: true }
+    screenshot: true
+
+  - name: shape square corner radius from size
+    props: { shape: square, label: "Square", size: md }
+    screenshot: true
+
+  - name: shape square takes its corner radius from size with an icon
+    props: { shape: square, icon: format_bold, ariaLabel: Bold, size: md }
+    expect: [ { part: button, name: Bold } ]
+    screenshot: true
+
+  - name: shape round filled disc
+    props: { shape: round, variant: filled, icon: add, ariaLabel: "Add", size: md, reveal: always }
+    screenshot: true
+
+  # Surface
+  - name: media surface filled, white 10 percent fill
+    props: { surface: media, variant: filled, shape: round, icon: add, ariaLabel: "Add", size: md }
+    screenshot: true
+
+  - name: media filled hover turns white 20 percent
+    props: { surface: media, variant: filled, shape: round, icon: add, ariaLabel: "Add", size: md }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: media filled hover goes to white 20 percent on the previous pager
+    props: { surface: media, variant: filled, shape: round, size: step, icon: chevron_left, ariaLabel: "Previous image" }
+    steps: [ { action: hover, part: button } ]
+    expect: [ { part: button, name: "Previous image" } ]
+    screenshot: true
+
+  - name: media ghost at rest over a photo
+    props: { surface: media, shape: icon, icon: close, ariaLabel: Close, size: xl }
+    expect: [ { part: button, name: Close } ]
+    screenshot: true
+
+  - name: media ghost hover gets its wash
+    props: { surface: media, shape: icon, icon: close, ariaLabel: Close, size: xl }
+    steps: [ { action: hover, part: button } ]
+    expect: [ { part: button, name: Close } ]
+    screenshot: true
+
+  - name: media danger hover is a solid danger fill with a white glyph
+    props: { surface: media, tone: danger, shape: icon, icon: delete, ariaLabel: "Remove attachment", size: xl }
+    steps: [ { action: hover, part: button } ]
+    expect: [ { part: button, name: "Remove attachment" } ]
+    screenshot: true
+
+  # Reveal
+  - name: reveal row hidden at rest
+    props: { reveal: row, variant: strong, label: Restore, icon: restore }
+    screenshot: true
+
+  - name: reveal row shows on hover
+    props: { reveal: row, variant: strong, label: Restore, icon: restore }
+    steps: [ { action: hover, part: button } ]
+    trace: [ { part: button, property: opacity } ]
+
+  - name: reveal row shows when keyboard focus is within the row
+    props: { reveal: row, variant: strong, label: Restore, icon: restore }
+    steps: [ { action: focus, part: button } ]
+    trace: [ { part: button, property: opacity } ]
+    expect: [ { part: button, focused: true } ]
+    screenshot: true
+
+  - name: reveal always is visible at rest
+    props: { reveal: always, label: Copy, icon: content_copy }
+    expect: [ { part: button, name: Copy } ]
+    screenshot: true
+
+  # Layout
+  - name: layout stacked shows an equal-size tile with the icon above the label
+    props: { layout: stacked, icon: note_add, label: "New note", width: half }
+    screenshot: true
+
+  # Width
+  - name: width defaults to full
+    props: { label: "Open folder" }
+    screenshot: true
+
+  - name: width content follows the label
+    props: { width: content, label: "Copy task" }
+    screenshot: true
+
+  - name: width half of a two-column row
+    props: { width: half, label: Note, icon: note_add }
+    screenshot: true
+
+  - name: width full fills the row
+    props: { width: full, label: "Add note", variant: dashed, size: dashedTall }
+    screenshot: true
+
+  # Hover
+  - name: hover text colour step
+    props: { variant: ghost, hover: text, label: "Capture target" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: hover text changes the colour step only
+    props: { hover: text, tone: muted, label: "Capture target" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: hover wash background
+    props: { variant: ghost, hover: wash, label: "Open folder" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: hover wash fills the background of a path button
+    props: { hover: wash, mono: true, tone: muted, label: "/Users/example/Taskscape" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: dashed hover
+    props: { variant: dashed, size: dashedTall, width: full, icon: add, label: "Add note" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  - name: link hover wash
+    props: { variant: link, hover: wash, label: "Add link" }
+    steps: [ { action: hover, part: button } ]
+    screenshot: true
+
+  # Glyph props
+  - name: icon weight 300 is the default
+    props: { label: "New task", icon: add, size: sm }
+    screenshot: true
+
+  - name: iconWeight 400 for New task
+    props: { label: "New task", icon: add, size: sm, iconWeight: 400 }
+    expect: [ { part: button, name: "New task" } ]
+    screenshot: true
+
+  - name: icon weight 500
+    props: { icon: delete, iconWeight: 500, label: "Delete list", size: lg }
+    screenshot: true
+
+  - name: icon size per use
+    props: { shape: icon, icon: settings, iconSize: 19, ariaLabel: Settings, size: xl }
+    screenshot: true
+
+  - name: leading icon and trailing chevron
+    props: { icon: folder, trailingIcon: expand_more, label: "Open folder" }
+    screenshot: true
+
+  - name: trailingIcon shows a chevron after the label
+    props: { label: "Move to", trailingIcon: arrow_drop_down }
+    expect: [ { part: button, name: "Move to" } ]
+    screenshot: true
+
+  - name: radius override 5.25 for New list
+    props: { variant: neutral, size: lg, label: "New list", icon: add, radius: 5.25 }
+    expect: [ { part: button, name: "New list" } ]
+    screenshot: true
+
+  # Text props
+  - name: truncate ellipsis when label is too wide
+    props: { truncate: true, label: "A very long label that will not fit in the box", width: half }
+    screenshot: true
+
+  - name: truncate ellipsises an attached file name that cannot fit
+    props: { truncate: true, label: "Attach a screenshot file with a very long name that cannot fit", width: half }
+    screenshot: true
+
+  - name: truncate false lets the label wrap
+    props: { truncate: false, label: "A very long label that will not fit in the box", width: half }
+    screenshot: true
+
+  - name: mono path
+    props: { mono: true, tone: muted, label: "/Users/example/Taskscape" }
+    expect: [ { part: button, name: "/Users/example/Taskscape" } ]
+    screenshot: true
+
+  - name: block hint style
+    props: { block: true, tone: muted, label: "Add a note" }
+    expect: [ { part: button, name: "Add a note" } ]
+    screenshot: true
+
+  - name: empty label shows muted dash
+    props: { label: "", emptyLabel: "—", mono: true, tone: muted }
+    expect: [ { part: button, text: "—" } ]
+
+  # States
+  - name: disabled look
+    props: { disabled: true, label: "Copy task" }
+    expect: [ { part: button, disabled: true } ]
+    screenshot: true
+
+  - name: disabled primary is muted
+    props: { disabled: true, variant: primary, label: Done }
+    expect: [ { part: button, disabled: true } ]
+    screenshot: true
+
+  - name: disabled cannot take focus
+    props: { disabled: true, label: "Copy task" }
+    steps: [ { action: focus, part: button } ]
+    expect: [ { part: button, focused: false } ]
+
+  - name: disabled ignores press
+    props: { disabled: true, label: "Copy task" }
+    steps: [ { action: press, part: button } ]
+    expect: [ { event: activated, times: 0 } ]
+
+  - name: busy shows spinner and disables
+    props: { busy: true, label: Shot, icon: photo_camera, size: md }
+    expect:
+      - { part: spinner, visible: true }
+      - { part: button, disabled: true }
+    screenshot: true
+
+  - name: busy ignores press
+    props: { busy: true, label: Shot, icon: photo_camera }
+    steps: [ { action: press, part: button } ]
+    expect: [ { event: activated, times: 0 } ]
+
+  - name: active wash while the mark is on
+    props: { active: true, variant: ghost, label: Link }
+    screenshot: true
+
+  - name: active with an icon wash
+    props: { active: true, variant: ghost, tone: strong, label: Link, icon: link }
+    expect: [ { part: button, name: Link } ]
+    screenshot: true
+
+  - name: active is exposed as selected
+    props: { active: true, variant: ghost, label: Link }
+    expect: [ { part: button, selected: true } ]
+
+  - name: active does not stop press activating
+    props: { active: true, variant: ghost, label: Link }
+    steps: [ { action: press, part: button } ]
+    expect: [ { event: activated, times: 1, last: { count: 1 } } ]
+
+  - name: feedback label replaces label
+    props: { feedbackLabel: "Copied", feedbackIcon: check, label: "Copy task", variant: ghost }
+    expect:
+      - { part: label, text: "Copied" }
+      - { part: icon, visible: true }
+    screenshot: true
+
+  - name: feedback label is announced in the status part
+    props: { feedbackLabel: "Copied", feedbackIcon: check, label: "Copy task" }
+    expect: [ { part: feedback, text: "Copied" } ]
+
+  - name: press during feedback still activates once
+    props: { feedbackLabel: "Copied", feedbackIcon: check, label: "Copy task" }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { part: label, text: "Copied" }
+      - { event: activated, times: 1, last: { count: 1 } }
+
+  - name: error shows red text and an error glyph
+    props: { errorText: "Could not attach the file", label: "Attach screenshot", icon: photo_camera, size: md, shape: text }
+    screenshot: true
+
+  - name: error with outline and danger tone
+    props: { errorText: "Screenshot failed", label: "Attach screenshot", variant: outline, tone: danger, size: md, icon: add_photo_alternate }
+    expect: [ { part: button, name: "Attach screenshot" } ]
+    screenshot: true
+
+  - name: error string is the tooltip on focus
+    props: { errorText: "Could not attach the file", label: "Attach screenshot", icon: photo_camera, size: md }
+    steps: [ { action: focus, part: button } ]
+    expect:
+      - { part: tooltip, visible: true, text: "Could not attach the file" }
+      - { part: button, name: "Attach screenshot" }
+
+  - name: error text is the tooltip on hover
+    props: { errorText: "Screenshot failed", label: "Attach screenshot", variant: outline, tone: danger, size: md, icon: add_photo_alternate }
+    steps: [ { action: hover, part: button } ]
+    expect: [ { part: tooltip, visible: true, text: { contains: "Screenshot failed" } } ]
+
+  - name: tabbable false keeps the same look
+    props: { tabbable: false, variant: outline, size: md, label: "Clear draft", icon: close }
+    screenshot: true
+
+  - name: tabbable false takes the button out of the Tab order
+    props: { tabbable: false, label: "Clear draft", variant: outline, size: md, icon: delete }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Tab }
+    expect: [ { part: button, focused: false } ]
+
+  # Tooltip
+  - name: tooltip opens on focus
+    props: { description: "Copy a file into this task", label: File }
+    steps: [ { action: focus, part: button } ]
+    expect:
+      - { part: tooltip, visible: true, text: "Copy a file into this task" }
+      - { part: button, name: File }
+
+  - name: tooltip opens on hover
+    props: { description: "Copy a file into this task", label: File }
+    steps: [ { action: hover, part: button } ]
+    expect:
+      - { part: tooltip, visible: true, text: "Copy a file into this task" }
+      - { part: button, name: File }
+
+  - name: tooltip opens on keyboard focus and keeps the ariaLabel as the name
+    props: { shape: icon, icon: content_copy, ariaLabel: "Copy a file", description: "Copy a file into this task" }
+    steps: [ { action: focus, part: button } ]
+    expect:
+      - { part: tooltip, visible: true, text: { contains: "Copy a file into this task" } }
+      - { part: button, name: "Copy a file" }
+
+  - name: tooltip opens on hover and keeps the ariaLabel as the name
+    props: { shape: icon, icon: content_copy, ariaLabel: "Copy a file", description: "Copy a file into this task" }
+    steps: [ { action: hover, part: button } ]
+    expect:
+      - { part: tooltip, visible: true, text: { contains: "Copy a file into this task" } }
+      - { part: button, name: "Copy a file" }
+
+  - name: Escape closes the tooltip without activating
+    props: { description: "Copy a file into this task", label: File }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: tooltip, visible: false }
+      - { event: activated, times: 0 }
+
+  - name: Escape closes an open tooltip with an icon button and does not activate
+    props: { shape: icon, icon: content_copy, ariaLabel: "Copy a file", description: "Copy a file into this task" }
+    steps:
+      - { action: focus, part: button }
+      - { action: key, part: button, key: Escape }
+    expect:
+      - { part: tooltip, visible: false }
+      - { event: activated, times: 0 }
+
+  - name: shortcut shows the Command glyph on macOS
+    only: [macos]
+    props: { shape: icon, icon: save, ariaLabel: Save, description: Save, shortcut: "Mod+S" }
+    steps: [ { action: focus, part: button } ]
+    expect: [ { part: tooltip, visible: true, text: { matches: '⌘S' } } ]
+
+  - name: shortcut shows Control elsewhere
+    except: [macos]
+    props: { shape: icon, icon: save, ariaLabel: Save, description: Save, shortcut: "Mod+S" }
+    steps: [ { action: focus, part: button } ]
+    expect: [ { part: tooltip, visible: true, text: { matches: 'Ctrl\+S' } } ]
+
+  - name: shortcut shown in tooltip on hover
+    props: { shortcut: "Mod+K", description: "Search and commands", label: Search }
+    steps: [ { action: hover, part: button } ]
+    expect: [ { part: tooltip, text: { matches: '(⌘|Ctrl\+)K' } } ]
+
+  # Icons and web only
+  - name: asChild on web makes the child the button and it navigates with role link
+    only: [web]
+    props: { asChild: true, label: "Open", icon: open_in_new }
+    steps: [ { action: press, part: child } ]
+    expect:
+      - { event: activated, times: 1, last: { count: 1 } }
+      - { part: child, role: button }
+
+  - name: asChild on desktop is ignored
+    only: [desktop]
+    props: { asChild: true, label: "Open" }
+    steps: [ { action: press, part: button } ]
+    expect:
+      - { part: button, name: "Open" }
+      - { event: activated, times: 1, last: { count: 1 } }
+
+viewports: [ { width: 320, height: 240 } ]
+colorSchemes: [ light, dark ]
+keyboard: true
+mask: [ tooltip ]
+
+# open (decisions and items this contract cannot check; the format has no open field, so they live here)
+#
+# Decisions taken in this merge:
+# - width default is full (spec). content is kept as an added value for label-width toolbar buttons, tested.
+# - neutral tone is an alias of default. neutral variant is a separate filled button.
+# - error prop is named errorText; dashed heights are named dashedShort (35px) and dashedTall (84px).
+# - shape=icon is the icon-only form (the spec purpose says size=icon; the axis says shape). Chosen: shape=icon.
+# - focusable is merged into tabbable (duplicate). Draft B focusable test merged into the Tab order test.
+# - fullWidth maps to width full. onClick maps to the activated event. pressed, pressedIcon, haspopup and
+#   expanded are not props: aria-pressed belongs to Toggle, aria-haspopup to MenuButton, aria-expanded to DisclosureButton.
+# - children maps to label, or to the child part on web with asChild.
+# - active is exposed as the selected field (a chosen button), not aria-pressed. A rich-text link mark that
+#   needs aria-pressed should use Toggle instead. Team to confirm.
+# - layout is added (inline | stacked) for the TileButton form. Team confirmation pending.
+# - empty-label rule: label is required when shape is text, unless emptyLabel is set. emptyLabel shows when label is "".
+# - feedback: caller owns the 1200 ms timer. The feedback status part announces feedbackLabel.
+# - busy and disabled use the native disabled state (focus removed). The APG suggests aria-disabled so the
+#   control stays discoverable. Team to decide; the native choice is tested by "disabled cannot take focus".
+#
+# Not checkable in this contract (untestable here):
+# - keepFocusOnPress and retainFocus need a textbox part. A composed test belongs in the sheet or draft title
+#   contract (press the button, expect the textbox to keep focus and its caret). Not written here.
+# - type submit: a form part is not in this format. A composed form test would expect no submit with the default type.
+# - pressed-down (active-down) state: the press action completes a press, so the mid-press state cannot be read.
+# - the 1200 ms feedback revert: the caller's timer; check it in the caller's contract.
+# - the tooltip role (aria: tooltip) and the aria-describedby link for description and errorText:
+#   the tooltip part is generic in this format.
+# - reveal row selected state (the row is selected and the button is revealed): needs a row part. Move the test
+#   to the list or row contract that owns the row.
+# - hidden reveal buttons (opacity 0) remain in the accessibility tree and the Tab order until the row gains focus.
+#   Screenshot tests do not measure this.
+# - tabbable false on Clear draft and Attach screenshot removes them from the Tab order. The spec says the
+#   shortcuts then become the only keyboard route. The shortcut-activates-action test belongs in the capture-bar contract.
+# - size sm (21px) and footer (25 by 19) are below the 24px minimum target size (WCAG 2.5.8). No hit-area check
+#   exists in this format. Record the exception here; spacing must cover it in the layout.
+# - the Enter input and Escape input names (confirm, dismiss) are not verified in platforms.yaml; key actions are used instead.
+# - the web role for navigating actions: asChild renders an anchor (role link on web, tested above). Desktop
+#   buttons remain role button.

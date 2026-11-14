@@ -1,0 +1,312 @@
+# ui.tablist: tab strip for list tabs (horizontal, title bar) and Settings sections (vertical).
+# Follows the WAI-ARIA tabs pattern: arrows move between tabs, Home and End included,
+# automatic activation (focus selects), one tab stop, Tab leaves the strip.
+# The New list button is an action outside the tablist; it is not a part here.
+# Tab items come from the tabs family as children. The fixture renders tabCount tabs with ids
+# "1".."N" and text "List 1".."List N". Parts firstTab, secondTab and lastTab are tabs 1, 2 and N
+# (lastTab is the same tab as tab 3 when tabCount is 3).
+id: ui.tablist
+
+props:
+  value: { type: string, default: "1" }                # selected tab id; "" selects none
+  loop: { type: boolean, default: true }               # true: arrows wrap past the first and last tab; false: stop at the ends
+  label: { type: string, default: Tabs }               # aria-label of the tablist, for example Settings sections
+  orientation: { type: string, default: horizontal }   # horizontal or vertical; Left/Right act only in horizontal, Up/Down only in vertical
+  overflow: { type: string, default: scroll }          # scroll: horizontal scroll with the scrollbar hidden; fit: no scroll (the vertical Settings list uses fit)
+  tabCount: { type: integer, default: 3 }              # test fixture only: tabs rendered; 0 is the empty state, 12 overflows the strip
+
+events:
+  valueChanged: { value: { type: string } }   # the newly selected tab id; fired by press, arrows, Home and End, not by pressing the selected tab or by an arrow that stops at an end
+
+parts:
+  tablist: { role: generic }                        # aria: tablist; generic when there are no tabs (see the empty test); its name is label, which generic cannot report
+  firstTab: { role: button, optional: true }        # aria: tab; tab 1
+  secondTab: { role: button, optional: true }       # aria: tab; tab 2
+  lastTab: { role: button, optional: true }         # aria: tab; the last rendered tab (tab 3 at tabCount 3, tab 12 at tabCount 12)
+
+keyboard: true
+colorSchemes: [light, dark]
+same: pixels
+
+tests:
+  - name: the selected tab shows selected and carries the tab role
+    steps: [ { action: focus, part: firstTab } ]
+    expect:
+      - { part: tablist, role: generic }
+      - { part: firstTab, role: button }
+      - { part: firstTab, text: List 1 }
+      - { part: firstTab, selected: true }
+      - { part: secondTab, selected: false }
+      - { part: lastTab, selected: false }
+
+  - name: pressing a tab selects it and emits valueChanged
+    steps: [ { action: press, part: secondTab, times: 1 } ]
+    expect:
+      - { part: secondTab, role: button }
+      - { part: secondTab, selected: true }
+      - { part: firstTab, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "2" } }
+
+  - name: pressing the selected tab changes nothing
+    steps: [ { action: press, part: firstTab } ]
+    expect:
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: ArrowRight moves focus to the next tab and selects it
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowRight }
+    expect:
+      - { part: secondTab, focused: true }
+      - { part: secondTab, selected: true }
+      - { part: firstTab, selected: false }
+      - { event: valueChanged, times: 1, last: { value: "2" } }
+
+  - name: ArrowLeft moves focus to the previous tab and selects it
+    props: { value: "2" }
+    steps:
+      - { action: focus, part: secondTab }
+      - { action: key, part: secondTab, key: ArrowLeft }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "1" } }
+
+  - name: ArrowLeft on the first tab wraps to the last when loop is on
+    props: { value: "1", loop: true }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowLeft }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "3" } }
+
+  - name: ArrowRight on the last tab wraps to the first when loop is on
+    props: { value: "3", loop: true }
+    steps:
+      - { action: focus, part: lastTab }
+      - { action: key, part: lastTab, key: ArrowRight }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "1" } }
+
+  - name: ArrowRight on the last tab stops there when loop is off
+    props: { value: "3", loop: false }
+    steps:
+      - { action: focus, part: lastTab }
+      - { action: key, part: lastTab, key: ArrowRight }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { part: firstTab, selected: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: ArrowLeft on the first tab stops there when loop is off
+    props: { value: "1", loop: false }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowLeft }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: Home moves to the first tab and selects it
+    props: { value: "3" }
+    steps:
+      - { action: focus, part: lastTab }
+      - { action: key, part: lastTab, key: Home }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "1" } }
+
+  - name: End moves to the last tab and selects it
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: End }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "3" } }
+
+  - name: ArrowDown does nothing in the horizontal strip
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowDown }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 0 }
+
+  - name: Tab leaves the strip, so no tab keeps focus
+    props: { value: "2" }
+    steps:
+      - { action: focus, part: secondTab }
+      - { action: key, part: secondTab, key: Tab }
+    expect:
+      - { part: firstTab, focused: false }
+      - { part: secondTab, focused: false }
+      - { part: lastTab, focused: false }
+      - { part: secondTab, selected: true }
+
+  - name: vertical ArrowDown moves to the next section and selects it
+    props: { orientation: vertical, overflow: fit, value: "1" }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowDown }
+    expect:
+      - { part: secondTab, focused: true }
+      - { part: secondTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "2" } }
+
+  - name: vertical ArrowDown on the last section wraps to the first
+    props: { orientation: vertical, overflow: fit, value: "3", loop: true }
+    steps:
+      - { action: focus, part: lastTab }
+      - { action: key, part: lastTab, key: ArrowDown }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "1" } }
+
+  - name: vertical ArrowUp on the first section wraps to the last
+    props: { orientation: vertical, overflow: fit, value: "1", loop: true }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowUp }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "3" } }
+
+  - name: vertical Down and Up move between sections and wrap at the ends
+    props: { orientation: vertical, overflow: fit }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowDown }
+      - { action: key, part: secondTab, key: ArrowUp }
+      - { action: key, part: firstTab, key: ArrowUp }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 3, last: { value: "3" } }
+
+  - name: vertical list ignores ArrowRight
+    props: { orientation: vertical, overflow: fit, value: "1" }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowRight }
+    expect:
+      - { part: firstTab, focused: true }
+      - { part: firstTab, selected: true }
+      - { part: secondTab, selected: false }
+      - { event: valueChanged, times: 0 }
+
+  - name: vertical End moves to the last section and selects it
+    props: { orientation: vertical, overflow: fit, value: "1" }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: End }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "3" } }
+
+  - name: overflowing strip starts with its last tab clipped
+    props: { tabCount: 12 }
+    steps: [ { action: hover, part: tablist } ]
+    expect:
+      - { part: firstTab, visible: true }
+      - { part: lastTab, visible: false }
+
+  - name: End scrolls the last tab into view and selects it
+    props: { tabCount: 12 }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: End }
+    expect:
+      - { part: lastTab, focused: true }
+      - { part: lastTab, visible: true }
+      - { part: lastTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "12" } }
+    trace:
+      - { part: lastTab, point: center, timing: { duration: 200ms, easing: ease-out } }
+
+  - name: ArrowLeft from the first tab wraps to the last and scrolls it into view
+    props: { tabCount: 12, value: "1" }
+    steps:
+      - { action: focus, part: firstTab }
+      - { action: key, part: firstTab, key: ArrowLeft }
+    expect:
+      - { part: tablist, visible: true }
+      - { part: lastTab, focused: true }
+      - { part: lastTab, selected: true }
+      - { part: lastTab, visible: true }
+      - { event: valueChanged, times: 1, last: { value: "12" } }
+
+  - name: fit shows every tab without scrolling
+    props: { tabCount: 12, overflow: fit }
+    steps: [ { action: hover, part: tablist } ]
+    expect:
+      - { part: firstTab, visible: true }
+      - { part: lastTab, visible: true }
+
+  - name: empty strip keeps its place and exposes no tabs
+    props: { tabCount: 0, value: "" }
+    steps: [ { action: hover, part: tablist } ]
+    expect:
+      - { part: tablist, visible: true }
+      - { part: tablist, role: generic }
+      - { event: valueChanged, times: 0 }
+
+  - name: on desktop a press in the title-bar strip selects the tab
+    only: [desktop]
+    steps: [ { action: press, part: secondTab } ]
+    expect:
+      - { part: secondTab, selected: true }
+      - { event: valueChanged, times: 1, last: { value: "2" } }
+
+  - name: title-bar strip with three tabs
+    steps: [ { action: hover, part: tablist } ]
+    screenshot: true
+
+  - name: keyboard focus ring on a tab
+    steps: [ { action: focus, part: secondTab } ]
+    screenshot: true
+
+  - name: horizontal strip with the second tab focused and selected
+    props: { value: "2" }
+    steps: [ { action: focus, part: secondTab } ]
+    screenshot: true
+
+  - name: horizontal strip at rest
+    props: { value: "2" }
+    screenshot: true
+
+  - name: overflowing horizontal strip at its start
+    props: { tabCount: 12 }
+    steps: [ { action: hover, part: tablist } ]
+    screenshot: true
+
+  - name: fit horizontal strip with twelve tabs
+    props: { tabCount: 12, overflow: fit }
+    steps: [ { action: hover, part: tablist } ]
+    screenshot: true
+
+  - name: fit horizontal strip with three tabs
+    props: { overflow: fit, value: "2" }
+    screenshot: true
+
+  - name: vertical Settings section list
+    props: { orientation: vertical, overflow: fit, label: "Settings sections" }
+    steps: [ { action: hover, part: tablist } ]
+    screenshot: true
+
+  - name: empty strip
+    props: { tabCount: 0, value: "" }
+    steps: [ { action: hover, part: tablist } ]
+    screenshot: true

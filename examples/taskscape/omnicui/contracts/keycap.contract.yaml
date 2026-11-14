@@ -1,0 +1,359 @@
+# Keycap (ui.keycap): a button that shows one shortcut binding as keycap glyphs in a
+# settings row and, when activated, records the next key combo for that action.
+# Idle and recording share one component on a mode axis (same box, radius, font and
+# focus handling). The reset control is a sibling button beside the keycap, never
+# nested inside it.
+#
+# Sizes (1rem = 14px, from reference A): idle height 21px (1.5rem); idle minimum width
+# 49px (3.5rem), content width above that; recording fixed width 101px (7.214rem);
+# radius 4.375px (0.3125rem, radius-sm); label text 11px (0.786rem) on a 16.5px
+# (1.179rem) line. No expect field measures sizes, so these are spec text only.
+# Colours are tokens: muted fill and muted-foreground text for idle; recording uses
+# foreground text and the shared neutral focus ring (open item 1).
+# Base: shadcn Button styling (secondary surface), rendered as a native button; no
+# Radix primitive. Glyphs come from HotkeyHint (size sm, tone inherit).
+#
+# Widget props folded into the contract props: keys (derived from accel by HotkeyHint),
+# combo (= accel), customised (= binding is custom), recording (= mode is recording),
+# onRecord (= capture event), isReserved (= reserved), label (= actionName).
+#
+# Accelerator notation (provisional, open item 8): modifiers Control, Shift, Meta joined
+# with "+", then the key name, for example Shift+F5, Control+Shift+K, Backspace.
+#
+# Not tested (the format has no way to observe them): every keydown is default-prevented
+# while recording so app shortcuts do not fire; blur during recording cancels (proposed,
+# open item 5; no action moves focus off the keycap); the optional desktop window
+# controls are not part of this widget.
+id: ui.keycap
+
+props:
+  mode: { type: string, default: idle }            # idle | recording. Owned by the list; at most one keycap per list is recording.
+  binding: { type: string, default: default }      # default | custom | unbound. Derived by the owner from accel. Precedence: unbound wins (shown as unbound when accel is "" or binding is "unbound"), then custom (reset shown), otherwise default. Ignored while recording.
+  accel: { type: string, default: "" }             # Stored accelerator; "" means unbound. Format provisional (open item 8). Ignored while recording.
+  actionName: { type: string, default: "" }        # Name of the command the row binds. Used in the accessible name.
+  prompt: { type: string, default: "Type shortcut…" }   # Shown and announced while recording. Needs a localisation key (open item 4).
+  unboundLabel: { type: string, default: "None" }  # Muted text shown when unbound. Needs a localisation key (open item 4).
+  reserved: { type: string, default: "" }          # Comma-separated combos the platform owns, for example "Shift+F5,Shift+F6". Web: browser-reserved chords. Desktop: OS-reserved chords. A recorded reserved combo is refused, not captured (proposed, open item 6).
+  scope: { type: string, default: app }            # app | global. app: works while the app window is focused (the only scope on web). global: system-wide hotkey, desktop only. Has no visible effect here; see the desktop-only test.
+  disabled: { type: boolean, default: false }      # Library addition. Disables activation and styling of the keycap and the reset control.
+
+events:
+  startRecording: {}                               # Keycap activated while idle (press, Enter or Space). The owner then sets mode to recording.
+  capture:                                         # A combo was recorded while recording.
+    accel: { type: string }                        # accel "" when a bare Backspace or Delete unbinds the row.
+  cancel: {}                                       # Escape, a second activation of the recording keycap (press, Enter or Space), or Tab while recording (Tab proposed, open item 5). The owner returns mode to idle.
+  reset: {}                                        # The reset control was activated. The owner restores the default binding.
+  refused:                                         # A reserved combo was pressed while recording (proposed, open item 6). Nothing is captured and a message is announced.
+    accel: { type: string }
+
+parts:
+  group: { role: generic }                         # aria: group. Wrapper holding the keycap and the optional reset control. Not interactive. Its name is not measured (generic has no name field).
+  keycap: { role: button, same: { default: layout } }   # aria: button. Idle: glyphs, accessible name "actionName, spelled-out accel" (unbound: actionName plus unboundLabel; recording: actionName plus prompt). Instructions such as "press to change" live in an aria-describedby element with a localisation key, not in the name. Shows glyphs when idle, the prompt while recording. Not nested with reset.
+  reset: { role: button, optional: true }          # aria: button. Shared ghost IconButton beside the keycap, a sibling and never nested in it. Name: "Reset " plus actionName (localised, open item 4). Shown only when binding is custom, the row is not unbound, and mode is idle; disabled with the row.
+  announcement: { role: status }                   # aria-live polite, visually hidden. Carries the prompt on entering recording and refusal messages. Its text is not measured; the prompt is measured through keycap text and refusal through the refused event.
+
+mask: [ announcement ]
+same: pixels
+keyboard: true
+colorSchemes: [ light, dark ]
+
+tests:
+  # Idle variants
+  - name: idle shows the combination as keycaps inside a group
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: group, role: generic }
+      - { part: keycap, role: button }
+      - { part: keycap, text: { contains: "F5" } }
+      - { part: keycap, name: { contains: "Refresh list" } }
+      - { part: keycap, name: { contains: "F5" } }
+      - { part: reset, visible: false }
+
+  - name: idle keycap takes keyboard focus
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap } ]
+    expect:
+      - { part: keycap, focused: true }
+
+  - name: unbound shows the unbound label in muted text and no reset
+    props: { accel: "", binding: unbound, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "None" }
+      - { part: keycap, name: { contains: "Refresh list" } }
+      - { part: keycap, name: { contains: "None" } }
+      - { part: reset, visible: false }
+
+  - name: unboundLabel replaces the default None text
+    props: { accel: "", binding: unbound, unboundLabel: "Not set", actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "Not set" }
+      - { part: keycap, name: { contains: "Not set" } }
+
+  - name: unbound wins over custom when accel is empty
+    props: { accel: "", binding: custom, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "None" }
+      - { part: reset, visible: false }
+
+  - name: binding unbound with a stored accel still shows the unbound label
+    props: { accel: "Shift+F5", binding: unbound, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "None" }
+      - { part: reset, visible: false }
+
+  - name: custom binding shows the reset control beside the keycap
+    props: { accel: "Shift+F5", binding: custom, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, visible: true }
+      - { part: reset, visible: true }
+      - { part: reset, role: button }
+      - { part: reset, name: { contains: "Reset" } }
+      - { part: reset, name: { contains: "Refresh list" } }
+
+  - name: default binding shows no reset control
+    props: { accel: "Shift+F5", binding: default, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: reset, visible: false }
+
+  # Recording variant
+  - name: recording shows the prompt in place of the keys, hides reset, and keeps the action in the name
+    props: { mode: recording, accel: "Shift+F5", binding: custom, actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "Type shortcut…" }
+      - { part: keycap, name: { contains: "Refresh list" } }
+      - { part: reset, visible: false }
+      - { part: announcement, role: status }
+
+  - name: prompt prop replaces the default prompt
+    props: { mode: recording, prompt: "Press the new keys", actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: keycap, text: "Press the new keys" }
+
+  # Starting recording
+  - name: a press on an idle keycap starts recording
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: press, part: keycap } ]
+    expect:
+      - { event: startRecording, times: 1 }
+      - { event: cancel, times: 0 }
+
+  - name: Enter on an idle keycap starts recording
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Enter } ]
+    expect:
+      - { event: startRecording, times: 1 }
+
+  - name: Space on an idle keycap starts recording
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Space } ]
+    expect:
+      - { event: startRecording, times: 1 }
+
+  - name: pressing the keycap of a custom row starts recording and does not reset
+    props: { binding: custom, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: press, part: keycap } ]
+    expect:
+      - { event: startRecording, times: 1 }
+      - { event: reset, times: 0 }
+
+  # Capturing while recording
+  - name: the next combo is captured
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Shift+F6 } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "Shift+F6" } }
+      - { event: cancel, times: 0 }
+
+  - name: a modified Backspace is a combo, not an unbind
+    props: { mode: recording, actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Shift+Backspace } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "Shift+Backspace" } }
+
+  - name: bare Backspace unbinds the row
+    props: { mode: recording, actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Backspace } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "" } }
+
+  - name: bare Delete unbinds the row
+    props: { mode: recording, actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Delete } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "" } }
+
+  - name: a bare modifier does not complete a recording (proposed, open item 5)
+    props: { mode: recording, actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Shift } ]
+    expect:
+      - { event: capture, times: 0 }
+      - { event: cancel, times: 0 }
+      - { part: keycap, text: "Type shortcut…" }
+
+  - name: a reserved combo is refused and other combos still record (proposed, open item 6)
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Shift+F5,Shift+F6" }
+    steps:
+      - { action: key, part: keycap, key: Shift+F6 }
+      - { action: key, part: keycap, key: Shift+F7 }
+    expect:
+      - { event: refused, times: 1, last: { accel: "Shift+F6" } }
+      - { event: capture, times: 1, last: { accel: "Shift+F7" } }
+      - { part: keycap, text: "Type shortcut…" }
+
+  - name: a browser or OS chord reserved on macOS is refused (proposed, open item 6)
+    only: [macos]
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Meta+T" }
+    steps: [ { action: key, part: keycap, key: Meta+T } ]
+    expect:
+      - { event: refused, times: 1, last: { accel: "Meta+T" } }
+      - { event: capture, times: 0 }
+
+  - name: a browser or OS chord reserved on Windows and Linux is refused (proposed, open item 6)
+    only: [windows, linux]
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Control+T" }
+    steps: [ { action: key, part: keycap, key: Control+T } ]
+    expect:
+      - { event: refused, times: 1, last: { accel: "Control+T" } }
+      - { event: capture, times: 0 }
+
+  - name: a combo that is not reserved is captured when a reserved list is set
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Control+T,Control+W,Control+N" }
+    steps: [ { action: key, part: keycap, key: Control+Shift+K } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "Control+Shift+K" } }
+      - { event: refused, times: 0 }
+
+  - name: scope global still captures the recorded combo (desktop only)
+    only: [desktop]
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", scope: global }
+    steps: [ { action: key, part: keycap, key: Control+Shift+K } ]
+    expect:
+      - { event: capture, times: 1, last: { accel: "Control+Shift+K" } }
+
+  # Cancelling recording
+  - name: Escape cancels recording without capturing
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: key, part: keycap, key: Escape } ]
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: capture, times: 0 }
+
+  - name: a second press on the recording keycap cancels
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: press, part: keycap } ]
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: startRecording, times: 0 }
+      - { event: capture, times: 0 }
+
+  - name: Enter while recording cancels, because a bare Enter cannot be bound
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Enter } ]
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: capture, times: 0 }
+
+  - name: Space while recording cancels, because a bare Space cannot be bound
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Space } ]
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: capture, times: 0 }
+
+  - name: Tab passes through and cancels recording (proposed, open item 5)
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Tab } ]
+    expect:
+      - { event: cancel, times: 1 }
+      - { event: capture, times: 0 }
+      - { part: keycap, focused: false }
+
+  # Reset control
+  - name: pressing reset restores the default and does not start recording
+    props: { binding: custom, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: press, part: reset } ]
+    expect:
+      - { event: reset, times: 1 }
+      - { event: startRecording, times: 0 }
+
+  - name: reset activates with Enter and with Space, without starting recording
+    props: { binding: custom, accel: "Shift+F5", actionName: "Refresh list" }
+    steps:
+      - { action: focus, part: reset }
+      - { action: key, part: reset, key: Enter }
+      - { action: key, part: reset, key: Space }
+    expect:
+      - { event: reset, times: 2 }
+      - { event: startRecording, times: 0 }
+
+  - name: reset is a separate Tab stop after the keycap
+    props: { binding: custom, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap }, { action: key, part: keycap, key: Tab } ]
+    expect:
+      - { part: reset, focused: true }
+      - { part: keycap, focused: false }
+      - { event: startRecording, times: 0 }
+
+  # Disabled
+  - name: a disabled keycap does not start recording
+    props: { disabled: true, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: press, part: keycap } ]
+    expect:
+      - { part: keycap, disabled: true }
+      - { event: startRecording, times: 0 }
+
+  - name: a disabled row disables the reset control
+    props: { disabled: true, binding: custom, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: []
+    expect:
+      - { part: reset, disabled: true }
+
+  # Screenshots: one per variant and state, each at light and dark
+  - name: idle default
+    props: { accel: "Shift+F5", binding: default, actionName: "Refresh list" }
+    steps: []
+    screenshot: true
+
+  - name: idle custom with reset beside the keycap
+    props: { accel: "Shift+F5", binding: custom, actionName: "Refresh list" }
+    steps: []
+    screenshot: true
+
+  - name: idle unbound
+    props: { accel: "", binding: unbound, actionName: "Refresh list" }
+    steps: []
+    screenshot: true
+
+  - name: recording at its fixed width
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: []
+    screenshot: true
+
+  - name: hover
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: hover, part: keycap } ]
+    screenshot: true
+
+  - name: focus-visible on the keycap
+    props: { accel: "Shift+F5", actionName: "Refresh list" }
+    steps: [ { action: focus, part: keycap } ]
+    screenshot: true
+
+  - name: focus-visible on the reset control
+    props: { accel: "Shift+F5", binding: custom, actionName: "Refresh list" }
+    steps: [ { action: focus, part: reset } ]
+    screenshot: true
+
+  - name: disabled
+    props: { disabled: true, accel: "Shift+F5", actionName: "Refresh list" }
+    steps: []
+    screenshot: true
