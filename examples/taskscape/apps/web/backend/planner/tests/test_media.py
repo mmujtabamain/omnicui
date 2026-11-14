@@ -57,5 +57,7 @@ def test_the_built_app_is_served_for_its_own_routes(client, frontend):
     for path in ("/", "/signin", "/lists/3"):
         r = client.get(path)
         assert r.status_code == 200 and b"id=root" in b"".join(r.streaming_content)
-    assert client.get("/assets/app.js").status_code == 200
+    asset = client.get("/assets/app.js")
+    assert asset.status_code == 200
+    assert "immutable" in asset["Cache-Control"]  # hashed names: a reload loads the app from the cache
     assert client.get("/api/auth/me").status_code == 401

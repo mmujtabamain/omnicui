@@ -8,7 +8,11 @@ from django.views.static import serve
 
 
 def asset(request, path):
-    return serve(request, path, document_root=Path(settings.FRONTEND_DIST) / "assets")
+    # Asset names carry a hash of their content, so a browser may keep them for good: a reload then
+    # loads the app from its cache instead of the network.
+    response = serve(request, path, document_root=Path(settings.FRONTEND_DIST) / "assets")
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
 
 
 def index(request, path=""):
