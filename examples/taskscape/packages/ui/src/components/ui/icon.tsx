@@ -37,7 +37,7 @@ export const iconVariants = cva(
   [
     "material-symbols-outlined [font-family:'Material_Symbols_Outlined'] pointer-events-none inline-flex shrink-0 select-none items-center justify-center",
     "whitespace-nowrap normal-case tracking-normal leading-none",
-    "transition-[opacity,transform] duration-(--duration-fast) ease-standard motion-reduce:transition-none",
+    "transition-[opacity,transform,rotate] duration-(--duration-fast) ease-standard motion-reduce:transition-none",
   ],
   {
     variants: {
@@ -97,9 +97,9 @@ export interface IconProps extends React.HTMLAttributes<HTMLSpanElement> {
   name?: string;
   /** Given, the glyph is role img with this name; otherwise it is decorative. */
   label?: string;
-  /** Named size (default md; lg inside a tint badge) or a px number, snapped to the nearest step. */
+  /** Named size (default md) or an exact px number (for a measured glyph). A tint fixes the glyph at lg (18px). */
   size?: IconSize | number;
-  /** 200, 300 or 400 (default 300). */
+  /** 200, 300 or 400 (default 300); another number is used as it is (a measured weight). */
   weight?: number;
   /** Glyph colour; ignored when tint is not none. */
   tone?: IconTone;
@@ -120,10 +120,17 @@ export const Icon = React.forwardRef<HTMLSpanElement, IconProps>(function Icon(
 ) {
   if (name === "") return null;
 
-  const glyphSize = resolveIconSize(size ?? (tint === "none" ? "md" : "lg"));
+  // A tint fixes the glyph at 18px (lg) inside its 32px box; the size is still validated.
+  const requested = resolveIconSize(size ?? "md");
+  const glyphSize: IconSize = tint === "none" ? requested : "lg";
   const glyphTone = tint === "none" ? tone : tint;
   const glyphWeight = String(nearest(weight, WEIGHTS)) as IconWeightKey;
   const glyphClass = iconVariants({ size: glyphSize, weight: glyphWeight, tone: glyphTone, reveal, rotate });
+  // A measured px size or weight that is not one of the steps is kept exactly, inline.
+  const exact: React.CSSProperties = {
+    ...(typeof size === "number" && tint === "none" && size !== ICON_SIZES[glyphSize] ? { fontSize: size } : {}),
+    ...(!(WEIGHTS as readonly number[]).includes(weight) ? { fontVariationSettings: `'wght' ${weight}` } : {}),
+  };
   // The glyph part stays a generic box; a label is announced by an img inside it, and no label hides it.
   const content = label ? (
     <span role="img" aria-label={label}>
@@ -135,7 +142,7 @@ export const Icon = React.forwardRef<HTMLSpanElement, IconProps>(function Icon(
 
   if (tint === "none") {
     return (
-      <span ref={ref} data-slot={dataSlot ?? "glyph"} aria-hidden={label ? undefined : true} className={cn(glyphClass, className)} {...props}>
+      <span ref={ref} data-slot={dataSlot ?? "glyph"} aria-hidden={label ? undefined : true} className={cn(glyphClass, className)} {...props} style={{ ...exact, ...props.style }}>
         {content}
       </span>
     );
@@ -143,7 +150,7 @@ export const Icon = React.forwardRef<HTMLSpanElement, IconProps>(function Icon(
 
   return (
     <span ref={ref} data-slot={dataSlot ?? "badge"} className={cn(iconBadgeVariants({ tint }), className)} {...props}>
-      <span data-slot="glyph" aria-hidden={label ? undefined : true} className={glyphClass}>
+      <span data-slot="glyph" aria-hidden={label ? undefined : true} className={glyphClass} style={exact}>
         {content}
       </span>
     </span>

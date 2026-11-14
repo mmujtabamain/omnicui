@@ -5,6 +5,11 @@ export default [
   { ignores: ["**/node_modules/**", "**/dist/**"] },
   ...tseslint.configs.recommended.map((c) => ({ ...c, files: ["**/*.{ts,tsx}"] })),
   {
+    // Harness entries take whatever props a contract test sets.
+    files: ["**/src/harness/**/*.tsx"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
+  {
     // The apps: only widgets from @taskscape/ui, layout tags, and token utilities.
     files: ["apps/web/frontend/src/**/*.{ts,tsx}"],
     plugins: { taskscape },

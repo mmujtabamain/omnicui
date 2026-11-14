@@ -1,7 +1,7 @@
 // The one way the app talks to the API: JSON over fetch, the session cookie, and Django's CSRF
 // token on every write. Errors come back as ApiError with the status and the server's body.
 export class ApiError extends Error {
-  constructor(public status: number, public body: any) {
+  constructor(public status: number, public body: Record<string, unknown> | null) {
     super(typeof body?.detail === "string" ? body.detail : `Request failed (${status})`);
   }
   /** The first message for a field of a 400 body, e.g. fieldError("name"). */
@@ -51,8 +51,8 @@ export const api = {
 export function reportError(message: string, detail?: string) {
   try {
     const body = JSON.stringify({ message: message.slice(0, 500), detail: detail?.slice(0, 4000), url: location.pathname });
-    navigator.sendBeacon?.("/api/client-errors", new Blob([body], { type: "application/json" })) ||
-      fetch("/api/client-errors", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true }).catch(() => {});
+    const sent = navigator.sendBeacon?.("/api/client-errors", new Blob([body], { type: "application/json" }));
+    if (!sent) fetch("/api/client-errors", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true }).catch(() => {});
   } catch {
     /* reporting must never break the app */
   }

@@ -24,6 +24,8 @@ Object.assign(window, {
       const r = await fetch("/api/demo/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataset: props.dataset ?? "standard" }) });
       if (!r.ok) return `demo reset failed: ${r.status} ${await r.text()}`;
     }
+    // The tokens switch on .dark (shadcn's convention); a widget follows the page's colour scheme.
+    if (!OMNICUI_APP) document.documentElement.classList.toggle("dark", matchMedia("(prefers-color-scheme: dark)").matches);
     const emit = (name: string, fields: Record<string, unknown> = {}) => events.push({ name, fields });
     root = createRoot(document.getElementById("root")!);
     flushSync(() => root!.render(<TooltipProvider delayDuration={0}><h.Component {...props} emit={emit} /></TooltipProvider>));

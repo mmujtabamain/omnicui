@@ -148,14 +148,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
     children
   ) : (
     <>
-      {busy && <Icon data-slot="spinner" name="progress_activity" size={glyphSize} weight={iconWeight} className="animate-spin" />}
-      {glyph && <Icon data-slot="icon" name={glyph} size={glyphSize} weight={iconWeight} />}
+      {busy && <Icon data-slot="spinner" name="progress_activity" size={glyphSize} weight={iconWeight} tone="inherit" className="animate-spin" />}
+      {glyph && <Icon data-slot="icon" name={glyph} size={glyphSize} weight={iconWeight} tone="inherit" />}
       {shape === "text" && (text !== "" || emptyLabel !== "") && (
         <span data-slot="label" className={cn("min-w-0", truncate ? "truncate" : "whitespace-normal text-left", text === "" && "text-content-3")}>
           {text !== "" ? text : emptyLabel}
         </span>
       )}
-      {trailingIcon && <Icon data-slot="trailingIcon" name={trailingIcon} size={glyphSize} weight={iconWeight} className="-mr-0.5" />}
+      {trailingIcon && <Icon data-slot="trailingIcon" name={trailingIcon} size={glyphSize} weight={iconWeight} tone="inherit" className="-mr-0.5" />}
       {feedback && <span data-slot="feedback" role="status" className="sr-only">{feedbackLabel}</span>}
     </>
   );
