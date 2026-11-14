@@ -318,13 +318,14 @@ tests:
     expect:
       - { part: tabMenu, visible: false }
   - name: a press outside the tab menu closes it
-    # the outside press lands on the Garden tab, which is assumed to pass through and select Garden
+    # The outside press lands where the Garden tab is; it only closes the menu (F07-071), so Garden
+    # is not selected.
     steps:
       - { action: key, part: listTabReading, key: ContextMenu }
       - { action: press, part: listTabGarden }
     expect:
       - { part: tabMenu, visible: false }
-      - { event: listSelected, times: 1, last: { name: "Garden" } }
+      - { event: listSelected, times: 0 }
   - name: menu Rename asks for the rename and does not open the inline field
     steps:
       - { action: key, part: listTab, key: ContextMenu }

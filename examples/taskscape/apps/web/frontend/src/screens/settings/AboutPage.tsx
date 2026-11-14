@@ -65,9 +65,11 @@ export interface AboutPageProps {
   version?: string;
   /** Runs when the confirmed reset runs. */
   onResetAll?: () => void;
+  /** Inside the app's Settings dialog, which draws the window, search and sections: only the pane. */
+  embedded?: boolean;
 }
 
-export function AboutPage({ version = "", onResetAll }: AboutPageProps) {
+export function AboutPage({ version = "", onResetAll, embedded = false }: AboutPageProps) {
   const qc = useQueryClient();
   const settingsQuery = useSettings();
   const shortcutsQuery = useShortcuts();
@@ -330,6 +332,8 @@ export function AboutPage({ version = "", onResetAll }: AboutPageProps) {
     </div>
   );
 
+  if (embedded) return <PaneFrame key="about" pane="about">{aboutBody}</PaneFrame>;
+
   return (
     <div
       data-part="app.settingsabout.window"
@@ -463,8 +467,6 @@ export function AboutPage({ version = "", onResetAll }: AboutPageProps) {
                 onDiscard={(fields) => discard(fields, [])}
               />
             )}
-            {/* The Shortcuts pane body is not drawn here: ShortcutsPage renders a whole dialog of its own
-                (header, search, tabs), so it cannot sit inside this one. It needs a pane-only export. */}
           </div>
         </PaneFrame>
       </div>

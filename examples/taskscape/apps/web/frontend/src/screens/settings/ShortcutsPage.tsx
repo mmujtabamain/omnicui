@@ -308,7 +308,11 @@ function ShortcutLine({ item, accel, recording, error, onStart, onCapture, onCan
   );
 }
 
-export function ShortcutsPage({ onBindingChanged }: { onBindingChanged?: (label: string, accel: string) => void }) {
+/**
+ * embedded: the page inside the app's Settings dialog, which already draws the window, the search
+ * and the section list; only the shortcuts pane is drawn. Standalone (its own contract) it draws all.
+ */
+export function ShortcutsPage({ onBindingChanged, embedded = false }: { onBindingChanged?: (label: string, accel: string) => void; embedded?: boolean }) {
   const qc = useQueryClient();
   const shortcuts = useShortcuts();
   const bindings = shortcuts.data;
@@ -509,6 +513,8 @@ export function ShortcutsPage({ onBindingChanged }: { onBindingChanged?: (label:
       </div>
     );
   }
+
+  if (embedded) return <PaneScroll key="shortcuts">{body}</PaneScroll>;
 
   return (
     <Overlay

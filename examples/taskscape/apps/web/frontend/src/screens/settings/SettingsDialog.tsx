@@ -169,7 +169,7 @@ export function SettingsDialog() {
       />
     );
   } else {
-    body = pane === "shortcuts" ? <ShortcutsPage /> : <AboutPage />;
+    body = pane === "shortcuts" ? <ShortcutsPage embedded /> : <AboutPage embedded />;
   }
 
   return (
