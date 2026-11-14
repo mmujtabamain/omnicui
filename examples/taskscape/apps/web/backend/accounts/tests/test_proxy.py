@@ -48,3 +48,14 @@ def test_the_public_host_may_come_as_x_forwarded_host(ana, settings):
     r = c.post("/api/projects", {"name": "Work"}, format="json", HTTP_HOST="10.0.0.5:8080",
                HTTP_X_FORWARDED_HOST=HOST, HTTP_ORIGIN=f"https://{HOST}", HTTP_X_CSRFTOKEN=token)
     assert r.status_code == 201
+
+
+@pytest.mark.django_db
+def test_a_proxy_that_forwards_its_own_http_hop_still_passes(ana, behind_proxy, settings):
+    settings.SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    c = APIClient(enforce_csrf_checks=True)
+    c.force_login(ana)
+    token = c.get("/api/auth/csrf", HTTP_HOST=HOST).json()["csrfToken"]
+    r = c.post("/api/projects", {"name": "Work"}, format="json", HTTP_HOST=HOST, HTTP_X_FORWARDED_PROTO="http",
+               HTTP_ORIGIN=f"https://{HOST}", HTTP_X_CSRFTOKEN=token)
+    assert r.status_code == 201
