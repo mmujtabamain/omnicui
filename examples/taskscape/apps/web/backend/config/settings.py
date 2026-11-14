@@ -5,6 +5,7 @@ SECRET_KEY       required unless DEBUG is on
 DEBUG            "1" for local development
 ALLOWED_HOSTS    comma-separated
 MEDIA_ROOT       where uploads go (default: media/ next to manage.py)
+DEMO_RESET       "1" routes POST api/demo/reset (screen tests and recordings only)
 ALERT_WEBHOOK_URL, ALERT_WEBHOOK_TOKEN   where production errors are posted (optional)
 """
 import os
@@ -13,6 +14,8 @@ from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DEBUG") == "1"
+# Routes POST api/demo/reset, which signs anyone in as the demo account: screen tests and recordings only.
+DEMO_RESET = os.environ.get("DEMO_RESET") == "1"
 SECRET_KEY = os.environ.get("SECRET_KEY") or ("dev-only-key" if DEBUG else None)
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is required when DEBUG is off")

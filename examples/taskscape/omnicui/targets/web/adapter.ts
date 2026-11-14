@@ -8,10 +8,10 @@
 // both from a local HTTP server, and performs every step in a real Chromium through Playwright. Each reply is sent
 // only once the page has settled: no running animations, fonts loaded, the app not busy (see
 // settle()), two frames painted.
-import { createServer } from "node:http";
+import { createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readdirSync, existsSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,33 +32,42 @@ class RpcError extends Error {
 }
 
 // --- build what ships, and serve it ------------------------------------------------------------
+// Two targets share this adapter. "web" (no argument) mounts the widgets of packages/ui; "app"
+// (targets/web-app) mounts the screens of apps/web/frontend on a real API with demo data.
+const APP = process.argv[2] === "app";
 const ui = join(here, "../../../packages/ui");
+const frontend = join(here, "../../../apps/web/frontend");
+const source = APP ? join(frontend, "src") : join(ui, "src");
 // Every adapter process builds into a folder of its own, so several checks can run side by side.
 const dist = mkdtempSync(join(tmpdir(), "omnicui-web-"));
 process.on("exit", () => rmSync(dist, { recursive: true, force: true }));
-// One harness entry per widget (packages/ui/src/harness/<name>.tsx, default export { id, Component, events }).
+for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"] as const) process.on(sig, () => process.exit(1));
+// One harness entry per widget or screen (src/harness/<name>.tsx, default export { id, Component, events }).
 // OMNICUI_WIDGETS=button,icon builds only those, so a widget still being written elsewhere cannot break this build.
 const only = process.env.OMNICUI_WIDGETS?.split(",").map((w) => w.trim()).filter(Boolean);
-const entries = (existsSync(join(ui, "src/harness")) ? readdirSync(join(ui, "src/harness")).filter((f) => f.endsWith(".tsx")).sort() : [])
+const entries = (existsSync(join(source, "harness")) ? readdirSync(join(source, "harness")).filter((f) => f.endsWith(".tsx")).sort() : [])
   .filter((f) => !only || only.includes(f.replace(/\.tsx$/, "")));
 const registry = join(dist, "registry.gen.ts");
 writeFileSync(registry,
-  entries.map((f, i) => `import h${i} from ${JSON.stringify(join(ui, "src/harness", f))};`).join("\n") +
+  entries.map((f, i) => `import h${i} from ${JSON.stringify(join(source, "harness", f))};`).join("\n") +
   `\nexport const harnesses = [${entries.map((_, i) => `h${i}`).join(", ")}];\n`);
 await build({
   entryPoints: [join(here, "harness.tsx")],
   bundle: true, minify: true, outdir: dist, entryNames: "harness", format: "iife",
-  loader: { ".woff2": "file", ".ttf": "file" }, assetNames: "[name]", define: { "process.env.NODE_ENV": '"production"' }, logLevel: "warning",
-  nodePaths: [join(ui, "node_modules"), join(here, "../../../node_modules")],
+  loader: { ".woff2": "file", ".ttf": "file" }, assetNames: "[name]", logLevel: "warning",
+  nodePaths: [join(ui, "node_modules"), join(frontend, "node_modules"), join(here, "../../../node_modules")],
+  define: { "process.env.NODE_ENV": '"production"', "OMNICUI_APP": String(APP) },
   plugins: [{ name: "registry", setup: (b) => b.onResolve({ filter: /^\.\/registry\.gen$/ }, () => ({ path: registry })) }],
 });
-execFileSync(join(here, "../../../node_modules/.bin/tailwindcss"), ["-i", join(ui, "src/styles/index.css"), "-o", join(dist, "harness.css"), "--minify"], { stdio: ["ignore", "ignore", "inherit"] });
+execFileSync(join(here, "../../../node_modules/.bin/tailwindcss"), ["-i", APP ? join(frontend, "src/styles.css") : join(ui, "src/styles/index.css"), "-o", join(dist, "harness.css"), "--minify"], { stdio: ["ignore", "ignore", "inherit"] });
 writeFileSync(join(dist, "harness.html"), readFileSync(join(here, "harness.html")));
 // The icon font sits next to the styles (packages/ui/scripts/fonts.mjs); the CSS asks for ./fonts/.
 mkdirSync(join(dist, "fonts"), { recursive: true });
 for (const f of readdirSync(join(ui, "src/styles/fonts"))) copyFileSync(join(ui, "src/styles/fonts", f), join(dist, "fonts", f));
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml" };
+const api = APP ? await startApi() : null;
 const server = createServer((req, res) => {
+  if (api && /^\/(api|media)\//.test(req.url ?? "")) return proxy(req, res, api);
   const path = join(dist, new URL(req.url ?? "/", "http://x").pathname);
   if (!path.startsWith(dist) || !existsSync(path)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": TYPES[path.slice(path.lastIndexOf("."))] ?? "application/octet-stream" });
@@ -186,7 +195,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async advertise() {
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back"],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu"],
       cannot: {
         "do.scroll": "not implemented in this target yet",
         "do.swipe": "a desktop browser has no swipe",
@@ -222,10 +231,12 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
     return null;
   },
   // protocol: do. back is the browser's back button (history.back(), which the app's History
-  // API routing answers with popstate).
+  // API routing answers with popstate); contextMenu is a right click.
   async do(p) {
-    if (p.name !== "back") throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
-    await page.goBack({ waitUntil: "commit" });
+    if (p.name === "back") await page.goBack({ waitUntil: "commit" });
+    // contextMenu: a right click on the part, as a mouse user opens a context menu.
+    else if (p.name === "contextMenu") await (await locate(p.part)).click({ button: "right" });
+    else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
     await settle();
     return null;
   },
@@ -391,3 +402,43 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   process.exit(0);
 });
 log("ready on port", port);
+
+// --- the API behind the screens (app mode) -------------------------------------------------------
+// The screens talk to the real Django API, on a database of this run's own that is dropped on exit,
+// with DEMO_RESET on so every mount starts from a demo data set (props.dataset, default standard).
+// Needs SCREENS_DATABASE_URL (a Postgres server, e.g. postgres://postgres@127.0.0.1:5432) and,
+// unless python3 is the right interpreter, TASKSCAPE_PYTHON.
+async function startApi(): Promise<number> {
+  const backend = join(here, "../../../apps/web/backend");
+  const python = process.env.TASKSCAPE_PYTHON ?? "python3";
+  const server = process.env.SCREENS_DATABASE_URL?.replace(/\/+$/, "");
+  if (!server) throw new Error("SCREENS_DATABASE_URL is not set: the screens need a Postgres server for their API");
+  const db = `taskscape_screens_${process.pid}`;
+  const admin = (sql: string) => execFileSync(python, ["-c",
+    `import psycopg, sys; c = psycopg.connect(sys.argv[1], autocommit=True); c.execute(sys.argv[2])`, `${server}/postgres`, sql], { stdio: ["ignore", "ignore", "inherit"] });
+  admin(`DROP DATABASE IF EXISTS ${db}`);
+  admin(`CREATE DATABASE ${db}`);
+  const env = { ...process.env, DATABASE_URL: `${server}/${db}`, DEBUG: "1", DEMO_RESET: "1", MEDIA_ROOT: join(dist, "media") };
+  execFileSync(python, ["manage.py", "migrate", "--noinput"], { cwd: backend, env, stdio: ["ignore", "ignore", "inherit"] });
+  const port = await new Promise<number>((ok) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = (s.address() as { port: number }).port; s.close(() => ok(p)); }); });
+  const django = spawn(python, ["manage.py", "runserver", `127.0.0.1:${port}`, "--noreload", "--nothreading"], { cwd: backend, env, stdio: ["ignore", "ignore", "pipe"] });
+  django.stderr.on("data", (d) => { const l = String(d).trim(); if (/error|exception|traceback/i.test(l)) log("api:", l.slice(0, 2000)); });
+  process.on("exit", () => {
+    django.kill();
+    try { admin(`DROP DATABASE IF EXISTS ${db} WITH (FORCE)`); } catch { /* the server may already be gone */ }
+  });
+  for (let i = 0; i < 300; i++) {
+    try { if ((await fetch(`http://127.0.0.1:${port}/api/auth/csrf`)).ok) return port; } catch { /* not up yet */ }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error("the API did not start in 30 s");
+}
+
+function proxy(req: IncomingMessage, res: ServerResponse, port: number) {
+  const out = httpRequest({ host: "127.0.0.1", port, path: req.url, method: req.method, headers: req.headers }, (r) => {
+    res.writeHead(r.statusCode ?? 502, r.headers);
+    r.pipe(res);
+  });
+  out.on("error", (e) => { res.writeHead(502); res.end(String(e)); });
+  req.pipe(out);
+}

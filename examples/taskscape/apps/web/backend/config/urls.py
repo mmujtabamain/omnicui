@@ -7,6 +7,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from accounts import api as accounts
+from config.client_errors import client_errors
 
 log = logging.getLogger("taskscape.urls")
 RESOURCES = [
@@ -34,7 +35,12 @@ urlpatterns = [
     path("api/auth/me", accounts.me),
     path("api/settings", accounts.user_settings),
     path("api/shortcuts", accounts.shortcuts),
+    path("api/client-errors", client_errors),
     path("api/", include(router.urls)),
 ]
+if settings.DEMO_RESET:
+    from planner.demo import api as demo_api
+
+    urlpatterns.insert(0, path("api/demo/reset", demo_api.reset))
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

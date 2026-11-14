@@ -79,3 +79,7 @@ An attachment: `{id, task, kind: file|link, name, url, size, mime, created_at}`.
 ## Logging
 
 Every write logs one line at INFO (`resource action id user`). Server errors are logged at ERROR, which posts them to the alert webhook when one is configured.
+
+## Browser errors
+
+- POST `client-errors` (no sign-in, no CSRF) `{message, detail?, url?}`: logs the browser's failure at ERROR, which alerts like a server error. 204; empty `message` is 400; more than 20 an hour from one client is 429.
