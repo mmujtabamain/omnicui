@@ -2,184 +2,189 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
-/** Size sets the type and the line box. Fill is the resting surface (draft, or inline while editing). */
+/**
+ * Single-line text entry with no chrome of its own. The host supplies the surface (InputGroup,
+ * SearchField, the tab bar). Base: shadcn Input; `multiline` renders a textarea that grows from one
+ * line (21px) to two (42px) and then scrolls.
+ */
 const inputVariants = cva(
   [
-    "min-w-0 w-full rounded-(--radius-field) text-content-1 outline-none",
-    "placeholder:text-content-3 selection:bg-selection-1",
-    "focus:ring-focus-1 transition-[background-color,box-shadow] duration-(--duration-fast) ease-standard",
-    "disabled:pointer-events-none disabled:opacity-45",
+    "block w-full min-w-0 bg-transparent text-content-1 placeholder:text-content-3 selection:bg-selection-1",
+    "rounded-(--radius-field) outline-none focus:ring-1 focus:ring-focus-1",
+    "transition-[background-color,box-shadow] duration-(--duration-fast) ease-standard",
+    "disabled:cursor-default disabled:opacity-45",
   ],
   {
     variants: {
       size: {
-        inline: "h-[1.5rem] max-w-[10rem] px-space-4 text-[1rem] leading-[1.5rem] font-medium focus:ring-1",
-        md: "h-[1.5rem] px-space-4 text-[1rem] leading-[1.5rem] focus:ring-2",
-        sm: "h-[1.2857rem] px-space-4 text-[0.857rem] leading-[1.2857rem] focus:ring-2",
-        display: "h-[1.5rem] px-space-4 text-[1.2857rem] leading-[1.5rem] font-semibold focus:ring-2",
+        inline: "h-[1.5rem] max-w-[10rem] px-space-4 py-0 text-[1rem] font-medium leading-[1.5rem]",
+        md: "h-[1.5rem] px-0 text-[1rem] leading-[1.5rem]",
+        sm: "h-[1.286rem] px-0 text-[0.857rem] leading-[1.286rem]",
+        display: "h-[1.5rem] px-0 text-[1.286rem] font-semibold leading-[1.5rem]",
       },
-      fill: {
-        none: "bg-transparent",
-        resting: "bg-surface-0",
+      mode: {
+        inline: "cursor-text bg-transparent px-space-4",
+        draft: "bg-surface-0 px-space-4",
+        bare: "bg-transparent px-0",
+      },
+      editing: {
+        true: "bg-surface-0",
+        false: "",
       },
       multiline: {
+        true: "h-auto min-h-[1.5rem] max-h-[3rem] field-sizing-content resize-none overflow-y-auto py-0 break-words whitespace-pre-wrap",
         false: "",
-        true: "field-sizing-content h-auto min-h-[1.5rem] max-h-[3rem] resize-none overflow-y-auto py-0",
       },
     },
-    defaultVariants: { size: "md", fill: "none", multiline: false },
+    defaultVariants: { size: "md", mode: "inline", editing: false, multiline: false },
   },
 );
 
-type Element = HTMLInputElement | HTMLTextAreaElement;
-type Size = VariantProps<typeof inputVariants>["size"];
-
-export type InputMode = "inline" | "draft" | "bare";
+type InputVariants = VariantProps<typeof inputVariants>;
+type FieldElement = HTMLInputElement | HTMLTextAreaElement;
 
 export interface InputProps
   extends Omit<
-    React.InputHTMLAttributes<Element>,
-    "size" | "value" | "defaultValue" | "onChange" | "onKeyDown" | "onFocus" | "onBlur" | "onMouseDown" | "onMouseUp" | "onSubmit"
+    React.InputHTMLAttributes<HTMLInputElement>,
+    "size" | "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "onKeyDown" | "onMouseDown" | "onMouseUp" | "spellCheck"
   > {
+  /** Controlled text. */
   value?: string;
-  size?: Size;
-  /** inline: readonly at rest, editing on click or editRequest. draft: always editable, resting fill. bare: always editable, no fill. */
-  mode?: InputMode;
-  /** A textarea that grows from one line to two, then scrolls. Enter never inserts a line break. */
-  multiline?: boolean;
+  placeholder?: string;
   /** Accessible name. */
   ariaLabel?: string;
-  /** Select all on keyboard focus with a non-empty value. */
+  size?: InputVariants["size"];
+  mode?: InputVariants["mode"];
+  /** A textarea: one line grows to two by soft wrap, then scrolls. Enter never inserts a line break. */
+  multiline?: boolean;
+  /** Keyboard focus with a non-empty value selects all. */
   selectOnFocus?: boolean;
-  /** Select all when editing opens (inline) with a non-empty value. */
+  /** Opening for editing with a non-empty value selects all. */
   selectOnOpen?: boolean;
-  /** Stops every key at the field. */
+  /** Every key stops at the field. */
   stopKeyPropagation?: boolean;
+  spellCheck?: boolean;
   /** A changed value asks an inline field to enter editing. */
   editRequest?: number;
   onValueChange?: (value: string) => void;
-  /** Enter without Shift, value trimmed. */
+  /** Enter without Shift, trimmed. */
   onSubmit?: (value: string) => void;
-  /** Inline and draft: Enter or blur, value trimmed, at most once per editing session. */
+  /** Inline and draft: Enter or blur, trimmed; at most once per editing session. */
   onCommit?: (value: string) => void;
   /** Escape. */
   onCancel?: () => void;
-  className?: string;
 }
 
-export const Input = React.forwardRef<Element, InputProps>(function Input(
+export const Input = React.forwardRef<FieldElement, InputProps>(function Input(
   {
-    size = "md", mode = "inline", multiline = false, value = "", ariaLabel = "", placeholder = "",
+    value = "", placeholder = "", ariaLabel = "", size = "md", mode = "inline", multiline = false,
     autoFocus = false, selectOnFocus = false, selectOnOpen = true, stopKeyPropagation = false,
     spellCheck = true, disabled = false, editRequest = 0, className,
     onValueChange, onSubmit, onCommit, onCancel, ...props
   },
   ref,
 ) {
-  const node = React.useRef<Element | null>(null);
   const [editing, setEditing] = React.useState(false);
+  const fieldRef = React.useRef<FieldElement | null>(null);
   const pointerDown = React.useRef(false);
-  const committed = React.useRef(false);
-  const sessionStart = React.useRef("");
-  const lastRequest = React.useRef(editRequest);
+  const settled = React.useRef(false);
+  const seenRequest = React.useRef(editRequest);
+  const atRest = mode === "inline" && !editing;
 
   const setRef = React.useCallback(
-    (el: Element | null) => {
-      node.current = el;
+    (el: FieldElement | null) => {
+      fieldRef.current = el;
       if (typeof ref === "function") ref(el);
       else if (ref) ref.current = el;
     },
     [ref],
   );
 
-  const commit = (next: string) => {
-    if (committed.current) return;
-    committed.current = true;
-    onCommit?.(next);
-  };
-
+  // A changed editRequest starts inline editing. A value present at mount does not.
   React.useEffect(() => {
-    if (autoFocus) node.current?.focus();
-  }, [autoFocus]);
-
-  React.useEffect(() => {
-    if (lastRequest.current === editRequest) return;
-    lastRequest.current = editRequest;
-    if (mode === "inline" && !disabled) node.current?.focus();
+    if (seenRequest.current === editRequest) return;
+    seenRequest.current = editRequest;
+    if (mode === "inline" && !disabled) setEditing(true);
   }, [editRequest, mode, disabled]);
 
-  const handleFocus = () => {
-    committed.current = false;
-    sessionStart.current = value;
-    if (mode === "inline") setEditing(true);
-    const select = mode === "inline" ? selectOnOpen : selectOnFocus;
-    if (select && value !== "" && !pointerDown.current) node.current?.select();
+  // Entering edit focuses the field and, with a value, selects all of it.
+  React.useEffect(() => {
+    if (!editing) return;
+    const el = fieldRef.current;
+    if (!el) return;
+    el.focus();
+    if (selectOnOpen && el.value !== "") el.select();
+  }, [editing, selectOnOpen]);
+
+  const commitOnce = (text: string) => {
+    if (mode === "bare" || settled.current) return;
+    settled.current = true;
+    onCommit?.(text);
   };
 
-  const handleMouseDown = (e: React.MouseEvent<Element>) => {
-    // A resting inline field opens for editing on press, with the whole text selected.
-    if (mode === "inline" && !editing) {
-      e.preventDefault();
-      node.current?.focus();
-      return;
-    }
+  const handleMouseDown = (e: React.MouseEvent<FieldElement>) => {
     pointerDown.current = true;
+    if (mode === "inline" && !editing && !disabled) {
+      // Stop the browser placing a caret: the effect above focuses and selects the whole text.
+      e.preventDefault();
+      setEditing(true);
+    }
   };
 
   const handleMouseUp = () => {
     pointerDown.current = false;
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<Element>) => {
+  const handleFocus = (e: React.FocusEvent<FieldElement>) => {
+    const byPointer = pointerDown.current;
+    pointerDown.current = false;
+    settled.current = false;
+    if (mode === "inline" && !editing) setEditing(true);
+    if (selectOnFocus && !byPointer && e.currentTarget.value !== "") e.currentTarget.select();
+  };
+
+  const handleBlur = (e: React.FocusEvent<FieldElement>) => {
+    if (mode === "inline") setEditing(false);
+    commitOnce(e.currentTarget.value.trim());
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<FieldElement>) => {
     if (stopKeyPropagation) e.stopPropagation();
     if (e.nativeEvent.isComposing) return;
     if (e.key === "Enter" && (multiline || !e.shiftKey)) {
+      // Enter never inserts a line break; Shift+Enter on a single line does nothing.
       e.preventDefault();
-      const trimmed = value.trim();
-      onSubmit?.(trimmed);
-      if (mode !== "bare") commit(trimmed);
-      if (mode === "inline") node.current?.blur();
+      const text = e.currentTarget.value.trim();
+      onSubmit?.(text);
+      commitOnce(text);
     } else if (e.key === "Escape") {
-      if (mode !== "bare") committed.current = true;
+      settled.current = true;
       onCancel?.();
-      if (mode === "inline") {
-        onValueChange?.(sessionStart.current);
-        node.current?.blur();
-      }
+      if (mode === "inline") e.currentTarget.blur();
     }
   };
 
-  const handleBlur = () => {
-    pointerDown.current = false;
-    if (mode !== "bare") commit(value.trim());
-    if (mode === "inline") setEditing(false);
-  };
-
-  const filled = mode === "draft" || (mode === "inline" && editing);
   const shared = {
-    ...props,
-    ref: setRef,
     "data-slot": "field",
+    "aria-label": ariaLabel || undefined,
     value,
     placeholder,
-    disabled,
     spellCheck,
-    readOnly: mode === "inline" && !editing,
-    "aria-label": ariaLabel || undefined,
-    className: cn(inputVariants({ size, fill: filled ? "resting" : "none", multiline }), className),
-    onChange: (e: React.ChangeEvent<Element>) => onValueChange?.(e.target.value),
+    disabled,
+    autoFocus,
+    readOnly: atRest,
+    className: cn(inputVariants({ size, mode, editing, multiline }), className),
+    onChange: (e: React.ChangeEvent<FieldElement>) => onValueChange?.(e.currentTarget.value),
+    onKeyDown: handleKeyDown,
     onFocus: handleFocus,
     onBlur: handleBlur,
-    onKeyDown: handleKeyDown,
     onMouseDown: handleMouseDown,
     onMouseUp: handleMouseUp,
   };
 
-  return multiline ? (
-    <textarea {...shared} rows={1} aria-multiline="true" />
-  ) : (
-    <input {...shared} type="text" />
-  );
+  if (multiline)
+    return <textarea {...props} {...shared} ref={setRef} rows={1} aria-multiline={true} />;
+  return <input {...props} {...shared} ref={setRef} type="text" />;
 });
 
 export { inputVariants };

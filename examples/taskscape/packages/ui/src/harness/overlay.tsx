@@ -1,45 +1,32 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../components/ui/button";
-import { Overlay } from "../components/ui/overlay";
+import { Overlay, OverlayTitle } from "../components/ui/overlay";
 
-function OverlayHarness({ emit, open: initialOpen = false, ...props }: any) {
-  const [open, setOpen] = useState<boolean>(initialOpen);
-  useEffect(() => setOpen(initialOpen), [initialOpen]);
-
+function OverlayHarness({ emit, open: initialOpen, ...props }: any) {
+  const [open, setOpen] = useState(Boolean(initialOpen));
   return (
-    <div className="flex items-start gap-2 p-3">
-      <Button
-        data-slot="opener"
-        variant="outline"
-        label="Open"
-        onClick={() => {
-          setOpen(true);
-          emit("openChanged", { open: true });
-        }}
-      />
-      <Button data-slot="outside" variant="outline" label="Outside" />
+    <div className="flex flex-col items-start gap-2 p-3">
+      <Button data-slot="opener" variant="outline" label="Open layer" onClick={() => setOpen(true)} />
+      <Button data-slot="outside" variant="outline" label="Outside" className="pointer-events-auto" />
       <Overlay
         {...props}
         open={open}
-        title="Quick open"
         onOpenChange={(next: boolean) => {
-          setOpen(next);
           emit("openChanged", { open: next });
+          setOpen(next);
         }}
-        onDismiss={() => {
-          setOpen(false);
-          emit("dismissed", {});
-        }}
+        onDismiss={() => emit("dismissed", {})}
       >
-        <div className="flex flex-col gap-[0.571rem]">
+        <div className="flex flex-col gap-2 p-3">
+          <OverlayTitle>Overlay</OverlayTitle>
           <input
             data-slot="field"
-            aria-label="Find a task"
-            placeholder="Find a task"
-            className="h-[2.071rem] w-full rounded-(--radius-field) border border-edge-2 bg-surface-3 px-[0.714rem] text-[0.929rem] text-content-1 placeholder:text-content-3 outline-none focus-visible:ring-2 focus-visible:ring-focus-1"
+            aria-label="Name"
+            placeholder="Name"
+            className="h-[1.75rem] w-full min-w-0 rounded-(--radius-field) border border-edge-2 bg-surface-3 px-2 text-[0.929rem] text-content-1 outline-none focus-visible:ring-2 focus-visible:ring-focus-1"
           />
           <div className="flex justify-end">
-            <Button data-slot="action" variant="primary" label="Apply" />
+            <Button data-slot="action" variant="primary" label="Done" />
           </div>
         </div>
       </Overlay>

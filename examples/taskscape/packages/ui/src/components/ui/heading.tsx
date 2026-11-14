@@ -2,46 +2,45 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
-/** Display-family semibold title in the primary tone. Sizes: 1rem is 14px in this app. */
-export const headingVariants = cva("block min-w-0 font-display font-semibold leading-tight text-content-1", {
-  variants: {
-    size: {
-      sm: "text-[1rem]",
-      md: "text-[1.143rem]",
+/** Display-family semibold title, always tone primary. Sizes: sm 14px, md 16px (1rem = 14px). */
+export const headingVariants = cva(
+  "block min-w-0 max-w-full font-display font-semibold leading-[1.35] text-content-1",
+  {
+    variants: {
+      size: {
+        sm: "text-[1rem]",
+        md: "text-[1.143rem]",
+      },
+      overflow: {
+        truncate: "truncate",
+        wrap: "text-pretty",
+      },
     },
-    overflow: {
-      truncate: "truncate",
-      wrap: "text-pretty",
-    },
+    defaultVariants: { size: "sm", overflow: "truncate" },
   },
-  defaultVariants: { size: "sm", overflow: "truncate" },
-});
-
-export type HeadingTag = "h1" | "h2" | "h3" | "p" | "span";
+);
 
 export interface HeadingProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, "children">,
+  extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof headingVariants> {
-  /** The element: h1 to h3 give a heading role; p and span give none. Default h2. */
-  as?: HeadingTag;
+  /** h1, h2 and h3 keep the heading role; p and span report generic. */
+  as?: "h1" | "h2" | "h3" | "p" | "span";
   children?: React.ReactNode;
 }
 
 export const Heading = React.forwardRef<HTMLElement, HeadingProps>(function Heading(
-  { as = "h2", size = "sm", overflow = "truncate", className, children, ...props },
+  { as = "h2", size, overflow, className, children, ...props },
   ref,
 ) {
-  const Tag: React.ElementType = as;
+  const Comp = as as React.ElementType;
   return (
-    <Tag
-      ref={ref as React.Ref<HTMLHeadingElement>}
-      // A paragraph is reported as "paragraph"; the contract expects it to read as generic.
-      role={as === "p" ? "generic" : undefined}
-      {...props}
+    <Comp
+      ref={ref}
       data-slot="title"
       className={cn(headingVariants({ size, overflow }), className)}
+      {...props}
     >
       {children}
-    </Tag>
+    </Comp>
   );
 });

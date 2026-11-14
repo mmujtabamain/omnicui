@@ -1,18 +1,15 @@
 import { Icon } from "../components/ui/icon";
-import { InputGroup, InputGroupInput } from "../components/ui/input-group";
+import { InputGroup } from "../components/ui/input-group";
 
-function InputGroupHarness(props: any) {
-  const { shape = "well", tone = "field", ...rest } = props;
-  delete rest.emit; // the frame emits no events
-  const search = tone === "search";
-  const leading = shape === "bar" || search ? <Icon name="search" size="md" /> : undefined;
+function InputGroupHarness({ emit: _emit, ...props }: any) {
+  const search = props.tone === "search";
   return (
-    <InputGroup shape={shape} tone={tone} leading={leading} {...rest}>
-      <InputGroupInput
-        aria-label={search ? "Search tasks" : "Name"}
-        placeholder={search ? "Search" : "Name"}
-      />
-    </InputGroup>
+    <InputGroup
+      {...props}
+      inputLabel={search ? "Search tasks" : "Sheet name"}
+      placeholder={search ? "Search" : "Name"}
+      leading={search || props.shape === "bar" ? <Icon name="search" size={props.size === "sm" ? 14 : 16} /> : undefined}
+    />
   );
 }
 

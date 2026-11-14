@@ -1,44 +1,76 @@
-import { useState } from "react";
-import { Popover, PopoverItem } from "../components/ui/popover";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Popover, PopoverEditor, PopoverItem, PopoverList } from "../components/ui/popover";
 
-const PEOPLE = ["alice", "albert", "alina", "alan", "alexis", "alfred", "allison", "bruno"];
+const NAMES = ["alan", "alice", "albert", "alexandra", "amara", "alina", "bartholomew", "gabriel"];
 
 function PopoverHarness({ emit, maxItems = 6, anchorX = 0, anchorY = 0 }: any) {
   const [text, setText] = useState("");
+  const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState(false);
-  const query = text.slice(1).toLowerCase();
-  const matches =
-    text.startsWith("@") && !text.includes(" ") ? PEOPLE.filter((p) => p.includes(query)) : [];
-  const open = !dismissed && matches.length > 0;
+  const [measured, setMeasured] = useState({ x: 0, y: 0 });
+  const editor = useRef<HTMLInputElement>(null);
+
+  // Without an explicit anchor, the caret sits at the editor's bottom-left.
+  useLayoutEffect(() => {
+    const r = editor.current?.getBoundingClientRect();
+    if (r) setMeasured({ x: r.left, y: r.bottom });
+  }, []);
+  const caret = anchorX || anchorY ? { x: anchorX, y: anchorY } : measured;
+
+  const match = /@(\w*)$/.exec(text);
+  const query = match ? match[1].toLowerCase() : "";
+  const matches = match ? NAMES.filter((name) => name.includes(query)) : [];
+  const open = matches.length > 0 && !dismissed;
+
+  const change = (value: string) => {
+    setText(value);
+    setActive(0);
+    setDismissed(false);
+  };
+
+  const pick = (index: number) => {
+    if (!match) return;
+    const value = matches[index];
+    setText(text.slice(0, match.index) + `@${value} `);
+    emit("picked", { value });
+  };
+
+  const dismissByEscape = () => {
+    setDismissed(true);
+    emit("escaped", {});
+  };
 
   return (
-    <div className="flex h-[34rem] w-full flex-col justify-end bg-surface-1 p-4 text-content-1">
-      <div className="w-[16rem]">
-        <Popover
-          value={text}
-          onValueChange={(v) => {
-            setDismissed(false);
-            setText(v);
-          }}
-          open={open}
-          anchor={{ x: anchorX, y: anchorY }}
-          maxItems={maxItems}
+    <div className="p-4">
+      <Popover
+        open={open}
+        anchor={caret}
+        maxItems={maxItems}
+        matchCount={matches.length}
+        active={active}
+        onActiveChange={setActive}
+        onPick={pick}
+        onEscape={dismissByEscape}
+        onOpenChange={(o) => {
+          if (!o) setDismissed(true);
+        }}
+      >
+        <PopoverEditor
+          ref={editor}
+          aria-label="Mention"
           placeholder="Type @ to mention"
-          onEscape={() => {
-            setDismissed(true);
-            emit("escaped", {});
-          }}
-          onPick={(value: string) => {
-            setDismissed(true);
-            setText(`${value} `);
-            emit("picked", { value });
-          }}
-        >
-          {matches.map((name) => (
-            <PopoverItem key={name} value={`@${name}`} />
+          className="w-60"
+          value={text}
+          onChange={(e) => change(e.target.value)}
+        />
+        <PopoverList>
+          {matches.map((name, i) => (
+            <PopoverItem key={name} index={i} data-slot={`row${i + 1}`}>
+              {name}
+            </PopoverItem>
           ))}
-        </Popover>
-      </div>
+        </PopoverList>
+      </Popover>
     </div>
   );
 }

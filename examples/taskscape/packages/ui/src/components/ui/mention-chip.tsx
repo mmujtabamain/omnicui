@@ -1,21 +1,16 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
+import { Button } from "./button";
 
 /**
- * Inline @mention chip for an attachment inside a note body. It is an atom: contenteditable is
- * false, it cannot be typed into, and Backspace or Delete removes it as one unit. It is a native
- * button, so Enter and Space open it too (WAI-ARIA APG button). The source changes what a press
- * does, not how the chip looks.
+ * Inline @mention chip for an attachment in a note body. It is an atom: contenteditable="false",
+ * it cannot be typed into, and Backspace or Delete removes it as one unit. It is a button because
+ * it is focusable, so Enter and Space press it (WAI-ARIA APG button); a native button does that.
+ * Local and remote look the same; the source only decides where the press goes (the caller's onOpen).
  */
 export const mentionChipVariants = cva(
-  [
-    "inline-flex min-w-0 max-w-full items-center align-middle select-none whitespace-nowrap",
-    "h-[1.5rem] px-1.5 rounded-(--radius-field) text-[0.857rem] leading-none font-medium",
-    "bg-selection-1 text-accent-600 cursor-pointer outline-none",
-    "transition-[color,background-color] duration-(--duration-fast) ease-standard hover:text-accent-700",
-    "focus-visible:ring-2 focus-visible:ring-focus-1 focus-visible:ring-offset-0",
-  ],
+  "max-w-full select-none rounded-full bg-selection-1 font-medium hover:bg-selection-1",
   {
     variants: {
       source: {
@@ -28,8 +23,9 @@ export const mentionChipVariants = cva(
 );
 
 export interface MentionChipProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type">,
-    VariantProps<typeof mentionChipVariants> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof Button>, "label" | "children" | "variant" | "size" | "width"> {
+  /** local: press opens the attachment in the lightbox. remote: press calls the host's api.openAttachment. */
+  source?: "local" | "remote";
   /** Shown as @name. */
   name?: string;
   /** Press, Enter or Space on the chip. */
@@ -39,36 +35,32 @@ export interface MentionChipProps
 }
 
 export const MentionChip = React.forwardRef<HTMLButtonElement, MentionChipProps>(function MentionChip(
-  { source = "local", name = "attachment", onOpen, onRemove, onClick, onKeyDown, className, ...props },
+  { source = "local", name = "attachment", onOpen, onRemove, className, onClick, onKeyDown, ...props },
   ref,
 ) {
   return (
-    <button
+    <Button
       ref={ref}
-      type="button"
       data-slot="chip"
-      data-source={source}
+      variant="ghost"
+      tone="accent"
+      size="sm"
+      width="content"
       contentEditable={false}
+      label={`@${name}`}
       className={cn(mentionChipVariants({ source }), className)}
       onClick={(e) => {
         onClick?.(e);
-        onOpen?.();
+        if (!e.defaultPrevented) onOpen?.();
       }}
       onKeyDown={(e) => {
         onKeyDown?.(e);
-        if (e.defaultPrevented) return;
-        // Enter and Space open the chip here; preventDefault stops the native click so it opens once.
-        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-          e.preventDefault();
-          onOpen?.();
-        } else if (e.key === "Backspace" || e.key === "Delete") {
+        if (!e.defaultPrevented && (e.key === "Backspace" || e.key === "Delete")) {
           e.preventDefault();
           onRemove?.();
         }
       }}
       {...props}
-    >
-      <span className="min-w-0 truncate">@{name}</span>
-    </button>
+    />
   );
 });

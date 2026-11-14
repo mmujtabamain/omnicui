@@ -1,7 +1,6 @@
 import { HotkeyHint } from "../components/ui/hotkey-hint";
 
-function HotkeyHintHarness({ emit, ...props }: any) {
-  void emit; // the widget is display only and emits no events
+function HotkeyHintHarness(props: any) {
   return <HotkeyHint {...props} />;
 }
 

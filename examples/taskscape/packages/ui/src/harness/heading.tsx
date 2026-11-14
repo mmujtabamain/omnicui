@@ -1,7 +1,6 @@
 import { Heading } from "../components/ui/heading";
 
-function HeadingHarness({ emit, content = "Title", ...props }: any) {
-  void emit; // a heading emits no events
+function HeadingHarness({ content = "Title", ...props }: any) {
   return <Heading {...props}>{content}</Heading>;
 }
 

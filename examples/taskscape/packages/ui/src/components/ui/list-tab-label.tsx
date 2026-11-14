@@ -1,94 +1,79 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
-const TAB = "tab";
+const TAB_VALUE = "list";
 
 /**
- * Label-only list tab. Sizes at 1rem = 14px: text 13px/19.5px at weight 500 is
- * 0.929rem / 1.393rem; the label truncates at 160px (max-w-40 in the spec, 11.429rem here).
- * Colours: active content-1, inactive content-3 (the spec's oklch values match the tokens).
- * The hairline frame around the active flat label is styling of selected (OPEN 5).
+ * Label-only list tab. The host owns `selected`; the widget never changes it.
+ * Sizes: 13px text on a 19.5px line (0.929rem / 1.393rem), 24.5px tall (1.75rem).
+ * Colours: content-1 active, content-3 inactive (the spec's oklch values match these tokens).
  */
 const listTabLabelVariants = cva(
   [
-    "relative inline-flex min-w-0 items-center gap-[0.357rem] whitespace-nowrap select-none",
-    "h-[1.75rem] px-2 rounded-(--radius-field) font-medium text-[0.929rem] leading-[1.393rem]",
-    "outline-none transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard",
+    "group/tab relative inline-flex min-w-0 max-w-[11.429rem] items-center whitespace-nowrap",
+    "h-[1.75rem] rounded-(--radius-field) border px-2 gap-[0.357rem]",
+    "text-[0.929rem] leading-[1.393rem] font-medium select-none outline-none",
+    "transition-[color,background-color,border-color,box-shadow] duration-(--duration-fast) ease-standard",
     "focus-visible:ring-2 focus-visible:ring-focus-1 focus-visible:ring-offset-0",
   ],
   {
     variants: {
       selected: {
-        true: "text-content-1",
-        false: "text-content-3",
+        true: "text-content-1 border-edge-2",
+        false: "border-transparent text-content-3",
       },
       surface: {
-        flat: "",
+        flat: "bg-transparent",
         raised: "bg-surface-3 shadow-lift",
       },
     },
-    compoundVariants: [
-      { selected: true, surface: "flat", className: "ring-1 ring-inset ring-edge-2" },
-    ],
     defaultVariants: { selected: false, surface: "flat" },
   },
 );
 
-type Variants = VariantProps<typeof listTabLabelVariants>;
-
 export interface ListTabLabelProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect" | "defaultValue" | "dir"> {
-  /** List name. Truncates at 160px. */
+  /** List name. Truncates at max-w-40 (160px = 11.429rem). */
   name?: string;
-  /** Active tab. Host-controlled: the widget never changes it. */
+  /** true = active tab; false = inactive tab. Host-controlled. */
   selected?: boolean;
-  /** Raised applies only with selected true (draft-inspector); ignored otherwise. */
-  surface?: Variants["surface"];
-  /** Split view: decorative blue marker before the name, outside the accessible name. */
+  /** 'raised' only applies with selected true. */
+  surface?: "flat" | "raised";
+  /** Split view: decorative blue marker before the name. */
   paneMarker?: boolean;
-  /** Shows the close x; rendered only when closable and selected. */
+  /** Shows the close x; applies only when selected is true. */
   closable?: boolean;
-  /** Press, Enter or Space on the tab. Never fires on an already selected tab. */
+  /** Press, Enter or Space on the tab. Not emitted on an already selected tab. */
   onSelect?: () => void;
   /** Press, Enter or Space on the close x. Never selects. */
   onClose?: () => void;
 }
 
 export const ListTabLabel = React.forwardRef<HTMLDivElement, ListTabLabelProps>(function ListTabLabel(
-  {
-    name = "",
-    selected = false,
-    surface = "flat",
-    paneMarker = false,
-    closable = false,
-    onSelect,
-    onClose,
-    className,
-    ...props
-  },
+  { name = "", selected = false, surface = "flat", paneMarker = false, closable = false, onSelect, onClose, className, ...props },
   ref,
 ) {
   const showClose = closable && selected;
-  // Raised is valid only with selected true (spec: "Raised applies only when selected is true").
-  const tabSurface = selected && surface === "raised" ? "raised" : "flat";
+  const effectiveSurface = selected ? surface : "flat";
 
   return (
     <TabsPrimitive.Root
       ref={ref}
-      value={selected ? TAB : ""}
+      {...props}
+      value={selected ? TAB_VALUE : ""}
       activationMode="manual"
       onValueChange={() => onSelect?.()}
       className={cn("inline-flex min-w-0 max-w-full items-center", className)}
-      {...props}
     >
-      <TabsPrimitive.List className="inline-flex min-w-0">
+      {/* The close x sits outside the tablist, so the tab's accessible name excludes it (OPEN 11). */}
+      <TabsPrimitive.List className="inline-flex min-w-0 max-w-full items-center">
         <TabsPrimitive.Trigger
-          value={TAB}
-          role="button"
           data-slot="tab"
-          className={cn(listTabLabelVariants({ selected, surface: tabSurface }), "max-w-[11.429rem]")}
+          value={TAB_VALUE}
+          aria-controls={undefined}
+          className={listTabLabelVariants({ selected, surface: effectiveSurface })}
         >
           {paneMarker && (
             <span data-slot="paneMarker" aria-hidden="true" className="size-[0.5rem] shrink-0 rounded-full bg-accent-500" />
@@ -99,13 +84,12 @@ export const ListTabLabel = React.forwardRef<HTMLDivElement, ListTabLabelProps>(
       {showClose && (
         <Button
           data-slot="close"
+          variant="ghost"
           size="sm"
           shape="icon"
-          variant="ghost"
-          tone="muted"
+          tone="default"
           icon="close"
           ariaLabel={`Close ${name}`}
-          className="shrink-0"
           onClick={() => onClose?.()}
         />
       )}

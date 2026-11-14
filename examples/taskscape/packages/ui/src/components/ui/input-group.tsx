@@ -3,214 +3,176 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
+/** The inner input. A string tag, as Button does with its "button" element. */
+const Field = "input" as const;
+
 /**
- * The frame around one inner input: border, fill, focus ring and the leading, suffix and
- * trailing slots. The frame emits no events; the inner input owns the value and the role.
+ * The frame: border, fill, focus ring. The leading and trailing slots and the inner input
+ * sit inside it. shape sets the outline, tone the fill, size the height and text size.
  */
-export const inputGroupVariants = cva(
-  "group/input-group relative flex w-full min-w-0 items-center text-content-1 outline-none transition-[border-color,background-color,box-shadow,opacity] duration-(--duration-fast) ease-standard focus-within:ring-2 focus-within:ring-focus-1 data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
+const inputGroupVariants = cva(
+  [
+    "group/input-group relative flex min-w-0 items-center outline-none",
+    "transition-[border-color,background-color,opacity] duration-(--duration-fast) ease-standard",
+    "focus-within:ring-2 focus-within:ring-focus-1",
+    "data-[disabled]:opacity-45 data-[disabled]:pointer-events-none",
+  ],
   {
     variants: {
       shape: {
-        well: "",
-        bar: "rounded-none border-b border-edge-1",
+        well: "rounded-(--radius-field) border border-edge-2",
+        bar: "rounded-none border-0 border-b border-edge-1",
       },
       tone: {
-        field: "",
-        search: "",
+        field: "bg-surface-1",
+        search: "rounded-full border-0 bg-wash-2",
       },
       size: {
-        sm: "h-[1.75rem] px-2",
-        md: "h-[2.5rem] px-2.5",
+        md: "h-[2.5rem] gap-2 px-2 text-[1rem]",
+        sm: "h-[1.75rem] gap-1.5 px-1.5 text-[0.857rem]",
       },
     },
-    compoundVariants: [
-      { shape: "well", tone: "field", className: "rounded-(--radius-field) border border-edge-2 bg-surface-1" },
-      { shape: "well", tone: "search", className: "rounded-full bg-wash-2" },
-    ],
     defaultVariants: { shape: "well", tone: "field", size: "md" },
   },
 );
 
-/** Text size inside the well: the inner input and the suffix share it. */
-export const inputGroupTextVariants = cva("", {
-  variants: {
-    size: {
-      sm: "text-[0.857rem]",
-      md: "text-[1rem]",
-    },
-  },
-  defaultVariants: { size: "md" },
-});
+type Variants = VariantProps<typeof inputGroupVariants>;
 
-type InputGroupVariantProps = VariantProps<typeof inputGroupVariants>;
-type InputGroupSize = NonNullable<InputGroupVariantProps["size"]>;
-type InputGroupTone = NonNullable<InputGroupVariantProps["tone"]>;
+const FIELD_TEXT: Record<"md" | "sm", string> = { md: "text-[1rem]", sm: "text-[0.857rem]" };
+
+const FIELD =
+  "min-w-0 flex-1 self-stretch bg-transparent p-0 text-content-1 placeholder:text-content-3 outline-none disabled:cursor-not-allowed";
+const LEADING = "inline-flex shrink-0 items-center text-content-3";
+const SUFFIX = "shrink-0 select-none whitespace-pre text-content-3";
+const TRAILING = "inline-flex shrink-0 items-center gap-0.5";
 
 export interface InputGroupProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "defaultValue"> {
-  /** well: rounded bordered bar with a leading slot. bar: full-width row with a bottom edge. */
-  shape?: InputGroupVariantProps["shape"];
-  /** field: bordered sheet well. search: filled grey pill with no border. */
-  tone?: InputGroupTone;
-  /** md is 2.5rem high, sm is 1.75rem high. */
-  size?: InputGroupSize;
-  /** Locked, greyed tail after the typed value. The frame does not change the typed value. */
+  /** well: rounded bordered bar. bar: full-width row with a bottom edge. */
+  shape?: Variants["shape"];
+  /** field: bordered, surface fill. search: filled grey pill, no border. */
+  tone?: Variants["tone"];
+  /** md: 2.5rem high, 14px text. sm: 1.75rem high, 12px text. */
+  size?: Variants["size"];
+  /** Locked, greyed tail after the typed value. "" means none. */
   suffix?: string;
   /** A press anywhere in the well focuses the inner input. */
   focusInputOnPress?: boolean;
   disabled?: boolean;
-  /** Renders the roll dice button (sheets only). */
+  /** Renders the roll dice button. */
   sheet?: boolean;
   /** Icon in the leading slot. */
   leading?: React.ReactNode;
-  /** Controlled value of the inner input. */
+  /** Controlled typed value. Without it the frame keeps its own. */
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  /** Pressed on the roll dice button. */
+  /** Pressing the roll dice button. */
   onRoll?: () => void;
-  /** The inner input, the one InputGroupInput. */
-  children?: React.ReactNode;
-}
-
-type InputGroupContextValue = {
-  value: string;
-  setValue: (next: string) => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  size: InputGroupSize;
-  tone: InputGroupTone;
-  disabled: boolean;
-  hasSuffix: boolean;
-};
-
-const InputGroupContext = React.createContext<InputGroupContextValue | null>(null);
-
-function useInputGroup(): InputGroupContextValue {
-  const ctx = React.useContext(InputGroupContext);
-  if (!ctx) throw new Error("InputGroupInput must be rendered inside InputGroup");
-  return ctx;
+  /** Accessible name of the inner input. */
+  inputLabel?: string;
+  placeholder?: string;
 }
 
 export const InputGroup = React.forwardRef<HTMLDivElement, InputGroupProps>(function InputGroup(
   {
-    shape = "well", tone = "field", size = "md", suffix = "", focusInputOnPress = true, disabled = false, sheet = false,
-    leading, value: valueProp, defaultValue = "", onValueChange, onRoll, className, children, onMouseDown, ...props
+    shape = "well", tone = "field", size = "md", suffix = "", focusInputOnPress = true,
+    disabled = false, sheet = false, leading, value, defaultValue = "", onValueChange, onRoll,
+    inputLabel = "Input", placeholder, className, onMouseDown, ...props
   },
   ref,
 ) {
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const [inner, setInner] = React.useState(defaultValue);
-  const controlled = valueProp !== undefined;
-  const value = controlled ? valueProp : inner;
+  const current = value ?? inner;
+  const filled = current !== "";
+  const shapeName = shape ?? "well";
+  const toneName = tone ?? "field";
+  const sizeName = size ?? "md";
+  const buttonSize = sizeName === "md" ? "md" : "sm";
+  const role = shapeName === "bar" ? "combobox" : toneName === "search" ? "searchbox" : "textbox";
 
-  const setValue = React.useCallback(
-    (next: string) => {
-      if (!controlled) setInner(next);
-      onValueChange?.(next);
-    },
-    [controlled, onValueChange],
-  );
+  const change = (next: string) => {
+    if (value === undefined) setInner(next);
+    onValueChange?.(next);
+  };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
     onMouseDown?.(e);
-    if (!focusInputOnPress || disabled || e.defaultPrevented) return;
-    if (e.target instanceof Element && e.target.closest("button, input")) return;
+    if (!focusInputOnPress || disabled) return;
+    // A press on a button or on the input keeps its own behaviour.
+    if ((e.target as Element).closest("button, input")) return;
     e.preventDefault();
     inputRef.current?.focus();
-  };
+  }
 
-  const clear = () => {
-    setValue("");
+  function clear() {
+    change("");
     inputRef.current?.focus();
-  };
-
-  const hasSuffix = suffix !== "";
-  const hasTrailing = value !== "" || sheet;
+  }
 
   return (
-    <InputGroupContext.Provider value={{ value, setValue, inputRef, size, tone, disabled, hasSuffix }}>
-      <div
-        ref={ref}
-        data-slot="well"
-        data-disabled={disabled || undefined}
-        className={cn(inputGroupVariants({ shape, tone, size }), className)}
-        onMouseDown={handleMouseDown}
-        {...props}
-      >
-        {leading && (
-          <span data-slot="leading" aria-hidden="true" className="mr-1.5 flex shrink-0 items-center">
-            {leading}
-          </span>
-        )}
-        {children}
-        {hasSuffix && (
-          <>
-            <span data-slot="suffix" className={cn("shrink-0 select-none whitespace-pre text-content-3", inputGroupTextVariants({ size }))}>
-              {suffix}
-            </span>
-            <span aria-hidden="true" className="min-w-0 flex-1" />
-          </>
-        )}
-        {hasTrailing && (
-          <span data-slot="trailing" className="ml-1 flex shrink-0 items-center gap-0.5">
-            {value !== "" && (
-              <Button
-                data-slot="clear"
-                size="sm"
-                shape="icon"
-                variant="ghost"
-                tone="muted"
-                icon="close"
-                ariaLabel="Clear"
-                description="Clear"
-                disabled={disabled}
-                onClick={clear}
-              />
-            )}
-            {sheet && (
-              <Button
-                data-slot="roll"
-                size="sm"
-                shape="icon"
-                variant="ghost"
-                tone="muted"
-                icon="casino"
-                ariaLabel="Roll dice"
-                description="Roll dice"
-                disabled={disabled}
-                onClick={onRoll}
-              />
-            )}
-          </span>
-        )}
-      </div>
-    </InputGroupContext.Provider>
+    <div
+      ref={ref}
+      data-slot="well"
+      data-shape={shapeName}
+      data-tone={toneName}
+      data-disabled={disabled || undefined}
+      onMouseDown={handleMouseDown}
+      className={cn(inputGroupVariants({ shape: shapeName, tone: toneName, size: sizeName }), className)}
+      {...props}
+    >
+      {leading && (
+        <span data-slot="leading" className={LEADING}>
+          {leading}
+        </span>
+      )}
+      <Field
+        ref={inputRef}
+        data-slot="input"
+        type="text"
+        role={role}
+        aria-label={inputLabel}
+        autoComplete="off"
+        spellCheck={false}
+        disabled={disabled}
+        placeholder={placeholder}
+        value={current}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => change(e.target.value)}
+        className={cn(FIELD, FIELD_TEXT[sizeName === "sm" ? "sm" : "md"])}
+      />
+      {suffix !== "" && (
+        <span data-slot="suffix" className={SUFFIX}>
+          {suffix}
+        </span>
+      )}
+      {(filled || sheet) && (
+        <span data-slot="trailing" className={TRAILING}>
+          {filled && (
+            <Button
+              data-slot="clear"
+              ariaLabel="Clear"
+              icon="close"
+              shape="icon"
+              size={buttonSize}
+              tone="muted"
+              disabled={disabled}
+              onClick={clear}
+            />
+          )}
+          {sheet && (
+            <Button
+              data-slot="roll"
+              ariaLabel="Roll dice"
+              icon="casino"
+              shape="icon"
+              size={buttonSize}
+              tone="muted"
+              disabled={disabled}
+              onClick={onRoll}
+            />
+          )}
+        </span>
+      )}
+    </div>
   );
 });
-
-export interface InputGroupInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "defaultValue" | "type"> {}
-
-/** The one inner input. Declared textbox; a searchbox on the search tone. */
-export function InputGroupInput({ className, onChange, disabled, ...props }: InputGroupInputProps) {
-  const ctx = useInputGroup();
-  return (
-    <input
-      {...props}
-      ref={ctx.inputRef}
-      data-slot="input"
-      type={ctx.tone === "search" ? "search" : "text"}
-      value={ctx.value}
-      disabled={ctx.disabled || disabled}
-      onChange={(e) => {
-        ctx.setValue(e.target.value);
-        onChange?.(e);
-      }}
-      className={cn(
-        inputGroupTextVariants({ size: ctx.size }),
-        "h-full min-w-0 bg-transparent p-0 text-content-1 outline-none placeholder:text-content-3 disabled:cursor-not-allowed [&::-webkit-search-cancel-button]:appearance-none",
-        ctx.hasSuffix ? "max-w-full flex-none [field-sizing:content]" : "flex-1",
-        className,
-      )}
-    />
-  );
-}

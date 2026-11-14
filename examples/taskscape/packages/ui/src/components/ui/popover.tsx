@@ -2,173 +2,220 @@ import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { cn } from "../../lib/utils";
 
-export interface PopoverItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "value"> {
-  /** The text picked when this row is chosen. */
-  value: string;
+export interface PopoverPoint {
+  x: number;
+  y: number;
 }
 
-interface OptionContext {
-  index: number;
-  id: string;
-  active: boolean;
-  onPick: (value: string) => void;
+interface PopoverContextValue {
+  open: boolean;
+  /** Rows shown: the matches, capped at maxItems. */
+  count: number;
+  /** Highlighted row index, -1 when there are no rows. */
+  active: number;
+  listId: string;
+  optionId: (index: number) => string;
+  onActiveChange?: (index: number) => void;
+  onPick?: (index: number) => void;
+  onEscape?: () => void;
 }
 
-const OptionContext = React.createContext<OptionContext | null>(null);
+const PopoverContext = React.createContext<PopoverContextValue | null>(null);
 
-/** One mention row. Rendered by Popover, which numbers it (row1 to row6) and links it to the editor. */
-export function PopoverItem({ value, children, className, ...props }: PopoverItemProps) {
-  const option = React.useContext(OptionContext);
-  return (
-    <div
-      {...props}
-      data-slot={option ? `row${option.index + 1}` : undefined}
-      role="option"
-      id={option?.id}
-      aria-selected={option?.active ?? false}
-      data-active={option?.active || undefined}
-      onMouseDown={(e) => {
-        // Pointer picks never take focus from the editor.
-        e.preventDefault();
-        option?.onPick(value);
-      }}
-      className={cn(
-        "flex h-[1.857rem] min-w-0 cursor-default items-center truncate rounded-(--radius-field) px-2 text-[0.929rem] text-content-1 select-none",
-        "hover:bg-wash-1 data-[active=true]:bg-selection-1",
-        className,
-      )}
-    >
-      {children ?? value}
-    </div>
-  );
+function usePopover(part: string): PopoverContextValue {
+  const ctx = React.useContext(PopoverContext);
+  if (!ctx) throw new Error(`${part} must be rendered inside <Popover>`);
+  return ctx;
 }
 
 export interface PopoverProps {
-  /** Text in the @ input that owns the list. */
-  value?: string;
-  onValueChange?: (value: string) => void;
   /** Shown when there are matches for the @ query. */
   open?: boolean;
-  /** Caret point, in viewport pixels. */
-  anchor?: { x: number; y: number };
+  /** Caret point in viewport px; the list is placed against it. */
+  anchor?: PopoverPoint;
   /** Most rows shown. */
   maxItems?: number;
-  placeholder?: string;
-  ariaLabel?: string;
-  /** Escape closed the list; the typed text stays in the editor. */
+  /** Number of matches the caller has for the query (before the cap). */
+  matchCount?: number;
+  /** Highlighted row index. */
+  active?: number;
+  onActiveChange?: (index: number) => void;
+  /** A row was picked, by Enter, Tab or a mousedown on it. */
+  onPick?: (index: number) => void;
+  /** Escape closed the list; focus and typed text stay in the editor. */
   onEscape?: () => void;
-  /** A row was picked, by Enter, Tab or a pointer press. */
-  onPick?: (value: string) => void;
-  /** PopoverItem rows. */
+  /** Radix dismissal (pointer down outside the list). */
+  onOpenChange?: (open: boolean) => void;
   children?: React.ReactNode;
 }
 
-const ORIGIN = { x: 0, y: 0 };
-
-/**
- * The @-mention popover: a combobox editor whose listbox opens at the caret. Focus stays in the
- * editor (APG combobox pattern); the highlighted row is linked by aria-activedescendant.
- */
+/** Anchored floating list for the mention autocomplete. Renders no DOM of its own. */
 export function Popover({
-  value = "",
-  onValueChange,
   open = false,
-  anchor = ORIGIN,
+  anchor = { x: 0, y: 0 },
   maxItems = 6,
-  placeholder = "",
-  ariaLabel = "Mention",
-  onEscape,
+  matchCount = 0,
+  active = 0,
+  onActiveChange,
   onPick,
+  onEscape,
+  onOpenChange,
   children,
 }: PopoverProps) {
   const listId = React.useId();
-  const [active, setActive] = React.useState(-1);
-  const items = React.Children.toArray(children)
-    .filter(React.isValidElement)
-    .slice(0, Math.max(0, maxItems)) as React.ReactElement<PopoverItemProps>[];
-  const highlighted = active < items.length ? active : -1;
-  const isOpen = open && items.length > 0;
-  const optionId = (i: number) => `${listId}-option-${i}`;
-
+  const count = Math.max(0, Math.min(matchCount, maxItems));
+  const isOpen = open && count > 0;
+  const highlight = count > 0 ? Math.min(Math.max(active, 0), count - 1) : -1;
+  const { x, y } = anchor;
+  // A zero-size virtual element at the caret; Radix places the list against it.
   const virtualRef = React.useMemo(
-    () => ({ current: { getBoundingClientRect: () => new DOMRect(anchor.x, anchor.y, 0, 0) } }),
-    [anchor.x, anchor.y],
+    () => ({ current: { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) } }),
+    [x, y],
   );
 
-  const pick = (picked: string) => {
-    setActive(-1);
-    onPick?.(picked);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen) return;
-    const n = items.length;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActive(highlighted < 0 ? 0 : (highlighted + 1) % n);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive(highlighted <= 0 ? n - 1 : highlighted - 1);
-    } else if ((e.key === "Enter" || e.key === "Tab") && highlighted >= 0) {
-      e.preventDefault();
-      pick(items[highlighted].props.value);
-    }
-  };
-
   return (
-    <PopoverPrimitive.Root open={isOpen}>
-      <PopoverPrimitive.Anchor virtualRef={virtualRef} />
+    <PopoverContext.Provider
+      value={{
+        open: isOpen,
+        count,
+        active: highlight,
+        listId,
+        optionId: (index: number) => `${listId}-option-${index}`,
+        onActiveChange,
+        onPick,
+        onEscape,
+      }}
+    >
+      <PopoverPrimitive.Root open={isOpen} onOpenChange={onOpenChange}>
+        <PopoverPrimitive.Anchor virtualRef={virtualRef} />
+        {children}
+      </PopoverPrimitive.Root>
+    </PopoverContext.Provider>
+  );
+}
+
+/** The @ input that owns the list (APG combobox). Focus stays here throughout. */
+export const PopoverEditor = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function PopoverEditor({ className, onKeyDown, ...props }, ref) {
+    const ctx = usePopover("PopoverEditor");
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      onKeyDown?.(e);
+      if (e.defaultPrevented || !ctx.open) return;
+      const last = ctx.count - 1;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          ctx.onActiveChange?.(ctx.active >= last ? 0 : ctx.active + 1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          ctx.onActiveChange?.(ctx.active <= 0 ? last : ctx.active - 1);
+          break;
+        case "Enter":
+        case "Tab":
+          if (ctx.active < 0) break;
+          e.preventDefault();
+          ctx.onPick?.(ctx.active);
+          break;
+        default:
+          break;
+      }
+    };
+
+    return (
       <input
+        ref={ref}
         data-slot="editor"
         type="text"
         role="combobox"
-        aria-label={ariaLabel}
+        autoComplete="off"
         aria-autocomplete="list"
-        aria-expanded={isOpen}
-        aria-controls={isOpen ? listId : undefined}
-        aria-activedescendant={highlighted >= 0 ? optionId(highlighted) : undefined}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => {
-          setActive(-1);
-          onValueChange?.(e.target.value);
-        }}
-        onKeyDown={onKeyDown}
+        aria-expanded={ctx.open}
+        aria-controls={ctx.listId}
+        aria-activedescendant={ctx.open && ctx.active >= 0 ? ctx.optionId(ctx.active) : undefined}
         className={cn(
-          "h-[2rem] w-full min-w-0 rounded-(--radius-field) border border-edge-2 bg-surface-2 px-2",
-          "text-[0.929rem] text-content-1 placeholder:text-content-3 outline-none",
-          "transition-[border-color] duration-(--duration-fast) ease-standard",
-          "focus-visible:border-accent-500 focus-visible:ring-2 focus-visible:ring-focus-1",
+          "h-[1.75rem] w-full min-w-0 rounded-(--radius-field) border border-edge-2 bg-surface-3 px-2 text-[0.929rem] text-content-1 outline-none placeholder:text-content-3 focus-visible:ring-2 focus-visible:ring-focus-1",
+          className,
         )}
+        onKeyDown={handleKeyDown}
+        {...props}
       />
+    );
+  },
+);
+
+/** The listbox. Closed, it is not rendered; Escape asks the caller to close it. */
+export const PopoverList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  function PopoverList({ className, children, ...props }, ref) {
+    const ctx = usePopover("PopoverList");
+    return (
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
+          ref={ref}
+          id={ctx.listId}
+          role="listbox"
+          data-slot="list"
           side="bottom"
           align="start"
-          sideOffset={6}
+          sideOffset={4}
           collisionPadding={8}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => {
             e.preventDefault();
-            onEscape?.();
+            ctx.onEscape?.();
           }}
           className={cn(
-            "z-(--z-index-dropdown) w-60 rounded-(--radius-control) border border-edge-2 bg-surface-3 p-1 shadow-menu outline-none animate-rise",
+            "z-(--z-index-dropdown) max-h-56 w-60 overflow-y-auto rounded-(--radius-panel) border border-edge-2 bg-surface-3 p-1 shadow-menu outline-none",
+            className,
           )}
+          {...props}
         >
-          <div data-slot="list" role="listbox" id={listId} aria-label={ariaLabel} className="max-h-56 overflow-y-auto">
-            {items.map((item, i) => (
-              <OptionContext.Provider
-                key={i}
-                value={{ index: i, id: optionId(i), active: i === highlighted, onPick: pick }}
-              >
-                {item}
-              </OptionContext.Provider>
-            ))}
-          </div>
+          {children}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
-    </PopoverPrimitive.Root>
-  );
+    );
+  },
+);
+
+export interface PopoverItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Position in the list, from 0. Rows past maxItems are not rendered. */
+  index: number;
 }
+
+/** A mention row (role option). Mousedown picks it and keeps focus in the editor. */
+export const PopoverItem = React.forwardRef<HTMLDivElement, PopoverItemProps>(
+  function PopoverItem({ index, className, children, onMouseDown, onMouseEnter, ...props }, ref) {
+    const ctx = usePopover("PopoverItem");
+    if (index >= ctx.count) return null;
+    const highlighted = index === ctx.active;
+    return (
+      <div
+        ref={ref}
+        role="option"
+        id={ctx.optionId(index)}
+        data-slot="row"
+        aria-selected={highlighted}
+        data-highlighted={highlighted || undefined}
+        onMouseEnter={(e) => {
+          onMouseEnter?.(e);
+          ctx.onActiveChange?.(index);
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          onMouseDown?.(e);
+          ctx.onPick?.(index);
+        }}
+        className={cn(
+          "flex h-[1.75rem] cursor-default select-none items-center rounded-(--radius-field) px-2 text-[0.929rem] text-content-1",
+          highlighted && "bg-accent-500 text-on-accent",
+          className,
+        )}
+        {...props}
+      >
+        <span className="min-w-0 truncate">{children}</span>
+      </div>
+    );
+  },
+);

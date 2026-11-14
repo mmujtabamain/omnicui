@@ -8,7 +8,7 @@ import { Icon } from "./icon";
 const attachmentPreviewVariants = cva("", {
   variants: {
     kind: {
-      image: "max-h-full max-w-full rounded-(--radius-control) object-contain shadow-menu",
+      image: "aspect-[16/10] w-[34.286rem] max-h-full max-w-full rounded-(--radius-control) object-contain shadow-menu",
       video: "max-h-full max-w-full rounded-(--radius-control) shadow-menu",
       audio: "w-full max-w-md flex-col items-center gap-3 rounded-(--radius-panel) bg-surface-2 px-8 py-10",
       pdf: "h-full w-full max-w-4xl rounded-(--radius-control)",

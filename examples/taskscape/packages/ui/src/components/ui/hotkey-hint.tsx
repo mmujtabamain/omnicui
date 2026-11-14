@@ -1,108 +1,124 @@
 import * as React from "react";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 import { Icon } from "./icon";
 
-/** Sizes are the measured ones (1rem = 14px). Tone inherit takes the parent's text colour. */
-export const hotkeyHintVariants = cva(
-  "inline-flex items-center whitespace-nowrap font-sans font-light select-none",
-  {
-    variants: {
-      size: {
-        sm: "text-[0.857rem] leading-[0.857rem]",
-        md: "text-[0.929rem] leading-[1.286rem]",
-      },
-      tone: {
-        inherit: "",
-        muted: "text-content-3",
-      },
+/**
+ * Display-only glyph sequence for one accelerator (shadcn Kbd pattern, no Radix primitive).
+ * Modifiers then key, edge to edge. Sizes at 1rem = 14px: sm 12px glyphs and text, md 13px.
+ */
+const hotkeyHintVariants = cva("inline-flex items-center whitespace-nowrap font-sans font-light select-none", {
+  variants: {
+    size: {
+      sm: "text-[0.857rem] leading-[0.857rem]",
+      md: "text-[0.929rem] leading-[1.286rem]",
     },
-    defaultVariants: { size: "sm", tone: "inherit" },
+    /** inherit takes the parent's text colour (currentColor); muted is the muted-foreground token. */
+    tone: {
+      inherit: "",
+      muted: "text-content-3",
+    },
   },
-);
+  defaultVariants: { size: "sm", tone: "inherit" },
+});
 
-export type HotkeyHintOs = "macos" | "windows" | "other";
+type Variants = VariantProps<typeof hotkeyHintVariants>;
+type Platform = "macos" | "windows" | "other";
 
-export interface HotkeyHintProps extends React.HTMLAttributes<HTMLElement> {
-  /** Canonical accelerator, modifiers then key, joined with "+". Empty renders nothing. */
-  accel?: string;
-  size?: "sm" | "md";
-  tone?: "inherit" | "muted";
-  /** "" resolves the host OS from the browser. */
-  platform?: HotkeyHintOs | "";
+/** A glyph (Material Symbols name) or, where no glyph is asserted, a text label. */
+interface Token {
+  glyph?: string;
+  text?: string;
+  /** Spoken equivalent for the visually hidden text. */
+  label: string;
 }
 
-type Glyph = { icon?: string; text?: string; label: string };
+const MODIFIERS: Record<Platform, Record<string, Token>> = {
+  macos: {
+    Meta: { glyph: "keyboard_command_key", label: "Command" },
+    Alt: { glyph: "keyboard_option_key", label: "Option" },
+    Control: { glyph: "keyboard_control_key", label: "Control" },
+    Shift: { glyph: "arrow_upward", label: "Shift" },
+  },
+  // Windows and web: Meta is the Control glyph, Alt is the Alt label.
+  windows: {
+    Meta: { glyph: "keyboard_control_key", label: "Control" },
+    Alt: { text: "Alt", label: "Alt" },
+    Control: { glyph: "keyboard_control_key", label: "Control" },
+    Shift: { glyph: "arrow_upward", label: "Shift" },
+  },
+  // Linux: the glyph map is not in the brief, so every modifier is a text label.
+  other: {
+    Meta: { text: "Super", label: "Super" },
+    Alt: { text: "Alt", label: "Alt" },
+    Control: { text: "Ctrl", label: "Control" },
+    Shift: { text: "Shift", label: "Shift" },
+  },
+};
 
-const GLYPH_SIZE = { sm: 12, md: 13 } as const;
+const KEYS: Record<string, Token> = {
+  Enter: { glyph: "keyboard_return", label: "Return" },
+  Return: { glyph: "keyboard_return", label: "Return" },
+  Backspace: { glyph: "backspace", label: "Backspace" },
+  ArrowUp: { glyph: "arrow_upward", label: "Up" },
+  ArrowLeft: { glyph: "arrow_back", label: "Left" },
+  Comma: { text: ",", label: "Comma" },
+  Backslash: { text: "\\", label: "Backslash" },
+  Minus: { text: "-", label: "Minus" },
+};
 
-/** Host OS for platform="". The web follows the Windows rules; Linux is "other". */
-function hostPlatform(): HotkeyHintOs {
-  if (typeof navigator === "undefined") return "windows";
-  const id = navigator.platform || navigator.userAgent || "";
-  if (/Mac|iPhone|iPad/.test(id)) return "macos";
-  if (/Linux/.test(id) && !/Android/.test(id)) return "other";
+function resolvePlatform(platform: string): Platform {
+  if (platform === "macos" || platform === "windows" || platform === "other") return platform;
+  // Empty: resolve from the host. The web follows the Windows rule, so only Apple hosts differ.
+  if (typeof navigator !== "undefined" && /Macintosh|Mac OS X/.test(navigator.userAgent)) return "macos";
   return "windows";
 }
 
-function modifierGlyph(name: string, os: HotkeyHintOs): Glyph | null {
-  switch (name) {
-    case "Meta":
-      if (os === "macos") return { icon: "keyboard_command_key", label: "Command" };
-      if (os === "windows") return { text: "Ctrl", label: "Control" };
-      return { text: "Meta", label: "Meta" };
-    case "Alt":
-      if (os === "macos") return { icon: "keyboard_option_key", label: "Option" };
-      return { text: "Alt", label: "Alt" };
-    case "Control":
-      return { text: "Ctrl", label: "Control" };
-    case "Shift":
-      if (os === "macos") return { icon: "arrow_upward", label: "Shift" };
-      return { text: "Shift", label: "Shift" };
-    default:
-      return null;
-  }
+function modifierToken(name: string, platform: Platform): Token {
+  return MODIFIERS[platform][name] ?? { text: name, label: name };
 }
 
-const KEY_ICONS: Record<string, string> = {
-  Enter: "keyboard_return",
-  Backspace: "backspace",
-  ArrowUp: "arrow_upward",
-  ArrowLeft: "arrow_back",
-};
+function keyToken(key: string): Token {
+  if (KEYS[key]) return KEYS[key];
+  const text = key.length === 1 ? key.toUpperCase() : key;
+  return { text, label: text };
+}
 
-const KEY_TEXT: Record<string, { text: string; label: string }> = {
-  Comma: { text: ",", label: "comma" },
-  Backslash: { text: "\\", label: "backslash" },
-  Minus: { text: "-", label: "minus" },
-  Escape: { text: "Esc", label: "Escape" },
-  Space: { text: "Space", label: "Space" },
-  Tab: { text: "Tab", label: "Tab" },
-};
+/** Glyphs run edge to edge; a text modifier (Alt, Shift) gets a small trailing gap so it reads as a word. */
+function Glyph({ token, size, word = false }: { token: Token; size: number; word?: boolean }) {
+  return (
+    <span aria-hidden="true" className={cn("inline-flex items-center", word && token.text && "mr-[0.214rem]")}>
+      {token.glyph ? (
+        <Icon name={token.glyph} size={size} weight={300} tone="inherit" />
+      ) : (
+        <span>{token.text}</span>
+      )}
+    </span>
+  );
+}
 
-function keyGlyph(key: string): Glyph {
-  if (KEY_ICONS[key]) return { icon: KEY_ICONS[key], label: key };
-  if (KEY_TEXT[key]) return KEY_TEXT[key];
-  return { text: key.length === 1 ? key.toUpperCase() : key, label: key.length === 1 ? key.toUpperCase() : key };
+export interface HotkeyHintProps extends React.HTMLAttributes<HTMLElement> {
+  /** Canonical accelerator, modifiers then key, joined with "+", for example Meta+Alt+N. Empty renders nothing. */
+  accel?: string;
+  size?: Variants["size"];
+  tone?: Variants["tone"];
+  /** Host OS for glyph resolution; "" resolves from the app context. */
+  platform?: Platform | "";
 }
 
 export const HotkeyHint = React.forwardRef<HTMLElement, HotkeyHintProps>(function HotkeyHint(
   { accel = "", size = "sm", tone = "inherit", platform = "", className, ...props },
   ref,
 ) {
-  const names = accel.split("+").map((s) => s.trim()).filter(Boolean);
-  if (names.length === 0)
-    // Nothing to show: the hint stays in the tree as an empty, hidden kbd.
-    return <kbd ref={ref} {...props} data-slot="hint" hidden />;
+  const tokens = accel.split("+").map((part) => part.trim()).filter(Boolean);
+  if (tokens.length === 0) return null;
 
-  const os: HotkeyHintOs = platform === "" ? hostPlatform() : platform;
-  const key = names[names.length - 1];
-  const glyphs: Glyph[] = [
-    ...names.slice(0, -1).map((name) => modifierGlyph(name, os)).filter((g): g is Glyph => g !== null),
-    keyGlyph(key),
-  ];
-  const spoken = glyphs.map((g) => g.label).join(" ");
-  const glyphSize = GLYPH_SIZE[size === "md" ? "md" : "sm"];
+  const host = resolvePlatform(platform);
+  const key = tokens[tokens.length - 1];
+  const modifiers = tokens.slice(0, -1).map((name) => modifierToken(name, host));
+  const keyTok = keyToken(key);
+  const glyphSize = size === "md" ? 13 : 12;
+  const spoken = [...modifiers.map((token) => token.label), keyTok.label].join(" ");
 
   return (
     <kbd
@@ -111,16 +127,13 @@ export const HotkeyHint = React.forwardRef<HTMLElement, HotkeyHintProps>(functio
       data-slot="hint"
       className={cn(hotkeyHintVariants({ size, tone }), className)}
     >
-      {glyphs.map((g, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className={cn("inline-flex items-center justify-center", g.text !== undefined && "px-px")}
-        >
-          {g.icon ? <Icon name={g.icon} size={glyphSize} weight={300} tone="inherit" /> : g.text}
-        </span>
-      ))}
       <span className="sr-only">{spoken}</span>
+      {modifiers.map((token, index) => (
+        <Glyph key={index} token={token} size={glyphSize} word />
+      ))}
+      <Glyph token={keyTok} size={glyphSize} />
     </kbd>
   );
 });
+
+export { hotkeyHintVariants };

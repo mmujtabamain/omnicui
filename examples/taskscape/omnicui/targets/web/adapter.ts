@@ -150,6 +150,20 @@ async function axNode(part: string) {
   return nodes[0];
 }
 
+const OMNICUI_ROLES = new Set(["button", "switch", "checkbox", "slider", "textbox", "status", "heading", "generic"]);
+const ROLE: Record<string, string> = {
+  // pressed to act or to choose
+  link: "button", menuitem: "button", menuitemradio: "button", menuitemcheckbox: "button", option: "button", tab: "button",
+  treeitem: "button", combobox: "button", PopUpButton: "button", ToggleButton: "button", DisclosureTriangle: "button",
+  // checked on and off
+  radio: "checkbox",
+  // typed into
+  searchbox: "textbox", spinbutton: "textbox", TextField: "textbox", textbox: "textbox",
+  // moved along a range (a focusable splitter is one too)
+  separator: "slider", scrollbar: "slider",
+  // announced
+  progressbar: "status", alert: "status", log: "status", timer: "status", meter: "status",
+};
 const prop = (node: any, name: string) => node?.properties?.find((p: any) => p.name === name)?.value?.value;
 
 // protocol: Space is sent as " " to Playwright; every other key name is the same.
@@ -175,7 +189,15 @@ async function step(method: string, p: Params, settled = true) {
     case "focus": await (await locate(p.part)).focus(); break;
     // The key goes wherever focus really is, so a part that can't be focused fails honestly.
     // A key with no part goes to whatever has focus.
-    case "key": if (p.part !== undefined) await locate(p.part); await page.keyboard.press(playwrightKey(p.key)); break;
+    // A key goes to the part: focus it first unless focus is already inside it (a field in a group).
+    case "key": {
+      if (p.part !== undefined) {
+        const loc = await locate(p.part);
+        if (!(await loc.evaluate((el) => el.contains(document.activeElement)))) await loc.focus();
+      }
+      await page.keyboard.press(playwrightKey(p.key));
+      break;
+    }
     // Focus first, as a user tabs or clicks in: Playwright's pressSequentially on a field that
     // isn't focused puts the caret at the start itself, which no user's focus does. Focused, the
     // field keeps the caret where its own focus put it (the end, in this app).
@@ -224,7 +246,9 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   },
   // protocol: where a part is on screen, in CSS pixels; a part that is not rendered is 0×0.
   async bounds(p) {
-    const box = await (await locate(p.part)).boundingBox();
+    const loc = page.locator(selector(p.part));
+    if ((await loc.count()) === 0) return { x: 0, y: 0, width: 0, height: 0 };
+    const box = await loc.first().boundingBox();
     return box ? { x: box.x, y: box.y, width: box.width, height: box.height } : { x: 0, y: 0, width: 0, height: 0 };
   },
   // contract: tests[].props, viewports, colorSchemes. A fresh page for every mount.
@@ -286,7 +310,9 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       case "disabled": return prop(node, "disabled") === true;
       case "value": { const v = node?.value?.value ?? prop(node, "valuenow"); return v === undefined ? null : Number(v); }
       // Chromium's role names are WAI-ARIA's, except a few of its own.
-      case "role": { const r = String(node?.role?.value ?? ""); return ({ StaticText: "text", none: "generic", LabelText: "label" } as Record<string, string>)[r] ?? r.toLowerCase(); }
+      // omnicui's roles are eight (button, switch, checkbox, slider, textbox, status, heading, generic):
+      // each ARIA role is answered as the one of them a user would take it for.
+      case "role": { const r = String(node?.role?.value ?? ""); if (r === "separator" && !prop(node, "focusable")) return "generic"; return ROLE[r] ?? (OMNICUI_ROLES.has(r.toLowerCase()) ? r.toLowerCase() : "generic"); }
     }
     throw new RpcError(STEP_FAILED, `unknown field ${p.field}`);
   },

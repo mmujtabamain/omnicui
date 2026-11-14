@@ -1,66 +1,61 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
-/**
- * The scrim behind a layer. Dim is content ink at 40%; dark mode uses the dark surface.
- * Strong is denser and adds the blur the attachment lightbox shell uses.
- */
-export const overlayScrimVariants = cva(
-  "fixed inset-0 z-(--z-index-modal) animate-[fade-in_var(--duration-fast)_ease-out_both]",
+/** The scrim. Desktop draws none: the platform rule is applied at the md breakpoint. */
+const overlayScrimVariants = cva(
+  "pointer-events-none fixed inset-0 z-(--z-index-overlay) animate-[fade-in_var(--duration-fast)_var(--ease-standard)_both]",
   {
     variants: {
       scrim: {
-        dim: "bg-content-1/40 dark:bg-surface-0/70",
-        strong: "bg-content-1/60 backdrop-blur-sm dark:bg-surface-0/85",
+        dim: "bg-content-1/40 dark:bg-surface-0/70 md:bg-transparent",
+        strong: "bg-content-1/60 backdrop-blur-sm dark:bg-surface-0/85 md:bg-transparent md:backdrop-blur-none",
       },
     },
     defaultVariants: { scrim: "dim" },
   },
 );
 
-/** Where the layer content sits: a card near the top, a centred card, or the whole window. */
-export const overlayLayerVariants = cva(
-  "fixed z-(--z-index-modal) flex flex-col gap-[0.714rem] outline-none data-[state=open]:animate-rise",
+/** The layer: the Radix Dialog content that holds the app's panel, stage or card. */
+const overlayLayerVariants = cva(
+  "fixed z-(--z-index-modal) min-w-0 overflow-y-auto outline-none animate-rise",
   {
     variants: {
       placement: {
-        top: "top-[5.714rem] left-1/2 -translate-x-1/2 w-[min(35.714rem,calc(100vw_-_1.5rem))] rounded-(--radius-panel) border border-edge-1 bg-surface-2 p-[1.143rem] shadow-menu",
-        center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(25rem,calc(100vw_-_2rem))] rounded-(--radius-panel) border border-edge-1 bg-surface-2 p-[1.143rem] shadow-menu",
-        fill: "inset-0",
+        top: "top-[4rem] left-1/2 w-[min(36rem,calc(100%_-_2rem))] max-h-[calc(100%_-_5rem)] -translate-x-1/2 rounded-(--radius-panel) border border-edge-1 bg-surface-2 shadow-menu",
+        fill: "inset-0 h-full w-full bg-transparent",
+        center: "top-1/2 left-1/2 w-[min(28rem,calc(100%_-_2rem))] max-h-[calc(100%_-_2rem)] -translate-x-1/2 -translate-y-1/2 rounded-(--radius-panel) border border-edge-1 bg-surface-2 shadow-menu",
       },
     },
     defaultVariants: { placement: "center" },
   },
 );
 
-type ScrimVariants = VariantProps<typeof overlayScrimVariants>;
-type LayerVariants = VariantProps<typeof overlayLayerVariants>;
+export type OverlayPlacement = NonNullable<Parameters<typeof overlayLayerVariants>[0]>["placement"];
+export type OverlayScrim = NonNullable<Parameters<typeof overlayScrimVariants>[0]>["scrim"];
+export type OverlayDismissOn = "outside" | "none";
 
 export interface OverlayProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
+  extends Omit<
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
+    "onEscapeKeyDown" | "onPointerDownOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus"
+  > {
   /** Controlled visibility; closed means not mounted. */
   open?: boolean;
-  /** Called with false on dismissal. */
+  /** Radix open change, called with false on every dismissal. */
   onOpenChange?: (open: boolean) => void;
-  /** Called on Escape (when captured) and on outside press (when dismissOn is outside). */
+  /** Called on Escape and, when dismissOn is outside, on an outside press. */
   onDismiss?: () => void;
-  placement?: LayerVariants["placement"];
-  scrim?: ScrimVariants["scrim"];
-  /** "outside" lets a press outside the layer dismiss it; "none" ignores it. */
-  dismissOn?: "outside" | "none";
-  /** true routes Escape to onDismiss; false leaves Escape to the content. */
+  placement?: OverlayPlacement;
+  scrim?: OverlayScrim;
+  /** 'none' makes outside presses do nothing; Escape still dismisses. */
+  dismissOn?: OverlayDismissOn;
+  /** false leaves Escape to the content. */
   captureEscape?: boolean;
-  /** Visible heading of the layer, and its accessible name. */
-  title?: React.ReactNode;
-  children?: React.ReactNode;
 }
 
-/**
- * Modal layer shell: a Radix Dialog root with a Portal, a scrim, a focus trap and Escape handling.
- * App content (palette panel, lightbox stage, dialog card) goes in as children.
- */
+/** The single modal root: Portal, scrim, focus trap, Escape capture and dismissal. */
 export const Overlay = React.forwardRef<HTMLDivElement, OverlayProps>(function Overlay(
   {
     open = false,
@@ -70,46 +65,67 @@ export const Overlay = React.forwardRef<HTMLDivElement, OverlayProps>(function O
     scrim = "dim",
     dismissOn = "outside",
     captureEscape = true,
-    title,
     className,
     children,
     ...props
   },
   ref,
 ) {
-  const handleOpenChange = (next: boolean) => {
-    if (next) return;
-    onOpenChange?.(false);
-    onDismiss?.();
-  };
-
+  // Without a Radix Trigger, focus returns to whatever held it when the layer opened.
+  const openerRef = React.useRef<HTMLElement | null>(null);
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange?.(next);
+        if (!next) onDismiss?.();
+      }}
+    >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay data-slot="scrim" className={overlayScrimVariants({ scrim })} />
         <DialogPrimitive.Content
           ref={ref}
           data-slot="layer"
-          aria-describedby={undefined}
-          onInteractOutside={(event) => {
-            if (dismissOn === "none") event.preventDefault();
+          aria-modal="true"
+          onOpenAutoFocus={() => {
+            openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            openerRef.current?.focus();
           }}
           onEscapeKeyDown={(event) => {
             if (!captureEscape) event.preventDefault();
           }}
+          onPointerDownOutside={(event) => {
+            if (dismissOn === "none") event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (dismissOn === "none") event.preventDefault();
+          }}
           className={cn(overlayLayerVariants({ placement }), className)}
           {...props}
         >
-          {title ? (
-            <DialogPrimitive.Title data-slot="title" className="text-[1.071rem] leading-[1.4rem] font-semibold text-content-1">
-              {title}
-            </DialogPrimitive.Title>
-          ) : (
-            <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>
-          )}
           {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );
 });
+
+/** The layer's accessible name: a heading the layer is labelled by. */
+export const OverlayTitle = React.forwardRef<
+  HTMLHeadingElement,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+>(function OverlayTitle({ className, ...props }, ref) {
+  return (
+    <DialogPrimitive.Title
+      ref={ref}
+      data-slot="title"
+      className={cn("text-[1.071rem] leading-tight font-semibold text-content-1", className)}
+      {...props}
+    />
+  );
+});
+
+export { overlayLayerVariants, overlayScrimVariants };

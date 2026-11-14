@@ -1,14 +1,11 @@
 import { Button } from "../components/ui/button";
 import { Footer } from "../components/ui/footer";
 
-function FooterHarness({ emit, ...props }: any) {
-  // The footer emits nothing; the demo buttons carry their own events. Row sheets use taller buttons.
-  void emit;
-  const size = props.density === "row" ? "lg" : "md";
+function FooterHarness({ density, tone, edge, drag }: any) {
   return (
-    <Footer {...props}>
-      <Button data-slot="cancel" variant="outline" size={size} label="Cancel" />
-      <Button data-slot="accept" variant="primary" size={size} label="Save" />
+    <Footer density={density} tone={tone} edge={edge} drag={drag}>
+      <Button data-slot="cancel" variant="outline" label="Cancel" />
+      <Button data-slot="accept" variant="primary" label="Save" />
     </Footer>
   );
 }

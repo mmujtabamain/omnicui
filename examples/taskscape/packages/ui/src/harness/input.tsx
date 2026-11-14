@@ -1,28 +1,30 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Input } from "../components/ui/input";
 
-function InputHarness({ emit, value: initialValue = "", ...props }: any) {
-  const [value, setValue] = useState<string>(initialValue);
-
-  // Test hook: every keydown that reaches the window (i.e. was not stopped by the field).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => emit("propagated", { key: e.key });
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [emit]);
-
+function InputHarness({ emit, value, ...props }: any) {
+  const [text, setText] = useState<string>(value ?? "");
+  const saved = useRef<string>(value ?? "");
   return (
-    <Input
-      {...props}
-      value={value}
-      onValueChange={(next: string) => {
-        setValue(next);
-        emit("valueChange", { value: next });
-      }}
-      onSubmit={(next: string) => emit("submit", { value: next })}
-      onCommit={(next: string) => emit("commit", { value: next })}
-      onCancel={() => emit("cancel", {})}
-    />
+    <div onKeyDown={(e) => emit("propagated", { key: e.key })}>
+      <Input
+        {...props}
+        value={text}
+        onValueChange={(next: string) => {
+          setText(next);
+          emit("valueChange", { value: next });
+        }}
+        onSubmit={(next: string) => emit("submit", { value: next })}
+        onCommit={(next: string) => {
+          saved.current = next;
+          setText(next);
+          emit("commit", { value: next });
+        }}
+        onCancel={() => {
+          setText(saved.current);
+          emit("cancel", {});
+        }}
+      />
+    </div>
   );
 }
 

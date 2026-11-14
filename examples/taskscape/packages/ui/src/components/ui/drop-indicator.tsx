@@ -1,41 +1,42 @@
 import * as React from "react";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 /**
  * Insertion marker drawn while a pointer drag is over a valid drop target. Presentational: the
- * drop itself is announced by the target that accepts it. Not accent (accent is reserved for
- * primary action and selection); the drop token is still open, so this uses the neutral ink.
+ * drop result is announced by the target that accepts it. Drawn in a neutral ink, not accent
+ * (accent marks primary action and selection). Appears and disappears at once, with no motion.
  */
-const dropIndicatorVariants = cva("shrink-0 bg-content-1", {
+const dropIndicatorVariants = cva("relative rounded-full bg-content-1", {
   variants: {
     target: {
-      row: "relative h-0.5 w-full rounded-full",
-      root: "relative h-0.5 w-full rounded-full",
-      tab: "h-6 w-1 rounded-full",
+      row: "h-0.5 w-full",
+      root: "h-0.5 w-full",
+      tab: "h-6 w-1 shrink-0",
+    },
+    edge: {
+      before: "",
+      after: "",
     },
     visible: {
       true: "",
-      // Not rendered: display none draws nothing and takes no space.
       false: "hidden",
     },
   },
-  defaultVariants: { target: "row", visible: false },
+  defaultVariants: { target: "row", edge: "before", visible: false },
 });
 
-const dropDotClass = "absolute top-1/2 left-0 size-2 -translate-y-1/2 rounded-full bg-content-1";
+/** The dot at the left end of a row or root line; absent on a tab bar. */
+const dropIndicatorDotClass = "absolute left-0 top-1/2 size-2 -translate-y-1/2 rounded-full bg-content-1";
 
-type DropIndicatorVariants = {
-  target?: "row" | "root" | "tab";
-  visible?: boolean;
-};
+type DropIndicatorVariants = VariantProps<typeof dropIndicatorVariants>;
 
-export interface DropIndicatorProps extends React.HTMLAttributes<HTMLDivElement>, DropIndicatorVariants {
-  /** Where it lands: a task row, the list root, or a tab divider or end drop zone. */
-  target?: "row" | "root" | "tab";
-  /** Row only: before (top) or after (bottom) the task row. Ignored by root and tab. */
-  edge?: "before" | "after";
-  /** true while a drag is over the target; false draws nothing and hides it from assistive tech. */
+export interface DropIndicatorProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Where it lands. */
+  target?: NonNullable<DropIndicatorVariants["target"]>;
+  /** Row only: before (top) or after (bottom) the task row. */
+  edge?: NonNullable<DropIndicatorVariants["edge"]>;
+  /** True while a drag is over the target; false draws nothing and hides it from assistive tech. */
   visible?: boolean;
 }
 
@@ -46,15 +47,15 @@ export const DropIndicator = React.forwardRef<HTMLDivElement, DropIndicatorProps
   return (
     <div
       ref={ref}
+      {...props}
       data-slot="indicator"
       data-target={target}
       data-edge={target === "row" ? edge : undefined}
       role="none"
       aria-hidden="true"
-      className={cn(dropIndicatorVariants({ target, visible }), className)}
-      {...props}
+      className={cn(dropIndicatorVariants({ target, edge, visible }), className)}
     >
-      {target !== "tab" && <span data-slot="dot" className={dropDotClass} />}
+      {target !== "tab" && <span data-slot="dot" role="none" className={dropIndicatorDotClass} />}
     </div>
   );
 });

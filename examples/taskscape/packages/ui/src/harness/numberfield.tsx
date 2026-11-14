@@ -2,13 +2,14 @@ import { useState } from "react";
 import { NumberField } from "../components/ui/number-field";
 
 function NumberFieldHarness({ emit, value, ...props }: any) {
-  const [day, setDay] = useState<number>(value);
+  // The host keeps the day count in state, seeded from the prop, so an emitted change is shown.
+  const [days, setDays] = useState<number>(value ?? 1);
   return (
     <NumberField
       {...props}
-      value={day}
+      value={days}
       onValueChange={(next: number) => {
-        setDay(next);
+        setDays(next);
         emit("changed", { value: next });
       }}
     />

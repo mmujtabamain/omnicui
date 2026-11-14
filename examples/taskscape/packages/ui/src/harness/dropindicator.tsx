@@ -1,35 +1,43 @@
-import { Fragment } from "react";
-import { DropIndicator } from "../components/ui/drop-indicator";
+import { DropIndicator, type DropIndicatorProps } from "../components/ui/drop-indicator";
 
-const TASKS = ["Draft the quarterly plan", "Review onboarding copy", "Ship the export fix"];
+type Props = Pick<DropIndicatorProps, "target" | "edge" | "visible">;
 
-function DropIndicatorHarness({ emit, target = "row", edge = "before", visible = false }: any) {
-  // No events: the drop is emitted by the target, so emit is accepted and unused.
-  void emit;
+/** A task row of the demo list the indicator is drawn against. */
+function TaskRow({ children }: { children: string }) {
+  return (
+    <div className="flex h-[1.75rem] items-center rounded-(--radius-field) border border-edge-1 bg-surface-2 px-2 text-[0.929rem] text-content-1">
+      {children}
+    </div>
+  );
+}
+
+function DropIndicatorHarness({ target = "row", edge = "before", visible = false }: Props) {
   if (target === "tab")
     return (
-      <div className="flex h-[2.5rem] w-56 items-center gap-1 rounded-(--radius-panel) border border-edge-1 bg-surface-1 px-2">
-        <span className="px-1 text-[0.929rem] font-medium text-content-1">Inbox</span>
+      <div className="flex h-[2.5rem] w-[16rem] items-center gap-1 rounded-(--radius-control) border border-edge-1 bg-surface-1 px-2 text-[0.929rem] text-content-2">
+        <span className="px-2">Inbox</span>
         <DropIndicator target="tab" visible={visible} />
-        <span className="px-1 text-[0.929rem] text-content-2">Today</span>
-        <span className="px-1 text-[0.929rem] text-content-2">Later</span>
+        <span className="px-2">Today</span>
+        <span className="px-2">Done</span>
       </div>
     );
 
-  const indicator = <DropIndicator target={target} edge={edge} visible={visible} />;
+  if (target === "root")
+    return (
+      <div className="flex w-[16rem] flex-col gap-1 p-2">
+        <TaskRow>Write release notes</TaskRow>
+        <TaskRow>Review pull request</TaskRow>
+        <DropIndicator target="root" visible={visible} />
+      </div>
+    );
 
+  const line = <DropIndicator target="row" edge={edge} visible={visible} />;
   return (
-    <div className="flex w-56 flex-col gap-1 rounded-(--radius-panel) border border-edge-1 bg-surface-1 p-2">
-      {TASKS.map((task, i) => (
-        <Fragment key={task}>
-          {target === "row" && edge === "before" && i === 1 && indicator}
-          <div className="flex h-[1.75rem] items-center rounded-(--radius-field) border border-edge-1 bg-surface-3 px-2 text-[0.929rem] text-content-1">
-            {task}
-          </div>
-          {target === "row" && edge === "after" && i === 1 && indicator}
-        </Fragment>
-      ))}
-      {target === "root" && indicator}
+    <div className="flex w-[16rem] flex-col gap-1 p-2">
+      {edge === "before" && line}
+      <TaskRow>Write release notes</TaskRow>
+      {edge === "after" && line}
+      <TaskRow>Review pull request</TaskRow>
     </div>
   );
 }
