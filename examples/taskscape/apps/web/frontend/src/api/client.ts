@@ -24,12 +24,25 @@ let onUnauthorized: () => void = () => {};
 export const setUnauthorizedHandler = (fn: () => void) => { onUnauthorized = fn; };
 
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (method !== "GET") headers["X-CSRFToken"] = await csrfToken();
-  const init: RequestInit = { method, headers, credentials: "same-origin" };
-  if (body instanceof FormData) init.body = body;
-  else if (body !== undefined) { headers["Content-Type"] = "application/json"; init.body = JSON.stringify(body); }
-  const res = await fetch(`/api/${path}`, init);
+  const send = async () => {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (method !== "GET") headers["X-CSRFToken"] = await csrfToken();
+    const init: RequestInit = { method, headers, credentials: "same-origin" };
+    if (body instanceof FormData) init.body = body;
+    else if (body !== undefined) { headers["Content-Type"] = "application/json"; init.body = JSON.stringify(body); }
+    return fetch(`/api/${path}`, init);
+  };
+  let res = await send();
+  // Django rotates the CSRF token when the session changes: a stale one is fetched again, once.
+  if (res.status === 403 && method !== "GET") {
+    const detail = await res.clone().json().catch(() => null);
+    if (typeof detail?.detail === "string" && detail.detail.startsWith("CSRF")) {
+      forgetCsrf();
+      res = await send();
+    }
+  }
+  // Signing in, up or out starts a new session, and with it a new token.
+  if (res.ok && /^auth\/(signin|signup|signout)$/.test(path)) forgetCsrf();
   const data = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && !path.startsWith("auth/")) onUnauthorized();
