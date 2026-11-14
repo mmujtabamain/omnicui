@@ -35,3 +35,16 @@ def test_without_trust_proxy_the_scheme_is_not_inferred(ana, settings):
     settings.TRUST_PROXY = False
     settings.ALLOWED_HOSTS = [HOST]
     assert signed_in_write(ana, f"https://{HOST}").status_code == 403
+
+
+@pytest.mark.django_db
+def test_the_public_host_may_come_as_x_forwarded_host(ana, settings):
+    settings.TRUST_PROXY = True
+    settings.USE_X_FORWARDED_HOST = True
+    settings.ALLOWED_HOSTS = ["*"]
+    c = APIClient(enforce_csrf_checks=True)
+    c.force_login(ana)
+    token = c.get("/api/auth/csrf").json()["csrfToken"]
+    r = c.post("/api/projects", {"name": "Work"}, format="json", HTTP_HOST="10.0.0.5:8080",
+               HTTP_X_FORWARDED_HOST=HOST, HTTP_ORIGIN=f"https://{HOST}", HTTP_X_CSRFTOKEN=token)
+    assert r.status_code == 201

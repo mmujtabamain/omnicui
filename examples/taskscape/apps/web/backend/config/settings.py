@@ -7,7 +7,7 @@ ALLOWED_HOSTS    comma-separated
 MEDIA_ROOT       where uploads go (default: media/ next to manage.py)
 DEMO_RESET       "1" routes POST api/demo/reset (screen tests and recordings only)
 FRONTEND_DIST    the built web app, served at / (optional)
-TRUST_PROXY      "1" behind a TLS-terminating proxy (trusts X-Forwarded-Proto)
+TRUST_PROXY      "1" behind a TLS-terminating proxy (trusts X-Forwarded-Proto and X-Forwarded-Host)
 ALERT_WEBHOOK_URL, ALERT_WEBHOOK_TOKEN   where production errors are posted (optional)
 """
 import os
@@ -27,6 +27,7 @@ CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").sp
 TRUST_PROXY = os.environ.get("TRUST_PROXY") == "1"
 if TRUST_PROXY:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True  # the proxy may pass the public host only as X-Forwarded-Host
 
 INSTALLED_APPS = [
     "django.contrib.auth",
