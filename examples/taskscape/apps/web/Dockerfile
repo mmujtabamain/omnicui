@@ -6,14 +6,13 @@ FROM node:22-slim AS frontend
 WORKDIR /src
 COPY package.json package-lock.json ./
 COPY packages/ui/package.json packages/ui/
-COPY packages/ui/scripts packages/ui/scripts
 COPY packages/eslint-plugin/package.json packages/eslint-plugin/
 COPY apps/web/frontend/package.json apps/web/frontend/
 COPY omnicui/targets/web/package.json omnicui/targets/web/
 RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --no-audit --no-fund
 COPY packages packages
 COPY apps/web/frontend apps/web/frontend
-RUN node packages/ui/scripts/fonts.mjs && cd apps/web/frontend && npx vite build
+RUN cd apps/web/frontend && npx vite build
 
 FROM python:3.13-slim
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql && rm -rf /var/lib/apt/lists/*

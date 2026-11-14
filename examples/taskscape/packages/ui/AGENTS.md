@@ -31,6 +31,9 @@ The contract name is the file name without `.contract.yaml` (`button`, `panefoot
 - Compose the widgets that already exist instead of redrawing them: `Icon` (`./icon`), `Button`
   (`./button`), `Tooltip` (`./tooltip`), and any other file in `src/components/ui/`.
 - Icons are Material Symbols names rendered by `<Icon name="add" size={16} />`. Never an SVG.
+  The app ships only the icons its code names (`src/styles/fonts/material-symbols-subset.woff2`):
+  after using a new icon, run `npm run icons` from examples/taskscape (`npm run check:icons` tells
+  you when it is needed).
 
 ## Parts: `data-slot`
 

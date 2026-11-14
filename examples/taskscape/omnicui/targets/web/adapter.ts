@@ -64,7 +64,7 @@ writeFileSync(join(dist, "harness.html"), readFileSync(join(here, "harness.html"
 // Media the contracts name (fixtures/photo.png…) are served from ./fixtures; fixtures/missing.* is a 404.
 mkdirSync(join(dist, "fixtures"), { recursive: true });
 for (const f of readdirSync(join(here, "fixtures"))) copyFileSync(join(here, "fixtures", f), join(dist, "fixtures", f));
-// The icon font sits next to the styles (packages/ui/scripts/fonts.mjs); the CSS asks for ./fonts/.
+// The icon font (the subset scripts/subset-icons.py builds) sits next to the styles; the CSS asks for ./fonts/.
 mkdirSync(join(dist, "fonts"), { recursive: true });
 for (const f of readdirSync(join(ui, "src/styles/fonts"))) copyFileSync(join(ui, "src/styles/fonts", f), join(dist, "fonts", f));
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml", ".mp4": "video/mp4", ".mp3": "audio/mpeg", ".pdf": "application/pdf" };
