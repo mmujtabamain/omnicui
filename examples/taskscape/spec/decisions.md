@@ -34,3 +34,7 @@ Product decisions for the rebuild, with the reason. "Web" is the Django + React 
 18. **Browser-reserved chords on the web:** remapped to web defaults. New task Alt+N; New list Alt+Shift+N; Search "/" when no text field has focus; Switch to list 1–9 Alt+1…9; Previous and next list tab Alt+Shift+Left and Right; Previous and next project Alt+Shift+[ and ]. Desktop keeps the reference defaults.
 19. **Desktop Settings window size:** opens at 640 × 520 and can be resized, never smaller than 640 × 520 (as the reference code does).
 20. **Capture bar, Cmd+Enter (desktop only):** while the bar has focus, Cmd+Enter (Ctrl+Enter on Windows) submits from the title or the notes; the global show/hide toggle acts only when the bar does not have focus. Escape dismisses the bar.
+
+## From the desktop build (16 Nov)
+
+21. **Desktop framework: egui (Rust).** The desktop version is an eframe app. Settings, Trash, dialogs and the capture bar are real OS windows (eframe viewports, with the OS's own controls). The tray or menu-bar agent, the global hotkey and the native menus use `tray-icon`, `global-hotkey` and `muda`. Storage is SQLite with the Atlas HCL schema and Atlas-generated SQL migrations applied at start-up. The egui omnicui target drives it headlessly. Chosen over JavaFX (a weak Linux tray, and a global hotkey that needs a third-party native library), native macOS (macOS only, and no Mac to test on) and Tauri (omnicui cannot drive its webviews, and it would be a web page in a window again).
