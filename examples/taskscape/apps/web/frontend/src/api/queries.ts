@@ -1,5 +1,7 @@
 // React Query keys and hooks over the endpoints. Writes invalidate what they change.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useSheets } from "../screens/sheets/store";
+import { applyOptimistic, restore } from "./optimistic";
 import * as ep from "./endpoints";
 import type { Id } from "./types";
 
@@ -28,13 +30,40 @@ export const useTasks = (scope: { list?: Id | null; project?: Id | null; q?: str
   useQuery({ queryKey: keys.tasks(scope), queryFn: () => ep.tasks.list({ list: scope.list ?? undefined, project: scope.project ?? undefined, q: scope.q }), enabled: scope.list != null || scope.project != null });
 export const useTrash = () => useQuery({ queryKey: keys.trash, queryFn: ep.trash.list });
 
-/** A write that refreshes everything task-shaped afterwards (lists' counts, tasks, trash). */
+const refresh = (qc: QueryClient) => {
+  for (const k of ["lists", "tasks", "notes", "trash", "projects"]) qc.invalidateQueries({ queryKey: [k] });
+};
+
+/**
+ * A write. The screen changes at once (api/optimistic.ts), the server is asked, and everything task-shaped is
+ * refreshed afterwards (lists' counts, tasks, trash). A refused write puts the screen back as it was and says
+ * so, with Try again.
+ */
 export function useWrite<A extends unknown[], R>(fn: (...a: A) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (a: A) => fn(...a),
-    onSettled: () => {
-      for (const k of ["lists", "tasks", "notes", "trash", "projects"]) qc.invalidateQueries({ queryKey: [k] });
+    onMutate: (a: A) => applyOptimistic(qc, fn, a),
+    onError: (_error, a, snapshot) => {
+      if (!snapshot) return;
+      restore(qc, snapshot);
+      useSheets.getState().setToast({
+        message: "",
+        failed: true,
+        errorMessage: "Couldn't save that change",
+        retry: async () => {
+          const again = await applyOptimistic(qc, fn, a);
+          try {
+            await fn(...a);
+          } catch (error) {
+            if (again) restore(qc, again);
+            throw error;
+          } finally {
+            refresh(qc);
+          }
+        },
+      });
     },
+    onSettled: () => refresh(qc),
   });
 }
