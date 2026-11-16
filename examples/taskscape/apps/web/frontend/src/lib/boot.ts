@@ -18,5 +18,10 @@ export function dismissBoot() {
   );
 }
 
+// The app's fade-in plays once: after it, the root keeps its look even if it is emptied and filled again.
+document.getElementById("root")?.addEventListener("animationend", (event) => {
+  if (event.animationName === "app-in") (event.currentTarget as HTMLElement).classList.add("shown");
+});
+
 // Never leave the veil up: if the first data has not arrived in this long, show what there is.
 setTimeout(dismissBoot, 10_000);

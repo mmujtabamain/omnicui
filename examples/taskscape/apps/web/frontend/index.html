@@ -4,11 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Taskscape</title>
+    <!-- The theme before the first paint: the saved choice (src/lib/appearance.ts keeps it), else the system's.
+         Without it the tokens are light until the app's code runs, and a dark window flashes light. -->
+    <script>
+      try {
+        var t = localStorage.getItem("taskscape-theme");
+        var dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch (e) {}
+    </script>
     <!-- The window's own colour from the first paint, before the styles and the app load, so a reload
          never flashes white (surface-1 of the tokens, light and dark). -->
     <style>
       html, body { margin: 0; background: oklch(0.968 0.002 255); }
-      @media (prefers-color-scheme: dark) { html, body { background: oklch(0.205 0.004 260); } }
+      html.dark, html.dark body { background: oklch(0.205 0.004 260); }
 
       /* Loading, as in the reference: a blurred veil over the mounting app with a rounded box whose tick
          draws in on a loop. src/lib/boot.ts fades the veil out once the first data has arrived, and the app
@@ -16,16 +25,15 @@
          under reduced motion too (brief, one-shot feedback): the id selectors and !important outweigh the
          tokens' clamp. */
       :root { --boot-bg: oklch(0.968 0.002 255); --boot-edge: oklch(0.32 0.02 260 / 0.3); --boot-ink: oklch(0.62 0.013 264); }
-      @media (prefers-color-scheme: dark) {
-        :root { --boot-bg: oklch(0.205 0.004 260); --boot-edge: oklch(0.98 0.01 260 / 0.24); --boot-ink: oklch(0.57 0.011 262); }
-      }
+      :root.dark { --boot-bg: oklch(0.205 0.004 260); --boot-edge: oklch(0.98 0.01 260 / 0.24); --boot-ink: oklch(0.57 0.011 262); }
       #boot {
         position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
         background-color: color-mix(in oklab, var(--surface-1, var(--boot-bg)) 62%, transparent);
         -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
       }
-      #root:empty { opacity: 0; }
-      #root:not(:empty) { animation: app-in 1000ms cubic-bezier(0.2, 0, 0, 1) both !important; }
+      /* The app fades in once, on its first render (src/lib/boot.ts marks it shown when the fade ends). */
+      #root:empty:not(.shown) { opacity: 0; }
+      #root:not(:empty):not(.shown) { animation: app-in 1000ms cubic-bezier(0.2, 0, 0, 1) both !important; }
       @keyframes app-in { from { opacity: 0; } }
       #boot .boot-box { stroke: var(--edge-3, var(--boot-edge)); }
       #boot .boot-tick {

@@ -24,11 +24,12 @@ export function App() {
 
   // Signed out, the sign-in page is all there is to load; signed in, the main window lifts the veil.
   useEffect(() => {
-    if (!me.isLoading && !me.data) dismissBoot();
-  }, [me.isLoading, me.data]);
+    if (me.isFetched && !me.data) dismissBoot();
+  }, [me.isFetched, me.data]);
 
-  // Only the very first check shows nothing; later re-checks keep the page on screen.
-  if (me.isLoading) return null;
+  // Only the very first check shows nothing. A later re-check (on tab focus) keeps the page on screen: signed out,
+  // a re-check has no data to show meanwhile, and rendering nothing then blanked the page and replayed its fade-in.
+  if (!me.isFetched) return null;
   const signedIn = !!me.data;
   return (
     <Crash>
