@@ -10,7 +10,8 @@ import { Resizer } from "@taskscape/ui/resizer";
 import { Scrim } from "@taskscape/ui/scrim";
 import { Text } from "@taskscape/ui/text";
 import * as ep from "../../api/endpoints";
-import { keys, useLists, useProjects, useSettings } from "../../api/queries";
+import { dismissBoot } from "../../lib/boot";
+import { keys, useLists, useProjects, useSettings, useTasks } from "../../api/queries";
 import type { Task, TaskList } from "../../api/types";
 import { PREVIEW_MAX, PREVIEW_MIN, SPLIT_MAX, SPLIT_MIN, useUi } from "../../state/ui";
 import { SheetHost, useSheets } from "../sheets";
@@ -95,6 +96,15 @@ export function MainWindow() {
   const splitOn = panes.length > 1 && !noLists;
   const rightId = splitOn ? (panes[1] ?? null) : null;
   const draftList = lists.find((l) => l.id === draftListId) ?? null;
+
+  // The loading veil lifts once the projects, the lists and the project's tasks have arrived (the task list
+  // reads the same query), so the window never shows its empty states while it is still loading.
+  const tasksQuery = useTasks({ project: activeProject?.id ?? null });
+  const settled = (q: { isSuccess: boolean; isError: boolean }) => q.isSuccess || q.isError;
+  const loaded = settled(projectsQuery) && (activeProject == null ? projects.length === 0 : settled(listsQuery) && settled(tasksQuery));
+  useEffect(() => {
+    if (loaded) dismissBoot();
+  }, [loaded]);
 
   // Opens on the first project (Home in the demo data) until a project is picked.
   useEffect(() => {

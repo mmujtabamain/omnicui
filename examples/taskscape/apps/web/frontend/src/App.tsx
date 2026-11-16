@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { reportError, setUnauthorizedHandler } from "./api/client";
 import { keys, useMe, useSettings } from "./api/queries";
 import { useAppearance } from "./lib/appearance";
+import { dismissBoot } from "./lib/boot";
 import { screens } from "./screens";
 
 /** Signed out → the sign-in page; signed in → the app. */
@@ -20,6 +21,11 @@ export function App() {
     qc.invalidateQueries({ queryKey: keys.me });
     navigate("/signin");
   }), [qc, navigate]);
+
+  // Signed out, the sign-in page is all there is to load; signed in, the main window lifts the veil.
+  useEffect(() => {
+    if (!me.isLoading && !me.data) dismissBoot();
+  }, [me.isLoading, me.data]);
 
   // Only the very first check shows nothing; later re-checks keep the page on screen.
   if (me.isLoading) return null;
@@ -40,5 +46,5 @@ class Crash extends Component<{ children: ReactNode }, { error: Error | null }> 
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
   componentDidCatch(error: Error, info: { componentStack?: string | null }) { reportError(`render crash: ${error.message}`, `${error.stack}\n${info.componentStack ?? ""}`); }
-  render() { return this.state.error ? <screens.Crash error={this.state.error} /> : this.props.children; }
+  render() { if (this.state.error) dismissBoot(); return this.state.error ? <screens.Crash error={this.state.error} /> : this.props.children; }
 }
