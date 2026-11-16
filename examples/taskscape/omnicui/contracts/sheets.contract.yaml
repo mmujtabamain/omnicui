@@ -25,7 +25,7 @@ events:
     id: { type: string }          # the instead id, else ""
 
 parts:
-  scrim: { role: generic }        # aria: none. Full-window soft dim behind the card. Not pressed: its centre is under the card.
+  scrim: { role: generic, optional: true }        # aria: none. Full-window soft dim behind the card. Not pressed: its centre is under the card.
   card: { role: generic }         # aria: dialog (aria-modal). The sheet surface, 364px wide, centred. Checked with role: generic.
   glyph: { role: generic }        # aria: none (aria-hidden). 32px tinted badge with an 18px icon. Accent for name prompts, danger for deletions.
   headline: { role: heading }     # h2. The dialog's accessible name.
@@ -42,6 +42,7 @@ parts:
 tests:
   # New list
   - name: "new list sheet opens over the dimmed window with its parts"
+    only: [web]
     props: { sheet: newList }
     expect:
       - { part: card, role: generic, visible: true }
@@ -55,6 +56,19 @@ tests:
       - { part: accept, text: "Create", disabled: false }
       - { part: detail, visible: false }
       - { part: toast, visible: false }
+    screenshot: { mask: [nameField] }
+
+  - name: "new list sheet opens as its own window with focus in the name field"
+    only: [desktop]
+    props: { sheet: newList }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "New list" }
+      - { part: nameField, name: "New list", focused: true, text: { matches: "\\S" } }
+      - { part: roll, name: "Roll another name", visible: true }
+      - { part: cancel, text: "Cancel", visible: true }
+      - { part: accept, text: "Create", disabled: false }
+      - { part: scrim, visible: false }
     screenshot: { mask: [nameField] }
 
   - name: "clearing the name disables Create and Enter keeps the sheet open"
@@ -417,6 +431,7 @@ tests:
 
   # Move to Trash
   - name: "Move to Trash confirmation shows the task title and no shortcut hint"
+    only: [web]
     props: { sheet: deleteConfirm, task: "Book bike service" }
     expect:
       - { part: card, role: generic, visible: true }
@@ -424,6 +439,22 @@ tests:
       - { part: headline, text: "Move to Trash?" }
       - { part: detail, text: { contains: "Book bike service" } }
       - { part: detail, text: { matches: "^[^⌘]*$" } }
+      - { part: cancel, text: "Cancel", focused: true }
+      - { part: accept, text: "Move to Trash", disabled: false }
+      - { part: nameField, visible: false }
+      - { part: roll, visible: false }
+      - { part: importJson, visible: false }
+      - { part: toast, visible: false }
+    screenshot: true
+
+  - name: "Move to Trash confirmation shows the task title and the undo hint"
+    only: [desktop]
+    props: { sheet: deleteConfirm, task: "Book bike service" }
+    expect:
+      - { part: card, role: generic, visible: true }
+      - { part: headline, text: "Move to Trash?" }
+      - { part: detail, text: { contains: "Book bike service" } }
+      - { part: detail, text: { default: { contains: "Ctrl Z puts it back" }, macos: { contains: "⌘Z puts it back" } }, why: "macOS: the desktop keeps the ⌘Z hint (notes-sheets.txt:20-21). Windows and Linux: the modifier is written as the word Ctrl (platform-rubric.md:68), so the copy is derived by that rule. The reference Windows copy is not in the sources." }
       - { part: cancel, text: "Cancel", focused: true }
       - { part: accept, text: "Move to Trash", disabled: false }
       - { part: nameField, visible: false }

@@ -41,7 +41,7 @@ export interface DialogProps {
   open?: boolean;
   /** Called with false when the card asks to close (Cancel, Escape, or an outside press on web). */
   onOpenChange?: (open: boolean) => void;
-  /** Runs the accept action: Accept pressed, Enter or Space on Accept, or Enter in the field. */
+  /** Runs the accept action: Accept pressed, Space on Accept, or Enter in the field (Enter on a confirmation's Accept does nothing, decision 10). */
   onAccept?: () => void;
   /** name: the field takes focus. confirm: Cancel takes focus, role alertdialog, no field. */
   kind?: DialogKind;
@@ -171,6 +171,9 @@ export const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(function Dia
               width="content"
               label={acceptLabel}
               onClick={() => onAccept?.()}
+              // Enter never confirms a confirmation (decision 10): a press or Space does. A button turns
+              // Enter into a click, so the key is stopped here.
+              onKeyDown={confirm ? (e) => { if (e.key === "Enter") e.preventDefault(); } : undefined}
             />
           </div>
         </Footer>

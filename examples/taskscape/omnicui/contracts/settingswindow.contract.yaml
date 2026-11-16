@@ -1,0 +1,510 @@
+id: app.settingswindow
+
+# Desktop Settings window (decision 19): its own OS window. It opens at 640 x 520, is resizable and never smaller.
+# Decision 2: the OS draws the window controls. No close, minimize or zoom part exists here and none is tested.
+# The pages (General, Capture, Shortcuts, About) have their own contracts. This contract tests the window, its sidebar, search and discard controls.
+# Parts marked "General-pane control" are controls on the General page. They are checked here only for the window's discard and search behaviour; their own behaviour is owned by the settingsgeneral contract.
+
+props:
+  dataset: { type: string, default: standard }   # standard | empty | nolists | long. Harness loads that demo data set into the local SQLite database before mounting. Every test here uses the default; the window shows no task data. Required on every contract by the format.
+  motionSignal: { type: string, default: none }  # none | lowPower | systemPrefers. Harness reports an OS signal to the app's motion handler, as macOS would: lowPower = Low Power Mode on, systemPrefers = macOS Reduce Motion on. Only the macOS tests set it.
+  storedTheme: { type: string, default: none }   # none | system | light | dark. Harness writes this value into the settings store before mounting, as a theme saved before the window opened, so it is the value at open. none leaves the store empty, so every setting starts at its default. Needs harness seeding support (see notes).
+
+events:
+  settingChanged: { key: { type: string }, value: { type: string } }  # Emitted on every setting write, including each write a discard makes. key: theme | reduced_motion | show_completed. value: system | light | dark (theme); system | on | off (reduced_motion); on | off (show_completed). Plain strings.
+  windowClosed: { reason: { type: string } }   # Emitted once when the window closes. reason: escape | shortcut. Proposed event name; the close leaves no part behind, so the harness needs this event to see it.
+
+parts:
+  title: { role: heading }              # aria: h1, text "Settings" (SettingsTitleBar). In-app heading; see notes on decision 2.
+  discardAll: { role: button }          # Title-bar IconButton, icon undo. Name "Discard all changes". Shown only while a setting is changed.
+  sidebar: { role: generic }            # aria: nav (w-44 column).
+  tabList: { role: generic }            # aria: tablist "Settings sections".
+  search: { role: textbox }             # Name "Search settings". Placeholder "Search".
+  searchClear: { role: button }         # Name "Clear search". Shown only while the query is non-empty.
+  tabGeneral: { role: button }          # aria: tab. selected = active section.
+  tabCapture: { role: button }          # aria: tab.
+  tabShortcuts: { role: button }        # aria: tab.
+  tabAbout: { role: button }            # aria: tab.
+  generalMatches: { role: generic }     # Badge on the General tab with its match count. Shown only while searching with matches. Inventory shows it on General only; see notes.
+  content: { role: generic }            # aria: tabpanel (pane content of the chosen section).
+  emptyState: { role: status }          # EmptyState, title "No settings match".
+  emptyHint: { role: generic }          # EmptyState subtitle "Nothing here for “<query>”.".
+  appearanceHeading: { role: heading }  # SectionHeader "Appearance" (while searching: "General · Appearance").
+  appearanceDiscard: { role: button }   # Group clear control, name "Discard changes in this group". Shown only when Appearance has a change.
+  appearanceGroup: { role: generic }    # SettingsGroup card.
+  themeRow: { role: generic }           # SettingRow (stacked, like the Theme layout).
+  themeTitle: { role: generic }         # Text "Theme".
+  themeHint: { role: generic }          # Text "Follow the system appearance, or pin one.".
+  themeSystem: { role: button }         # aria: segment of Segmented. selected = chosen.
+  themeLight: { role: button }          # aria: segment.
+  themeDark: { role: button }           # aria: segment.
+  reducedRow: { role: generic }         # SettingRow. Layout is not asserted (no layout field); see notes.
+  reducedTitle: { role: generic }       # Text "Reduced motion".
+  reducedHint: { role: generic }        # Text "Cuts animations and transitions to the minimum.".
+  reducedSystem: { role: button }       # aria: segment. Three-way choice (decision 16), not a switch. General-pane control.
+  reducedOn: { role: button }           # aria: segment. General-pane control.
+  reducedOff: { role: button }          # aria: segment. General-pane control.
+  lowPowerNote: { role: generic }       # Footnote, shown only when motionSignal is lowPower (macOS).
+  systemNote: { role: generic }         # Footnote, shown only when motionSignal is systemPrefers (macOS).
+  tasksHeading: { role: heading }       # SectionHeader "Tasks".
+  tasksDiscard: { role: button }        # Group clear control, name "Discard changes in this group". Shown only when Tasks has a change.
+  tasksGroup: { role: generic }         # SettingsGroup card.
+  showCompletedRow: { role: generic }   # SettingRow, inline.
+  showCompletedTitle: { role: generic } # Text "Show completed tasks".
+  showCompletedHint: { role: generic }  # Text "Keep finished tasks in the list instead of hiding them.".
+  showCompleted: { role: switch }       # Name "Show completed tasks". General-pane control.
+
+viewports:
+  - { width: 640, height: 520 }    # The size the window opens at (decision 19).
+  - { width: 1180, height: 760 }   # A resized window. Also the size the reference inventory was measured at. Conflict with review notes is open (see notes).
+colorSchemes: [light, dark]        # The dark variant covers the settings-dark reference state.
+keyboard: true
+
+tests:
+  - name: opens on General with nothing pending
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: title, text: "Settings" }
+      - { part: sidebar, visible: true }
+      - { part: tabList, visible: true }
+      - { part: tabGeneral, name: { contains: "General" } }
+      - { part: tabCapture, name: { contains: "Capture" } }
+      - { part: tabShortcuts, name: { contains: "Shortcuts" } }
+      - { part: tabAbout, name: { contains: "About" } }
+      - { part: tabGeneral, selected: true }
+      - { part: tabCapture, selected: false }
+      - { part: tabShortcuts, selected: false }
+      - { part: tabAbout, selected: false }
+      - { part: search, name: "Search settings" }
+      - { part: searchClear, visible: false }
+      - { part: generalMatches, visible: false }
+      - { part: discardAll, visible: false }
+      - { part: appearanceHeading, name: "Appearance" }
+      - { part: appearanceGroup, visible: true }
+      - { part: themeTitle, text: "Theme" }
+      - { part: themeHint, text: "Follow the system appearance, or pin one." }
+      - { part: themeSystem, selected: true }
+      - { part: themeLight, selected: false }
+      - { part: themeDark, selected: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: reducedTitle, text: "Reduced motion" }
+      - { part: reducedHint, text: "Cuts animations and transitions to the minimum." }
+      - { part: reducedSystem, selected: true }   # default System is inferred; see notes
+      - { part: reducedOn, selected: false }
+      - { part: reducedOff, selected: false }
+      - { part: lowPowerNote, visible: false }
+      - { part: systemNote, visible: false }
+      - { part: tasksHeading, name: "Tasks" }
+      - { part: tasksGroup, visible: true }
+      - { part: showCompletedTitle, text: "Show completed tasks" }
+      - { part: showCompletedHint, text: "Keep finished tasks in the list instead of hiding them." }
+      - { part: showCompleted, checked: true }     # default on is unconfirmed; see notes
+      - { part: tasksDiscard, visible: false }
+      - { part: emptyState, visible: false }
+    screenshot: true               # settings-general; at colour scheme dark this is settings-dark
+
+  - name: a theme saved before opening shows as the value at open with nothing pending
+    only: [desktop]
+    props: { storedTheme: dark }
+    steps: []
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+
+  - name: ArrowDown moves from General to Capture
+    only: [desktop]
+    steps:
+      - { action: focus, part: tabGeneral }
+      - { action: key, part: tabGeneral, key: ArrowDown }
+    expect:
+      - { part: tabCapture, selected: true }
+      - { part: tabCapture, focused: true }
+      - { part: tabGeneral, selected: false }
+
+  - name: ArrowDown from About wraps to General
+    only: [desktop]
+    steps:
+      - { action: press, part: tabAbout }
+      - { action: key, part: tabAbout, key: ArrowDown }
+    expect:
+      - { part: tabGeneral, selected: true }
+      - { part: tabGeneral, focused: true }
+      - { part: tabAbout, selected: false }
+
+  - name: ArrowUp from General wraps to About
+    only: [desktop]
+    steps:
+      - { action: focus, part: tabGeneral }
+      - { action: key, part: tabGeneral, key: ArrowUp }
+    expect:
+      - { part: tabAbout, selected: true }
+      - { part: tabAbout, focused: true }
+      - { part: tabGeneral, selected: false }
+
+  - name: Tab from the search field reaches only the selected section
+    only: [desktop]
+    steps:
+      - { action: focus, part: search }
+      - { action: key, part: search, key: Tab }
+    expect:
+      - { part: tabGeneral, focused: true }     # assumes the first Tab lands on the selected tab; see notes
+      - { part: tabCapture, focused: false }
+      - { part: tabShortcuts, focused: false }
+      - { part: tabAbout, focused: false }
+
+  - name: focusing the search field shows it focused
+    only: [desktop]
+    steps:
+      - { action: focus, part: search }
+    expect:
+      - { part: search, focused: true }
+    screenshot: true               # settings-search-focus: captures the focus outline (F10-010)
+
+  - name: pressing a section shows that pane
+    only: [desktop]
+    steps:
+      - { action: press, part: tabCapture }
+    expect:
+      - { part: tabCapture, selected: true }
+      - { part: tabGeneral, selected: false }
+      - { part: appearanceGroup, visible: false }
+      - { part: tasksGroup, visible: false }
+
+  - name: pane content animates in on each section switch
+    only: [desktop]
+    steps:
+      - { action: press, part: tabAbout }
+    record: { part: content }      # the press starts the motion; clip of the content box only
+    expect:
+      - { part: tabAbout, selected: true }
+
+  - name: with Reduced motion on, a section switch records the pane motion for review
+    only: [desktop]
+    steps:
+      - { action: press, part: reducedOn }
+      - { action: press, part: tabAbout }
+    record: { part: content }      # reviewed by eye against the default clip of the previous test; no field reports motion
+    expect:
+      - { part: tabAbout, selected: true }
+      - { part: reducedOn, selected: true }
+
+  - name: typing filters every pane live to matching rows
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion" }
+    expect:
+      - { part: search, text: "motion" }
+      - { part: searchClear, visible: true }
+      - { part: generalMatches, text: "1" }      # "1" is from the recording; not confirmed from source
+      - { part: appearanceGroup, visible: true }
+      - { part: appearanceHeading, name: "General · Appearance" }
+      - { part: themeRow, visible: false }
+      - { part: reducedRow, visible: true }
+      - { part: reducedTitle, visible: true }
+      - { part: tasksGroup, visible: false }
+      - { part: showCompletedRow, visible: false }
+      - { part: emptyState, visible: false }
+    screenshot: true               # settings-search
+
+  - name: search matching is case-insensitive
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "MOTION" }
+    expect:
+      - { part: reducedRow, visible: true }
+      - { part: themeRow, visible: false }
+      - { part: generalMatches, text: "1" }
+
+  - name: every typed word must match a row (AND)
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "reduced tasks" }
+    expect:
+      - { part: reducedRow, visible: false }
+      - { part: showCompletedRow, visible: false }
+      - { part: themeRow, visible: false }
+
+  - name: a query with no match shows the empty state
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "zzqx" }
+    expect:
+      - { part: emptyState, visible: true }
+      - { part: emptyState, text: { contains: "No settings match" } }
+      - { part: emptyHint, text: "Nothing here for “zzqx”." }
+      - { part: appearanceGroup, visible: false }
+      - { part: tasksGroup, visible: false }
+      - { part: generalMatches, visible: false }
+    screenshot: true               # settings-search-empty
+
+  - name: a query where one word matches nothing shows the empty state with the whole query in its hint
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion xyzzy" }
+    expect:
+      - { part: emptyState, text: { contains: "No settings match" } }
+      - { part: emptyHint, text: "Nothing here for “motion xyzzy”." }
+      - { part: generalMatches, visible: false }
+
+  - name: the clear button returns to the normal pane view
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: searchClear }
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: generalMatches, visible: false }
+      - { part: themeRow, visible: true }
+      - { part: reducedRow, visible: true }
+      - { part: tasksGroup, visible: true }
+      - { part: tabGeneral, selected: true }
+
+  - name: Escape clears a non-empty search and keeps the window open
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: key, part: search, key: Escape }
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: generalMatches, visible: false }
+      - { part: themeRow, visible: true }
+      - { event: windowClosed, times: 0 }
+
+  - name: Escape with no field being edited closes the window
+    only: [desktop]
+    steps:
+      - { action: focus, part: tabGeneral }
+      - { action: key, part: tabGeneral, key: Escape }
+    expect:
+      - { event: windowClosed, times: 1, last: { reason: "escape" } }
+
+  - name: Ctrl or Cmd W closes the window from a tab (pending team confirmation; no source names this chord)
+    only: [desktop]
+    steps:
+      - { input: closeWindow, part: tabGeneral }   # proposed named input; see notes
+    expect:
+      - { event: windowClosed, times: 1, last: { reason: "shortcut" } }
+
+  - name: Ctrl or Cmd W closes the window from the search field (pending team confirmation; no source names this chord)
+    only: [desktop]
+    steps:
+      - { action: focus, part: search }
+      - { input: closeWindow, part: search }
+    expect:
+      - { event: windowClosed, times: 1, last: { reason: "shortcut" } }
+
+  - name: Ctrl or Cmd F focuses and selects the search field from a focused tab
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: focus, part: tabGeneral }
+      - { input: search, part: search }
+      - { action: type, part: search, text: "tasks" }   # replaces the selected text, so the query is exactly "tasks"
+    expect:
+      - { part: search, focused: true }
+      - { part: search, text: "tasks" }
+      - { part: tasksGroup, visible: true }
+      - { part: themeRow, visible: false }
+      - { part: reducedRow, visible: false }
+
+  - name: Ctrl or Cmd F from another section focuses the search field and takes the query typed there
+    only: [desktop]
+    steps:
+      - { action: focus, part: tabCapture }
+      - { input: search, part: search }
+      - { action: type, part: search, text: "reduced" }
+    expect:
+      - { part: search, text: "reduced", focused: true }
+      - { part: generalMatches, text: "1" }
+      - { part: reducedRow, visible: true }
+
+  - name: clicking a section with matches keeps the search and narrows to it
+    only: [desktop]
+    steps:
+      - { action: press, part: tabCapture }
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: tabGeneral }
+    expect:
+      - { part: search, text: "motion" }
+      - { part: tabGeneral, selected: true }
+      - { part: appearanceHeading, name: "General · Appearance" }
+      - { part: themeRow, visible: false }
+      - { part: reducedRow, visible: true }
+
+  - name: clicking a section with no matches clears the search
+    only: [desktop]
+    steps:
+      - { action: type, part: search, text: "motion" }
+      - { action: press, part: tabCapture }
+    expect:
+      - { part: search, text: "" }
+      - { part: searchClear, visible: false }
+      - { part: generalMatches, visible: false }
+      - { part: tabCapture, selected: true }
+      - { part: appearanceGroup, visible: false }
+
+  - name: choosing Dark applies at once and shows the discard controls
+    only: [desktop]
+    steps:
+      - { action: press, part: themeDark }
+    expect:
+      - { part: themeDark, selected: true }
+      - { part: themeSystem, selected: false }
+      - { part: discardAll, visible: true }
+      - { part: discardAll, name: "Discard all changes" }
+      - { part: appearanceDiscard, visible: true }
+      - { part: appearanceDiscard, name: "Discard changes in this group" }
+      - { part: tasksDiscard, visible: false }
+      - { event: settingChanged, times: 1, last: { key: "theme", value: "dark" } }
+    screenshot: true               # settings-dark when the colour scheme is dark
+
+  - name: choosing Light saves the light theme
+    only: [desktop]
+    steps:
+      - { action: press, part: themeLight }
+    expect:
+      - { part: themeLight, selected: true }
+      - { part: themeSystem, selected: false }
+      - { event: settingChanged, times: 1, last: { key: "theme", value: "light" } }
+    screenshot: true
+
+  - name: moving a setting back to its value at open clears its discard controls
+    only: [desktop]
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: themeSystem }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+      - { event: settingChanged, times: 2, last: { key: "theme", value: "system" } }
+
+  - name: choosing On for reduced motion saves it
+    only: [desktop]
+    steps:
+      - { action: press, part: reducedOn }
+    expect:
+      - { part: reducedOn, selected: true }
+      - { part: reducedSystem, selected: false }
+      - { part: appearanceDiscard, visible: true }
+      - { event: settingChanged, times: 1, last: { key: "reduced_motion", value: "on" } }
+    screenshot: true
+
+  - name: choosing Off after On saves reduced motion off
+    only: [desktop]
+    steps:
+      - { action: press, part: reducedOn }
+      - { action: press, part: reducedOff }
+    expect:
+      - { part: reducedOff, selected: true }
+      - { part: reducedOn, selected: false }
+      - { event: settingChanged, times: 2, last: { key: "reduced_motion", value: "off" } }
+
+  - name: turning Show completed tasks off saves it and shows its group discard
+    only: [desktop]
+    steps:
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: false }
+      - { part: discardAll, visible: true }
+      - { part: tasksDiscard, visible: true }
+      - { part: tasksDiscard, name: "Discard changes in this group" }
+      - { part: appearanceDiscard, visible: false }
+      - { event: settingChanged, times: 1, last: { key: "show_completed", value: "off" } }
+    screenshot: true               # settings-changed-group
+
+  - name: turning Show completed tasks back on saves it
+    only: [desktop]
+    steps:
+      - { action: press, part: showCompleted }
+      - { action: press, part: showCompleted }
+    expect:
+      - { part: showCompleted, checked: true }
+      - { event: settingChanged, times: 2, last: { key: "show_completed", value: "on" } }
+
+  - name: the title-bar discard reverts every pending change
+    only: [desktop]
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: reducedOn }
+      - { action: press, part: showCompleted }
+      - { action: press, part: discardAll }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: reducedSystem, selected: true }
+      - { part: reducedOn, selected: false }
+      - { part: showCompleted, checked: true }
+      - { part: discardAll, visible: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: tasksDiscard, visible: false }
+      - { event: settingChanged, times: 6 }   # 3 changes, then one discard write per changed setting; order not asserted
+
+  - name: a group discard reverts only its own group
+    only: [desktop]
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: showCompleted }
+      - { action: press, part: tasksDiscard }
+    expect:
+      - { part: showCompleted, checked: true }
+      - { part: tasksDiscard, visible: false }
+      - { part: themeDark, selected: true }
+      - { part: appearanceDiscard, visible: true }
+      - { part: discardAll, visible: true }
+      - { event: settingChanged, times: 3, last: { key: "show_completed", value: "on" } }
+
+  - name: the Appearance group discard reverts theme and reduced motion
+    only: [desktop]
+    steps:
+      - { action: press, part: themeDark }
+      - { action: press, part: reducedOn }
+      - { action: press, part: appearanceDiscard }
+    expect:
+      - { part: themeSystem, selected: true }
+      - { part: themeDark, selected: false }
+      - { part: reducedSystem, selected: true }
+      - { part: reducedOn, selected: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: discardAll, visible: false }
+      - { event: settingChanged, times: 4 }   # 2 changes, then 2 discard writes; order not asserted
+
+  - name: the Appearance group discard reverts its settings and keeps the Tasks change
+    only: [desktop]
+    steps:
+      - { action: press, part: showCompleted }
+      - { action: press, part: reducedOn }
+      - { action: press, part: appearanceDiscard }
+    expect:
+      - { part: reducedOn, selected: false }
+      - { part: reducedSystem, selected: true }
+      - { part: showCompleted, checked: false }
+      - { part: appearanceDiscard, visible: false }
+      - { part: tasksDiscard, visible: true }
+      - { part: discardAll, visible: true }
+
+  - name: macOS Low Power Mode shows reduced motion on and its footnote
+    only: [macos]                  # whole-OS difference: Low Power Mode and macOS Reduce Motion are macOS signals
+    props: { motionSignal: lowPower }
+    steps: []
+    expect:
+      - { part: reducedOn, selected: true }        # forced on by the signal (F10-060)
+      - { part: lowPowerNote, visible: true }
+      - { part: lowPowerNote, text: "Due to Low Power Mode, reduced motion is on by default on macOS." }
+      - { part: systemNote, visible: false }
+    screenshot: true
+
+  - name: macOS Reduce Motion shows its footnote under reduced motion
+    only: [macos]
+    props: { motionSignal: systemPrefers }
+    steps: []
+    expect:
+      - { part: systemNote, visible: true }
+      - { part: systemNote, text: "macOS Reduce Motion is on, so motion stays reduced." }
+      - { part: lowPowerNote, visible: false }

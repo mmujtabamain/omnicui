@@ -1,0 +1,69 @@
+BASED ON. Merged from Draft A, Draft B and the critique. This run had no file tools, so I did not reopen the source files (trash.json, area-07.json, decisions.md, web.md, notes-trash.txt, contract-format.txt). Every F07-xxx and decision number here is carried from the drafts' notes and is not re-verified.
+
+PROPS (what the harness does).
+- dataset: loads that demo set into the local SQLite database before the window mounts. Tests use only standard and empty. long holds the same two trashed roots (per the critique, which corrects Draft B). nolists has no list names and is not used here.
+- openRequests: the harness calls the app's open-Trash handler this many times before the steps. 1 gives a fresh window (opened created true). 2 sends a second request, which must focus the existing window (opened created false, and no second window). No part exposes window focus, so focus is measured only through created false.
+
+EVENTS (proposed; the app must emit them, since the reference has no such signals).
+- opened: once per open request, with created true or false.
+- closed: once when the window closes, with reason escape, shortcut or os.
+- restored: once per trashed root restored, with its title. Restore all emits one per root (times 2 with standard). Per task, not a per-action count, so the main window contract can tell which task came back (F07-013). Draft A's count shape is dropped for this reason.
+- purged: once per root deleted permanently from a row, with its title. Empty does not emit it, because the confirmation is its own window.
+- emptyAsked: emitted when Empty opens its confirmation, with the number of roots it names. The count shown on that confirmation is checked by the sheets contract, not here.
+
+PROPOSED NAMED INPUTS (not in the harness list yet).
+- closeWindow: default Control+KeyW, macos Meta+KeyW. Used for Ctrl W / Cmd W. It is a named input because the chord uses the platform modifier.
+- osClose: default { do: close }, macos { do: close }. This is the OS close request. It is measured only if the target advertises do.close. It is not a light.
+- undo: the existing named input. It is used with part title, which is always present, because restoreAll is hidden after Restore all and cannot anchor the input.
+- Key names Enter, Space and Escape are assumed.
+
+PROPOSED BEHAVIOUR NOT IN DECISIONS (tests kept, flagged).
+- Escape closes the window, and Ctrl/Cmd W closes it. No decision says this. Decision 10 says Escape cancels confirmations, not windows. Escape is an explicit key step, not a named dismiss input.
+- The keyboard focus reveal (focus on restoreRow shows its buttons). No decision requires it. If the team keeps hover-only reveal, delete this test and record focused-but-invisible buttons as an open issue. On desktop the row buttons stay at opacity 0 until hover, so a focused Restore is invisible unless this is decided.
+
+KEYBOARD. keyboard: false on purpose, since the automatic test would press Delete permanently on Enter, which decision 10 forbids. Key cases are written out for every button: restoreAll (Enter, Space), emptyTrash (Enter, Space), restoreRow (Enter, Space), purgeRow (Space purges, Enter does not), secondRestoreRow (Enter, Space), secondPurgeRow (Space purges, Enter does not).
+
+DECISIONS APPLIED. Desktop Trash is its own OS window (decision 8), so no in-app close, minimise or full-screen lights (decision 2). Restore all is default tone. Empty and Delete permanently are danger tone at rest (notes-trash Note 1). The reference capture shows them grey, so screenshot baselines follow the decided look. Tone cannot be read from a field and is covered only by the screenshots. A single-row Delete permanently is immediate on click and Space, with no sheet (decision 12). Empty asks first and names the count (decision 12). Enter never purges (decision 10). Desktop keeps the hover reveal of the row buttons. The trash-selected state is a hover on the second row, since TrashPane has no selection state. Decision 14 (web inline failures) and F07-014 are web-only and not applied. The desktop uses local SQLite and has no stale-item path.
+
+DROPS (union kept except these; each with reason).
+- Draft B open prop, with the tests titleBar, palette and titleBarTwice: entering from the main window's title bar or palette belongs to the main window contract, and this contract declares no main window parts. The second-request case is covered by the openRequests test (opened created false).
+- Draft B trashWindows event: duplicates opened and closed.
+- Draft A restored and purged count shape: replaced by per-task title (critique).
+- Draft B parts rowTitle and rowMeta: their checks are done with row and secondRow text, which carry the title, the list name and "deleted". Draft B's rowMeta regex is dropped because it pinned a word and a format the sources do not confirm.
+- Draft B part oldestRow: same element as secondRow, which has the second-row buttons Draft B lacked.
+- Draft B part row (duplicate of A's row) and names rowRestore and rowDelete: merged into restoreRow and purgeRow, which are the clearer names used in the events.
+- Draft B dismiss input: replaced by the explicit Escape key step.
+- Draft B keyboard: true: replaced by keyboard false (critique). Draft B's note 4 question (may Enter destroy a row?) is dropped because decision 10 answers it.
+- Draft B's quote "deleted 2 days ago" from web.md: web.md has "(Errands, 2 days ago)" and never the word "deleted". Corrected. Relative time is not pinned.
+- Draft B's "desktop seed" label for web.md: dropped, since no source calls web.md the desktop seed.
+- Duplicate screenshots: "trash state" (B) is the same as "trash list at rest" (A). "trash-selected state" (B) is the same as "trash with the second row hovered" (A). "empty state" (B) is the same as "empty trash" (A). A's names kept.
+- Duplicate tests: B's "Restore all" test is merged with A's. B's "Empty asks first" is merged with A's pressing Empty test. B's "Enter on Empty" is merged with A's Enter on Empty test. B's Escape test (title visible false) is merged into A's Escape test. B's Ctrl W test is merged into A's Ctrl/Cmd W test. B's hover test on the first row is kept alongside A's hover test on the second row, since they hover different rows.
+- A's restored count reason (no task identity) is replaced, as above.
+
+CONFLICTS AND RESOLUTIONS.
+- Restored and purged granularity: per task with title, as the critique recommends.
+- titleBar visible check (Draft A) against decision 2 and the critique's question whether desktop paints an in-app header. Kept, because A cites the reference record for the header strip (F07-001). This is unverified here. If the Trash region record shows no in-app header on desktop, drop titleBar and its visible check.
+- Empty accessible name: the reference inventory uses "delete_forever Empty". The contract requires the exact name "Empty", so the icon must be hidden from the accessible name (an app requirement).
+- Empty count basis: the reference counts all trashed items including hidden children (items.length, F07-006), while the list shows roots only (F07-003). Both give 2 with standard data. Open for the sheets contract.
+- Relative time: web.md says "30 minutes ago" and "2 days ago"; the inventory says "3d ago" and "5d ago". Not pinned. Tests match only the word "deleted", cited to F07-008 (not re-verified here).
+
+VIEWPORT AND SCHEME. 319 by 715 is the trash pane's measured size from trash.json. The desktop window's own size is not measured, so this is flagged. colorSchemes is light only: the reference was captured in light only (F07-104).
+
+LEFT OUT, with reasons.
+- Loading state: transient, and the harness waits for the UI to settle, so "Loading" is never seen (F07-002 flag, F07-007).
+- Rows overflowing and scrolling: no dataset has more than two trashed roots. "Keeps its place" is tested as row order after actions and after a second open request.
+- Hidden child rows (F07-003): no demo data set has a trashed child under a trashed root. A data set with a trashed root that has a child is needed. Open.
+- Restore reaching the main window's list (F07-013): the main window contract. The restored event is the link. The harness must mount both windows for a cross-window check.
+- Title bar Trash button and palette Open Trash (decision 1 entry points): main window contract.
+- Empty Trash confirmation contents (headline "Empty Trash?", count shown, Cancel focused by default per decisions 10 and 13), its controls and its accept path: sheets contract.
+- Undo stack, undo toast, Move to Trash hint (F07-015 to F07-021, F07-077 to F07-079): main window features. The undo tests here check only that restored or purged rows stay gone (F07-012). Routing of undo from this window is a main window check.
+- Failure handling (F07-014, decision 14): web-only.
+- Trash panel replacing the inspector (F07-080): superseded by decision 8, since desktop Trash is its own window.
+- Close, minimise and full-screen lights (F07-081, F07-082): not drawn on desktop (decision 2).
+- Pane resizer and window resizing (F07-103): superseded by decision 8. Window resizing is an OS action with no part, and the viewport fixes the size.
+- Fetch after boot (F07-084): not visible in this window. The open tests cover the loaded list.
+- Dark scheme (F07-104): the reference has no dark capture.
+- Drag and drop: none in the trash, so no drag steps.
+- Native OS close button: drawn by the OS. Only the osClose request is tested, through the named input.
+- Window focus visible state: no part exposes it.
+- Decision 14 stale-item handling: web-only.

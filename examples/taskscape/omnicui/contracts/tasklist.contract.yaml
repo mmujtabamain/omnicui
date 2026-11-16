@@ -301,9 +301,9 @@ tests:
       - { part: selectionCount, visible: false }
       - { part: checkGroceries, selected: false }
 
-  - name: "select all: Control+KeyA selects the tasks of the focused pane (Control on the web)"
+  - name: "select all: the platform modifier with KeyA selects the tasks of the focused pane (Control on the web)"
     steps:
-      - { action: key, part: row, key: "Control+KeyA" }
+      - { input: selectAll, part: row }
     expect:
       - { part: bulkBar, visible: true }
       - { part: selectionCount, text: { contains: "selected" } }
@@ -584,11 +584,19 @@ tests:
       - { part: emptyState, text: { contains: "No matches in Errands" } }
 
   - name: "the Slash key focuses the search field without typing a slash"
+    only: [web]
     steps:
       - { action: key, part: row, key: "Slash" }
     expect:
       - { part: search, focused: true }
       - { part: search, text: "" }
+
+  - name: "the search chord focuses the search field (Cmd+F on macOS, Ctrl+F on Windows and Linux)"
+    only: [desktop]
+    steps:
+      - { input: search, part: row }
+    expect:
+      - { part: search, focused: true }
 
   - name: "search options: the scope and fields menu shows the current choices"
     steps:
@@ -759,8 +767,16 @@ tests:
       - { part: row, name: { contains: "Pick up prescription" } }
 
   - name: "Alt+N starts a draft for the list (decision 18 as read by the critic; binding not checked against decisions.md text here)"
+    only: [web]
     steps:
       - { action: key, part: row, key: "Alt+KeyN" }
+    expect:
+      - { event: draftStarted, times: 1, last: { list: "Errands" } }
+
+  - name: "the platform New task chord starts a draft for the list (Cmd+N on macOS, Ctrl+N on Windows and Linux)"
+    only: [desktop]
+    steps:
+      - { input: newTask, part: row }
     expect:
       - { event: draftStarted, times: 1, last: { list: "Errands" } }
 

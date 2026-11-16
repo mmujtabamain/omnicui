@@ -53,13 +53,13 @@ parts:
   swapPanes: { role: button }   # name Swap panes; shown only while split is on
   previewToggle: { role: button }   # aria: button with aria-pressed; name Hide preview panel, or Show preview panel when hidden
   trashButton: { role: button }   # web: Trash icon button (label not in the spec)
-  paletteButton: { role: button }   # web: search and commands button (label not in the spec)
+  paletteButton: { role: button, optional: true }   # web: search and commands button (label not in the spec)
   settingsButton: { role: button }   # name contains Settings (a shortcut hint may follow)
-  accountButton: { role: button }   # web: account button at the end of the bar, shows the initial of the name
-  accountMenu: { role: generic }   # aria: menu; shows the email, Settings and Sign out
-  accountEmail: { role: generic }   # aria: none; the account email in the menu (plain text)
-  accountSettings: { role: button }   # aria: menuitem; Settings
-  accountSignOut: { role: button }   # aria: menuitem; Sign out
+  accountButton: { role: button, optional: true }   # web: account button at the end of the bar, shows the initial of the name
+  accountMenu: { role: generic, optional: true }   # aria: menu; shows the email, Settings and Sign out
+  accountEmail: { role: generic, optional: true }   # aria: none; the account email in the menu (plain text)
+  accountSettings: { role: button, optional: true }   # aria: menuitem; Settings
+  accountSignOut: { role: button, optional: true }   # aria: menuitem; Sign out
   reducedMotionStatus: { role: status }   # shown only while reduced motion is on; hover tooltip Reduced motion is on
 viewports: [ { width: 1180, height: 160 }, { width: 820, height: 160 } ]   # 1180 main window; 820 narrow window; 160 tall so the project menu (to y 154) is in view
 colorSchemes: [ light ]   # no dark state is recorded for this bar
@@ -85,7 +85,7 @@ tests:
       - { part: projectMenu, visible: false }
       - { part: reducedMotionStatus, visible: false }
     screenshot: true
-  - name: cmd held leaves the bar as it is
+  - name: the modifier hold leaves the bar as it is
     steps:
       - { input: modifierHold }
     expect:
@@ -115,6 +115,7 @@ tests:
       - { part: projectMenu, visible: false }
       - { part: projectSwitcher, text: { contains: "Home" } }
   - name: a press outside the project menu closes it
+    only: [web]
     # The outside press lands where the preview toggle is; it only closes the menu and goes no further
     # (F07-071; the same rule as the task and tab menus), so the preview does not toggle.
     steps:
@@ -144,15 +145,15 @@ tests:
   - name: the next project chord cycles and wraps
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketRight" }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketRight" }
+      - { input: nextProject, part: projectSwitcher }
+      - { input: nextProject, part: projectSwitcher }
     expect:
       - { part: projectSwitcher, text: { contains: "Home" } }
       - { event: projectSelected, times: 2, last: { name: "Home" } }
   - name: the previous project chord wraps to the last project
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+BracketLeft" }
+      - { input: prevProject, part: projectSwitcher }
     expect:
       - { part: projectSwitcher, text: { contains: "Spring launch" } }
       - { event: projectSelected, times: 1, last: { name: "Spring launch" } }
@@ -199,7 +200,7 @@ tests:
   - name: the new list chord asks to create a list in the active project
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+KeyN" }
+      - { input: newList, part: projectSwitcher }
     expect:
       - { event: listCreateRequested, times: 1, last: { project: "Home" } }
   - name: clicking a tab makes it the active list
@@ -226,23 +227,23 @@ tests:
   - name: the next list chord cycles through the lists and wraps to the first
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowRight" }
+      - { input: nextList, part: projectSwitcher }
+      - { input: nextList, part: projectSwitcher }
+      - { input: nextList, part: projectSwitcher }
     expect:
       - { part: listTab, selected: true, text: { contains: "Errands" } }
       - { event: listSelected, times: 3, last: { name: "Errands" } }
   - name: the previous list chord wraps to the last list
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Shift+ArrowLeft" }
+      - { input: prevList, part: projectSwitcher }
     expect:
       - { part: listTabGarden, selected: true }
       - { event: listSelected, times: 1, last: { name: "Garden" } }
   - name: the list number chord selects the second tab
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: "Alt+Digit2" }
+      - { input: switchList2, part: projectSwitcher }
     expect:
       - { part: listTabReading, selected: true }
       - { event: listSelected, times: 1, last: { name: "Reading" } }
@@ -318,6 +319,7 @@ tests:
     expect:
       - { part: tabMenu, visible: false }
   - name: a press outside the tab menu closes it
+    only: [web]
     # The outside press lands where the Garden tab is; it only closes the menu (F07-071), so Garden
     # is not selected.
     steps:
@@ -442,6 +444,7 @@ tests:
     expect:
       - { event: trashOpened, times: 1, last: { open: true } }
   - name: command palette button opens the palette
+    only: [web]
     steps:
       - { action: press, part: paletteButton }
     expect:
@@ -453,6 +456,7 @@ tests:
       - { part: settingsButton, name: { contains: "Settings" } }
       - { event: settingsOpened, times: 1, last: { open: true } }
   - name: account menu shows the email, Settings and Sign out
+    only: [web]
     steps:
       - { action: press, part: accountButton }
     expect:
@@ -462,6 +466,7 @@ tests:
       - { part: accountSignOut, text: { contains: "Sign out" } }
     screenshot: true
   - name: account menu Settings opens the settings
+    only: [web]
     steps:
       - { action: press, part: accountButton }
       - { action: press, part: accountSettings }
@@ -469,6 +474,7 @@ tests:
       - { part: accountMenu, visible: false }
       - { event: settingsOpened, times: 1, last: { open: true } }
   - name: Sign out asks the app to sign the account out
+    only: [web]
     # only the request is checked; the sign-out itself is outside this bar
     steps:
       - { action: press, part: accountButton }

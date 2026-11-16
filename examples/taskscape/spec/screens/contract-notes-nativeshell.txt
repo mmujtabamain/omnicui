@@ -1,0 +1,81 @@
+Basis: the two drafts for app.nativeshell, the critic's list of fixes, and the task rules. I did not open the feature records (F13/F14/F15), decisions.md, the reference source or the common crate. Every feature id, decision number and source line below is as the drafts cited it and is unchecked. Verify them before the merge is final.
+
+MERGED HARNESS MEANING OF EVERY PROP
+- dataset: the harness loads that demo set into the one local SQLite database before launch. standard is the default. The desktop seed data is assumed to match the web demo data in spec/screens/web.md; this is not confirmed.
+- open: main (default) = booted, main window shown, bar hidden. background = launch with the main window hidden, bar hidden, agent running (used by the tray Open test). Draft A's open: boot value is moved to the boot prop, because the boot veil is a launch phase, not an open state.
+- boot: done (default) = boot finished, veil and box removed. held = the harness withholds the first paint, so the veil and box stay up for the reads. No step releases it. The stalled value from Draft B is dropped: egui has no frontend and no ready signal, so the 4 s fallback has no meaning here.
+- focus: main = the main window holds keyboard focus, so chords go to main (decision 11). other = the harness makes another app's window the OS-focused one before the step. Chords then go to the global handler, and to the bar when it is shown. On an input step with focus other, the part only names the window the test reads. The key itself is an OS-level global key event, not a part action.
+- barState: hidden (default) = bar parked, as in F14-029. shown = the harness shows the bar and then moves OS focus to another app, so the bar is visible without keyboard focus. Renamed from Draft B's captureBar, because a prop and a part should not share a name. The focused value is not needed: the typed-summon test covers the focused bar.
+- lastProject, lastList: stored as last_active_project and last_active_list before first paint. "" stores nothing, and the app opens on Home > Errands.
+- captureMode: writes the screenshot_mode setting (fullScreen or region).
+- captureHotkey: bound keeps the default toggle combo. unbound clears the toggle binding.
+
+EVENTS
+- shellCommand {action}: the shell's command to the main window. import_list and export_list come from the List menu. new_task comes from the toggle chord with main focused; the action name is not asserted (see the conflicts). attach_screenshot comes from the screenshot chord with main focused. refresh comes after a submitted capture (F14-046, F15-030).
+- captureSubmitted {title}: the capture just submitted from the bar.
+- quit {code}: exit code 0 on every quit path (tray Quit, closing the main window). Hiding the bar is not a quit.
+- remembered {list, project}: the store write of last_active_list and last_active_project (F15-039, uncertain).
+- Naming: action values use snake_case (import_list, attach_screenshot). Input names use camelCase (toggleCaptureBar, captureScreenshot). Draft B's menuCommand event (hyphenated values) and its attachScreenshot input name are dropped in favour of this set.
+
+PROPOSED NAMED INPUTS (none exists yet; each needs a platforms.yaml entry)
+- toggleCaptureBar: default { key: Control+Enter }, macos { key: Meta+Enter }. Mod is Control on Windows and Linux and Command on macOS (web.md); decision 20 uses Enter. The reference default conflicts across sources: docs say Cmd+Return, the code comment says Cmd+Enter, F15-028 says Cmd+Enter. Confirm the exact default when platforms.yaml is written. The tooltip test accepts any label. Delivered to the app's global-hotkey handler, as the OS would deliver it.
+- captureScreenshot: default { key: Control+Shift+Enter }, macos { key: Meta+Shift+Enter }. Reference is Cmd+Shift+Return (docs) or Cmd+Shift+Enter (code).
+- closeWindow: default { key: Alt+F4 }, macos { key: Meta+KeyW }. The OS close request to the named window. On Linux the window manager may consume Alt+F4; if so, the close-to-quit tests are not measured there.
+- Existing named inputs used: switchList2, nextTab, nextProject.
+
+DECISIONS FOLLOWED
+- Decision 2: close, minimise and zoom controls are never tested. Reading taken: the app's response to a close request (quit, or hide for the bar) is app behaviour and is tested through closeWindow. The two drafts read decision 2 differently; the team should confirm this reading.
+- Decision 11: with main focused, the main window handles the chord and the bar is not shown. This overrides F14-001's visible-first order.
+- Decision 20: Enter in the title submits; the global toggle acts only when the bar lacks focus; a visible unfocused bar is hidden by the toggle; Escape hides. This overrides F14-001 and F14-002's visible-first reading.
+- Decision 21: one egui process. Tray and hotkeys are in-process handlers. The reference routes and ports (7420, 7421, /focus, /quit, /new-task, /attach-screenshot, /refresh, /reload-hotkeys) are not asserted. Their behaviour is kept as handlers and shellCommand events. The mechanism (Tauri, emit_to, tray-app) is replaced by muda and tray-icon.
+
+CONFLICTS AND HOW THEY WERE RESOLVED
+1. Tray menu. The brief lists Open, Refresh and Quit. The source has only Open Taskscape and Quit Taskscape (F14-041, F14-042; the drafts also cited tray/src-tauri/src/lib.rs:205-217, unchecked). Refresh is the shellCommand emitted after a capture (F14-046, F15-030), not a tray item. The brief's author should be told.
+2. F14-001 versus decision 20. Followed decision 20. F14-002's own title says a visible bar is hidden.
+3. F13-016 (Cmd+Enter in the title dismisses) versus decision 20 (submits). This contract follows decision 20; the capture-bar card owner must resolve F13-016. The test that depends on it is marked.
+4. Hotkey labels differ (⌘Return, Cmd+Enter, ⌘Enter). The tooltip regex accepts any label; the inputs use the platform modifier form.
+5. Boot box. The records describe an empty 25x25 box at the window centre, removed on boot done. No tick is recorded anywhere; Draft B's "ticking" has no source. The test asserts unchecked and does not assert a tick.
+6. Boot veil and box in the egui build. Presence is unconfirmed (critic). The parts are marked optional: true, and the boot tests stay. If the egui build keeps no veil, remove the two boot tests, the two parts and the boot prop.
+7. F15-039 (remembering the list) is uncertain in the record. The remembered tests are kept and marked; the trigger is inferred from the list tabs and the project pill.
+8. F14-040 (tray left click) conflicts between code and docs. The tray icon is OS-drawn, so it is left out.
+9. The tooltip wording is unverified (critic), so the regex was loosened to ^Taskscape.+capture$. The exact text is not asserted.
+10. The "first list" fallback is uncertain (project or all projects), so the test asserts only the remembered project in the target.
+
+OWNERSHIP
+- This contract owns the bar's box (captureBar), the title (captureTitle) and the target (captureTarget) only for shell outcomes: visibility, focus on summon, submit routing, and target text and press. The card contract owns their behaviour. Part ids are per screen, so the two contracts do not clash on accessibility ids.
+
+DROPS AND MERGES (all from the critique or the duplicate rule)
+From Draft A:
+- Test "boot veil and box cover the window before the first paint" (identical props to the next test) rewritten to boot: held, which is harness-controlled.
+- Test "boot veil and box are removed" merged with "nothing remembered opens Home > Errands" into one test, since both read the same default state.
+- Test "Tray Open Taskscape shows and focuses" renamed. Focus is not assertable on a generic part.
+- The new_task action is no longer asserted on the main-focused toggle (critic: not confirmed). Only the count is asserted.
+- The fallback test no longer asserts the list "Website" (critic: uncertain).
+- The menuList and menuEdit aria comments changed from "menu" to "menuitem". Role stays button.
+- The header ownership list was narrowed to the items actually left out (critic).
+From Draft B:
+- Props: mainFocused became focus (same meaning, clearer). captureBar became barState. The boot stalled value was dropped.
+- Events: menuCommand became shellCommand. The hotkey event was dropped: it proved only routing, and the outcome tests replace it. The captureBar event was dropped: visibility is read from the part. The mainFocus event was dropped with its test (F15-027, no visible effect).
+- Parts: listMenu, editMenu, importListItem and exportListItem became menuList, menuEdit, menuImportList and menuExportList. openListTitle was dropped: it is an assumed heading (critic), and openListLabel carries the same text. menuBar and appMenu are kept; appMenu is macOS-only.
+- Tests: the menu-bar test was split (Edit and List kept, App moved to a macOS-only test). The List-menu label test was merged into the List-menu test as name expectations. The two restore tests were merged into one: they run the same path, and the Spring launch values are kept. The "after boot" test was merged into the boot-done test. The stalled-frontend test was dropped (no frontend). The main-focus-reported test was dropped. The toggle-with-main-focused test was merged into the main-focused toggle test. The "focus other, toggle, summons" test was merged into the title-focus test. The "attach screenshot with another app focused" test was merged into the full-screen test. The "toggle while bar focused goes to bar" test was merged into the submit-instead-of-toggle test. The next-list and next-project tests were kept with openListLabel in place of openListTitle, and the remembered event carries no partial last.
+Added from the critique: the unbound toggle test (with captureHotkey unbound, the chord does not show the bar), the draft-cleared-after-submit test, and the toggle-hides-a-shown-bar test (barState shown).
+
+LEFT OUT, WITH REASONS
+- OS only: bar placement at the cursor and flips (F14-016..019); click-away (F14-024); Spaces, NSPanel, activation (F14-026..028); Dock icon (F14-030); tray icon left click (F14-040, conflict); pointer hidden, bar does not move, drag (F14-052, F14-058, F14-060; drag only on sliders); traffic lights (F15-037; decision 2); Low Power Mode (F15-038; a macOS power state that cannot be triggered); embedded tray packaging (F15-046); Screen Recording permission.
+- Needs a real screen grab (OS): F14-006, F14-007, F14-009, F14-010, F14-011, F14-012, F14-013, F14-014; the reveal after a finished region selection; the dim to 25%.
+- Settings screen: F14-008 (capture mode setting), F14-035 (rebuild after settings close), F14-036 (re-register with rollback), F14-037 (modifier mapping; covered by the named inputs), F14-038 (plus key refused), F14-049 (startup registration; seen only through the tooltip test).
+- Two-process plumbing replaced by decision 21: F14-048 (tray HTTP endpoint), F14-062 (fallback after a failed POST), F14-063 (launch by bundle id when nothing answers), F15-047 (local data server), F15-050 (capture after reopen; main closed means quit, F15-026, which is covered by the closeWindow test).
+- Tray menu items F14-041, F14-042, F15-031, F15-032 are not left out: they are covered by the trayOpen and trayQuit handlers. Draft B's reason (HTTP to :7420) is out of date under decision 21.
+- Files and other screens: F15-004 and F15-005 (OS file dialogs; file contents not readable through parts); F15-006 (Markdown copy, main list screen); F15-048 (hidden-until-measured panels, Settings); F15-049 (800x600 used as the viewport).
+- Card internals (capture-bar card contract): F13-001..063 except the shell-facing items above; F14-021..023 except the shell outcome of the draft surviving a dismissal and being cleared after a submit; F14-031..032 (card opacity and height); F14-034 (hotkey hints); F14-045 (target list selection); F14-053..057 (notes and tab order); F14-059 (dividers).
+- Covered only indirectly: F14-033 (dark mode, via colorSchemes); F15-034 and F15-036 (colours, via screenshots); F14-050 (target refresh on open, via the target test); F14-051 (title autofocus, via the focus expectation); F14-043 and F13-017 (captureTarget).
+- Timing not asserted: the 180 ms fade and the 4 s fallback (F15-033).
+
+VIEWPORT AND MASK
+- Viewport 800x600 is the main window. The bar is a separate OS window; its screenshot compares only its own box, and its size belongs to the card. Menu parts are masked because the OS draws the menu bar.
+
+UNVERIFIED ITEMS TO CHECK BEFORE MERGE
+- The F15 records and the source line citations in both drafts were not checked.
+- Whether the harness can read parts in a separate OS window (the capture bar). The bar tests depend on it.
+- Whether the egui build keeps a boot veil and box.
+- Whether optional: true is the format's way to mark parts some targets lack (the critic's suggestion).

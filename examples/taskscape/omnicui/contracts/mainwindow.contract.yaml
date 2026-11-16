@@ -36,14 +36,14 @@ parts:
   splitView: { role: button }   # name "Split view", or "Close split view" while split is on; selected while split is on
   swapPanes: { role: button }   # name "Swap panes"; split only
   previewToggle: { role: button }   # name contains "Hide preview panel" (shown) or "Show preview panel" (hidden); selected while the aside shows the preview
-  commandButton: { role: button }   # search-and-commands button in the title bar (decision 7); name not in the sources
+  commandButton: { role: button, optional: true }   # search-and-commands button in the title bar (decision 7); name not in the sources
   trash: { role: button }   # title-bar Trash icon button (decision 1); name not in the sources, so not asserted
   settingsButton: { role: button }   # title-bar Settings button; name contains "Settings"
-  accountButton: { role: button }   # account button ending the title bar (web.md); name and text not in the sources
-  accountMenu: { role: generic }   # aria: menu
-  accountEmail: { role: generic }   # the email line of the account menu (web.md); presence only
-  accountSettings: { role: button }   # aria: menuitem; text "Settings"
-  accountSignOut: { role: button }   # aria: menuitem; text "Sign out"
+  accountButton: { role: button, optional: true }   # account button ending the title bar (web.md); name and text not in the sources
+  accountMenu: { role: generic, optional: true }   # aria: menu
+  accountEmail: { role: generic, optional: true }   # the email line of the account menu (web.md); presence only
+  accountSettings: { role: button, optional: true }   # aria: menuitem; text "Settings"
+  accountSignOut: { role: button, optional: true }   # aria: menuitem; text "Sign out"
   # Left task pane
   taskPane: { role: generic }
   searchField: { role: textbox }   # name and placeholder "Search Errands"
@@ -86,7 +86,7 @@ parts:
   previewDivider: { role: slider }   # aria: separator; resizer on the aside edge; value = aside width in px, 280 to 420
   trashPane: { role: generic }   # TrashPane in the aside
   trashHeading: { role: heading }   # trash pane heading
-  trashClose: { role: button }   # close control of the trash pane; name not in the sources
+  trashClose: { role: button, optional: true }   # close control of the trash pane; name not in the sources
   filterPanel: { role: generic }   # FilterPanel in the aside
   filterHeading: { role: heading }   # filter panel heading
   # Split
@@ -118,7 +118,7 @@ parts:
   # Settings (web modal over the window, 640x520 in web.md)
   settingsDialog: { role: generic }   # aria: dialog
   settingsHeading: { role: heading }   # Settings heading
-  settingsClose: { role: button }   # close control of the settings dialog; name not in the sources
+  settingsClose: { role: button, optional: true }   # close control of the settings dialog; name not in the sources
 
 tests:
   # Rest and layout
@@ -135,10 +135,8 @@ tests:
       - { part: newList, name: "New list", visible: true }
       - { part: splitView, name: "Split view", selected: false }
       - { part: previewToggle, name: { contains: "Hide preview panel" }, selected: true }
-      - { part: commandButton, visible: true }
       - { part: trash, visible: true }
       - { part: settingsButton, visible: true }
-      - { part: accountButton, visible: true }
       - { part: taskPane, visible: true }
       - { part: searchField, name: "Search Errands" }
       - { part: newTask, name: "New task", visible: true }
@@ -383,10 +381,10 @@ tests:
       - { part: selectionCount, text: { matches: "^2( selected)?$" } }
       - { part: multiInspector, visible: true }
 
-  - name: "Control+A selects every task in the pane"
+  - name: "the select-all chord selects every task in the pane"
     steps:
       - { action: focus, part: rowTitle }
-      - { action: key, part: rowTitle, key: Control+KeyA }
+      - { input: selectAll, part: rowTitle }
     expect:
       - { part: rowSelect, checked: true }
       - { part: rowKeysSelect, checked: true }
@@ -444,14 +442,14 @@ tests:
     expect:
       - { part: rowTitle, text: "Pick up prescription" }
 
-  - name: "Control+Z restores the deleted task"
+  - name: "the undo chord restores the deleted task"
     steps:
       - { action: press, part: rowTitle }
       - { action: focus, part: rowTitle }
       - { action: key, part: rowTitle, key: Delete }
       - { action: press, part: dialogMoveToTrash }
       - { action: focus, part: rowTitle }
-      - { action: key, part: rowTitle, key: Control+KeyZ }
+      - { input: undo, part: rowTitle }
     expect:
       - { part: rowTitle, text: "Pick up prescription" }
 
@@ -476,6 +474,7 @@ tests:
       - { part: doneCount, text: { matches: "(?i)^1 ?/ ?4 done$" } }   # 4 tasks in the subtree, 1 of them done (Oat milk)
 
   - name: "the trash button opens the trash in the aside"
+    only: [web]
     steps:
       - { action: press, part: trash }
     expect:
@@ -485,7 +484,16 @@ tests:
       - { part: previewPanel, visible: false }
       - { part: previewEmpty, visible: false }
 
+  - name: "the trash button opens the Trash window"
+    steps:
+      - { action: press, part: trash }
+    expect:
+      - { part: trashPane, visible: true }
+      - { part: trashHeading, visible: true }
+      - { part: trashPane, text: { contains: "Print the old flyer" } }   # seeded Trash item (web.md)
+
   - name: "closing the trash brings the preview back"
+    only: [web]
     steps:
       - { action: press, part: trash }
       - { action: press, part: trashClose }
@@ -511,7 +519,7 @@ tests:
       - { action: focus, part: rowBike }
       - { action: key, part: rowBike, key: F2 }
       - { action: focus, part: rowTitleEdit }
-      - { action: key, part: rowTitleEdit, key: Control+KeyA }   # selects the current title so type replaces it (assumed)
+      - { input: selectAll, part: rowTitleEdit }   # selects the current title so type replaces it (assumed)
       - { action: type, part: rowTitleEdit, text: "Book bike service today" }
       - { action: key, part: rowTitleEdit, key: Enter }   # commit key assumed; the sources do not name it
     expect:
@@ -568,20 +576,20 @@ tests:
       - { part: previewPanel, visible: true }
       - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
 
-  - name: "Alt+KeyN starts a new task draft"
+  - name: "the new task chord starts a new task draft"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+KeyN }
+      - { input: newTask, part: listTab }
     expect:
       - { part: draftInspector, visible: true }
       - { part: previewEmpty, visible: false }
       - { part: doneCount, text: { matches: "(?i)^2 ?/ ?8 done$" } }
 
   # Search and arrows
-  - name: "Slash focuses the search field"
+  - name: "the search chord focuses the search field"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Slash }
+      - { input: search, part: listTab }
     expect:
       - { part: searchField, focused: true }
 
@@ -680,6 +688,7 @@ tests:
       - { part: previewEmpty, visible: true }
 
   - name: "opening the filter panel closes the trash"
+    only: [web]
     steps:
       - { action: press, part: trash }
       - { action: press, part: sortFilter }
@@ -688,6 +697,7 @@ tests:
       - { part: trashPane, visible: false }
 
   - name: "opening the trash closes the filter panel"
+    only: [web]
     steps:
       - { action: press, part: sortFilter }
       - { action: press, part: trash }
@@ -697,6 +707,7 @@ tests:
 
   # Account menu and Settings (web: account menu; Settings is a modal dialog, web.md)
   - name: "account menu lists Settings, Sign out and the account email"
+    only: [web]
     steps:
       - { action: press, part: accountButton }
     expect:
@@ -706,6 +717,7 @@ tests:
       - { part: accountEmail, visible: true }
 
   - name: "Escape closes the account menu"
+    only: [web]
     steps:
       - { action: press, part: accountButton }
       - { action: focus, part: accountSettings }
@@ -714,6 +726,7 @@ tests:
       - { part: accountSignOut, visible: false }
 
   - name: "account menu Settings opens the settings modal"
+    only: [web]
     steps:
       - { action: press, part: accountButton }
       - { action: press, part: accountSettings }
@@ -722,6 +735,7 @@ tests:
       - { part: settingsHeading, visible: true }
 
   - name: "the title-bar Settings button opens the settings dialog"
+    only: [web]
     steps:
       - { action: press, part: settingsButton }
     expect:
@@ -729,7 +743,15 @@ tests:
       - { part: settingsHeading, visible: true }
       - { part: settingsClose, visible: true }
 
+  - name: "the title-bar Settings button opens the Settings window"
+    steps:
+      - { action: press, part: settingsButton }
+    expect:
+      - { part: settingsDialog, visible: true }
+      - { part: settingsHeading, visible: true }
+
   - name: "Escape closes the settings dialog"
+    only: [web]
     steps:
       - { action: press, part: settingsButton }
       - { action: focus, part: settingsClose }
@@ -738,31 +760,41 @@ tests:
       - { part: settingsDialog, visible: false }
 
   - name: "Control+Comma opens the settings dialog"
+    only: [web]
     steps:
       - { action: focus, part: listTab }
       - { action: key, part: listTab, key: Control+Comma }   # F08-004; the web chord is assumed to keep the Mod key
     expect:
       - { part: settingsDialog, visible: true }
 
+  - name: "the Settings chord opens the Settings window"
+    steps:
+      - { action: focus, part: listTab }
+      - { input: openSettings, part: listTab }
+    expect:
+      - { part: settingsDialog, visible: true }
+
   # Command palette (decision 7)
   - name: "title-bar command button opens the palette with focus in the input"
+    only: [web]
     steps:
       - { action: press, part: commandButton }
     expect:
       - { part: commandPalette, visible: true }
       - { part: commandInput, focused: true }
 
-  - name: "Control+KeyK opens the command palette"
+  - name: "the palette chord opens the command palette"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Control+KeyK }
+      - { input: commandPalette, part: listTab }
     expect:
       - { part: commandPalette, visible: true }
       - { part: commandInput, focused: true }
 
   - name: "Escape closes the command palette"
     steps:
-      - { action: press, part: commandButton }
+      - { action: focus, part: listTab }
+      - { input: commandPalette, part: listTab }
       - { action: focus, part: commandInput }
       - { action: key, part: commandInput, key: Escape }
     expect:
@@ -771,7 +803,8 @@ tests:
 
   - name: "palette command Open Trash opens the trash"
     steps:
-      - { action: press, part: commandButton }
+      - { action: focus, part: listTab }
+      - { input: commandPalette, part: listTab }
       - { action: type, part: commandInput, text: "Open Trash" }
       - { action: press, part: paletteOpenTrash }
     expect:
@@ -780,7 +813,8 @@ tests:
 
   - name: "the palette filters its commands as you type"
     steps:
-      - { action: press, part: commandButton }
+      - { action: focus, part: listTab }
+      - { input: commandPalette, part: listTab }
       - { action: type, part: commandInput, text: "zzzz" }
     expect:
       - { part: paletteOpenTrash, visible: false }
@@ -824,10 +858,10 @@ tests:
       - { part: dialog, visible: false }
       - { part: listTabNew, text: "Hardware", visible: true }
 
-  - name: "Alt+Shift+KeyN opens the new list sheet"
+  - name: "the new list chord opens the new list sheet"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+Shift+KeyN }
+      - { input: newList, part: listTab }
     expect:
       - { part: dialog, visible: true }
       - { part: dialogHeading, visible: true }
@@ -837,7 +871,7 @@ tests:
     steps:
       - { action: press, part: newList }
       - { action: focus, part: dialogCancel }
-      - { action: key, part: dialogCancel, key: Alt+KeyN }
+      - { input: newTask, part: dialogCancel }
     expect:
       - { part: draftInspector, visible: false }
       - { part: dialogName, visible: true }
@@ -958,9 +992,9 @@ tests:
   - name: "project keys step through the projects and wrap"
     steps:
       - { action: focus, part: projectSwitcher }
-      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketRight }   # Home to Spring launch
-      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketRight }   # wraps to Home
-      - { action: key, part: projectSwitcher, key: Alt+Shift+BracketLeft }    # Home to Spring launch
+      - { input: nextProject, part: projectSwitcher }   # Home to Spring launch
+      - { input: nextProject, part: projectSwitcher }   # wraps to Home
+      - { input: prevProject, part: projectSwitcher }    # Home to Spring launch
     expect:
       - { part: projectSwitcher, text: { contains: "Spring launch" } }   # a missed wrap would end on Home
 
@@ -984,35 +1018,35 @@ tests:
       - { part: rowTitle, text: "Finish the novel on the nightstand" }
       - { part: searchField, name: "Search Reading" }
 
-  - name: "Alt+Shift+ArrowRight steps through the list tabs and wraps"
+  - name: "the next-tab chord steps through the list tabs and wraps"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
-      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
-      - { action: key, part: listTab, key: Alt+Shift+ArrowRight }
+      - { input: nextList, part: listTab }
+      - { input: nextList, part: listTab }
+      - { input: nextList, part: listTab }
     expect:
       - { part: listTab, selected: true }
       - { part: listTabGarden, selected: false }
 
-  - name: "Alt+Shift+ArrowLeft wraps from Errands to Garden"
+  - name: "the previous-tab chord wraps from Errands to Garden"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+Shift+ArrowLeft }
+      - { input: prevList, part: listTab }
     expect:
       - { part: listTabGarden, selected: true }
 
-  - name: "Alt+Digit2 selects the second list"
+  - name: "the list 2 chord selects the second list"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+Digit2 }
+      - { input: switchList2, part: listTab }
     expect:
       - { part: listTabReading, selected: true }
       - { part: rowTitle, text: "Finish the novel on the nightstand" }
 
-  - name: "Alt+Digit3 selects the third list"
+  - name: "the list 3 chord selects the third list"
     steps:
       - { action: focus, part: listTab }
-      - { action: key, part: listTab, key: Alt+Digit3 }
+      - { input: switchList3, part: listTab }
     expect:
       - { part: listTabGarden, selected: true }
 

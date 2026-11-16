@@ -1,0 +1,781 @@
+# Contract for app.confirmwindows (desktop only). Each confirmation and prompt sheet is its own OS window over its parent window.
+# No scrim, no backdrop, no press-outside dismissal (notes-sheets [desktop]). The web dialogs are app.sheets.
+# Decisions 2, 8, 10, 12, 13 and 21 apply. The OS draws every window control, so close, minimise and zoom are never tested.
+id: "app.confirmwindows"
+
+props:
+  # dataset: the demo data the parent main window is seeded with before the window opens.
+  # Allowed: standard | empty | nolists | long (web.md). Default standard.
+  dataset: { type: string, default: standard }
+  # open: the one window the harness opens over its parent window. The parent is mounted, so the changed event can be read.
+  # Allowed (camelCase): newList | newProject | renameList | renameProject | deleteList | deleteProject | moveToTrash | emptyTrash | deletePermanently.
+  # Targets when target is "": renameList and deleteList use list Reading (standard) or Inbox (empty);
+  # renameProject and deleteProject use the active project Home; moveToTrash uses task "Book bike service" in Errands;
+  # emptyTrash and deletePermanently use the Trash rows of standard. deletePermanently selects the two Trash rows
+  # "Print the old flyer" and "Call the printer about samples" (names from one draft, not re-checked against the data).
+  open: { type: string, default: newList }
+  # count: moveToTrash and deletePermanently only. How many items the window is about. 1 is the single-task copy.
+  # deletePermanently is opened only for 2 or more; the harness rejects a lower count (decision 12: one row is purged at once, no window).
+  # moveToTrash with count 3 selects the first three open tasks of Errands, starting with "Book bike service".
+  count: { type: integer, default: 1 }
+  # target: the exact name of the list, project or task the window acts on. "" uses the reference target above.
+  # Used by renameList, deleteList, renameProject, deleteProject and moveToTrash only.
+  target: { type: string, default: "" }
+  # initialName: newList and newProject only. The text the name field starts with, selected. The harness sets it before the window shows.
+  # "" leaves the app's own rolled name in place. Not used by renameList or renameProject (their field starts with the current name).
+  # This is the only starting-text seam in this contract. If the app has no such seam, the parent must add one.
+  initialName: { type: string, default: "" }
+
+events:
+  # answered: how the window resolved. action: accept | dismiss | instead (instead is only checked for visibility, see notes).
+  # text: the trimmed name for prompts, "" for confirmations and dismiss. id: the spec's instead id on instead, "" otherwise (not asserted here).
+  answered: { action: { type: string }, text: { type: string }, id: { type: string } }
+  # changed: the data change an accept made in the parent's data, observed through the mounted parent.
+  # kind: list-created | project-created | list-renamed | project-renamed | list-deleted | project-deleted | task-trashed | trash-emptied | purged.
+  # name: the list, project or task name. Exceptions with no single name: "Trash" for trash-emptied and "2 items" for purged (named by this contract, not by the sources).
+  changed: { kind: { type: string }, name: { type: string } }
+
+parts:
+  badge: { role: generic }                      # aria: none (decorative glyph badge, aria-hidden). Tone danger on confirmations, accent on prompts. Checked by screenshot only.
+  card: { role: generic }                       # aria: dialog (the window's card, named by the headline). Role dialog is outside the role set, mapped to generic.
+  headline: { role: heading }                   # aria: h2 (the dialog's accessible name)
+  detail: { role: generic }                     # aria: p. Required on deleteList, deleteProject and moveToTrash; expected on emptyTrash and deletePermanently (copy not confirmed). Prompts have no detail and no test reads it.
+  field: { role: textbox, optional: true }      # the name input; absent on the confirmations
+  roll: { role: button, optional: true }        # IconButton "Roll another name"; newList, newProject, renameList. Not in the tab order.
+  instead: { role: button, optional: true }     # KeyAction "Import JSON…"; newList only
+  footer: { role: generic }                     # the action row under a 1px divider
+  cancel: { role: button }                      # KeyAction "Cancel"; focused on open for every confirmation
+  accept: { role: button }                      # the accept verb, named per window
+
+viewports:
+  # Not a run list. The harness sizes each window from its open value. Prompts (newList, newProject, renameList, renameProject): 364 x 141.
+  # Confirmations (deleteList, deleteProject, moveToTrash, emptyTrash, deletePermanently): 364 x 122. Only deleteList and the prompts are measured in the inventory.
+  - { width: 364, height: 141 }
+  - { width: 364, height: 122 }
+
+# Only light is recorded. Dark appearance was not recorded (F09-092).
+colorSchemes: [light]
+
+# Off on purpose: keyboard true would make Enter press every button, which decision 10 forbids on the danger buttons.
+# Enter and Space are tested per button below.
+keyboard: false
+
+tests:
+  # --- New list (prompt) ---
+  - name: "New list opens focused on its name with Create enabled"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps: []   # the window opens at mount; no step starts it
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "New list" }
+      - { part: field, text: "Golden Oasis" }
+      - { part: headline, text: "New list" }
+      - { part: footer, visible: true }
+      - { part: instead, name: "Import JSON…" }
+      - { part: roll, name: "Roll another name" }
+      - { part: cancel, name: "Cancel" }
+      - { part: accept, name: "Create" }
+      - { part: accept, disabled: false }
+    screenshot: true
+
+  - name: "New list Enter creates the list with the typed name"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: type, part: field, text: "Trip ideas" }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Trip ideas" } }
+      - { event: changed, times: 1, last: { kind: list-created, name: "Trip ideas" } }
+
+  - name: "New list Enter accepts the trimmed typed name"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: type, part: field, text: "  Groceries  " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Groceries" } }
+
+  - name: "New list Create button accepts the trimmed name"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: type, part: field, text: "  Trip  " }
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Trip" } }
+      - { event: changed, times: 1, last: { kind: list-created, name: "Trip" } }
+
+  - name: "New list with an empty name disables Create and Enter only refocuses the field"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { input: selectAll, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { part: field, name: "New list", text: "" }
+      - { part: accept, disabled: true }
+      - { part: field, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+    screenshot: true   # shows the placeholder "New list" in the empty field
+
+  - name: "New list with a spaces-only name counts as empty"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { input: selectAll, part: field }
+      - { action: type, part: field, text: "   " }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { part: accept, disabled: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "New list Roll another name fills the field and keeps focus"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: press, part: roll }
+    expect:
+      - { part: field, focused: true }
+      - { part: field, text: { matches: '\S' } }   # the rolled value is not known; only non-empty is asserted
+      - { event: changed, times: 0 }
+
+  - name: "New list Cancel closes with nothing created"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: type, part: field, text: "Something" }
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "New list Escape closes with nothing created"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: type, part: field, text: "Something" }
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "New list typing after a roll replaces the rolled name"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "Golden Oasis" }
+    steps:
+      - { action: press, part: roll }
+      - { input: selectAll, part: field }
+      - { action: type, part: field, text: "Q" }
+    expect:
+      - { part: field, text: "Q" }
+      - { part: field, focused: true }
+
+  - name: "A new list starts with a rolled list name"
+    only: [desktop]
+    props: { dataset: standard, open: newList, initialName: "" }
+    expect:
+      - { part: field, text: { matches: '^[A-Z][a-z]+( [A-Z][a-z]+)?$' } }   # pattern inferred from sample names, see notes
+      - { part: field, focused: true }
+
+  # --- New project (prompt) ---
+  - name: "New project opens focused on its name with Create enabled"
+    only: [desktop]
+    props: { dataset: standard, open: newProject, initialName: "Nereid" }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "New project" }
+      - { part: field, text: "Nereid" }
+      - { part: headline, text: "New project" }
+      - { part: roll, name: "Roll another name" }
+      - { part: instead, visible: false }
+      - { part: cancel, name: "Cancel" }
+      - { part: accept, name: "Create" }
+      - { part: accept, disabled: false }
+    screenshot: true
+
+  - name: "A new project starts with a rolled project name"
+    only: [desktop]
+    props: { dataset: standard, open: newProject, initialName: "" }
+    expect:
+      - { part: field, text: { matches: '^[A-Z][a-z]+( [A-Z][a-z]+)?$' } }   # pattern inferred from sample names, see notes
+      - { part: field, focused: true }
+
+  - name: "New project Enter creates the project with the typed name"
+    only: [desktop]
+    props: { dataset: standard, open: newProject, initialName: "Nereid" }
+    steps:
+      - { action: type, part: field, text: "Garden 2" }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Garden 2" } }
+      - { event: changed, times: 1, last: { kind: project-created, name: "Garden 2" } }
+
+  - name: "New project Roll another name fills the field and keeps focus"
+    only: [desktop]
+    props: { dataset: standard, open: newProject, initialName: "Nereid" }
+    steps:
+      - { action: press, part: roll }
+    expect:
+      - { part: field, focused: true }
+      - { part: field, text: { matches: '\S' } }   # the rolled value is not known; only non-empty is asserted
+      - { event: changed, times: 0 }
+
+  - name: "New project Cancel closes with nothing created"
+    only: [desktop]
+    props: { dataset: standard, open: newProject, initialName: "Nereid" }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  # --- Rename list (prompt) ---
+  - name: "Rename list opens prefilled with the list name"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "Rename list" }
+      - { part: field, text: "Reading" }
+      - { part: headline, text: "Rename list" }
+      - { part: roll, name: "Roll another name" }
+      - { part: instead, visible: false }
+      - { part: cancel, name: "Cancel" }
+      - { part: accept, name: "Rename" }
+    screenshot: true
+
+  - name: "Rename list Tab from the name goes to Cancel and skips Roll"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: key, part: field, key: Tab }
+    expect:
+      - { part: cancel, focused: true }
+
+  - name: "Rename list Tab cycles inside the window and typing then replaces the name"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: key, part: field, key: Tab }
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Tab }
+      - { action: type, part: field, text: "Notes" }
+    expect:
+      - { part: field, text: "Notes" }
+      - { part: field, focused: true }
+
+  - name: "Rename list typing on open replaces the whole current list name"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: type, part: field, text: "Books" }
+    expect:
+      - { part: field, text: "Books" }
+      - { part: field, focused: true }
+
+  - name: "Rename list Enter renames the list"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: type, part: field, text: "Reading 2" }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Reading 2" } }
+      - { event: changed, times: 1, last: { kind: list-renamed, name: "Reading 2" } }
+
+  - name: "Rename list Roll another name fills the field and keeps focus"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: press, part: roll }
+    expect:
+      - { part: field, focused: true }
+      - { part: field, text: { matches: '\S' } }   # the rolled value is not known; only non-empty is asserted
+      - { event: changed, times: 0 }
+
+  - name: "Rename list Cancel closes and keeps the name"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Rename list Escape closes and keeps the name"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Rename list with a cleared name disables Rename and Enter only refocuses the field"
+    only: [desktop]
+    props: { dataset: standard, open: renameList }
+    steps:
+      - { input: selectAll, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { part: accept, disabled: true }
+      - { part: field, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  # --- Rename project (prompt) ---
+  - name: "Rename project opens prefilled with the project name"
+    only: [desktop]
+    props: { dataset: standard, open: renameProject }
+    steps: []
+    expect:
+      - { part: field, focused: true }
+      - { part: field, name: "Rename project" }
+      - { part: field, text: "Home" }
+      - { part: headline, text: "Rename project" }
+      - { part: instead, visible: false }
+      - { part: cancel, name: "Cancel" }
+      - { part: accept, name: "Rename" }
+    screenshot: true   # no reference capture for this window; baseline only. No roll is asserted (open question, see notes).
+
+  - name: "Rename project Enter renames the project"
+    only: [desktop]
+    props: { dataset: standard, open: renameProject }
+    steps:
+      - { action: type, part: field, text: "Work" }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Work" } }
+      - { event: changed, times: 1, last: { kind: project-renamed, name: "Work" } }
+
+  - name: "Rename project accept with the unchanged name returns Home"
+    only: [desktop]
+    props: { dataset: standard, open: renameProject }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "Home" } }
+    # The no-op rule for an unchanged name is not confirmed by the sources, so no changed check is made.
+
+  - name: "Rename project with an empty name disables Rename"
+    only: [desktop]
+    props: { dataset: standard, open: renameProject }
+    steps:
+      - { input: selectAll, part: field }
+      - { action: key, part: field, key: Backspace }
+      - { action: key, part: field, key: Enter }
+    expect:
+      - { part: accept, disabled: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Rename project Cancel closes and keeps the project name"
+    only: [desktop]
+    props: { dataset: standard, open: renameProject }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  # --- Delete list (destructive confirmation) ---
+  - name: "Delete list opens with Cancel focused and the task count"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Delete “Reading”?" }
+      - { part: detail, text: "Its 3 tasks go with it. No undo." }
+      - { part: accept, name: "Delete list" }
+      - { part: field, visible: false }
+    screenshot: { mask: [badge, cancel] }   # reference cancel is 100 px and the decided width is 84 px; the reference badge tone is not the decided danger tone
+
+  - name: "Delete list Enter on the focused Cancel cancels and deletes nothing"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete list Enter on the focused Delete list button does nothing"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Delete list Space on the focused Delete list button deletes the list"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: list-deleted, name: "Reading" } }
+
+  - name: "Delete list click on Delete list deletes the list"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: list-deleted, name: "Reading" } }
+
+  - name: "Delete list Cancel click closes and keeps the list"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete list Escape closes and keeps the list"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete list Tab from Delete list wraps to Cancel inside the window"
+    only: [desktop]
+    props: { dataset: standard, open: deleteList }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Tab }
+    expect:
+      - { part: cancel, focused: true }
+      - { part: accept, focused: false }
+      - { part: card, visible: true }
+
+  - name: "Delete list on an empty list says the list is empty"
+    only: [desktop]
+    props: { dataset: empty, open: deleteList }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Delete “Inbox”?" }
+      - { part: detail, text: "The list is empty. No undo." }
+      - { part: accept, name: "Delete list" }
+
+  # --- Delete project (destructive confirmation) ---
+  - name: "Delete project opens with Cancel focused and the list and task counts"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Delete “Home”?" }
+      - { part: detail, text: { matches: '^Its 3 lists and \d+ tasks go with it\. No undo\.$' } }   # task count not pinned: the sources do not say whether subtasks or trashed items count
+      - { part: accept, name: "Delete project" }
+    screenshot: true   # no reference capture for this window; baseline only
+
+  - name: "Delete project with one list and no tasks uses the singular"
+    only: [desktop]
+    props: { dataset: empty, open: deleteProject }
+    steps: []
+    expect:
+      - { part: detail, text: "Its 1 list and 0 tasks go with it. No undo." }
+
+  - name: "Delete project with no lists reads zero lists and zero tasks"
+    only: [desktop]
+    props: { dataset: nolists, open: deleteProject }
+    steps: []
+    expect:
+      - { part: detail, text: "Its 0 lists and 0 tasks go with it. No undo." }
+
+  - name: "Delete project with the Spring launch project names its two lists"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject, target: "Spring launch" }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Delete “Spring launch”?" }
+      - { part: detail, text: { matches: '^Its 2 lists and \d+ tasks go with it\. No undo\.$' } }   # project name and list count come from one draft, not re-checked
+
+  - name: "Delete project Enter on the focused Cancel cancels and deletes nothing"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete project Enter on the focused Delete project button does nothing"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Delete project Space on the focused Delete project button deletes the project"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: project-deleted, name: "Home" } }
+
+  - name: "Delete project click on Delete project deletes the project"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: project-deleted, name: "Home" } }
+
+  - name: "Delete project Cancel click closes and keeps the project"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: press, part: cancel }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete project Escape closes and keeps the project"
+    only: [desktop]
+    props: { dataset: standard, open: deleteProject }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  # --- Move to Trash (destructive confirmation, single task) ---
+  - name: "Move to Trash opens with Cancel focused and names the task and the undo"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Move to Trash?" }
+      - { part: detail, text: { default: "“Book bike service” — Ctrl Z puts it back.", macos: "“Book bike service” — ⌘Z puts it back." }, why: "Key labels are text: Command Z on macOS, Control Z on Windows and Linux. Desktop keeps the undo hint (notes-sheets)." }
+      - { part: accept, name: "Move to Trash" }
+    screenshot: { mask: [badge, accept] }   # reference shows the accent tone and the label "Move"; decision 10 and the notes change them to danger and "Move to Trash"
+
+  - name: "Move to Trash Enter on the focused Cancel cancels and the task stays"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Move to Trash Enter on the focused Move to Trash button does nothing"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Move to Trash Space on the focused Move to Trash button moves the task"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: task-trashed, name: "Book bike service" } }
+
+  - name: "Move to Trash click on Move to Trash moves the task"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: task-trashed, name: "Book bike service" } }
+
+  - name: "Move to Trash Escape closes and the task stays"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 1 }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Move to Trash for several tasks keeps Cancel focused and Enter cancels"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, count: 3 }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { part: cancel, focused: true }
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+    # The bulk copy is not in the sources, so only the controls are checked.
+
+  - name: "Move to Trash for a task with subtasks names the subtask count"
+    only: [desktop]
+    props: { dataset: standard, open: moveToTrash, target: "Buy groceries for the week" }
+    steps: []
+    expect:
+      - { part: headline, text: "Move to Trash?" }
+      - { part: detail, text: { contains: "and its 3 subtask" } }   # the source template reads "subtask(s)"; only the stable part is checked
+      - { part: accept, name: "Move to Trash" }
+
+  # --- Empty Trash (destructive confirmation) ---
+  - name: "Empty Trash opens with Cancel focused and the copy"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: headline, text: "Empty Trash?" }   # copy from area-07 as cited by one draft; not confirmed, see notes
+      - { part: detail, text: "2 tasks deleted for good. No undo." }   # same status as the headline
+      - { part: card, text: { contains: "2" } }   # weak placeholder that the Trash holds two items
+      - { part: accept, name: "Empty Trash" }
+    screenshot: true   # no reference capture for this window; baseline only
+
+  - name: "Empty Trash Enter on the focused Cancel cancels and the Trash keeps its items"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Empty Trash Enter on the focused Empty Trash button does nothing"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Empty Trash Space on the focused Empty Trash button empties the Trash"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: trash-emptied, name: "Trash" } }
+
+  - name: "Empty Trash click on Empty Trash empties the Trash"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: trash-emptied, name: "Trash" } }
+
+  - name: "Empty Trash Escape closes and the Trash keeps its items"
+    only: [desktop]
+    props: { dataset: standard, open: emptyTrash }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  # --- Delete permanently, two rows (destructive confirmation; copy not confirmed) ---
+  - name: "Delete permanently for two rows opens with Cancel focused and names how many"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps: []
+    expect:
+      - { part: cancel, focused: true }
+      - { part: detail, text: { matches: '\b2\b' } }   # weak placeholder: no source gives this copy
+      - { part: card, text: { contains: "2" } }   # weak placeholder
+      - { part: accept, name: "Delete permanently" }   # inferred from decision 10, not confirmed by a source
+    screenshot: true   # no reference capture for this window; baseline only
+
+  - name: "Delete permanently Enter on the focused Cancel cancels and the rows stay in the Trash"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps:
+      - { action: key, part: cancel, key: Enter }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+  - name: "Delete permanently Enter on the focused Delete permanently button does nothing"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Enter }
+    expect:
+      - { part: accept, focused: true }
+      - { event: answered, times: 0 }
+      - { event: changed, times: 0 }
+
+  - name: "Delete permanently Space on the focused Delete permanently button purges the rows"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps:
+      - { action: key, part: cancel, key: Tab }
+      - { action: key, part: accept, key: Space }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: purged, name: "2 items" } }
+
+  - name: "Delete permanently click on Delete permanently purges the rows"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps:
+      - { action: press, part: accept }
+    expect:
+      - { event: answered, times: 1, last: { action: accept, text: "" } }
+      - { event: changed, times: 1, last: { kind: purged, name: "2 items" } }
+
+  - name: "Delete permanently Escape closes and the rows stay in the Trash"
+    only: [desktop]
+    props: { dataset: standard, open: deletePermanently, count: 2 }
+    steps:
+      - { action: key, part: cancel, key: Escape }
+    expect:
+      - { event: answered, times: 1, last: { action: dismiss, text: "" } }
+      - { event: changed, times: 0 }
+
+# Left out on purpose (the full list is in notes):
+# - Scrim, backdrop, overlay and outside-press dismissal: none on desktop (notes-sheets [desktop]).
+# - Import JSON press: it opens the system file dialog, which the OS draws. Only its visibility is checked.
+# - Close, minimise and zoom: the OS draws them (decision 2).
+# - Drag and drop: none on this screen.
+# - Dark colour scheme: not recorded (F09-092).
+# - Motion (entrance and exit): not recorded in the sources, so no trace or record.
+# - Single-row Delete permanently: no window (decision 12).

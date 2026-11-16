@@ -21,6 +21,7 @@ parts:
   passwordError: { role: status, optional: true } # Server message for a refused password (400 {password: [...]}), under the password field. No test exercises it yet.
 tests:
   - name: "signed out, the sign-in page shows the app name, the fields and the link to create an account"
+    only: [web]
     props: { mode: "signin" }
     steps: []
     expect:
@@ -32,6 +33,7 @@ tests:
     screenshot: true
 
   - name: "the create-account page shows the name, email and password fields, the create button and the link back to sign in"
+    only: [web]
     props: { mode: "signup" }
     steps: []
     expect:
@@ -43,6 +45,7 @@ tests:
     screenshot: true
 
   - name: "the email field accepts keyboard focus on the sign-in page"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: focus, part: emailField }
@@ -50,6 +53,7 @@ tests:
       - { part: emailField, focused: true }
 
   - name: "the demo account signs in with the button and the main window opens; the button is recorded while the request runs"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: type, part: emailField, text: "demo@taskscape.test" }
@@ -60,6 +64,7 @@ tests:
       - { event: signedIn, times: 1, last: { email: "demo@taskscape.test" } }
 
   - name: "Enter in the password field signs in with the demo account and the main window opens"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: type, part: emailField, text: "demo@taskscape.test" }
@@ -69,6 +74,7 @@ tests:
       - { event: signedIn, times: 1, last: { email: "demo@taskscape.test" } }
 
   - name: "a wrong password shows the server's message under the form and does not sign in"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: type, part: emailField, text: "demo@taskscape.test" }
@@ -81,6 +87,7 @@ tests:
     screenshot: true
 
   - name: "an unknown email shows the server's message under the form and does not sign in"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: type, part: emailField, text: "nobody@taskscape.test" }
@@ -92,6 +99,7 @@ tests:
       - { event: signedIn, times: 0 }
 
   - name: "the link on the sign-in page switches to create-account mode"
+    only: [web]
     props: { mode: "signin" }
     steps:
       - { action: press, part: modeLink }
@@ -104,6 +112,7 @@ tests:
     screenshot: true
 
   - name: "the link on the create-account page returns to sign-in mode"
+    only: [web]
     props: { mode: "signup" }
     steps:
       - { action: press, part: modeLink }
@@ -112,6 +121,7 @@ tests:
       - { part: modeLink, text: { matches: "(?i)account" } }
 
   - name: "create an account with a name and the main window opens"
+    only: [web]
     props: { mode: "signup" }
     steps:
       - { action: type, part: nameField, text: "Sam Reader" }
@@ -122,6 +132,7 @@ tests:
       - { event: signedIn, times: 1, last: { email: "sam.reader@taskscape.test" } }
 
   - name: "the name is optional: Enter in the password field creates the account without one"
+    only: [web]
     props: { mode: "signup" }
     steps:
       - { action: type, part: emailField, text: "new.reader@taskscape.test" }
@@ -131,6 +142,7 @@ tests:
       - { event: signedIn, times: 1, last: { email: "new.reader@taskscape.test" } }
 
   - name: "an email the server refuses shows its message under the email field and does not sign in"
+    only: [web]
     props: { mode: "signup" }
     steps:
       - { action: type, part: emailField, text: "demo@taskscape.test" }

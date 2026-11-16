@@ -116,49 +116,9 @@ tests:
       - { part: title, text: Trash, visible: true }
     screenshot: true
 
-  - name: leading window controls are close, minimize and maximize buttons
-    only: [desktop]
-    props: { controls: leading, scope: window, title: Settings }
-    steps:
-      - { action: hover, part: title }
-    expect:
-      - { part: controls, visible: true }
-      - { part: close, role: button, name: Close, visible: true }
-      - { part: minimize, role: button, name: Minimize, visible: true }
-      - { part: maximize, role: button, name: { default: Maximize, macos: Zoom }, visible: true, why: "the macOS green traffic light is named Zoom" }
-      - { part: title, text: Settings, visible: true }
-    screenshot: true
 
-  - name: pane with leading controls shows only the close traffic light
-    only: [desktop]
-    props: { controls: leading, scope: pane, title: Trash }
-    steps:
-      - { action: hover, part: title }
-    expect:
-      - { part: controls, visible: true }
-      - { part: close, role: button, name: Close, visible: true }
-      - { part: minimize, visible: false }
-      - { part: maximize, visible: false }
-      - { part: title, text: Trash, visible: true }
-    screenshot: true
 
-  - name: window controls are lit while the window has focus
-    only: [desktop]
-    props: { controls: leading, scope: window, windowFocused: true, title: Settings }
-    steps:
-      - { action: hover, part: title }
-    expect:
-      - { part: close, visible: true }
-    screenshot: { part: controls }
 
-  - name: window controls are grey while the window is blurred
-    only: [desktop]
-    props: { controls: leading, scope: window, windowFocused: false, title: Settings }
-    steps:
-      - { action: hover, part: title }
-    expect:
-      - { part: close, visible: true }
-    screenshot: { part: controls }
 
   - name: an open project menu does not move the bar or its title
     props: { scope: window, projectMenuOpen: true, title: Project }
@@ -255,13 +215,6 @@ tests:
     expect:
       - { part: projectSwitcher, focused: false }
 
-  - name: double-click on the drag region toggles maximize
-    only: [desktop]
-    props: { controls: leading, scope: window, title: Settings }
-    steps:
-      - { do: doubleClick, part: bar }
-    expect:
-      - { event: maximizeToggled, times: 1, last: { maximized: true } }
 
   - name: a pane header does not drag or maximize on double-click
     only: [desktop]
@@ -286,24 +239,7 @@ tests:
       - { part: tabs, visible: true }
       - { part: title, visible: true }
 
-  - name: title and controls stay on screen at every window width
-    only: [desktop]
-    props: { controls: leading, scope: window, title: Settings }
-    steps:
-      - { action: hover, part: title }
-    expect:
-      - { part: title, text: Settings, visible: true }
-      - { part: close, visible: true }
-      - { part: maximize, visible: true }
-    screenshot: true
 
-  - name: the bar takes no focus, so the first Tab lands on the leading control
-    only: [desktop]
-    props: { controls: leading, scope: window, title: Settings }
-    steps:
-      - { action: key, part: close, key: Tab }
-    expect:
-      - { part: close, focused: true }
 
   - name: defaults are a window banner with no controls
     props: {}

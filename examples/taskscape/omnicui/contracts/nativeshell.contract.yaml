@@ -1,0 +1,365 @@
+id: app.nativeshell
+# Desktop shell (egui, decision 21): app menus, tray agent, global hotkeys, app lifecycle, boot veil.
+# One process. The tray and the hotkeys are in-process handlers: tests reach them through those handlers and read the result from parts or from the events below.
+# Owned here: menus, tray items, quit, the shell's routing and show/hide outcomes, and the boot state.
+# Left to the capture-bar card contract: the bar's own behaviour (typing, draft clear, notes, tab order, card opacity and height, hotkey hints, target list selection, dividers) and the F13-* items. This contract reads captureTitle and captureTarget only to check shell outcomes.
+# Part ids are per screen (app.<screen id>.<part>), so the card contract may name the same bar parts without a clash.
+props:
+  dataset: { type: string, default: standard }        # standard | empty | nolists | long (demo data, spec/screens/web.md)
+  open: { type: string, default: main }               # main: booted, main window shown, bar hidden | background: main window hidden, bar hidden, agent running
+  boot: { type: string, default: done }               # held: first paint withheld, boot veil and box stay up for the reads (no step releases it) | done: boot finished
+  focus: { type: string, default: main }              # main: main window is focused, chords go to it (decision 11) | other: another app is focused, chords go to the global handler
+  barState: { type: string, default: hidden }         # hidden: bar parked (F14-029) | shown: bar visible without keyboard focus
+  lastProject: { type: string, default: "" }          # project stored as the remembered project before launch; "" = nothing stored
+  lastList: { type: string, default: "" }             # list stored as the remembered list before launch; "" = nothing stored
+  captureMode: { type: string, default: fullScreen }  # fullScreen | region (the screenshot mode setting)
+  captureHotkey: { type: string, default: bound }     # bound: default toggle combo kept | unbound: toggle combo cleared
+events:
+  shellCommand: { action: { type: string } }          # import_list | export_list | new_task | attach_screenshot | refresh
+  captureSubmitted: { title: { type: string } }       # title of the capture just submitted from the bar
+  quit: { code: { type: integer } }                   # exit code; 0 on every quit path
+  remembered: { list: { type: string }, project: { type: string } }  # store write of last_active_list and last_active_project
+parts:
+  bootVeil: { role: generic, optional: true }         # boot veil over the window until first paint (F15-033); kept only if the egui build has one
+  bootBox: { role: checkbox, optional: true }         # empty native box at the window centre, removed on boot done; no tick is recorded
+  mainWindow: { role: generic }                       # main window, 800x600
+  menuBar: { role: generic, optional: true }          # OS-drawn menu bar (muda); masked in screenshots
+  appMenu: { role: button, optional: true }           # aria: menuitem. macOS App menu; read only in the macOS test
+  menuEdit: { role: button, optional: true }          # aria: menuitem. standard "Edit" menu
+  menuList: { role: button, optional: true }          # aria: menuitem. "List" menu of the menu bar
+  menuImportList: { role: button, optional: true }    # aria: menuitem. "Import List from JSON…" in the List menu
+  menuExportList: { role: button, optional: true }    # aria: menuitem. "Export List to JSON…" in the List menu
+  projectSwitcher: { role: button }                   # project pill; shows the open project's name
+  listTab: { role: button }                           # aria: tab. first of the list tabs of the open project
+  openListLabel: { role: status }                     # project and list the main window has open
+  captureBar: { role: generic }                       # capture bar, a separate OS window (its box is compared alone in screenshots)
+  captureTitle: { role: textbox }                     # title field of the capture bar
+  captureTarget: { role: button }                     # footer target (project / list); pressing it opens the main window and hides the bar
+  trayTooltip: { role: status, optional: true }       # tooltip text the tray agent sets
+  trayOpen: { role: button }                          # aria: menuitem. tray item "Open Taskscape", the app's own handler
+  trayQuit: { role: button }                          # aria: menuitem. tray item "Quit Taskscape", the app's own handler
+tests:
+  # Boot. Held state: the harness withholds the first paint, so nothing releases the veil in this test.
+  - name: boot veil and box are up while the first paint is held
+    only: [desktop]
+    props: { boot: held }
+    steps: []
+    expect:
+      - { part: bootVeil, visible: true }
+      - { part: bootBox, visible: true }
+      - { part: bootBox, checked: false }
+    screenshot: true
+
+  - name: boot veil and box are removed after the first paint and Home › Errands is open with the bar hidden
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: bootVeil, visible: false }
+      - { part: bootBox, visible: false }
+      - { part: mainWindow, visible: true }
+      - { part: openListLabel, text: { matches: "Home.*Errands" } }
+      - { part: projectSwitcher, text: { contains: "Home" } }
+      - { part: listTab, name: "Errands", selected: true }
+      - { part: captureBar, visible: false }
+    screenshot: true
+
+  # Remembered project and list (F15-039, uncertain in the record: restore is inferred, the trigger is inferred).
+  - name: the main window opens on the remembered project and list
+    only: [desktop]
+    props: { lastProject: "Spring launch", lastList: "Press kit" }
+    steps: []
+    expect:
+      - { part: openListLabel, text: { matches: "Spring launch.*Press kit" } }
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+    screenshot: true
+    # The Home and Garden restore case runs the same path and is not repeated.
+
+  - name: switching to list 2 changes the open list
+    only: [desktop]
+    steps:
+      - { input: switchList2, part: mainWindow }
+    expect:
+      - { part: openListLabel, text: { matches: "Home.*Reading" } }
+    # The relaunch leg (store, then start again) needs a restart step the format does not have; the launch leg is covered by the restore test above.
+
+  - name: choosing the next list is remembered
+    only: [desktop]
+    steps:
+      - { action: focus, part: listTab }
+      - { input: nextList, part: listTab }
+    expect:
+      - { event: remembered, times: 1, last: { list: "Reading", project: "Home" } }
+      - { part: openListLabel, text: { contains: "Reading" } }
+    # Uncertain (F15-039): the trigger is inferred from the list tabs.
+
+  - name: choosing the next project is remembered
+    only: [desktop]
+    steps:
+      - { input: nextProject, part: mainWindow }
+    expect:
+      - { event: remembered, times: 1 }
+      - { part: projectSwitcher, text: { contains: "Spring launch" } }
+    # Uncertain (F15-039), as above.
+
+  # Menus. The menu parts are optional: a target that exposes no native menu does not measure these tests.
+  - name: the List menu holds Import and Export with their labels
+    only: [desktop]
+    steps:
+      - { action: press, part: menuList }
+    expect:
+      - { part: menuImportList, visible: true }
+      - { part: menuImportList, name: "Import List from JSON…" }
+      - { part: menuExportList, visible: true }
+      - { part: menuExportList, name: "Export List to JSON…" }
+
+  - name: Import List from JSON… emits the import command
+    only: [desktop]
+    steps:
+      - { action: press, part: menuList }
+      - { action: press, part: menuImportList }
+    expect:
+      - { event: shellCommand, times: 1, last: { action: "import_list" } }
+    # The file dialog is drawn by the OS and the imported list is not readable through parts; the list created by the import is not asserted.
+
+  - name: Export List to JSON… emits the export command
+    only: [desktop]
+    steps:
+      - { action: press, part: menuList }
+      - { action: press, part: menuExportList }
+    expect:
+      - { event: shellCommand, times: 1, last: { action: "export_list" } }
+    # The save dialog is drawn by the OS and the written JSON is not readable through parts.
+
+  - name: the standard Edit menu stays beside the List menu
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: menuBar, visible: true }
+      - { part: menuEdit, visible: true }
+      - { part: menuEdit, name: "Edit" }
+      - { part: menuList, visible: true }
+      - { part: menuList, name: "List" }
+
+  - name: the macOS App menu is present
+    only: [macos]
+    steps: []
+    expect:
+      - { part: appMenu, visible: true }
+    # The App menu is a macOS convention. Check it against the reference menu setup before keeping it.
+
+  # Tray items (the OS draws the tray menu; the two items are the app's own handlers).
+  - name: Tray Open Taskscape shows a hidden main window
+    only: [desktop]
+    props: { open: background }
+    steps:
+      - { action: press, part: trayOpen }
+    expect:
+      - { part: mainWindow, visible: true }
+      - { part: captureBar, visible: false }
+    screenshot: true
+    # Focus of the main window is not asserted: mainWindow is generic, and generic can assert only visible and text.
+
+  - name: Tray Quit Taskscape quits the app with exit code 0
+    only: [desktop]
+    steps:
+      - { action: press, part: trayQuit }
+    expect:
+      - { event: quit, times: 1, last: { code: 0 } }
+
+  - name: closing the main window quits the app with exit code 0
+    only: [desktop]
+    steps:
+      - { input: closeWindow, part: mainWindow }
+    expect:
+      - { event: quit, times: 1, last: { code: 0 } }
+    # closeWindow sends only the OS close request. The close control itself is not tested (decision 2); the app's response to the request is app behaviour and is tested.
+
+  # Global chords with main focused (decision 11): main handles the chord and the bar stays hidden.
+  - name: the toggle chord with main focused is handled by the main window and does not show the bar
+    only: [desktop]
+    props: { focus: main }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { event: shellCommand, times: 1 }
+      - { part: captureBar, visible: false }
+    # The action name (new_task in the drafts, from the /new-task route) is not confirmed against F15-028 and F15-029, so only the count is asserted.
+
+  - name: the screenshot chord with main focused attaches the screenshot in main
+    only: [desktop]
+    props: { focus: main }
+    steps:
+      - { input: captureScreenshot, part: mainWindow }
+    expect:
+      - { event: shellCommand, times: 1, last: { action: "attach_screenshot" } }
+      - { part: captureBar, visible: false }
+
+  # Global chords with another app focused (decision 20: the global toggle acts only when the bar lacks focus).
+  - name: the toggle chord with another app focused shows the hidden bar with its title focused
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: true }
+      - { part: captureTitle, focused: true }
+    screenshot: { part: captureBar }
+
+  - name: the toggle chord hides a visible bar that does not have focus
+    only: [desktop]
+    props: { focus: other, barState: shown }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: false }
+
+  - name: the screenshot chord in full-screen mode shows a hidden bar
+    only: [desktop]
+    props: { focus: other, captureMode: fullScreen }
+    steps:
+      - { input: captureScreenshot, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: true }
+    # The grab itself is drawn by the OS; the spinner, the attached shot and the PNG path are not tested because they need a real grab.
+
+  - name: the screenshot chord in region mode leaves a hidden bar hidden during the selection
+    only: [desktop]
+    props: { focus: other, captureMode: region }
+    steps:
+      - { input: captureScreenshot, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: false }
+    # The region selection is drawn by the OS; the reveal after a finished selection and the dim to 25% are not tested.
+
+  - name: Escape hides the bar
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { action: key, part: captureTitle, key: Escape }
+    expect:
+      - { part: captureBar, visible: false }
+
+  - name: the draft survives a dismissal and is there on the next summon
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { action: key, part: captureTitle, key: Escape }
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: true }
+      - { part: captureTitle, text: "Buy stamps" }
+
+  - name: Enter in the title submits the capture, dismisses the bar and refreshes main
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { part: captureBar, visible: false }
+      - { event: captureSubmitted, times: 1, last: { title: "Buy stamps" } }
+      - { event: shellCommand, times: 1, last: { action: "refresh" } }
+
+  - name: the title is empty on the next summon after a submit
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { action: key, part: captureTitle, key: Enter }
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: true }
+      - { part: captureTitle, text: "" }
+
+  - name: the toggle chord with the bar focused submits instead of toggling
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { input: toggleCaptureBar, part: captureTitle }
+    expect:
+      - { event: captureSubmitted, times: 1, last: { title: "Buy stamps" } }
+      - { part: captureBar, visible: false }
+    # Decision 20: while the bar has focus the combo submits; the global toggle acts only when the bar does not have focus. The card owner must resolve F13-016 against this.
+
+  # Capture target (F14-043 and F13-017 are the same control).
+  - name: the capture target shows the open project and list
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureTarget, text: { matches: "Home.*Errands" } }
+
+  - name: pressing the capture target opens the main window and hides the bar
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: press, part: captureTarget }
+    expect:
+      - { part: mainWindow, visible: true }
+      - { part: captureBar, visible: false }
+
+  - name: the capture target still shows the remembered project when the remembered list is gone
+    only: [desktop]
+    props: { focus: other, lastProject: "Spring launch", lastList: "Deleted list" }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureTarget, text: { contains: "Spring launch" } }
+    # The list the target falls back to is not asserted: the record says "first list" from list_lists() without saying whether that means the first list of the project or of all projects.
+
+  - name: with no lists the capture creates a list and submits
+    only: [desktop]
+    props: { dataset: nolists, focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { action: type, part: captureTitle, text: "Buy stamps" }
+      - { action: key, part: captureTitle, key: Enter }
+    expect:
+      - { event: captureSubmitted, times: 1, last: { title: "Buy stamps" } }
+      - { event: shellCommand, times: 1, last: { action: "refresh" } }
+    # The generated list name is not asserted: the docs say Inbox, the code generates a name (F14-061).
+
+  # Tray tooltip (OS-drawn tray; the text the agent sets is read here; the exact wording is not verified, so the regex is loose).
+  - name: the tray tooltip advertises the capture combo
+    only: [desktop]
+    steps: []
+    expect:
+      - { part: trayTooltip, text: { matches: "^Taskscape.+capture$" } }
+
+  - name: the tray tooltip is plain Taskscape when the capture combo is unbound
+    only: [desktop]
+    props: { captureHotkey: unbound }
+    steps: []
+    expect:
+      - { part: trayTooltip, text: "Taskscape" }
+
+  - name: with the capture hotkey unbound the toggle chord does not show the bar
+    only: [desktop]
+    props: { focus: other, captureHotkey: unbound }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+    expect:
+      - { part: captureBar, visible: false }
+
+  - name: the close request on the bar hides it and leaves the app running
+    only: [desktop]
+    props: { focus: other }
+    steps:
+      - { input: toggleCaptureBar, part: mainWindow }
+      - { input: closeWindow, part: captureTitle }
+    expect:
+      - { part: captureBar, visible: false }
+      - { event: quit, times: 0 }
+viewports: [ { width: 800, height: 600 } ]
+colorSchemes: [light, dark]
+mask: [menuBar, appMenu, menuEdit, menuList, menuImportList, menuExportList]   # OS-drawn menu bar, not part of the app's picture

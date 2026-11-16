@@ -197,11 +197,21 @@ tests:
       - { part: button, role: button, name: "New task" }
 
   - name: a browser-reserved chord shows its refusal as a live status
+    only: [web]
     props: { title: "New task", layout: inline, control: hotkey, footnote: "The browser keeps that shortcut.", footnoteTone: error }
     steps: []
     expect:
       - { part: footnote, text: { contains: "browser" } }
       - { part: rebindError, role: status, text: { contains: "browser" }, visible: true }
+    screenshot: true
+
+  - name: an OS-kept chord shows its refusal as a live status
+    only: [desktop]
+    props: { title: "New task", layout: inline, control: hotkey, footnote: "The OS keeps that shortcut.", footnoteTone: error }
+    steps: []
+    expect:
+      - { part: footnote, text: "The OS keeps that shortcut.", visible: true }
+      - { part: rebindError, role: status, text: "The OS keeps that shortcut.", visible: true }
     screenshot: true
 
   - name: recording keycap keeps its title as its name while it records

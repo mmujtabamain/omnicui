@@ -214,8 +214,7 @@ tests:
 
   - name: Command-F or Ctrl-F focuses the search field (desktop)
     only: [desktop]
-    # Meta+KeyF is the macOS form. Windows and Linux need Control+KeyF; the per-platform form is not defined in the sources (uncertain).
-    steps: [ { action: focus, part: navAbout }, { action: key, part: navAbout, key: Meta+KeyF } ]
+    steps: [ { action: focus, part: navAbout }, { input: search, part: navAbout } ]
     expect:
       - { part: search, focused: true }
 
@@ -430,24 +429,7 @@ tests:
       - { part: version, text: "—" }
     screenshot: true
 
-  - name: the title bar lights show close enabled and minimize and full screen inert (desktop only)
-    # Draft B says decisions.md item 2 removes drawn window controls; draft A keeps them per notes reply 14 (conflict).
-    only: [desktop]
-    steps: []
-    expect:
-      - { part: closeLight, name: "Close" }
-      - { part: closeLight, disabled: false }
-      - { part: minimizeLight, name: "Minimize" }
-      - { part: minimizeLight, disabled: true }
-      - { part: fullscreenLight, name: "Full Screen" }
-      - { part: fullscreenLight, disabled: true }
-    screenshot: true
 
-  - name: pressing the close light closes the window (desktop only)
-    only: [desktop]
-    steps: [ { action: press, part: closeLight } ]
-    expect:
-      - { part: window, visible: false }
 
 # notes: |
 #   BASED ON: spec/inventory/settings-about.json, spec/screens/notes-settings-about.txt, spec/screens/web.md, spec/decisions.md, and the feature records listed in the merge notes.

@@ -1,0 +1,372 @@
+id: "app.trashwindow"
+
+# Desktop Trash window: its own OS window (decision 8). Opened from the main
+# window's Trash button or the palette's Open Trash; those triggers belong to
+# the main window contract, not this one.
+
+props:
+  dataset: { type: string, default: standard }   # standard: two trashed roots, "Call the printer about samples" (Website, newest) then "Print the old flyer" (Errands). empty: no trashed items (assumed). long: standard plus 40 more tasks, with the same two trashed roots (not used here). nolists: no list names (not used here).
+  openRequests: { type: integer, default: 1 }    # 1: the harness opens a fresh window. 2: the harness sends a second open request, which must focus the existing window instead of making another.
+
+events:
+  opened: { created: { type: boolean } }         # once per open request: true when a new window was made, false when the existing window was focused
+  closed: { reason: { type: string } }           # once when the window closes: "escape", "shortcut" or "os"
+  restored: { title: { type: string } }          # once per trashed root restored (Restore or Restore all): the root's title
+  purged: { title: { type: string } }            # once per root deleted permanently from a row: the root's title
+  emptyAsked: { count: { type: integer } }       # Empty pressed: the Empty Trash confirmation opens; count is the number of roots it names
+
+parts:
+  title: { role: heading }                       # aria: heading, text "Trash"; the OS also draws the window title
+  titleBar: { role: generic }                    # aria: group (header strip); no window controls, the OS draws them (decision 2)
+  actionStrip: { role: generic }                 # aria: toolbar; rendered only when at least one root
+  listBody: { role: generic }                    # aria: list (scrolling container)
+  restoreAll: { role: button }                   # text and name "Restore all"; default tone; no confirmation
+  emptyTrash: { role: button }                   # text and name "Empty" (the icon is hidden from the accessible name); danger tone at rest; opens the Empty Trash confirmation, which is its own OS window
+  emptyState: { role: status }                   # text "Trash is empty" when there are no roots
+  row: { role: generic }                         # aria: listitem; the first (newest) row, first of the shared row elements
+  restoreRow: { role: button }                   # the first row's Restore; name "Restore"; hidden at rest, shown on hover
+  purgeRow: { role: button }                     # the first row's Delete permanently; name "Delete permanently"; danger tone at rest; deletes at once, no confirmation
+  secondRow: { role: generic }                   # aria: listitem; the second row, given its own accessibility id
+  secondRestoreRow: { role: button }             # the second row's Restore; name "Restore"; hidden at rest, shown on hover
+  secondPurgeRow: { role: button }               # the second row's Delete permanently; name "Delete permanently"; danger tone at rest; deletes at once
+
+tests:
+  - name: opens with the trash list loaded, newest first
+    props: { dataset: standard, openRequests: 1 }
+    steps: []
+    expect:
+      - { part: title, text: "Trash" }
+      - { event: opened, times: 1, last: { created: true } }
+      - { part: titleBar, visible: true }
+      - { part: listBody, visible: true }
+      - { part: emptyState, visible: false }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: secondRow, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: a second open request focuses the same window and keeps its list
+    props: { dataset: standard, openRequests: 2 }
+    steps: []
+    expect:
+      - { event: opened, times: 2, last: { created: false } }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: secondRow, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: each row shows its list and deleted time, with named row actions
+    props: { dataset: standard }
+    steps: []
+    expect:
+      - { part: row, text: { contains: "Website" } }
+      - { part: row, text: { contains: "deleted" } }
+      - { part: secondRow, text: { contains: "Errands" } }
+      - { part: restoreRow, name: "Restore" }
+      - { part: purgeRow, name: "Delete permanently" }
+      - { part: secondRestoreRow, name: "Restore" }
+      - { part: secondPurgeRow, name: "Delete permanently" }
+      - { part: restoreAll, name: "Restore all" }
+      - { part: emptyTrash, name: "Empty" }
+      - { part: actionStrip, visible: true }
+    only: [desktop]
+
+  - name: hovering the first row fades its row actions in
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: row }
+    trace:
+      - { part: restoreRow, property: opacity }
+      - { part: purgeRow, property: opacity }
+    only: [desktop]
+
+  - name: hovering the second row fades its row actions in
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: secondRow }
+    trace:
+      - { part: secondRestoreRow, property: opacity }
+      - { part: secondPurgeRow, property: opacity }
+    only: [desktop]
+
+  - name: keyboard focus on a row Restore reveals the row's buttons (proposal)
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreRow }
+    expect:
+      - { part: restoreRow, focused: true }
+    trace:
+      - { part: restoreRow, property: opacity }
+    only: [desktop]
+
+  - name: an empty trash shows the empty state and hides the toolbar
+    props: { dataset: empty }
+    steps: []
+    expect:
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: actionStrip, visible: false }
+      - { part: restoreAll, visible: false }
+      - { part: emptyTrash, visible: false }
+    only: [desktop]
+
+  - name: Restore on the first row returns it and the next row moves up
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: restoreRow }
+    expect:
+      - { event: restored, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+      - { part: secondRow, visible: false }
+      - { part: restoreAll, visible: true }
+    only: [desktop]
+
+  - name: Restore on the second row keeps the first row where it was
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: secondRestoreRow }
+    expect:
+      - { event: restored, times: 1, last: { title: "Print the old flyer" } }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: secondRow, visible: false }
+    only: [desktop]
+
+  - name: Restore all moves every row back with no confirmation
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: restoreAll }
+    expect:
+      - { event: restored, times: 2 }
+      - { part: emptyState, text: "Trash is empty" }
+      - { part: actionStrip, visible: false }
+    only: [desktop]
+
+  - name: Enter on Restore all runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreAll }
+      - { action: key, part: restoreAll, key: Enter }
+    expect:
+      - { event: restored, times: 2 }
+    only: [desktop]
+
+  - name: Space on Restore all runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreAll }
+      - { action: key, part: restoreAll, key: Space }
+    expect:
+      - { event: restored, times: 2 }
+    only: [desktop]
+
+  - name: Enter on a row Restore runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreRow }
+      - { action: key, part: restoreRow, key: Enter }
+    expect:
+      - { event: restored, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: Space on a row Restore runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: restoreRow }
+      - { action: key, part: restoreRow, key: Space }
+    expect:
+      - { event: restored, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: Enter on the second row Restore runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: secondRestoreRow }
+      - { action: key, part: secondRestoreRow, key: Enter }
+    expect:
+      - { event: restored, times: 1, last: { title: "Print the old flyer" } }
+      - { part: secondRow, visible: false }
+    only: [desktop]
+
+  - name: Space on the second row Restore runs it
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: secondRestoreRow }
+      - { action: key, part: secondRestoreRow, key: Space }
+    expect:
+      - { event: restored, times: 1, last: { title: "Print the old flyer" } }
+      - { part: secondRow, visible: false }
+    only: [desktop]
+
+  - name: undo does not bring a restored task back into the trash
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: restoreAll }
+      - { input: undo, part: title }
+    expect:
+      - { event: restored, times: 2 }
+      - { part: emptyState, text: "Trash is empty" }
+    only: [desktop]
+
+  - name: Delete permanently on a row is immediate, with no confirmation
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: purgeRow }
+    expect:
+      - { event: purged, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+      - { part: emptyTrash, visible: true }
+    # The absence of a confirmation window is not checkable from this window's parts; the harness must not open any other window in this test.
+    only: [desktop]
+
+  - name: Delete permanently on the second row keeps the first row
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: secondPurgeRow }
+    expect:
+      - { event: purged, times: 1, last: { title: "Print the old flyer" } }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: secondRow, visible: false }
+    only: [desktop]
+
+  - name: Space on Delete permanently purges immediately
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: purgeRow }
+      - { action: key, part: purgeRow, key: Space }
+    expect:
+      - { event: purged, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: Enter on Delete permanently does not purge
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: purgeRow }
+      - { action: key, part: purgeRow, key: Enter }
+    expect:
+      - { event: purged, times: 0 }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: purgeRow, focused: true }
+    # Decision 10: Enter does not confirm a destructive action; Delete permanently needs a click, or Tab to it and Space.
+    only: [desktop]
+
+  - name: Space on the second row Delete permanently purges immediately
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: secondPurgeRow }
+      - { action: key, part: secondPurgeRow, key: Space }
+    expect:
+      - { event: purged, times: 1, last: { title: "Print the old flyer" } }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+    only: [desktop]
+
+  - name: Enter on the second row Delete permanently does not purge
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: secondPurgeRow }
+      - { action: key, part: secondPurgeRow, key: Enter }
+    expect:
+      - { event: purged, times: 0 }
+      - { part: secondRow, text: { contains: "Print the old flyer" } }
+      - { part: secondPurgeRow, focused: true }
+    only: [desktop]
+
+  - name: undo does not bring a permanently deleted task back
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: purgeRow }
+      - { input: undo, part: title }
+    expect:
+      - { event: purged, times: 1, last: { title: "Call the printer about samples" } }
+      - { part: row, text: { contains: "Print the old flyer" } }
+    only: [desktop]
+
+  - name: pressing Empty asks first and names how many roots it will delete
+    props: { dataset: standard }
+    steps:
+      - { action: press, part: emptyTrash }
+    expect:
+      - { event: emptyAsked, times: 1, last: { count: 2 } }
+      - { event: purged, times: 0 }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+      - { part: secondRow, text: { contains: "Print the old flyer" } }
+    # The Empty Trash confirmation is its own OS window, with headline "Empty Trash?", the count and Cancel focused by default (decisions 10 and 13). Its contents, the count it displays and the accept path belong to the sheets contract.
+    only: [desktop]
+
+  - name: Enter on Empty asks and does not empty the trash
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: emptyTrash }
+      - { action: key, part: emptyTrash, key: Enter }
+    expect:
+      - { event: emptyAsked, times: 1, last: { count: 2 } }
+      - { event: purged, times: 0 }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+    only: [desktop]
+
+  - name: Space on Empty asks and does not empty the trash
+    props: { dataset: standard }
+    steps:
+      - { action: focus, part: emptyTrash }
+      - { action: key, part: emptyTrash, key: Space }
+    expect:
+      - { event: emptyAsked, times: 1, last: { count: 2 } }
+      - { event: purged, times: 0 }
+      - { part: row, text: { contains: "Call the printer about samples" } }
+    only: [desktop]
+
+  - name: Escape closes the window and changes no data
+    props: { dataset: standard }
+    steps:
+      - { action: key, part: restoreAll, key: Escape }
+    expect:
+      - { event: closed, times: 1, last: { reason: "escape" } }
+      - { event: restored, times: 0 }
+      - { event: purged, times: 0 }
+      - { part: title, visible: false }
+    only: [desktop]
+
+  - name: Ctrl W or Cmd W closes the window
+    props: { dataset: standard }
+    steps:
+      - { input: closeWindow, part: restoreAll }
+    expect:
+      - { event: closed, times: 1, last: { reason: "shortcut" } }
+      - { event: purged, times: 0 }
+      - { part: title, visible: false }
+    only: [desktop]
+
+  - name: the OS close request closes the window
+    props: { dataset: standard }
+    steps:
+      - { input: osClose, part: restoreAll }
+    expect:
+      - { event: closed, times: 1, last: { reason: "os" } }
+      - { event: purged, times: 0 }
+    # Measured only when the target advertises do.close; otherwise this test is not measured. This is the window's close request, not a close light.
+    only: [desktop]
+
+  - name: trash list at rest
+    props: { dataset: standard }
+    steps: []
+    screenshot: true
+    only: [desktop]
+
+  - name: trash with the second row hovered
+    props: { dataset: standard }
+    steps:
+      - { action: hover, part: secondRow }
+    screenshot: true
+    only: [desktop]
+
+  - name: empty trash
+    props: { dataset: empty }
+    steps: []
+    screenshot: true
+    only: [desktop]
+
+viewports: [ { width: 319, height: 715 } ]
+
+colorSchemes: [ light ]
+
+# Off on purpose: the automatic keyboard test would press Delete permanently on Enter, which decision 10 forbids. Enter and Space cases are written out for every button in this window instead.
+keyboard: false

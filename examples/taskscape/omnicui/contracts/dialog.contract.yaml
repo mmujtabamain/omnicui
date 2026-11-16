@@ -178,14 +178,14 @@ tests:
       - { event: openChanged, times: 1, last: { open: false } }
       - { event: accepted, times: 0 }
 
-  - name: Enter on the focused Accept of a confirm accepts
+  - name: Enter on the focused Accept of a confirm does not accept
     props: { open: true, kind: confirm, title: "Delete this list?", acceptLabel: "Delete" }
     steps:
       - { action: focus, part: accept }
       - { action: key, part: accept, key: Enter }
     expect:
       - { part: accept, focused: true }
-      - { event: accepted, times: 1 }
+      - { event: accepted, times: 0 }
       - { event: openChanged, times: 0 }
 
   - name: Space on the focused Accept of a confirm accepts
@@ -388,6 +388,17 @@ tests:
     expect:
       - { part: card, visible: true }
     screenshot: true
+
+  - name: fullscreen size opens as its own window and closes on Escape
+    only: [desktop]
+    props: { open: true, kind: name, title: "Preview", acceptLabel: "Done", presentation: window, size: fullscreen }
+    steps:
+      - { action: key, part: field, key: Escape }
+    expect:
+      - { part: field, focused: true }
+      - { part: card, visible: true }
+      - { event: openChanged, times: 1, last: { open: false } }
+      - { event: accepted, times: 0 }
 
   - name: confirm card in its own window
     only: [desktop]

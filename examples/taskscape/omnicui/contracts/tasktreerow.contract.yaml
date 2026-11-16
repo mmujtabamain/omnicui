@@ -248,23 +248,14 @@ tests:
     expect:
       - { event: activate, times: 1, last: { platformModifier: false, shift: false } }
 
-  - name: "Command+Space toggles the row in the selection on macOS (proposed)"
-    only: [macos]
+  - name: "Space with the platform modifier toggles the row in the selection (proposed)"
     props: { title: "Buy milk", depth: 0 }
     steps:
       - { action: focus, part: row }
-      - { action: key, part: row, key: Meta+Space }
+      - { input: selectToggle }
     expect:
       - { event: activate, times: 1, last: { platformModifier: true, shift: false } }
 
-  - name: "Control+Space toggles the row in the selection off macOS (proposed)"
-    except: [macos]
-    props: { title: "Buy milk", depth: 0 }
-    steps:
-      - { action: focus, part: row }
-      - { action: key, part: row, key: Control+Space }
-    expect:
-      - { event: activate, times: 1, last: { platformModifier: true, shift: false } }
 
   - name: "Shift+ArrowDown on the focused row extends the range (proposed)"
     props: { title: "Buy milk", depth: 0 }
@@ -290,21 +281,12 @@ tests:
     expect:
       - { event: toggleDone, times: 1 }
 
-  - name: "Control+Enter toggles done off macOS (proposed)"
-    except: [macos]
-    props: { title: "Buy milk", depth: 0 }
-    steps:
-      - { action: focus, part: row }
-      - { action: key, part: row, key: Control+Enter }
-    expect:
-      - { event: toggleDone, times: 1 }
 
-  - name: "Command+Enter toggles done on macOS (proposed)"
-    only: [macos]
+  - name: "platform modifier+Enter toggles done (proposed)"
     props: { title: "Buy milk", depth: 0 }
     steps:
       - { action: focus, part: row }
-      - { action: key, part: row, key: Meta+Enter }
+      - { input: toggleDone }
     expect:
       - { event: toggleDone, times: 1 }
 

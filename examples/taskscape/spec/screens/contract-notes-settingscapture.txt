@@ -1,0 +1,52 @@
+What it is based on: only the two drafts as written. This merge has no file access, so I did not reopen spec/inventory, spec/features, spec/decisions.md or the review notes. Every source citation (F10-xxx, F13-xxx, decision numbers, SettingsWindow.tsx lines) is taken from the drafts and not re-verified.
+
+Props, with the merged harness meaning:
+- dataset (standard by default; empty, nolists, long): the harness seeds the local SQLite database with that set. This screen reads only settings and the data path, so every set shows the same screen. The tests use the default.
+- open (capture by default; general, shortcuts, about): the harness presents the window with that sidebar section selected, set as a user click would set it.
+- storedScreenshotMode (fullscreen by default; region; any other text): the harness stores the value as screenshot_mode before the window opens. Any value other than fullscreen or region must show Full screen. Draft B reached F10-032 only through the datasets, which hold no stored region; this prop replaces that route, so the fallback test is reachable.
+- pathLoading (false by default; true): the harness holds the data-path reply, so Saved to shows the dash. Draft B said the dash could not be reached; draft A holds the reply, so the dash test is kept.
+
+Events (merged):
+- settingSaved (key, value): the app's write of screenshot_mode through ctx.set or ctx.discard. Draft B's screenshotModeChanged (mode) observed the same write, so it is dropped as a duplicate. Both drafts assume the discard writes and emits this event; that is not verified.
+- folderOpenRequested (folder): replaces draft B's pathOpened (path). Draft B carried the absolute machine-specific path; folder "screenshots" is machine independent.
+- windowClosed (reason): kept from draft B. Draft A left the Escape close out as an OS action, but the rules allow testing an app handler that calls close(), so the event is kept. Confirm.
+
+Parts: 30 parts. Where both drafts had the same part under different names, the draft A name is kept, because its notes cite the reference more exactly. Parts only draft B had (captureModeLabel, captureModeControl, savedToLabel, searchEmpty) are kept as separate parts, because draft B tests use them.
+- captureMatchCount: draft A says generic (the reference records aria none); draft B says status. Generic is kept.
+- searchEmpty: draft B says status; generic is kept, because the reference does not record the EmptyState role (draft A note 10).
+- screenshotsHeading: both drafts map it to heading. Draft B notes the reference span has no heading role, so heading is a mapping choice, not a reference fact.
+- discardAll name: draft A gives the aria-label "Discard changes" (source only). Draft B gives the title "Discard every change made since this window opened". The aria name is kept and the title is not checked. Confirm.
+- screenshotsDiscard name: draft A uses the inventory title; draft B says F13-061 says those names are not in source. The name is kept in the comment only and not asserted in a test.
+
+Tests: 32 tests after merging. Duplicates merged with the union of their expectations: the default Capture state (A1 and B1, one screenshot), Region choice, Full screen again, the title-bar discard, the Screenshots discard, Tab from search, ArrowUp wrap, the clear button, Escape clearing the query, the Ctrl or Cmd F focus, the Capture narrowing, the no-match section click.
+Dropped draft B tests and why:
+- "the search filters every section live": same as the live filter test (draft A), which already asserts the Capture · Screenshots prefix.
+- "switching sections animates the pane in": the same contentPane record as the entrance test; the entrance test is kept.
+- "reference state", "Region mode with the discard controls shown", and "search for region shows the focus outline": screenshot-only repeats of the default, Region and live-filter tests, which keep screenshot true.
+- "editing a narrowed search" with Backspace and "n": same result as the scoped-search editing test; the space-append version is kept.
+Added: a focus step on sectionCapture in the ArrowDown list test, so it matches the other key tests.
+
+Conflicts and resolutions:
+- open default: draft A says the reference opens on General (F10-002) and F13-055 records Capture after a click; draft B says F13-055 says the window opens on Capture. Default capture is kept, and the harness must present at that section.
+- Escape close: draft A left it out, draft B tested it through windowClosed. Draft B is kept, per the rule on testing app handlers.
+- Matchers: draft A uses matches and draft B uses contains for text. Both are kept; confirm the format accepts contains.
+
+Uncertain items (carried over, not resolved):
+- mask: taken from draft A. The field is not in the format list given with this task, so confirm the format accepts it. It is kept because the path is machine-specific.
+- hover action: taken from draft A; confirm the format accepts a hover step.
+- captureMatchCount text "1": from source logic in both drafts; not in the reference text.
+- "Restore defaults" (About pane text) and "Shortcuts · Global" (heading prefix): draft B's claims, not verified; used in tests.
+- "saved region" all-words rule: draft B's reading, not verified; the expectation depends on it.
+- The screenshotsDiscard name is unconfirmed (see above).
+- The title "Settings" appears both in the OS title and in the in-app heading if the OS title is shown (draft A note 6). Confirm.
+- times: 0 is used in both drafts; confirm the format accepts it.
+
+Left out, with reasons:
+- Close, minimize and zoom controls, the title-strip drag, and the window fade-in: drawn or timed by the OS (decision 2).
+- Silent failed writes (F10-031): no fault injection in the harness.
+- The group dot (F10-034): conflicts with the undo icon; the icon is used.
+- Dimmed sections and the focus outline: pixels only, covered by screenshots.
+- Scroll reset, section intros, the shortcut recorder, the About pane details, and the capture bar: no field for them, or they belong to another pane or screen.
+- Drag-and-drop: none on this screen (drag acts only on sliders).
+- Keyboard Tab: tested only from the search field.
+- New named input: none. Ctrl or Cmd F uses the existing search input.

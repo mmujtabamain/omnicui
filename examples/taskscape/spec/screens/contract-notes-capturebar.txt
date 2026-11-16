@@ -1,0 +1,83 @@
+BASIS. Merged from Draft A and Draft B, with the critic's fixes applied. No source, feature record, platforms.yaml or format document was opened in this merge, so every choice below rests on the two drafts, their notes and the critique. Items the drafts left unverified are marked as such.
+
+PROPS (what the harness does).
+- dataset (standard | empty | nolists | long): loads that demo set from spec/screens/web.md into the one local SQLite database. standard gives the target "Home / Errands". empty gives "Home / Inbox" (per the critique, the first list of the Home project). nolists has no lists; a submit there is asserted only by its count and the barHidden event, because the generated list name is not fixed. long is not used by any test.
+- draft (empty | typed | notes): seeds the draft before the first frame and emits no draftChanged for the seed. empty = no title, notes closed. typed = title "Call the plumber", notes closed. notes = title "Call the plumber", notes open and empty. The title of the notes state is an assumption (the reference does not state it), and the tests that use notes depend on it.
+- captureResult (captured | cancelled | failed | pending): how the harness answers a screenshot request (the native grab cannot run headless). captured = one PNG at once. cancelled = the region selection is cancelled: no image, no error. failed = an error, shown as "Capture failed". pending = never resolves during the test, so the button stays disabled and the spinner stays. Draft A called these ok, hold, fail and cancel; the names of Draft B were kept because they are clearer.
+- Viewports: 760 x 116 is the collapsed card and the starting size. 760 x 185 is the notes-open size (F13-039, F14-032). The harness reads the live window size and must not crop it. The critique asked for a second viewport, so both are listed; whether the format runs every test at both sizes is unknown and is flagged.
+- colorSchemes [light, dark]: the first test is the reference dark state.
+- keyboard: true. The screen is keyboard driven (Tab, Enter, Escape, Shift+Enter). Enter on a focused footer button is not tested. Draft B cited F13-003 for a submit from a footer button, but the feature title of F13-043 (as Draft B quotes it) says the card handles only title and editor keys, so no footer submit is expected. Footer buttons are tabIndex -1 per the review.
+
+EVENTS (the bar's own observable effects, plain text, notes "" when there are none).
+- draftChanged (title, notes, shots): after each change of the draft.
+- taskSaved (title, notes, shots, project, list): a submit. Notes and shots were added at the critique's request, so the notes and the attached shots are checked.
+- barHidden (title, notes): the bar hid, with the draft it still holds. A submit emits it with the cleared draft; Escape and the footer target emit it with the kept draft.
+- mainRequested (project, list): the footer target asked for the main window. This is Draft A's event; Draft B's mainOpened was dropped as its duplicate.
+- captureStarted (pending): a native grab was requested; pending is the in-flight count after the request. Added from Draft B for the second-press check (F14-009).
+- Draft B's submitted and dismissed were dropped (replaced by taskSaved and barHidden, which carry the project, list and notes fields that Draft B lacked).
+
+PARTS. Names are the clearer forms of the two drafts: notesHint (Draft A's hint), strikethrough, bulletList and numberedList (Draft A). Roles follow the allowed set. card is aria dialog, toolbar is aria toolbar, and both are generic. spinner is required (critique), so a test that expects it hidden assumes that a part which is not rendered counts as not visible; this is flagged. notes and the footer buttons follow the same assumption.
+
+NAMED INPUTS.
+- submit (existing, in the list): used for the Cmd/Ctrl+Enter tests (decision 20). Draft A flagged that its binding in platforms.yaml is unverified. If it is not the platform modifier plus Enter, rename the two tests to a new input submitMod (default Control+Enter, macos Meta+Enter). Draft B's modEnter was not added, because it would duplicate submit.
+- clearDraft (proposed, not in the list): default { key: Control+Shift+Backspace }, macos { key: Meta+Shift+Backspace }. Reason: the reference clear accelerator is Cmd+Shift+Backspace, active with the title or the notes focused (F14-023). The feature title F13-013 says Cmd+Shift+Delete. The conflict is kept open; the code default is used. The platforms.yaml entry must be added by the harness owner.
+- selectAll (existing) is used for the formatting and list tests.
+- summon (Draft B) was not used. The reveal is the native shell's contract, and the critique says a do action is allowed only when the target advertises it, which is unverified. The reveal-focus and survives-reveal tests were dropped.
+
+DROPPED ENTRIES, with reasons.
+- Draft B "Enter with a blank title submits nothing" and "Enter in the title submits the trimmed title": the blank-title and trimming rules are not in any feature title the drafts cite, and the critique asked for them to be dropped if unconfirmed. The submit itself is covered by the Enter test.
+- Draft B "Shift+Enter ..." and the Draft A version: merged into one test (Draft A's, plus the focus check).
+- Draft B "the bar is hidden after Escape": a subset of the Escape test (duplicate).
+- Draft B "Escape hides the bar and keeps the draft for the next reveal", "Escape in the notes ... a reveal focuses the non-empty notes", "a reveal focuses the title when the notes are open but empty": need a summon (see above).
+- Draft B "clicking the Tab hint opens the notes", "empty notes collapse", "non-empty notes stay open", "notes open with the title typed", "the counter counts the characters", "Enter in the notes adds a line" (replaced by the corrected Draft A test), "modEnter in the notes submits" (replaced by the submit test with the note checked), "Clear appears once the title has text", "clearDraft from the title" and "clearDraft from the notes", "each Screenshot press", "one attached capture reads 1 shot", "Clear removes the attached captures", "the formatting buttons apply their marks" (Draft A's version kept), "the Tab hint shows a focus ring" (same as Draft A's focus test), "hovering Clear", "hovering the Tab hint", "hovering the footer target": each duplicates a kept test.
+- Draft B "Clear appears when the notes open with an empty title": contradicts F13-011, which says Clear appears only with draft content.
+- Draft B "the Clear button tooltip shows the clear shortcut", "the formatting tooltips show the platform modifier": tooltips are not in the part tree, so no field can read them (Draft A left them out for the same reason). The formatting shortcuts are also not bound in the reference source (see the conflict below).
+- Draft B "Clear during a capture returns the button to Screenshot": the pending grab is still in flight after Clear, so the button should still show Capturing; the expectation is doubtful and unflagged in its draft. Dropped.
+- Draft B "the footer target shows the list of the empty data set" and "a capture with no lists still submits": kept, as the critique asked (see the list of tests below).
+- Draft A "the mark shortcuts toggle bold, italic and underline on the selection" (input toggleBold, toggleItalic, toggleUnderline): dropped. Draft B's source (its records F13-047 to F13-049 edge cases) says the reference binds no such chord, and the source named in Draft A is only the inventory. The named inputs toggleBold, toggleItalic and toggleUnderline are therefore not used. If the desktop is found to bind them, add the test back.
+- Draft A "the list buttons toggle bulleted and numbered lists" (with the stray steps2_note key): split into two tests (bulletList and numberedList), so the exclusivity of the lists is not assumed. steps2_note is removed.
+
+CONFLICTS AND DECISIONS.
+- Counter: "0/2000" (code and screenshot, per the critique) versus "0 / 2000" (elements.json). The exact "0/2000" is used, per the critique.
+- Target label: the regex ^Home ?/ ?Errands$ is kept, because the separator may have no spaces. The exact text must be measured once and pinned.
+- Footer target and hiding the bar: Draft B expects the bar to hide (dismissed), Draft A did not check it. Draft B's source (its reading of F13-017 and F14-043) is the more precise, so the barHidden expectation is kept and flagged as unverified.
+- Submit (decision 20): taken from F14-046 (the bar is dismissed and the draft cleared). Draft B noted that F13-015 describes only the clear. Flagged as uncertain.
+- Clear visible in the notes state: the notes-state test has a title, so Clear is expected. Whether Clear shows with an empty title and open notes is unresolved and not tested.
+- Placeholder: the code says "Capture a task ..." and the screenshot shows an ellipsis. The placeholder is not asserted; the screenshot covers it.
+- Screenshot button filled state is neutral, not accent (review note). This follows decision 12 (accent only for the primary action and selection) and the review note, not the accent wording of F13-026 alone. Covered by the screenshot tests.
+- Hint and Clear keep their roles per the review: the Tab hint is in the tab order (F13-007); Clear, target and screenshot are tabIndex -1. Clear's tabIndex comes from the review notes only and is marked unverified.
+- Notes state: "formatting button keeps empty notes open" may conflict with F14-055 (empty notes collapse when the editor is left). Kept and flagged.
+- Escape, submit and footer hide the bar; the draft is kept on Escape and the footer target, and cleared on submit (F14-046, F13-015).
+
+UNCERTAIN ITEMS (kept as written, flagged).
+- times: 0 on events is used in several tests. The format's allowance for zero is unconfirmed (both drafts used it).
+- focused: false and selected: true on the toggle buttons assume the format and the ToolButton active state support them (both drafts).
+- The second press on a disabled screenshot button (pending test) may be refused by the harness as a press on a disabled element. If so, the test should use a focus-and-press or be split.
+- Enter in the notes is taken as a newline, and the notes text "Milk\nEggs" is compared as plain text. The editor code was not read.
+- Hover tests check only visible: true. The hover colour is not a field, so the hover state is checked by the screenshot alone.
+- The 300 px cap on the notes (F13-008) is checked by the long-note screenshot only; no height is asserted.
+- Dividers and the vertical separators are estimated from the screenshot; covered only by screenshots.
+- Whether the format runs each test at both viewports is unknown. The tests with notes open depend on the live window size, not on the viewport entry.
+- Dark colour scheme is covered by colorSchemes, not by a separate test.
+- Name matchers nested inside platform keys (Draft B) were removed, because the format shows only plain values per platform, and the tooltip tests that used them were dropped.
+
+LEFT OUT, with reasons.
+- Global summon and toggle hotkey, click-away dismiss, close request, Spaces, full-screen, placement and edge flip, Dock, start hidden, hotkey registration and conflicts, tray entries, the tray HTTP endpoint and the tray target fallback (F14-001..003, F14-015..019, F14-024..030, F14-036..043, F14-047..049, F14-061..063, F13-031): the native shell's contract, not this screen's widget tree. F14-001, F14-024 and F14-040 to F14-042 live in the tray process and lib.rs, not in this screen. Decision 20's rule that the global toggle acts only when the bar lacks focus is also the shell's.
+- Reveal and summon (F13-019, F13-031, F13-033 beyond the mount, F14-050, F14-057 non-empty notes across dismissal): needs a real summon. Covered only at mount: test 1 (title focus) and the notes-state test. The draft-survives and reveal-focus checks were dropped with the summon input.
+- Hotkey map reload and hint text from the live map (F13-029, F13-030, F14-034, F14-035): needs Settings edits.
+- Pointer hidden on reveal and while typing (F13-036, F14-052): no part exposes the pointer.
+- Drag by the chrome (F14-060) and the bar not moving during capture (F14-058): drag acts only on sliders, and there is no position part. No drag, trace or record step is used.
+- Second capture trigger from the global hotkey (F14-009): the native shell's trigger. The in-bar case is covered by the second-press test.
+- Auto-clear of the failed label after 4 s (F13-024) and clearing an earlier error on a new capture (F13-025): no wait step, and the capture result cannot change mid-test.
+- Cancelled region selection clearing the spinner (F14-012): covered by the cancelled test.
+- Tab order from the footer (F13-041): the footer buttons are tabIndex -1 by design; only press and focus checks are written.
+- Settings window (F13-055..063) and the appearance setting (F13-037, F14-033): another screen, or resolved by colorSchemes; the theme resolution is not observable.
+- Bar placement and edge flip (F14-015..019), click-away (F14-024), the close request (F14-025, decision 2): the OS and the shell.
+- Region selection and capture modes (F14-004..006, F14-008, F14-014): need the OS selection overlay and Screen Recording. The outcomes are covered by captureResult. The bar being excluded from the capture (F14-014) is the native grab's behaviour, and the PNG output (F14-011) is the harness stub's output; neither is tested here.
+- Tooltips (Clear, target, screenshot, formatting, Capturing) and the placeholder: not in the part tree.
+- HotkeyHint glyphs: display only, covered by screenshots.
+- Web-only items (web footer slot, web tabIndex, web shortcut remaps, web Image slot): not applicable on desktop.
+- Cursor and animation (F13-036, F13-042): nothing observable.
+- The target label when the target is not loaded (Taskscape, F13-017), and the target on the nolists set: not fixed by the inventory, so not asserted.
+
+TESTS (38, after the merge). Every test is only: [desktop] and has at least one expect or screenshot. Each reference state has a screenshot test: empty bar (test 1, dark through colorSchemes), typed title with Clear (test 2), the attached shot (test 16), the failed capture (test 22), the notes-open state (the open-state test), the focus ring (test 5), the hovers (the last three), and the long note (its test).

@@ -1,0 +1,97 @@
+BASIS. This merge uses only the text of Draft A, Draft B and the critique, plus the sources those drafts name (sheets.json, features-sheets.txt, notes-sheets.txt, decisions.md, web.md, the area-07 and area-09 feature records). No file was opened in this step and no critique item was re-run, so every source claim below is as the drafts or critique state it. Where the critique could not settle a point, the point is listed under CONFLICTS and PARENT TO CONFIRM.
+
+EVENT AND PART NAMES. Draft A names are kept where they were clearer: answered (B's resolved, with B's id field added), card (B's sheet), badge (B's glyph), field (B's nameField). B's footer part is kept.
+
+PROPS AND WHAT THE HARNESS DOES.
+- dataset: the parent main window is seeded with the named demo data (standard, empty, nolists, long) before the window opens. No sign-in on desktop.
+- open: the parent main window is mounted with dataset, then exactly one window is opened over it as its own OS window. The parent must be mounted so that changed can be read (the critique asks for one mount rule; this is it, and it is the rule that allows parent effects to be tested). Values are camelCase versions of Draft A's kebab names (new-list becomes newList, and so on). Targets when target is "": renameList and deleteList use list Reading (standard) or Inbox (empty); renameProject and deleteProject use Home; moveToTrash uses "Book bike service" (Errands); emptyTrash and deletePermanently use the Trash rows of standard. deletePermanently selects the two Trash rows "Print the old flyer" and "Call the printer about samples" (names from Draft B, not re-checked).
+- count: moveToTrash and deletePermanently only. The harness rejects deletePermanently with count below 2 (decision 12). For moveToTrash with count 3 the harness selects the first three open tasks of Errands, starting with "Book bike service" (the critique's requested definition). The standard count of Errands tasks is not given by the sources; the long dataset has 45 there.
+- target: the exact name of the list, project or task. Used by renameList, deleteList, renameProject, deleteProject and moveToTrash. Tests that pass target: "Spring launch" (project, standard), "Buy groceries for the week" (task, standard) and "Inbox" are names from the drafts; they are not checked against the data.
+- initialName: the one starting-text seam. newList and newProject only. The harness sets the field's starting text, selected, before the window shows. "" leaves the app's roll in place. This replaces Draft A's name-pool seeding, so there is one mechanism (critique item on the seam). If the app has no starting-text seam, the parent must add one; until then the initialName tests are not runnable.
+
+VIEWPORTS. The viewports list is not a run list. The harness sizes each window from its open value: prompts (newList, newProject, renameList, renameProject) 364 x 141; confirmations (deleteList, deleteProject, moveToTrash, emptyTrash, deletePermanently) 364 x 122. The 141 is measured for the prompts and the 122 for deleteList only; the other windows take their kind's size, which is an assumption. The parent should confirm this rule or split the contract into prompts and confirmations.
+
+EVENTS. answered: action accept | dismiss | instead; text is the trimmed name for prompts and "" otherwise; id is the spec's instead id and is not asserted, because the Import JSON press was dropped (see below). changed: the data change an accept made in the parent's data, read through the mounted parent. Exceptions: the names "Trash" (trash-emptied) and "2 items" (purged) have no single name, so the harness uses these; the sources do not give them. PARENT TO CONFIRM: whether the window emits changed or the parent contract owns it. If the window does not emit it, the times 1 checks fail and the times 0 checks pass vacuously, so changed must be removed from this contract or confirmed.
+
+PARTS. detail is required on deleteList, deleteProject and moveToTrash, and expected on emptyTrash and deletePermanently (copy unconfirmed). Prompts have no detail and no test reads it there. field, roll and instead are optional. Their visible: false checks are absence checks on optional parts; per the critique the engine skips these with a note, so they assert nothing where the part is absent by design. The parent should decide whether to make them strict. The glyph is the badge part; its visibility is not checked (aria-hidden), only screenshots show it.
+
+MASKS. moveToTrash screenshot masks badge and accept (reference tone accent and label "Move"; decision 10 and the notes change them to danger and "Move to Trash"). deleteList screenshot masks badge and cancel (reference Cancel 100 px, decided 84 px; reference tone differs). The deleteList accept tone is not masked; if the reference tone differs, the parent decides. The cancel width is therefore not checked on deleteList; it is not checked elsewhere either (no reference on prompts gives it).
+
+SCREENSHOTS. Reference states with a recording: newList, newProject, renameList, deleteList, moveToTrash (masked as above). Windows with no reference (renameProject, deleteProject, emptyTrash, deletePermanently) keep a screenshot as a baseline only, not as a reference check. Draft A kept these; Draft B said there should be none. PARENT TO CHOOSE.
+
+CONFLICTS (recorded, not silently resolved):
+1. New project default name: Draft A says the inventory (sheets.json) shows "Nereid"; Draft B says F09-093 shows "Titan". The critique asks for the default to be checked by pattern or by a seeded starting value. Resolved: the open test starts from initialName "Nereid" (a harness-supplied value, not a claim about the default); the generated default is checked only by the pattern test. PARENT TO CONFIRM the default from area-09.
+2. Empty Trash copy: Draft B gives headline "Empty Trash?" and detail "2 tasks deleted for good. No undo.", citing area-07. Draft A says the copy is not in the sources. Kept Draft B's exact copy because it names a precise source, but it is unconfirmed. If the parent cannot confirm area-07, delete the headline and detail assertions and keep only the weak card contains "2" check.
+3. Delete permanently copy: no source. Its detail check (matches \b2\b), card contains "2" check and headline absence are weak placeholders. The accept label "Delete permanently" is inferred from decision 10. Draft B's "contains Delete" was dropped in favour of the exact value (the critique asks for the most exact value).
+4. Empty Trash accept label "Empty Trash": Draft A inferred it from decision 10; Draft B cites area-07. Both agree.
+5. Project delete counts: Home is 3 lists (Draft A), with the task count as a pattern because the sources do not say whether subtasks or trashed items count. Spring launch is 2 lists (Draft B), not re-checked.
+6. Sample names: the inventory uses Golden Oasis and Nereid; other drafts cite Gilded Fjord and Titan. The contract pins only the harness-supplied initialName values; the rolled name is checked by pattern (inferred from four samples, uncertain) or by non-empty only.
+7. Cancel width: decided 84 px (6rem at 14px) versus 100 px in the reference delete-list state. Masked on deleteList; not otherwise checked.
+8. Shift+Tab: Draft B used it; the named key set does not include modifier keys. Replaced by the Tab cycle test on rename list, which now also types after the wrap.
+
+PARENT TO CONFIRM (summary): the viewport rule; whether the window emits changed; the Empty Trash and Delete permanently copy; the new project default name; whether absence checks on optional parts are to be strict; whether the four unreferenced windows keep baseline screenshots; the dataset names used in the tests (Spring launch, Buy groceries for the week, the two Trash rows).
+
+DROPS (each with its reason):
+From Draft A:
+- Every { part: badge, visible: true } check: the glyph is aria-hidden and screenshot-only; the critique flags the contradiction.
+- New list Cancel and New list Escape (without typed text): merged into the typed versions from Draft B, which check the same dismiss and that nothing is created.
+- New project "opens focused on the generated name" with expected text "Nereid": replaced by the initialName version because the default is in conflict (see CONFLICTS 1).
+- Rename project unchanged-name changed check (changed times 0): the no-op rule is not confirmed by the sources (critique). The answered check is kept.
+- Unmasked screenshots for moveToTrash and deleteList: changed to masked (not dropped; the entry is kept with masks).
+From Draft B:
+- Event name resolved: renamed to answered (names unified).
+- Parts sheet, glyph, nameField: renamed to card, badge, field (names unified).
+- sheet visible: false checks after close: closure is not measurable on a closed window; closure is read from the answered event instead.
+- glyph visible checks and new list detail visible: false: glyph is screenshot-only; detail is required on confirmations and prompts do not read it.
+- Import JSON answers instead and closes the prompt: the press opens the OS file dialog and the answer's timing is not confirmed (critique). Only visibility is kept, as in Draft A.
+- Tab from Create stays in the window and wraps: uses a focus action outside the named actions used everywhere else; the same wrap is tested on rename list.
+- Clearing the name disables Create: duplicate of Draft A's empty-name test.
+- A blank name disables Create and Enter only refocuses: duplicate of Draft A's spaces-only test.
+- An empty new list name shows the placeholder: folded into Draft A's empty-name test, which now has a screenshot.
+- Create accepts the typed name (Groceries): duplicate of Draft A's Create test, which also checks the trim and changed.
+- Enter creates a project from the typed name: duplicate of Draft A's project Enter test, which also checks changed.
+- Enter renames the list to the typed name: duplicate of Draft A's rename Enter test, which also checks changed.
+- Enter renames the project to the typed name: identical to Draft A's test.
+- Reference-window tests for newList, newProject, renameList, deleteList and moveToTrash: merged into the matching open tests, which carry the same expectations (and the masks).
+- Focusing the rename field again selects its whole value (with Shift+Tab): merged into the rename list Tab cycle test, with Shift+Tab removed.
+- Rename project roll visible: false and the roll-absence claim: not confirmed (critique and the notes' own uncertainty). The roll is not asserted on renameProject.
+- Delete list Enter cancel, Enter on Delete list, Space, click, Escape, Cancel click: duplicates of Draft A's delete-list tests.
+- Deleting an empty list: duplicate of Draft A's empty-list test.
+- Delete project one list and no lists: duplicates of Draft A's dataset tests.
+- Enter on Delete project (no delete): kept as the Enter-on-danger test (listed under the merged set).
+- Move to Trash Enter on accept, Space, Enter cancel: duplicates of Draft A's tests.
+- Empty Trash Space on accept: duplicate of Draft A's test.
+- Delete permanently reference test: merged into Draft A's open test (see CONFLICTS 3).
+- Escape closes a new list prompt and Cancel closes a prompt: merged into the typed Cancel and Escape tests.
+From the critique's additions (new tests, not drops): Enter on the danger button for deleteProject, emptyTrash, deletePermanently; Escape for deleteProject, emptyTrash, deletePermanently; click accept for deleteProject, emptyTrash, deletePermanently; Space on accept for deleteProject and deletePermanently; Cancel press on newProject, renameList, renameProject; Roll press on newProject and renameList; instead visible false on newProject and renameList and renameProject; accept disabled on renameList; typing on open for renameList; Tab wrap on deleteList.
+
+LEFT OUT WITH REASONS (union of both drafts and the critique):
+- Scrim, backdrop, overlay, background window, outside-press dismissal: none on desktop (notes-sheets [desktop]); each sheet is its own window.
+- keyboard: true: would make Enter press every button, against decision 10. keyboard is false.
+- Import JSON press: the system file dialog is drawn by the OS; only visibility is checked.
+- Close, minimise, zoom: the OS draws them (decision 2).
+- Focus return to the parent, the parent blocked while a window is open, one sheet at a time: parent window and OS (F06-059, F06-088).
+- SuffixInput (tail), F06-078: no window here uses a tail; the reference records none.
+- Toast host and toast after delete (F06-091 to F06-098): the main window shows the toast.
+- Motion (animate-sheet-in, card exit, F06-103): no recorded state.
+- Glyph badge (F06-062): aria-hidden, screenshot only.
+- Dark colour scheme (F09-092, F09-055): no dark recording.
+- Drag and drop: none on this screen.
+- Single-row Delete permanently (decision 12): no window.
+- Openers and other screens (F06-001 to F06-042, F06-030, F06-031, F06-056, F09-063, F09-067, F09-096): the parent opens these; this screen mounts windows with open.
+- Centred placement (F06-058): the OS places the window; no rule in the spec.
+- Stale answer id (F06-060): sheet-store detail; each window answers only itself.
+- Scrim press, dim levels, stacking, body rendering, parked focus (F06-068, F06-083 to F06-086, F06-089): no scrim on desktop.
+- Depth counter disables the app key map (F06-087) and focus returns to the opener (F06-088): these concern the parent window.
+- Window blur and resize dismissal (F06-090): the draft reads it as applying to context menus, not sheets, so sheets do not close on blur. Not checked here.
+- Parent state after create, delete, rename, and pane reconciliation (F09-007, F09-010, F09-015): parent contracts.
+- Non-settings panel empty surface (F09-054): an artefact of the reference's panel routing; not carried.
+- App-level sheet host (F09-057): the desktop has no such host; each sheet is its own window.
+- Window chrome (F09-058) and window sizes measured for the main window only (F09-059): see VIEWPORTS.
+- Singular copy for a one-task list in delete list (F09-066): untested, because no dataset in the drafts has a one-task list.
+- Cancel width on deleteList: masked (see MASKS).
+- Rename project roll: open question (no dice pool stated by the sources); not asserted.
+- Rename project no-op rule: not confirmed; the changed check is dropped.
+- Instead path beyond visibility: uncertain in the inventory; not tested.
+
+HARD-RULE CHECK. Part roles are button, textbox, heading and generic only (dialog mapped to generic and heading kept; the comments carry the real ARIA roles). Props have only type and default; allowed values are in comments. Every step with an action names its part. Actions used: press, type, key, and the named input selectAll (no new named input is needed). No focus action and no modifier chord are used. Every test has an expect or a screenshot, and every test is only desktop. Event last values are plain strings. drag is not used. No trace or record is used.

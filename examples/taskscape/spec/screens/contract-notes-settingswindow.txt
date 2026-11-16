@@ -1,0 +1,95 @@
+Merged from Draft A and Draft B with the critique applied. This step had no file access, so no source was re-read. Every source claim comes from the drafts or the critique, and unverified points are marked as open.
+
+WHAT CAME FROM WHERE
+- Parts use Draft A names throughout, because they are the clearer and more exact ones: searchClear (B clearSearch), generalMatches (B matchCount), content (B pane), appearanceDiscard (B discardAppearance), tasksDiscard (B discardTasks), reducedOn and reducedOff and reducedSystem (B reducedMotionOn, which was a driver part), showCompleted (B showCompletedSwitch), tabGeneral and the other tab parts (B sectionX). B's unused sections part is now tabList and is checked in the first test. B's driver parts are replaced by the General-pane controls defined here. Their behaviour stays with settingsgeneral, as noted in the yaml header.
+- Event: windowClosed with reason (A) replaces B's closed with by. Both are proposed names; A's is the clearer one.
+- emptyState role: status (A, EmptyState). B said generic. Chose status; check the inventory.
+- Added prop storedTheme, from the critique's seeding fix. Its harness support is unconfirmed.
+- Viewports: both kept (640 x 520 from decision 19 and 1180 x 760 from A).
+
+DROPPED, WITH REASON
+- B test "Escape in an empty search field does not close the window": the critique says it asserts the opposite of F10-024 as settled fact. The conflict is left open and untested.
+- B's Escape rule change (focus elsewhere with a non-empty query closes instead of clears): not the reference (F10-023) and has no source. Dropped; the reference clear-from-anywhere case is untested here.
+- B "ArrowUp/ArrowDown wraps" combined test: duplicates A's two wrap tests.
+- B "pressing a section selects it and deselects the others": duplicates A's pane test.
+- B "ArrowDown moves to next section": duplicates A's.
+- B "Tab from search lands on selected section only": duplicates A's wider version.
+- B "REDUCED Motion" test: duplicates A's case-insensitive test, which checks more (the row is hidden too).
+- B "search results label each group" (regex): duplicates A's exact name check for the appearance heading.
+- B "a query of only spaces": dropped. The critique says zero-token behaviour is undefined under the AND rule (F10-013), so the expected result is an assumption.
+- B "pressing a section with matches narrows" (started on General): A's version (starts on Capture) is kept, so this one is dropped.
+- B "editing the query after a narrowed search returns to every section": dropped. No narrowing can occur when only General has matches, so it does not test F10-019.
+- B "pressing a section with no matches clears": duplicates A's.
+- B "clear button" test: duplicates A's; its General-selected check is merged into A's test.
+- B "Escape in non-empty search clears": merged into A's Escape test, which gains the clear-button and badge checks.
+- B "Discard all changes": duplicates A's title-bar test, which also covers theme.
+- B "Tasks group discard": duplicates A's group discard test.
+- B "switching section plays the pane entrance animation": duplicates A's pane animation test.
+- B's citation SettingsWindow.tsx:30-33: dropped. No source code was read, so the line reference cannot be checked.
+- B's claim that the OS enforces the minimum size: corrected. Decision 19 says the window is never smaller than 640 x 520, which is app behaviour. It stays untested because the format has no resize step.
+- A's reducedRow "inline" layout note: the layout claim is removed. Decision 16 says like Theme, and Theme is stacked, so the inline claim is not supported. Layout is not a field the format can check. Confirm later.
+
+KEPT FROM B WITH CHANGES
+- Ctrl or Cmd F from another section: now starts on Capture, not General (critique). The General-tab version from A is kept too.
+- Ctrl or Cmd W from the search field: kept as a second test with the first. Both are pending.
+- Escape-in-non-empty and focusing-search tests: kept, see above.
+- The multi-word empty-state test ("motion xyzzy" with the full query in the hint): kept as distinct.
+- The Appearance discard that keeps the Tasks change: kept as distinct from A's Appearance test.
+- Session baseline test (theme set to dark, then back to system): added from the critique (F10-033 within session).
+
+CRITIQUE ITEMS APPLIED
+- Citation fix: the forced-on Reduced motion state is F10-060, not F10-059.
+- The Low Power test now asserts reducedOn selected true.
+- settingChanged counts added to the title-bar discard (6), the Tasks group discard (3) and the Appearance discard (4). The Show completed off test asserts times 1 and last show_completed off.
+- Reduced-motion pane record test added (record only; reviewed by eye against the default clip).
+- Focus-outline screenshot test added for the search field.
+- Stored value at open added (storedTheme prop).
+- Decision 19 overrides F10-001's "fixed" wording. The window is resizable, and 640 x 520 is only the opening size.
+- The show_completed storage form (1 / 0) cited F10-062 in Draft A. The critique says F10-062 is the macOS live-state record and not the storage form. The event value stays on / off. The 1 / 0 storage detail is unsourced here and must be checked against the F10-063 or F10-064 detail before it is relied on.
+
+CRITIQUE ITEMS NOT APPLIED (OPEN)
+- Per-section match badges (F10-015): the critique says the feature list shows a badge on each section, but the inventory shows General only. Kept generalMatches only. Confirm from the F10-015 detail; if each tab has a badge, add captureMatches, shortcutsMatches and aboutMatches parts and a test.
+- Search reaching an unselected section (F10-052): no test. It needs a word that appears only in a Shortcuts row, and no allowed source gives one. Add once the row text is known.
+- Shortcut half of the title-bar discard: deferred to settingsshortcuts (no shortcut driver part).
+- Ctrl or Cmd W: the critique says no source names this chord. Both tests are marked pending team confirmation. Proposed named input: closeWindow, default { key: Control+KeyW }, macos { key: Meta+KeyW }. Key names must match platforms.yaml.
+- Ctrl or Cmd F default: F10-025, assumed.
+- Forced-on Reduced motion selectability (F10-060): On and Off are not asserted disabled. The team needs to settle this first.
+- Viewport conflict: Draft A says 1180 x 760 is the inventory's measured size. Draft B says the review notes flag it as a conflict. Not checked. Kept as a resized-window size under decision 19. If the review notes confirm the conflict, drop the second viewport.
+- Defaults: Reduced motion default System is inferred ("like Theme"). show_completed default on is unconfirmed.
+- Title part: decision 2 says the app draws no window chrome. The in-app h1 "Settings" is kept as a question; drop title if the OS title replaces it.
+- Badge value "1" comes from the recording, not confirmed from source.
+- Tab test assumes the first Tab from an empty search field lands on the selected General tab.
+- Tab names use contains because icon ligature text may be part of the accessible name.
+- Fixed section order (F10-002): not asserted; the fields cannot express it.
+- Event counts for discards assume one write per changed setting. Discard order is not asserted.
+
+notes: |
+  Based on: the inventory settings-general.json (regions, widgets, states), features-settings-general.txt, the F10 detail records as cited by the two drafts, decisions 2, 16 and 19, the contract format and the library list. No source code was read.
+
+  Props, as the harness must act on them:
+  - dataset (standard | empty | nolists | long, default standard): loads that demo data set into the local SQLite database before mounting. Every test uses the default; the window shows no task data.
+  - motionSignal (none | lowPower | systemPrefers, default none): reports that OS signal to the app's motion handler, as macOS would. lowPower = Low Power Mode on; systemPrefers = macOS Reduce Motion on. Only the two macOS tests set it. A live change mid-test is not possible.
+  - storedTheme (none | system | light | dark, default none): writes the value into the settings store before mounting, so the window opens with it as the value at open. none leaves the store empty, so every setting starts at its default. Needs harness seeding support; if the harness cannot seed, drop the storedTheme test.
+  - The window always mounts with General selected and an empty search query.
+
+  Events:
+  - settingChanged: emitted on every setting write, including each write a discard makes. Discard counts assume one write per changed setting; the order of discard writes is not asserted.
+  - windowClosed (reason: escape | shortcut): emitted once per close. times 0 means the window did not close. Proposed event names.
+
+  Left out, with reasons:
+  - Close, minimize and zoom: the OS draws them (decision 2). The OS close button, minimum size and resizing are OS behaviour and have no step.
+  - Opens once, and a second request focuses the window: only the app shell can count or focus windows; no part here shows it.
+  - Title-bar drag: drag acts only on slider parts.
+  - Window fade-in (F10-001): no user step starts it; the harness mounts the window.
+  - Scroll to top on section click (F10-005): no scroll-position field.
+  - Dimmed tabs while searching (F10-016), focus outline as a visual (F10-010; covered by the focus screenshot), changed-group dot (F10-034), section header rule (F10-035), section icons and order (F10-002): visual or not expressible with the fields. Fixed section order is not asserted.
+  - Tooltips: no text part.
+  - F10-019 (editing a scoped query returns to results in every section): needs matches in another pane; not tested.
+  - F10-021 and F10-022 (Shortcuts intro hidden while searching): belong to settingsshortcuts; General has no intro.
+  - F10-026 (Escape and Cmd or Ctrl F swallowed while recording) and rebinding discard: settingsshortcuts.
+  - F10-030, F10-031, F10-032, F10-033 (persistence across launches, write failures, unreadable stored values, baseline across reopening): one headless mount on one data set cannot produce them. The within-session baseline and the stored value at open are tested instead.
+  - F10-036 and F10-064: not covered by any test here; the drafts give no reason, so they stay out until checked.
+  - Live change of the macOS signal (F10-062): no step can change an OS signal mid-test.
+  - Web-only items (sign-in, account menu, modal settings, browser Escape, Cmd or Ctrl F override) and web decisions 15, 17 and 18: not desktop behaviour.
+  - Pane contents (the Theme, Reduced motion and Show completed rows, footnotes): checked here only for the window-level parts; their own behaviour belongs to settingsgeneral.
+  - Shortcut half of the title-bar discard (F10-027): deferred to settingsshortcuts; there is no shortcut driver part here.

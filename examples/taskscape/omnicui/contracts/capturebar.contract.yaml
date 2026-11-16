@@ -1,0 +1,471 @@
+# Capture bar: the floating quick-capture window (desktop only; the web has no capture bar).
+# Parts are found by accessibility id app.capturebar.<part>.
+id: "app.capturebar"
+
+props:
+  dataset: { type: string, default: standard }          # standard | empty | nolists | long: the demo data set the harness loads
+  draft: { type: string, default: empty }               # empty | typed | notes: draft the harness seeds before the first frame
+  captureResult: { type: string, default: captured }    # captured | cancelled | failed | pending: how the harness answers a screenshot request
+
+events:
+  draftChanged: { title: { type: string }, notes: { type: string }, shots: { type: integer } }
+  taskSaved: { title: { type: string }, notes: { type: string }, shots: { type: integer }, project: { type: string }, list: { type: string } }
+  barHidden: { title: { type: string }, notes: { type: string } }
+  mainRequested: { project: { type: string }, list: { type: string } }
+  captureStarted: { pending: { type: integer } }
+
+parts:
+  card: { role: generic }                       # frameless window root; aria: dialog
+  titleRow: { role: generic }
+  title: { role: textbox }                      # title field, autofocused on mount
+  clear: { role: button }                       # "Clear", shown only with a draft; tabIndex -1 (review note, not verified against F13-041)
+  notesHint: { role: button }                   # "Press Tab to add a note", collapsed notes only
+  notes: { role: textbox }                      # rich-text notes editor, open only
+  toolbar: { role: generic }                    # formatting toolbar; aria: toolbar
+  bold: { role: button }                        # toggle, aria-pressed
+  italic: { role: button }                      # toggle, aria-pressed
+  underline: { role: button }                   # toggle, aria-pressed
+  strikethrough: { role: button }               # toggle, aria-pressed
+  bulletList: { role: button }                  # toggle, aria-pressed
+  numberedList: { role: button }                # toggle, aria-pressed
+  counter: { role: generic }                    # character counter, "0/2000" form
+  footer: { role: generic }
+  target: { role: button }                      # "Home / Errands" (project / list), opens the main window; tabIndex -1
+  screenshot: { role: button }                  # "Screenshot", "N shot(s)", "Capturing ...", "Capture failed"; tabIndex -1
+  spinner: { role: generic }                    # busy indicator, shown only while a capture is pending (F13-022, F14-010)
+
+viewports:
+  - { width: 760, height: 116 }                 # collapsed card: the starting size
+  - { width: 760, height: 185 }                 # notes open: the window grows to this (F13-039, F14-032); read live, never cropped
+colorSchemes: [light, dark]
+keyboard: true
+
+tests:
+  - name: "opens empty with the title focused and notes closed"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps: []
+    expect:
+      - { part: title, focused: true }
+      - { part: title, text: "" }
+      - { part: clear, visible: false }
+      - { part: notesHint, visible: true, text: { contains: "Press Tab to add a note" } }
+      - { part: notes, visible: false }
+      - { part: counter, visible: false }
+      - { part: target, text: { matches: "^Home ?/ ?Errands$" } }
+      - { part: screenshot, text: { contains: "Screenshot" } }
+      - { part: spinner, visible: false }
+    screenshot: true
+
+  - name: "typing fills the title and shows Clear"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: type, part: title, text: "Call the plumber" }
+    expect:
+      - { part: title, text: "Call the plumber" }
+      - { part: clear, visible: true }
+      - { part: clear, text: { contains: "Clear" } }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 0 } }
+    screenshot: true
+
+  - name: "Tab from the title opens the notes editor and focuses it"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Tab }
+    expect:
+      - { part: notes, visible: true }
+      - { part: notes, focused: true }
+      - { part: notesHint, visible: false }
+      - { part: toolbar, visible: true }
+      - { part: counter, text: "0/2000" }
+      - { part: target, focused: false }
+      - { part: screenshot, focused: false }
+
+  - name: "pressing the Tab hint opens the notes editor"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: press, part: notesHint }
+    expect:
+      - { part: notes, visible: true }
+      - { part: notes, focused: true }
+      - { part: notesHint, visible: false }
+
+  - name: "the Tab hint takes the shared focus ring when focused"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: focus, part: notesHint }
+    expect:
+      - { part: notesHint, focused: true }
+      - { part: notes, visible: false }
+    screenshot: true
+
+  - name: "Shift+Enter in the title does not submit"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: "Shift+Enter" }
+    expect:
+      - { event: taskSaved, times: 0 }
+      - { part: title, text: "Call the plumber", focused: true }
+      - { part: card, visible: true }
+
+  - name: "Enter in the title submits the task, clears the draft and hides the bar"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: taskSaved, times: 1, last: { title: "Call the plumber", notes: "", shots: 0, project: "Home", list: "Errands" } }
+      - { event: draftChanged, last: { title: "", notes: "", shots: 0 } }
+      - { event: barHidden, times: 1, last: { title: "", notes: "" } }
+      - { part: card, visible: false }
+
+  - name: "the submit input in the title submits the task (decision 20)"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { input: submit, part: title }          # platform modifier plus Enter; see notes on the submit binding
+    expect:
+      - { event: taskSaved, times: 1, last: { title: "Call the plumber", notes: "", shots: 0, project: "Home", list: "Errands" } }
+      - { event: barHidden, times: 1 }
+      - { part: card, visible: false }
+
+  - name: "the submit input in the notes submits the task with its note (decision 20)"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Ask about the boiler" }
+      - { input: submit, part: notes }
+    expect:
+      - { event: taskSaved, times: 1, last: { title: "Call the plumber", notes: "Ask about the boiler", shots: 0, project: "Home", list: "Errands" } }
+      - { event: barHidden, times: 1 }
+      - { part: card, visible: false }
+
+  - name: "plain Enter in the notes adds a line and does not submit"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { action: key, part: notes, key: Enter }
+      - { action: type, part: notes, text: "Eggs" }
+    expect:
+      - { event: taskSaved, times: 0 }
+      - { part: notes, text: "Milk\nEggs" }
+      - { part: card, visible: true }
+
+  - name: "Escape in the title hides the bar and keeps the draft"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Escape }
+    expect:
+      - { event: barHidden, times: 1, last: { title: "Call the plumber", notes: "" } }
+      - { event: taskSaved, times: 0 }
+      - { part: card, visible: false }
+
+  - name: "Escape in the notes hides the bar and keeps the title and notes"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { action: key, part: notes, key: Escape }
+    expect:
+      - { event: barHidden, times: 1, last: { title: "Call the plumber", notes: "Milk" } }
+      - { part: card, visible: false }
+
+  - name: "the Clear button empties the whole draft and collapses the notes"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Tab }
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { action: press, part: clear }
+    expect:
+      - { event: draftChanged, last: { title: "", notes: "", shots: 0 } }
+      - { part: title, text: "" }
+      - { part: clear, visible: false }
+      - { part: notes, visible: false }
+      - { part: notesHint, visible: true }
+
+  - name: "the clearDraft input empties the draft when the title has focus"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { input: clearDraft, part: title }      # proposed input, see notes
+    expect:
+      - { event: draftChanged, last: { title: "", notes: "", shots: 0 } }
+      - { part: title, text: "" }
+      - { part: clear, visible: false }
+
+  - name: "the clearDraft input empties the draft and the notes when the notes have focus"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { input: clearDraft, part: notes }
+    expect:
+      - { event: draftChanged, last: { title: "", notes: "", shots: 0 } }
+      - { part: notes, visible: false }
+      - { part: notesHint, visible: true }
+
+  - name: "a screenshot attaches to the draft, shows 1 shot and returns focus to the title"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: press, part: screenshot }
+    expect:
+      - { part: screenshot, text: { contains: "1 shot" } }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 1 } }
+      - { event: captureStarted, times: 1, last: { pending: 1 } }
+      - { part: title, focused: true }
+    screenshot: true
+
+  - name: "a second screenshot shows 2 shots"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: press, part: screenshot, times: 2 }
+    expect:
+      - { part: screenshot, text: { contains: "2 shots" } }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 2 } }
+      - { event: captureStarted, times: 2, last: { pending: 1 } }
+
+  - name: "a shot attached before submit goes into the submitted task"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: press, part: screenshot }
+      - { action: type, part: title, text: "Call the plumber" }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: taskSaved, times: 1, last: { title: "Call the plumber", notes: "", shots: 1, project: "Home", list: "Errands" } }
+
+  - name: "Clear resets the screenshot count to Screenshot"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: press, part: screenshot }
+      - { action: press, part: clear }
+    expect:
+      - { part: screenshot, text: { contains: "Screenshot" } }
+      - { event: draftChanged, last: { title: "", notes: "", shots: 0 } }
+      - { part: clear, visible: false }
+
+  - name: "a capture in progress shows Capturing, disables the button and starts nothing on a second press"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: pending }
+    steps:
+      - { action: press, part: screenshot }
+      - { action: press, part: screenshot }
+    expect:
+      - { part: screenshot, disabled: true }
+      - { part: screenshot, text: { contains: "Capturing" } }
+      - { part: spinner, visible: true }
+      - { event: captureStarted, times: 1, last: { pending: 1 } }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 0 } }
+    screenshot: { mask: [spinner] }
+
+  - name: "a failed capture shows Capture failed and attaches nothing"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: failed }
+    steps:
+      - { action: press, part: screenshot }
+    expect:
+      - { part: screenshot, text: { contains: "Capture failed" } }
+      - { part: screenshot, disabled: false }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 0 } }
+    screenshot: true
+
+  - name: "a cancelled capture is silent: no error, no shot, focus on the title"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: cancelled }
+    steps:
+      - { action: press, part: screenshot }
+    expect:
+      - { part: screenshot, text: { contains: "Screenshot" } }
+      - { part: spinner, visible: false }
+      - { event: captureStarted, times: 1 }
+      - { event: draftChanged, last: { title: "Call the plumber", notes: "", shots: 0 } }
+      - { part: title, focused: true }
+
+  - name: "empty notes collapse back to the hint when focus leaves them"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Tab }
+      - { action: focus, part: title }
+    expect:
+      - { part: notes, visible: false }
+      - { part: notesHint, visible: true }
+      - { part: title, focused: true }
+
+  - name: "non-empty notes stay open when focus leaves them"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: key, part: title, key: Tab }
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { action: focus, part: title }
+    expect:
+      - { part: notes, visible: true }
+      - { part: notesHint, visible: false }
+
+  - name: "a formatting button keeps empty notes open (unverified, see notes)"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: press, part: bold }
+    expect:
+      - { part: notes, visible: true }
+      - { part: notesHint, visible: false }
+
+  - name: "the open notes state shows the title focused, editor, toolbar and counter"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps: []
+    expect:
+      - { part: title, focused: true }
+      - { part: title, text: "Call the plumber" }
+      - { part: clear, visible: true }
+      - { part: notes, visible: true }
+      - { part: notes, text: "" }
+      - { part: notesHint, visible: false }
+      - { part: toolbar, visible: true }
+      - { part: counter, text: "0/2000" }
+      - { part: bold, visible: true }
+    screenshot: true
+
+  - name: "the formatting buttons apply marks to the selected text"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+      - { input: selectAll, part: notes }
+      - { action: press, part: bold }
+      - { action: press, part: italic }
+      - { action: press, part: underline }
+      - { action: press, part: strikethrough }
+    expect:
+      - { part: bold, selected: true }
+      - { part: italic, selected: true }
+      - { part: underline, selected: true }
+      - { part: strikethrough, selected: true }
+      - { part: notes, text: "Milk" }
+
+  - name: "the bulletList button starts a bulleted list"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Eggs" }
+      - { input: selectAll, part: notes }
+      - { action: press, part: bulletList }
+    expect:
+      - { part: bulletList, selected: true }
+
+  - name: "the numberedList button starts a numbered list"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Eggs" }
+      - { input: selectAll, part: notes }
+      - { action: press, part: numberedList }
+    expect:
+      - { part: numberedList, selected: true }
+
+  - name: "the character counter counts the note"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Milk" }
+    expect:
+      - { part: counter, text: "4/2000" }
+
+  - name: "a long note grows the card up to its height cap"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: type, part: notes, text: "Pick up the dry cleaning, call the plumber about the boiler, and order more milk for the weekend. Pick up the dry cleaning, call the plumber about the boiler, and order more milk for the weekend. Pick up the dry cleaning, call the plumber about the boiler, and order more milk for the weekend. Pick up the dry cleaning, call the plumber about the boiler, and order more milk for the weekend." }
+    expect:
+      - { part: notes, visible: true }
+    screenshot: true
+
+  - name: "Tab from the notes does not reach the footer"
+    only: [desktop]
+    props: { dataset: standard, draft: notes, captureResult: captured }
+    steps:
+      - { action: focus, part: notes }
+      - { action: key, part: notes, key: Tab }
+    expect:
+      - { part: target, focused: false }
+      - { part: screenshot, focused: false }
+
+  - name: "the footer target opens the main window for its project and list and hides the bar"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: press, part: target }
+    expect:
+      - { event: mainRequested, times: 1, last: { project: "Home", list: "Errands" } }
+      - { event: barHidden, times: 1, last: { title: "Call the plumber", notes: "" } }
+      - { part: card, visible: false }
+
+  - name: "the footer target shows the list of the empty data set"
+    only: [desktop]
+    props: { dataset: empty, draft: empty, captureResult: captured }
+    steps: []
+    expect:
+      - { part: target, text: { matches: "^Home ?/ ?Inbox$" } }
+
+  - name: "a capture with no lists still submits"
+    only: [desktop]
+    props: { dataset: nolists, draft: empty, captureResult: captured }
+    steps:
+      - { action: type, part: title, text: "Water the ferns" }
+      - { action: key, part: title, key: Enter }
+    expect:
+      - { event: taskSaved, times: 1 }
+      - { event: barHidden, times: 1, last: { title: "", notes: "" } }
+
+  - name: "the Tab hint shows its hover state (checked by screenshot)"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: hover, part: notesHint }
+    expect:
+      - { part: notesHint, visible: true }
+    screenshot: true
+
+  - name: "the Clear button shows its hover state (checked by screenshot)"
+    only: [desktop]
+    props: { dataset: standard, draft: typed, captureResult: captured }
+    steps:
+      - { action: hover, part: clear }
+    expect:
+      - { part: clear, visible: true }
+    screenshot: true
+
+  - name: "the footer target shows its hover state (checked by screenshot)"
+    only: [desktop]
+    props: { dataset: standard, draft: empty, captureResult: captured }
+    steps:
+      - { action: hover, part: target }
+    expect:
+      - { part: target, visible: true }
+    screenshot: true
+
+keyboard: true

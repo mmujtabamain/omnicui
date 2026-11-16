@@ -1,0 +1,495 @@
+# Merged omnicui contract for app.settingscapture (desktop Settings window, Capture section).
+id: app.settingscapture
+
+# One OS window at 640 x 520 (decision 19: resizable, never smaller).
+# Settings is its own OS window (decision 2, decision 21): no backdrop, no scrim, no in-window overlay.
+# The app draws no window controls. Close, minimize and zoom are drawn by the OS and are never tested.
+
+props:
+  dataset:
+    type: string
+    default: standard
+    # standard | empty | nolists | long (spec/screens/web.md). The harness seeds the local SQLite database with that set.
+    # This screen reads only the stored settings and the data path, so every set shows the same screen.
+  open:
+    type: string
+    default: capture
+    # general | capture | shortcuts | about. The sidebar section selected when the window is presented, set as a user click would set it.
+    # Default capture: this screen is the Capture pane. The reference source opens on General (F10-002); F13-055 records Capture after a click.
+  storedScreenshotMode:
+    type: string
+    default: fullscreen
+    # fullscreen | region | any other text. The harness stores this value as screenshot_mode before the window opens.
+    # Any value other than fullscreen or region must show Full screen (F10-032).
+  pathLoading:
+    type: boolean
+    default: false
+    # true: the harness holds the reply for the data paths, so the Saved to row shows the dash (F10-040) until released.
+    # false: the path arrives at once.
+
+events:
+  settingSaved:
+    key: { type: string }
+    value: { type: string }
+    # Emitted when the app writes a setting (ctx.set, or ctx.discard). key is screenshot_mode on this screen.
+    # This is the write, observed by the harness. It is not a broadcast: the reference does not broadcast screenshot_mode (F10-064).
+  folderOpenRequested:
+    folder: { type: string }
+    # Emitted at the app's PathButton handler, in place of the OS file manager call (api.openPath, F10-039).
+    # folder is "screenshots". The harness records the request and does not start a file manager.
+    # The absolute path is machine-specific, so it is not in the event.
+  windowClosed:
+    reason: { type: string }
+    # Emitted at the app's own window handler, where it calls close() (SettingsWindow.tsx:123-126). reason is "escape".
+    # The OS close control is not tested.
+
+viewports:
+  - { width: 640, height: 520 }
+  # Layout size from SettingsWindow.tsx (F10-001, decision 19). The inventory's 1180 x 760 is not used as the layout reference.
+
+colorSchemes: [ light, dark ]
+
+keyboard: true
+
+mask: [ pathButton ]
+# The Saved to path is the data folder on the machine, so it differs between machines. Masked in every screenshot.
+
+parts:
+  titleBar: { role: generic }  # Settings title strip, 46 px, with a bottom hairline. Holds title and discardAll. Dragging is an OS action, not tested. Draft B name: settingsTitleBar.
+  title: { role: heading }  # h1 "Settings" (F10-028).
+  discardAll: { role: button }  # aria: button (IconButton, undo icon). Trailing in the title strip, before the OS controls. Present only while a setting differs from its value when the window opened (F10-027). Name "Discard changes" (draft A, from source only).
+  sidebar: { role: generic }  # Left column, about 139 px wide, with a right border. Holds the search field and the section list.
+  searchField: { role: textbox }  # aria-label "Search settings", placeholder "Search" (F10-009). Accepts type and key.
+  clearSearch: { role: button }  # aria: button (IconButton, close icon, aria-label "Clear search"). Present only while the query is non-empty (F10-011). Draft B name: searchClear.
+  sections: { role: generic }  # aria: tablist, aria-label "Settings sections", vertical. Contains the four section tabs. Draft B name: sectionList.
+  sectionGeneral: { role: button }  # aria: tab. Label "General", icon tune. Selected on open only when open is general. Draft B name: generalTab.
+  sectionCapture: { role: button }  # aria: tab. Label "Capture", icon screenshot_monitor. tabIndex 0 only when selected (F10-007). Draft B name: captureTab.
+  sectionShortcuts: { role: button }  # aria: tab. Label "Shortcuts", icon keyboard. Draft B name: shortcutsTab.
+  sectionAbout: { role: button }  # aria: tab. Label "About", icon info. Draft B name: aboutTab.
+  captureMatchCount: { role: generic }  # aria: none. Recessed badge with the number of matching rows on the Capture tab (F10-015). Present only while searching and Capture has matches. Draft B name: captureMatchBadge (role status not used; the reference records no role).
+  searchEmpty: { role: generic }  # Container of the no-match empty state (draft B). Shown while a query matches nothing. Draft B role status not used (see notes).
+  contentPane: { role: generic }  # aria: tabpanel. Scrolling content area of the active section, or of the search results (F10-074).
+  screenshotsGroup: { role: generic }  # SettingsGroup "Screenshots". Container for the header and the card of rows.
+  screenshotsHeading: { role: heading }  # SectionHeader, shown uppercase by CSS, label "Screenshots". While an unscoped search matches it reads "Capture · Screenshots" (F10-014). Draft B name: screenshotsHeader.
+  screenshotsDiscard: { role: button }  # aria: button (IconButton, undo icon), at the end of the Screenshots header. Group-level discard. Present only while screenshot_mode differs from its value when the window opened. Name from the inventory title (draft A, not confirmed). Draft B name: groupDiscard.
+  captureModeRow: { role: generic }  # SettingRow "Capture mode", stacked. Hidden while searching unless it matches.
+  captureModeLabel: { role: generic }  # Row title text "Capture mode" (draft B).
+  captureModeControl: { role: generic }  # Segmented control (surfaceThumb). Its own role is not recorded (draft B).
+  segmentFullScreen: { role: button }  # aria: button (segment of the Segmented control), name "Full screen", icon fullscreen. Selected when the mode is fullscreen. Draft B name: fullScreenSegment.
+  segmentRegion: { role: button }  # aria: button (segment of the Segmented control), name "Region", icon crop_free. Selected when the mode is region. Draft B name: regionSegment.
+  captureHint: { role: generic }  # Footnote under the control, caption size (11 px, the one caption token). Full screen: "Capture the entire screen instantly." Region: "Drag to select an area, or press Space to grab a window. Esc cancels." Draft B name: captureModeHint.
+  savedToRow: { role: generic }  # SettingRow "Saved to", stacked.
+  savedToLabel: { role: generic }  # Row title text "Saved to" (draft B).
+  savedToDescription: { role: generic }  # Row description, caption size (11 px, the same token as captureHint). Text "Click to open the folder."
+  pathButton: { role: button }  # PathButton: the screenshots folder path in monospace, with the folder_open icon. aria-label "Open <path> in the file manager". Present only when the path is known. Draft B name: savedPath.
+  pathPlaceholder: { role: generic }  # Muted "—" shown in place of pathButton while the path loads (pathLoading). Not clickable.
+  emptyTitle: { role: generic }  # EmptyState title "No settings match". Shown in place of the groups while a query matches nothing.
+  emptySubtitle: { role: generic }  # EmptyState subtitle "Nothing here for “<trimmed query>”."
+
+tests:
+  - name: opens on Capture with Full screen selected, the hint, the folder row and no changes
+    only: [desktop]
+    props: {}
+    steps: []
+    expect:
+      - { part: title, text: "Settings" }
+      - { part: sectionCapture, text: "Capture", selected: true }
+      - { part: sectionGeneral, selected: false }
+      - { part: sectionShortcuts, selected: false }
+      - { part: sectionAbout, selected: false }
+      - { part: segmentFullScreen, text: "Full screen", selected: true }
+      - { part: segmentRegion, text: "Region", selected: false }
+      - { part: captureModeLabel, text: "Capture mode" }
+      - { part: captureHint, text: "Capture the entire screen instantly." }
+      - { part: screenshotsHeading, text: "Screenshots" }
+      - { part: savedToLabel, text: "Saved to" }
+      - { part: savedToDescription, text: "Click to open the folder." }
+      - { part: pathButton, name: { matches: "^Open .*screenshots in the file manager$" }, text: { matches: "screenshots$" } }
+      - { part: discardAll, visible: false }
+      - { part: screenshotsDiscard, visible: false }
+      - { part: searchField, text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: captureMatchCount, visible: false }
+      - { event: settingSaved, times: 0 }
+    screenshot: true
+
+  - name: the sidebar shows the four section tabs with their labels
+    only: [desktop]
+    props: {}
+    steps: []
+    expect:
+      - { part: sectionGeneral, text: "General" }
+      - { part: sectionCapture, text: "Capture" }
+      - { part: sectionShortcuts, text: "Shortcuts" }
+      - { part: sectionAbout, text: "About" }
+
+  - name: choosing Region shows the region hint, saves the mode and offers the discards
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: segmentRegion }
+    expect:
+      - { part: segmentRegion, selected: true }
+      - { part: segmentFullScreen, selected: false }
+      - { part: captureHint, text: "Drag to select an area, or press Space to grab a window. Esc cancels." }
+      - { part: discardAll, name: "Discard changes", visible: true }
+      - { part: screenshotsDiscard, visible: true }
+      - { event: settingSaved, times: 1, last: { key: screenshot_mode, value: region } }
+    screenshot: true
+
+  - name: choosing Full screen again after Region clears the change and both discards
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: segmentRegion }
+      - { action: press, part: segmentFullScreen }
+    expect:
+      - { part: segmentFullScreen, selected: true }
+      - { part: segmentRegion, selected: false }
+      - { part: captureHint, text: "Capture the entire screen instantly." }
+      - { part: discardAll, visible: false }
+      - { part: screenshotsDiscard, visible: false }
+      - { event: settingSaved, times: 2, last: { key: screenshot_mode, value: fullscreen } }
+    screenshot: true
+
+  - name: the title-bar discard restores Full screen from when the window opened
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: segmentRegion }
+      - { action: press, part: discardAll }
+    expect:
+      - { part: segmentFullScreen, selected: true }
+      - { part: segmentRegion, selected: false }
+      - { part: captureHint, text: "Capture the entire screen instantly." }
+      - { part: discardAll, visible: false }
+      - { part: screenshotsDiscard, visible: false }
+      - { event: settingSaved, times: 2, last: { key: screenshot_mode, value: fullscreen } }
+    screenshot: true
+
+  - name: the Screenshots header discard restores Full screen and hides both discards
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: segmentRegion }
+      - { action: press, part: screenshotsDiscard }
+    expect:
+      - { part: segmentFullScreen, selected: true }
+      - { part: segmentRegion, selected: false }
+      - { part: captureHint, text: "Capture the entire screen instantly." }
+      - { part: discardAll, visible: false }
+      - { part: screenshotsDiscard, visible: false }
+      - { event: settingSaved, times: 2, last: { key: screenshot_mode, value: fullscreen } }
+    screenshot: true
+
+  - name: a stored Region is shown on open with no discard offered
+    only: [desktop]
+    props: { storedScreenshotMode: region }
+    steps: []
+    expect:
+      - { part: segmentRegion, selected: true }
+      - { part: segmentFullScreen, selected: false }
+      - { part: captureHint, text: "Drag to select an area, or press Space to grab a window. Esc cancels." }
+      - { part: discardAll, visible: false }
+      - { part: screenshotsDiscard, visible: false }
+    screenshot: true
+
+  - name: an unrecognised stored mode falls back to Full screen
+    only: [desktop]
+    props: { storedScreenshotMode: "bogus-value" }
+    steps: []
+    expect:
+      - { part: segmentFullScreen, selected: true }
+      - { part: segmentRegion, selected: false }
+      - { part: captureHint, text: "Capture the entire screen instantly." }
+
+  - name: pressing the Saved to path asks for the screenshots folder to open
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: pathButton }
+    expect:
+      - { event: folderOpenRequested, times: 1, last: { folder: "screenshots" } }
+      - { part: pathButton, visible: true }
+    # The harness observes the request from the app's handler. The OS file manager is not started by the test.
+
+  - name: while the path loads, Saved to shows a dash that is not a button
+    only: [desktop]
+    props: { pathLoading: true }
+    steps: []
+    expect:
+      - { part: pathPlaceholder, text: "—" }
+      - { part: pathButton, visible: false }
+      - { part: savedToRow, visible: true }
+    screenshot: true
+
+  - name: hovering the path button shows its hover look
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: hover, part: pathButton }
+    expect:
+      - { part: pathButton, visible: true }
+    screenshot: true
+    # The path text is masked in every screenshot (see mask), so the hover wash is not compared pixel by pixel.
+
+  - name: Tab from the search field reaches the selected section only
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: key, part: searchField, key: Tab }
+    expect:
+      - { part: sectionCapture, focused: true }
+      - { part: sectionGeneral, focused: false }
+      - { part: sectionShortcuts, focused: false }
+      - { part: sectionAbout, focused: false }
+
+  - name: ArrowUp on Capture selects General and moves focus to it
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: sectionCapture }
+      - { action: key, part: sectionCapture, key: ArrowUp }
+    expect:
+      - { part: sectionGeneral, selected: true, focused: true }
+      - { part: sectionCapture, selected: false }
+      - { part: captureModeRow, visible: false }
+
+  - name: ArrowUp on General wraps to About
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: sectionCapture }
+      - { action: key, part: sectionCapture, key: ArrowUp }
+      - { action: key, part: sectionGeneral, key: ArrowUp }
+    expect:
+      - { part: sectionAbout, selected: true, focused: true }
+      - { part: sectionGeneral, selected: false }
+
+  - name: ArrowDown on About wraps to General
+    only: [desktop]
+    props: { open: about }
+    steps:
+      - { action: focus, part: sectionAbout }
+      - { action: key, part: sectionAbout, key: ArrowDown }
+    expect:
+      - { part: sectionGeneral, selected: true, focused: true }
+      - { part: sectionAbout, selected: false }
+
+  - name: ArrowDown moves down through Capture and Shortcuts, then wraps from About to General
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: sectionCapture }
+      - { action: key, part: sectionCapture, key: ArrowDown }
+      - { action: key, part: sectionShortcuts, key: ArrowDown }
+      - { action: key, part: sectionAbout, key: ArrowDown }
+    expect:
+      - { part: sectionGeneral, selected: true, focused: true }
+      - { part: sectionAbout, selected: false }
+
+  - name: pressing Capture from General shows the Capture pane and plays its entrance
+    only: [desktop]
+    props: { open: general }
+    steps:
+      - { action: press, part: sectionCapture }
+    expect:
+      - { part: sectionCapture, selected: true }
+      - { part: captureModeRow, visible: true }
+    record: { part: contentPane }
+
+  - name: pressing General hides the Capture pane
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: sectionGeneral }
+    expect:
+      - { part: sectionGeneral, selected: true }
+      - { part: sectionCapture, selected: false }
+      - { part: captureModeRow, visible: false }
+
+  - name: typing a query filters the rows live, shows the count and the prefixed heading
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region area" }
+    expect:
+      - { part: searchField, text: "region area" }
+      - { part: clearSearch, visible: true }
+      - { part: captureModeRow, visible: true }
+      - { part: savedToRow, visible: false }
+      - { part: captureMatchCount, text: "1" }
+      - { part: screenshotsHeading, text: { matches: "(?i)^capture · screenshots$" } }
+    screenshot: true
+
+  - name: the x button clears the query and returns to the Capture pane
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region area" }
+      - { action: press, part: clearSearch }
+    expect:
+      - { part: searchField, text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: sectionCapture, selected: true }
+      - { part: captureModeRow, visible: true }
+      - { part: savedToRow, visible: true }
+      - { part: screenshotsHeading, visible: true }
+      - { part: captureMatchCount, visible: false }
+    screenshot: true
+
+  - name: Escape clears the query first and keeps the window open
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region" }
+      - { action: key, part: searchField, key: Escape }
+    expect:
+      - { part: searchField, text: "" }
+      - { part: clearSearch, visible: false }
+      - { part: savedToRow, visible: true }
+      - { part: screenshotsHeading, visible: true }
+      - { event: windowClosed, times: 0 }
+
+  - name: Escape closes the window when the search is empty
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: key, part: searchField, key: Escape }
+    expect:
+      - { event: windowClosed, times: 1, last: { reason: "escape" } }
+    # The app's own window handler calls close() (SettingsWindow.tsx:123-126). The harness observes that call.
+    # The OS close control itself is not tested.
+
+  - name: a query that matches nothing shows the empty state with the query
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "zzz" }
+    expect:
+      - { part: emptyTitle, text: "No settings match" }
+      - { part: emptySubtitle, text: "Nothing here for “zzz”." }
+      - { part: captureModeRow, visible: false }
+      - { part: captureMatchCount, visible: false }
+    screenshot: true
+
+  - name: a query whose words do not all match one row shows the empty state with the trimmed query
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "saved region" }
+    expect:
+      - { part: searchEmpty, visible: true, text: { contains: "No settings match" } }
+      - { part: searchEmpty, text: { contains: "Nothing here for “saved region”." } }
+    # The all-words rule is draft B's reading and is not verified against the source.
+
+  - name: Ctrl or Cmd F focuses and selects the search field
+    only: [desktop]
+    props: {}
+    steps:
+      - { input: search, part: contentPane }
+    expect:
+      - { part: searchField, focused: true }
+
+  - name: the search ignores letter case
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "CAPTURE MODE" }
+    expect:
+      - { part: contentPane, text: { contains: "Capture · Screenshots" } }
+      - { part: captureModeRow, visible: true }
+
+  - name: clicking Capture while searching narrows the results to that section, without the prefix
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region area" }
+      - { action: press, part: sectionCapture }
+    expect:
+      - { part: sectionCapture, selected: true }
+      - { part: searchField, text: "region area" }
+      - { part: screenshotsHeading, text: { matches: "(?i)^screenshots$" } }
+      - { part: captureModeRow, visible: true }
+      - { part: savedToRow, visible: false }
+      - { part: captureMatchCount, text: "1", visible: true }
+
+  - name: editing the query of a scoped search returns to all sections with the prefix
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region area" }
+      - { action: press, part: sectionCapture }
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: " " }
+    expect:
+      - { part: screenshotsHeading, text: { matches: "(?i)^capture · screenshots$" } }
+      - { part: captureMatchCount, text: "1" }
+      - { part: savedToRow, visible: false }
+
+  - name: clicking a section with no matches clears the search and shows that section
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "region area" }
+      - { action: press, part: sectionAbout }
+    expect:
+      - { part: searchField, text: "" }
+      - { part: sectionAbout, selected: true }
+      - { part: captureModeRow, visible: false }
+      - { part: clearSearch, visible: false }
+      - { part: contentPane, text: { contains: "Restore defaults" } }
+    # "Restore defaults" is draft B's text for the About pane and is not verified against the reference.
+
+  - name: clicking About shows the About pane and hides Screenshots
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: sectionAbout }
+    expect:
+      - { part: sectionAbout, selected: true }
+      - { part: screenshotsHeading, visible: false }
+      - { part: contentPane, text: { contains: "Restore defaults" } }
+
+  - name: clicking Capture again shows the Screenshots group
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: press, part: sectionAbout }
+      - { action: press, part: sectionCapture }
+    expect:
+      - { part: sectionCapture, selected: true }
+      - { part: sectionAbout, selected: false }
+      - { part: screenshotsHeading, visible: true }
+      - { part: captureModeLabel, text: "Capture mode" }
+
+  - name: a search for a shortcut term finds shortcut rows while Shortcuts is closed
+    only: [desktop]
+    props: {}
+    steps:
+      - { action: focus, part: searchField }
+      - { action: type, part: searchField, text: "shortcut" }
+    expect:
+      - { part: contentPane, text: { contains: "Shortcuts · Global" } }
+    # The "Shortcuts · Global" heading prefix is draft B's reading and is not verified against the reference.
+
+# Not tested, and why:
+# - Dragging the title strip moves the window: a window-manager action, not a part behaviour. Drag acts only on sliders, so there are no drag tests.
+# - Close, minimize and zoom controls, and the window fade-in on open (F10-001): drawn or timed by the OS (decision 2).
+# - Failed writes stay silent (F10-031): the harness has no fault injection.
+# - The group dot (F10-034): conflicts with the undo icon (F10-035, inventory); the icon is used and the dot is left out.
+# - Dimmed sections at 40% opacity (F10-016) and the blue focus outline (F10-010): pixels only, covered by the screenshots.
+# - Scroll reset to top (F10-005): no scroll field in the roles. Section intros (F10-021, F10-022): Capture has no intro.
+# - Recording a shortcut that swallows Escape and Command-F (F10-026): belongs to the Shortcuts pane.
+# - Other panes and other screens: About pane details (F10-037, F10-038), F10-041 to F10-054, F10-056 to F10-064 apart from the ones above, F10-068 to F10-073, F10-075 to F10-077, F13-001 to F13-054 (capture bar).
+# - Click-to-open of the folder in the OS file manager: the harness observes folderOpenRequested instead.
+# - Keyboard Tab is tested only from the search field, not through the whole tab order.

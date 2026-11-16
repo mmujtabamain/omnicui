@@ -189,6 +189,7 @@ tests:
 
   # Variants (screenshots run at every viewport and at light and dark)
   - name: defaults are center placement, dim scrim, outside dismissal and Escape captured
+    only: [web]
     props: { open: true }
     expect:
       - { part: layer, visible: true }
@@ -210,6 +211,7 @@ tests:
     except: [desktop]
 
   - name: placement center with dim scrim (dialog card)
+    only: [web]
     props: { open: true, placement: center, scrim: dim }
     expect:
       - { part: layer, visible: true }
@@ -229,6 +231,18 @@ tests:
       - { part: layer, visible: true }
     screenshot: true
     except: [desktop]
+
+  - name: lightbox window closes on Escape and returns focus to the opener
+    props: { open: false, placement: fill, scrim: strong, dismissOn: none, captureEscape: true }
+    steps:
+      - { action: focus, part: opener }
+      - { action: key, part: opener, key: Enter }
+      - { input: dismiss }
+    expect:
+      - { event: dismissed, times: 1 }
+      - { part: layer, visible: false }
+      - { part: opener, focused: true }
+    only: [desktop]
 
   # Desktop draws no scrim. Absence of the optional scrim is not asserted by expect (skipped where absent);
   # these tests are screenshot-only.

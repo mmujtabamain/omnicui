@@ -31,6 +31,7 @@ tests:
       - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
 
   - name: remote source calls api.openAttachment on press
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: press, part: chip }
@@ -68,6 +69,7 @@ tests:
       - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
 
   - name: Space on the focused remote chip opens it
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: focus, part: chip }
@@ -83,6 +85,7 @@ tests:
       - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
 
   - name: Enter opens a remote chip
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: key, part: chip, key: Enter }
@@ -90,12 +93,21 @@ tests:
       - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
 
   - name: confirm input opens the focused chip
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: focus, part: chip }
       - { input: confirm }
     expect:
       - { event: opened, times: 1, last: { source: remote, name: Report.pdf } }
+
+  - name: confirm input opens the focused local chip
+    props: { source: local, name: Report.pdf }
+    steps:
+      - { action: focus, part: chip }
+      - { input: confirm }
+    expect:
+      - { event: opened, times: 1, last: { source: local, name: Report.pdf } }
 
   - name: Backspace removes a local chip as one unit
     props: { source: local, name: Report.pdf }
@@ -118,6 +130,7 @@ tests:
       - { event: opened, times: 0 }
 
   - name: Backspace removes a remote chip as one unit
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: focus, part: chip }
@@ -128,6 +141,7 @@ tests:
       - { event: opened, times: 0 }
 
   - name: Delete removes a remote chip as one unit
+    only: [web]
     props: { source: remote, name: Report.pdf }
     steps:
       - { action: focus, part: chip }
@@ -155,6 +169,7 @@ tests:
       - { part: chip, visible: true }
 
   - name: remote chip looks the same in light and dark
+    only: [web]
     props: { source: remote, name: Report.pdf }
     screenshot: true
     expect:

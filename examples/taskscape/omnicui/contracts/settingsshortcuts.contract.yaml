@@ -17,7 +17,7 @@ events:
 parts:
   dialog: { role: generic }            # aria: dialog. Modal Settings dialog over the main window
   title: { role: heading }             # "Settings"
-  close: { role: button }              # the dialog's close button (its name is not asserted)
+  close: { role: button, optional: true }              # the dialog's close button (its name is not asserted)
   discardAll: { role: button }         # title-bar undo, aria-label "Discard changes"; shown only while a setting or shortcut differs from its open-time value
   search: { role: textbox }            # placeholder "Search", aria-label "Search settings"
   searchClear: { role: button }        # aria-label "Clear search"; shown while the query is non-empty (spaces count)
@@ -70,7 +70,7 @@ tests:
       - { part: intro, visible: true, text: "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel." }
       - { part: groupMain, text: "Main window" }
       - { part: rowNewTask, visible: true, text: { contains: "New task" } }
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: discardAll, visible: false }
       - { part: discardGroup, visible: false }
       - { part: shortcutsMatches, visible: false }
@@ -277,6 +277,7 @@ tests:
       - { part: dialog, visible: false }
 
   - name: the close button closes Settings
+    only: [web]
     steps:
       - { action: press, part: close }
     expect:
@@ -335,7 +336,7 @@ tests:
       - { action: press, part: keycapNewTask }
       - { action: key, part: keycapNewTask, key: Escape }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: dialog, visible: true }
       - { part: reset, visible: false }
       - { event: bindingChanged, times: 0 }
@@ -345,7 +346,7 @@ tests:
       - { action: press, part: keycapNewTask }
       - { action: press, part: keycapNewTask }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: reset, visible: false }
       - { event: bindingChanged, times: 0 }
 
@@ -384,10 +385,10 @@ tests:
       - { action: hover, part: rowNewTask }
       - { action: press, part: reset }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: reset, visible: false }
       - { part: discardAll, visible: false }
-      - { event: bindingChanged, last: { label: "New task", accel: "Alt+N" } }
+      - { event: bindingChanged, last: { label: "New task" } }   # the default chord differs by platform (decision 18); the event carries it as is
 
   - name: the per-row reset puts a changed shortcut back to its default
     steps:
@@ -395,7 +396,7 @@ tests:
       - { action: key, part: keycapNewTask, key: "Alt+KeyK" }
       - { action: press, part: reset }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: reset, visible: false }
 
   - name: the per-row reset fades in when its row is hovered
@@ -414,7 +415,7 @@ tests:
       - { action: key, part: keycapNewTask, key: "Alt+J" }
       - { action: press, part: discardAll }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: discardAll, visible: false }
       - { part: discardGroup, visible: false }
       - { part: reset, visible: false }
@@ -425,12 +426,13 @@ tests:
       - { action: key, part: keycapNewTask, key: "Alt+J" }
       - { action: press, part: discardGroup }
     expect:
-      - { part: keycapNewTask, name: { matches: "^(Alt|Option) N$" } }
+      - { part: keycapNewTask, name: { web: { matches: "^(Alt|Option) N$" }, default: { matches: "^Ctrl N$" }, macos: { matches: "^Command N$" } }, why: "New task: Alt+N on the web (decision 18); Ctrl+N on Windows and Linux and Cmd+N on macOS on the desktop (platform-rubric.md:22)" }
       - { part: discardGroup, visible: false }
       - { part: discardAll, visible: false }
-      - { event: bindingChanged, last: { label: "New task", accel: "Alt+N" } }
+      - { event: bindingChanged, last: { label: "New task" } }   # the default chord differs by platform (decision 18); the event carries it as is
 
   - name: web defaults use Alt chords for the commands the browser reserves, with their spoken names
+    only: [web]
     # Mod is Ctrl off macOS and Command on macOS (F08-071, F08-072). In the regexes, [[] is a literal "[".
     steps:
       - { action: hover, part: rowNewList }
@@ -444,6 +446,18 @@ tests:
       - { part: keycapUndo, name: { matches: "^(Ctrl|Command) Z$" } }
       - { part: keycapRedo, name: { matches: "^(Ctrl|Command) Shift Z$" } }
 
+  - name: desktop defaults keep the reference chords for the same commands
+    only: [desktop]
+    steps:
+      - { action: hover, part: rowNewList }
+    expect:
+      - { part: rowNewList, text: { contains: "New list" } }
+      - { part: keycapNewList, name: { default: { matches: "^Ctrl Shift N$" }, macos: { matches: "^Command Shift N$" } }, why: "Desktop keeps the reference default Cmd+Shift+N (platform-rubric.md:22); Ctrl on Windows and Linux, Command on macOS as in the web undo test (settingsshortcuts.contract.yaml:444)" }
+      - { part: keycapSearch, name: { default: { matches: "^Ctrl F$" }, macos: { matches: "^Command F$" } }, why: "Desktop Search is Cmd+F (platform-rubric.md:22)" }
+      - { part: keycapSwitchList1, name: { default: { matches: "^Ctrl 1$" }, macos: { matches: "^Command 1$" } }, why: "Desktop lists are Cmd+1 to 9 (platform-rubric.md:22)" }
+      - { part: keycapPrevTab, name: { default: { matches: "^Ctrl Alt Left arrow$" }, macos: { matches: "^Command Option Left arrow$" } }, why: "Desktop tabs are Cmd+Alt+Left (platform-rubric.md:22); Option is the macOS spoken name for Alt, as in the web test" }
+      - { part: keycapPrevProject, name: { default: { matches: "^Ctrl Shift [[]$" }, macos: { matches: "^Command Shift [[]$" } }, why: "Desktop projects are Cmd+Shift+[ (platform-rubric.md:22)" }
+
   - name: Tab moves from one row's keycap to the next row in list order
     steps:
       - { action: focus, part: keycapNewTask }
@@ -453,7 +467,7 @@ tests:
       - { part: keycapNewTask, focused: false }
 
   - name: a browser-reserved combo is refused with a red line under the row on Windows and Linux
-    only: [ linux, windows ]
+    only: [web]
     steps:
       - { action: press, part: keycapNewTask }
       - { action: key, part: keycapNewTask, key: "Control+T" }
@@ -471,11 +485,20 @@ tests:
       - { event: bindingChanged, times: 0 }
 
   - name: a browser-reserved search chord is refused on Windows and Linux
-    only: [ linux, windows ]
+    only: [web]
     steps:
       - { action: press, part: keycapSearch }
       - { action: key, part: keycapSearch, key: "Control+KeyF" }
     expect:
       - { part: shortcutError, visible: true }
       - { part: keycapSearch, name: { matches: "/" } }
+      - { event: bindingChanged, times: 0 }
+
+  - name: a bare key without a modifier is refused on the desktop
+    only: [desktop]
+    steps:
+      - { action: press, part: keycapNewTask }
+      - { action: key, part: keycapNewTask, key: KeyK }
+    expect:
+      - { part: shortcutError, visible: true }
       - { event: bindingChanged, times: 0 }

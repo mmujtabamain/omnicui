@@ -694,10 +694,18 @@ tests:
       - { part: panelTitle, visible: false }
 
   - name: "the slash key focuses the search field"
+    only: [web]
     # Decision 18 (web): "/" focuses search when no text field has focus. The seed letter is not asserted.
     steps:
       - { action: focus, part: newTask }
       - { action: key, part: newTask, key: Slash }
+    expect:
+      - { part: searchField, focused: true }
+
+  - name: "the find shortcut focuses the search field"
+    steps:
+      - { action: focus, part: newTask }
+      - { input: search }
     expect:
       - { part: searchField, focused: true }
 
