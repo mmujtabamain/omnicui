@@ -8,6 +8,7 @@ import { Input } from "@taskscape/ui/input";
 import { Menu } from "@taskscape/ui/menu";
 import { MenuItem } from "@taskscape/ui/menu-item";
 import { Separator } from "@taskscape/ui/separator";
+import { useUi } from "../../state/ui";
 import { Text } from "@taskscape/ui/text";
 import type { TaskList } from "../../api/types";
 
@@ -62,6 +63,9 @@ export function ListTabs(props: ListTabsProps) {
   const { lists, leftId, rightId, splitOn, renamingId, onNewList, onReorder, onDropTask } = props;
   const leftIndex = lists.findIndex((list) => list.id === leftId);
   const rightIndex = splitOn ? lists.findIndex((list) => list.id === rightId) : -1;
+  // The focused tab is the list of the pane last clicked: it takes the tab fill and the full-height separators.
+  const activePane = useUi((s) => s.activePane);
+  const focusedIndex = splitOn && activePane === 1 && rightIndex >= 0 ? rightIndex : leftIndex;
   // The pane markers carry one test part: the first marker in the strip.
   const markerIndex = [leftIndex, rightIndex].filter((index) => index >= 0).sort((a, b) => a - b)[0] ?? -1;
   // The index of the tab (or the end zone, lists.length) the drag is over.
@@ -111,7 +115,7 @@ export function ListTabs(props: ListTabsProps) {
       {lists.map((list, index) => {
         const pane = splitOn && index === leftIndex ? "left" : splitOn && index === rightIndex ? "right" : "";
         // A separator next to the focused tab runs the full height in the focused tab's edge colour.
-        const adjacent = index === leftIndex || index - 1 === leftIndex;
+        const adjacent = index === focusedIndex || index - 1 === focusedIndex;
         return (
           <React.Fragment key={list.id}>
             <Separator
@@ -123,7 +127,7 @@ export function ListTabs(props: ListTabsProps) {
             <ListTab
               list={list}
               index={index}
-              selected={index === leftIndex}
+              selected={index === focusedIndex}
               renaming={renamingId === list.id}
               dropOver={dropAt === index}
               splitOn={splitOn}
@@ -150,9 +154,9 @@ export function ListTabs(props: ListTabsProps) {
       {lists.length > 0 && (
         <Separator
           orientation="vertical"
-          length={lists.length - 1 === leftIndex ? "full" : "sm"}
-          emphasis={lists.length - 1 === leftIndex ? "adjacent" : "default"}
-          className={lists.length - 1 === leftIndex ? undefined : "self-center"}
+          length={lists.length - 1 === focusedIndex ? "full" : "sm"}
+          emphasis={lists.length - 1 === focusedIndex ? "adjacent" : "default"}
+          className={lists.length - 1 === focusedIndex ? undefined : "self-center"}
         />
       )}
       <Button
@@ -329,8 +333,10 @@ function ListTab({
         onDelete(list);
       }}
       className={cls(
-        "group/tab relative flex h-full min-w-0 max-w-[11.429rem] shrink-0 items-stretch border-x pr-[0.5rem]",
-        selected ? "border-edge-2 bg-surface-2" : "border-transparent hover:bg-wash-1",
+        // No side borders: the separators between tabs are the only vertical lines, and they stay where they
+        // are when the active tab changes (they only grow to full height beside it), as in the reference.
+        "group/tab relative flex h-full min-w-0 max-w-[11.429rem] shrink-0 items-stretch pr-[0.5rem]",
+        selected ? "bg-surface-2" : "hover:bg-wash-1",
         dropOver && "bg-selection-1",
         dragging && "opacity-40",
       )}

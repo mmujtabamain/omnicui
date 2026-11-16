@@ -22,10 +22,8 @@ const SOURCES: Record<string, string> = {
   "app.mainwindow.projectMenuSpring": "projectSpringLaunch",
   "app.appbar.projectNew": "projectNew",
   "app.mainwindow.projectNew": "projectNew",
-  "app.appbar.projectMore": "projectMore",
-  "app.appbar.projectMoreSpring": "projectMoreSpring",
-  "app.appbar.menuProjectRename": "menuProjectRename",
-  "app.appbar.menuProjectDelete": "menuProjectDelete",
+  "app.appbar.projectRenameSpring": "projectRenameSpring",
+  "app.appbar.projectDeleteSpring": "projectDeleteSpring",
 
   // List tabs
   "app.appbar.listTab": "firstTab",

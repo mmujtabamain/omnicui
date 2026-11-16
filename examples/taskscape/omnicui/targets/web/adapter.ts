@@ -275,6 +275,10 @@ async function step(method: string, p: Params, settled = true) {
         // A user presses where the part is: if something covers it (a sheet's scrim, a menu's outside
         // layer), the press lands on that, as the user's would, where Playwright's click() would wait
         // for the part to be uncovered. A trial click tells a covered part from one still settling.
+        // The pointer travels to the part, as a user's does, rather than jumping there: a menu keeps a
+        // submenu open only while the pointer is seen heading towards it.
+        const start = await loc.boundingBox();
+        if (start) await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2, { steps: 6 });
         let free = !(await loc.isDisabled());
         if (free) free = await loc.click({ trial: true, timeout: 1500 }).then(() => true, () => false);
         if (free) await loc.click();
@@ -308,7 +312,7 @@ async function step(method: string, p: Params, settled = true) {
         const loc = await locate(p.part);
         if (!(await loc.evaluate((el) => el.contains(document.activeElement)))) await loc.focus();
       }
-      await page.keyboard.press(playwrightKey(p.key));
+      for (let i = 0; i < (p.times ?? 1); i++) await page.keyboard.press(playwrightKey(p.key));
       break;
     }
     // Focus first, as a user tabs or clicks in: Playwright's pressSequentially on a field that

@@ -212,7 +212,7 @@ export function Menu({
           side={placement === "submenu" ? "right" : "bottom"}
           align="start"
           sideOffset={control ? offset : lift}
-          avoidCollisions={placement !== "control"}
+          avoidCollisions
           collisionPadding={4}
           className={menuPanelVariants({ width })}
           onKeyDown={onContentKeyDown}
@@ -252,7 +252,7 @@ export function MenuSubmenuPanel({ ariaLabel = "Submenu", children }: { ariaLabe
     ref.current?.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')?.focus();
   }, []);
   return (
-    <div ref={ref} role="menu" aria-label={ariaLabel} data-slot="submenuPanel" className={cn("flex flex-col")}>
+    <div ref={ref} aria-label={ariaLabel} data-slot="submenuPanel" className={cn("flex flex-col")}>
       {children}
     </div>
   );

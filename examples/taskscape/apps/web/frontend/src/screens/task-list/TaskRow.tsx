@@ -43,7 +43,8 @@ export interface RowProps {
   /** A double-click on the row body toggles done. */
   onDoubleToggle: (row: RowModel) => void;
   /** Right-click opens the row's menu. */
-  onContext: (row: RowModel) => void;
+  /** A right-click on the row, with where it happened (the menu opens there). */
+  onContext: (row: RowModel, at: { x: number; y: number }) => void;
   onToggleExpanded: (row: RowModel) => void;
   onRenamed: (id: Id, title: string | null) => void;
   onKey: (event: KeyboardEvent<HTMLDivElement>, row: RowModel) => void;
@@ -128,7 +129,7 @@ export function TaskRow(p: RowProps) {
       onKeyDown={(e) => p.onKey(e, row)}
       onContextMenu={(e) => {
         e.preventDefault();
-        p.onContext(row);
+        p.onContext(row, { x: e.clientX, y: e.clientY });
       }}
       className={cx(
         "group/row relative flex min-h-[2.25rem] items-center gap-[0.786rem] rounded-(--radius-field) pr-[0.643rem] text-content-1",

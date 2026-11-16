@@ -509,7 +509,10 @@ tests:
   - name: "the bulleted list button marks the list"
     props: { task: "Rewrite the hero section" }
     steps:
+      # The press lands mid-note, on a line that is already a bullet; the arrows take the caret up to the
+      # first line, a plain paragraph, so the button turns a list on rather than off.
       - { action: press, part: noteBody }
+      - { action: key, part: noteBody, key: ArrowUp, times: 6 }
       - { action: key, part: noteBody, key: End }
       - { action: key, part: noteBody, key: "Shift+Home" }
       - { action: press, part: noteBullet }
@@ -599,9 +602,12 @@ tests:
       - { action: key, part: noteBodySecond, key: End }
       - { action: type, part: noteBodySecond, text: " @hero" }
       - { action: key, part: noteBodySecond, key: Enter }
+      # A part's text is read trimmed, so the trailing space shows as what typing does next: it goes on as
+      # text after the chip, a space apart.
+      - { action: type, part: noteBodySecond, text: "x" }
     expect:
       - { part: noteBodySecond, text: { contains: "@hero-sketch.png" } }
-      - { part: noteBodySecond, text: { matches: "@hero-sketch\\.png\\s$" } }
+      - { part: noteBodySecond, text: { matches: "@hero-sketch\\.png\\s+x$" } }
       - { part: mentionPopup, visible: false }
     screenshot: true
 

@@ -3,8 +3,6 @@
 import * as React from "react";
 import { Button } from "@taskscape/ui/button";
 import { Icon } from "@taskscape/ui/icon";
-import { Menu } from "@taskscape/ui/menu";
-import { MenuItem } from "@taskscape/ui/menu-item";
 import { Text } from "@taskscape/ui/text";
 import type { Project } from "../../api/types";
 
@@ -14,9 +12,6 @@ export interface ProjectRowProps {
   active: boolean;
   /** Test part names; only the first and second rows carry them. */
   part?: string;
-  morePart?: string;
-  menuRenamePart?: string;
-  menuDeletePart?: string;
   renamePart?: string;
   deletePart?: string;
   onPick(): void;
@@ -24,12 +19,11 @@ export interface ProjectRowProps {
   onDelete(): void;
 }
 
-export function ProjectRow({
-  project, active, part, morePart, menuRenamePart, menuDeletePart, renamePart, deletePart, onPick, onRename, onDelete,
-}: ProjectRowProps) {
-  const [moreOpen, setMoreOpen] = React.useState(false);
+export function ProjectRow({ project, active, part, renamePart, deletePart, onPick, onRename, onDelete }: ProjectRowProps) {
+  // The whole row takes the hover highlight; rename and delete show inside it on hover or keyboard focus (F02-010),
+  // as in the reference. No row menu: the two actions are the row's own.
   return (
-    <div className="flex items-center pr-[0.357rem]">
+    <div className="group/row flex items-center rounded-(--radius-field) pr-[0.357rem] hover:bg-wash-2 focus-within:bg-wash-2">
       <div
         role="menuitem"
         aria-selected={active}
@@ -42,7 +36,7 @@ export function ProjectRow({
             onPick();
           }
         }}
-        className="flex h-[2.286rem] min-w-0 flex-1 cursor-default items-center gap-[0.357rem] rounded-(--radius-field) pr-2 pl-[0.643rem] outline-none hover:bg-wash-2 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1"
+        className="flex h-[2.286rem] min-w-0 flex-1 cursor-default items-center gap-[0.357rem] rounded-(--radius-field) pr-2 pl-[0.643rem] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1"
       >
         <span className="flex w-[1.071rem] shrink-0 items-center justify-center">
           {active && <Icon name="check" size={15} weight={400} tone="accent" />}
@@ -54,47 +48,29 @@ export function ProjectRow({
       <Button
         data-part={renamePart}
         ariaLabel="Rename project"
+        description="Rename project"
         icon="edit"
         iconSize={16}
         shape="icon"
         size="sm"
         variant="ghost"
         tone="muted"
+        reveal="row"
         onClick={onRename}
       />
       <Button
         data-part={deletePart}
         ariaLabel="Delete project"
+        description="Delete project"
         icon="delete"
         iconSize={16}
         shape="icon"
         size="sm"
         variant="ghost"
         tone="danger"
+        reveal="row"
         onClick={onDelete}
       />
-      <Menu
-        open={moreOpen}
-        onOpenChange={(open) => setMoreOpen(open)}
-        placement="control"
-        width="content"
-        ariaLabel="Project actions"
-        trigger={
-          <Button
-            data-part={morePart}
-            ariaLabel="More"
-            icon="more_horiz"
-            iconSize={16}
-            shape="icon"
-            size="sm"
-            variant="ghost"
-            tone="muted"
-          />
-        }
-      >
-        <MenuItem data-part={menuRenamePart} label="Rename project" icon="edit" onSelect={onRename} />
-        <MenuItem data-part={menuDeletePart} label="Delete project" icon="delete" tone="danger" onSelect={onDelete} />
-      </Menu>
     </div>
   );
 }

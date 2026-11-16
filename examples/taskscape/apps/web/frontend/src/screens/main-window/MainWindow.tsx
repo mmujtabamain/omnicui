@@ -21,7 +21,6 @@ import { AppPalette } from "../palette/AppPalette";
 import { TitleBar } from "../title-bar/TitleBar";
 import { TaskList as TaskPane } from "../task-list/TaskList";
 import { Aside } from "./Aside";
-import { SplitPane } from "./SplitPane";
 import { observeParts, setListCount, tagParts } from "./parts";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
@@ -139,8 +138,10 @@ export function MainWindow() {
 
   // App-wide shortcuts (decision 18). Mod is Ctrl on Windows and Linux, Cmd on macOS.
   useEffect(() => {
+    // New tasks and typed searches go to the pane last clicked (the active pane).
     const startDraft = () => {
-      const listId = useUi.getState().panes[0];
+      const st = useUi.getState();
+      const listId = st.panes[st.activePane] ?? st.panes[0];
       if (listId != null) useUi.getState().startDraft(listId);
     };
     const onKeyCapture = (event: KeyboardEvent) => {
@@ -210,7 +211,7 @@ export function MainWindow() {
       // Slash, and a letter typed on a focused row, start a search in the focused list.
       const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
       if (plain && (event.code === "Slash" || /^Key[A-Z]$/.test(event.code))) {
-        const input = paneRef.current?.querySelector<HTMLInputElement>("input");
+        const input = paneRef.current?.querySelector<HTMLInputElement>(`[data-pane="${st.activePane}"] input`);
         if (input) {
           input.focus();
           if (event.code === "Slash") event.preventDefault();
@@ -248,10 +249,12 @@ export function MainWindow() {
   const barEmit = (name: string) => {
     if (name === "signOutRequested") signOut();
   };
-  const listEmit = (name: string) => {
+  const listEmit = (pane: number) => (name: string) => {
     if (name === "draftStarted") {
-      const listId = useUi.getState().panes[0];
+      const listId = useUi.getState().panes[pane];
       if (listId != null) useUi.getState().startDraft(listId);
+    } else if (name === "splitClosed") {
+      useUi.setState((s) => ({ panes: [s.panes[0] ?? null], activePane: 0 }));
     }
   };
   const activate = (pane: number) => {
@@ -269,10 +272,12 @@ export function MainWindow() {
           {!noLists && panes[0] != null && (
             <div
               data-part="app.mainwindow.taskPane"
+              data-pane="0"
               onPointerDownCapture={() => activate(0)}
+              onFocusCapture={() => activate(0)}
               className={splitOn ? `flex min-h-0 min-w-0 shrink-0 flex-col ${leftWidth(splitRatio)}` : "flex min-h-0 min-w-0 flex-1 flex-col"}
             >
-              <TaskPane key={splitOn ? "split" : "single"} emit={listEmit} />
+              <TaskPane key={splitOn ? "split" : "single"} emit={listEmit(0)} />
             </div>
           )}
           {!noLists && splitOn && rightId != null && (
@@ -288,7 +293,16 @@ export function MainWindow() {
                 onReset={() => useUi.getState().setSplitRatio(0.5)}
                 className={OVER_EDGE}
               />
-              <SplitPane listId={rightId} />
+              {/* The right pane is the same task list as the left, on the second list (as in the reference). */}
+              <div
+                data-part="app.mainwindow.splitPane"
+                data-pane="1"
+                onPointerDownCapture={() => activate(1)}
+                onFocusCapture={() => activate(1)}
+                className="flex min-h-0 min-w-0 flex-1 flex-col"
+              >
+                <TaskPane key={rightId} pane={1} split emit={listEmit(1)} />
+              </div>
             </>
           )}
           {noLists && (

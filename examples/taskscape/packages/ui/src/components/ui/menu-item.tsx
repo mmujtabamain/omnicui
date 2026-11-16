@@ -2,6 +2,7 @@ import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
+import { menuPanelVariants } from "./menu";
 import { Button } from "./button";
 import { Icon } from "./icon";
 
@@ -73,6 +74,15 @@ export interface MenuItemProps extends Omit<React.ComponentPropsWithoutRef<typeo
  * DropdownMenu.Content. The ref goes to the row (data-slot="row"); the wrapper holds the row's
  * submenu and rename and delete siblings.
  */
+function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
+  return (node: T | null) => {
+    for (const r of refs) {
+      if (typeof r === "function") r(node);
+      else if (r) (r as React.MutableRefObject<T | null>).current = node;
+    }
+  };
+}
+
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
   {
     variant = "item", tone = "default", size = "default", selection = "action", trailing = "none",
@@ -83,6 +93,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
   ref,
 ) {
   const [open, setOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLDivElement | null>(null);
   const openRef = React.useRef(false);
   // Radix moves focus onto a row the pointer is over. That focus is not keyboard focus: the spec's hover is a
   // wash only, so the row drops its focus ring while the pointer holds it, and the ring returns when the row
@@ -172,7 +183,33 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
   };
 
   // Radix RadioItem reads its checked state from the group's value; "on" and "off" make that the checked prop.
-  const row = isRadio ? (
+  // A submenu row is Radix's SubTrigger: its submenu is a flyout beside the row (portalled, flipped at the
+  // window edge), not a block inside the menu.
+  const { onSelect: _select, ...triggerProps } = rowProps;
+  const row = isSubmenu ? (
+    <DropdownMenuPrimitive.Sub open={open} onOpenChange={setSubmenu}>
+      <DropdownMenuPrimitive.SubTrigger ref={mergeRefs(ref, triggerRef)} {...triggerProps}>
+        {content}
+      </DropdownMenuPrimitive.SubTrigger>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.SubContent
+          data-slot="submenu"
+          sideOffset={2}
+          alignOffset={-4}
+          collisionPadding={4}
+          className={cn(menuPanelVariants({ width: "content" }), "min-w-[8.571rem]")}
+          // Escape closes only the submenu and returns to its row (APG); Radix would close the whole menu.
+          onEscapeKeyDown={(event) => {
+            event.preventDefault();
+            setSubmenu(false);
+            triggerRef.current?.focus();
+          }}
+        >
+          {submenu}
+        </DropdownMenuPrimitive.SubContent>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Sub>
+  ) : isRadio ? (
     <DropdownMenuPrimitive.RadioGroup value={checked ? "on" : "off"} onValueChange={ignore}>
       <DropdownMenuPrimitive.RadioItem ref={ref} value="on" {...rowProps}>
         {content}
@@ -187,11 +224,6 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(function
   return (
     <div className="group/row relative">
       {row}
-      {isSubmenu && open && (
-        <div role="menu" data-slot="submenu" className="ml-space-7 mt-space-3 flex flex-col gap-space-3 rounded-(--radius-field) bg-surface-3 p-space-4 shadow-menu">
-          {submenu}
-        </div>
-      )}
       {rowActions && (
         <div className="absolute inset-y-0 right-space-5 flex items-center gap-space-3">
           <Button data-slot="renameAction" ariaLabel="Rename" description="Rename" icon="edit" shape="icon" size="sm" variant="ghost" tone="muted" reveal="row" onClick={onRename} />

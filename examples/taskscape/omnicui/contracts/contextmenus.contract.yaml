@@ -31,10 +31,8 @@ parts:
   projectSpringLaunch: { role: button }    # aria: menuitem. Row "Spring launch"
   projectLast: { role: button }            # aria: menuitem. The last project row; a project created in a test is appended here
   projectNew: { role: button }             # aria: menuitem. Footer row "New project…" (opens the New project sheet)
-  projectMore: { role: button }            # More button on the Home row (visible at rest)
-  projectMoreSpring: { role: button }      # More button on the Spring launch row (visible at rest)
-  menuProjectRename: { role: button }      # aria: menuitem. "Rename project" in a project row menu (owner only)
-  menuProjectDelete: { role: button }      # aria: menuitem. "Delete project" in a project row menu (owner only)
+  projectRenameSpring: { role: button }    # "Rename project" on the Spring launch row, shown on hover (F02-010; the reference has no row menu)
+  projectDeleteSpring: { role: button }    # "Delete project" on the Spring launch row, shown on hover (owner only)
 
   # List tabs (Home > Errands, Reading, Garden; Spring launch > Website, Press kit)
   firstTab: { role: button }               # aria: tab. The first list tab (Errands on Home, Website on Spring launch)
@@ -143,8 +141,6 @@ tests:
       - { part: projectHome, text: { contains: "Home" } }
       - { part: projectSpringLaunch, text: { contains: "Spring launch" } }
       - { part: projectNew, text: { contains: "New project" } }
-      - { part: projectMore, visible: true }
-      - { part: projectMoreSpring, visible: true }
     screenshot: true
 
   - name: "open: Move to list opens its submenu on click and lists the other lists (submenu state; overrides F06-046)"
@@ -629,19 +625,19 @@ tests:
       - { part: projectMenu, visible: false }
       - { part: firstTab, selected: true }
 
-  - name: "Project row More lists Rename project and Delete project"
+  - name: "Hovering a project row shows its Rename project and Delete project buttons"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
+      - { action: hover, part: projectSpringLaunch }
     expect:
-      - { part: menuProjectRename, text: { contains: "Rename project" } }
-      - { part: menuProjectDelete, text: { contains: "Delete project" } }
+      - { part: projectRenameSpring, name: "Rename project" }
+      - { part: projectDeleteSpring, name: "Delete project" }
 
   - name: "Rename project sheet opens prefilled with the project name"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectRename }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectRenameSpring }
     expect:
       - { part: sheetInput, text: "Spring launch" }
       - { part: sheetInput, focused: true }
@@ -649,8 +645,8 @@ tests:
   - name: "Rename project on its sheet saves the new name"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectRename }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectRenameSpring }
       - { action: type, part: sheetInput, text: "Spring fair" }
       - { action: press, part: sheetAccept }
       - { action: press, part: projectSwitch }
@@ -660,8 +656,8 @@ tests:
   - name: "Enter in the Rename project sheet saves the new name"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectRename }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectRenameSpring }
       - { action: type, part: sheetInput, text: "Spring 2027" }
       - { action: key, part: sheetInput, key: Enter }
       - { action: press, part: projectSwitch }
@@ -671,8 +667,8 @@ tests:
   - name: "Delete project sheet names the project and keeps Cancel focused"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectDelete }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectDeleteSpring }
     expect:
       - { part: sheetHeadline, text: { contains: "Spring launch" } }
       - { part: sheetAccept, visible: true }
@@ -681,8 +677,8 @@ tests:
   - name: "Escape on the Delete project sheet cancels and keeps the project"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectDelete }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectDeleteSpring }
       - { action: key, part: sheetCancel, key: Escape }
       - { action: press, part: projectSwitch }
     expect:
@@ -692,8 +688,8 @@ tests:
   - name: "Enter on the focused Delete project button does not delete the project"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectDelete }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectDeleteSpring }
       - { action: focus, part: sheetAccept }
       - { action: key, part: sheetAccept, key: Enter }
     expect:
@@ -702,8 +698,8 @@ tests:
   - name: "Delete project on its sheet removes the project from the dropdown"
     steps:
       - { action: press, part: projectSwitch }
-      - { action: press, part: projectMoreSpring }
-      - { action: press, part: menuProjectDelete }
+      - { action: hover, part: projectSpringLaunch }
+      - { action: press, part: projectDeleteSpring }
       - { action: press, part: sheetAccept }
       - { action: press, part: projectSwitch }
     expect:

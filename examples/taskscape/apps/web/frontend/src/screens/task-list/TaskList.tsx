@@ -1,6 +1,6 @@
 // The task list pane (contract app.tasklist): the search bar, the task tree of the active list (or the matches
 // grouped by list), the empty states, and the footer with the done stats or the bulk bar.
-import { createRef, Fragment, useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Button } from "@taskscape/ui/button";
 import { EmptyState } from "@taskscape/ui/empty-state";
@@ -34,56 +34,48 @@ import {
 import { SubtaskComposer, TaskRow, type RowParts } from "./TaskRow";
 
 export interface TaskListProps {
-  /** Left pane of a split view: Close split shows. */
+  /** A pane of a split view: Close split shows. */
   split?: boolean;
+  /** Which pane of the window this list is: 0, the left (or only) one; 1, the right one of a split. */
+  pane?: number;
   /** The harness hook: emit(name, fields) with the contract's event names. */
   emit?: (name: string, fields: Record<string, string | number>) => void;
 }
 
-const P = (part: string) => `app.tasklist.${part}`;
+const PART = (part: string) => `app.tasklist.${part}`;
+/** The right pane of a split view carries only the main window's split parts. */
+const SPLIT_PARTS: Record<string, string> = {
+  search: "app.mainwindow.splitSearch",
+  closeSplit: "app.mainwindow.splitClose",
+  row: "app.mainwindow.splitRow",
+  doneCount: "app.mainwindow.splitFooterDoneCount",
+};
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 const FOOTER =
   "flex h-[2.286rem] shrink-0 items-center gap-2 border-t border-edge-2 bg-surface-2 pl-[0.857rem] pr-[0.857rem]";
 
-/**
- * A pointer over a submenu row opens its submenu, as a hover does in the reference. The row takes the ArrowRight
- * that opens a submenu row (MenuItem's own keyboard path), so the open does not depend on which pointer event
- * the pointer delivers.
- */
-const openSubmenuOnHover = (e: SyntheticEvent<HTMLElement>) => {
-  e.currentTarget.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-};
-
-/**
- * A pointer over a plain row closes the submenu open on the Move to list row, as a Radix submenu closes when the
- * pointer enters a sibling item. The row takes the ArrowLeft that closes a submenu row (MenuItem's own keyboard path).
- */
-const closeSubmenuOnHover = (moveRow: { current: HTMLElement | null }) => () => {
-  moveRow.current?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }));
-};
-
 /** Contract parts on rows, by title (the rows the tests name). */
 const TITLE_PARTS: Record<string, RowParts> = {
-  "Post the parcel to Mum": { row: P("rowPostParcel"), check: P("checkPost") },
-  "Book bike service": { row: P("rowBookBike"), check: P("checkBike"), badge: P("badgeBike") },
-  "Cut a spare key": { check: P("checkCut") },
+  "Post the parcel to Mum": { row: PART("rowPostParcel"), check: PART("checkPost") },
+  "Book bike service": { row: PART("rowBookBike"), check: PART("checkBike"), badge: PART("badgeBike") },
+  "Cut a spare key": { check: PART("checkCut") },
   "Buy groceries for the week": {
-    row: P("rowGroceries"),
-    check: P("checkGroceries"),
-    badge: P("badgeGroceries"),
-    disclosure: P("disclosure"),
+    row: PART("rowGroceries"),
+    check: PART("checkGroceries"),
+    badge: PART("badgeGroceries"),
+    disclosure: PART("disclosure"),
   },
-  "Sourdough loaf": { check: P("checkSourdough"), more: P("moreSourdough") },
-  "Oat milk": { row: P("rowOatMilk") },
-  "Buy stamps": { row: P("rowNewSubtask") },
-  "Errand number 40": { row: P("rowLastErrand") },
-  "Rewrite the hero section": { attach: P("attachmentBadge") },
-  "Return library books": { row: P("rowReturnBooks") },
-  "Trim the hedge": { row: P("matchTrimHedge") },
+  "Sourdough loaf": { check: PART("checkSourdough"), more: PART("moreSourdough") },
+  "Oat milk": { row: PART("rowOatMilk") },
+  "Buy stamps": { row: PART("rowNewSubtask") },
+  "Errand number 40": { row: PART("rowLastErrand") },
+  "Rewrite the hero section": { attach: PART("attachmentBadge") },
+  "Return library books": { row: PART("rowReturnBooks") },
+  "Trim the hedge": { row: PART("matchTrimHedge") },
 };
 
 /** The Reading item of a move menu carries the contract part. */
-const targetPart = (listName: string) => (listName === "Reading" ? P("moveTargetReading") : undefined);
+const targetPart = (listName: string) => (listName === "Reading" ? PART("moveTargetReading") : undefined);
 
 interface Source {
   projectId: Id;
@@ -92,9 +84,11 @@ interface Source {
   tasks: Task[];
 }
 
-export function TaskList({ split = false, emit }: TaskListProps) {
+export function TaskList({ split = false, pane = 0, emit }: TaskListProps) {
+  // Contract parts: the left pane carries the task list's own, the right pane only the split ones.
+  const P = (part: string): string | undefined => (pane === 0 ? PART(part) : SPLIT_PARTS[part]);
   const projectId = useUi((s) => s.projectId);
-  const listId = useUi((s) => s.panes[0] ?? null);
+  const listId = useUi((s) => s.panes[pane] ?? null);
   const selection = useUi((s) => s.selection);
   const previewId = useUi((s) => s.previewId);
   const aside = useUi((s) => s.aside);
@@ -118,6 +112,8 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   const [renaming, setRenaming] = useState<Id | null>(null);
   const [composing, setComposing] = useState<Id | null>(null);
   const [menuFor, setMenuFor] = useState<Id | null>(null);
+  // Where the row menu was asked for: at the pointer for a right-click, under More otherwise.
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   // Where the bulk Move menu opens: at its trigger, so the menu lifts into view above the footer.
   const [bulkPoint, setBulkPoint] = useState({ x: 0, y: 0 });
@@ -237,7 +233,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   // Then the first subtask and the first match add theirs.
   const partsOf = (row: RowModel): RowParts => {
     const firstRootParts: RowParts = row.task.id === firstRoot?.task.id ? { row: P("row"), check: P("check"), more: P("more") } : {};
-    const titleParts: RowParts = TITLE_PARTS[row.task.title] ?? {};
+    const titleParts: RowParts = (pane === 0 && TITLE_PARTS[row.task.title]) || {};
     return {
       ...(searching ? { ...firstRootParts, ...titleParts } : { ...titleParts, ...firstRootParts }),
       ...(row.task.id === firstSub?.task.id ? { subtask: P("subtask") } : {}),
@@ -496,13 +492,16 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   const rowMenu = (row: RowModel, parts: RowParts) => {
     const t = row.task;
     const targets = activeLists.filter((l) => l.id !== row.listId);
-    const moveRow = createRef<HTMLDivElement>();
-    const closeMove = closeSubmenuOnHover(moveRow);
     return (
       <Menu
         open={menuFor === t.id}
-        onOpenChange={(open) => setMenuFor(open ? t.id : null)}
-        placement="control"
+        onOpenChange={(open) => {
+          setMenuFor(open ? t.id : null);
+          if (!open) setMenuAt(null);
+        }}
+        placement={menuAt && menuFor === t.id ? "cursor" : "control"}
+        pointX={menuAt?.x ?? 0}
+        pointY={menuAt?.y ?? 0}
         width="task"
         ariaLabel="Task menu"
         trigger={
@@ -524,43 +523,32 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             data-part={P("menuCopy")}
             label="Copy"
             icon="content_copy"
-            onPointerEnter={closeMove}
-            onPointerMove={closeMove}
             onSelect={() => copyTasks([t.id])}
           />
           <MenuItem
             data-part={P("menuAddSubtask")}
             label="Add subtask"
             icon="subdirectory_arrow_right"
-            onPointerEnter={closeMove}
-            onPointerMove={closeMove}
             onSelect={() => setComposing(t.id)}
           />
           <MenuItem
             data-part={P("menuRename")}
             label="Rename"
             icon="edit"
-            onPointerEnter={closeMove}
-            onPointerMove={closeMove}
             onSelect={() => setRenaming(t.id)}
           />
           <MenuItem
-            ref={moveRow}
             data-part={P("menuMoveToList")}
             label="Move to list"
             icon="arrow_forward"
             trailing="submenu"
             disabled={targets.length === 0}
-            onPointerEnter={openSubmenuOnHover}
-            onPointerMove={openSubmenuOnHover}
-            onMouseEnter={openSubmenuOnHover}
-            onMouseMove={openSubmenuOnHover}
             submenu={
               <MenuSubmenuPanel ariaLabel="Move to list">
                 {targets.map((l) => (
                   <MenuItem
                     key={l.id}
-                    data-part={targetPart(l.name)}
+                    data-part={pane === 0 ? targetPart(l.name) : undefined}
                     label={l.name}
                     onSelect={() => moveTo([t.id], l.id)}
                   />
@@ -573,8 +561,6 @@ export function TaskList({ split = false, emit }: TaskListProps) {
               data-part={P("menuPromote")}
               label="Promote to top level"
               icon="north_west"
-              onPointerEnter={closeMove}
-              onPointerMove={closeMove}
               onSelect={() => move.mutate([t.id, { parent: null }])}
             />
           )}
@@ -584,8 +570,6 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             label="Delete task…"
             icon="delete"
             tone="danger"
-            onPointerEnter={closeMove}
-            onPointerMove={closeMove}
             onSelect={() => remove(t)}
           />
         </div>
@@ -614,7 +598,10 @@ export function TaskList({ split = false, emit }: TaskListProps) {
           else togglePick(r.task.id);
         }}
         onDoubleToggle={(r) => toggleDone(r.task.id)}
-        onContext={(r) => setMenuFor(r.task.id)}
+        onContext={(r, at) => {
+          setMenuAt(at);
+          setMenuFor(r.task.id);
+        }}
         onToggleExpanded={(r) => setExpanded(r.task.id, !r.expanded)}
         onRenamed={(id, text) => rename(id, text)}
         onKey={onRowKey}
@@ -730,7 +717,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   );
 
   return (
-    <div className={cx("flex h-full min-h-0 min-w-0 flex-1 flex-col bg-surface-2", split && "border-r border-edge-1")}>
+    <div className={cx("flex h-full min-h-0 min-w-0 flex-1 flex-col bg-surface-2", split && pane === 0 && "border-r border-edge-1")}>
       <div className="flex shrink-0 items-center gap-2 px-[1rem] pb-[0.5rem] pt-[0.714rem]">
         <div
           className="flex h-[2.5rem] min-w-0 flex-1 items-center gap-[0.357rem] rounded-(--radius-control) bg-surface-0 pl-[0.643rem] pr-[0.643rem] focus-within:ring-2 focus-within:ring-focus-1"
@@ -917,7 +904,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             {moveTargets.map((l) => (
               <MenuItem
                 key={l.id}
-                data-part={targetPart(l.name)}
+                data-part={pane === 0 ? targetPart(l.name) : undefined}
                 label={l.name}
                 onSelect={() => moveTo(selection, l.id)}
               />
