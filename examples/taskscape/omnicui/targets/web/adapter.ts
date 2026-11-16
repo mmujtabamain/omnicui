@@ -137,9 +137,16 @@ const selector = (part: string) => {
   return `[data-part~="${quote(part)}"], [data-slot="${quote(own)}"]`;
 };
 
-async function locate(part: string) {
+const STEP_PATIENCE = 2000;
+async function locate(part: string, patience = 0) {
   const loc = page.locator(selector(part));
-  if ((await loc.count()) === 0) throw new RpcError(NO_PART, `no part ${part}`);
+  // A part a step acts on may be named a moment after the render that draws it (a screen tags some parts from a
+  // mutation observer), and under load that moment is longer: steps give it `patience` ms before calling it absent.
+  // Reads do not wait: an absent part is often what a test expects.
+  for (let waited = 0; (await loc.count()) === 0; waited += 100) {
+    if (waited >= patience) throw new RpcError(NO_PART, `no part ${part}`);
+    await page.waitForTimeout(100);
+  }
   return loc.first();
 }
 
@@ -181,7 +188,7 @@ async function dispatchDrag(loc: Loc, types: string[], data: Record<string, stri
   const at = point ?? (box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : { x: 0, y: 0 });
   for (const type of types) await loc.dispatchEvent(type, { dataTransfer: handle, clientX: at.x, clientY: at.y, bubbles: true, cancelable: true });
 }
-const DO: Record<string, (loc: Loc, w: Record<string, any>) => Promise<void>> = {
+const DO: Record<string, (loc: Loc, w: Record<string, any>, part: string) => Promise<void>> = {
   // A press on the part where nothing inside it is: the scrim around a dialog, the blank end of a list.
   async pressOutside(loc, w) { const pt = await ownPoint(loc); await page.mouse.click(pt.x, pt.y, { button: w.button === "right" ? "right" : "left" }); },
   async pressBlank(loc, w) { const pt = await ownPoint(loc); await page.mouse.click(pt.x, pt.y, { button: w.button === "right" ? "right" : "left" }); },
@@ -221,6 +228,16 @@ const DO_DRAG: typeof DO = {
     await dispatchDrag(loc, ["dragenter", "dragover"], { "text/plain": "" }, null, at);
   },
   async drop(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], { "text/plain": String(w.taskId ?? ""), "application/x-taskscape-task": String(w.taskId ?? "") }, null); },
+  // A real drag, as a user makes it: from this part onto with.to, landing at with.at (top, middle or bottom of it).
+  async dragTo(loc, w, part) {
+    // with.to names a part of the same contract, as part: does.
+    const name = `${part.slice(0, part.lastIndexOf(".") + 1)}${String(w.to)}`;
+    const to = page.locator(selector(name)).first();
+    const box = await to.boundingBox();
+    if (!box) throw new RpcError(NO_PART, `no part ${name}`);
+    const y = w.at === "top" ? 3 : w.at === "bottom" ? box.height - 3 : box.height / 2;
+    await loc.dragTo(to, { targetPosition: { x: Math.min(200, box.width / 2), y } });
+  },
   async dropAttachment(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], {}, w.file ?? "photo.png"); },
 };
 Object.assign(DO, DO_DRAG);
@@ -250,9 +267,9 @@ type Params = Record<string, any>;
 async function doAction(p: Params) {
   if (p.name === "back") await page.goBack({ waitUntil: "commit" });
   // contextMenu: a right click on the part, as a mouse user opens a context menu.
-  else if (p.name === "contextMenu") await (await locate(p.part)).click({ button: "right" });
+  else if (p.name === "contextMenu") await (await locate(p.part, STEP_PATIENCE)).click({ button: "right" });
   // togglePlayback: what the media element's own play/pause control does.
-  else if (p.name === "togglePlayback") await (await locate(p.part)).evaluate(async (el) => {
+  else if (p.name === "togglePlayback") await (await locate(p.part, STEP_PATIENCE)).evaluate(async (el) => {
     const m = (el.matches("video, audio") ? el : el.querySelector("video, audio")) as HTMLMediaElement | null;
     if (!m) throw new Error("no video or audio element in this part");
     if (m.paused) await m.play().catch(() => {}); else m.pause();
@@ -261,7 +278,7 @@ async function doAction(p: Params) {
   // carry them, as a user's click does while the key is held.
   else if (p.name === "holdModifier") await page.keyboard.down("Alt");
   else if (p.name === "holdSelect") await page.keyboard.down(process.platform === "darwin" ? "Meta" : "Control");
-  else if (p.name in DO) await DO[p.name](await locate(p.part), p.with ?? {});
+  else if (p.name in DO) await DO[p.name](await locate(p.part, STEP_PATIENCE), p.with ?? {}, p.part);
   else throw new RpcError(NO_METHOD, `do.${p.name} is not something this target does`);
 }
 
@@ -270,7 +287,7 @@ async function step(method: string, p: Params, settled = true) {
     // A disabled control is still pressed where a user would press it, by the mouse: Playwright's
     // click() would wait for it to become enabled instead.
     case "press": {
-      const loc = await locate(p.part);
+      const loc = await locate(p.part, STEP_PATIENCE);
       for (let i = 0; i < (p.times ?? 1); i++) {
         // A user presses where the part is: if something covers it (a sheet's scrim, a menu's outside
         // layer), the press lands on that, as the user's would, where Playwright's click() would wait
@@ -303,13 +320,13 @@ async function step(method: string, p: Params, settled = true) {
       break;
     }
     case "do": await doAction(p); break;
-    case "focus": await (await locate(p.part)).focus(); break;
+    case "focus": await (await locate(p.part, STEP_PATIENCE)).focus(); break;
     // The key goes wherever focus really is, so a part that can't be focused fails honestly.
     // A key with no part goes to whatever has focus.
     // A key goes to the part: focus it first unless focus is already inside it (a field in a group).
     case "key": {
       if (p.part !== undefined) {
-        const loc = await locate(p.part);
+        const loc = await locate(p.part, STEP_PATIENCE);
         if (!(await loc.evaluate((el) => el.contains(document.activeElement)))) await loc.focus();
       }
       for (let i = 0; i < (p.times ?? 1); i++) await page.keyboard.press(playwrightKey(p.key));
@@ -318,9 +335,9 @@ async function step(method: string, p: Params, settled = true) {
     // Focus first, as a user tabs or clicks in: Playwright's pressSequentially on a field that
     // isn't focused puts the caret at the start itself, which no user's focus does. Focused, the
     // field keeps the caret where its own focus put it (the end, in this app).
-    case "type": { const field = await locate(p.part); await field.focus(); await field.pressSequentially(p.text); break; }
+    case "type": { const field = await locate(p.part, STEP_PATIENCE); await field.focus(); await field.pressSequentially(p.text); break; }
     case "drag": {
-      const box = await (await locate(p.part)).boundingBox();
+      const box = await (await locate(p.part, STEP_PATIENCE)).boundingBox();
       if (!box) throw new RpcError(STEP_FAILED, `${p.part} is not visible`);
       const x = box.x + box.width / 2, y = box.y + box.height / 2;
       await page.mouse.move(x, y);

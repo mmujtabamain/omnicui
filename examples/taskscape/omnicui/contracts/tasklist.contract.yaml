@@ -411,6 +411,20 @@ tests:
     expect:
       - { part: badgeGroceries, text: "1/2" }
 
+  # Dragging rows (review note #11951; reference TaskRow.tsx: the top and bottom 30% of a row drop before and
+  # after it, the middle nests into it).
+  - name: "dragging a row onto the top of another moves it above that row"
+    steps:
+      - { do: dragTo, part: rowBookBike, with: { to: row, at: top } }
+    expect:
+      - { part: row, name: { contains: "Book bike service" } }
+
+  - name: "dragging a row onto the middle of another makes it that row's subtask"
+    steps:
+      - { do: dragTo, part: rowBookBike, with: { to: row, at: middle } }
+    expect:
+      - { part: subtask, text: { contains: "Book bike service" } }
+
   - name: "Move to list in the row menu moves the task to Reading"
     steps:
       - { action: press, part: more }

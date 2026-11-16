@@ -78,9 +78,15 @@ const PATCHES = new Map<unknown, Patch>([
     else if (list != null) moveTasks(qc, ids, list);
   }],
   [ep.tasks.trash, (qc, [id]: [Id]) => removeTasks(qc, [id])],
-  [ep.tasks.move, (qc, [id, to]: [Id, { list?: Id; parent?: Id | null }]) => {
-    if (to.list != null && to.parent === undefined) moveTasks(qc, [id], to.list);
-    else editTasks(qc, (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...(to.list != null ? { list: to.list } : {}), ...(to.parent !== undefined ? { parent: to.parent } : {}) } : t)));
+  [ep.tasks.move, (qc, [id, to]: [Id, { list?: Id; parent?: Id | null; sort_order?: number }]) => {
+    if (to.list != null) moveTasks(qc, [id], to.list);
+    editTasks(qc, (tasks) =>
+      tasks.map((t) =>
+        t.id === id
+          ? { ...t, ...(to.parent !== undefined ? { parent: to.parent } : {}), ...(to.sort_order != null ? { sort_order: to.sort_order } : {}) }
+          : t,
+      ),
+    );
     recount(qc);
   }],
   // A new task shows at once under a temporary id; the refetch after the write swaps in the real one.

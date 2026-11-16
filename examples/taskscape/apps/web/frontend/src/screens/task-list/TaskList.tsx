@@ -1,6 +1,6 @@
 // The task list pane (contract app.tasklist): the search bar, the task tree of the active list (or the matches
 // grouped by list), the empty states, and the footer with the done stats or the bulk bar.
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Button } from "@taskscape/ui/button";
 import { EmptyState } from "@taskscape/ui/empty-state";
@@ -31,6 +31,7 @@ import {
   type Scope,
   type Where,
 } from "./model";
+import { droppedIds, isTaskDrag, planDrop, startTaskDrag, zoneOf, type DropZone, type MoveTo } from "./drag";
 import { SubtaskComposer, TaskRow, type RowParts } from "./TaskRow";
 
 export interface TaskListProps {
@@ -245,6 +246,23 @@ export function TaskList({ split = false, pane = 0, emit }: TaskListProps) {
   const bulk = useWrite(ep.tasks.bulk);
   const create = useWrite(ep.tasks.create);
   const move = useWrite(ep.tasks.move);
+
+  // Dragging tasks (drag.ts): which rows are being dragged, and where a drag over a row would land.
+  const [draggingIds, setDraggingIds] = useState<Id[]>([]);
+  const [dropAt, setDropAt] = useState<{ id: Id; zone: DropZone } | null>(null);
+  const runMoves = async (moves: [Id, MoveTo][]) => {
+    // One at a time: each move renumbers against the one before it.
+    for (const [id, to] of moves) await move.mutateAsync([id, to]).catch(() => undefined);
+  };
+  const dropTasks = (e: DragEvent<HTMLElement>, target: Task | null, zone: DropZone) => {
+    const ids = droppedIds(e);
+    setDropAt(null);
+    setDraggingIds([]);
+    if (ids.length === 0 || listId == null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    void runMoves(planDrop(activeTasks, ids, target, zone, listId));
+  };
 
   const setExpanded = (id: Id, open: boolean) =>
     setCollapsed((prev) => {
@@ -609,6 +627,31 @@ export function TaskList({ split = false, pane = 0, emit }: TaskListProps) {
           if (el) bodies.current.set(id, el);
           else bodies.current.delete(id);
         }}
+        dropZone={dropAt?.id === row.task.id ? dropAt.zone : null}
+        dragging={draggingIds.includes(row.task.id)}
+        onDragStart={(r, e) => {
+          // A picked row drags the whole pick; any other row drags itself.
+          const ids = selection.includes(r.task.id) && selection.length > 1 ? selection : [r.task.id];
+          startTaskDrag(e, ids);
+          setDraggingIds(ids);
+        }}
+        onDragOver={(r, e) => {
+          if (!isTaskDrag(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "move";
+          const zone = zoneOf(e);
+          const next = draggingIds.includes(r.task.id) ? null : { id: r.task.id, zone };
+          if (next?.id !== dropAt?.id || next?.zone !== dropAt?.zone) setDropAt(next);
+        }}
+        onDragLeave={(r, e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null) && dropAt?.id === r.task.id) setDropAt(null);
+        }}
+        onDrop={(r, e) => dropTasks(e, r.task, zoneOf(e))}
+        onDragEnd={() => {
+          setDraggingIds([]);
+          setDropAt(null);
+        }}
       />
       {composing === row.task.id && (
         <SubtaskComposer
@@ -808,6 +851,13 @@ export function TaskList({ split = false, pane = 0, emit }: TaskListProps) {
 
       <div
         data-part={P("scrollArea")}
+        // The pane's empty space takes a dragged task to the end of this list (from the other pane, too).
+        onDragOver={(e) => {
+          if (!isTaskDrag(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(e) => dropTasks(e, null, "after")}
         // A scrolling region takes focus, so the keyboard (Page Down, Space) scrolls it.
         tabIndex={0}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-1"

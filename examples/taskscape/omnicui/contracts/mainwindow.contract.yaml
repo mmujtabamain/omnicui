@@ -193,6 +193,22 @@ tests:
       - { part: previewDivider, value: 280 }
       - { part: previewPanel, visible: true }
 
+  # Dragging tasks between lists (review note #11951): onto a list tab, or onto the other pane of a split view.
+  - name: "dragging a task onto the Reading tab moves it to Reading"
+    steps:
+      - { do: dragTo, part: rowBike, with: { to: listTabReading } }
+    expect:
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?7 done$" } }
+
+  - name: "dragging a task onto the other pane of a split view moves it to that list"
+    steps:
+      - { action: press, part: splitView }
+      - { do: dragTo, part: rowBike, with: { to: splitRow, at: top } }
+    expect:
+      - { part: splitRow, text: { contains: "Book bike service" } }
+      - { part: splitFooterDoneCount, text: { matches: "(?i)^1 ?/ ?4 done$" } }
+      - { part: doneCount, text: { matches: "(?i)^2 ?/ ?7 done$" } }
+
   # Split
   - name: "split view opens with Reading in the right pane"
     steps:

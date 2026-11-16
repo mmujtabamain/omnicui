@@ -1,6 +1,6 @@
 // One row of the task list: the round check, the title and note line, the attachment and subtask counts,
 // the disclosure chevron and the More menu. Also the inline title field and the subtask composer.
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { Badge } from "@taskscape/ui/badge";
 import { Button } from "@taskscape/ui/button";
 import { Icon } from "@taskscape/ui/icon";
@@ -8,6 +8,7 @@ import { Input } from "@taskscape/ui/input";
 import { MatchHighlight } from "@taskscape/ui/match-highlight";
 import { Separator } from "@taskscape/ui/separator";
 import type { Id } from "../../api/types";
+import type { DropZone } from "./drag";
 import { cx, plainNotes, type RowModel } from "./model";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
@@ -49,6 +50,14 @@ export interface RowProps {
   onRenamed: (id: Id, title: string | null) => void;
   onKey: (event: KeyboardEvent<HTMLDivElement>, row: RowModel) => void;
   registerBody: (id: Id, el: HTMLElement | null) => void;
+  /** Dragging (drag.ts): the row starts a drag, and shows where a drag over it would land. */
+  dropZone?: DropZone | null;
+  dragging?: boolean;
+  onDragStart?: (row: RowModel, event: DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (row: RowModel, event: DragEvent<HTMLDivElement>) => void;
+  onDragLeave?: (row: RowModel, event: DragEvent<HTMLDivElement>) => void;
+  onDrop?: (row: RowModel, event: DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
 }
 
 const P = (part: string) => `app.tasklist.${part}`;
@@ -127,6 +136,12 @@ export function TaskRow(p: RowProps) {
       data-picked={p.picked || undefined}
       data-part={p.parts.subtask}
       onKeyDown={(e) => p.onKey(e, row)}
+      draggable={!p.renaming && p.onDragStart != null}
+      onDragStart={(e) => p.onDragStart?.(row, e)}
+      onDragOver={(e) => p.onDragOver?.(row, e)}
+      onDragLeave={(e) => p.onDragLeave?.(row, e)}
+      onDrop={(e) => p.onDrop?.(row, e)}
+      onDragEnd={() => p.onDragEnd?.()}
       onContextMenu={(e) => {
         e.preventDefault();
         p.onContext(row, { x: e.clientX, y: e.clientY });
@@ -136,9 +151,17 @@ export function TaskRow(p: RowProps) {
         // A plain row is 31.5px tall (min-h-9); a row with a note line takes the note's 46px, as in the reference.
         note !== "" ? "py-[0.429rem]" : "py-0",
         indentClass(row.depth),
-        tinted ? "bg-selection-1" : "hover:bg-wash-1",
+        tinted || p.dropZone === "nest" ? "bg-selection-1" : "hover:bg-wash-1",
+        p.dragging && "opacity-40",
       )}
     >
+      {(p.dropZone === "before" || p.dropZone === "after") && (
+        <span
+          aria-hidden="true"
+          data-slot="dropLine"
+          className={cx("pointer-events-none absolute right-0 left-[1.429rem] h-[0.143rem] rounded-full bg-accent-500", p.dropZone === "before" ? "-top-px" : "-bottom-px")}
+        />
+      )}
       <span
         role="button"
         tabIndex={0}
