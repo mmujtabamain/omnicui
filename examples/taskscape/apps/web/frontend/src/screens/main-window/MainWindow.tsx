@@ -68,6 +68,10 @@ const LEFT_WIDTHS = [
 ];
 const leftWidth = (ratio: number) => LEFT_WIDTHS[Math.round(Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, ratio)) * 100) - 25] ?? "w-[50%]";
 
+/** A resize handle sits over the 1px edge between two panes (negative margins), so it takes no width of
+ *  its own: no band between the panes, as in the reference. */
+const OVER_EDGE = "relative z-10 -mx-[0.143rem]";
+
 export function MainWindow() {
   const qc = useQueryClient();
   const projectsQuery = useProjects();
@@ -282,6 +286,7 @@ export function MainWindow() {
                 reset="double-click"
                 onResize={(ratio) => useUi.getState().setSplitRatio(ratio)}
                 onReset={() => useUi.getState().setSplitRatio(0.5)}
+                className={OVER_EDGE}
               />
               <SplitPane listId={rightId} />
             </>
@@ -309,6 +314,7 @@ export function MainWindow() {
               reset="none"
               open
               onResize={(px) => useUi.getState().setPreviewWidth(px)}
+              className={OVER_EDGE}
             />
             <Aside
               mode={aside}

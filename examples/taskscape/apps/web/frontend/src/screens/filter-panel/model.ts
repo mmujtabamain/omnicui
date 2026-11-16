@@ -215,3 +215,13 @@ export function computePane(tasks: Task[], v: View, ctx: Ctx, collapsed: Record<
     matches,
   };
 }
+
+/**
+ * The tasks of one list as its view shows them: filtered, and ordered by the view's sort (the order is
+ * written into sort_order, so a tree built from them keeps it). The task list applies this.
+ */
+export function applyView(tasks: Task[], v: View, now: number): Task[] {
+  if (!viewActive(v)) return tasks;
+  const pane = computePane(tasks, v, { query: "", fields: "both", showCompleted: true, now }, {});
+  return pane.rows.map((r, i) => ({ ...r.task, sort_order: i }));
+}

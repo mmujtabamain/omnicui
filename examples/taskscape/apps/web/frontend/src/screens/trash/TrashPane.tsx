@@ -88,7 +88,7 @@ function TrashRow({ item, first, onRestore, onPurge }: TrashRowProps) {
   const sharedPurge = first && named ? part(named.purge) : undefined;
   return (
     <div data-part={first ? "app.trash.row" : undefined}>
-      <Row data-part={part(named?.row)} className="px-[0.429rem]">
+      <Row data-part={part(named?.row)} className="px-[0.429rem] py-[0.429rem]">
         <div className="flex min-w-0 flex-1 flex-col">
           <Text as="div" size="base" overflow="truncate">
             {item.title}
@@ -187,28 +187,26 @@ export function TrashPane({ onClose, onRestored, onPurged }: TrashPaneProps) {
       className="flex h-full min-h-0 w-full min-w-0 flex-col border-l border-edge-2 bg-surface-1 text-content-1"
     >
       <div className="flex h-[3.286rem] shrink-0 items-center border-b border-edge-1">
-        <div className="flex shrink-0 items-center gap-[0.5rem] pl-[1.286rem]">
-          <Button
-            data-part="app.trash.closeControl"
-            variant="ghost"
-            shape="round"
-            size="sm"
-            width="content"
-            ariaLabel="Close Trash"
-            description="Close Trash"
-            className="h-[1rem] w-[1rem] bg-danger-500 p-0"
-            onClick={() => onClose?.()}
-          />
-          {/* Minimize and Full Screen are dropped in this pane (F07-082); the space keeps the title in place. */}
-          <span aria-hidden="true" className="size-[1rem]" />
-          <span aria-hidden="true" className="size-[1rem]" />
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-[0.357rem] pr-[0.714rem] pl-[1.357rem]">
+        {/* No window lights on the web (decision 2): the pane closes with an ordinary × at its end. */}
+        <div className="flex min-w-0 flex-1 items-center gap-[0.357rem] pr-[0.714rem] pl-[1rem]">
           <Icon name="delete" size="lg" weight={400} tone="secondary" />
           <Heading as="h2" size="sm" data-part="app.trash.title">
             Trash
           </Heading>
         </div>
+        <Button
+          data-part="app.trash.closeControl"
+          variant="ghost"
+          tone="muted"
+          shape="icon"
+          size="md"
+          width="content"
+          icon="close"
+          ariaLabel="Close Trash"
+          description="Close Trash"
+          className="mr-[0.571rem]"
+          onClick={() => onClose?.()}
+        />
       </div>
 
       {notice !== "" && (
@@ -257,7 +255,7 @@ export function TrashPane({ onClose, onRestored, onPurged }: TrashPaneProps) {
           <EmptyState data-part="app.trash.emptyState" title="Trash is empty" icon="delete" iconSize={28} />
         )}
         {items.length > 0 && (
-          <div data-part="app.trash.list" className="flex flex-col">
+          <div data-part="app.trash.list" className="flex flex-col gap-[0.143rem] divide-y divide-edge-1">
             {items.map((item, index) => (
               <TrashRow
                 key={item.id}

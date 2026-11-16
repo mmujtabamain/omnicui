@@ -168,7 +168,7 @@ function TriRow({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex w-[6rem] shrink-0 items-center gap-2">
+      <span className="flex w-[7.5rem] shrink-0 items-center gap-2">
         <Icon name={icon} size="sm" tone="muted" />
         <Text size="sm" weight="medium" tone={value === "any" ? "secondary" : "primary"} overflow="truncate">
           {label}

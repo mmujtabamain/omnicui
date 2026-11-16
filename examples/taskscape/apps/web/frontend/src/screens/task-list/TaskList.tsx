@@ -16,6 +16,7 @@ import * as ep from "../../api/endpoints";
 import { keys, useLists, useProjects, useSettings, useTasks, useWrite } from "../../api/queries";
 import type { Id, Task, TaskList as ListRecord } from "../../api/types";
 import { useUi } from "../../state/ui";
+import { applyView, DEFAULT_VIEW, viewActive } from "../filter-panel/model";
 import { openSheet } from "../sheets/store";
 import {
   cx,
@@ -179,7 +180,9 @@ export function TaskList({ split = false, emit }: TaskListProps) {
   const listRecord = activeLists.find((l) => l.id === listId);
   const listName = listRecord?.name ?? "";
   const projectName = activeProject?.name ?? "";
-  const listTasks = activeTasks.filter((t) => t.list === listId);
+  // Filter & Sort (the aside) edits this list's view; the list shows its tasks through it.
+  const listView = useUi((s) => (listId != null ? s.views[listId] : undefined)) ?? DEFAULT_VIEW;
+  const listTasks = applyView(activeTasks.filter((t) => t.list === listId), listView, Date.now());
   const everyTask = [...activeTasks, ...otherTasks.flatMap((r) => r.data ?? [])];
   const taskOf = (id: Id) => everyTask.find((t) => t.id === id);
 
@@ -968,7 +971,7 @@ export function TaskList({ split = false, emit }: TaskListProps) {
             tone="muted"
             icon="tune"
             ariaLabel="Sort & filter"
-            label={aside === "filter" ? "Filtered" : ""}
+            label={viewActive(listView) ? "Filtered" : ""}
             onClick={() => setAside(aside === "filter" ? "preview" : "filter")}
           />
           <span aria-hidden="true" className="block h-4 w-px bg-edge-2" />

@@ -1,6 +1,7 @@
 // What the user is looking at, as opposed to the data (which is the API's, cached by React Query).
 import { create } from "zustand";
 import type { Id } from "../api/types";
+import { DEFAULT_VIEW, type View } from "../screens/filter-panel/model";
 
 export type Aside = "preview" | "trash" | "filter" | "none";
 
@@ -21,6 +22,10 @@ export interface UiState {
   previewId: Id | null;
   /** A task whose inspector should open with a new note ready to type (the draft's Note button). */
   noteFor: Id | null;
+  /** Filter & Sort, per list: what the task list shows and in which order (absent: the default view). */
+  views: Record<Id, View>;
+  patchViews(listIds: Id[], patch: Partial<View>): void;
+  resetViews(listIds: Id[]): void;
   aside: Aside;
   paletteOpen: boolean;
   settingsOpen: boolean;
@@ -57,6 +62,17 @@ export const useUi = create<UiState>((set) => ({
   selection: [],
   previewId: null,
   noteFor: null,
+  views: {},
+  patchViews: (listIds, patch) => set((s) => {
+    const views = { ...s.views };
+    for (const id of listIds) views[id] = { ...(views[id] ?? DEFAULT_VIEW), ...patch };
+    return { views };
+  }),
+  resetViews: (listIds) => set((s) => {
+    const views = { ...s.views };
+    for (const id of listIds) delete views[id];
+    return { views };
+  }),
   aside: "preview",
   paletteOpen: false,
   settingsOpen: false,

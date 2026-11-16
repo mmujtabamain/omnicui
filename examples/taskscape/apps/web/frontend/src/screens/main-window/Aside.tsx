@@ -6,7 +6,7 @@ import { Text } from "@taskscape/ui/text";
 import type { Id } from "../../api/types";
 import { useUi, type Aside as AsideMode } from "../../state/ui";
 import { DraftInspector } from "../draft-inspector/DraftInspector";
-import { FilterPanel } from "../filter-panel/FilterPanel";
+import { FilterAside } from "../filter-panel/FilterAside";
 import { MultiInspector } from "../multi-inspector/MultiInspector";
 import { TaskInspector } from "../task-inspector/TaskInspector";
 import { TrashPane } from "../trash/TrashPane";
@@ -45,10 +45,8 @@ export function Aside({ mode, width, picked, previewId, draftListId, draftListNa
     );
   } else if (mode === "filter") {
     body = (
-      // The filter panel is a whole window of its own (its title bar, list tabs and task panes come with it). Here
-      // only its Filter & Sort column shows: the window's own title bar and its panes are hidden from this aside.
-      <div data-part="app.mainwindow.filterPanel" className="flex min-h-0 flex-1 flex-col [&_[data-slot=titleBar]]:hidden [&_[data-slot=body]>div:first-child]:hidden">
-        <FilterPanel />
+      <div data-part="app.mainwindow.filterPanel" className="flex min-h-0 flex-1 flex-col">
+        <FilterAside />
       </div>
     );
   } else {

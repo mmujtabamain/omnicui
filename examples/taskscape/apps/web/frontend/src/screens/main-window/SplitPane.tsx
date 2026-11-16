@@ -12,6 +12,7 @@ import { useLists, useProjects, useSettings, useTasks, useWrite } from "../../ap
 import type { Id } from "../../api/types";
 import { useUi } from "../../state/ui";
 import { matchRows, percentOf, treeRows, type RowModel, type Where } from "../task-list/model";
+import { applyView, DEFAULT_VIEW } from "../filter-panel/model";
 import { TaskRow } from "../task-list/TaskRow";
 
 export function SplitPane({ listId }: { listId: Id }) {
@@ -26,11 +27,13 @@ export function SplitPane({ listId }: { listId: Id }) {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<Id>>(() => new Set<Id>());
   const bodies = useRef(new Map<Id, HTMLElement>());
+  const listView = useUi((s) => s.views[listId]) ?? DEFAULT_VIEW;
 
   const list = lists.data?.find((l) => l.id === listId) ?? null;
   if (!list) return null;
 
-  const tasks = tasksQuery.data ?? [];
+  // The right pane shows its list through the same Filter & Sort view as the left one.
+  const tasks = applyView(tasksQuery.data ?? [], listView, Date.now());
   const showCompleted = settings.data?.show_completed ?? true;
   const where: Where = {
     projectId: list.project,
