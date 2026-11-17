@@ -246,7 +246,8 @@ impl DraftInspector {
         let image_rect = Rect::from_min_size(pos2(left + chip_w + SMALL_GAP, btn_top), vec2(chip_w, CHIP_H));
         let note = chip(ui, t, note_id, note_rect, "add", "Note");
         part(ui, &note, parts::NOTEBUTTON);
-        let image = chip(ui, t, image_id, image_rect, "image", "Image");
+        // The desktop keeps the reference's Screenshot here (decision 27); the web has Image (decision 5).
+        let image = chip(ui, t, image_id, image_rect, "screenshot_monitor", "Screenshot");
         part(ui, &image, parts::IMAGEBUTTON);
         if note.clicked() {
             let value = self.title.trim().to_owned();

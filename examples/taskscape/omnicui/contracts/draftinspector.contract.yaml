@@ -22,7 +22,7 @@ parts:
   discardDraft: { role: button }  # icon close in both builds (tooltip "Discard draft")
   startWith: { role: generic }    # html: span. Section label "Start with", rendered uppercase by CSS. Not a heading.
   noteButton: { role: button }    # dashed "Note" button, add icon size 16
-  imageButton: { role: button, optional: true }   # web slot that replaces Screenshot (decisions.md 5): dashed "Image" button, icon size 16
+  imageButton: { role: button, optional: true }   # the draft's second dashed button: "Image" on the web (decision 5), "Screenshot" on the desktop (decision 27); icon size 16
   hint: { role: generic }         # html: p (no ARIA role). Helper paragraph under the buttons
 
 tests:
@@ -36,7 +36,7 @@ tests:
       - { part: breadcrumb, text: { matches: "/ Errands$" } }
       - { part: startWith, text: { matches: "(?i)^start with$" } }
       - { part: noteButton, name: { contains: "Note" } }
-      - { part: imageButton, name: { contains: "Image" } }
+      - { part: imageButton, name: { default: { contains: "Image" }, desktop: { contains: "Screenshot" } }, why: "The web drafts take a pasted or picked image (decision 5); the desktop keeps the reference's Screenshot (decision 27)" }
       - { part: discardDraft, name: { contains: "Discard draft" } }
       - { part: hint, text: { contains: "the task is created the moment it has something in it." } }   # tail clause only; the lead clause is not decided
     screenshot: true   # reference state new-task-draft
