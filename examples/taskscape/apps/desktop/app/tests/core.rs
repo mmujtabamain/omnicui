@@ -56,3 +56,23 @@ fn settings_read_and_write_in_the_reference_format() {
     assert_eq!(saved["show_completed"], "1", "written as the reference writes it");
     assert_eq!(saved["reduced_motion"], "0");
 }
+
+/// A list exported in the reference's format comes back whole: its tasks, subtasks, done state and notes
+/// (review #12350: export and import were never built on the desktop).
+#[test]
+fn a_list_exports_and_imports_in_the_reference_format() {
+    let mut app = App::demo("standard").unwrap();
+    let errands = app.data.list_named(None, "Errands").unwrap().id.clone();
+    let json = app.data.export_list(&errands).unwrap();
+    let doc: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(doc["taskscape_export"], 1);
+    assert_eq!(doc["list"]["name"], "Errands");
+    let home = app.data.project_named("Home").unwrap().id.clone();
+    let copy = app.data.import_list(&home, &json, Some("Errands copy")).unwrap();
+    let before = app.data.tasks_of(&errands);
+    let after = app.data.tasks_of(&copy);
+    assert_eq!(after.len(), before.len(), "every task, subtasks included");
+    assert_eq!(after.iter().filter(|t| t.done).count(), before.iter().filter(|t| t.done).count());
+    let groceries = after.iter().find(|t| t.title == "Buy groceries for the week").unwrap();
+    assert_eq!(app.data.children_of(&groceries.id).len(), 3);
+}

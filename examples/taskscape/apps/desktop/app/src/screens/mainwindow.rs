@@ -104,6 +104,8 @@ pub struct MainWindow {
     /// The other windows are drawn over this one (a screen test has one window). The app sets it off and
     /// opens them as OS windows with [`MainWindow::windows`].
     pub in_place: bool,
+    /// Which of Trash, Settings and a sheet were open last frame, to focus a window when it opens.
+    open_last: (bool, bool, bool),
 }
 
 impl MainWindow {
@@ -130,6 +132,7 @@ impl MainWindow {
             split_divider: Resizer::new(ResizerProps { value: 0.5, min: SPLIT_MIN as f64, max: SPLIT_MAX as f64, reset: "double-click".into(), open: true, label: "Resize the panes".into(), ..Default::default() }),
             preview_divider: Resizer::new(ResizerProps { value: 322.0, min: PREVIEW_MIN as f64, max: PREVIEW_MAX as f64, reset: "none".into(), open: true, label: "Resize the preview panel".into(), ..Default::default() }),
             in_place: true,
+            open_last: (false, false, false),
         }
     }
 
@@ -267,17 +270,33 @@ impl MainWindow {
     /// The Trash, Settings and a confirmation, each as an OS window of its own (eframe viewports). Closing
     /// one with the OS's close button closes it here too.
     pub fn windows(&mut self, app: &mut App, ctx: &egui::Context, look: Look) {
+        use crate::chrome;
         let open_before = (app.trash_window, app.settings_window.is_some(), app.sheet.is_some());
+        // A window that has just opened takes the keyboard and comes to the front (the reference's set_focus).
+        let opened = (open_before.0 && !self.open_last.0, open_before.1 && !self.open_last.1, open_before.2 && !self.open_last.2);
         let t = look.t;
         let frame = egui::Frame::NONE.fill(t.surface_1);
+        let native = app.native_window;
+        let header = |ui: &egui::Ui| egui::Rect::from_min_size(ui.max_rect().min, egui::vec2(ui.max_rect().width(), 46.0));
         // Each window opens centred over the main window.
         let main = ctx.input(|i| i.viewport().outer_rect);
         let at = |w: f32, h: f32| main.map(|r| r.center() - egui::vec2(w, h) / 2.0).unwrap_or(egui::pos2(80.0, 80.0));
         if app.trash_window {
-            let vp = egui::ViewportBuilder::default().with_title("Trash").with_inner_size([520.0, 560.0]).with_position(at(520.0, 560.0)).with_min_inner_size([420.0, 360.0]);
-            ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("trash"), vp, |ctx, _| {
+            let vp = chrome::panel(egui::ViewportBuilder::default().with_title("Trash").with_inner_size([520.0, 560.0]).with_position(at(520.0, 560.0)).with_min_inner_size([420.0, 360.0]).with_active(true));
+            let id = egui::ViewportId::from_hash_of("trash");
+            if opened.0 {
+                ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
+            }
+            ctx.show_viewport_immediate(id, vp, |ctx, _| {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
+                    let bar = header(ui);
+                    chrome::drag_region(ui, bar, false);
+                    self.trash.lead = chrome::lead(native);
                     self.trash.show(app, ui, look);
+                    let trail = chrome::trail(native, 1);
+                    if trail > 0.0 && chrome::buttons(ui, look, egui::Rect::from_min_max(egui::pos2(bar.right() - trail, bar.top()), bar.max), false) {
+                        app.trash_window = false;
+                    }
                 });
                 if ctx.input(|i| i.viewport().close_requested()) {
                     app.trash_window = false;
@@ -285,10 +304,21 @@ impl MainWindow {
             });
         }
         if app.settings_window.is_some() {
-            let vp = egui::ViewportBuilder::default().with_title("Settings").with_inner_size([640.0, 520.0]).with_position(at(640.0, 520.0)).with_min_inner_size([640.0, 520.0]);
-            ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("settings"), vp, |ctx, _| {
+            let vp = chrome::panel(egui::ViewportBuilder::default().with_title("Settings").with_inner_size([640.0, 520.0]).with_position(at(640.0, 520.0)).with_min_inner_size([640.0, 520.0]).with_active(true));
+            let id = egui::ViewportId::from_hash_of("settings");
+            if opened.1 {
+                ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
+            }
+            ctx.show_viewport_immediate(id, vp, |ctx, _| {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
+                    let bar = header(ui);
+                    chrome::drag_region(ui, bar, false);
+                    let trail = chrome::trail(native, 1);
+                    self.settings.general_chrome = (chrome::lead(native), trail);
                     self.settings.show(app, ui, look);
+                    if trail > 0.0 && chrome::buttons(ui, look, egui::Rect::from_min_max(egui::pos2(bar.right() - trail, bar.top()), bar.max), false) {
+                        app.settings_window = None;
+                    }
                 });
                 if ctx.input(|i| i.viewport().close_requested()) {
                     app.settings_window = None;
@@ -296,9 +326,14 @@ impl MainWindow {
             });
         }
         if app.sheet.is_some() {
-            let vp = egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([380.0, 140.0]).with_position(at(380.0, 140.0)).with_resizable(false);
-            ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("sheet"), vp, |ctx, _| {
-                egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
+            let vp = chrome::sheet(egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([380.0, 140.0]).with_position(at(380.0, 140.0)).with_active(true));
+            let id = egui::ViewportId::from_hash_of("sheet");
+            if opened.2 {
+                ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
+            }
+            ctx.show_viewport_immediate(id, vp, |ctx, _| {
+                // The sheet's card is the whole window: no fill around it (the window is transparent).
+                egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| {
                     self.sheets.show(app, ui, look);
                 });
                 // The window fits the card: its height follows the card's.
@@ -311,6 +346,7 @@ impl MainWindow {
                 }
             });
         }
+        self.open_last = open_before;
         // A window that closed itself from its own keys: the main window draws again, so the OS window goes.
         if open_before != (app.trash_window, app.settings_window.is_some(), app.sheet.is_some()) {
             ctx.request_repaint_of(egui::ViewportId::ROOT);

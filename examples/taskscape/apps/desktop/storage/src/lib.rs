@@ -16,6 +16,7 @@ pub mod names;
 pub mod paths;
 pub mod screenshot;
 pub mod settings;
+pub mod transfer;
 pub mod storage;
 pub mod util;
 

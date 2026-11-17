@@ -3,6 +3,9 @@
 //! omnicui/contracts/<name>.contract.yaml; the main window and the other windows compose the same
 //! screens the contracts check one at a time.
 pub mod app;
+pub mod chrome;
+pub mod dialogs;
+pub mod menu;
 pub mod data;
 pub mod state;
 

@@ -8,11 +8,23 @@ use taskscape_ui::Look;
 struct Taskscape {
     app: App,
     window: MainWindow,
+    menu: Option<taskscape_app::menu::NativeMenu>,
 }
 
 impl eframe::App for Taskscape {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        // The OS menu's List items.
+        if let Some(action) = self.menu.as_ref().and_then(|m| m.poll()) {
+            match action {
+                taskscape_app::menu::MenuAction::ImportList => self.app.import_list(None),
+                taskscape_app::menu::MenuAction::ExportList => {
+                    if let Some(list) = self.app.active_list() {
+                        self.app.export_list(&list);
+                    }
+                }
+            }
+        }
         // The theme: the saved one, or the system's while it says System.
         let dark = match self.app.data.settings.theme.as_str() {
             "dark" => true,
@@ -40,7 +52,7 @@ fn main() -> eframe::Result {
         }
     };
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([1180.0, 760.0]).with_min_inner_size([820.0, 560.0]).with_app_id("taskscape"),
+        viewport: taskscape_app::chrome::main_window(egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([1180.0, 760.0]).with_min_inner_size([820.0, 560.0]).with_app_id("taskscape")),
         ..Default::default()
     };
     eframe::run_native(
@@ -50,7 +62,10 @@ fn main() -> eframe::Result {
             taskscape_ui::fonts(&cc.egui_ctx);
             let mut window = MainWindow::new();
             window.in_place = false;
-            Ok(Box::new(Taskscape { app: App::new(data), window }))
+            let mut app = App::new(data);
+            app.native_window = true;
+            let menu = taskscape_app::menu::NativeMenu::install();
+            Ok(Box::new(Taskscape { app, window, menu }))
         }),
     )
 }

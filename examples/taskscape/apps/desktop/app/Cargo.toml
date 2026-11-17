@@ -17,7 +17,7 @@ required-features = ["window"]
 # The window needs eframe; the screens don't. The omnicui target turns `window` off and never builds eframe.
 [features]
 default = ["window"]
-window = ["dep:eframe"]
+window = ["dep:eframe", "dep:rfd", "dep:muda"]
 
 [dependencies]
 taskscape-ui = { path = "../ui" }
@@ -27,4 +27,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 anyhow = "1"
+# OS file dialogs (list import and export); the portal backend on Linux needs no GTK.
+rfd = { version = "0.15", optional = true, default-features = false, features = ["xdg-portal", "async-std"] }
 eframe = { version = "0.37", optional = true, default-features = false, features = ["accesskit", "default_fonts", "wgpu", "wayland", "x11"] }
+
+# The macOS menu bar (App, View, Window, List), as the reference's.
+[target.'cfg(target_os = "macos")'.dependencies]
+muda = { version = "0.17", optional = true }

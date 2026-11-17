@@ -239,6 +239,17 @@ impl Data {
         let (key, value) = (key.to_owned(), stored(key, value));
         self.save(async move |s| s.set_setting(&key, &value).await)
     }
+    /// A list as the reference's JSON export document.
+    pub fn export_list(&self, list: &str) -> Result<String> {
+        self.rt.block_on(taskscape_storage::transfer::export_list(&self.store, list))
+    }
+    /// A new list in the project from an export document; `name` overrides the document's.
+    pub fn import_list(&mut self, project: &str, json: &str, name: Option<&str>) -> Result<Id> {
+        let (project, json, name) = (project.to_owned(), json.to_owned(), name.map(str::to_owned));
+        let list = self.rt.block_on(async { taskscape_storage::transfer::import_list(&self.store, &project, &json, name.as_deref()).await })?;
+        self.reload()?;
+        Ok(list.id)
+    }
     pub fn get_setting(&self, key: &str) -> Option<String> {
         self.rt.block_on(self.store.get_setting(key)).ok().flatten()
     }

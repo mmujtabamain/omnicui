@@ -58,6 +58,8 @@ fn close_request(ui: &egui::Ui) -> Option<&'static str> {
 
 /// The Trash window's state: the Trash list it holds, and the events waiting to be reported.
 pub struct TrashWindow {
+    /// Room at the header's left for the OS's window buttons (a real window on macOS).
+    pub lead: f32,
     trash: Trash,
     /// Events raised outside a frame (an open request, a close request); reported on the next frame.
     queued: Vec<TrashwindowEvent>,
@@ -67,7 +69,7 @@ pub struct TrashWindow {
 
 impl TrashWindow {
     pub fn new() -> Self {
-        Self { trash: Trash::new(), queued: vec![], focus: false }
+        Self { trash: Trash::new(), queued: vec![], focus: false, lead: 0.0 }
     }
 
     /// An open request (from the title bar or the palette): opens the window, or focuses it when it is
@@ -118,6 +120,7 @@ impl TrashWindow {
         let before: Vec<(String, String)> = app.data.trash.iter().map(|t| (t.id.clone(), t.title.clone())).collect();
         let mut names: Vec<(&str, &str)> = LIST_NAMES.to_vec();
         names.extend(second_row_names(app));
+        self.trash.lead = self.lead;
         let trash_events = as_part(ui, &names, |ui| self.trash.show(app, ui, look));
         if let Some(count) = self.trash.empty_asked.take() {
             events.push(TrashwindowEvent::EmptyAsked { count: count as i64 });

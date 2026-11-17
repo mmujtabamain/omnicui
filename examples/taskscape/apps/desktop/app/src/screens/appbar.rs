@@ -233,7 +233,16 @@ impl AppBar {
         let painter = ui.painter().clone();
         painter.rect_filled(bar, CornerRadius::ZERO, t.surface_1);
         painter.hline(bar.x_range(), bar.bottom() - 0.5, Stroke::new(1.0, t.edge_2));
-        let content = Rect::from_min_max(bar.min, pos2(bar.max.x, bar.bottom() - 1.0));
+        // In a real window the bar is the title bar: room for the window buttons, and a drag region under
+        // the controls (see chrome).
+        let (lead, trail) = (crate::chrome::lead(app.native_window), crate::chrome::trail(app.native_window, 3));
+        if app.native_window {
+            crate::chrome::drag_region(ui, bar, true);
+            if trail > 0.0 && crate::chrome::buttons(ui, look, Rect::from_min_max(pos2(bar.right() - trail, bar.top()), bar.max), true) {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        }
+        let content = Rect::from_min_max(pos2(bar.min.x + lead, bar.min.y), pos2(bar.max.x - trail, bar.bottom() - 1.0));
 
         // The project pill: the Button widget, with the bar's own node for the switcher (its name and its value).
         let label = snap.project.map(|i| snap.projects[i].1.clone()).unwrap_or_default();
@@ -602,6 +611,7 @@ impl AppBar {
                 self.tab_menu = None;
                 let name = snap.list_name(&id).unwrap_or_default();
                 ev.push(AppbarEvent::ListExportRequested { name });
+                app.export_list(&id);
             }
             Act::Split(target) => {
                 self.tab_menu = None;

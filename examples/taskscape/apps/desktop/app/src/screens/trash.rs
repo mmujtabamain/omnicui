@@ -83,11 +83,13 @@ pub struct Trash {
     focus_row: Option<String>,
     /// Set when Empty opened the confirmation, with the number of roots it names; the window reads it.
     pub empty_asked: Option<usize>,
+    /// Room kept at the header's left for the OS's window buttons (a real window on macOS).
+    pub lead: f32,
 }
 
 impl Trash {
     pub fn new() -> Self {
-        Self { notice: String::new(), sheet: None, focus_row: None, empty_asked: None }
+        Self { notice: String::new(), sheet: None, focus_row: None, empty_asked: None, lead: 0.0 }
     }
 
     /// One frame: draws the Trash list and returns the events it raised.
@@ -120,7 +122,7 @@ impl Trash {
         part(ui, &pane, parts::PANE);
 
         ui.spacing_mut().item_spacing.y = 0.0;
-        header(ui, look);
+        header(ui, look, self.lead);
         if !self.notice.is_empty() {
             notice_bar(ui, look, &self.notice);
         }
@@ -364,11 +366,11 @@ fn pressed(events: &[ButtonEvent]) -> bool {
 }
 
 /// The header: the delete glyph and the "Trash" title, on a hairline.
-fn header(ui: &mut egui::Ui, look: Look) {
+fn header(ui: &mut egui::Ui, look: Look, lead: f32) {
     let t = look.t;
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), rem(3.286)), Sense::hover());
     ui.painter().hline(rect.x_range(), rect.bottom(), Stroke::new(1.0, t.edge_1));
-    let inner = Rect::from_min_max(rect.min + vec2(rem(1.0), 0.0), rect.max);
+    let inner = Rect::from_min_max(rect.min + vec2(rem(1.0) + lead, 0.0), rect.max);
     ui.scope_builder(UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)), |ui| {
         ui.spacing_mut().item_spacing.x = rem(0.357);
         Icon::new(IconProps { name: "delete".into(), size: "lg".into(), tone: "secondary".into(), ..Default::default() })

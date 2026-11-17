@@ -112,6 +112,10 @@ pub struct SettingsGeneral {
     pub window: bool,
     /// The pane's rectangle in the last frame, for the window to draw another section's page into.
     pub content: Option<Rect>,
+    /// Room kept in the header for the window buttons: at the left for the OS's (macOS), at the right for
+    /// the app's own (Windows, Linux), in a real window.
+    pub lead: f32,
+    pub trail: f32,
     /// Each setting written in the last frame, as (key, value).
     pub writes: Vec<(&'static str, String)>,
     /// Set when the window asked to close in the last frame: "escape" or "shortcut".
@@ -134,6 +138,8 @@ impl SettingsGeneral {
             fade_from: 0.0,
             primed: false,
             window: false,
+            lead: 0.0,
+            trail: 0.0,
             content: None,
             writes: vec![],
             closed: None,
@@ -164,11 +170,11 @@ impl SettingsGeneral {
         p.hline(Rangef::new(header.left(), header.right()), header.bottom() - 0.5, Stroke::new(1.0, t.edge_1));
         let title = lay(ui, "Settings", 15.0, 600, t.content_1, f32::INFINITY);
         let ts = title.size();
-        let at = pos2(header.left() + rem(1.286), header.center().y - ts.y / 2.0);
+        let at = pos2(header.left() + rem(1.286) + self.lead, header.center().y - ts.y / 2.0);
         node_text(ui, Rect::from_min_size(at, ts), title, t.content_1, parts::HEADING, "Settings", Role::Heading);
         if ALL.iter().any(|f| differs(&current, &open, *f)) {
             let b = rem(2.0);
-            let r = Rect::from_min_size(pos2(header.right() - rem(1.286) - b, header.center().y - b / 2.0), vec2(b, b));
+            let r = Rect::from_min_size(pos2(header.right() - rem(1.286) - self.trail - b, header.center().y - b / 2.0), vec2(b, b));
             if icon_button(ui, &t, r, parts::DISCARDALL, "Discard all changes", "undo", 19.0, t.content_1) {
                 discard(&current, &open, ALL, &mut actions);
             }

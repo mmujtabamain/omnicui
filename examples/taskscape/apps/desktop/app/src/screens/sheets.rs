@@ -121,6 +121,10 @@ impl Sheets {
                     Act::Instead(id) => {
                         app.sheet = None;
                         events.push(answered("instead", "", &id));
+                        // Import JSON: a list from an export file instead of a new empty one (the reference's).
+                        if id == "import" {
+                            app.import_list(None);
+                        }
                     }
                     Act::Accept(name) => match commit(app, &sheet, &name) {
                         Ok(()) => {

@@ -64,6 +64,8 @@ const CAPTURE_CHROME: (f32, f32) = (153.0, 46.0);
 const SHORTCUTS_CHROME: (f32, f32) = (taskscape_ui::rem(10.929), taskscape_ui::rem(3.286));
 
 pub struct SettingsWindow {
+    /// The General page draws the window's header; the window sets its room for the window buttons.
+    pub general_chrome: (f32, f32),
     general: SettingsGeneral,
     capture: SettingsCapture,
     shortcuts: SettingsShortcuts,
@@ -88,7 +90,7 @@ impl SettingsWindow {
         shortcuts.embedded = true;
         about.embedded = true;
         about.set_data_folder(taskscape_storage::paths::root_dir().display().to_string());
-        Self { general, capture, shortcuts, about, last_pane: "general".into() }
+        Self { general, capture, shortcuts, about, last_pane: "general".into(), general_chrome: (0.0, 0.0) }
     }
 
     /// One frame of the window's content. A close (Escape, the close chord) sets `app.settings_window`
@@ -98,6 +100,7 @@ impl SettingsWindow {
         if app.settings_window.is_none() {
             app.settings_window = Some("general".into());
         }
+        (self.general.lead, self.general.trail) = self.general_chrome;
         as_part(ui, RENAMES, |ui| {
             self.general.show(app, ui, look);
         });

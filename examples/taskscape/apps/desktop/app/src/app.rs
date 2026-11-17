@@ -40,11 +40,14 @@ pub struct App {
     pub capture_open: bool,
     /// The error a save returned, for the toast.
     pub last_error: Option<String>,
+    /// Drawn in real OS windows (the app binary): the bars carry the window chrome (see `chrome`).
+    /// Off in screen tests, which have one headless window.
+    pub native_window: bool,
 }
 
 impl App {
     pub fn new(data: Data) -> Self {
-        let mut app = Self { data, ui: UiState::default(), toast: None, sheet: None, trash_window: false, settings_window: None, capture_open: false, last_error: None };
+        let mut app = Self { data, ui: UiState::default(), toast: None, sheet: None, trash_window: false, settings_window: None, capture_open: false, last_error: None, native_window: false };
         app.open_last();
         app
     }
@@ -72,6 +75,25 @@ impl App {
         }
         if let Some(l) = list.and_then(|n| self.data.list_named(self.ui.project.as_deref(), n)).map(|l| l.id.clone()) {
             self.ui.open_list(Some(l), Some(0));
+        }
+    }
+
+    /// Exports a list to a JSON file the user picks (the reference's export).
+    pub fn export_list(&mut self, list: &str) {
+        let name = self.data.list(list).map(|l| l.name.clone()).unwrap_or_else(|| "List".into());
+        let Some(path) = crate::dialogs::save_json(&format!("{name}.json")) else { return };
+        if let Err(e) = self.data.export_list(list).and_then(|json| Ok(std::fs::write(&path, json)?)) {
+            self.refused(e);
+        }
+    }
+
+    /// Imports a list from a JSON file the user picks into the open project, and opens it.
+    pub fn import_list(&mut self, name: Option<&str>) {
+        let Some(project) = self.ui.project.clone() else { return };
+        let Some(path) = crate::dialogs::open_json() else { return };
+        match std::fs::read_to_string(&path).map_err(anyhow::Error::from).and_then(|json| self.data.import_list(&project, &json, name)) {
+            Ok(list) => self.ui.open_list(Some(list), None),
+            Err(e) => self.refused(e),
         }
     }
 
