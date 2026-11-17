@@ -94,6 +94,10 @@ Roles, what a test can check on a part of each, and the actions it accepts:
            whether it can be minimised or zoomed (targets that advertise window)
 
 How targets are compared (warnings, never failures, unless check --fail-on says so):
+  references   references.yaml at the project's root lists recorded screenshots of the app the
+               targets reproduce: { contract, test, image, colorScheme, crop, mask, maskParts }.
+               Each target's screenshot of the test at that size is compared with it, pixel by
+               pixel, whatever its design ("reference ↔ <target>"); --fail-on reference for CI.
   screenshots  every pair of targets of one design (design: in target.yaml; most share the
                default), at every combination; the worst combination is reported.
                area      how much of the drawn area differs (a pixel differs when no pixel within

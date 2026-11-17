@@ -26,7 +26,7 @@ func pairLabel(c Comparison) string {
 
 func unit(kind string) string {
 	switch kind {
-	case "pixels", "palette", "layout":
+	case "pixels", "reference", "palette", "layout":
 		return "%"
 	case "direction":
 		return "°"
@@ -39,7 +39,7 @@ func valueText(c Comparison) string {
 		return "∞"
 	}
 	switch c.Kind {
-	case "pixels", "palette", "layout":
+	case "pixels", "reference", "palette", "layout":
 		return fmt.Sprintf("%.1f%%", c.Value)
 	case "direction":
 		return fmt.Sprintf("%.0f°", c.Value)
@@ -180,7 +180,7 @@ func Print(w io.Writer, rep *Report, runDir string) {
 				if cmp.Contract != c.ID || cmp.Test != test.Name {
 					continue
 				}
-				if cmp.Kind == "pixels" {
+				if cmp.Kind == "pixels" || cmp.Kind == "reference" {
 					pix = append(pix, cmp)
 				} else if cmp.Kind == "visibility" {
 					seen = append(seen, cmp)

@@ -156,6 +156,8 @@ Three more checks catch what a contract could not say before: what stays after t
 
 `leave` takes no part; `titleBar` is `os` or `app`; `focusVisible` exists only on focusable roles. *(TestLeaveAndTitleBar)*
 
+**References.** A project may list recorded screenshots of the app its targets reproduce, in `references.yaml` at its root: per entry the contract's id and the test's name, the `image` (relative to the project), its `colorScheme` (light by default), an optional `crop` (the part of the image the test's viewport shows, when the test mounts a component of a larger window), and what may differ: `mask` (areas of the image) and `maskParts` (parts, by their box on each target). Each target's screenshot of that test at the image's (or crop's) size and scheme is compared with it with the same measures and thresholds as two targets of one design, whatever the target's design, as a `reference` comparison with a diff image; `--fail-on reference` fails the run on one above its threshold. A listed image that doesn't exist stops the run before any target starts; a reference no target took a screenshot of its size for is reported. *(TestReferences, TestReferencesMissingImage)*
+
 ### Invariants
 
 - [R] A contract's `id` is unique among the project's contracts. *(TestDuplicateIDs)*

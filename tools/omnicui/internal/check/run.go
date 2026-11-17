@@ -51,7 +51,9 @@ type runner struct {
 	wire       *os.File
 	wireMu     sync.Mutex
 	// For palettes across designs: every result, and each target's palettes per colour scheme.
-	results      []TestResult
+	results []TestResult
+	// refs: the recorded screenshots of the app the targets reproduce (references.yaml).
+	refs         []project.Reference
 	paletteMu    sync.Mutex
 	paletteCache map[string][]compare.Palette
 }
@@ -93,6 +95,9 @@ func Run(opts Options) (*Report, error) {
 	defer wire.Close()
 	r := &runner{opts: opts, runDir: dir, runID: newRunID(), wire: wire}
 	r.log = log.With("run", r.runID)
+	if r.refs, err = opts.Project.References(); err != nil {
+		return nil, err
+	}
 	r.log.Info("check started", "contracts", len(opts.Contracts), "targets", len(opts.Targets))
 	rep := &Report{RunID: r.runID, Contracts: opts.Contracts, Problems: opts.Problems}
 

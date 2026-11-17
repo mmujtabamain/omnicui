@@ -160,7 +160,8 @@ func (r Rect) contains(x, y float64) bool {
 type Comparison struct {
 	Contract string `json:"contract"`
 	Test     string `json:"test"`
-	// Kind: "pixels" (targets of one design), "palette" (targets of different designs),
+	// Kind: "pixels" (targets of one design), "reference" (a target and a recorded screenshot of the
+	// app it reproduces, references.yaml), "palette" (targets of different designs),
 	// "timing", "direction", "motion" or "visibility".
 	Kind  string `json:"kind"`
 	A     string `json:"a"`
@@ -242,7 +243,7 @@ func (r *Report) Failed() bool {
 }
 
 // FailOnKinds are the values --fail-on accepts: every warning, or one kind of comparison.
-var FailOnKinds = map[string]bool{"warnings": true, "pixels": true, "palette": true, "timing": true, "direction": true, "motion": true, "visibility": true}
+var FailOnKinds = map[string]bool{"warnings": true, "pixels": true, "reference": true, "palette": true, "timing": true, "direction": true, "motion": true, "visibility": true}
 
 // WarningsFailing counts the warnings that --fail-on turns into a failed run.
 func (r *Report) WarningsFailing(failOn []string) (int, []string) {

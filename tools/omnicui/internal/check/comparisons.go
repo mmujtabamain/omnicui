@@ -36,6 +36,7 @@ func (r *runner) compareAll(rep *Report) []Comparison {
 			}
 			if test.Screenshot {
 				out = append(out, r.compareScreens(c, test, results, plats)...)
+				out = append(out, r.compareReferences(c, test, results)...)
 			}
 			if len(test.Trace) > 0 {
 				out = append(out, compareTraces(c, test, results, plats)...)

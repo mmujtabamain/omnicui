@@ -289,7 +289,7 @@ func writeReport(path string, rep *Report) error {
 					continue
 				}
 				switch cmp.Kind {
-				case "pixels":
+				case "pixels", "reference":
 					rt.Pixels = append(rt.Pixels, cmp)
 				case "visibility":
 					rt.Visibility = append(rt.Visibility, cmp)
