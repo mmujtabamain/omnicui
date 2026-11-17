@@ -70,7 +70,7 @@ const TITLE_PARTS: Record<string, RowParts> = {
   "Oat milk": { row: PART("rowOatMilk") },
   "Buy stamps": { row: PART("rowNewSubtask") },
   "Errand number 40": { row: PART("rowLastErrand") },
-  "Rewrite the hero section": { attach: PART("attachmentBadge") },
+  "Rewrite the hero section": { attach: PART("attachmentBadge"), badge: PART("badgeHero") },
   "Return library books": { row: PART("rowReturnBooks") },
   "Trim the hedge": { row: PART("matchTrimHedge") },
 };

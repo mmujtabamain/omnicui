@@ -217,7 +217,10 @@ fn title_parts(title: &str) -> Parts {
         "Oat milk" => p.row = Some(parts::ROWOATMILK),
         "Buy stamps" => p.row = Some(parts::ROWNEWSUBTASK),
         "Errand number 40" => p.row = Some(parts::ROWLASTERRAND),
-        "Rewrite the hero section" => p.attach = Some(parts::ATTACHMENTBADGE),
+        "Rewrite the hero section" => {
+            p.attach = Some(parts::ATTACHMENTBADGE);
+            p.badge = Some(parts::BADGEHERO);
+        }
         "Return library books" => p.row = Some(parts::ROWRETURNBOOKS),
         "Trim the hedge" => p.row = Some(parts::MATCHTRIMHEDGE),
         _ => {}

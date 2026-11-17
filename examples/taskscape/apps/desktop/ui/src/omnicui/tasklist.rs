@@ -82,6 +82,7 @@ pub mod parts {
     pub const BADGEGROCERIES: &str = "app.tasklist.badgeGroceries";
     pub const BADGEBIKE: &str = "app.tasklist.badgeBike";
     pub const ATTACHMENTBADGE: &str = "app.tasklist.attachmentBadge";
+    pub const BADGEHERO: &str = "app.tasklist.badgeHero";
     pub const MATCHMARK: &str = "app.tasklist.matchMark";
     pub const CHECKBIKE: &str = "app.tasklist.checkBike";
     pub const CHECKPOST: &str = "app.tasklist.checkPost";

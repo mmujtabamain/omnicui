@@ -179,8 +179,9 @@ impl Input {
         let edit_id = self.edit_id();
         let radius = CornerRadius::same(4);
 
-        // A multiline field is one line (21px) and grows to two (42px), then scrolls.
-        let box_h = if multi && ui.painter().layout(self.text.clone(), font.clone(), t.content_1, inner_w).size().y > line + 0.5 {
+        // A multiline field is one line (21px) and grows to two (42px), then scrolls. Counted in rows: an
+        // 18 px line is taller than 21 px, so a height test made every display title two lines tall.
+        let box_h = if multi && ui.painter().layout(self.text.clone(), font.clone(), t.content_1, inner_w).rows.len() > 1 {
             rem(3.0)
         } else {
             line
@@ -293,7 +294,7 @@ impl Input {
         };
         let color = color.gamma_multiply(alpha);
         let galley = ui.painter().layout(shown, font, color, if multi { inner_w } else { f32::INFINITY });
-        let box_h = if multi && galley.size().y > line + 0.5 { rem(3.0) } else { line };
+        let box_h = if multi && galley.rows.len() > 1 { rem(3.0) } else { line };
 
         let sense = if disabled { Sense::hover() } else { Sense::click() };
         let (rect, response) = ui.allocate_exact_size(vec2(width, box_h), sense);

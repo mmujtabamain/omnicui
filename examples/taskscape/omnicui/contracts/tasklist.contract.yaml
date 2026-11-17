@@ -76,6 +76,7 @@ parts:
   badgeGroceries: { role: generic }            # subtask count of Buy groceries for the week, text like 1/3
   badgeBike: { role: generic }                 # subtask count of Book bike service, shown once it has a child
   attachmentBadge: { role: generic }           # attachment count (paperclip icon and the count) of a row
+  badgeHero: { role: generic }                 # subtask count of Rewrite the hero section, text like 1/2
   matchMark: { role: generic }                 # first highlight in the first matching row (title or note line)
   checkBike: { role: button }                  # round check of Book bike service
   checkPost: { role: button }                  # round check of Post the parcel to Mum
@@ -767,6 +768,11 @@ tests:
     expect:
       - { part: attachmentBadge, text: { contains: "2" } }
       - { part: row, name: { contains: "Rewrite the hero section" } }
+
+  - name: "a row's subtask count comes before its attachment count, on one line"
+    props: { project: "Spring launch", list: "Website" }
+    expect:
+      - { part: badgeHero, leftOf: attachmentBadge, middleWith: attachmentBadge }
 
   - name: "split: Close split ends the split view and reports the list"
     props: { split: true }
