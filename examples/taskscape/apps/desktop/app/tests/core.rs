@@ -37,3 +37,22 @@ fn open_named_moves_to_another_project() {
     let press = app.data.list_named(app.ui.project.as_deref(), "Press kit").unwrap().id.clone();
     assert_eq!(app.active_list(), Some(press));
 }
+
+/// The settings file is shared with the reference app, which writes Show completed and Reduced motion as
+/// `1` and `0`: each app must read what the other wrote (review #12354).
+#[test]
+fn settings_read_and_write_in_the_reference_format() {
+    let mut app = App::demo("standard").unwrap();
+    let file = taskscape_storage::paths::root_dir().join("settings.json");
+    std::fs::write(&file, r#"{"show_completed":"0","reduced_motion":"1","theme":"dark"}"#).unwrap();
+    app.data.reload().unwrap();
+    assert!(!app.data.settings.show_completed, "the reference's 0 hides completed tasks");
+    assert_eq!(app.data.settings.reduced_motion, "on", "the reference's 1 is reduced motion on");
+    assert_eq!(app.data.settings.theme, "dark");
+
+    app.data.set_setting("show_completed", "true").unwrap();
+    app.data.set_setting("reduced_motion", "system").unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+    assert_eq!(saved["show_completed"], "1", "written as the reference writes it");
+    assert_eq!(saved["reduced_motion"], "0");
+}

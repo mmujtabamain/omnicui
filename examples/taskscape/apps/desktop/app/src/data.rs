@@ -76,8 +76,8 @@ impl Data {
         let get = |k: &str| self.rt.block_on(s.get_setting(k)).ok().flatten();
         self.settings = Settings {
             theme: get("theme").unwrap_or_else(|| "system".into()),
-            reduced_motion: get("reduced_motion").unwrap_or_else(|| "system".into()),
-            show_completed: get("show_completed").map(|v| v != "false").unwrap_or(true),
+            reduced_motion: motion_from_stored(get("reduced_motion").as_deref()).into(),
+            show_completed: get("show_completed").map(|v| v != "0" && v != "false").unwrap_or(true),
         };
         Ok(())
     }
@@ -236,7 +236,7 @@ impl Data {
         self.save(async move |s| s.delete_attachment(&id).await)
     }
     pub fn set_setting(&mut self, key: &str, value: &str) -> Result<()> {
-        let (key, value) = (key.to_owned(), value.to_owned());
+        let (key, value) = (key.to_owned(), stored(key, value));
         self.save(async move |s| s.set_setting(&key, &value).await)
     }
     pub fn get_setting(&self, key: &str) -> Option<String> {
@@ -245,5 +245,29 @@ impl Data {
     /// The store itself, for what has no method here (hotkeys, attachment paths).
     pub fn with_store<T>(&self, f: impl AsyncFnOnce(&Store) -> Result<T>) -> Result<T> {
         self.rt.block_on(f(&self.store))
+    }
+}
+
+/// A setting as the reference writes it to the shared settings file, so either app reads what the
+/// other wrote: Show completed and Reduced motion are `1` or `0` there. Reduced motion's System is the
+/// reference's `0` (it then follows the OS); Off, which the reference does not have, is stored as `off`,
+/// which the reference reads as its default.
+fn stored(key: &str, value: &str) -> String {
+    match (key, value) {
+        ("show_completed", "true" | "on" | "1") => "1".into(),
+        ("show_completed", "false" | "off" | "0") => "0".into(),
+        ("reduced_motion", "on") => "1".into(),
+        ("reduced_motion", "system") => "0".into(),
+        _ => value.into(),
+    }
+}
+
+/// Reduced motion as the screens name it (system, on, off), from the stored value (`1`, `0`, `off`, or
+/// an older `on`/`system`).
+fn motion_from_stored(v: Option<&str>) -> &'static str {
+    match v {
+        Some("1" | "on") => "on",
+        Some("off") => "off",
+        _ => "system",
     }
 }
