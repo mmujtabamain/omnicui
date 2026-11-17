@@ -341,6 +341,17 @@ impl Target {
             find(&root, &part)?.scroll_to_me();
             let _ = h.try_run();
         }
+        // Typing goes into the part a user clicked into first: egui gives a field the keyboard one frame after
+        // AccessKit asks, so text sent in the same frame as the focus request would be lost.
+        if method == "type" {
+            let h = self.harness()?;
+            let root = h.root();
+            let node = find(&root, &part)?;
+            if !node.is_focused() {
+                node.focus();
+                h.step();
+            }
+        }
         let h = self.harness()?;
         let root = h.root();
         let node = find(&root, &part)?;

@@ -78,8 +78,16 @@ pub const fn rem(r: f32) -> f32 {
 /// Marks a widget's response as a contract part: AccessKit's `author_id` is the part id. Inside
 /// [`as_part`], a part id the screen renamed is tagged with the screen's name instead.
 pub fn part(ui: &egui::Ui, response: &Response, id: &str) {
-    let renamed = ui.ctx().data(|d| d.get_temp::<Vec<(String, String)>>(part_map_id())).and_then(|map| map.iter().rev().find(|(from, _)| from == id).map(|(_, to)| to.clone()));
-    let id = renamed.unwrap_or_else(|| id.to_owned());
+    // Renames chain: a widget's part renamed by its screen (ui.tasktreerow.row -> app.tasklist.row) and that
+    // screen's part renamed by the window around it (app.tasklist.row -> app.mainwindow.row).
+    let map = ui.ctx().data(|d| d.get_temp::<Vec<(String, String)>>(part_map_id())).unwrap_or_default();
+    let mut id = id.to_owned();
+    for _ in 0..4 {
+        match map.iter().rev().find(|(from, _)| *from == id) {
+            Some((_, to)) if *to != id => id = to.clone(),
+            _ => break,
+        }
+    }
     ui.ctx().accesskit_node_builder(response.id, |node| node.set_author_id(id));
 }
 

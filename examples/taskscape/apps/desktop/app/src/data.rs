@@ -36,6 +36,12 @@ impl Data {
     pub fn open() -> Result<Self> {
         let rt = tokio::runtime::Builder::new_multi_thread().worker_threads(1).enable_all().build()?;
         let store = rt.block_on(Store::open())?;
+        // A first launch (nothing saved yet, and no first launch before it) starts on the demo projects.
+        let fresh = rt.block_on(async { Ok::<_, anyhow::Error>(store.list_projects().await?.is_empty() && store.get_setting("seeded").await?.is_none()) })?;
+        if fresh {
+            rt.block_on(demo::load(&store, "standard"))?;
+            rt.block_on(store.set_setting("seeded", "1"))?;
+        }
         let mut d = Self { rt, store, projects: vec![], lists: vec![], tasks: vec![], trash: vec![], settings: Settings { theme: "system".into(), reduced_motion: "system".into(), show_completed: true } };
         d.reload()?;
         Ok(d)

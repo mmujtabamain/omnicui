@@ -99,6 +99,9 @@ fn cmd(group: Group, label: impl Into<String>, icon: &'static str, accel: &'stat
     Row { group, label: label.into(), icon, accel, slot, action }
 }
 
+/// The Open Trash row: no part of this contract, named so a window around the palette can name it.
+pub const ROW_OPEN_TRASH: &str = "app.palette.rowOpenTrash";
+
 /// The rows the app offers now: the commands, then the Delete row for the one selected task, then the
 /// lists of the open project, then the projects. The web's order and labels.
 fn catalog(app: &App) -> Vec<Row> {
@@ -116,7 +119,7 @@ fn catalog(app: &App) -> Vec<Row> {
         cmd(Task, "Redo", "redo", "Mod+Shift+Z", None, Action::Noop),
         cmd(Manage, "New list", "playlist_add", "Mod+Shift+N", None, Action::NewList),
         cmd(Manage, "New project", "create_new_folder", "", None, Action::NewProject),
-        cmd(Manage, "Open Trash", "delete", "", None, Action::OpenTrash),
+        cmd(Manage, "Open Trash", "delete", "", Some(ROW_OPEN_TRASH), Action::OpenTrash),
         cmd(Manage, "Settings", "settings", "Mod+Comma", None, Action::Settings),
     ];
 

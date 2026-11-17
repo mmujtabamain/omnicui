@@ -490,7 +490,8 @@ impl FilterPanel {
     }
 
     /// The Filter & Sort panel: sort, show, refine and date, edited on every list on screen as one.
-    fn panel(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) {
+    /// The Filter & Sort panel alone, as the main window's aside shows it.
+    pub fn panel(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) {
         let t = look.t;
         let names: Vec<String> = app.ui.panes.iter().flatten().filter_map(|id| app.data.list(id).map(|l| l.name.clone())).collect();
         let subtitle = if names.is_empty() { "No list open".to_string() } else { names.join(", ") };

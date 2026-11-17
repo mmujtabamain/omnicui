@@ -28,6 +28,17 @@ const PANES: [&str; 3] = ["general", "shortcuts", "about"];
 const TAB_PARTS: [&str; 3] = [parts::GENERALTAB, parts::SHORTCUTSTAB, parts::ABOUTTAB];
 const TAB_NAMES: [&str; 3] = ["General", "Shortcuts", "About"];
 const TAB_ICONS: [&str; 3] = ["tune", "keyboard", "info"];
+/// The desktop Settings window's sections (decision 19): Capture joins them, after General.
+const WINDOW_PANES: [&str; 4] = ["general", "capture", "shortcuts", "about"];
+const WINDOW_TAB_PARTS: [&str; 4] = [parts::GENERALTAB, CAPTURE_TAB, parts::SHORTCUTSTAB, parts::ABOUTTAB];
+const WINDOW_TAB_NAMES: [&str; 4] = ["General", "Capture", "Shortcuts", "About"];
+const WINDOW_TAB_ICONS: [&str; 4] = ["tune", "capture", "keyboard", "info"];
+/// Parts the page has only in the window (its contract has no Capture section and no row containers).
+pub const CAPTURE_TAB: &str = "app.settingsgeneral.captureTab";
+pub const SIDEBAR: &str = "app.settingsgeneral.sidebar";
+pub const THEME_ROW: &str = "app.settingsgeneral.themeRow";
+pub const REDUCED_ROW: &str = "app.settingsgeneral.reducedRow";
+pub const SHOW_ROW: &str = "app.settingsgeneral.showCompletedRow";
 
 /// One searchable row of the General pane: its title, description and keywords make its text.
 struct Row {
@@ -96,6 +107,15 @@ pub struct SettingsGeneral {
     fade_from: f64,
     /// The search field was given the keyboard once, when the page first drew.
     primed: bool,
+    /// Drawn as the desktop Settings window: four sections, and the window's own keys (Escape and the
+    /// close chord close it). The window draws the panes other than General into `content`.
+    pub window: bool,
+    /// The pane's rectangle in the last frame, for the window to draw another section's page into.
+    pub content: Option<Rect>,
+    /// Each setting written in the last frame, as (key, value).
+    pub writes: Vec<(&'static str, String)>,
+    /// Set when the window asked to close in the last frame: "escape" or "shortcut".
+    pub closed: Option<&'static str>,
 }
 
 impl Default for SettingsGeneral {
@@ -106,7 +126,18 @@ impl Default for SettingsGeneral {
 
 impl SettingsGeneral {
     pub fn new() -> Self {
-        Self { open: None, query: String::new(), scoped: false, fade_key: String::new(), fade_from: 0.0, primed: false }
+        Self {
+            open: None,
+            query: String::new(),
+            scoped: false,
+            fade_key: String::new(),
+            fade_from: 0.0,
+            primed: false,
+            window: false,
+            content: None,
+            writes: vec![],
+            closed: None,
+        }
     }
 
     /// One frame: draws the page on the app and returns the events it raised (the page declares none).
@@ -166,6 +197,29 @@ impl SettingsGeneral {
         // A fixed id: the field keeps its focus and its typed text from frame to frame.
         let search_id = egui::Id::new("app.settingsgeneral.search");
         let focused = ui.memory(|m| m.has_focus(search_id));
+        self.writes.clear();
+        self.closed = None;
+        if self.window {
+            // The window's keys: the search chord focuses the field with its text selected; the close chord closes.
+            let (find, close) = ui.input(|i| {
+                let only = (i.modifiers.command || i.modifiers.ctrl) && !i.modifiers.shift && !i.modifiers.alt;
+                (only && i.key_pressed(Key::F), only && i.key_pressed(Key::W))
+            });
+            if close {
+                self.closed = Some("shortcut");
+            }
+            if find {
+                ui.memory_mut(|m| m.request_focus(search_id));
+                let mut state = egui::text_edit::TextEditState::load(ui.ctx(), search_id).unwrap_or_default();
+                let all = egui::text::CCursorRange::two(egui::text::CCursor::new(0), egui::text::CCursor::new(self.query.chars().count()));
+                state.cursor.set_char_range(Some(all));
+                state.store(ui.ctx(), search_id);
+            }
+            // Escape with an empty search (and no menu or field taking it) closes the window.
+            if self.query.is_empty() && ui.input(|i| i.key_pressed(Key::Escape)) {
+                self.closed = Some("escape");
+            }
+        }
         // Escape clears a non-empty search; with an empty search it is left for the window (it closes it).
         if !self.query.is_empty() && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
             self.query.clear();
@@ -216,18 +270,25 @@ impl SettingsGeneral {
         let tokens = tokens_of(&self.query);
         let searching = !tokens.is_empty();
         let general_matches = if searching { ROWS.iter().filter(|r| row_matches(r, &tokens)).count() } else { 0 };
-        let counts = [general_matches, 0, 0];
+        let n_tabs = if self.window { 4 } else { 3 };
+        let (panes, tab_parts, tab_names, tab_icons): (&[&str], &[&str], &[&str], &[&str]) = if self.window {
+            (&WINDOW_PANES, &WINDOW_TAB_PARTS, &WINDOW_TAB_NAMES, &WINDOW_TAB_ICONS)
+        } else {
+            (&PANES, &TAB_PARTS, &TAB_NAMES, &TAB_ICONS)
+        };
+        let mut counts = vec![0; n_tabs];
+        counts[0] = general_matches;
         let any_match = general_matches > 0;
 
         // The section tabs: a click or Enter or Space selects; the arrows move focus and select.
         let tab_h = rem(2.143);
         let tops = search_rect.bottom() + rem(0.5);
-        let tab_rects: Vec<Rect> = (0..3)
+        let tab_rects: Vec<Rect> = (0..n_tabs)
             .map(|i| Rect::from_min_size(pos2(inner_l, tops + i as f32 * (tab_h + 2.0)), vec2(inner_w, tab_h)))
             .collect();
-        let tab_resps: Vec<Response> = (0..3).map(|i| ui.interact(tab_rects[i], ui.scope_id().with(TAB_PARTS[i]), Sense::click())).collect();
+        let tab_resps: Vec<Response> = (0..n_tabs).map(|i| ui.interact(tab_rects[i], ui.scope_id().with(tab_parts[i]), Sense::click())).collect();
         // The section list is one node: a generic container named "Settings sections", over the three tabs.
-        let list_rect = Rect::from_min_max(tab_rects[0].min, tab_rects[2].max);
+        let list_rect = Rect::from_min_max(tab_rects[0].min, tab_rects[n_tabs - 1].max);
         let list = ui.interact(list_rect, ui.scope_id().with(parts::SECTIONNAV), Sense::hover());
         list.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Settings sections"));
         part(ui, &list, parts::SECTIONNAV);
@@ -241,19 +302,19 @@ impl SettingsGeneral {
         let mut moved: Option<usize> = None;
         if let Some(c) = tab_resps.iter().position(|r| r.has_focus()) {
             if down {
-                moved = Some((c + 1) % 3);
+                moved = Some((c + 1) % n_tabs);
             } else if up {
-                moved = Some((c + 2) % 3);
+                moved = Some((c + n_tabs - 1) % n_tabs);
             }
         }
         if let Some(n) = moved {
             tab_resps[n].request_focus();
-            choose(app, &mut self.query, &mut self.scoped, searching, counts, n);
+            choose(app, &mut self.query, &mut self.scoped, searching, &counts, panes, n);
             ui.ctx().request_repaint();
         } else {
-            for i in 0..3 {
+            for i in 0..n_tabs {
                 if pressed(ui, &tab_resps[i]) {
-                    choose(app, &mut self.query, &mut self.scoped, searching, counts, i);
+                    choose(app, &mut self.query, &mut self.scoped, searching, &counts, panes, i);
                     // During a search the field keeps the keyboard, so typing carries on in it; otherwise the tab takes it.
                     if searching {
                         ui.memory_mut(|m| m.request_focus(search_id));
@@ -263,9 +324,9 @@ impl SettingsGeneral {
                 }
             }
         }
-        let pane = pane_index(app.settings_window.as_deref());
+        let pane = panes.iter().position(|p| Some(*p) == app.settings_window.as_deref()).unwrap_or(0);
 
-        for i in 0..3 {
+        for i in 0..n_tabs {
             let r = tab_rects[i];
             let resp = &tab_resps[i];
             let selected = pane == i;
@@ -275,8 +336,8 @@ impl SettingsGeneral {
             }
             let base = if selected || resp.hovered() { t.content_1 } else { t.content_2 };
             let fg = base.gamma_multiply(dim);
-            glyph(&p, TAB_ICONS[i], pos2(r.left() + rem(0.643) + 8.0, r.center().y), 16.0, t.content_3.gamma_multiply(dim));
-            let label = lay(ui, TAB_NAMES[i], 13.0, 400, fg, f32::INFINITY);
+            glyph(&p, tab_icons[i], pos2(r.left() + rem(0.643) + 8.0, r.center().y), 16.0, t.content_3.gamma_multiply(dim));
+            let label = lay(ui, tab_names[i], 13.0, 400, fg, f32::INFINITY);
             let ly = r.center().y - label.size().y / 2.0;
             p.galley(pos2(r.left() + rem(0.643) + 16.0 + rem(0.5), ly), label, fg);
             if i == 0 && searching && general_matches > 0 {
@@ -289,16 +350,16 @@ impl SettingsGeneral {
                 p.rect_filled(br, CornerRadius::same(8), t.wash_2);
                 node_text(ui, Rect::from_center_size(br.center(), gs), g, t.content_2, parts::GENERALMATCHES, &count, Role::GenericContainer);
             }
-            resp.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, TAB_NAMES[i]));
+            resp.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, tab_names[i]));
             ui.ctx().accesskit_node_builder(resp.id, |n| n.set_selected(selected));
-            part(ui, resp, TAB_PARTS[i]);
+            part(ui, resp, tab_parts[i]);
             if resp.has_focus() {
                 p.rect_stroke(r, CornerRadius::same(5), Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
             }
         }
 
         // The pane: its content fades in on each change of pane or search (0.28 s, as the web's pane frame).
-        let key = if searching { "search".to_owned() } else { PANES[pane].to_owned() };
+        let key = if searching { "search".to_owned() } else { panes[pane].to_owned() };
         if self.fade_key != key {
             self.fade_key = key;
             self.fade_from = now;
@@ -307,6 +368,12 @@ impl SettingsGeneral {
         if fade < 1.0 {
             ui.ctx().request_repaint();
         }
+        if self.window {
+            let side = ui.interact(nav, ui.scope_id().with(SIDEBAR), Sense::hover());
+            side.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Settings"));
+            part(ui, &side, SIDEBAR);
+        }
+        self.content = (!searching && pane != 0).then_some(content);
         let panel = ui.interact(content, ui.scope_id().with(parts::CONTENTPANEL), Sense::hover());
         panel.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         part(ui, &panel, parts::CONTENTPANEL);
@@ -323,7 +390,7 @@ impl SettingsGeneral {
             if searching && !any_match {
                 empty_state(ui, &t, &query);
             } else if searching || pane == 0 {
-                general_page(ui, &t, &tokens, searching, scoped, &current, &open, &mut actions);
+                general_page(ui, &t, &tokens, searching, scoped && !self.window, &current, &open, &mut actions);
             }
         });
 
@@ -334,6 +401,8 @@ impl SettingsGeneral {
         for (f, v) in actions {
             if let Err(e) = app.data.set_setting(key_of(f), &v) {
                 app.refused(e);
+            } else {
+                self.writes.push((key_of(f), v));
             }
         }
     }
@@ -495,6 +564,7 @@ fn theme_row(ui: &mut egui::Ui, t: &Tokens, value: &str, actions: &mut Vec<(Fiel
         parts::THEMEDESCRIPTION,
         0.0,
         rem(1.857),
+        THEME_ROW,
     );
     segments(ui, t, tray, &THEME_SEGS, value, true, Field::Theme, actions);
 }
@@ -512,6 +582,7 @@ fn motion_row(ui: &mut egui::Ui, t: &Tokens, value: &str, actions: &mut Vec<(Fie
         parts::REDUCEDMOTIONDESCRIPTION,
         cw,
         rem(1.857),
+        REDUCED_ROW,
     );
     segments(ui, t, tray, &MOTION_SEGS, value, false, Field::Motion, actions);
 }
@@ -528,6 +599,7 @@ fn show_row(ui: &mut egui::Ui, t: &Tokens, on: bool, actions: &mut Vec<(Field, S
         parts::SHOWCOMPLETEDDESCRIPTION,
         rem(2.5),
         rem(1.357),
+        SHOW_ROW,
     );
     switch(ui, t, sw, on, actions);
 }
@@ -545,6 +617,7 @@ fn setting_row(
     desc_part: &'static str,
     control_w: f32,
     control_h: f32,
+    row_part: &'static str,
 ) -> Rect {
     let w = ui.available_width();
     let text_w = if stacked { w - 2.0 * PAD_X } else { (w - 2.0 * PAD_X - control_w - GAP).max(40.0) };
@@ -553,7 +626,9 @@ fn setting_row(
     let (ts, ds) = (tg.size(), dg.size());
     let text_h = ts.y + 2.0 + ds.y;
     let body_h = if stacked { text_h + 5.0 + control_h } else { text_h.max(control_h) };
-    let (row, _) = ui.allocate_exact_size(vec2(w, 2.0 * PAD_Y + body_h), Sense::hover());
+    let (row, row_resp) = ui.allocate_exact_size(vec2(w, 2.0 * PAD_Y + body_h), Sense::hover());
+    row_resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, title));
+    part(ui, &row_resp, row_part);
     let x = row.left() + PAD_X;
     let y = if stacked { row.top() + PAD_Y } else { row.center().y - text_h / 2.0 };
     node_text(ui, Rect::from_min_size(pos2(x, y), ts), tg, t.content_1, title_part, title, Role::GenericContainer);
@@ -722,8 +797,8 @@ fn glyph(p: &egui::Painter, name: &str, at: egui::Pos2, px: f32, color: Color32)
 
 /// Selects a section: the pane, and the search's scope. A tab with matches keeps the search scoped to
 /// itself; one without matches clears it. Outside a search it only changes the pane.
-fn choose(app: &mut App, query: &mut String, scoped: &mut bool, searching: bool, counts: [usize; 3], to: usize) {
-    app.settings_window = Some(PANES[to].to_owned());
+fn choose(app: &mut App, query: &mut String, scoped: &mut bool, searching: bool, counts: &[usize], panes: &[&str], to: usize) {
+    app.settings_window = Some(panes[to].to_owned());
     if !searching {
         return;
     }
@@ -732,15 +807,6 @@ fn choose(app: &mut App, query: &mut String, scoped: &mut bool, searching: bool,
     } else {
         query.clear();
         *scoped = false;
-    }
-}
-
-/// The section a settings page shows: General unless the window names another.
-fn pane_index(page: Option<&str>) -> usize {
-    match page {
-        Some("shortcuts") => 1,
-        Some("about") => 2,
-        _ => 0,
     }
 }
 

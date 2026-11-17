@@ -38,6 +38,13 @@ impl Resizer {
         self.value
     }
 
+    /// Sets the value from outside (the app's state, which a key or another window may have changed).
+    pub fn set_value(&mut self, v: f64) {
+        if self.drag.is_none() {
+            self.value = clamp_in(v, self.p.min, self.p.max);
+        }
+    }
+
     /// Sets the width of the row the strip sits in.
     pub fn set_span(&mut self, px: f32) {
         self.span = px;

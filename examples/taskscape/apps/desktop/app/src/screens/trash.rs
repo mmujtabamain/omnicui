@@ -81,11 +81,13 @@ pub struct Trash {
     notice: String,
     sheet: Option<Dialog>,
     focus_row: Option<String>,
+    /// Set when Empty opened the confirmation, with the number of roots it names; the window reads it.
+    pub empty_asked: Option<usize>,
 }
 
 impl Trash {
     pub fn new() -> Self {
-        Self { notice: String::new(), sheet: None, focus_row: None }
+        Self { notice: String::new(), sheet: None, focus_row: None, empty_asked: None }
     }
 
     /// One frame: draws the Trash list and returns the events it raised.
@@ -198,7 +200,10 @@ impl Trash {
                     Ok(()) => events.push(TrashEvent::Purged { count: ids.len() as i64 }),
                     Err(_) => self.notice = CHANGED_ELSEWHERE.to_owned(),
                 },
-                Action::OpenEmpty(count) => self.sheet = Some(empty_sheet(count)),
+                Action::OpenEmpty(count) => {
+                    self.sheet = Some(empty_sheet(count));
+                    self.empty_asked = Some(count);
+                }
             }
         }
 
@@ -284,7 +289,8 @@ impl Trash {
         if restore {
             actions.push(Action::Restore(vec![e.id.clone()]));
         }
-        if purge {
+        // Enter never runs a destructive action (decision 10): Delete permanently takes a click or Space.
+        if purge && !ui.input(|i| i.key_pressed(Key::Enter)) {
             actions.push(Action::Purge(vec![e.id.clone()]));
         }
         has_focus

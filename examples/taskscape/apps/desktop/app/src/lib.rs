@@ -18,6 +18,7 @@ pub fn mount(id: &str, props: serde_json::Value) -> Option<Result<Box<dyn tasksc
     if !id.starts_with("app.") {
         return None;
     }
+    screens::sheets::reset_roll();
     let dataset = props.get("dataset").and_then(|d| d.as_str()).unwrap_or("standard").to_owned();
     let app = match App::demo(&dataset) {
         Ok(a) => a,

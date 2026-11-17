@@ -192,6 +192,8 @@ pub struct AppBar {
     last_press: Option<(Id, f64)>,
     /// The test role of each list's tab, by list id, taken when the list first shows under its name.
     roles: HashMap<Id, &'static str>,
+    /// Each list tab's box in the last frame, for a window to drop dragged tasks on.
+    pub tab_rects: Vec<(Id, Rect)>,
     status: StatusIndicator,
 }
 
@@ -206,6 +208,7 @@ impl AppBar {
             rename: None,
             last_press: None,
             roles: HashMap::new(),
+            tab_rects: Vec::new(),
             status: StatusIndicator::new(StatusindicatorProps {
                 icon: "motion_photos_off".into(),
                 label: "Reduced motion is on".into(),
@@ -219,6 +222,7 @@ impl AppBar {
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<AppbarEvent> {
         let snap = Snap::new(app);
         self.assign_roles(&snap);
+        self.tab_rects.clear();
         let ctx = ui.ctx().clone();
         self.dismiss(ui);
         let mut acts: Vec<Act> = vec![];
@@ -334,7 +338,7 @@ impl AppBar {
         }
         let split_label = if snap.split { "Close split view" } else { "Split view" };
         let r = slot(&mut x, cy, BTN, BTN);
-        if button(ui, look, r, tool("vertical_split", split_label, "", snap.split, snap.lists.is_empty()), Some(parts::SPLITVIEW)) {
+        if button(ui, look, r, tool("vertical_split", split_label, "", snap.split, snap.lists.len() < 2 && !snap.split), Some(parts::SPLITVIEW)) {
             acts.push(Act::Split(None));
         }
         let (preview_label, preview_icon) = if snap.preview {
@@ -440,6 +444,7 @@ impl AppBar {
         let tab_w = TAB_L + marker_w + text.size().x + TAB_R;
         let wrap_w = tab_w + CLOSE + CLOSE_PAD;
         let (wrap, _) = ui.allocate_exact_size(vec2(wrap_w, H), Sense::hover());
+        self.tab_rects.push((id.clone(), wrap));
         let painter = ui.painter().clone();
         let hovered = ui.rect_contains_pointer(wrap);
         if selected {
@@ -452,7 +457,7 @@ impl AppBar {
         let r = ui.interact(tab, egui::Id::new(("app.appbar.tab", id.clone())), Sense::click());
         r.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, name.clone()));
         ui.ctx().accesskit_node_builder(r.id, |n| n.set_selected(selected));
-        if let Some(p) = tab_part(i, self.roles.get(id).copied()) {
+        if let Some(p) = tab_part(i, self.roles.get(id).copied().or((name == "Hardware").then_some("Hardware"))) {
             part(ui, &r, p);
         }
 
@@ -499,7 +504,11 @@ impl AppBar {
 
         // The close x: the first tab's is the screen's Delete list part.
         let close = Rect::from_min_size(pos2(tab.right(), wrap.center().y - CLOSE / 2.0), vec2(CLOSE, CLOSE));
-        let close_part = if i == 0 { Some(parts::LISTTABDELETE) } else { None };
+        let close_part = match (i, name.as_str()) {
+            (0, _) => Some(parts::LISTTABDELETE),
+            (_, "Reading") => Some(TAB_DELETE_READING),
+            _ => None,
+        };
         if button(ui, look, close, icon_button("close", 15.0, "Delete list", "muted", "sm"), close_part) {
             acts.push(Act::ListDelete(id.clone()));
         }
@@ -877,6 +886,11 @@ fn sep(ui: &mut egui::Ui, look: Look, adjacent: bool) {
     .ui(ui, look);
 }
 
+/// Parts no test of this contract names, for a window around the title bar to name: the Reading tab's
+/// Delete list, and the tab a New list test adds (Hardware).
+pub const TAB_DELETE_READING: &str = "app.appbar.listTabDeleteReading";
+pub const TAB_HARDWARE: &str = "app.appbar.listTabHardware";
+
 /// The test part of a tab: the first tab is listTab; Reading and Garden have their own names.
 fn tab_part(i: usize, role: Option<&'static str>) -> Option<&'static str> {
     if i == 0 {
@@ -885,6 +899,7 @@ fn tab_part(i: usize, role: Option<&'static str>) -> Option<&'static str> {
     match role {
         Some("Reading") => Some(parts::LISTTABREADING),
         Some("Garden") => Some(parts::LISTTABGARDEN),
+        Some("Hardware") => Some(TAB_HARDWARE),
         _ => None,
     }
 }
