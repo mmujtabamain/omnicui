@@ -161,3 +161,11 @@ pub fn fonts(ctx: &egui::Context) {
     fonts.families.entry(FontFamily::Monospace).or_default().push("Inter".into());
     ctx.set_fonts(fonts);
 }
+
+/// An eyebrow label (APPEARANCE, NOTES, a group's name): capitals at 10.5 px, weight 600, with the
+/// reference's 0.12 em tracking (its SectionHeader: `text-[10.5px] tracking-[0.12em] uppercase`).
+pub fn eyebrow(painter: &egui::Painter, label: &str, color: egui::Color32) -> std::sync::Arc<egui::Galley> {
+    let px = 10.5;
+    let format = egui::TextFormat { font_id: egui::FontId::new(px, weight(600)), color, extra_letter_spacing: 0.12 * px, ..Default::default() };
+    painter.layout_job(egui::text::LayoutJob::single_section(label.to_uppercase(), format))
+}

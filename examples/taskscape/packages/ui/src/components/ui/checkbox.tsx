@@ -27,8 +27,9 @@ export const checkboxVariants = cva(
         round: "rounded-full",
       },
       intent: {
-        done: "border-content-1 data-[state=checked]:border-done-lamp-1 data-[state=checked]:bg-done-lamp-1",
-        select: "border-content-1 data-[state=checked]:border-accent-500 data-[state=checked]:bg-accent-500",
+        // Unticked: the reference's quiet edge-3 border, content-3 on hover (the review's white outline, #12377).
+        done: "border-edge-3 hover:border-content-3 data-[state=checked]:border-done-lamp-1 data-[state=checked]:bg-done-lamp-1",
+        select: "border-edge-3 hover:border-content-3 data-[state=checked]:border-accent-500 data-[state=checked]:bg-accent-500",
       },
     },
     defaultVariants: { size: "sm", shape: "square", intent: "done" },

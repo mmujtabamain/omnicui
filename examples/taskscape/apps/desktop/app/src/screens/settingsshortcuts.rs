@@ -841,7 +841,7 @@ fn paragraph(ui: &mut egui::Ui, text: &str, px: f32, w: u16, color: Color32, par
 /// The Main window group's heading: small caps in the muted colour. Its text is the group name as written.
 fn group_label(ui: &mut egui::Ui, look: Look, text: &str) {
     let color = look.t.content_3;
-    let galley = ui.painter().layout_no_wrap(text.to_uppercase(), FontId::new(rem(0.786), weight(600)), color);
+    let galley = taskscape_ui::eyebrow(ui.painter(), text, color);
     let (rect, response) = ui.allocate_exact_size(galley.size(), Sense::hover());
     ui.painter().galley(rect.min, galley, color);
     ui.ctx().accesskit_node_builder(response.id, |node| node.set_level(2));

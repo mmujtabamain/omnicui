@@ -6,6 +6,7 @@ pub mod app;
 pub mod chrome;
 pub mod dialogs;
 pub mod menu;
+pub mod time;
 pub mod data;
 pub mod state;
 

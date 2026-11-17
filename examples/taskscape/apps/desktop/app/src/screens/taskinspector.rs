@@ -665,8 +665,10 @@ fn title_input(value: &str, rename: bool) -> Input {
 fn heading(ui: &mut egui::Ui, look: Look, label: &str, part_id: &str, rule: bool, trailing: impl FnOnce(&mut egui::Ui)) {
     let t = look.t;
     ui.horizontal(|ui| {
-        let text = egui::RichText::new(label.to_uppercase()).font(FontId::new(rem(0.786), weight(600))).color(t.content_2);
-        let r = ui.add(egui::Label::new(text).selectable(false));
+        let g = taskscape_ui::eyebrow(ui.painter(), label, t.content_2);
+        let (r, _) = ui.allocate_exact_size(g.size(), Sense::hover());
+        ui.painter().galley(r.min, g, t.content_2);
+        let r = ui.interact(r, egui::Id::new(("inspector.heading", part_id)), Sense::hover());
         r.widget_info(|| WidgetInfo::labeled(Role::Heading, true, label));
         part(ui, &r, part_id);
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -735,29 +737,7 @@ fn now_ms() -> i64 {
 
 /// "5m ago", "2d ago" and so on, as the web's relative time.
 fn relative(ms: i64, now: i64) -> String {
-    let minutes = (now - ms).max(0) / 60_000;
-    if minutes < 1 {
-        return "just now".into();
-    }
-    if minutes < 60 {
-        return format!("{minutes}m ago");
-    }
-    let hours = minutes / 60;
-    if hours < 24 {
-        return format!("{hours}h ago");
-    }
-    let days = hours / 24;
-    if days < 7 {
-        return format!("{days}d ago");
-    }
-    if days < 30 {
-        return format!("{}w ago", days / 7);
-    }
-    let months = days / 30;
-    if months < 12 {
-        return format!("{months}mo ago");
-    }
-    format!("{}y ago", months / 12)
+    crate::time::relative(ms, now)
 }
 
 /// The test's mount: the app on the props' data set, with the props' task shown in its list.

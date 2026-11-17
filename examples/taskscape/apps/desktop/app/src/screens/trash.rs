@@ -314,7 +314,13 @@ fn row_action(
     name: &str,
 ) -> (bool, bool) {
     let t = look.t;
+    // The actions fade in and out with the row (the web's 0.18 s); they are always laid out, so they can
+    // take focus. They used to be covered with the pane's fill, a different shade from a hovered row,
+    // and the button's own hover fill faded out under the cover: boxes that lingered (#12384).
+    let dur = if ui.style().animation_time > 0.0 { 0.18 } else { 0.0 };
+    let shown = ui.ctx().animate_bool_with_time(ui.next_auto_id().with("trash.reveal"), show, dur);
     let inner = ui.scope(|ui| {
+        ui.multiply_opacity(shown);
         let id = ui.next_auto_id();
         let focused = ui.memory(|m| m.has_focus(id));
         let events = match part_id {
@@ -325,10 +331,7 @@ fn row_action(
     });
     let (mut pressed_now, mut focused) = inner.inner;
     let rect = inner.response.rect;
-    if !show {
-        // Not drawn while the row is not shown: the box is laid over with the pane's fill.
-        ui.painter().rect_filled(rect, CornerRadius::same(5), t.surface_1);
-    }
+
     if let Some(p) = named {
         let node = ui.interact(rect, ui.scope_id().with(p), Sense::click());
         node.widget_info(|| WidgetInfo::labeled(Role::Button, true, name));
@@ -458,17 +461,9 @@ fn empty_sheet(count: usize) -> Dialog {
 /// The short relative time of a row's meta line: "just now", "30m ago", "3h ago", "5d ago". The stored
 /// time is unix seconds or milliseconds; a value past year 5000 in seconds can only be milliseconds.
 fn relative(deleted: i64, now: i64) -> String {
-    let deleted = if deleted > 100_000_000_000 { deleted / 1000 } else { deleted };
-    let minutes = (now - deleted).max(0) / 60;
-    if minutes < 1 {
-        "just now".to_owned()
-    } else if minutes < 60 {
-        format!("{minutes}m ago")
-    } else if minutes < 24 * 60 {
-        format!("{}h ago", minutes / 60)
-    } else {
-        format!("{}d ago", minutes / (24 * 60))
-    }
+    // `now` is in seconds; storage keeps deleted_at in milliseconds (an older seconds value still reads).
+    let deleted_ms = if deleted > 100_000_000_000 { deleted } else { deleted * 1000 };
+    crate::time::relative(deleted_ms, now * 1000)
 }
 
 fn now_secs() -> i64 {

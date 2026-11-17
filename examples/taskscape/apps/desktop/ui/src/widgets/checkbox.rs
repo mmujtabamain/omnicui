@@ -43,7 +43,14 @@ impl Checkbox {
             (true, _) => t.done_lamp_1,
             (false, _) => t.surface_3,
         };
-        let edge = if checked { fill } else { t.content_1 };
+        // Unticked: the reference's quiet edge-3 border, content-3 on hover (#12377; content-1 read as a white outline).
+        let edge = if checked {
+            fill
+        } else if response.hovered() {
+            t.content_3
+        } else {
+            t.edge_3
+        };
         let alpha = if self.p.disabled { 0.45 } else { 1.0 };
         let painter = ui.painter();
         painter.rect(rect, radius, fill.gamma_multiply(alpha), Stroke::new(1.0, edge.gamma_multiply(alpha)), StrokeKind::Inside);

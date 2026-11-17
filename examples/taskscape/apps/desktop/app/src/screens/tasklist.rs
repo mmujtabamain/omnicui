@@ -578,7 +578,9 @@ fn badge(ui: &mut egui::Ui, look: Look, part_id: Option<&str>, value: &str, glyp
 
 /// A text run whose value is the text a test reads (the uppercase of the web is a style, shown here).
 fn status(ui: &mut egui::Ui, part_id: Option<&str>, value: &str, shown: &str, px: f32, w: u16, color: Color32) {
-    let galley = ui.painter().layout_no_wrap(shown.to_owned(), FontId::new(px, weight(w)), color);
+    // Capitals with the reference's 0.08 em tracking (its footer: `text-[11px] tracking-[0.08em] uppercase`).
+    let format = egui::TextFormat { font_id: FontId::new(px, weight(w)), color, extra_letter_spacing: 0.08 * px, ..Default::default() };
+    let galley = ui.painter().layout_job(egui::text::LayoutJob::single_section(shown.to_owned(), format));
     let (rect, resp) = ui.allocate_exact_size(galley.size(), Sense::hover());
     resp.widget_info(|| info(Role::Status, value, value));
     if let Some(p) = part_id {
@@ -708,6 +710,9 @@ pub struct TaskList {
     claimed: HashMap<TaskId, &'static str>,
     /// The More button that opened the row menu: Escape gives it the keyboard back.
     more_focus: Option<Id>,
+    /// The row a pointer press gave the keyboard: it shows no focus ring until a key moves the focus
+    /// (the web's :focus-visible; egui has no such distinction, #12346).
+    pointer_focus: Option<TaskId>,
     pane: usize,
     query: String,
     scope: Scope,
@@ -756,6 +761,7 @@ impl TaskList {
             more_claims: vec![],
             claimed: HashMap::new(),
             more_focus: None,
+            pointer_focus: None,
             pane,
             query: String::new(),
             scope: Scope::List,
@@ -795,6 +801,10 @@ impl TaskList {
     /// One frame: draws the pane and returns the events it raised.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<TasklistEvent> {
         PANE.with(|p| p.set(self.pane));
+        // A key press makes the focus visible again, as the web's :focus-visible does after a click.
+        if ui.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Key { pressed: true, .. }))) {
+            self.pointer_focus = None;
+        }
         let ctx = ui.ctx().clone();
         let full = ui.available_rect_before_wrap();
         self.pane_rect = full;
@@ -1322,26 +1332,22 @@ impl TaskList {
         if let Some(p) = pt.check {
             part(ui, &check, p);
         }
-        let (fill, edge, round) = if alt {
-            if row.done {
-                (Some(t.done_lamp_1), t.done_lamp_1, false)
-            } else {
-                (Some(t.surface_3), t.content_1, false)
-            }
-        } else if picked {
-            (Some(t.accent_500), t.accent_500, true)
-        } else {
-            (None, t.edge_3, true)
-        };
-        let cr = if round { CornerRadius::same(8) } else { CornerRadius::same(4) };
-        if let Some(f) = fill {
-            painter.rect_filled(check_rect, cr, f);
-        }
+        // Holding Option morphs the round check into a square (and back), and a done task's tick draws in,
+        // over the reference's 0.18 s; with reduced motion it is immediate (#12376).
+        let dur = if ui.style().animation_time > 0.0 { 0.18 } else { 0.0 };
+        let sq = ui.ctx().animate_bool_with_time(check.id.with("square"), alt, dur);
+        let tick = ui.ctx().animate_bool_with_time(check.id.with("tick"), alt && row.done, dur);
+        let (round_fill, round_edge) = if picked { (t.accent_500, t.accent_500) } else { (Color32::TRANSPARENT, t.edge_3) };
+        let (square_fill, square_edge) = if row.done { (t.done_lamp_1, t.done_lamp_1) } else { (t.surface_3, t.edge_3) };
+        let fill = round_fill.lerp_to_gamma(square_fill, sq);
+        let edge = round_edge.lerp_to_gamma(square_edge, sq);
+        let cr = CornerRadius::same((8.0 - 4.0 * sq).round() as u8);
+        painter.rect_filled(check_rect, cr, fill);
         painter.rect_stroke(check_rect, cr, Stroke::new(1.0, edge), StrokeKind::Inside);
-        if alt && row.done {
-            paint_icon(&painter, check_rect.center(), "check", 14.0, t.on_accent);
+        if tick > 0.0 {
+            paint_icon(&painter, check_rect.center(), "check", 8.0 + 6.0 * tick, t.on_accent.gamma_multiply(tick));
         } else if !alt && picked {
-            painter.circle_filled(check_rect.center(), 3.0, t.on_accent);
+            painter.circle_filled(check_rect.center(), 3.0 * (1.0 - sq), t.on_accent);
         }
         if check.has_focus() {
             painter.rect_stroke(check_rect.expand(2.0), cr, Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
@@ -1427,6 +1433,7 @@ impl TaskList {
             if body.clicked() && !chord {
                 // The pressed row takes the keyboard, so its keys (Delete, F2, the arrows) act on it next.
                 body.request_focus();
+                self.pointer_focus = Some(row.id.clone());
                 let flat = s.flat();
                 let idx = flat.iter().position(|r| r.id == row.id).unwrap_or(0);
                 if shift {
@@ -1461,7 +1468,7 @@ impl TaskList {
             if body.drag_started() {
                 self.dragging = if picked && s.selection.len() > 1 { s.selection.clone() } else { vec![row.id.clone()] };
             }
-            if body.has_focus() {
+            if body.has_focus() && self.pointer_focus.as_deref() != Some(row.id.as_str()) {
                 painter.rect_stroke(body_rect, radius, Stroke::new(2.0, t.focus_1), StrokeKind::Inside);
             }
 
@@ -1770,7 +1777,7 @@ impl TaskList {
             ch.painter().rect_filled(sep, CornerRadius::same(0), t.edge_2);
             let value = format!("{}/{} done", s.done, s.total);
             let shown = format!("{}/{} DONE", s.done, s.total);
-            status(&mut ch, self.pp(parts::DONECOUNT, Some(SPLIT_DONE)), &value, &shown, 12.0, 600, t.content_2);
+            status(&mut ch, self.pp(parts::DONECOUNT, Some(SPLIT_DONE)), &value, &shown, 11.0, 600, t.content_2);
             ch.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 let p = format!("{pct}%");
                 status(ui, self.pp(parts::PERCENT, None), &p, &p, 12.0, 600, t.content_2);

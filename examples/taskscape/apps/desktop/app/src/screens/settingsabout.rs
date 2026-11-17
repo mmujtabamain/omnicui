@@ -483,7 +483,9 @@ fn tag(ui: &Ui, rect: Rect, sense: Sense, role: Role, label: &str, value: Option
 
 /// An eyebrow label over a card, with a rule to its right. Returns the y where the card starts.
 fn group_label(ui: &Ui, p: &Painter, t: &Tokens, x: f32, y: f32, w: f32, label: &str, part_id: &str) -> f32 {
-    let r = paint_text(p, pos2(x, y + 8.0), Align2::LEFT_CENTER, &label.to_uppercase(), 10.5, 600, t.content_3);
+    let g = taskscape_ui::eyebrow(p, label, t.content_3);
+    let r = Rect::from_min_size(pos2(x, y + 8.0 - g.size().y / 2.0), g.size());
+    p.galley(r.min, g, t.content_3);
     tag(ui, r, Sense::hover(), Role::Heading, label, None, None, part_id);
     p.hline(r.right() + 8.0..=x + w, y + 8.0, Stroke::new(1.0, t.edge_2));
     y + 24.0

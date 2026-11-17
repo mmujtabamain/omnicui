@@ -521,7 +521,7 @@ fn group(
 
     let lh = if changed { rem(1.5) } else { rem(1.143) };
     let (row, _) = ui.allocate_exact_size(vec2(w, lh), Sense::hover());
-    let caps = lay(ui, &label.to_uppercase(), 11.0, 600, t.content_3, f32::INFINITY);
+    let caps = taskscape_ui::eyebrow(ui.painter(), label, t.content_3);
     let cs = caps.size();
     let cy = row.center().y;
     let mut x = row.left();

@@ -735,7 +735,7 @@ impl SettingsCapture {
             }
 
             let caps = heading.to_uppercase();
-            let hg = job(ui, &caps, 10.5, 600, t.content_3, f32::INFINITY, true);
+            let hg = taskscape_ui::eyebrow(&painter, &caps, t.content_3);
             let head = Rect::from_min_size(pos2(content_x, y), vec2(hg.size().x, HEAD_H));
             painter.galley(pos2(head.left(), y + (HEAD_H - hg.size().y) / 2.0), hg, t.content_3);
             if shots {

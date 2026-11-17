@@ -118,7 +118,7 @@ export function TaskRow(p: RowProps) {
   const fill = p.optionHeld
     ? t.done
       ? "border-done-lamp-1 bg-done-lamp-1 text-on-accent"
-      : "border-content-1 bg-surface-3"
+      : "border-edge-3 bg-surface-3" // the reference's quiet edge, not a white outline (#12377)
     : p.picked
       ? "border-accent-500 bg-accent-500 text-on-accent"
       : "border-edge-3";
