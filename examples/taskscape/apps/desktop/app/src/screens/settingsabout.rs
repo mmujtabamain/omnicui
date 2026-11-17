@@ -164,7 +164,7 @@ impl SettingsAbout {
 
         // Search: the well with its query field, and the clear control while the query is not empty.
         let well = Rect::from_min_size(nav.min + vec2(8.0, 8.0), vec2(NAV_W - 16.0, 24.5));
-        p.rect_filled(well, CornerRadius::same(4), t.wash_2);
+        p.rect_filled(well, CornerRadius::same(4), t.surface_0);
         // Command-F (Ctrl-F elsewhere) focuses the search field.
         if ui.input(|i| i.key_pressed(Key::F) && (i.modifiers.command || i.modifiers.ctrl || i.modifiers.mac_cmd)) {
             ui.memory_mut(|m| m.request_focus(search_id));
@@ -307,7 +307,7 @@ impl SettingsAbout {
                 // The application row: name, description and version.
                 let name_r = paint_text(&p, pos2(x + 8.0, y + 8.0), Align2::LEFT_TOP, "Taskscape", 14.0, 400, t.content_1);
                 tag(ui, name_r, Sense::hover(), Role::GenericContainer, "Taskscape", None, None, parts::APPNAME);
-                let desc = wrapped(&p, APP_DESCRIPTION, 11.5, 400, t.content_2, w - 76.0);
+                let desc = wrapped(&p, APP_DESCRIPTION, 11.5, 400, t.content_3, w - 76.0);
                 let desc_r = Rect::from_min_size(pos2(x + 8.0, y + 29.5), desc.size());
                 p.galley(desc_r.min, desc, t.content_2);
                 tag(ui, desc_r, Sense::hover(), Role::GenericContainer, APP_DESCRIPTION, None, None, parts::APPDESCRIPTION);
@@ -321,7 +321,7 @@ impl SettingsAbout {
                 // face, which opens the folder in the file manager (the reference's row).
                 let fy = y + 56.0;
                 paint_text(&p, pos2(x + 8.0, fy + 8.0), Align2::LEFT_TOP, "Data folder", 14.0, 400, t.content_1);
-                paint_text(&p, pos2(x + 8.0, fy + 27.5), Align2::LEFT_TOP, DATA_FOLDER_DESCRIPTION, 11.5, 400, t.content_2);
+                paint_text(&p, pos2(x + 8.0, fy + 27.5), Align2::LEFT_TOP, DATA_FOLDER_DESCRIPTION, 11.5, 400, t.content_3);
                 let path = if self.data_folder.is_empty() { "—".to_owned() } else { self.data_folder.clone() };
                 if !self.data_folder.is_empty() {
                     paint_icon(&p, pos2(x + 17.0, fy + 56.0), "folder_open", 15.0, t.content_2);
@@ -339,13 +339,13 @@ impl SettingsAbout {
                 }
 
                 let cr = CornerRadius::same(10);
-                p.set(slot, Shape::Vec(vec![Shape::rect_filled(card, cr, t.surface_2), Shape::rect_stroke(card, cr, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)]));
+                p.set(slot, Shape::Vec(vec![Shape::rect_filled(card, cr, t.surface_3), Shape::rect_stroke(card, cr, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)]));
                 y += 132.0 + 18.0;
             }
 
             if reset_shown {
                 y = group_label(ui, &p, &t, x, y, w, &heading("Reset"), parts::RESETHEADER);
-                let desc = wrapped(&p, RESTORE_DESCRIPTION, 11.5, 400, t.content_2, w - 16.0);
+                let desc = wrapped(&p, RESTORE_DESCRIPTION, 11.5, 400, t.content_3, w - 16.0);
                 let dh = desc.size().y;
                 let card_h = 8.0 + 19.5 + 2.0 + dh + 7.0 + 30.0 + 8.0;
                 let card = Rect::from_min_size(pos2(x, y), vec2(w, card_h));
@@ -399,7 +399,7 @@ impl SettingsAbout {
                 }
 
                 let cr = CornerRadius::same(10);
-                p.set(slot, Shape::Vec(vec![Shape::rect_filled(card, cr, t.surface_2), Shape::rect_stroke(card, cr, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)]));
+                p.set(slot, Shape::Vec(vec![Shape::rect_filled(card, cr, t.surface_3), Shape::rect_stroke(card, cr, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)]));
             }
         }
 

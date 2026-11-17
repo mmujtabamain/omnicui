@@ -233,7 +233,8 @@ impl SettingsGeneral {
         }
         let has_q = !self.query.is_empty();
         let box_px = rem(1.5);
-        p.rect_filled(search_rect, CornerRadius::same(5), t.wash_2);
+        // The reference's InputWell: surface-0 (#12365).
+        p.rect_filled(search_rect, CornerRadius::same(5), t.surface_0);
         if focused {
             p.rect_stroke(search_rect.expand(2.0), CornerRadius::same(5), Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
         }
@@ -549,7 +550,8 @@ fn group(
     let card = Rect::from_min_max(pos2(left, top), pos2(left + w, ui.cursor().top()));
     p.set(
         back,
-        Shape::Rect(egui::epaint::RectShape::new(card, CornerRadius::same(10), t.surface_2, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)),
+        // The reference's group is a Surface at step 3, over the pane's surface-2 (#12365).
+        Shape::Rect(egui::epaint::RectShape::new(card, CornerRadius::same(10), t.surface_3, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)),
     );
     let card_resp = ui.interact(card, ui.scope_id().with(group_part), Sense::hover());
     card_resp.widget_info(|| WidgetInfo::new(Role::GenericContainer));
@@ -628,7 +630,7 @@ fn setting_row(
     let w = ui.available_width();
     let text_w = if stacked { w - 2.0 * PAD_X } else { (w - 2.0 * PAD_X - control_w - GAP).max(40.0) };
     let tg = lay(ui, title, 13.0, 500, t.content_1, text_w);
-    let dg = lay(ui, desc, 11.5, 400, t.content_2, text_w);
+    let dg = lay(ui, desc, 11.5, 400, t.content_3, text_w);
     let (ts, ds) = (tg.size(), dg.size());
     let text_h = ts.y + 2.0 + ds.y;
     let body_h = if stacked { text_h + 5.0 + control_h } else { text_h.max(control_h) };
@@ -638,7 +640,7 @@ fn setting_row(
     let x = row.left() + PAD_X;
     let y = if stacked { row.top() + PAD_Y } else { row.center().y - text_h / 2.0 };
     node_text(ui, Rect::from_min_size(pos2(x, y), ts), tg, t.content_1, title_part, title, Role::GenericContainer);
-    node_text(ui, Rect::from_min_size(pos2(x, y + ts.y + 2.0), ds), dg, t.content_2, desc_part, desc, Role::GenericContainer);
+    node_text(ui, Rect::from_min_size(pos2(x, y + ts.y + 2.0), ds), dg, t.content_3, desc_part, desc, Role::GenericContainer);
     if stacked {
         Rect::from_min_size(pos2(x, y + text_h + 5.0), vec2(w - 2.0 * PAD_X, control_h))
     } else {
@@ -686,7 +688,9 @@ fn segments(
     actions: &mut Vec<(Field, String)>,
 ) {
     let p = ui.painter().clone();
-    p.rect_filled(tray, CornerRadius::same(5), t.wash_2);
+    // The reference's Segmented (surface thumb): a surface-0 track, the chosen segment raised on surface-3
+    // with an edge-2 border (#12365).
+    p.rect_filled(tray, CornerRadius::same(5), t.surface_0);
     let n = segs.len();
     let gaps = 2.0 * (n - 1) as f32;
     let inner = tray.width() - 4.0 - gaps;
@@ -699,8 +703,7 @@ fn segments(
         let selected = s.value == value;
         let fg = if selected || resp.hovered() { t.content_1 } else { t.content_2 };
         if selected {
-            p.rect_filled(r.translate(vec2(0.0, 1.0)), CornerRadius::same(4), t.content_1.gamma_multiply(0.12));
-            p.rect_filled(r, CornerRadius::same(4), t.surface_3);
+            p.rect(r, CornerRadius::same(4), t.surface_3, Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
         }
         let label = lay(ui, s.label, 12.0, 600, fg, f32::INFINITY);
         let icon_w = if s.icon.is_empty() { 0.0 } else { 15.0 + rem(0.429) };

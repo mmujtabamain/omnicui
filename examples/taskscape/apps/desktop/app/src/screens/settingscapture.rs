@@ -330,7 +330,7 @@ fn segmented(ui: &egui::Ui, painter: &Painter, rect: Rect, mode: Mode, t: Tokens
         let selected = mode == m;
         let r = ui.interact(seg, ui.scope_id().with(key), Sense::click());
         if selected {
-            painter.rect_filled(seg.shrink(2.0), CornerRadius::same(4), t.surface_3);
+            painter.rect(seg.shrink(2.0), CornerRadius::same(4), t.surface_3, Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
         }
         let fg = if selected { t.content_1 } else { t.content_2 };
         let text = job(ui, label, 12.0, if selected { 600 } else { 500 }, fg, f32::INFINITY, false);
@@ -754,7 +754,7 @@ impl SettingsCapture {
                 }
             }
 
-            painter.rect(card, CornerRadius::same(10), t.surface_3, Stroke::new(1.0, t.edge_1), StrokeKind::Inside);
+            painter.rect(card, CornerRadius::same(10), t.surface_3, Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
             let mut ry = card.top();
             for (i, l) in laid.iter().enumerate() {
                 if i > 0 {

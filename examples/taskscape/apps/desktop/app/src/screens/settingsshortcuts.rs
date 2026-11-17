@@ -282,7 +282,7 @@ impl SettingsShortcuts {
         let query_now = self.query.clone();
         let well_w = nav_ui.available_width();
         nav_ui.allocate_ui_with_layout(vec2(well_w, WELL_H), Layout::left_to_right(Align::Center), |well| {
-            well.painter().rect_filled(well.max_rect(), CornerRadius::same(4), t.wash_2);
+            well.painter().rect_filled(well.max_rect(), CornerRadius::same(4), t.surface_0);
             well.add_space(rem(0.643));
             let mut glyph = Icon::new(IconProps {
                 name: "search".into(),
@@ -489,8 +489,9 @@ impl SettingsShortcuts {
         });
 
         ui.add_space(rem(0.5));
+        // The reference's group: a Surface at step 3 over the pane (#12365).
         egui::Frame::NONE
-            .fill(t.surface_2)
+            .fill(t.surface_3)
             .stroke(Stroke::new(1.0, t.edge_2))
             .corner_radius(CornerRadius::same(10))
             .show(ui, |ui| {
