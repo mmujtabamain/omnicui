@@ -1,7 +1,8 @@
 //! The app's own window chrome, as the reference has it: each window's bar is its title bar, with the window
-//! buttons inside it. On macOS the OS draws its buttons over the app's bar (an overlay title bar); on Windows
-//! and Linux the windows have no OS frame and the app draws the buttons. Settings, Trash and the sheets cannot
-//! be minimised or zoomed. Screen tests draw no chrome (`App::native_window` is off there).
+//! buttons inside it. On macOS the OS draws its own lights over the app's bar (a transparent title bar; the
+//! reference draws its own, but Mujtaba chose the OS's: the reference is outdated there). On Windows and Linux
+//! the windows have no OS frame and the app draws minimise, maximise and close. Settings, Trash and the sheets cannot be minimised
+//! or zoomed. Screen tests draw no chrome (`App::native_window` is off there).
 use egui::{pos2, vec2, Align2, CornerRadius, FontFamily, FontId, Id, Rect, Sense, Ui, ViewportBuilder, ViewportCommand};
 use taskscape_ui::{icon, Look};
 
@@ -37,6 +38,16 @@ pub fn sheet(vb: ViewportBuilder) -> ViewportBuilder {
     vb.with_decorations(false).with_transparent(true).with_minimize_button(false).with_maximize_button(false).with_resizable(false)
 }
 
+/// What a builder asks the OS for, as a test reads it (see taskscape_ui::WindowKind).
+pub fn kind(vb: &ViewportBuilder) -> taskscape_ui::WindowKind {
+    let app_bar = vb.decorations == Some(false) || (vb.fullsize_content_view == Some(true) && vb.titlebar_shown == Some(false));
+    taskscape_ui::WindowKind {
+        title_bar: if app_bar { "app" } else { "os" },
+        minimizable: vb.minimize_button.unwrap_or(true),
+        maximizable: vb.maximize_button.unwrap_or(true),
+    }
+}
+
 /// Space to keep free at the left of a window's bar for the OS's buttons (macOS overlay), else none.
 pub fn lead(native: bool) -> f32 {
     if native && MAC {
@@ -55,11 +66,25 @@ pub fn trail(native: bool, buttons: usize) -> f32 {
     }
 }
 
+fn no_drag_id(bar: Rect) -> Id {
+    Id::new(("chrome.noDrag", bar.min.x as i32, bar.min.y as i32))
+}
+
+/// A control in a bar: a press on it never moves the window, even where egui would hand the drag to the bar.
+pub fn no_drag(ui: &Ui, bar: Rect, control: Rect) {
+    ui.ctx().data_mut(|d| d.get_temp_mut_or_default::<Vec<Rect>>(no_drag_id(bar)).push(control));
+}
+
 /// The bar as a drag region: dragging its empty space moves the window, a double click zooms the main
-/// window. Registered before the bar's controls, which sit above it and keep their presses.
+/// window. Registered before the bar's controls, which sit above it and keep their presses; a press that
+/// began on a control the bar named last frame (`no_drag`) never moves the window (a dragged tab moved
+/// the window on macOS, #12480).
 pub fn drag_region(ui: &mut Ui, bar: Rect, zoomable: bool) {
+    let controls = ui.ctx().data_mut(|d| std::mem::take(d.get_temp_mut_or_default::<Vec<Rect>>(no_drag_id(bar))));
     let r = ui.interact(bar, Id::new(("chrome.drag", bar.min.x as i32, bar.min.y as i32)), Sense::click_and_drag());
-    if r.drag_started() {
+    let origin = ui.input(|i| i.pointer.press_origin());
+    let on_control = origin.is_some_and(|p| controls.iter().any(|c| c.contains(p)));
+    if r.drag_started() && !on_control {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
     if zoomable && r.double_clicked() {
@@ -98,4 +123,20 @@ pub fn buttons(ui: &mut Ui, look: Look, bar: Rect, minimise: bool) -> bool {
         }
     }
     closed
+}
+
+/// macOS: the main window keeps a (transparent) title bar for its rounded frame, and AppKit would move the
+/// window from that strip on its own, under the app's tabs and buttons (#12480). It is made not movable by
+/// the OS; the app's drag region moves it instead (performWindowDrag works on a window that isn't movable).
+#[cfg(all(target_os = "macos", feature = "window"))]
+pub fn not_movable_by_os(handle: &impl raw_window_handle::HasWindowHandle) {
+    use raw_window_handle::RawWindowHandle;
+    let Ok(h) = handle.window_handle() else { return };
+    if let RawWindowHandle::AppKit(h) = h.as_raw() {
+        // SAFETY: the handle's view is the window's live NSView, on the main thread.
+        let view: &objc2_app_kit::NSView = unsafe { h.ns_view.cast().as_ref() };
+        if let Some(window) = view.window() {
+            window.setMovable(false);
+        }
+    }
 }

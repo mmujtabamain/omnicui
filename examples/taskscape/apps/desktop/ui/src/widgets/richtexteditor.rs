@@ -275,10 +275,14 @@ impl RichTextEditor {
                 .vscroll(scrolls)
                 .auto_shrink([false, true])
                 .show(ui, |ui| {
-                    // The web's px-2 padding is laid out by hand, so it holds whatever the TextEdit's margin does.
+                    // The reference's px-3 py-2.5 padding (12 px across, 10 down; the web had px-2), laid out by hand
+                    // so it holds whatever the TextEdit's margin does (#12487).
                     ui.horizontal(|ui| {
-                        ui.add_space(8.0);
+                        ui.add_space(12.0);
                         ui.vertical(|ui| {
+                            // The top padding, laid out: a frameless TextEdit leaves its margin out (the
+                            // text sat on the box's top edge, #12487).
+                            ui.add_space(10.0);
                             let styles = self.rich.styles.clone();
                             let kinds = self.rich.kinds.clone();
                             let soft_now = self.soft.clone();
@@ -294,8 +298,8 @@ impl RichTextEditor {
                                 .font(FontId::new(rem(0.9643), weight(400)))
                                 .text_color(if disabled { t.content_2 } else { t.content_1 })
                                 .frame(egui::Frame::NONE)
-                                .margin(egui::Margin { left: 0, right: 0, top: 8, bottom: 8 })
-                                .desired_width(ui.available_width() - 8.0)
+                                .margin(egui::Margin { left: 0, right: 0, top: 10, bottom: 10 })
+                                .desired_width(ui.available_width() - 12.0)
                                 .desired_rows(rows)
                                 .char_limit(max_len)
                                 .interactive(!disabled)
@@ -337,7 +341,7 @@ impl RichTextEditor {
             let frame_rect = if scrolls {
                 scroll.inner_rect
             } else {
-                Rect::from_min_max(scroll.inner_rect.min, pos2(scroll.inner_rect.max.x.max(out.response.rect.max.x), out.response.rect.max.y + 6.0))
+                Rect::from_min_max(scroll.inner_rect.min, pos2(scroll.inner_rect.max.x.max(out.response.rect.max.x), out.response.rect.max.y + 10.0))
             };
             let focus_now = out.response.has_focus();
             // The editor keeps Tab, the arrows and Escape: they are its keys, and the handling decides them.
@@ -865,6 +869,8 @@ fn styled_job(text: &str, styles: &[u8], kinds: &[u8], soft: &[usize], typing: [
             font_id: FontId::new(rem(0.9643), weight(if st & BOLD != 0 { 700 } else { 400 })),
             color: if st & MENTION != 0 { ink.gamma_multiply(0.85) } else { ink },
             italics: st & ITALIC != 0,
+            // The reference's leading-5: a 20 px line.
+            line_height: Some(20.0),
             ..Default::default()
         };
         if st & UNDERLINE != 0 {
@@ -884,7 +890,7 @@ fn styled_job(text: &str, styles: &[u8], kinds: &[u8], soft: &[usize], typing: [
         i = j;
     }
     if chars.is_empty() {
-        job.append("", 0.0, egui::TextFormat { font_id: FontId::new(rem(0.9643), weight(400)), color: ink, ..Default::default() });
+        job.append("", 0.0, egui::TextFormat { font_id: FontId::new(rem(0.9643), weight(400)), color: ink, line_height: Some(20.0), ..Default::default() });
     }
     job
 }

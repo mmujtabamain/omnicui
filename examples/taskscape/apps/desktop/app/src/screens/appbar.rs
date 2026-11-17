@@ -279,6 +279,17 @@ impl AppBar {
         let strip = Rect::from_min_max(pos2(strip_x0, content.top()), pos2(strip_x1, content.bottom()));
         self.strip(ui, look, &snap, strip, &mut acts);
         self.toolbar(ui, look, &snap, content, &mut acts);
+        // The bar's controls take their presses: dragging one never moves the window (#12480).
+        if app.native_window {
+            crate::chrome::no_drag(ui, bar, pill);
+            for (_, r) in &self.tab_rects {
+                crate::chrome::no_drag(ui, bar, *r);
+            }
+            if let Some((_, last)) = self.tab_rects.last() {
+                crate::chrome::no_drag(ui, bar, Rect::from_min_max(pos2(last.right(), bar.top()), pos2(last.right() + NEW_LIST + 8.0, bar.bottom())));
+            }
+            crate::chrome::no_drag(ui, bar, Rect::from_min_max(pos2(content.right() - right_w, bar.top()), pos2(content.right(), bar.bottom())));
+        }
 
         // The menus, drawn on top of the bar.
         if self.project_open {

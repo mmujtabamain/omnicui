@@ -71,7 +71,7 @@ impl AttachmentPreview {
         let p = &self.p;
         match (self.outcome, p.kind.as_str()) {
             (Some(Status::Error), kind) => fallback(ui, area, t, fallback_icon(kind), &p.name),
-            (Some(Status::Loaded), "image") => image(ui, area, t, &p.name),
+            (Some(Status::Loaded), "image") => image(ui, area, t, &p.name, &p.src),
             (Some(Status::Loaded), "video") => {
                 let r = fit(area, 9.0 / 16.0, IMAGE_W);
                 poster(ui, r, t, "movie", &p.name, parts::VIDEO, &p.src);
@@ -170,8 +170,24 @@ fn limit(s: &str) -> &str {
     }
 }
 
-/// The image kind. The desktop has no image decoder here, so the frame is drawn with its name and icon.
-fn image(ui: &mut egui::Ui, area: Rect, t: Tokens, name: &str) {
+/// The image kind: the picture itself, as large as the stage allows at its own proportions (object-contain),
+/// through the app's image loader as the attachment tiles do. While it loads, or when it can't be read, the
+/// frame is drawn with its name and icon (it was only ever that frame, #12482).
+fn image(ui: &mut egui::Ui, area: Rect, t: Tokens, name: &str, src: &str) {
+    let uri = if src.contains("://") { src.to_owned() } else { format!("file://{src}") };
+    if let Ok(egui::load::TexturePoll::Ready { texture }) = ui.ctx().try_load_texture(&uri, egui::TextureOptions::LINEAR, egui::SizeHint::default()) {
+        let (tw, th) = (texture.size.x, texture.size.y);
+        if tw > 0.0 && th > 0.0 {
+            let s = (area.width() / tw).min(area.height() / th).min(1.0);
+            let r = Rect::from_center_size(area.center(), vec2(tw * s, th * s));
+            egui::Image::from_texture(texture).corner_radius(CornerRadius::same(RADIUS_CONTROL)).paint_at(ui, r);
+            let resp = ui.interact(r, ui.scope_id().with(parts::IMAGE), Sense::hover());
+            let label = name.to_owned();
+            resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, label.clone()));
+            part(ui, &resp, parts::IMAGE);
+            return;
+        }
+    }
     let r = fit(area, 10.0 / 16.0, IMAGE_W);
     ui.painter().rect_filled(r, CornerRadius::same(RADIUS_CONTROL), t.surface_2);
     let resp = ui.interact(r, ui.scope_id().with(parts::IMAGE), Sense::hover());

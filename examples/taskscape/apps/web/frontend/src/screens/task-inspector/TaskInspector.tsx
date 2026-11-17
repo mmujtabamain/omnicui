@@ -79,7 +79,14 @@ function Inspector({
   React.useEffect(() => {
     if (lightbox === null) return;
     const part = `${P}lightbox`;
-    const tag = () => document.querySelector('[data-slot="lightbox"]')?.setAttribute("data-part", part);
+    // The file it shows, too: a test checks the lightbox opened on the pressed attachment (#12482).
+    const name = `${P}lightboxFileName`;
+    const tag = () => {
+      document.querySelector('[data-slot="lightbox"]')?.setAttribute("data-part", part);
+      const el = document.querySelector('[data-part~="app.attachmentlightbox.fileName"]');
+      const parts = el?.getAttribute("data-part") ?? "";
+      if (el && !parts.split(" ").includes(name)) el.setAttribute("data-part", `${parts} ${name}`);
+    };
     tag();
     const observer = new MutationObserver(tag);
     observer.observe(document.body, { childList: true, subtree: true });

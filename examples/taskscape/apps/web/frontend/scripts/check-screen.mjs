@@ -9,7 +9,7 @@
 // (a Postgres server) and TASKSCAPE_PYTHON (the backend's interpreter) unless python3 is it.
 // Exit code 0 when every test passes.
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,9 @@ if (lint.status !== 0) ok = false;
 
 // 3. The contract, on the web-app target, with only this screen built.
 const run = join(out, "run");
+// The last run's results go first: a check that doesn't run (contracts that don't load) must not be read
+// as passing from the previous run's file.
+rmSync(join(run, "results.json"), { force: true });
 const check = spawnSync(join(root, "../../bin/omnicui"), ["--project", project, "check", "web-app", name, "--out", run, ...rest], {
   cwd: project, encoding: "utf8", env: { ...process.env, OMNICUI_WIDGETS: name }, maxBuffer: 64 << 20,
 });

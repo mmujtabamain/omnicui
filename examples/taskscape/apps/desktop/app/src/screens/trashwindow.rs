@@ -97,6 +97,8 @@ impl TrashWindow {
     /// One frame: draws the window's content while the window is open, and returns the events it raised.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<TrashwindowEvent> {
         let mut events = self.take_events();
+        // The window this screen opens in, as its real window asks the OS for it.
+        taskscape_ui::set_window(ui.ctx(), parts::TITLEBAR, crate::chrome::kind(&crate::chrome::panel(egui::ViewportBuilder::default())));
         if !app.trash_window {
             return events;
         }

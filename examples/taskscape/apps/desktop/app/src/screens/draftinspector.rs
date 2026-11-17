@@ -161,9 +161,9 @@ impl DraftInspector {
             .id(title_id)
             .frame(egui::Frame::NONE)
             .margin(Margin::ZERO)
-            .font(title_font)
+            .font(title_font.clone())
             .text_color(t.content_1)
-            .hint_text(RichText::new("Untitled").color(t.content_3))
+            .hint_text(RichText::new("Untitled").font(title_font.clone()).color(t.content_3))
             .desired_rows(1)
             .desired_width(field_w);
         let out = if grown {

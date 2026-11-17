@@ -198,15 +198,17 @@ impl Target {
         match method {
             // protocol: the first request; the constructs this target can perform on this run.
             "advertise" => {
-                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "trace", "bounds", "role", "focused", "selected"];
+                let mut can = vec!["mount", "press", "focus", "key", "type", "drag", "hover", "leave", "read", "events", "trace", "bounds", "role", "focused", "selected", "window", "seen"];
                 let mut cannot = serde_json::Map::new();
                 // egui has no opacity per widget to read back (it is multiplied into the painted
                 // colours); a fade is compared through the recorded clip instead.
                 cannot.insert("trace.opacity".into(), json!("egui has no per-widget opacity to read; record the test and its clip is compared"));
                 cannot.insert("trace.scale".into(), json!("egui widgets have no transform to read; record the test and its clip is compared"));
                 match &self.can_render {
-                    None => can.extend(["screenshot", "record", "probe"]),
+                    // focusVisible is read from a rendered frame (see ring_drawn).
+                    None => can.extend(["screenshot", "record", "probe", "focusVisible"]),
                     Some(why) => {
+                        cannot.insert("focusVisible".into(), json!(why));
                         cannot.insert("screenshot".into(), json!(why));
                         cannot.insert("record".into(), json!(why));
                     }
@@ -240,6 +242,34 @@ impl Target {
                 self.settle()?;
                 Ok(Value::Null)
             }
+            // contract: tests[].steps[] { action: leave }: the pointer leaves the window.
+            "leave" => {
+                self.harness()?.event(egui::Event::PointerGone);
+                self.settle()?;
+                Ok(Value::Null)
+            }
+            // contract: focusVisible: focused, and the part's focus ring is on screen (egui has no
+            // :focus-visible; a widget draws its ring itself, or not, after a press).
+            "read" if p["field"] == "focusVisible" => {
+                let (focused, rect) = {
+                    let h = self.harness()?;
+                    let root = h.root();
+                    let node = find(&root, &part)?;
+                    (node.is_focused(), node.rect())
+                };
+                Ok(json!(focused && self.ring_drawn(rect)?))
+            }
+            // contract: titleBar, minimizable, maximizable: what the part's window asks the OS for, as
+            // its screen recorded it from the builder its real window opens with.
+            "read" if matches!(p["field"].as_str(), Some("titleBar" | "minimizable" | "maximizable")) => {
+                let h = self.harness()?;
+                let kind = taskscape_ui::window_of(&h.ctx, &part).ok_or_else(|| fail(STEP_FAILED, format!("{part} is not the part a window screen records its window under")))?;
+                Ok(match p["field"].as_str().unwrap_or_default() {
+                    "titleBar" => json!(kind.title_bar),
+                    "minimizable" => json!(kind.minimizable),
+                    _ => json!(kind.maximizable),
+                })
+            }
             // contract: tests[].expect[] with part:. Everything is read from AccessKit.
             "read" => {
                 let h = self.harness()?;
@@ -253,6 +283,9 @@ impl Target {
                     "disabled" => json!(n.is_disabled()),
                     "value" => json!(n.numeric_value()),
                     "focused" => json!(node.is_focused()),
+                    // A person can see it: a box, and not marked hidden by the app (faded all the way out;
+                    // egui keeps the box, so it can still take focus).
+                    "seen" => json!(!n.is_hidden() && node.rect().width() > 0.0 && node.rect().height() > 0.0),
                     // A chosen chip, tab or segment: egui's selectable label reports it selected.
                     "selected" => json!(n.is_selected().unwrap_or(false)),
                     "role" => json!(aria_role(n.role())),
@@ -434,8 +467,10 @@ impl Target {
                 let root = h.root();
                 let from = find(&root, &part)?.rect().center();
                 let r = find(&root, &to_name)?.rect();
+                // with.at: top, middle or bottom of the part; or its left or right edge (things in a row, such as tabs).
                 let y = match with["at"].as_str() { Some("top") => r.min.y + 3.0, Some("bottom") => r.max.y - 3.0, _ => r.center().y };
-                let to = Pos2::new(r.min.x + (r.width() / 2.0).min(200.0), y);
+                let x = match with["at"].as_str() { Some("left") => r.min.x + 3.0, Some("right") => r.max.x - 3.0, _ => r.min.x + (r.width() / 2.0).min(200.0) };
+                let to = Pos2::new(x, y);
                 h.drag_at(from);
                 for i in 1..=6 {
                     h.hover_at(from + (to - from) * (i as f32 / 6.0));
@@ -488,6 +523,39 @@ impl Target {
             }
         }
         Ok((out, inputs))
+    }
+
+    /// Whether a focus ring is drawn around a part: one frame is drawn with the focus colour swapped
+    /// for a colour nothing else uses, and the part's edge (4 px either side) is searched for it.
+    fn ring_drawn(&mut self, rect: Rect) -> Result<bool> {
+        if let Some(why) = &self.can_render {
+            return Err(fail(STEP_FAILED, why.clone()));
+        }
+        const MARK: egui::Color32 = egui::Color32::from_rgb(255, 0, 255);
+        let h = self.harness()?;
+        let saved = h.state().look;
+        h.state_mut().look.t.focus_1 = MARK;
+        h.step();
+        let img = h.render().map_err(|e| fail(STEP_FAILED, format!("render: {e}")));
+        h.state_mut().look = saved;
+        h.step();
+        let img = img?;
+        let outer = rect.expand(4.0);
+        let inner = rect.shrink(4.0);
+        let mut marked = 0;
+        for y in outer.top().max(0.0) as u32..(outer.bottom().max(0.0) as u32).min(img.height()) {
+            for x in outer.left().max(0.0) as u32..(outer.right().max(0.0) as u32).min(img.width()) {
+                if inner.is_positive() && inner.contains(Pos2::new(x as f32 + 0.5, y as f32 + 0.5)) {
+                    continue;
+                }
+                let px = img.get_pixel(x, y).0;
+                // Pure magenta, or blended a little at an anti-aliased edge.
+                if px[0] > 200 && px[1] < 80 && px[2] > 200 {
+                    marked += 1;
+                }
+            }
+        }
+        Ok(marked >= 8)
     }
 
     fn render_to(&mut self, path: &str) -> Result<()> {

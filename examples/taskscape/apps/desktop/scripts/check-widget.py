@@ -77,6 +77,9 @@ env.setdefault("VK_ICD_FILENAMES", str(Path.home() / ".local" / "mesa" / "lvp_ic
 cmd = [str(OMNICUI), "--project", str(ROOT / "omnicui"), "check", "desktop", name, "--out", str(out)]
 for t in tests:
     cmd += ["--test", t]
+# The last run's results go first: a check that doesn't run (contracts that don't load) must not be read as
+# passing from the previous run's file.
+(out / "results.json").unlink(missing_ok=True)
 run = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True)
 try:
     results = json.loads((out / "results.json").read_text())["results"]

@@ -95,4 +95,5 @@ pub mod parts {
     pub const ATTACHMENTTILELINK: &str = "app.taskinspector.attachmentTileLink";
     pub const ATTACHMENTTILEIMAGE: &str = "app.taskinspector.attachmentTileImage";
     pub const LIGHTBOX: &str = "app.taskinspector.lightbox";
+    pub const LIGHTBOXFILENAME: &str = "app.taskinspector.lightboxFileName";
 }

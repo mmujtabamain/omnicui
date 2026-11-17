@@ -540,7 +540,7 @@ fn text_field(ui: &mut egui::Ui, rect: Rect, id: Id, text: &mut String, hint: &s
             .margin(Margin::ZERO)
             .font(FontId::new(px, weight(w)))
             .text_color(color)
-            .hint_text(RichText::new(hint).color(hint_color))
+            .hint_text(RichText::new(hint).font(FontId::new(px, weight(w))).color(hint_color))
             .desired_width(rect.width().max(1.0)),
     );
     let value = text.clone();

@@ -7,7 +7,7 @@ use taskscape_ui::omnicui::attachmenttile::{parts as tile_parts, AttachmenttileE
 use taskscape_ui::omnicui::button::{parts as button_parts, ButtonEvent, ButtonProps};
 use taskscape_ui::omnicui::checkbox::{parts as checkbox_parts, CheckboxEvent};
 use taskscape_ui::omnicui::input::{parts as input_parts, InputEvent};
-use taskscape_ui::omnicui::lightbox::{parts as lightbox_parts, LightboxEvent};
+use taskscape_ui::omnicui::attachmentlightbox::AttachmentlightboxEvent;
 use taskscape_ui::omnicui::richtexteditor::{parts as editor_parts, RichtexteditorEvent};
 use taskscape_ui::omnicui::taskinspector::{parts, TaskinspectorEvent, TaskinspectorProps};
 use taskscape_ui::omnicui::text::parts as text_parts;
@@ -15,7 +15,6 @@ use taskscape_ui::widgets::attachmenttile::AttachmentTile;
 use taskscape_ui::widgets::button::Button;
 use taskscape_ui::widgets::checkbox::Checkbox;
 use taskscape_ui::widgets::input::Input;
-use taskscape_ui::widgets::lightbox::Lightbox;
 use taskscape_ui::widgets::richtexteditor::RichTextEditor;
 use taskscape_ui::widgets::text::Text;
 use taskscape_ui::{as_part, icon, part, rem, weight, Look, Mounted};
@@ -51,11 +50,13 @@ pub struct TaskInspector {
     title: Option<Input>,
     /// Editors of the saved notes, by note id.
     notes: Vec<(Id, NoteEditor)>,
+    /// Frames the add-note editor has been open without the keyboard, while it is empty (see notes_section).
+    draft_idle: u8,
     /// The add-note editor, while adding.
     draft: Option<NoteEditor>,
     adding: bool,
     /// The attachment lightbox, while one is open.
-    lightbox: Option<Lightbox>,
+    lightbox: Option<crate::screens::attachmentlightbox::AttachmentLightbox>,
     /// When Copy task was pressed (Copied shows for 1.2 s).
     copied_at: Option<f64>,
 }
@@ -68,7 +69,7 @@ impl Default for TaskInspector {
 
 impl TaskInspector {
     pub fn new() -> Self {
-        Self { task: None, title: None, notes: vec![], draft: None, adding: false, lightbox: None, copied_at: None }
+        Self { task: None, title: None, notes: vec![], draft: None, draft_idle: 0, adding: false, lightbox: None, copied_at: None }
     }
 
     /// One frame: what the main window calls, and what the test mounts.
@@ -106,20 +107,30 @@ impl TaskInspector {
         let mut title_cancel = false;
         let (mut rename_req, mut close_req, mut copy_req, mut delete_req) = (false, false, false, false);
         let total_w = ui.available_width();
-        // The header sits a little below the panel's top edge, as the reference's does.
-        ui.add_space(rem(0.857));
+        // The header sits a little below the panel's top edge, as the reference's does (its title's line at
+        // y 58 in a 1180×760 window; the text column starts 4 px into the header, see lead).
+        ui.add_space(rem(0.857) - 4.0);
+        // The reference's header, measured from its recorded boxes (row-selected): the button column starts
+        // 4 px above the title's line, so the checkbox and the text start 4 px down; 21 px buttons 2 px apart.
         let header = ui.horizontal_top(|ui| {
-            ui.add_space(rem(0.929));
+            // The checkbox 15 px in, the title's text 8 px after it (measured: x 873 and 899 in the window).
+            ui.spacing_mut().item_spacing.x = 2.0;
+            ui.add_space(rem(0.929) + 2.0);
+            let lead = 4.0;
             let mut cb = Checkbox::new(props!(
                 "checked": task.done,
                 "ariaLabel": if task.done { "Mark not done" } else { "Mark done" },
                 "intent": "done",
-                "size": "sm"
+                "size": "md"
             ));
-            // Centred on the title's first line (21 px), as the reference's (#12357).
+            // 18 px (the reference's md), centred on the title's first line (21 px), as the reference's (#12357).
             let events = ui
-                .allocate_ui_with_layout(vec2(rem(1.143), 21.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    as_part(ui, &[(checkbox_parts::CONTROL, parts::DONETOGGLE)], |ui| cb.ui(ui, look))
+                .vertical(|ui| {
+                    ui.add_space(lead);
+                    ui.allocate_ui_with_layout(vec2(18.0, 21.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        as_part(ui, &[(checkbox_parts::CONTROL, parts::DONETOGGLE)], |ui| cb.ui(ui, look))
+                    })
+                    .inner
                 })
                 .inner;
             for e in events {
@@ -127,12 +138,13 @@ impl TaskInspector {
                 done_req = Some(checked);
             }
             // The text column takes the room up to the button column, which sits at the panel's right edge.
-            let text_w = (ui.available_width() - rem(1.5) - ui.spacing().item_spacing.x - rem(0.857)).max(0.0);
+            let text_w = (ui.available_width() - rem(1.5) - ui.spacing().item_spacing.x - rem(0.857) + 3.0).max(0.0);
             let _ = total_w;
             ui.vertical(|ui| {
                 ui.set_min_width(text_w);
                 ui.set_max_width(text_w);
                 ui.spacing_mut().item_spacing.y = rem(0.07);
+                ui.add_space(lead - rem(0.07));
                 if let Some(field) = self.title.as_mut() {
                     for e in as_part(ui, &[(input_parts::FIELD, parts::TITLE)], |ui| field.ui(ui, look)) {
                         match e {
@@ -142,12 +154,15 @@ impl TaskInspector {
                         }
                     }
                 }
+                // The reference's boxes: 9 px under the title's line, a line every 20.5 px (17.25 px lines).
+                ui.add_space(9.0 - ui.spacing().item_spacing.y);
+                ui.spacing_mut().item_spacing.y = 3.25;
                 meta_line(ui, look, "folder_open", parts::BREADCRUMB, crumb);
                 meta_line(ui, look, "schedule", parts::CREATED, created);
                 meta_line(ui, look, "update", parts::UPDATED, updated);
             });
             ui.vertical(|ui| {
-                ui.add_space(rem(0.357));
+                ui.spacing_mut().item_spacing.y = 2.0;
                 close_req |= button(ui, look, parts::CLOSEPANEL, props!(
                     "icon": "last_page", "iconSize": 16, "variant": "ghost", "size": "sm", "shape": "icon",
                     "tone": "muted", "ariaLabel": "Close panel", "tabbable": true
@@ -228,9 +243,23 @@ impl TaskInspector {
             ui.add_space(rem(0.929));
         });
 
+        // The attachment lightbox: the app's AttachmentLightbox screen on the opened file, over the whole window,
+        // as the reference's. It was the bare lightbox widget, given no file, so it showed its demo contents (#12482).
         if let Some(lb) = self.lightbox.as_mut() {
-            let evs = as_part(ui, &[(lightbox_parts::LIGHTBOX, parts::LIGHTBOX)], |ui| lb.ui(ui, look));
-            if evs.iter().any(|e| matches!(e, LightboxEvent::Close { .. })) {
+            let screen = ui.ctx().content_rect();
+            let mut closed = false;
+            egui::Area::new(egui::Id::new("app.taskinspector.lightboxArea")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ui.ctx(), |ui| {
+                ui.scope_builder(egui::UiBuilder::new().max_rect(screen), |ui| {
+                    let node = ui.interact(screen, egui::Id::new("app.taskinspector.lightboxNode"), Sense::hover());
+                    node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Attachment"));
+                    part(ui, &node, parts::LIGHTBOX);
+                    let renames = [("app.attachmentlightbox.fileName", parts::LIGHTBOXFILENAME)];
+                    for e in as_part(ui, &renames, |ui| lb.show(app, ui, look)) {
+                        closed |= matches!(e, AttachmentlightboxEvent::Closed { .. });
+                    }
+                });
+            });
+            if closed {
                 self.lightbox = None;
             }
         }
@@ -272,7 +301,12 @@ impl TaskInspector {
                     "label": "Note", "icon": "add", "iconSize": 14, "variant": "ghost", "size": "sm",
                     "width": "content", "tone": "muted", "ariaLabel": "Add note", "tabbable": true
                 ));
-                text_only(ui, look, parts::NOTESCOUNT, count.to_string());
+                // The reference's count: 11 px, muted (#12487).
+                let g = ui.painter().layout_no_wrap(count.to_string(), FontId::new(11.0, weight(400)), look.t.content_3);
+                let (r, resp) = ui.allocate_exact_size(g.size(), Sense::hover());
+                ui.painter().galley(r.min, g, look.t.content_3);
+                resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, count.to_string()));
+                part(ui, &resp, parts::NOTESCOUNT);
             }
         });
         let mentions = mentions_json(&app.data.attachments_of(&task.id));
@@ -304,10 +338,19 @@ impl TaskInspector {
             }
             if self.adding {
                 if let Some(mut draft) = self.draft.take() {
-                    let (evs, _) = editor_ui(ui, look, &mut draft, parts::NEWNOTEEDITOR, parts::NOTECHARS);
+                    let (evs, focused) = editor_ui(ui, look, &mut draft, parts::NEWNOTEEDITOR, parts::NOTECHARS);
+                    // An empty new note without the keyboard goes back to the Add note box, as the reference
+                    // finishes it on blur: one that never took focus sent no blur and stayed open (#12484).
+                    let idle = !focused && draft.text.is_empty();
+                    self.draft_idle = if idle { self.draft_idle.saturating_add(1) } else { 0 };
                     self.draft = Some(draft);
                     for e in evs {
                         self.draft_note_event(app, out, task, e);
+                    }
+                    if self.draft_idle > 3 {
+                        self.adding = false;
+                        self.draft = None;
+                        self.draft_idle = 0;
                     }
                 }
             }
@@ -418,13 +461,16 @@ impl TaskInspector {
         let Some(a) = app.data.attachments_of(task).into_iter().find(|a| a.id == *id) else { return };
         out.push(TaskinspectorEvent::AttachmentAction { action: "open".into(), name: a.name.clone() });
         if !is_remote(&a) {
-            self.lightbox = Some(Lightbox::new(props!("open": true, "presentation": "window")));
+            let mut lb = crate::screens::attachmentlightbox::AttachmentLightbox::new();
+            lb.open_on(task.clone(), a.id.clone());
+            self.lightbox = Some(lb);
         }
     }
 
     fn attachments_section(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look, task: &Task, atts: &[Attachment], out: &mut Vec<TaskinspectorEvent>) {
         let (mut link_req, mut file_req, mut shot_req) = (false, false, false);
-        heading(ui, look, "Attachments", parts::ATTACHMENTSHEADING, false, |ui| {
+        // A rule between the heading and its buttons, as the reference's (#12486).
+        heading(ui, look, "Attachments", parts::ATTACHMENTSHEADING, true, |ui| {
             file_req |= button(ui, look, parts::ATTACHFILE, props!(
                 "label": "File", "icon": "note_add", "iconSize": 14, "variant": "ghost", "size": "sm",
                 "width": "content", "tone": "muted", "tabbable": true
@@ -510,7 +556,10 @@ impl TaskInspector {
                         "draggable": false
                     ));
                     tile.side = side;
-                    ui.vertical(|ui| {
+                    // A tile and its caption at a known size: egui wraps a row before a child of known size,
+                    // never before a nested layout (all the tiles ran on in one row, past the panel, #12486).
+                    let caption_h = 16.0;
+                    ui.allocate_ui_with_layout(vec2(side, side + caption_h), Layout::top_down(Align::Min), |ui| {
                         ui.set_width(side);
                         for e in as_part(ui, &[(tile_parts::TILE, tile_part)], |ui| tile.ui(ui, look)) {
                             if let AttachmenttileEvent::Opened { .. } = e {
@@ -566,11 +615,25 @@ fn subtask_rows(app: &mut App, ui: &mut egui::Ui, look: Look, parent: &Id, depth
                 let CheckboxEvent::CheckedChange { checked } = e;
                 toggled = Some(checked);
             }
-            let tone = if kid.done { "muted" } else { "strong" };
-            selected |= button(ui, look, title_part, props!(
-                "label": kid.title.clone(), "variant": "ghost", "size": "xl", "shape": "text",
-                "width": "content", "tone": tone, "tabbable": true
-            ));
+            // The reference's title: 13.5 px, muted and struck through once done (#12485), truncated to the row.
+            let t = look.t;
+            let color = if kid.done { t.content_3 } else { t.content_1 };
+            let mut fmt = egui::TextFormat { font_id: FontId::new(13.5, weight(400)), color, ..Default::default() };
+            if kid.done {
+                fmt.strikethrough = Stroke::new(1.0, color);
+            }
+            let mut job = egui::text::LayoutJob::single_section(kid.title.clone(), fmt);
+            job.wrap = egui::text::TextWrapping::truncate_at_width((ui.available_width() - rem(0.571)).max(0.0));
+            let galley = ui.painter().layout_job(job);
+            let (rect, r) = ui.allocate_exact_size(vec2(galley.size().x, rem(2.2857)), Sense::click());
+            ui.painter().galley(pos2(rect.left(), rect.center().y - galley.size().y / 2.0), galley, color);
+            r.widget_info(|| WidgetInfo::labeled(Role::Button, true, &kid.title));
+            part(ui, &r, title_part);
+            if r.has_focus() {
+                ui.painter().rect_stroke(rect.expand(2.0), CornerRadius::same(4), Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
+            }
+            let key = r.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Space));
+            selected |= r.clicked() || key;
         });
         if let Some(done) = toggled {
             match app.data.update_task(&kid.id, None, None, Some(done)) {
@@ -635,7 +698,8 @@ fn new_editor(value: &str, placeholder: &str, auto_focus: bool, mentions: &str) 
         "ariaLabel": "Note",
         "maxLength": NOTE_LIMIT,
         "toolbar": "floating",
-        "size": "md",
+        // A saved note is the reference's NoteCard (at least 56 px); a new one its add-note editor (96 px).
+        "size": if auto_focus { "md" } else { "sm" },
         "autoFocus": auto_focus,
         "mentions": mentions
     ));
@@ -682,12 +746,36 @@ fn heading(ui: &mut egui::Ui, look: Look, label: &str, part_id: &str, rule: bool
     });
 }
 
-/// A meta line: a glyph and the text beside it.
+/// A meta line under the title, as the reference's: a 13 px icon and 11.5 px muted text, 6 px apart. The
+/// breadcrumb's project name is a step brighter than the rest (its `secondary` Label) (#12483).
 fn meta_line(ui: &mut egui::Ui, look: Look, glyph: &str, part_id: &str, content: String) {
-    ui.horizontal(|ui| {
+    let t = look.t;
+    // A row exactly the line's height: ui.horizontal is never shorter than egui's interactive height (20 px),
+    // which spread the lines 3 px apart.
+    ui.allocate_ui_with_layout(vec2(ui.available_width(), 17.25), Layout::left_to_right(Align::Center), |ui| {
+        ui.spacing_mut().item_spacing.x = 6.0;
+        // The icon lines up with the title's text (the reference's Label sits 4 px into the title's box).
+        ui.add_space(2.0);
+        // A 17.25 px line (the reference's 11.5 px text at 1.5): the icon is painted in it, not laid out as a
+        // label, whose icon-font line is taller and spread the lines apart.
+        let (cell, _) = ui.allocate_exact_size(vec2(13.0, 17.25), Sense::hover());
         let g = icon(glyph, 13.0).text().to_string();
-        ui.label(egui::RichText::new(g).font(FontId::new(13.0, FontFamily::Name("Icons".into()))).color(look.t.content_3));
-        text_only(ui, look, part_id, content);
+        ui.painter().text(cell.center(), egui::Align2::CENTER_CENTER, g, FontId::new(13.0, FontFamily::Name("Icons".into())), t.content_3);
+        let font = FontId::new(11.5, weight(400));
+        let fmt = |color| egui::TextFormat { font_id: font.clone(), color, ..Default::default() };
+        let mut job = egui::text::LayoutJob::default();
+        match (part_id == parts::BREADCRUMB).then(|| content.split_once(" / ")).flatten() {
+            Some((project, list)) => {
+                job.append(project, 0.0, fmt(t.content_2));
+                job.append(&format!(" / {list}"), 0.0, fmt(t.content_3));
+            }
+            None => job.append(&content, 0.0, fmt(t.content_3)),
+        }
+        let galley = ui.painter().layout_job(job);
+        let (rect, r) = ui.allocate_exact_size(vec2(galley.size().x, 17.25), Sense::hover());
+        ui.painter().galley(pos2(rect.left(), rect.center().y - galley.size().y / 2.0), galley, t.content_3);
+        r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, &content));
+        part(ui, &r, part_id);
     });
 }
 

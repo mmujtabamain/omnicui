@@ -78,6 +78,7 @@ parts:
   attachmentTileLink: { role: button }      # remote link tile "Brand brief"; opens externally
   attachmentTileImage: { role: button }     # local image tile "hero-sketch.png"; opens the lightbox
   lightbox: { role: generic }               # aria: dialog. Mounted when a local image tile or a mention chip is opened; its internals are in attachment-lightbox
+  lightboxFileName: { role: generic }       # the open lightbox's file name (attachment-lightbox's fileName): the file that was pressed
 
 viewports:
   - { width: 319, height: 715 }
@@ -281,6 +282,7 @@ tests:
     props: { task: "Cut a spare key" }
     expect:
       - { part: doneToggle, leftOf: title, middleWith: title }
+      - { part: closePanel, rightOf: title }
     screenshot: true
 
   - name: "a subtask's checkbox sits level with its title"
@@ -752,6 +754,7 @@ tests:
       - { action: press, part: attachmentTileImage }
     expect:
       - { part: lightbox, visible: true }
+      - { part: lightboxFileName, text: "hero-sketch.png" }
     screenshot: true
 
   - name: "dismiss closes the lightbox"

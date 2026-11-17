@@ -228,7 +228,8 @@ const DO_DRAG: typeof DO = {
     await dispatchDrag(loc, ["dragenter", "dragover"], { "text/plain": "" }, null, at);
   },
   async drop(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], { "text/plain": String(w.taskId ?? ""), "application/x-taskscape-task": String(w.taskId ?? "") }, null); },
-  // A real drag, as a user makes it: from this part onto with.to, landing at with.at (top, middle or bottom of it).
+  // A real drag, as a user makes it: from this part onto with.to, landing at with.at (top, middle or bottom of
+  // it; or its left or right edge, for things laid out in a row, such as tabs).
   async dragTo(loc, w, part) {
     // with.to names a part of the same contract, as part: does.
     const name = `${part.slice(0, part.lastIndexOf(".") + 1)}${String(w.to)}`;
@@ -236,7 +237,8 @@ const DO_DRAG: typeof DO = {
     const box = await to.boundingBox();
     if (!box) throw new RpcError(NO_PART, `no part ${name}`);
     const y = w.at === "top" ? 3 : w.at === "bottom" ? box.height - 3 : box.height / 2;
-    await loc.dragTo(to, { targetPosition: { x: Math.min(200, box.width / 2), y } });
+    const x = w.at === "left" ? 3 : w.at === "right" ? box.width - 3 : Math.min(200, box.width / 2);
+    await loc.dragTo(to, { targetPosition: { x, y } });
   },
   async dropAttachment(loc, w) { await dispatchDrag(loc, ["dragenter", "dragover", "drop"], {}, w.file ?? "photo.png"); },
 };
@@ -319,6 +321,8 @@ async function step(method: string, p: Params, settled = true) {
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 2 });
       break;
     }
+    // The pointer leaves the page, as it does when a user moves it away (pointerleave on everything under it).
+    case "leave": await page.mouse.move(-20, -20, { steps: 2 }); break;
     case "do": await doAction(p); break;
     case "focus": await (await locate(p.part, STEP_PATIENCE)).focus(); break;
     // The key goes wherever focus really is, so a part that can't be focused fails honestly.
@@ -356,8 +360,9 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   async advertise() {
     return {
       protocol: "1",
-      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback", "do.holdModifier", "do.holdSelect", ...Object.keys(DO).map((n) => `do.${n}`)],
+      can: ["mount", "press", "focus", "key", "type", "drag", "hover", "leave", "focusVisible", "seen", "read", "events", "screenshot", "trace", "trace.opacity", "trace.scale", "record", "probe", "bounds", "role", "focused", "selected", "do.back", "do.contextMenu", "do.togglePlayback", "do.holdModifier", "do.holdSelect", ...Object.keys(DO).map((n) => `do.${n}`)],
       cannot: {
+        window: "a page in a browser has no OS window of its own",
         "do.scroll": "not implemented in this target yet",
         "do.swipe": "a desktop browser has no swipe",
         "do.refresh": "the app has no pull to refresh",
@@ -403,6 +408,7 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
   },
   press: (p) => step("press", p),
   hover: (p) => step("hover", p),
+  leave: (p) => step("leave", p),
   focus: (p) => step("focus", p),
   key: (p) => step("key", p),
   type: (p) => step("type", p),
@@ -428,6 +434,16 @@ const methods: Record<string, (p: Params) => Promise<unknown>> = {
       return text;
     });
     if (p.field === "focused") return loc.evaluate((el) => el === document.activeElement);
+    // A person can see it: a box, and not faded all the way out (its opacity with its ancestors') or hidden.
+    if (p.field === "seen") return loc.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden") return false;
+      let opacity = 1;
+      for (let e: Element | null = el; e; e = e.parentElement) opacity *= Number(getComputedStyle(e).opacity);
+      return opacity > 0.01;
+    });
+    // The focus ring shows: the browser's own rule for keyboard focus as against a press.
+    if (p.field === "focusVisible") return loc.evaluate((el) => el === document.activeElement && el.matches(":focus-visible"));
     // A chosen chip, tab or segment: aria-pressed, aria-selected or aria-checked on a button.
     if (p.field === "selected") return loc.evaluate((el) => ["aria-pressed", "aria-selected", "aria-checked"].some((a) => el.getAttribute(a) === "true"));
     const node = await axNode(p.part);

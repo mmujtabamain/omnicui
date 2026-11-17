@@ -327,15 +327,23 @@ fn row_action(
             Some(p) => as_part(ui, &[(button_parts::BUTTON, p)], |ui| Button::new(props).ui(ui, look)),
             None => Button::new(props).ui(ui, look),
         };
-        (pressed(&events), focused)
+        (pressed(&events), focused, id)
     });
-    let (mut pressed_now, mut focused) = inner.inner;
+    let (mut pressed_now, mut focused, button_id) = inner.inner;
     let rect = inner.response.rect;
+    // Faded all the way out, the actions are not on screen: a screen reader (and a test) reads them as hidden.
+    let gone = shown <= 0.0;
+    if gone {
+        ui.ctx().accesskit_node_builder(button_id, |n| n.set_hidden());
+    }
 
     if let Some(p) = named {
         let node = ui.interact(rect, ui.scope_id().with(p), Sense::click());
         node.widget_info(|| WidgetInfo::labeled(Role::Button, true, name));
         part(ui, &node, p);
+        if gone {
+            ui.ctx().accesskit_node_builder(node.id, |n| n.set_hidden());
+        }
         let key = node.has_focus() && ui.input(|i| i.key_pressed(Key::Enter) || i.key_pressed(Key::Space));
         if node.clicked() || key {
             pressed_now = true;

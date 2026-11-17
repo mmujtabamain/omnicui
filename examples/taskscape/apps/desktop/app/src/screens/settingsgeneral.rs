@@ -235,8 +235,9 @@ impl SettingsGeneral {
         let box_px = rem(1.5);
         // The reference's InputWell: surface-0 (#12365).
         p.rect_filled(search_rect, CornerRadius::same(5), t.surface_0);
+        // The reference's InputWell shows focus as a 1 px ring (`focus-within:ring-1`) (#12488).
         if focused {
-            p.rect_stroke(search_rect.expand(2.0), CornerRadius::same(5), Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
+            p.rect_stroke(search_rect, CornerRadius::same(5), Stroke::new(1.0, t.focus_1), StrokeKind::Outside);
         }
         glyph(&p, "search", pos2(search_rect.left() + rem(0.643) + 7.0, search_rect.center().y), 14.0, t.content_3);
         let edit_left = search_rect.left() + rem(0.643) + 14.0 + 6.0;
@@ -253,7 +254,8 @@ impl SettingsGeneral {
             .margin(egui::Margin::ZERO)
             .font(FontId::new(12.0, weight(400)))
             .text_color(t.content_1)
-            .hint_text(RichText::new("Search").color(t.content_3))
+            // The placeholder at the field's own 12 px: a hint without a font is drawn at egui's body size (#12488).
+            .hint_text(RichText::new("Search").font(FontId::new(12.0, weight(400))).color(t.content_3))
             .desired_width(edit_rect.width())
             .show(&mut edit_ui)
             .response;

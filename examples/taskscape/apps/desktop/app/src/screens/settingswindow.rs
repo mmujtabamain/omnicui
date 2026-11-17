@@ -97,6 +97,8 @@ impl SettingsWindow {
     /// to None and reports it.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<SettingswindowEvent> {
         let mut events = vec![];
+        // The window this screen opens in, as its real window asks the OS for it.
+        taskscape_ui::set_window(ui.ctx(), parts::TITLE, crate::chrome::kind(&crate::chrome::panel(egui::ViewportBuilder::default())));
         if app.settings_window.is_none() {
             app.settings_window = Some("general".into());
         }

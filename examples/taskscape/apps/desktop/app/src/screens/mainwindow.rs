@@ -145,6 +145,8 @@ impl MainWindow {
         let full = ui.max_rect();
         ui.painter().rect_filled(full, 0.0, t.surface_1);
         node(ui, full, "mainwindow.window", parts::WINDOW, "Taskscape");
+        // The window this screen opens in, as its real window asks the OS for it.
+        taskscape_ui::set_window(ui.ctx(), parts::WINDOW, crate::chrome::kind(&crate::chrome::main_window(egui::ViewportBuilder::default())));
         self.keys(app, ui);
         // While a pane's menu is open, a press anywhere else closes it and goes no further (the web's menu
         // overlay): a layer over the window, under the menus, takes it.

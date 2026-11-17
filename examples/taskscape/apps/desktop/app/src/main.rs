@@ -60,6 +60,8 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             taskscape_ui::fonts(&cc.egui_ctx);
+            #[cfg(target_os = "macos")]
+            taskscape_app::chrome::not_movable_by_os(cc);
             let mut window = MainWindow::new();
             window.in_place = false;
             let mut app = App::new(data);

@@ -233,7 +233,7 @@ impl CaptureBar {
                 .frame(egui::Frame::NONE)
                 .font(FontId::new(rem(1.0), weight(400)))
                 .text_color(t.content_1)
-                .hint_text(RichText::new("Capture a task ...").color(t.content_3))
+                .hint_text(RichText::new("Capture a task ...").font(FontId::new(rem(1.0), weight(400))).color(t.content_3))
                 .desired_width(field);
             let r = ui.add(edit);
             part(ui, &r, parts::TITLE);
@@ -274,7 +274,7 @@ impl CaptureBar {
                     .frame(egui::Frame::NONE)
                     .font(FontId::new(rem(0.964), weight(400)))
                     .text_color(t.content_1)
-                    .hint_text(RichText::new("Notes ...").color(t.content_3))
+                    .hint_text(RichText::new("Notes ...").font(FontId::new(rem(0.964), weight(400))).color(t.content_3))
                     .desired_width(ui.available_width())
                     .desired_rows(1);
                 let r = ui.add(edit);

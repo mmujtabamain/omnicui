@@ -169,3 +169,31 @@ pub fn eyebrow(painter: &egui::Painter, label: &str, color: egui::Color32) -> st
     let format = egui::TextFormat { font_id: egui::FontId::new(px, weight(600)), color, extra_letter_spacing: 0.12 * px, ..Default::default() };
     painter.layout_job(egui::text::LayoutJob::single_section(label.to_uppercase(), format))
 }
+
+/// What a window asks the OS for: who draws its title bar (`os`, or `app` when the app's own bar is
+/// the title bar), and whether it can be minimised or zoomed. A window screen records it under one of
+/// its parts every frame, from the same builder its real window opens with, so a test reads what the
+/// real window gets.
+#[derive(Clone, Debug, PartialEq)]
+pub struct WindowKind {
+    pub title_bar: &'static str,
+    pub minimizable: bool,
+    pub maximizable: bool,
+}
+
+fn window_map_id() -> egui::Id {
+    egui::Id::new("taskscape-window-kinds")
+}
+
+/// Records the window a part's screen is in (see WindowKind).
+pub fn set_window(ctx: &egui::Context, part_id: &str, kind: WindowKind) {
+    ctx.data_mut(|d| {
+        let map = d.get_temp_mut_or_default::<std::collections::HashMap<String, WindowKind>>(window_map_id());
+        map.insert(part_id.to_owned(), kind);
+    });
+}
+
+/// The window recorded under a part, if its screen recorded one.
+pub fn window_of(ctx: &egui::Context, part_id: &str) -> Option<WindowKind> {
+    ctx.data(|d| d.get_temp::<std::collections::HashMap<String, WindowKind>>(window_map_id())).and_then(|m| m.get(part_id).cloned())
+}
