@@ -135,6 +135,9 @@ struct View {
 pub struct SettingsShortcuts {
     /// Settings is open. Escape with no search closes it.
     open: bool,
+    /// Drawn inside the Settings window, which has its own sidebar: the page stays on its own section and
+    /// ignores its sidebar, which sits out of view.
+    pub embedded: bool,
     /// The saved bindings have been read from the app's data (on the first frame).
     loaded: bool,
     pane: Pane,
@@ -165,6 +168,7 @@ impl SettingsShortcuts {
         let accels: Vec<String> = MAIN_ROWS.iter().map(|row| row.accel.to_owned()).collect();
         Self {
             open: true,
+            embedded: false,
             loaded: false,
             pane: Pane::Shortcuts,
             query: String::new(),
@@ -194,6 +198,9 @@ impl SettingsShortcuts {
         }
         if !self.open {
             return events;
+        }
+        if self.embedded {
+            self.pane = Pane::Shortcuts;
         }
         let t = look.t;
         let search_id = Id::new(SEARCH_FIELD);
@@ -350,7 +357,7 @@ impl SettingsShortcuts {
                 renames.push((sidebartab_parts::BADGE, parts::SHORTCUTSMATCHES));
             }
             let events = as_part(&mut nav_ui, &renames, |ui| tab.ui(ui, look));
-            let pressed = nav_ui.input(|i| i.pointer.primary_clicked() && i.pointer.interact_pos().is_some_and(|p| tab_rect.contains(p)));
+            let pressed = !self.embedded && nav_ui.input(|i| i.pointer.primary_clicked() && i.pointer.interact_pos().is_some_and(|p| tab_rect.contains(p)));
             if !events.is_empty() || pressed {
                 self.choose(pane_id, count, searching);
             }

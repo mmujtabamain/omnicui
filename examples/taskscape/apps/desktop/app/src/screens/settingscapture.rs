@@ -391,6 +391,9 @@ fn lay(ui: &egui::Ui, row: Row, mode: Mode, loading: bool, t: Tokens, w: f32, pa
 
 pub struct SettingsCapture {
     section: Section,
+    /// Drawn inside the Settings window, which has its own sidebar: the page stays on its own section and
+    /// ignores its sidebar, which sits out of view.
+    pub embedded: bool,
     query: String,
     /// While searching: the section the results are narrowed to (None: every section).
     scope: Option<Section>,
@@ -406,6 +409,7 @@ impl SettingsCapture {
     pub fn new() -> Self {
         Self {
             section: Section::Capture,
+            embedded: false,
             query: String::new(),
             scope: None,
             mode: None,
@@ -527,6 +531,9 @@ impl SettingsCapture {
 
     /// One frame: the title strip, the sections and search, and the pane for what is shown.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<SettingscaptureEvent> {
+        if self.embedded {
+            self.section = Section::Capture;
+        }
         let mut events = vec![];
         let ctx = ui.ctx().clone();
         let t = look.t;

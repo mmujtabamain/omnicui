@@ -54,6 +54,9 @@ impl Pane {
 /// The About pane of the Settings window. Its state is what the screen keeps between frames.
 pub struct SettingsAbout {
     pane: Pane,
+    /// Drawn inside the Settings window, which has its own sidebar: the page stays on its own section and
+    /// ignores its sidebar, which sits out of view.
+    pub embedded: bool,
     query: String,
     /// A click on a section with matches narrows the search to it; the heading then drops its prefix.
     scoped: bool,
@@ -76,6 +79,7 @@ impl SettingsAbout {
     pub fn new() -> Self {
         Self {
             pane: Pane::About,
+            embedded: false,
             query: String::new(),
             scoped: false,
             confirming: false,
@@ -91,6 +95,9 @@ impl SettingsAbout {
 
     /// One frame: the Settings window's About page on the app. Returns the events raised this frame.
     pub fn show(&mut self, app: &mut App, ui: &mut Ui, look: Look) -> Vec<SettingsaboutEvent> {
+        if self.embedded {
+            self.pane = Pane::About;
+        }
         let mut events = vec![];
         let t = look.t;
         let prev_focus = self.focus_seen;

@@ -51,6 +51,10 @@ const RENAMES: &[(&str, &str)] = &[
     (gp::SHOWCOMPLETEDTITLE, parts::SHOWCOMPLETEDTITLE),
     (gp::SHOWCOMPLETEDDESCRIPTION, parts::SHOWCOMPLETEDHINT),
     (gp::SHOWCOMPLETEDSWITCH, parts::SHOWCOMPLETED),
+    // The other sections' pages, as the window's tests read them.
+    ("app.settingscapture.captureModeLabel", parts::CAPTUREMODELABEL),
+    ("app.settingsshortcuts.rowNewTask", parts::SHORTCUTSNEWTASK),
+    ("app.settingsabout.appName", parts::ABOUTAPPNAME),
 ];
 
 /// The title bar's height and the sidebar's width of each section's own page: the page is drawn that
@@ -79,7 +83,11 @@ impl SettingsWindow {
     pub fn new() -> Self {
         let mut general = SettingsGeneral::new();
         general.window = true;
-        Self { general, capture: SettingsCapture::new(), shortcuts: SettingsShortcuts::new(), about: SettingsAbout::new(), last_pane: "general".into() }
+        let (mut capture, mut shortcuts, mut about) = (SettingsCapture::new(), SettingsShortcuts::new(), SettingsAbout::new());
+        capture.embedded = true;
+        shortcuts.embedded = true;
+        about.embedded = true;
+        Self { general, capture, shortcuts, about, last_pane: "general".into() }
     }
 
     /// One frame of the window's content. A close (Escape, the close chord) sets `app.settings_window`
@@ -123,7 +131,7 @@ impl SettingsWindow {
                 _ => ABOUT_CHROME,
             };
             let page = Rect::from_min_max(content.min - vec2(chrome.0, chrome.1), content.max);
-            ui.scope_builder(UiBuilder::new().max_rect(page), |ui| {
+            as_part(ui, RENAMES, |ui| ui.scope_builder(UiBuilder::new().max_rect(page), |ui| {
                 ui.set_clip_rect(content);
                 match pane.as_str() {
                     "capture" => {
@@ -136,7 +144,7 @@ impl SettingsWindow {
                         self.about.show(app, ui, look);
                     }
                 }
-            });
+            }));
             ui.input_mut(|i| i.events = events_before);
             if first {
                 if let Some(id) = focus_before {

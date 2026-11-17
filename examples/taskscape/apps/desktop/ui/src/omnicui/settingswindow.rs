@@ -76,4 +76,7 @@ pub mod parts {
     pub const SHOWCOMPLETEDTITLE: &str = "app.settingswindow.showCompletedTitle";
     pub const SHOWCOMPLETEDHINT: &str = "app.settingswindow.showCompletedHint";
     pub const SHOWCOMPLETED: &str = "app.settingswindow.showCompleted";
+    pub const CAPTUREMODELABEL: &str = "app.settingswindow.captureModeLabel";
+    pub const SHORTCUTSNEWTASK: &str = "app.settingswindow.shortcutsNewTask";
+    pub const ABOUTAPPNAME: &str = "app.settingswindow.aboutAppName";
 }

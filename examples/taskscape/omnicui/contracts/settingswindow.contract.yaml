@@ -53,6 +53,9 @@ parts:
   showCompletedTitle: { role: generic } # Text "Show completed tasks".
   showCompletedHint: { role: generic }  # Text "Keep finished tasks in the list instead of hiding them.".
   showCompleted: { role: switch }       # Name "Show completed tasks". General-pane control.
+  captureModeLabel: { role: generic }   # Capture section: the "Capture mode" row's label (the Capture page's own part, inside the window).
+  shortcutsNewTask: { role: generic }   # Shortcuts section: the "New task" row (the Shortcuts page's own part, inside the window).
+  aboutAppName: { role: generic }       # About section: "Taskscape", the application row (the About page's own part, inside the window).
 
 viewports:
   - { width: 640, height: 520 }    # The size the window opens at (decision 19).
@@ -172,6 +175,33 @@ tests:
       - { part: tabGeneral, selected: false }
       - { part: appearanceGroup, visible: false }
       - { part: tasksGroup, visible: false }
+
+  # Each section shows its page inside the window (review #12369: the Shortcuts section was blank, and no test
+  # looked inside a section other than General).
+  - name: the Capture section shows the capture settings
+    only: [desktop]
+    steps:
+      - { action: press, part: tabCapture }
+    expect:
+      - { part: tabCapture, selected: true }
+      - { part: captureModeLabel, text: "Capture mode" }
+
+  - name: the Shortcuts section shows the shortcuts
+    only: [desktop]
+    steps:
+      - { action: press, part: tabShortcuts }
+    expect:
+      - { part: tabShortcuts, selected: true }
+      - { part: shortcutsNewTask, visible: true }
+      - { part: shortcutsNewTask, text: { contains: "New task" } }
+
+  - name: the About section shows the application
+    only: [desktop]
+    steps:
+      - { action: press, part: tabAbout }
+    expect:
+      - { part: tabAbout, selected: true }
+      - { part: aboutAppName, text: "Taskscape" }
 
   - name: pane content animates in on each section switch
     only: [desktop]
