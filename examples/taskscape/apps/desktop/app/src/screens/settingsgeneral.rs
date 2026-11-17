@@ -607,8 +607,9 @@ fn show_row(ui: &mut egui::Ui, t: &Tokens, on: bool, actions: &mut Vec<(Field, S
         parts::SHOWCOMPLETEDTITLE,
         "Keep finished tasks in the list instead of hiding them.",
         parts::SHOWCOMPLETEDDESCRIPTION,
-        rem(2.5),
-        rem(1.357),
+        // The reference's switch: 30 × 18.
+        30.0,
+        18.0,
         SHOW_ROW,
     );
     switch(ui, t, sw, on, actions);
@@ -631,20 +632,26 @@ fn setting_row(
 ) -> Rect {
     let w = ui.available_width();
     let text_w = if stacked { w - 2.0 * PAD_X } else { (w - 2.0 * PAD_X - control_w - GAP).max(40.0) };
-    let tg = lay(ui, title, 13.0, 500, t.content_1, text_w);
+    // The reference's rows, measured from its recording: a 13 px regular title on a 19.5 px line, the
+    // description on a 17.25 px line 1 px under it, a stacked control 7 px below (ours had 16 and 14 px
+    // lines, so every row sat higher than the last).
+    let tg = lay(ui, title, 13.0, 400, t.content_1, text_w);
     let dg = lay(ui, desc, 11.5, 400, t.content_3, text_w);
-    let (ts, ds) = (tg.size(), dg.size());
-    let text_h = ts.y + 2.0 + ds.y;
-    let body_h = if stacked { text_h + 5.0 + control_h } else { text_h.max(control_h) };
+    let rows = |g: &Galley, line: f32| (g.rows.len().max(1) as f32) * line;
+    let (title_h, desc_h) = (rows(&tg, 19.5), rows(&dg, 17.25));
+    let ts = vec2(tg.size().x, title_h);
+    let ds = vec2(dg.size().x, desc_h);
+    let text_h = ts.y + 1.0 + ds.y;
+    let body_h = if stacked { text_h + 7.0 + control_h } else { text_h.max(control_h) };
     let (row, row_resp) = ui.allocate_exact_size(vec2(w, 2.0 * PAD_Y + body_h), Sense::hover());
     row_resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, title));
     part(ui, &row_resp, row_part);
     let x = row.left() + PAD_X;
     let y = if stacked { row.top() + PAD_Y } else { row.center().y - text_h / 2.0 };
     node_text(ui, Rect::from_min_size(pos2(x, y), ts), tg, t.content_1, title_part, title, Role::GenericContainer);
-    node_text(ui, Rect::from_min_size(pos2(x, y + ts.y + 2.0), ds), dg, t.content_3, desc_part, desc, Role::GenericContainer);
+    node_text(ui, Rect::from_min_size(pos2(x, y + ts.y + 1.0), ds), dg, t.content_3, desc_part, desc, Role::GenericContainer);
     if stacked {
-        Rect::from_min_size(pos2(x, y + text_h + 5.0), vec2(w - 2.0 * PAD_X, control_h))
+        Rect::from_min_size(pos2(x, y + text_h + 7.0), vec2(w - 2.0 * PAD_X, control_h))
     } else {
         Rect::from_min_size(pos2(row.right() - PAD_X - control_w, row.center().y - control_h / 2.0), vec2(control_w, control_h))
     }
@@ -773,7 +780,9 @@ fn node_text(ui: &mut egui::Ui, rect: Rect, galley: Arc<Galley>, color: Color32,
     let resp = ui.interact(rect, ui.scope_id().with(part_id), Sense::hover());
     resp.widget_info(|| WidgetInfo::labeled(role, true, label));
     part(ui, &resp, part_id);
-    ui.painter().galley(rect.min, galley, color);
+    // The text centred in its line box, as a browser sets it in its line-height.
+    let top = rect.top() + ((rect.height() - galley.size().y) / 2.0).max(0.0);
+    ui.painter().galley(pos2(rect.left(), top), galley, color);
 }
 
 /// A hairline between two rows of a card.
