@@ -226,11 +226,6 @@ export function TaskRow(p: RowProps) {
         )}
       </div>
 
-      {attachments > 0 && (
-        <Badge data-part={p.parts.attach} tone="outline" size="md" icon>
-          {String(attachments)}
-        </Badge>
-      )}
       {hasKids && (
         <Button
           data-part={p.parts.disclosure}
@@ -247,9 +242,15 @@ export function TaskRow(p: RowProps) {
           onClick={() => p.onToggleExpanded(row)}
         />
       )}
+      {/* The reference's order: the subtask count, then the attachments (#12347). */}
       {hasKids && (
         <Badge data-part={p.parts.badge} tone="outline" size="md">
           {`${row.kidsDone}/${row.kids}`}
+        </Badge>
+      )}
+      {attachments > 0 && (
+        <Badge data-part={p.parts.attach} tone="outline" size="md" icon>
+          {String(attachments)}
         </Badge>
       )}
       {p.menu}
