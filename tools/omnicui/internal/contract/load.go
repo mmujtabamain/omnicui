@@ -373,7 +373,8 @@ var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports
 	"type", "enum", "default", "role", "name", "steps", "expect", "screenshot", "trace", "record",
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
 	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale",
-	"same", "only", "except", "input", "why", "layout", "palette", "direction", "contains", "matches"}
+	"same", "only", "except", "input", "why", "layout", "palette", "direction", "contains", "matches",
+	"leftOf", "rightOf", "above", "below", "middleWith"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -853,6 +854,9 @@ func typeOK(t string, v any) bool {
 	case "boolean":
 		_, ok := v.(bool)
 		return ok
+	case "part":
+		_, ok := v.(string)
+		return ok
 	case "integer":
 		_, ok := v.(int64)
 		return ok
@@ -997,6 +1001,22 @@ func (l *loader) crossCheck(c *Contract) {
 					l.errorf(ptr+"/"+ch.Field+"#key", "`%s` is a %s, which has no field `%s`", e.Part, role, ch.Field)
 				} else if !typeOK(t, ch.Want) && !(t == "number" && typeOK("number", ch.Want)) {
 					l.errorf(ptr+"/"+ch.Field, "`%s` is %s, but it is %s", ch.Field, t, describe(ch.Want))
+				} else if t == "part" {
+					// The other part of a relation: one of the contract's, and not the part itself.
+					others := map[string]any{"": ch.Want}
+					for sel, v := range ch.ByPlatform {
+						others["/"+escape(sel)] = v
+					}
+					for _, at := range sortedKeys(others) {
+						other, ok := others[at].(string)
+						if !ok {
+							l.errorf(ptr+"/"+ch.Field+at, "`%s` names another part, but it is %s", ch.Field, describe(others[at]))
+						} else if other == e.Part {
+							l.errorf(ptr+"/"+ch.Field+at, "`%s` places `%s` relative to another part, not to itself", ch.Field, e.Part)
+						} else {
+							unknownPart(ptr+"/"+ch.Field+at, other)
+						}
+					}
 				} else {
 					for _, sel := range sortedKeys(ch.ByPlatform) {
 						if v := ch.ByPlatform[sel]; !typeOK(t, v) && !(t == "number" && typeOK("number", v)) {

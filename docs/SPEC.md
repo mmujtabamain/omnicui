@@ -146,6 +146,8 @@ There is nothing to recover: each run starts clean and replaces the last run's f
 
 Every role also has `role` (the role assistive technology reports, compared with the value given; capability `role`) and `visible` (the part has a size on screen and some of it is inside the viewport; omnicui works it out from `bounds`). The focusable roles (button, switch, checkbox, slider, textbox) have `focused` (capability `focused`). A test that checks one of them on a target that doesn't advertise its capability is "not advertised" there. *(TestRoleAndFocused)*
 
+Every role also has five **relations**, which place the part relative to another part named as the value: `leftOf`, `rightOf`, `above`, `below` (its whole box is on that side of the other's, within a pixel) and `middleWith` (their vertical middles are level, within a pixel). They say what a part's existence and text cannot: the order of chips in a row, a checkbox centred on its title's line, text centred in its well. omnicui works them out from both parts' `bounds`, the same way on every target; a failure gives the edges or the distance (``value.middleWith: expected its middle level with `increment`, but it sits 6 px higher``). The other part must be one of the contract's and not the part itself. *(TestRelationsNameAnotherPart, TestLayoutRelations, TestLayoutAboveBelow)*
+
 ### Invariants
 
 - [R] A contract's `id` is unique among the project's contracts. *(TestDuplicateIDs)*

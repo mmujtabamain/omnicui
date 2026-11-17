@@ -2,6 +2,8 @@ package check
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -119,4 +121,65 @@ func MeasuresTable(rows []MeasuresRow, th contract.PixelThresholds, indent strin
 	}
 	b.WriteString("\n")
 	return b.String()
+}
+
+// relationWords say a relation in a failure: "expected left of `b`".
+var relationWords = map[string]string{
+	"leftOf":     "left of",
+	"rightOf":    "right of",
+	"above":      "above",
+	"below":      "below",
+	"middleWith": "its middle level with",
+}
+
+// relationSlack is how far a relation may be off: a pixel, for rounding.
+const relationSlack = 1.0
+
+// relation checks where a part's box a is relative to another part's box b; it returns why not,
+// or "" when it holds.
+func relation(field string, a, b *Rect, self, other string) string {
+	if a == nil || a.Width <= 0 || a.Height <= 0 {
+		return fmt.Sprintf("but `%s` has no size on screen", self)
+	}
+	if b == nil || b.Width <= 0 || b.Height <= 0 {
+		return fmt.Sprintf("but `%s` has no size on screen", other)
+	}
+	switch field {
+	case "leftOf":
+		if a.X+a.Width <= b.X+relationSlack {
+			return ""
+		}
+		return fmt.Sprintf("but its right edge is at %s and `%s` starts at %s", px(a.X+a.Width), other, px(b.X))
+	case "rightOf":
+		if a.X >= b.X+b.Width-relationSlack {
+			return ""
+		}
+		return fmt.Sprintf("but it starts at %s and `%s` ends at %s", px(a.X), other, px(b.X+b.Width))
+	case "above":
+		if a.Y+a.Height <= b.Y+relationSlack {
+			return ""
+		}
+		return fmt.Sprintf("but its bottom is at %s and `%s` starts at %s", px(a.Y+a.Height), other, px(b.Y))
+	case "below":
+		if a.Y >= b.Y+b.Height-relationSlack {
+			return ""
+		}
+		return fmt.Sprintf("but it starts at %s and `%s` ends at %s", px(a.Y), other, px(b.Y+b.Height))
+	case "middleWith":
+		d := (a.Y + a.Height/2) - (b.Y + b.Height/2)
+		if math.Abs(d) <= relationSlack {
+			return ""
+		}
+		dir := "lower"
+		if d < 0 {
+			dir = "higher"
+		}
+		return fmt.Sprintf("but it sits %s px %s", px(math.Abs(d)), dir)
+	}
+	return "but omnicui doesn't know this relation"
+}
+
+// px writes a coordinate without trailing zeros.
+func px(v float64) string {
+	return strconv.FormatFloat(math.Round(v*10)/10, 'f', -1, 64)
 }

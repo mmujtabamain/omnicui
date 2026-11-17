@@ -579,6 +579,10 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 				needs = append(needs, ch.Field)
 			case "visible":
 				needs = append(needs, "bounds")
+			default:
+				if contract.IsRelation(ch.Field) {
+					needs = append(needs, "bounds")
+				}
 			}
 		}
 	}
@@ -1035,6 +1039,36 @@ func (tr *targetRun) expect(c *contract.Contract, test contract.Test, cb Combo, 
 		}
 		readsContent, skipped := false, false
 		for _, ch := range e.Checks {
+			if contract.IsRelation(ch.Field) {
+				want := ch.Want
+				if v, sel, ok := contract.Pick(ch.ByPlatform, tr.plat); ok {
+					want = v
+					if sel != "default" {
+						note := fmt.Sprintf("%s.%s: %s on %s (`%s`), not %s; why: %s", e.Part, ch.Field, show(v), tr.t.Name, sel, show(ch.Want), e.Why)
+						if !contains(res.Exceptions, note) {
+							res.Exceptions = append(res.Exceptions, note)
+						}
+					}
+				}
+				other, _ := want.(string)
+				var otherBox *Rect
+				err := bounds()
+				if err == nil {
+					err = tr.call("bounds", map[string]any{"part": c.ID + "." + other}, &otherBox)
+				}
+				if err != nil {
+					if tr.missingOptional(c, e.Part, "what the test expects of it is skipped", res) || tr.missingOptional(c, other, "where the test places a part relative to it is skipped", res) {
+						skipped = true
+						break
+					}
+					return err
+				}
+				res.measured++
+				if why := relation(ch.Field, box, otherBox, e.Part, other); why != "" {
+					fail(fmt.Sprintf("%s.%s: expected %s %s, %s%s", e.Part, ch.Field, relationWords[ch.Field], "`"+other+"`", why, suffix))
+				}
+				continue
+			}
 			var got any
 			if ch.Field == "visible" {
 				if err := bounds(); err != nil {

@@ -16,8 +16,25 @@ func set(xs ...string) map[string]bool {
 }
 
 // Every role also has `role` (the role assistive technology reports, compared with the
-// contract's) and `visible` (the part has a size on screen and is inside the viewport); the
-// focusable roles have `focused`. They are added to each role below.
+// contract's), `visible` (the part has a size on screen and is inside the viewport) and the
+// Relations (where it sits relative to another part); the focusable roles have `focused`. They
+// are added to each role below.
+
+// Relations place a part relative to another part, named as the field's value: `leftOf`,
+// `rightOf`, `above` and `below` (its whole box is on that side of the other's, give or take a
+// pixel), and `middleWith` (their vertical middles are level, within a pixel: a checkbox and its
+// title, text in its well). omnicui works them out from both parts' `bounds`.
+var Relations = []string{"leftOf", "rightOf", "above", "below", "middleWith"}
+
+// IsRelation reports whether a field places a part relative to another.
+func IsRelation(field string) bool {
+	for _, r := range Relations {
+		if r == field {
+			return true
+		}
+	}
+	return false
+}
 
 // Roles is the full table. A role that is not here is refused by the schema.
 var Roles = map[string]Role{
@@ -38,6 +55,9 @@ func init() {
 	for name, r := range Roles {
 		r.Fields["role"] = "string"
 		r.Fields["visible"] = "boolean"
+		for _, f := range Relations {
+			r.Fields[f] = "part"
+		}
 		Roles[name] = r
 	}
 	// selected: a button that stays chosen (a chip, a tab, a segment of a segmented control).

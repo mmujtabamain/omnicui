@@ -83,6 +83,10 @@ Roles, what a test can check on a part of each, and the actions it accepts:
   visible  the part has a size on screen and is inside the viewport (needs the target's bounds)
   focused  the part has keyboard focus
   selected a button that stays chosen: a chip, a tab, a segment (targets that advertise selected)
+  leftOf, rightOf, above, below  where the part sits relative to another part, named as the
+           value: its whole box on that side of the other's, within a pixel (needs bounds)
+  middleWith  the part's vertical middle level with another part's, within a pixel: a checkbox
+           and its title, text in its well (needs bounds)
 
 How targets are compared (warnings, never failures, unless check --fail-on says so):
   screenshots  every pair of targets of one design (design: in target.yaml; most share the

@@ -257,3 +257,23 @@ func TestKeyboardTestsFollowTheContractsPlatforms(t *testing.T) {
 		}
 	}
 }
+
+// R-LAYOUT-1: a relation names another part of the contract; one naming no part, or the part
+// itself, is an error.
+func TestRelationsNameAnotherPart(t *testing.T) {
+	ok := strings.Replace(good, `- { part: value, text: "3" }`, `- { part: value, text: "3", leftOf: increment, middleWith: increment }`, 1)
+	if _, ps := parse(t, ok); HasErrors(ps) {
+		t.Fatalf("%v", ps)
+	}
+	for _, c := range []struct{ yaml, want string }{
+		{`leftOf: incremnt`, "incremnt"},
+		{`above: value`, "relative to another part, not to itself"},
+		{`below: 3`, "expected string"}, // the schema says it first
+	} {
+		y := strings.Replace(good, `- { part: value, text: "3" }`, `- { part: value, `+c.yaml+` }`, 1)
+		_, ps := parse(t, y)
+		if !HasErrors(ps) || !strings.Contains(ps[0].Message, c.want) {
+			t.Errorf("%s: %v", c.yaml, ps)
+		}
+	}
+}
