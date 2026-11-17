@@ -45,6 +45,8 @@ struct AppState {
 
 struct Target {
     harness: Option<Harness<'static, AppState>>,
+    /// Modifiers a test holds down (selectHold, modifierHold) until the next mount.
+    held: Modifiers,
     can_render: Option<String>,
 }
 
@@ -65,6 +67,21 @@ fn key_of(name: &str) -> Result<Key> {
         n => n,
     };
     Key::from_name(plain).ok_or_else(|| fail(STEP_FAILED, format!("unknown key {name}")))
+}
+
+/// "Alt", "Meta+Shift": a combination of modifiers only (a held key), or None.
+fn only_modifiers(combo: &str) -> Option<Modifiers> {
+    let mut mods = Modifiers::NONE;
+    for m in combo.split('+') {
+        match m {
+            "Shift" => mods.shift = true,
+            "Control" => mods.ctrl = true,
+            "Alt" | "Option" => mods.alt = true,
+            "Meta" | "Command" => mods.command = true,
+            _ => return None,
+        }
+    }
+    Some(mods)
 }
 
 /// "Shift+Tab" → (Shift, Tab)
@@ -174,11 +191,14 @@ impl Target {
                 let scheme = p["colorScheme"].as_str().unwrap_or("light");
                 let size = egui::vec2(p["viewport"]["width"].as_f64().unwrap_or(320.0) as f32, p["viewport"]["height"].as_f64().unwrap_or(240.0) as f32);
                 self.harness = Some(build(c, Look::of(scheme), size, scheme == "dark"));
+                self.held = Modifiers::NONE;
                 self.settle()?;
                 Ok(Value::Null)
             }
             // contract: tests[].steps[].action on parts.<name>, sent as the part id "ui.counter.<name>".
             "press" | "focus" | "key" | "type" | "drag" | "hover" | "do" => {
+                // A named input with no key form here (none) never reaches the target; one with a
+                // key but no part goes to whatever has focus.
                 // A step with times repeats (a key pressed three times).
                 for _ in 0..p["times"].as_u64().unwrap_or(1).max(1) {
                     self.queue_step(method, p)?;
@@ -282,25 +302,44 @@ impl Target {
     /// Queues one step's input events; the next frames process them.
     fn queue_step(&mut self, method: &str, p: &Value) -> Result<()> {
         let part = p["part"].as_str().unwrap_or_default().to_owned();
+        if method == "do" {
+            return self.do_action(p);
+        }
+        let held = self.held;
+        // A key that is only modifiers (a held Alt or Command) stays down for the steps that follow, as a
+        // user holds it while pointing; it is let go when the next test mounts.
+        if method == "key" {
+            let combo = p["key"].as_str().unwrap_or_default();
+            if let Some(mods) = only_modifiers(combo) {
+                self.held = self.held | mods;
+                let all = self.held;
+                self.harness()?.event(egui::Event::ModifiersChanged(all));
+                return Ok(());
+            }
+            let (mods, key) = keys(combo)?;
+            let h = self.harness()?;
+            // A key on a part goes to that part, focused first as a user would tab or click to it; with
+            // no part, it goes wherever egui's focus is.
+            if !part.is_empty() {
+                let root = h.root();
+                let node = find(&root, &part)?;
+                if !node.is_focused() {
+                    node.focus();
+                    h.step();
+                }
+            }
+            h.key_press_modifiers(mods | held, key);
+            return Ok(());
+        }
         let h = self.harness()?;
         let root = h.root();
         let node = find(&root, &part)?;
         match method {
+            "press" if held != Modifiers::NONE => node.click_modifiers(held),
             "press" => node.click(),
             "hover" => node.hover(),
             "focus" => node.focus(),
             "type" => node.type_text(p["text"].as_str().unwrap_or_default()),
-            // A key on a part goes to that part, focused first as a user would tab or click to it; with
-            // no part, it goes wherever egui's focus is.
-            "key" => {
-                if !part.is_empty() && !node.is_focused() {
-                    node.focus();
-                    h.step();
-                }
-                let (mods, key) = keys(p["key"].as_str().unwrap_or_default())?;
-                h.key_press_modifiers(mods, key);
-            }
-            "do" => return self.do_action(p),
             "drag" => {
                 let from = node.rect().center();
                 let to = from + egui::vec2(p["dx"].as_f64().unwrap_or(0.0) as f32, p["dy"].as_f64().unwrap_or(0.0) as f32);
@@ -477,7 +516,7 @@ fn main() {
     if let Some(why) = &can_render {
         eprintln!("[egui] screenshots off: {why}");
     }
-    let mut target = Target { harness: None, can_render };
+    let mut target = Target { harness: None, held: Modifiers::NONE, can_render };
     let stdin = std::io::stdin();
     let mut out = std::io::stdout().lock();
     for line in stdin.lock().lines() {
