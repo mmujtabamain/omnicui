@@ -1064,6 +1064,25 @@ func (l *loader) crossCheck(c *Contract) {
 	}
 	if c.Keyboard {
 		found := false
+		// A generated test runs where the contract's own tests run: when every written test names its
+		// platforms with only:, the generated ones take the same platforms, so a contract written for one
+		// platform adds no keyboard tests on the others.
+		var only []string
+		if len(c.Tests) > 0 {
+			seen := map[string]bool{}
+			for _, t := range c.Tests {
+				if len(t.Only) == 0 || len(t.Except) > 0 {
+					only, seen = nil, nil
+					break
+				}
+				for _, o := range t.Only {
+					if !seen[o] {
+						seen[o] = true
+						only = append(only, o)
+					}
+				}
+			}
+		}
 		for _, p := range c.Parts {
 			for _, key := range KeyboardKeys[p.Role] {
 				found = true
@@ -1071,6 +1090,7 @@ func (l *loader) crossCheck(c *Contract) {
 				c.Tests = append(c.Tests, Test{
 					Name:     fmt.Sprintf("keyboard: %s on `%s` does what a press does", key, p.Name),
 					Keyboard: &KeyboardCheck{Part: p.Name, Key: key},
+					Only:     only,
 					Line:     l.line("/keyboard"),
 				})
 			}

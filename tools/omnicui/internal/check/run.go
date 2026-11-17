@@ -537,10 +537,8 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		res.Status, res.Messages = Broken, []string{"not run: the target broke earlier (" + b.Reason + ")"}
 		return res
 	}
-	if test.Keyboard != nil {
-		return tr.runKeyboard(c, test, res)
-	}
-	// Not for this platform: only / except, or an input it doesn't have.
+	// Not for this platform: only / except (a generated keyboard test takes its contract's), or an
+	// input it doesn't have.
 	if !test.Applies(tr.plat) {
 		res.Status = NotApplicable
 		if len(test.Only) > 0 {
@@ -549,6 +547,9 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 			res.Messages = append(res.Messages, fmt.Sprintf("except: [%s], and %s is", strings.Join(test.Except, ", "), tr.plat))
 		}
 		return res
+	}
+	if test.Keyboard != nil {
+		return tr.runKeyboard(c, test, res)
 	}
 	steps, sent, none := stepParamsFor(c, test.Steps, tr.plat)
 	res.Inputs = sent

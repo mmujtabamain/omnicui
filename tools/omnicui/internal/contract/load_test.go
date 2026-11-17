@@ -225,3 +225,35 @@ func TestClosest(t *testing.T) {
 		}
 	}
 }
+
+// R-KEY-13: the tests `keyboard: true` adds run where the contract's own tests run. When every written
+// test names its platforms with only:, the generated ones take them; otherwise they run everywhere.
+func TestKeyboardTestsFollowTheContractsPlatforms(t *testing.T) {
+	only := func(c *Contract) [][]string {
+		var out [][]string
+		for _, test := range c.Tests {
+			if test.Keyboard != nil {
+				out = append(out, test.Only)
+			}
+		}
+		return out
+	}
+	web := strings.Replace(good+"keyboard: true\n", "  - name: three presses\n", "  - name: three presses\n    only: [web]\n", 1)
+	c, ps := parse(t, web)
+	if len(ps) != 0 {
+		t.Fatalf("problems: %v", ps)
+	}
+	got := only(c)
+	if len(got) != 2 || strings.Join(got[0], ",") != "web" || strings.Join(got[1], ",") != "web" {
+		t.Fatalf("keyboard tests of a web-only contract: %v", got)
+	}
+	c, ps = parse(t, good+"keyboard: true\n")
+	if len(ps) != 0 {
+		t.Fatalf("problems: %v", ps)
+	}
+	for _, o := range only(c) {
+		if len(o) != 0 {
+			t.Fatalf("keyboard tests of a contract for every platform: %v", only(c))
+		}
+	}
+}
