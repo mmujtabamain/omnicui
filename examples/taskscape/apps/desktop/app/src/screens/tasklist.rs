@@ -717,6 +717,9 @@ pub struct TaskList {
     /// (the web's :focus-visible; egui has no such distinction, #12346).
     pointer_focus: Option<TaskId>,
     pane: usize,
+    /// Whether this pane offers Close split while the view is split: the main window's right pane does,
+    /// its left pane doesn't (the reference's split-view recording); a pane mounted on its own does.
+    pub close_on_split: bool,
     query: String,
     scope: Scope,
     fields: Fields,
@@ -761,6 +764,7 @@ pub struct TaskList {
 impl TaskList {
     pub fn new(pane: usize) -> Self {
         Self {
+            close_on_split: true,
             claims: vec![],
             row_box: None,
             more_claims: vec![],
@@ -1113,7 +1117,7 @@ impl TaskList {
         let mut ch = ui.new_child(UiBuilder::new().max_rect(inner).layout(Layout::right_to_left(Align::Center)));
         ch.spacing_mut().item_spacing.x = 5.0;
 
-        if s.split {
+        if s.split && self.close_on_split {
             let (pressed, _) = button(
                 &mut ch,
                 look,

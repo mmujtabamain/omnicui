@@ -117,6 +117,7 @@ impl MainWindow {
             grab: None,
             panes: {
                 let mut left = TaskList::new(0);
+                left.close_on_split = false;
                 left.claims = CLAIMS.to_vec();
                 left.row_box = Some(("Pick up prescription", "app.mainwindow.row"));
                 let mut right = TaskList::new(1);
