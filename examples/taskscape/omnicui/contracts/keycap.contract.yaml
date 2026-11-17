@@ -209,20 +209,21 @@ tests:
       - { event: capture, times: 1, last: { accel: "Shift+F7" } }
       - { part: keycap, text: "Type shortcut…" }
 
-  - name: a browser or OS chord reserved on macOS is refused (proposed, open item 6)
+  - name: a chord macOS keeps is refused (decision 23)
     only: [macos]
-    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Meta+T" }
-    steps: [ { action: key, part: keycap, key: Meta+T } ]
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Meta+Q,Meta+H,Meta+M,Meta+Tab,Meta+Space" }
+    steps: [ { action: key, part: keycap, key: Meta+H } ]
     expect:
-      - { event: refused, times: 1, last: { accel: "Meta+T" } }
+      - { event: refused, times: 1, last: { accel: "Meta+H" } }
       - { event: capture, times: 0 }
 
-  - name: a browser or OS chord reserved on Windows and Linux is refused (proposed, open item 6)
-    only: [windows, linux]
-    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Control+T" }
-    steps: [ { action: key, part: keycap, key: Control+T } ]
+  - name: a chord Windows or Linux keeps is refused (decision 23)
+    only: [desktop]
+    except: [macos]
+    props: { mode: recording, accel: "Shift+F5", actionName: "Refresh list", reserved: "Alt+F4,Alt+Tab" }
+    steps: [ { action: key, part: keycap, key: Alt+F4 } ]
     expect:
-      - { event: refused, times: 1, last: { accel: "Control+T" } }
+      - { event: refused, times: 1, last: { accel: "Alt+F4" } }
       - { event: capture, times: 0 }
 
   - name: a combo that is not reserved is captured when a reserved list is set

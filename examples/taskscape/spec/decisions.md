@@ -38,3 +38,18 @@ Product decisions for the rebuild, with the reason. "Web" is the Django + React 
 ## From the desktop build (16 Nov)
 
 21. **Desktop framework: egui (Rust).** The desktop version is an eframe app. Settings, Trash, dialogs and the capture bar are real OS windows (eframe viewports, with the OS's own controls). The tray or menu-bar agent, the global hotkey and the native menus use `tray-icon`, `global-hotkey` and `muda`. Storage is SQLite with the Atlas HCL schema and Atlas-generated SQL migrations applied at start-up. The egui omnicui target drives it headlessly. Chosen over JavaFX (a weak Linux tray, and a global hotkey that needs a third-party native library), native macOS (macOS only, and no Mac to test on) and Tauri (omnicui cannot drive its webviews, and it would be a web page in a window again).
+
+## From the desktop review of the contracts (17 Nov; all as recommended)
+
+22. **Command palette on the desktop:** a floating panel inside the main window with no backdrop, opened with Cmd/Ctrl+K. It is not its own OS window.
+23. **Chords the shortcut recorder refuses on the desktop:** only those the OS keeps (macOS ⌘Q ⌘H ⌘M ⌘Tab ⌘Space; Windows Alt+F4, Alt+Tab and Win chords; Linux Alt+Tab, Alt+F4), and a bare key with no modifier.
+24. **Marking the active task done from the keyboard:** Option+Space on macOS and the web; Ctrl+Enter on Windows and Linux, where Alt+Space opens the window menu.
+25. **Empty list copy on the desktop:** "Press ⌘N to add a task" on macOS, "Press Ctrl+N to add a task" on Windows and Linux. The web keeps "Press + to add a task".
+26. **Video and audio in the attachment preview on the desktop:** the poster and an Open button, which plays it in the OS's default player (egui has no media player).
+27. **Screenshot in the task inspector:** the desktop inspector has a Screenshot button beside File and Link (the web has Image in the draft instead, decision 5).
+28. **Lightbox on the desktop:** its own window, which fades in and out, with no scrim.
+29. **Low Power Mode note in Settings:** macOS "Low Power Mode is on", Windows "Battery saver is on"; Linux has none (the switch is never forced).
+30. **The global-shortcut hint:** "…work anywhere on your Mac", "…work anywhere in Windows", "…work anywhere on your desktop" (Linux).
+31. **Bold, italic and underline chords on the web:** Ctrl/Cmd+B, I and U work in the web editor too; browsers leave them to an editor that has focus.
+32. **@-mentions on the desktop:** the same mention popover as the web, in notes and in the capture bar.
+33. **Key labels on Windows and Linux:** words, never glyphs (Ctrl, Alt, Shift, then the key); macOS uses ⌘ ⌥ ⇧ ⌃.

@@ -72,6 +72,7 @@ parts:
   attachmentsHeading: { role: heading }     # "Attachments"; always shown
   attachFile: { role: button }              # header File button (web: browser file picker that uploads)
   attachLink: { role: button }              # header Link button: visible text "Link", accessible name "Add a link"
+  attachShot: { role: button, optional: true }   # "Screenshot": desktop only (decision 27); the web has Image in the draft instead (decision 5)
   emptyCopyFile: { role: button }           # "Copy a file" in the empty attachments box
   emptyAddLink: { role: button }            # "Add a link" in the empty attachments box (same name as the header Link button)
   attachmentTileLink: { role: button }      # remote link tile "Brand brief"; opens externally
@@ -682,6 +683,13 @@ tests:
       - { part: attachFile, name: "File" }
       - { part: attachLink, name: "Add a link" }
     screenshot: true
+
+  - name: "the desktop attachments header also has Screenshot"
+    only: [desktop]
+    props: { task: "Rewrite the hero section" }
+    steps: []
+    expect:
+      - { part: attachShot, name: "Screenshot" }
 
   - name: "File button asks for a file to attach"
     props: { task: "Rewrite the hero section" }

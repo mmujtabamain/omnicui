@@ -165,8 +165,18 @@ tests:
       - { part: doneCount, text: { contains: "3/8" } }
 
   - name: "Option+Space marks the active task done"
+    only: [macos, web]   # Windows and Linux keep Alt+Space for the window menu (decision 24)
     steps:
       - { action: key, part: row, key: "Alt+Space" }
+    expect:
+      - { part: doneCount, text: { contains: "3/8" } }
+      - { part: check, name: "Mark not done" }
+
+  - name: "Ctrl+Enter marks the active task done on Windows and Linux"
+    only: [desktop]
+    except: [macos]
+    steps:
+      - { input: toggleDone, part: row }
     expect:
       - { part: doneCount, text: { contains: "3/8" } }
       - { part: check, name: "Mark not done" }
@@ -708,6 +718,7 @@ tests:
     screenshot: true
 
   - name: "empty list: an empty Inbox shows the empty state with the web add hint"
+    only: [web]
     props: { dataset: empty, list: Inbox }
     steps: []
     expect:
@@ -717,6 +728,14 @@ tests:
       - { part: doneCount, text: { contains: "0/0" } }
       - { part: percent, text: "0%" }
     screenshot: true
+
+  - name: "empty list: the desktop add hint names the new-task chord"
+    only: [desktop]
+    props: { dataset: empty, list: Inbox }
+    steps: []
+    expect:
+      - { part: emptyState, text: { contains: "Nothing here yet" } }
+      - { part: emptyState, text: { default: { contains: "Press Ctrl+N to add a task" }, macos: { contains: "Press ⌘N to add a task" } }, why: "The desktop hint names the platform's new-task chord (decision 25)" }
 
   - name: "long list: the search bar stays fixed while the tree scrolls"
     props: { dataset: long }
