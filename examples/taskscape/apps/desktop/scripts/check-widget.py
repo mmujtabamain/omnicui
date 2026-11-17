@@ -32,8 +32,7 @@ for d in (ui / "src", target):
 shutil.copytree(UI / "src", ui / "src")
 for f in ("Cargo.toml", "build.rs"):
     shutil.copy(UI / f, ui / f)
-if not (ui / "fonts").exists():
-    shutil.copytree(UI / "fonts", ui / "fonts")
+shutil.copytree(UI / "fonts", ui / "fonts", dirs_exist_ok=True)   # the fonts change too (a new icon)
 draft = UI / "drafts" / f"{name}.rs"
 if draft.exists():
     shutil.copy(draft, ui / "src" / "widgets" / f"{name}.rs")

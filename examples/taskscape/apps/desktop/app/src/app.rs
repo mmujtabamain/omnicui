@@ -99,7 +99,9 @@ impl App {
                 if self.ui.preview.as_ref().is_some_and(|p| gone.contains(p)) {
                     self.ui.preview = None;
                 }
-                self.toast = Some(Toast { message: "Moved to Trash".into(), undo: gone, error: None });
+                // One task (with its subtasks) reads "Moved to Trash"; several picked roots read "<n> moved to Trash".
+                let message = if ids.len() > 1 { format!("{} moved to Trash", ids.len()) } else { "Moved to Trash".into() };
+                self.toast = Some(Toast { message, undo: gone, error: None });
             }
             Err(e) => self.refused(e),
         }
