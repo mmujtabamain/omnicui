@@ -28,6 +28,8 @@ const reads = (w) => [
   `${R}/omnicui/contracts/${w.contract}.contract.yaml (the contract; tests tagged only: [web] do not apply)`,
   `${D}/src/omnicui/${w.contract}.rs (the types generated from it: props, events, part ids)`,
   `${R}/packages/ui/src/components/ui/${w.web}.tsx (the web widget you are porting: its look, sizes and behaviour)`,
+  `${R}/packages/ui/src/harness/${w.contract}.tsx (how the web test mounts it: any fixture it renders beside the widget, such as an opener button, a field or an "outside" area, and how it turns props and events into the contract's, is the desktop mount's job too)`,
+  `${D}/src/tokens.rs and ${D}/src/icons.rs (the colour token names and the icon names you may use)`,
   `${R}/spec/library/widgets/${w.name}.json (the widget spec, if the web file leaves something open)`,
   `${D}/src/lib.rs and ${D}/src/widgets/checkbox.rs (the library's helpers, and a finished widget)`,
   ...(w.uses ?? []).map((u) => `${D}/src/widgets/${u}.rs (a finished desktop widget you compose; use it as crate::widgets::${u})`),
@@ -38,9 +40,10 @@ const build = (w, slot) => `You build one widget of a desktop app's egui widget 
 Read these first:
 ${reads(w)}
 
-Write only ${D}/drafts/${w.contract}.rs. Check it with exactly this command, and run no other command:
+Write only ${D}/drafts/${w.contract}.rs. If that file already exists, an earlier attempt wrote it: read it and continue from it. Check it with exactly this command, and run no other command:
   ${check(w, slot)}
-It builds your draft with the finished widgets and runs the contract, printing BUILD, CONTRACT and every failing test. Repeat until it exits 0, then look at two or three screenshots it names (Read the PNG) next to the web widget's look, and fix what is wrong. Keep within budget: read each file once.`
+Run it with the Bash tool's timeout set to 600000: it waits its turn for the shared build and can take several minutes. Never send it to the background. It builds your draft with the finished widgets and runs the contract, printing BUILD, CONTRACT and every failing test.
+When the web harness renders fixtures beside the widget (an opener, a field, an outside button), give the draft its own small Mounted struct that draws them around the widget, with the part ids the contract names, instead of crate::mounted!(…). Repeat until it exits 0, then look at two or three screenshots it names (Read the PNG) next to the web widget's look, and fix what is wrong. Keep within budget: read each file once.`
 
 const fix = (w, slot, first) => `A first builder ported the widget ${w.name} (contract ${w.contract}) to egui as ${D}/drafts/${w.contract}.rs; its check still fails. Its report: ${first?.summary ?? 'none (it ran out of budget)'}
 
@@ -48,7 +51,7 @@ Read:
 ${reads(w)}
 - ${D}/drafts/${w.contract}.rs (the draft to fix)
 
-Run exactly this check, and no other command:
+Run exactly this check, and no other command, with the Bash tool's timeout set to 600000 (never in the background):
   ${check(w, slot)}
 Fix the draft until the check exits 0. Change only that file. If a test cannot pass on egui as written, say which and why in needs.`
 

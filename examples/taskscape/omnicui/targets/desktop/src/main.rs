@@ -69,6 +69,10 @@ fn key_of(name: &str) -> Result<Key> {
 
 /// "Shift+Tab" → (Shift, Tab)
 fn keys(combo: &str) -> Result<(Modifiers, Key)> {
+    // egui has no ContextMenu key: the keyboard's menu key arrives as its other form, Shift+F10.
+    if combo == "ContextMenu" {
+        return Ok((Modifiers::SHIFT, Key::F10));
+    }
     let mut mods = Modifiers::NONE;
     let mut parts: Vec<&str> = combo.split('+').collect();
     let key = key_of(parts.pop().unwrap_or_default())?;

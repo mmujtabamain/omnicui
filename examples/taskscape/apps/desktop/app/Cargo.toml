@@ -1,0 +1,30 @@
+[package]
+name = "taskscape-app"
+version = "0.1.0"
+edition = "2024"
+description = "The Taskscape desktop app: its data (on the reference's storage), its state, its screens and windows (egui), and the eframe binary."
+publish = false
+
+[lib]
+name = "taskscape_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "taskscape"
+path = "src/main.rs"
+required-features = ["window"]
+
+# The window needs eframe; the screens don't. The omnicui target turns `window` off and never builds eframe.
+[features]
+default = ["window"]
+window = ["dep:eframe"]
+
+[dependencies]
+taskscape-ui = { path = "../ui" }
+taskscape-storage = { path = "../storage" }
+egui = "0.37"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+anyhow = "1"
+eframe = { version = "0.37", optional = true, default-features = false, features = ["accesskit", "default_fonts", "wgpu", "wayland", "x11"] }

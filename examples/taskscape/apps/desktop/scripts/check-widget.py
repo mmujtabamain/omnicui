@@ -1,10 +1,10 @@
-"""Checks one desktop widget against its contract, in a build slot of its own:
+"""Checks one desktop widget or screen against its contract, in a build slot of its own:
 
     python3 apps/desktop/scripts/check-widget.py <contract name> [--slot N] [--test <name>]
 
 The slot (.checks/desktop-slots/N) is a copy of the widget library and the desktop target with the
-finished widgets (ui/src/widgets/) plus this one: its draft (ui/drafts/<name>.rs) if there is one, else
-its finished file. Builders working on different widgets at once each use their own slot, so one
+finished widgets (ui/src/widgets/) and screens (app/src/screens/) plus this one: its draft
+(ui/drafts/<name>.rs or app/drafts/<name>.rs) if there is one, else its finished file. Builders working on different widgets at once each use their own slot, so one
 draft that does not compile never breaks another's build. Prints BUILD, then CONTRACT with the
 counts and every failing test. Exit code 0 when it builds and every test passes.
 """
@@ -37,13 +37,28 @@ if not (ui / "fonts").exists():
 draft = UI / "drafts" / f"{name}.rs"
 if draft.exists():
     shutil.copy(draft, ui / "src" / "widgets" / f"{name}.rs")
+APP = ROOT / "apps" / "desktop" / "app"
+app = dest / "app"
+shutil.rmtree(app / "src", ignore_errors=True)
+shutil.copytree(APP / "src", app / "src")
+shutil.copy(APP / "build.rs", app / "build.rs")
+storage = (ROOT / "apps" / "desktop" / "storage").resolve()
+(app / "Cargo.toml").write_text((APP / "Cargo.toml").read_text().replace('path = "../storage"', f'path = "{storage}"'))
+screen_draft = APP / "drafts" / f"{name}.rs"
+if screen_draft.exists():
+    (app / "src" / "screens").mkdir(parents=True, exist_ok=True)
+    shutil.copy(screen_draft, app / "src" / "screens" / f"{name}.rs")
 shutil.copytree(TARGET / "src", target / "src")
-toml = (TARGET / "Cargo.toml").read_text().replace('path = "../../../apps/desktop/ui"', 'path = "../ui"').replace('members = ["stubs"]', "members = []")
+# Every slot builds into one shared folder, so the dependencies are compiled once (cargo takes turns
+# on it); the slot's own package and binary carry the slot's number, so no slot overwrites another's.
+toml = (TARGET / "Cargo.toml").read_text().replace('path = "../../../apps/desktop/ui"', 'path = "../ui"').replace('path = "../../../apps/desktop/app"', 'path = "../app"').replace('members = ["stubs"]', "members = []")
+toml = toml.replace('name = "taskscape-target-desktop"', f'name = "taskscape-target-desktop-slot{slot}"').replace('name = "adapter"', f'name = "adapter-slot{slot}"')
 (target / "Cargo.toml").write_text(toml)
 shutil.copy(TARGET / "Cargo.lock", target / "Cargo.lock")
 
-env = {**os.environ, "CARGO_TARGET_DIR": str(dest / "build"), "PATH": f"{Path.home()}/.cargo/bin:{Path.home()}/.local/node22/bin:{os.environ['PATH']}"}
-build = subprocess.run(["cargo", "build", "-q", "--release", "--bin", "adapter"], cwd=target, env=env, capture_output=True, text=True)
+shared = ROOT / ".checks" / "desktop-slots" / "shared-build"
+env = {**os.environ, "CARGO_TARGET_DIR": str(shared), "PATH": f"{Path.home()}/.cargo/bin:{Path.home()}/.local/node22/bin:{os.environ['PATH']}"}
+build = subprocess.run(["cargo", "build", "-q", "--release", "--bin", f"adapter-slot{slot}"], cwd=target, env=env, capture_output=True, text=True)
 errors = [l for l in build.stderr.splitlines() if l.startswith(("error", "warning"))]
 if build.returncode != 0:
     print("BUILD: errors")
@@ -55,7 +70,7 @@ for w in own[:10]:
     print(w)
 
 out = ROOT / ".checks" / f"desktop-{name}"
-env["DESKTOP_ADAPTER"] = str(dest / "build" / "release" / "adapter")
+env["DESKTOP_ADAPTER"] = str(shared / "release" / f"adapter-slot{slot}")
 env.setdefault("VK_ICD_FILENAMES", str(Path.home() / ".local" / "mesa" / "lvp_icd.json"))
 cmd = [str(OMNICUI), "--project", str(ROOT / "omnicui"), "check", "desktop", name, "--out", str(out)]
 for t in tests:
