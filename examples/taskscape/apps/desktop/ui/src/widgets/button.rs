@@ -67,7 +67,8 @@ fn accel(s: &str) -> String {
 
 /// A label laid out on one line (ellipsis when truncated) or wrapped within max_w.
 fn label_galley(ui: &egui::Ui, s: String, font: FontId, max_w: f32, truncate: bool) -> Arc<Galley> {
-    let mut job = LayoutJob::single_section(s, TextFormat { font_id: font, ..Default::default() });
+    // PLACEHOLDER colour: the painter fills in the tone colour at paint time (the default is a grey).
+    let mut job = LayoutJob::single_section(s, TextFormat { font_id: font, color: egui::Color32::PLACEHOLDER, ..Default::default() });
     job.wrap.max_width = max_w;
     if truncate {
         job.wrap.max_rows = 1;

@@ -180,9 +180,20 @@ tests:
 
   - name: a row is found by its combo text
     # Assumes the stored accel string is "Alt+N" (keywords are "shortcut hotkey key binding <accel>", F10-051).
+    only: [web]   # the web's New task chord (decision 18); the desktop form follows
     steps:
       - { action: focus, part: search }
       - { action: type, part: search, text: "alt+n" }
+    expect:
+      - { part: rowNewTask, visible: true, text: { contains: "New task" } }
+      - { part: rowUndo, visible: false }
+
+  - name: a row is found by its combo text on Windows and Linux
+    only: [desktop]
+    except: [macos]   # the desktop keeps the reference's Ctrl+N (decision 18)
+    steps:
+      - { action: focus, part: search }
+      - { action: type, part: search, text: "ctrl+n" }
     expect:
       - { part: rowNewTask, visible: true, text: { contains: "New task" } }
       - { part: rowUndo, visible: false }

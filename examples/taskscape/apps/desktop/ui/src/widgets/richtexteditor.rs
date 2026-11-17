@@ -48,6 +48,8 @@ pub struct RichTextEditor {
     soft: Vec<usize>,
     /// Attachments inserted as mention chips, drawn in a row above the text.
     chips: Vec<Mention>,
+    /// Where each chip was put in the text (a char index), so the text as read reads "…@name " there.
+    chip_at: Vec<usize>,
     /// The attachments the @ list offers, parsed from the `mentions` JSON.
     mentions: Vec<Mention>,
     /// Bold, italic, underline, strikethrough, bulleted list, numbered list.
@@ -59,6 +61,9 @@ pub struct RichTextEditor {
     started: bool,
     /// Whether the widget had focus at the end of the last frame.
     focus_prev: bool,
+    /// Where the @ list was drawn last frame: a press on it takes focus from the text for a moment,
+    /// and the list must stay open until the press lands on a row.
+    list_rect: Option<egui::Rect>,
 }
 
 impl RichTextEditor {
@@ -72,6 +77,7 @@ impl RichTextEditor {
             cursor,
             soft: vec![],
             chips: vec![],
+            chip_at: vec![],
             mentions,
             marks: [false; 6],
             menu: None,
@@ -79,6 +85,7 @@ impl RichTextEditor {
             collapsed: false,
             started: false,
             focus_prev: false,
+            list_rect: None,
         }
     }
 
@@ -127,6 +134,7 @@ impl RichTextEditor {
             if !dropped.is_empty() {
                 for file in dropped {
                     self.chips.push(Mention { id: file.clone(), name: file.clone() });
+                    self.chip_at.push(usize::MAX);
                     events.push(RichtexteditorEvent::AttachmentDropped { file });
                 }
                 ui.memory_mut(|m| m.request_focus(editor_id));
@@ -184,6 +192,7 @@ impl RichTextEditor {
                 // A chip is one unit: Backspace at the start of the text takes the last chip.
                 if self.cursor == 0 && !self.chips.is_empty() && take(ui, Modifiers::NONE, Key::Backspace) {
                     self.chips.pop();
+                    self.chip_at.pop();
                 }
             }
 
@@ -289,8 +298,12 @@ impl RichTextEditor {
 
             part(ui, &out.response, parts::EDITOR);
             let label = aria.clone();
+            let read = self.read_text();
             ui.ctx().accesskit_node_builder(out.response.id, |node| {
                 node.set_label(label.clone());
+                // The text as a reader (and a test) sees it: each mention where it was put, as "@name ",
+                // the way the web's inline chip reads.
+                node.set_value(read.clone());
                 if disabled {
                     node.set_disabled();
                 }
@@ -359,7 +372,10 @@ impl RichTextEditor {
                     events.push(RichtexteditorEvent::Changed { value: text, paragraphs });
                 }
             }
-            self.scan(focus_now);
+            let on_list = self.list_rect.is_some_and(|r| {
+                ui.input(|i| i.pointer.interact_pos().is_some_and(|p| r.contains(p)) && (i.pointer.any_down() || i.pointer.any_released()))
+            });
+            self.scan(focus_now || on_list);
             if let Some(i) = pick.take() {
                 self.insert(i, ui.ctx(), editor_id);
                 inserted = true;
@@ -395,6 +411,7 @@ impl RichTextEditor {
                     }
                 });
                 let list_rect = list.response.rect;
+                self.list_rect = Some(list_rect);
                 ui.painter().set(
                     list_bg,
                     Shape::Vec(vec![
@@ -410,8 +427,13 @@ impl RichTextEditor {
                 list.response.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Mentions"));
                 part(ui, &list.response, parts::MENTIONLIST);
             }
+            if self.menu.is_none() {
+                self.list_rect = None;
+            }
             if let Some(i) = list_pick {
                 self.insert(i, ui.ctx(), editor_id);
+                // The text takes focus back, with the caret after the mention.
+                ui.memory_mut(|m| m.request_focus(editor_id));
                 inserted = true;
             }
 
@@ -559,6 +581,19 @@ impl RichTextEditor {
         }
     }
 
+    /// The text with each mention chip read in place as "@name " (chips dropped on the widget, which
+    /// have no place in the text, come at the end).
+    fn read_text(&self) -> String {
+        let mut chars: Vec<char> = self.text.chars().collect();
+        let mut placed: Vec<(usize, String)> = self.chips.iter().enumerate().map(|(i, c)| (self.chip_at.get(i).copied().unwrap_or(usize::MAX).min(chars.len()), format!("@{} ", c.name))).collect();
+        placed.sort_by(|a, b| b.0.cmp(&a.0));
+        for (at, label) in placed {
+            let at = at.min(chars.len());
+            chars.splice(at..at, label.chars());
+        }
+        chars.into_iter().collect()
+    }
+
     /// The text as the value: paragraphs and soft breaks both as '\n'.
     fn value(&self) -> String {
         self.text.clone()
@@ -619,6 +654,7 @@ impl RichTextEditor {
         shift_soft(&mut self.soft, menu.at, self.cursor.max(menu.at) - menu.at, 0);
         self.text.replace_range(from..to, "");
         self.chips.push(item);
+        self.chip_at.push(menu.at);
         self.dismissed = None;
         self.cursor = menu.at;
         set_cursor(ctx, editor, menu.at);

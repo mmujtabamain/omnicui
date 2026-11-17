@@ -62,7 +62,9 @@ build = subprocess.run(["cargo", "build", "-q", "--release", "--bin", f"adapter-
 errors = [l for l in build.stderr.splitlines() if l.startswith(("error", "warning"))]
 if build.returncode != 0:
     print("BUILD: errors")
-    print("\n".join(build.stderr.splitlines()[:60]))
+    # The errors only (warnings from other files would push them out of view), each with its context.
+    blocks = [b for b in build.stderr.split("\n\n") if b.lstrip().startswith("error")]
+    print("\n\n".join(blocks[:12])[:8000] or "\n".join(build.stderr.splitlines()[-60:]))
     sys.exit(1)
 own = [l for l in build.stderr.split("\n\n") if f"widgets/{name}.rs" in l and l.startswith("warning")]
 print("BUILD: ok" + (f" ({len(own)} warnings in {name}.rs)" if own else ""))
