@@ -89,5 +89,8 @@ print("CONTRACT: " + ", ".join(f"{v} {k}" for k, v in sorted(count.items())))
 for r in results:
     if r["status"] in ("fail", "broken"):
         print(f"- {r['status'].upper()} {r['test']}: {' / '.join(r.get('messages') or [])[:400]}")
-print(f"SCREENSHOTS: {out}/desktop/{name}/<test>/<size>-<scheme>.png")
+shots = sorted((out / "desktop" / name).glob("*/*.png"))
+print(f"SCREENSHOTS ({len(shots)}): " + ("" if shots else "none"))
+for p in shots[:12]:
+    print(f"  {p}")
 sys.exit(0 if all(r["status"] not in ("fail", "broken") for r in results) else 1)

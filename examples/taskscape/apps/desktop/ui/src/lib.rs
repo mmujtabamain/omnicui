@@ -101,8 +101,10 @@ pub fn icon(name: &str, size: f32) -> RichText {
     RichText::new(glyph).font(FontId::new(size, FontFamily::Name("Icons".into())))
 }
 
-/// Installs Inter (four weights) as the proportional font and the icon font as the "Icons" family.
+/// Installs Inter (four weights) as the proportional font and the icon font as the "Icons" family,
+/// and the image loaders (attachment thumbnails, the lightbox).
 pub fn fonts(ctx: &egui::Context) {
+    egui_extras::install_image_loaders(ctx);
     let mut fonts = FontDefinitions::default();
     let faces: [(&str, &'static [u8]); 5] = [
         ("Inter", include_bytes!("../fonts/Inter-Regular.ttf")),

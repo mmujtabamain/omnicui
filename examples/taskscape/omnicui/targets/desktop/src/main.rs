@@ -129,8 +129,8 @@ fn build(component: Box<dyn Mounted>, look: Look, size: egui::Vec2, dark: bool) 
             |ui, s: &mut AppState| {
                 let screen = ui.ctx().content_rect();
                 ui.painter().rect_filled(screen, 0.0, s.look.t.surface_1);
-                // Every target puts the component at (24, 24).
-                let inner = Rect::from_min_max(Pos2::new(24.0, 24.0), screen.max - egui::vec2(24.0, 24.0));
+                // The component fills the window from (0, 0), as the web target's page does (body margin 0).
+                let inner = screen;
                 let AppState { component, events, look } = s;
                 ui.scope_builder(UiBuilder::new().max_rect(inner), |ui| {
                     component.frame(ui, *look, &mut |name, fields| events.push(json!({ "name": name, "fields": fields })));
@@ -393,12 +393,20 @@ impl Target {
             }
             // The OS's close button: the app's window is asked to close.
             "close" => h.state_mut().component.close(),
+            // with: direction up|down|left|right; by wheel (default), line or page; to start|end scrolls all
+            // the way. Sent as wheel events over the part, in points (a line is 40, a page 90% of the part).
             "scroll" => {
                 let root = h.root();
-                let at = find(&root, &part)?.rect().center();
-                h.hover_at(at);
-                let by = with["by"].as_f64().unwrap_or(if with["to"].as_str() == Some("end") { 100000.0 } else { 0.0 }) as f32;
-                h.event(egui::Event::MouseWheel { unit: egui::MouseWheelUnit::Point, delta: egui::vec2(0.0, -by), phase: egui::TouchPhase::Move, source: egui::MouseWheelSource::Unknown, modifiers: Modifiers::NONE });
+                let r = find(&root, &part)?.rect();
+                h.hover_at(r.center());
+                let dir = with["direction"].as_str().unwrap_or(if with["to"].as_str() == Some("start") { "up" } else { "down" });
+                let sign = if dir == "up" || dir == "left" { -1.0 } else { 1.0 };
+                let horizontal = dir == "left" || dir == "right";
+                let size = if horizontal { r.width() } else { r.height() };
+                let amount = if with["to"].is_string() { 1.0e7 } else { match with["by"].as_str() { Some("page") => size * 0.9, Some("line") => 40.0, _ => 100.0 } };
+                let d = -sign * amount;
+                let delta = if horizontal { egui::vec2(d, 0.0) } else { egui::vec2(0.0, d) };
+                h.event(egui::Event::MouseWheel { unit: egui::MouseWheelUnit::Point, delta, phase: egui::TouchPhase::Move, source: egui::MouseWheelSource::Unknown, modifiers: Modifiers::NONE });
             }
             other => return Err(fail(NO_METHOD, format!("no action {other}"))),
         }
