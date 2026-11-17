@@ -6,7 +6,12 @@ use std::sync::Arc;
 use taskscape_ui::omnicui::settingsabout::{parts, SettingsaboutEvent, SettingsaboutProps};
 use taskscape_ui::{icon, part, weight, Look, Mounted, Tokens};
 
-const APP_DESCRIPTION: &str = "A task manager for lists, projects and subtasks.";
+/// The reference's own line for the desktop app (its About pane); off macOS the OS is not named.
+#[cfg(target_os = "macos")]
+const APP_DESCRIPTION: &str = "A macOS task manager with a menu-bar capture bar.";
+#[cfg(not(target_os = "macos"))]
+const APP_DESCRIPTION: &str = "A desktop task manager with a capture bar.";
+const DATA_FOLDER_DESCRIPTION: &str = "Tasks, attachments, screenshots and preferences. Click to open it.";
 const RESTORE_DESCRIPTION: &str = "Puts appearance, capture and task preferences — and every keyboard shortcut — back the way they shipped. Your tasks are untouched.";
 const APP_KEYWORDS: &str = "about version application name";
 const RESET_KEYWORDS: &str = "reset clear defaults factory revert erase preferences";
@@ -76,6 +81,11 @@ pub struct SettingsAbout {
 }
 
 impl SettingsAbout {
+    /// The folder the About row names and opens: the window passes the real one (`paths::root_dir()`).
+    pub fn set_data_folder(&mut self, path: impl Into<String>) {
+        self.data_folder = path.into();
+    }
+
     pub fn new() -> Self {
         Self {
             pane: Pane::About,
@@ -291,7 +301,7 @@ impl SettingsAbout {
 
             if app_shown {
                 y = group_label(ui, &p, &t, x, y, w, &heading("Application"), parts::APPLICATIONHEADER);
-                let card = Rect::from_min_size(pos2(x, y), vec2(w, 111.0));
+                let card = Rect::from_min_size(pos2(x, y), vec2(w, 132.0));
                 let slot = p.add(Shape::Noop);
 
                 // The application row: name, description and version.
@@ -302,30 +312,35 @@ impl SettingsAbout {
                 p.galley(desc_r.min, desc, t.content_2);
                 tag(ui, desc_r, Sense::hover(), Role::GenericContainer, APP_DESCRIPTION, None, None, parts::APPDESCRIPTION);
                 let ver = if self.version.is_empty() { "—".to_owned() } else { self.version.clone() };
-                let ver_r = paint_text(&p, pos2(x + w - 8.0, y + 27.5), Align2::RIGHT_CENTER, &ver, 11.5, 400, t.content_2);
+                // The version in a monospace face, as the reference sets it.
+                let ver_r = p.text(pos2(x + w - 8.0, y + 27.5), Align2::RIGHT_CENTER, &ver, FontId::new(12.5, FontFamily::Monospace), t.content_2);
                 tag(ui, ver_r, Sense::hover(), Role::GenericContainer, &ver, None, None, parts::VERSION);
                 p.hline(x..=x + w, y + 55.0, Stroke::new(1.0, t.edge_1));
 
-                // The data folder row (desktop): the path, and a control that opens it in the file manager.
+                // The data folder row (desktop): its description, then a folder icon and the path in a monospace
+                // face, which opens the folder in the file manager (the reference's row).
                 let fy = y + 56.0;
                 paint_text(&p, pos2(x + 8.0, fy + 8.0), Align2::LEFT_TOP, "Data folder", 14.0, 400, t.content_1);
+                paint_text(&p, pos2(x + 8.0, fy + 27.5), Align2::LEFT_TOP, DATA_FOLDER_DESCRIPTION, 11.5, 400, t.content_2);
                 let path = if self.data_folder.is_empty() { "—".to_owned() } else { self.data_folder.clone() };
-                let path_r = paint_text(&p, pos2(x + 8.0, fy + 27.5), Align2::LEFT_TOP, &path, 11.5, 400, t.content_2);
+                if !self.data_folder.is_empty() {
+                    paint_icon(&p, pos2(x + 17.0, fy + 56.0), "folder_open", 15.0, t.content_2);
+                }
+                let path_r = p.text(pos2(x + 30.0, fy + 56.0), Align2::LEFT_CENTER, &path, FontId::new(12.5, FontFamily::Monospace), t.content_2);
                 tag(ui, path_r, Sense::hover(), Role::GenericContainer, &path, None, None, parts::DATAFOLDERPATH);
                 if !self.data_folder.is_empty() {
-                    let br = Rect::from_center_size(pos2(x + w - 22.0, fy + 27.5), vec2(28.0, 28.0));
+                    let br = Rect::from_min_max(pos2(x + 6.0, fy + 46.0), pos2(path_r.right() + 6.0, fy + 66.0));
                     let open_name = format!("Open {} in the file manager", self.data_folder);
                     // Opening the folder happens in the OS file manager, outside the app; only the pane stays as it was.
                     let resp = tag(ui, br, Sense::click(), Role::Button, &open_name, Some(self.data_folder.as_str()), None, parts::PATHBUTTON);
                     if resp.hovered() {
                         p.rect_filled(br, CornerRadius::same(7), t.wash_1);
                     }
-                    paint_icon(&p, br.center(), "folder_open", 16.0, t.content_2);
                 }
 
                 let cr = CornerRadius::same(10);
                 p.set(slot, Shape::Vec(vec![Shape::rect_filled(card, cr, t.surface_2), Shape::rect_stroke(card, cr, Stroke::new(1.0, t.edge_2), StrokeKind::Inside)]));
-                y += 111.0 + 18.0;
+                y += 132.0 + 18.0;
             }
 
             if reset_shown {

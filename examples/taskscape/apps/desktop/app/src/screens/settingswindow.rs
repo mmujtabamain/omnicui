@@ -87,6 +87,7 @@ impl SettingsWindow {
         capture.embedded = true;
         shortcuts.embedded = true;
         about.embedded = true;
+        about.set_data_folder(taskscape_storage::paths::root_dir().display().to_string());
         Self { general, capture, shortcuts, about, last_pane: "general".into() }
     }
 
