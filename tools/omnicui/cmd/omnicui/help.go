@@ -87,6 +87,11 @@ Roles, what a test can check on a part of each, and the actions it accepts:
            value: its whole box on that side of the other's, within a pixel (needs bounds)
   middleWith  the part's vertical middle level with another part's, within a pixel: a checkbox
            and its title, text in its well (needs bounds)
+  seen     a person can see the part: a box, not faded out or hidden (visible only says it has a
+           box); with the step { action: leave }, what stays after the pointer leaves
+  focusVisible  the part shows its focus ring: true after keyboard focus, false after a press
+  titleBar, minimizable, maximizable  the part's window: who draws its title bar (os or app),
+           whether it can be minimised or zoomed (targets that advertise window)
 
 How targets are compared (warnings, never failures, unless check --fail-on says so):
   screenshots  every pair of targets of one design (design: in target.yaml; most share the

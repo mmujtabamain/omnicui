@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -275,5 +276,28 @@ func TestRelationsNameAnotherPart(t *testing.T) {
 		if !HasErrors(ps) || !strings.Contains(ps[0].Message, c.want) {
 			t.Errorf("%s: %v", c.yaml, ps)
 		}
+	}
+}
+
+// R-LEAVE-2: `leave` takes no part; titleBar is os or app.
+func TestLeaveAndTitleBar(t *testing.T) {
+	ok := strings.Replace(good, `      - { action: press, part: increment, times: 3 }`, `      - { action: press, part: increment, times: 3 }
+      - { action: leave }`, 1)
+	ok = strings.Replace(ok, `- { part: value, text: "3" }`, `- { part: value, text: "3", titleBar: app, minimizable: false }
+      - { part: increment, focusVisible: false }`, 1)
+	if _, ps := parse(t, ok); HasErrors(ps) {
+		t.Fatalf("%v", ps)
+	}
+	bad := strings.Replace(good, `      - { action: press, part: increment, times: 3 }`, `      - { action: leave, part: increment }`, 1)
+	if _, ps := parse(t, bad); !HasErrors(ps) || !strings.Contains(fmt.Sprint(ps), "takes no part") {
+		t.Errorf("leave with a part: %v", ps)
+	}
+	bad = strings.Replace(good, `- { part: value, text: "3" }`, `- { part: value, titleBar: native }`, 1)
+	if _, ps := parse(t, bad); !HasErrors(ps) {
+		t.Errorf("titleBar native: %v", ps)
+	}
+	bad = strings.Replace(good, `- { part: value, text: "3" }`, `- { part: value, focusVisible: true }`, 1)
+	if _, ps := parse(t, bad); !HasErrors(ps) || !strings.Contains(fmt.Sprint(ps), "no field `focusVisible`") {
+		t.Errorf("focusVisible on a status: %v", ps)
 	}
 }

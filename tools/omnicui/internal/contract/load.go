@@ -374,7 +374,7 @@ var knownFields = []string{"id", "props", "events", "parts", "tests", "viewports
 	"action", "part", "times", "key", "text", "dx", "dy", "event", "last", "point", "timing", "duration", "easing",
 	"width", "height", "pixels", "area", "strength", "shift", "spot", "disabled", "checked", "value", "focused", "visible", "property", "opacity", "allCombinations", "keyboard", "motion", "mask", "optional", "do", "with", "selected", "scale",
 	"same", "only", "except", "input", "why", "layout", "palette", "direction", "contains", "matches",
-	"leftOf", "rightOf", "above", "below", "middleWith"}
+	"leftOf", "rightOf", "above", "below", "middleWith", "leave", "seen", "focusVisible", "titleBar", "minimizable", "maximizable"}
 
 func (l *loader) schemaProblems(ve *jsonschema.ValidationError) {
 	seen := map[string]bool{}
@@ -625,11 +625,11 @@ func (l *loader) build(v map[string]any, root *yaml.Node) *Contract {
 				}
 				switch {
 				case kinds > 1:
-					l.errorf(ptr, "a step has one of `action` (press, focus, key, type, drag, hover), `do` (an action the targets define) or `input` (a named input from platforms.yaml)")
+					l.errorf(ptr, "a step has one of `action` (press, focus, key, type, drag, hover, leave), `do` (an action the targets define) or `input` (a named input from platforms.yaml)")
 				case kinds == 0:
-					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover) and a `part`, or `do` (an action the targets define, such as swipe), or `input` (a named input from platforms.yaml, such as back)")
-				case hasAction && !hasPart:
-					l.errorf(ptr, "missing field `part`: an `action` acts on a part")
+					l.errorf(ptr, "a step needs `action` (press, focus, key, type, drag, hover, leave) and a `part`, or `do` (an action the targets define, such as swipe), or `input` (a named input from platforms.yaml, such as back)")
+				case hasAction && !hasPart && s["action"] != "leave":
+					l.errorf(ptr, "missing field `part`: an `action` acts on a part (all but `leave`, which moves the pointer off the component)")
 				}
 				st.Action, _ = s["action"].(string)
 				st.Part, _ = s["part"].(string)
@@ -857,6 +857,8 @@ func typeOK(t string, v any) bool {
 	case "part":
 		_, ok := v.(string)
 		return ok
+	case "titleBar":
+		return v == "os" || v == "app"
 	case "integer":
 		_, ok := v.(int64)
 		return ok
@@ -944,6 +946,13 @@ func (l *loader) crossCheck(c *Contract) {
 				// The target defines what it does, and to which roles: only the part is checked.
 				if s.Part != "" {
 					unknownPart(ptr+"/part", s.Part)
+				}
+				continue
+			}
+			if s.Action == "leave" {
+				// The pointer leaves the whole component: there is no part to name.
+				if s.Part != "" {
+					l.errorf(ptr+"/part", "`leave` moves the pointer off the component, so it takes no part")
 				}
 				continue
 			}

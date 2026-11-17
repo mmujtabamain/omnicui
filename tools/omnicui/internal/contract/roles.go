@@ -16,9 +16,10 @@ func set(xs ...string) map[string]bool {
 }
 
 // Every role also has `role` (the role assistive technology reports, compared with the
-// contract's), `visible` (the part has a size on screen and is inside the viewport) and the
-// Relations (where it sits relative to another part); the focusable roles have `focused`. They
-// are added to each role below.
+// contract's), `visible` (the part has a size on screen and is inside the viewport), the
+// Relations (where it sits relative to another part) and its window's `titleBar`, `minimizable`
+// and `maximizable`; the focusable roles have `focused` and `focusVisible`. They are added to each
+// role below.
 
 // Relations place a part relative to another part, named as the field's value: `leftOf`,
 // `rightOf`, `above` and `below` (its whole box is on that side of the other's, give or take a
@@ -55,6 +56,8 @@ func init() {
 	for name, r := range Roles {
 		r.Fields["role"] = "string"
 		r.Fields["visible"] = "boolean"
+		// seen: visible, and not faded out (opacity zero, or hidden): what stays after the pointer leaves.
+		r.Fields["seen"] = "boolean"
 		for _, f := range Relations {
 			r.Fields[f] = "part"
 		}
@@ -64,6 +67,14 @@ func init() {
 	Roles["button"].Fields["selected"] = "boolean"
 	for _, name := range focusable {
 		Roles[name].Fields["focused"] = "boolean"
+		// focusVisible: the focus ring shows (keyboard focus), not only focus (a press gives focus too).
+		Roles[name].Fields["focusVisible"] = "boolean"
+	}
+	// The window the part is in: who draws its title bar, and whether it can be minimised or zoomed.
+	for name := range Roles {
+		Roles[name].Fields["titleBar"] = "titleBar"
+		Roles[name].Fields["minimizable"] = "boolean"
+		Roles[name].Fields["maximizable"] = "boolean"
 	}
 }
 

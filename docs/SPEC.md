@@ -148,6 +148,14 @@ Every role also has `role` (the role assistive technology reports, compared with
 
 Every role also has five **relations**, which place the part relative to another part named as the value: `leftOf`, `rightOf`, `above`, `below` (its whole box is on that side of the other's, within a pixel) and `middleWith` (their vertical middles are level, within a pixel). They say what a part's existence and text cannot: the order of chips in a row, a checkbox centred on its title's line, text centred in its well. omnicui works them out from both parts' `bounds`, the same way on every target; a failure gives the edges or the distance (``value.middleWith: expected its middle level with `increment`, but it sits 6 px higher``). The other part must be one of the contract's and not the part itself. *(TestRelationsNameAnotherPart, TestLayoutRelations, TestLayoutAboveBelow)*
 
+Three more checks catch what a contract could not say before: what stays after the pointer leaves, a focus ring that a press should not draw, and the window a part is in.
+
+- **`leave`** is a step with no part: the pointer leaves the component (capability `leave`). With it, every role's **`seen`** field (capability `seen`) says whether a person can see the part: it has a box and is not faded out (opacity zero) or hidden. `visible` only says it has a box, which a faded part keeps. A row's actions that should go when the pointer leaves are `seen: false` after `hover` then `leave`. *(TestLeaveHidesWhatHoverShowed)*
+- **`focusVisible`** (focusable roles, capability `focusVisible`) says the part shows its focus ring: true after keyboard focus, false after a press, as the web's `:focus-visible`. A target whose toolkit has no such state reads whether the ring is drawn. *(TestFocusVisible)*
+- **`titleBar`** (`os` or `app`: who draws the title bar), **`minimizable`** and **`maximizable`** describe the window the part is in (capability `window`). A target with no windows of its own, such as a browser page, doesn't advertise it, and the test is not advertised there. *(TestWindowFields)*
+
+`leave` takes no part; `titleBar` is `os` or `app`; `focusVisible` exists only on focusable roles. *(TestLeaveAndTitleBar)*
+
 ### Invariants
 
 - [R] A contract's `id` is unique among the project's contracts. *(TestDuplicateIDs)*
@@ -361,7 +369,7 @@ Each skip is noted under the test, on the console (`webalt: no `thumb` in webalt
 
 **Looser text** [R]. `text` and `name` are a string the value must equal, or `{ contains: "3" }`, or `{ matches: "^3\\b" }` (a regular expression, RE2), for a design that shows more than the contract cares about ("3 taps"). A regular expression that doesn't compile is a contract error. `text` is what the part shows: the web adapter leaves out text that only a screen reader gets (an element clipped to a 1×1 box); JavaFX and egui read their labels' text. *(TestTextMatch, TestTextMatchContractError)*
 
-**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `do` and its `with` (§4.4), or `input`, a named input (§4.2a). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
+**Steps.** A step has `action` (press, focus, key, type, drag, hover) and a `part`, or `action: leave` with no part, or `do` and its `with` (§4.4), or `input`, a named input (§4.2a). Neither, or both, is an error that says which to write, and an unknown action suggests `do`: ``tests.0.steps.0.action: `swipe` is not one of `press`, `focus`, `key`, `type`, `drag`, `hover`; for an action the targets define, write `do: swipe` (with its parameters under `with:`)``.
 
 **Standards it follows:**
 - typing: JSON Schema 2020-12, through the `yaml-language-server` first line, a path relative to the contract file (the schema is `tools/omnicui/schema/contract.schema.json`, and is also embedded in the omnicui binary);

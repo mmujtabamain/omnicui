@@ -409,7 +409,8 @@
             "key",
             "type",
             "drag",
-            "hover"
+            "hover",
+            "leave"
           ]
         },
         "part": {
@@ -509,7 +510,7 @@
         }
       ],
       "unevaluatedProperties": false,
-      "description": "A user action: `action` (press, focus, key, type, drag, hover) on a part, or `do`: an action a target defines and advertises (as do.<name>), such as swipe or scroll, with its own `with` parameters."
+      "description": "A user action: `action` (press, focus, key, type, drag, hover) on a part, or `leave` (the pointer leaves the component, on no part), or `do`: an action a target defines and advertises (as do.<name>), such as swipe or scroll, with its own `with` parameters."
     },
     "expectation": {
       "type": "object",
@@ -847,6 +848,117 @@
               }
             ],
             "description": "Its vertical middle is level with this part's, within a pixel: a checkbox and its title, text in its well."
+          },
+          "focusVisible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether the part shows its keyboard focus ring: true after keyboard focus, false after a pointer press (the web's :focus-visible). Focusable roles; capability focusVisible."
+          },
+          "titleBar": {
+            "anyOf": [
+              {
+                "enum": [
+                  "os",
+                  "app"
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "enum": [
+                    "os",
+                    "app"
+                  ]
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Who draws the title bar of the window the part is in: the OS (`os`) or the app's own bar (`app`, the OS's buttons over it or the app's own). Capability window."
+          },
+          "minimizable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether the window the part is in can be minimised. Capability window."
+          },
+          "maximizable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether the window the part is in can be maximised (zoomed). Capability window."
+          },
+          "seen": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "default"
+                ],
+                "propertyNames": {
+                  "$ref": "#/$defs/selector"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "description": "A value per platform selector, with `default`; the expectation must say why (`why:`)."
+              }
+            ],
+            "description": "Whether a person can see the part: it is visible and not faded out (opacity above zero, not hidden). `visible` only says it has a box on screen. Capability seen."
           },
           "why": {
             "description": "Why an expectation differs by platform. Required when a value is given per platform; listed in the report as a platform exception.",

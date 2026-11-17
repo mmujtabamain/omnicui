@@ -90,6 +90,8 @@ type state struct {
 	on        bool
 	label     string
 	focused   string
+	byPointer bool   // focus came from a press, not from the keyboard: no focus ring
+	hovered   string // the part under the pointer
 	events    []map[string]any
 	moved     float64 // the switch thumb's offset, 0..20
 }
@@ -171,12 +173,17 @@ func act(method string, p params) error {
 	case "press":
 		press()
 		st.focused = part
+		st.byPointer = true
 	case "focus":
 		st.focused = part
+		st.byPointer = false
+	case "hover":
+		st.hovered = part
 	case "key":
 		if p.Key == "Enter" && has(os.Getenv("FAKE_BUG"), "no-enter") {
 			break
 		}
+		st.byPointer = false // a key makes the focus visible, as :focus-visible does
 		if (p.Key == "Enter" || p.Key == "Space") && st.focused == part {
 			press()
 			if p.Key == "Space" && has(os.Getenv("FAKE_BUG"), "space-twice") {
@@ -283,7 +290,7 @@ func handle(n int, r req) (any, error) {
 	}
 	switch r.Method {
 	case "advertise":
-		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,read,events,screenshot,trace,trace.opacity,trace.scale,record,probe,bounds,role,focused"), ",")
+		can := strings.Split(env("FAKE_CAN", "mount,press,focus,key,type,drag,hover,leave,read,events,screenshot,trace,trace.opacity,trace.scale,record,probe,bounds,role,focused,focusVisible,window,seen"), ",")
 		cannot := map[string]string{}
 		for _, kv := range strings.Split(os.Getenv("FAKE_CANNOT"), ",") {
 			if k, v, ok := strings.Cut(kv, "="); ok {
@@ -334,6 +341,12 @@ func handle(n int, r req) (any, error) {
 		return nil, nil
 	case "press", "focus", "key", "type", "drag", "hover":
 		return nil, act(r.Method, p)
+	case "leave":
+		// The pointer leaves the component. FAKE_BUG=sticky-hover: the hover state stays.
+		if !has(os.Getenv("FAKE_BUG"), "sticky-hover") {
+			st.hovered = ""
+		}
+		return nil, nil
 	case "do":
 		// A target-defined action: `bump` adds with.by to the counter (on its increment part).
 		if p.Name != "bump" {
@@ -369,6 +382,18 @@ func handle(n int, r req) (any, error) {
 		switch p.Field {
 		case "focused":
 			return st.focused == part, nil
+		case "seen":
+			// FAKE_REVEAL=value: the part keeps its box but is faded out unless the pointer is on increment.
+			return !has(os.Getenv("FAKE_REVEAL"), part) || st.hovered == "increment", nil
+		case "focusVisible":
+			// FAKE_BUG=ring-on-press: a press shows the ring too.
+			return st.focused == part && (!st.byPointer || has(os.Getenv("FAKE_BUG"), "ring-on-press")), nil
+		case "titleBar":
+			return env("FAKE_TITLEBAR_KIND", "app"), nil
+		case "minimizable":
+			return has(os.Getenv("FAKE_WINDOW"), "minimizable"), nil
+		case "maximizable":
+			return has(os.Getenv("FAKE_WINDOW"), "maximizable"), nil
 		case "selected":
 			return part == "increment" && st.count > 0, nil
 		case "role":

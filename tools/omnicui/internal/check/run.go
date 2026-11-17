@@ -575,8 +575,11 @@ func (tr *targetRun) runTest(c *contract.Contract, test contract.Test) TestResul
 		needs = append(needs, "read")
 		for _, ch := range e.Checks {
 			switch ch.Field {
-			case "role", "focused", "selected":
+			case "role", "focused", "selected", "focusVisible", "seen":
 				needs = append(needs, ch.Field)
+			case "titleBar", "minimizable", "maximizable":
+				// What the part's window is: a target that has windows to read advertises window.
+				needs = append(needs, "window")
 			case "visible":
 				needs = append(needs, "bounds")
 			default:
