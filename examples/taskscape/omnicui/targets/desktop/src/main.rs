@@ -331,6 +331,16 @@ impl Target {
             h.key_press_modifiers(mods | held, key);
             return Ok(());
         }
+        // A press goes where a user would press: on a part scrolled out of view, the list is scrolled to it
+        // first, as Playwright's click does on the web.
+        if method == "press" {
+            let h = self.harness()?;
+            let root = h.root();
+            // egui only scrolls when the part is not already in view (a clipped row inside a scroll area
+            // counts as out of view, which the window's bounds alone would miss).
+            find(&root, &part)?.scroll_to_me();
+            let _ = h.try_run();
+        }
         let h = self.harness()?;
         let root = h.root();
         let node = find(&root, &part)?;

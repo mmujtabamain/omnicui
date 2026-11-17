@@ -1,0 +1,706 @@
+//! contract: omnicui/contracts/richtexteditor.contract.yaml (id: ui.richtexteditor). The one rich-text body: a plain-text editor with a formatting bar (under the box on focus, or docked above it), @mention attachments as chips with an @ list, drop-to-attach, and the counter near its limit.
+use crate::omnicui::charactercounter::CharactercounterProps;
+use crate::omnicui::richtexteditor::{parts, RichtexteditorEvent, RichtexteditorProps};
+use crate::widgets::charactercounter::CharacterCounter;
+use crate::{icon, part, rem, weight, Look};
+use egui::{
+    pos2, vec2, Align2, Color32, CornerRadius, EventFilter, FontFamily, FontId, Id, Key, Modifiers, Rect, Role, Sense,
+    Shape, Stroke, StrokeKind, WidgetInfo,
+};
+
+/// The formatting buttons in focus order: bold, italic, underline, strikethrough, bulleted list,
+/// numbered list, then the link button. The first six are toggles.
+const BUTTONS: [(&str, &str, &str); 7] = [
+    ("format_bold", "Bold", parts::BOLD),
+    ("format_italic", "Italic", parts::ITALIC),
+    ("format_underlined", "Underline", parts::UNDERLINE),
+    ("strikethrough_s", "Strikethrough", parts::STRIKETHROUGH),
+    ("format_list_bulleted", "Bulleted list", parts::BULLETLIST),
+    ("format_list_numbered", "Numbered list", parts::ORDEREDLIST),
+    ("link", "Link", parts::LINK),
+];
+/// A toolbar button's square side: the web's Toggle sm, h-6 (21 px).
+const BUTTON: f32 = rem(1.5);
+/// The corner radius of a control, in px.
+const RADIUS: u8 = 5;
+
+#[derive(Clone, serde::Deserialize)]
+struct Mention {
+    id: String,
+    name: String,
+}
+
+/// The open @ list: where the "@" is (a char index), the attachments that match, and the highlighted one.
+#[derive(Clone)]
+struct Menu {
+    at: usize,
+    items: Vec<Mention>,
+    index: usize,
+}
+
+pub struct RichTextEditor {
+    p: RichtexteditorProps,
+    /// The plain text, paragraphs separated by '\n', soft breaks as SOFT_BREAK.
+    text: String,
+    /// The caret as a char index, as the editor reported it at the end of the last frame.
+    cursor: usize,
+    /// The char indices of the '\n' that are Shift+Enter line breaks rather than paragraph breaks.
+    soft: Vec<usize>,
+    /// Attachments inserted as mention chips, drawn in a row above the text.
+    chips: Vec<Mention>,
+    /// The attachments the @ list offers, parsed from the `mentions` JSON.
+    mentions: Vec<Mention>,
+    /// Bold, italic, underline, strikethrough, bulleted list, numbered list.
+    marks: [bool; 6],
+    menu: Option<Menu>,
+    /// The "@" (char index) that Escape closed; the list stays closed for it.
+    dismissed: Option<usize>,
+    collapsed: bool,
+    started: bool,
+    /// Whether the widget had focus at the end of the last frame.
+    focus_prev: bool,
+}
+
+impl RichTextEditor {
+    pub fn new(p: RichtexteditorProps) -> Self {
+        let mentions = serde_json::from_str::<Vec<Mention>>(&p.mentions).unwrap_or_default();
+        let text = p.value.clone();
+        let cursor = text.chars().count();
+        Self {
+            p,
+            text,
+            cursor,
+            soft: vec![],
+            chips: vec![],
+            mentions,
+            marks: [false; 6],
+            menu: None,
+            dismissed: None,
+            collapsed: false,
+            started: false,
+            focus_prev: false,
+        }
+    }
+
+    /// One frame: draws the editor and returns the events it raised in this frame.
+    pub fn ui(&mut self, ui: &mut egui::Ui, look: Look) -> Vec<RichtexteditorEvent> {
+        let mut events = vec![];
+        if self.collapsed {
+            return events;
+        }
+        let t = look.t;
+        let disabled = self.p.disabled;
+        let docked = self.p.toolbar == "docked";
+        let max_len = self.p.maxLength.max(0) as usize;
+        let base = ui.scope_id().with("richtexteditor");
+        let editor_id = base.with("editor");
+        let n = BUTTONS.len();
+
+        if !self.started {
+            self.started = true;
+            if self.p.autoFocus && !disabled {
+                ui.memory_mut(|m| m.request_focus(editor_id));
+            }
+        }
+
+        // Before the editor reads the input: keys it must not see, and the drops.
+        let focused = ui.memory(|m| m.has_focus(editor_id));
+        let bar_focus = (0..n).find(|&i| ui.memory(|m| m.has_focus(button_id(base, i))));
+        let shift_enter = focused && ui.input(|i| i.key_pressed(Key::Enter) && i.modifiers.shift);
+        let cursor_before = self.cursor;
+        let mut pick: Option<usize> = None;
+        let mut inserted = false;
+
+        if !disabled {
+            // A file dropped on the widget becomes a mention chip, not text.
+            let dropped: Vec<String> = ui.input(|i| {
+                i.raw
+                    .dropped_files
+                    .iter()
+                    .map(|f| {
+                        // The attachment's file name is the last part of the dropped path.
+                        let path = f.path();
+                        path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
+                    })
+                    .collect()
+            });
+            if !dropped.is_empty() {
+                for file in dropped {
+                    self.chips.push(Mention { id: file.clone(), name: file.clone() });
+                    events.push(RichtexteditorEvent::AttachmentDropped { file });
+                }
+                ui.memory_mut(|m| m.request_focus(editor_id));
+            }
+
+            if focused {
+                if take_cmd(ui, Key::B) {
+                    self.marks[0] = !self.marks[0];
+                }
+                if take_cmd(ui, Key::I) {
+                    self.marks[1] = !self.marks[1];
+                }
+                if take_cmd(ui, Key::U) {
+                    self.marks[2] = !self.marks[2];
+                }
+                if take_cmd(ui, Key::Enter) && self.p.submitOnModEnter {
+                    events.push(RichtexteditorEvent::Submitted {});
+                }
+
+                // The @ list takes the arrows, Enter and Escape while it is open.
+                let mut escape_done = false;
+                if self.menu.is_some() {
+                    let len = self.menu.as_ref().map_or(1, |m| m.items.len());
+                    if take(ui, Modifiers::NONE, Key::ArrowDown) {
+                        if let Some(m) = self.menu.as_mut() {
+                            m.index = (m.index + 1) % len;
+                        }
+                    }
+                    if take(ui, Modifiers::NONE, Key::ArrowUp) {
+                        if let Some(m) = self.menu.as_mut() {
+                            m.index = (m.index + len - 1) % len;
+                        }
+                    }
+                    if take(ui, Modifiers::NONE, Key::Enter) {
+                        pick = self.menu.as_ref().map(|m| m.index);
+                    }
+                    if take(ui, Modifiers::NONE, Key::Escape) {
+                        if let Some(m) = self.menu.take() {
+                            self.dismissed = Some(m.at);
+                        }
+                        escape_done = true;
+                    }
+                }
+                if !escape_done && self.p.escapeCancels && take(ui, Modifiers::NONE, Key::Escape) {
+                    events.push(RichtexteditorEvent::Cancelled {});
+                }
+
+                // Tab leaves the widget from the editor; Shift+Tab goes to the first button of the bar.
+                if take(ui, Modifiers::SHIFT, Key::Tab) {
+                    ui.memory_mut(|m| m.request_focus(button_id(base, 0)));
+                } else if take(ui, Modifiers::NONE, Key::Tab) {
+                    ui.memory_mut(|m| m.surrender_focus(editor_id));
+                }
+
+                // A chip is one unit: Backspace at the start of the text takes the last chip.
+                if self.cursor == 0 && !self.chips.is_empty() && take(ui, Modifiers::NONE, Key::Backspace) {
+                    self.chips.pop();
+                }
+            }
+
+            // Within the bar: arrows move between the buttons, Tab returns to the editor.
+            if let Some(i) = bar_focus {
+                if take(ui, Modifiers::NONE, Key::ArrowRight) {
+                    ui.memory_mut(|m| m.request_focus(button_id(base, (i + 1) % n)));
+                }
+                if take(ui, Modifiers::NONE, Key::ArrowLeft) {
+                    ui.memory_mut(|m| m.request_focus(button_id(base, (i + n - 1) % n)));
+                }
+                if take(ui, Modifiers::NONE, Key::Tab) || take(ui, Modifiers::SHIFT, Key::Tab) {
+                    ui.memory_mut(|m| m.request_focus(editor_id));
+                }
+            }
+        }
+
+        // The floating bar is drawn while the editor (or its bar) has focus; a disabled one keeps its buttons.
+        let show_bar = docked || focused || bar_focus.is_some() || disabled;
+        let aria = self.p.ariaLabel.clone();
+
+        ui.vertical(|ui| {
+            if docked && show_bar {
+                self.bar(ui, look, base, editor_id, disabled, docked, &mut events);
+            }
+
+            // The attachments, as chips above the text.
+            if !self.chips.is_empty() {
+                let chips = self.chips.clone();
+                ui.horizontal_wrapped(|ui| {
+                    for chip in &chips {
+                        let label = format!("@{}", chip.name);
+                        let font = FontId::new(rem(0.875), weight(500));
+                        let w = ui.painter().layout_no_wrap(label.clone(), font.clone(), t.accent_600).size().x + 16.0;
+                        let (r, resp) = ui.allocate_exact_size(vec2(w, rem(1.714)), Sense::click());
+                        let radius = CornerRadius::same((rem(1.714) / 2.0) as u8);
+                        ui.painter().rect_filled(r, radius, t.selection_1);
+                        if resp.has_focus() {
+                            ui.painter().rect_stroke(r.expand(2.0), radius, Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
+                        }
+                        ui.painter().text(
+                            r.left_center() + vec2(8.0, 0.0),
+                            Align2::LEFT_CENTER,
+                            label.as_str(),
+                            font,
+                            t.accent_600,
+                        );
+                        resp.widget_info(|| WidgetInfo::labeled(Role::Button, !disabled, label.as_str()));
+                        part(ui, &resp, parts::MENTIONCHIP);
+                        if resp.clicked() {
+                            events.push(RichtexteditorEvent::MentionOpened { id: chip.id.clone() });
+                        }
+                    }
+                });
+            }
+
+            // The box: a TextEdit with its own frame off, drawn over a background set after it.
+            // The web's minimum heights: sm 3.5rem, md 6rem, capped 4rem growing to 10rem. The box holds its
+            // rows and scrolls past its maximum.
+            let (rows, max_h) = match self.p.size.as_str() {
+                "md" => (4, rem(6.0)),
+                "capped" => (2, rem(10.0)),
+                _ => (2, rem(3.5)),
+            };
+            let bg = ui.painter().add(Shape::Noop);
+            let old_chars: Vec<char> = self.text.chars().collect();
+            let scroll = egui::ScrollArea::vertical()
+                .id_salt(base.with("scroll"))
+                .max_height(max_h)
+                .auto_shrink([false, true])
+                .show(ui, |ui| {
+                    // The web's px-2 padding is laid out by hand, so it holds whatever the TextEdit's margin does.
+                    ui.horizontal(|ui| {
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            egui::TextEdit::multiline(&mut self.text)
+                                .id(editor_id)
+                                .font(FontId::new(rem(0.9643), weight(400)))
+                                .text_color(if disabled { t.content_2 } else { t.content_1 })
+                                .frame(egui::Frame::NONE)
+                                .margin(egui::Margin { left: 0, right: 0, top: 6, bottom: 6 })
+                                .desired_width(ui.available_width() - 8.0)
+                                .desired_rows(rows)
+                                .char_limit(max_len)
+                                .interactive(!disabled)
+                                .show(ui)
+                        })
+                        .inner
+                    })
+                    .inner
+                });
+            let out = scroll.inner;
+            let frame_rect = scroll.inner_rect;
+            let focus_now = out.response.has_focus();
+            // The editor keeps Tab, the arrows and Escape: they are its keys, and the handling decides them.
+            // Set after the TextEdit, which sets its own filter while it is shown.
+            ui.memory_mut(|m| {
+                m.set_focus_lock_filter(
+                    editor_id,
+                    EventFilter { horizontal_arrows: true, vertical_arrows: true, tab: true, escape: true },
+                )
+            });
+
+            part(ui, &out.response, parts::EDITOR);
+            let label = aria.clone();
+            ui.ctx().accesskit_node_builder(out.response.id, |node| {
+                node.set_label(label.clone());
+                if disabled {
+                    node.set_disabled();
+                }
+            });
+
+            let radius = CornerRadius::same(RADIUS);
+            let mut shapes = vec![
+                Shape::rect_filled(frame_rect, radius, if disabled { t.surface_2 } else { t.surface_3 }),
+                Shape::rect_stroke(
+                    frame_rect,
+                    radius,
+                    Stroke::new(1.0, if focus_now { t.focus_1 } else { t.edge_2 }),
+                    StrokeKind::Inside,
+                ),
+            ];
+            if focus_now {
+                shapes.push(Shape::rect_stroke(
+                    frame_rect.expand(2.0),
+                    radius,
+                    Stroke::new(2.0, t.focus_1),
+                    StrokeKind::Outside,
+                ));
+            }
+            ui.painter().set(bg, Shape::Vec(shapes));
+
+            // The placeholder: only while the text is empty, so it is absent once typing starts.
+            if self.text.is_empty() && !self.p.placeholder.is_empty() {
+                let text = self.p.placeholder.clone();
+                let origin = out.galley_pos;
+                let area = Rect::from_min_size(origin, vec2((frame_rect.width() - 16.0).max(0.0), rem(1.25)));
+                let ph = ui.interact(area, base.with("placeholder"), Sense::hover());
+                ph.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, text.as_str()));
+                part(ui, &ph, parts::PLACEHOLDER);
+                ui.painter().text(
+                    origin,
+                    Align2::LEFT_TOP,
+                    text.as_str(),
+                    FontId::new(rem(0.9643), weight(400)),
+                    t.content_3,
+                );
+            }
+
+            // The caret, the text change and the @ list.
+            self.cursor = out.cursor_range.map_or(self.cursor, |r| r.primary.index.into());
+            let changed = out.response.changed();
+            if changed {
+                let new_chars: Vec<char> = self.text.chars().collect();
+                let (p, r, k) = diff(&old_chars, &new_chars);
+                shift_soft(&mut self.soft, p, r, k);
+                if shift_enter && new_chars.get(cursor_before) == Some(&'\n') {
+                    // The newline just typed by Shift+Enter is a line break, not a new paragraph.
+                    self.soft.push(cursor_before);
+                    self.soft.sort_unstable();
+                    self.soft.dedup();
+                }
+                // One change per character typed, each with the text as it stood after that character.
+                let steps = k.max(1);
+                for j in 1..=steps {
+                    let text: String = if k == 0 {
+                        self.text.clone()
+                    } else {
+                        new_chars[..p + j].iter().chain(new_chars[p + k..].iter()).collect()
+                    };
+                    let below = self.soft.iter().filter(|&&s| s < text.chars().count()).count();
+                    let paragraphs = paragraphs_of(&text, below);
+                    events.push(RichtexteditorEvent::Changed { value: text, paragraphs });
+                }
+            }
+            self.scan(focus_now);
+            if let Some(i) = pick.take() {
+                self.insert(i, ui.ctx(), editor_id);
+                inserted = true;
+            }
+
+            if !docked && show_bar {
+                self.bar(ui, look, base, editor_id, disabled, docked, &mut events);
+            }
+
+            // The @ list: drawn only while open, so it is absent when closed.
+            let mut list_pick: Option<usize> = None;
+            if let Some(menu) = self.menu.clone() {
+                let list_bg = ui.painter().add(Shape::Noop);
+                let list = ui.scope(|ui| {
+                    for (i, item) in menu.items.iter().enumerate() {
+                        let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), rem(1.5)), Sense::click());
+                        let selected = i == menu.index;
+                        if selected {
+                            ui.painter().rect_filled(r, CornerRadius::same(RADIUS), t.wash_2);
+                        }
+                        ui.painter().text(
+                            pos2(r.left() + 8.0, r.center().y),
+                            Align2::LEFT_CENTER,
+                            item.name.as_str(),
+                            FontId::new(rem(0.9643), weight(400)),
+                            t.content_1,
+                        );
+                        resp.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, item.name.as_str()));
+                        part(ui, &resp, parts::MENTIONOPTION);
+                        if resp.clicked() {
+                            list_pick = Some(i);
+                        }
+                    }
+                });
+                let list_rect = list.response.rect;
+                ui.painter().set(
+                    list_bg,
+                    Shape::Vec(vec![
+                        Shape::rect_filled(list_rect, CornerRadius::same(RADIUS), t.surface_3),
+                        Shape::rect_stroke(
+                            list_rect,
+                            CornerRadius::same(RADIUS),
+                            Stroke::new(1.0, t.edge_2),
+                            StrokeKind::Inside,
+                        ),
+                    ]),
+                );
+                list.response.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Mentions"));
+                part(ui, &list.response, parts::MENTIONLIST);
+            }
+            if let Some(i) = list_pick {
+                self.insert(i, ui.ctx(), editor_id);
+                inserted = true;
+            }
+
+            // The counter, once the text is near its limit.
+            let count = self.text.chars().count();
+            if count as f64 > 0.9 * max_len as f64 {
+                let json = serde_json::json!({ "count": count, "limit": max_len, "nearRatio": 0.9 });
+                if let Ok(p) = serde_json::from_value::<CharactercounterProps>(json) {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                        CharacterCounter::new(p).ui(ui, look);
+                    });
+                }
+            }
+        });
+
+        // The blur: focus left the whole widget (the bar included).
+        let within = ui.memory(|m| m.has_focus(editor_id))
+            || (0..n).any(|i| ui.memory(|m| m.has_focus(button_id(base, i))));
+        if self.focus_prev && !within {
+            events.push(RichtexteditorEvent::Blurred { value: self.value() });
+            if self.p.collapseWhenEmpty && self.text.is_empty() {
+                self.collapsed = true;
+            }
+            ui.ctx().request_repaint();
+        }
+        self.focus_prev = within;
+        if inserted {
+            ui.ctx().request_repaint();
+        }
+        events
+    }
+
+    /// The formatting bar: seven buttons, each a toggle or the link. Floating hangs under the box with
+    /// a border; docked is a row with a top rule.
+    #[allow(clippy::too_many_arguments)]
+    fn bar(
+        &mut self,
+        ui: &mut egui::Ui,
+        look: Look,
+        base: Id,
+        editor_id: Id,
+        disabled: bool,
+        docked: bool,
+        events: &mut Vec<RichtexteditorEvent>,
+    ) {
+        let t = look.t;
+        let n = BUTTONS.len() as f32;
+        let (gap, pad_x, pad_y) = if docked {
+            (rem(0.25), 8.0, rem(0.375))
+        } else {
+            (rem(0.125), rem(0.125), rem(0.125))
+        };
+        let width = if docked { ui.available_width() } else { n * BUTTON + (n - 1.0) * gap + 2.0 * pad_x };
+        let height = BUTTON + 2.0 * pad_y;
+        let (rect, _) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
+        let bar = ui.interact(rect, base.with("bar"), Sense::hover());
+        bar.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Formatting"));
+        part(ui, &bar, parts::FORMATTING);
+        if docked {
+            ui.painter().hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, t.edge_1));
+        } else {
+            ui.painter().rect(
+                rect,
+                CornerRadius::same(7),
+                t.surface_3,
+                Stroke::new(1.0, t.edge_2),
+                StrokeKind::Inside,
+            );
+        }
+
+        let mut x = rect.left() + pad_x;
+        for (i, &(icon_name, label, part_id)) in BUTTONS.iter().enumerate() {
+            let r = Rect::from_min_size(pos2(x, rect.top() + pad_y), vec2(BUTTON, BUTTON));
+            let id = button_id(base, i);
+            let sense = if disabled { Sense::hover() } else { Sense::click() };
+            let resp = ui.interact(r, id, sense);
+            // Arrows and Tab are the bar's: egui must not move focus by them; the editor handles them.
+            ui.memory_mut(|m| {
+                m.set_focus_lock_filter(
+                    id,
+                    EventFilter { horizontal_arrows: true, vertical_arrows: true, tab: true, escape: false },
+                )
+            });
+            let on = self.marks.get(i).copied().unwrap_or(false);
+            let hovered = resp.hovered() && !disabled;
+            let fill = if on {
+                t.wash_2
+            } else if hovered {
+                t.wash_1
+            } else {
+                Color32::TRANSPARENT
+            };
+            let ink = if disabled {
+                t.content_3
+            } else if on || hovered {
+                t.content_1
+            } else {
+                t.content_2
+            };
+            ui.painter().rect_filled(r, CornerRadius::same(RADIUS), fill);
+            ui.painter().text(
+                r.center(),
+                Align2::CENTER_CENTER,
+                icon(icon_name, 15.0).text(),
+                FontId::new(15.0, FontFamily::Name("Icons".into())),
+                ink,
+            );
+            if resp.has_focus() {
+                ui.painter().rect_stroke(
+                    r.expand(2.0),
+                    CornerRadius::same(RADIUS),
+                    Stroke::new(2.0, t.focus_1),
+                    StrokeKind::Outside,
+                );
+            }
+            if i < 6 {
+                resp.widget_info(|| WidgetInfo::selected(Role::Button, !disabled, on, label));
+                ui.ctx().accesskit_node_builder(resp.id, |node| node.set_selected(on));
+            } else {
+                resp.widget_info(|| WidgetInfo::labeled(Role::Button, !disabled, label));
+            }
+            part(ui, &resp, part_id);
+
+            // A press keeps focus in the editor, as the web's buttons do.
+            if resp.clicked() && !disabled {
+                match i {
+                    0..=3 => self.marks[i] = !self.marks[i],
+                    4 => {
+                        self.marks[4] = !self.marks[4];
+                        if self.marks[4] {
+                            self.marks[5] = false;
+                        }
+                    }
+                    5 => {
+                        self.marks[5] = !self.marks[5];
+                        if self.marks[5] {
+                            self.marks[4] = false;
+                        }
+                    }
+                    _ => events.push(RichtexteditorEvent::LinkRequested {}),
+                }
+                ui.memory_mut(|m| m.request_focus(editor_id));
+            }
+            x += BUTTON + gap;
+        }
+    }
+
+    /// The text as the value: paragraphs and soft breaks both as '\n'.
+    fn value(&self) -> String {
+        self.text.clone()
+    }
+
+    /// Finds an "@query" before the caret, and opens the list with the attachments that match it.
+    fn scan(&mut self, focused: bool) {
+        let prev = self.menu.take();
+        let chars: Vec<char> = self.text.chars().collect();
+        let c = self.cursor.min(chars.len());
+        let mut at = None;
+        let mut i = c;
+        while i > 0 {
+            let ch = chars[i - 1];
+            if ch == '@' {
+                at = Some(i - 1);
+                break;
+            }
+            if ch.is_whitespace() {
+                break;
+            }
+            i -= 1;
+        }
+        let Some(a) = at else {
+            self.dismissed = None;
+            return;
+        };
+        if !focused || (a > 0 && !chars[a - 1].is_whitespace()) || self.dismissed == Some(a) {
+            return;
+        }
+        let needle: String = chars[a + 1..c].iter().collect::<String>().to_lowercase();
+        let items: Vec<Mention> = self
+            .mentions
+            .iter()
+            .filter(|m| m.name.to_lowercase().contains(&needle))
+            .cloned()
+            .collect();
+        if items.is_empty() {
+            return;
+        }
+        let index = match prev {
+            Some(p) if p.at == a => p.index.min(items.len() - 1),
+            _ => 0,
+        };
+        self.menu = Some(Menu { at: a, items, index });
+    }
+
+    /// Puts the attachment in as a chip and takes the "@query" out of the text.
+    fn insert(&mut self, i: usize, ctx: &egui::Context, editor: Id) {
+        let Some(menu) = self.menu.take() else {
+            return;
+        };
+        let Some(item) = menu.items.get(i).cloned() else {
+            return;
+        };
+        let from = byte_at(&self.text, menu.at);
+        let to = byte_at(&self.text, self.cursor.max(menu.at));
+        shift_soft(&mut self.soft, menu.at, self.cursor.max(menu.at) - menu.at, 0);
+        self.text.replace_range(from..to, "");
+        self.chips.push(item);
+        self.dismissed = None;
+        self.cursor = menu.at;
+        set_cursor(ctx, editor, menu.at);
+    }
+}
+
+crate::mounted!(RichTextEditor, RichtexteditorProps);
+
+fn button_id(base: Id, i: usize) -> Id {
+    base.with(("button", i))
+}
+
+/// Consumes a key press with these modifiers, so the editor and the focus navigation do not see it.
+fn take(ui: &egui::Ui, modifiers: Modifiers, key: Key) -> bool {
+    ui.input_mut(|i| i.consume_key(modifiers, key))
+}
+
+/// Consumes a press of `key` with the platform modifier: Command on macOS, Control elsewhere. The
+/// modifier is read from the held state or from the event itself, whichever the platform reports.
+fn take_cmd(ui: &egui::Ui, key: Key) -> bool {
+    ui.input_mut(|i| {
+        let held = i.modifiers.command || i.modifiers.ctrl || i.modifiers.mac_cmd;
+        let found = i.events.iter().position(|e| {
+            matches!(
+                e,
+                egui::Event::Key { key: k, pressed: true, modifiers, .. }
+                    if *k == key && (held || modifiers.command || modifiers.ctrl || modifiers.mac_cmd)
+            )
+        });
+        match found {
+            Some(idx) => {
+                i.events.remove(idx);
+                true
+            }
+            None => false,
+        }
+    })
+}
+
+/// The shared prefix and suffix of two texts, as (prefix, removed from old, inserted into new).
+fn diff(old: &[char], new: &[char]) -> (usize, usize, usize) {
+    let max = old.len().min(new.len());
+    let mut p = 0;
+    while p < max && old[p] == new[p] {
+        p += 1;
+    }
+    let mut s = 0;
+    while s < max - p && old[old.len() - 1 - s] == new[new.len() - 1 - s] {
+        s += 1;
+    }
+    (p, old.len() - p - s, new.len() - p - s)
+}
+
+/// Moves the soft-break indices across an edit that replaced `r` chars at `p` with `k` chars.
+fn shift_soft(soft: &mut Vec<usize>, p: usize, r: usize, k: usize) {
+    soft.retain_mut(|idx| {
+        if *idx < p {
+            true
+        } else if *idx < p + r {
+            false
+        } else {
+            *idx = *idx - r + k;
+            true
+        }
+    });
+}
+
+/// One more than the paragraph breaks, less the soft breaks among them.
+fn paragraphs_of(text: &str, soft_below: usize) -> i64 {
+    1 + text.matches('\n').count() as i64 - soft_below as i64
+}
+
+/// The byte offset of a char index (the end of the string when it is past it).
+fn byte_at(s: &str, index: usize) -> usize {
+    s.char_indices().nth(index).map_or(s.len(), |(b, _)| b)
+}
+
+/// Moves the editor's caret to a char index.
+fn set_cursor(ctx: &egui::Context, id: Id, index: usize) {
+    let mut state = egui::TextEdit::load_state(ctx, id).unwrap_or_default();
+    state
+        .cursor
+        .set_char_range(Some(egui::text_selection::CCursorRange::one(egui::text::CCursor::new(index))));
+    state.store(ctx, id);
+}
