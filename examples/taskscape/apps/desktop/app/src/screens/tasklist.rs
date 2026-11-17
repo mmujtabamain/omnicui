@@ -4,7 +4,7 @@ use crate::state::Aside;
 use crate::App;
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::text_selection::CCursorRange;
-use egui::{pos2, vec2, Align, Align2, Color32, CornerRadius, EventFilter, FontFamily, FontId, Id, Key, Layout, Margin, Modifiers, Order, Pos2, Response, Rect, RichText, Role, Sense, Stroke, StrokeKind, TextEdit, UiBuilder, WidgetInfo};
+use egui::{pos2, vec2, Align, Align2, Color32, CornerRadius, EventFilter, FontFamily, FontId, Id, Key, Layout, Margin, Modifiers, Order, Pos2, Response, Rect, RichText, Role, Sense, Stroke, StrokeKind, TextEdit, UiBuilder, Vec2, WidgetInfo};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use taskscape_storage::Task;
@@ -736,6 +736,8 @@ pub struct TaskList {
     anchor: Option<TaskId>,
     match_at: Option<usize>,
     dragging: Vec<TaskId>,
+    /// Where the pointer took the dragged row, from the title's top-left: the ghost keeps it under the pointer.
+    grab: Vec2,
     drop_at: Option<(TaskId, Zone)>,
     rows_now: Vec<(TaskId, Rect)>,
     rows_prev: Vec<(TaskId, Rect)>,
@@ -784,6 +786,7 @@ impl TaskList {
             anchor: None,
             match_at: None,
             dragging: Vec::new(),
+            grab: Vec2::ZERO,
             drop_at: None,
             rows_now: Vec::new(),
             rows_prev: Vec::new(),
@@ -1064,6 +1067,11 @@ impl TaskList {
 
     /// Starts a search with a typed character, with the search field taking the keyboard (a printable key
     /// pressed while the window's focus is outside a field).
+    /// Where the pointer took the dragged row, from its title's top-left.
+    pub fn grab(&self) -> Vec2 {
+        self.grab
+    }
+
     /// The tasks being dragged out of this pane, if a drag is on.
     pub fn dragged(&self) -> &[TaskId] {
         &self.dragging
@@ -1251,6 +1259,16 @@ impl TaskList {
 
     /// One row of the tree: the round check, the title and note, the counts, the disclosure and the More button.
     fn draw_row(&mut self, ui: &mut egui::Ui, look: Look, s: &Shown, row: &Row, acts: &mut Vec<Act>) {
+        // A row being dragged stays in its place, dimmed, while its ghost follows the pointer (#12361).
+        let before = ui.opacity();
+        if self.dragging.contains(&row.id) {
+            ui.multiply_opacity(0.4);
+        }
+        self.draw_row_inner(ui, look, s, row, acts);
+        ui.set_opacity(before);
+    }
+
+    fn draw_row_inner(&mut self, ui: &mut egui::Ui, look: Look, s: &Shown, row: &Row, acts: &mut Vec<Act>) {
         let t = look.t;
         let pt = self.parts_of(row, s);
         let picked = s.selection.contains(&row.id);
@@ -1467,6 +1485,7 @@ impl TaskList {
             }
             if body.drag_started() {
                 self.dragging = if picked && s.selection.len() > 1 { s.selection.clone() } else { vec![row.id.clone()] };
+                self.grab = ui.input(|i| i.pointer.press_origin()).map(|p| p - pos2(body_rect.left(), rect.top())).unwrap_or(Vec2::ZERO);
             }
             if body.has_focus() && self.pointer_focus.as_deref() != Some(row.id.as_str()) {
                 painter.rect_stroke(body_rect, radius, Stroke::new(2.0, t.focus_1), StrokeKind::Inside);

@@ -1,11 +1,10 @@
 //! contract: omnicui/contracts/taskinspector.contract.yaml (id: app.taskinspector). The task inspector: one task's title, done toggle, breadcrumb and times, notes, subtasks and attachments, for the task shown in the active pane.
 use crate::data::{Id, LinkType};
 use crate::App;
-use egui::{pos2, vec2, Align, CornerRadius, FontFamily, FontId, Layout, Rect, Role, Sense, Stroke, StrokeKind, UiBuilder, WidgetInfo};
+use egui::{pos2, vec2, Align, CornerRadius, FontFamily, FontId, Layout, Rect, Role, Sense, Stroke, StrokeKind, WidgetInfo};
 use taskscape_storage::{Attachment, Note, Task};
 use taskscape_ui::omnicui::attachmenttile::{parts as tile_parts, AttachmenttileEvent};
 use taskscape_ui::omnicui::button::{parts as button_parts, ButtonEvent, ButtonProps};
-use taskscape_ui::omnicui::charactercounter::parts as counter_parts;
 use taskscape_ui::omnicui::checkbox::{parts as checkbox_parts, CheckboxEvent};
 use taskscape_ui::omnicui::input::{parts as input_parts, InputEvent};
 use taskscape_ui::omnicui::lightbox::{parts as lightbox_parts, LightboxEvent};
@@ -14,7 +13,6 @@ use taskscape_ui::omnicui::taskinspector::{parts, TaskinspectorEvent, Taskinspec
 use taskscape_ui::omnicui::text::parts as text_parts;
 use taskscape_ui::widgets::attachmenttile::AttachmentTile;
 use taskscape_ui::widgets::button::Button;
-use taskscape_ui::widgets::charactercounter::CharacterCounter;
 use taskscape_ui::widgets::checkbox::Checkbox;
 use taskscape_ui::widgets::input::Input;
 use taskscape_ui::widgets::lightbox::Lightbox;

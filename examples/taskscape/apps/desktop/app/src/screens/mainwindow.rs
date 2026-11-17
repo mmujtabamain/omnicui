@@ -9,7 +9,7 @@ use crate::screens::{
 };
 use crate::state::{Aside, PREVIEW_MAX, PREVIEW_MIN, SPLIT_MAX, SPLIT_MIN};
 use crate::App;
-use egui::{Align2, CornerRadius, FontId, Id, Key, Pos2, Rect, Role, Sense, Stroke, StrokeKind, Ui, UiBuilder, WidgetInfo};
+use egui::{Align2, Color32, CornerRadius, FontId, Id, Key, Pos2, Rect, Role, Sense, Stroke, StrokeKind, Ui, UiBuilder, WidgetInfo};
 use taskscape_ui::omnicui::mainwindow::{parts, MainwindowEvent, MainwindowProps};
 use taskscape_ui::omnicui::resizer::{parts::RESIZER as RESIZER_HANDLE, ResizerProps};
 use taskscape_ui::widgets::resizer::Resizer;
@@ -89,6 +89,8 @@ const RENAMES: &[(&str, &str)] = &[
 
 pub struct MainWindow {
     bar: AppBar,
+    /// Where the pointer took the dragged row, kept while a task drag lasts (it may change panes).
+    grab: Option<egui::Vec2>,
     panes: [TaskList; 2],
     inspector: TaskInspector,
     draft: DraftInspector,
@@ -112,6 +114,7 @@ impl MainWindow {
     pub fn new() -> Self {
         Self {
             bar: AppBar::new(),
+            grab: None,
             panes: {
                 let mut left = TaskList::new(0);
                 left.claims = CLAIMS.to_vec();
@@ -167,7 +170,7 @@ impl MainWindow {
             });
 
             let body = Rect::from_min_max(Pos2::new(full.min.x, bar.max.y), full.max);
-            self.carry(app, ui, body);
+            self.carry(app, ui, body, look);
             let draft_before = app.ui.draft_list.is_some();
             let project_lists: Vec<String> = app.ui.project.as_deref().map(|p| app.data.lists_of(p).iter().map(|l| l.id.clone()).collect()).unwrap_or_default();
             let lists = project_lists.len();
@@ -355,11 +358,22 @@ impl MainWindow {
 
     /// Dragged tasks: dropped on a list tab they move to that list; carried onto the other pane they
     /// become that pane's drag, so its rows take the drop.
-    fn carry(&mut self, app: &mut App, ui: &mut Ui, body: Rect) {
+    fn carry(&mut self, app: &mut App, ui: &mut Ui, body: Rect, look: Look) {
         let (pointer, released) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_released()));
-        let Some(p) = pointer else { return };
         let from = (0..2).find(|&i| !self.panes[i].dragged().is_empty());
-        let Some(from) = from else { return };
+        let (Some(p), Some(from)) = (pointer, from) else {
+            self.bar.drop_tab = None;
+            self.grab = None;
+            return;
+        };
+        let grab = *self.grab.get_or_insert_with(|| self.panes[from].grab());
+        // A list tab under the pointer lights up; the ghost carries a + when the tasks would move there.
+        let over_tab = self.bar.tab_rects.iter().find(|(_, r)| r.contains(p)).map(|(l, _)| l.clone());
+        let ids = self.panes[from].dragged().to_vec();
+        let moves = over_tab.as_ref().is_some_and(|l| ids.iter().any(|id| app.data.task(id).is_some_and(|t| &t.list_id != l)));
+        self.bar.drop_tab = over_tab.filter(|_| moves);
+        ghost(app, ui, look, &ids, p, grab, moves);
+        ui.ctx().request_repaint();
         if released {
             if let Some((list, _)) = self.bar.tab_rects.iter().find(|(_, r)| r.contains(p)).cloned() {
                 let ids = self.panes[from].dragged().to_vec();
@@ -587,4 +601,31 @@ impl Mounted for Mount {
 pub fn mount(app: App, props: serde_json::Value) -> Result<Box<dyn Mounted>, String> {
     let _p: MainwindowProps = serde_json::from_value(props).map_err(|e| e.to_string())?;
     Ok(Box::new(Mount { app, window: MainWindow::new() }))
+}
+
+/// The dragged tasks' ghost under the pointer, as the reference's: the first task's check and title (with
+/// "+n" for the others), the title where the pointer took it, and a green + while a list tab would take
+/// them (#12361).
+fn ghost(app: &App, ui: &Ui, look: Look, ids: &[crate::data::Id], p: Pos2, grab: egui::Vec2, adds: bool) {
+    let t = look.t;
+    let Some(first) = ids.first().and_then(|id| app.data.task(id)) else { return };
+    let fg = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Tooltip, Id::new("mainwindow.taskGhost")));
+    let title = if ids.len() > 1 { format!("{}  +{}", first.title, ids.len() - 1) } else { first.title.clone() };
+    let text = fg.layout_no_wrap(title, FontId::new(13.0, weight(400)), t.content_1);
+    let check = 14.0;
+    let gap = 8.0;
+    let h = rem(2.25);
+    let left = p.x - grab.x.clamp(0.0, text.size().x);
+    let top = p.y - grab.y.clamp(0.0, h);
+    let check_rect = Rect::from_center_size(Pos2::new(left - gap - check / 2.0, top + h / 2.0), egui::vec2(check, check));
+    let card = Rect::from_min_max(Pos2::new(check_rect.left() - 6.0, top), Pos2::new(left + text.size().x + 8.0, top + h));
+    fg.rect_filled(card, CornerRadius::same(5), t.surface_2.gamma_multiply(0.85));
+    fg.rect_stroke(check_rect, CornerRadius::same(7), Stroke::new(1.0, t.edge_3), StrokeKind::Inside);
+    fg.galley(Pos2::new(left, top + (h - text.size().y) / 2.0), text, t.content_1);
+    if adds {
+        let c = Pos2::new(p.x + 4.0, p.y + 14.0);
+        // The OS's copy-drag badge in the reference (macOS draws it on the cursor), not an app colour.
+        fg.circle_filled(c, 7.0, Color32::from_rgb(52, 199, 89));
+        fg.text(c, Align2::CENTER_CENTER, "+", FontId::new(12.0, weight(700)), t.on_accent);
+    }
 }

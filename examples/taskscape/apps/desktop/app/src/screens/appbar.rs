@@ -73,6 +73,8 @@ enum Act {
     ListRename(Id),
     ListDelete(Id),
     ListExport(Id),
+    /// A dragged tab dropped at this place among the tabs (0 = before the first).
+    ListMove(Id, usize),
     /// Split view on or off; the list opened in the right pane when it turns on.
     Split(Option<Id>),
     Swap,
@@ -194,6 +196,10 @@ pub struct AppBar {
     roles: HashMap<Id, &'static str>,
     /// Each list tab's box in the last frame, for a window to drop dragged tasks on.
     pub tab_rects: Vec<(Id, Rect)>,
+    /// The tab dragged tasks would drop on (the window sets it while a task drag is over a tab): it lights up.
+    pub drop_tab: Option<Id>,
+    /// The tab being dragged to a new place, and where the pointer took it from the tab's top-left.
+    tab_drag: Option<(Id, egui::Vec2)>,
     status: StatusIndicator,
 }
 
@@ -209,6 +215,8 @@ impl AppBar {
             last_press: None,
             roles: HashMap::new(),
             tab_rects: Vec::new(),
+            drop_tab: None,
+            tab_drag: None,
             status: StatusIndicator::new(StatusindicatorProps {
                 icon: "motion_photos_off".into(),
                 label: "Reduced motion is on".into(),
@@ -379,6 +387,8 @@ impl AppBar {
             .id_salt("app.appbar.lists")
             .auto_shrink([false, false])
             .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
+            // A drag on a tab moves the tab, not the strip.
+            .scroll_source(egui::scroll_area::ScrollSource { drag: egui::scroll_area::DragScroll::Never, ..Default::default() })
             .show(&mut child, |ui| {
                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| self.tabs(ui, look, snap, acts));
             });
@@ -402,6 +412,7 @@ impl AppBar {
         if n > 0 {
             sep(ui, look, focused == Some(n - 1));
         }
+        self.tab_drag_update(ui, look, snap, acts);
         let (slot_rect, _) = ui.allocate_exact_size(vec2(NEW_LIST + 8.0, H), Sense::hover());
         let new_list = ButtonProps {
             variant: "ghost".into(),
@@ -417,6 +428,42 @@ impl AppBar {
         };
         if button(ui, look, Rect::from_center_size(slot_rect.center(), vec2(NEW_LIST, NEW_LIST)), new_list, Some(parts::NEWLIST)) {
             acts.push(Act::ListNew);
+        }
+    }
+
+    /// A tab being dragged: its ghost follows the pointer, a blue marker shows where it would land, and
+    /// the release moves the list there. The other tabs keep their places until the drop (#12362).
+    fn tab_drag_update(&mut self, ui: &mut egui::Ui, look: Look, snap: &Snap, acts: &mut Vec<Act>) {
+        let Some((id, grab)) = self.tab_drag.clone() else { return };
+        let t = look.t;
+        let (pointer, released, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_released(), i.pointer.primary_down()));
+        let Some(p) = pointer else { return };
+        let Some(from) = snap.lists.iter().position(|(l, _)| *l == id) else {
+            self.tab_drag = None;
+            return;
+        };
+        // The place: before the first tab whose middle is right of the pointer.
+        let rects: Vec<Rect> = self.tab_rects.iter().map(|(_, r)| *r).collect();
+        let to = rects.iter().position(|r| p.x < r.center().x).unwrap_or(rects.len());
+        let moves = to != from && to != from + 1;
+        let fg = ui.ctx().layer_painter(egui::LayerId::new(Order::Tooltip, egui::Id::new("app.appbar.tabDrag")));
+        let name = &snap.lists[from].1;
+        let text = fg.layout_no_wrap(name.clone(), FontId::new(13.0, weight(500)), t.content_1);
+        let ghost = Rect::from_min_size(p - grab, vec2(TAB_L + text.size().x + TAB_R, H));
+        fg.rect_filled(ghost, CornerRadius::same(6), t.surface_3.gamma_multiply(0.85));
+        fg.galley(pos2(ghost.left() + TAB_L, ghost.center().y - text.size().y / 2.0), text, t.content_1);
+        // The marker over the ghost, so the place stays visible under it.
+        if moves {
+            let x = if to < rects.len() { rects[to].left() } else { rects.last().map(|r| r.right()).unwrap_or(p.x) };
+            let mid = rects.first().map(|r| r.center().y).unwrap_or(p.y);
+            fg.rect_filled(Rect::from_center_size(pos2(x, mid), vec2(2.0, 16.0)), CornerRadius::same(1), t.accent_500);
+        }
+        ui.ctx().request_repaint();
+        if released || !down {
+            self.tab_drag = None;
+            if moves {
+                acts.push(Act::ListMove(id, to));
+            }
         }
     }
 
@@ -457,15 +504,23 @@ impl AppBar {
         let (wrap, _) = ui.allocate_exact_size(vec2(wrap_w, H), Sense::hover());
         self.tab_rects.push((id.clone(), wrap));
         let painter = ui.painter().clone();
-        let hovered = ui.rect_contains_pointer(wrap);
-        if selected {
+        let hovered = ui.rect_contains_pointer(wrap) && self.tab_drag.is_none();
+        let dragged = self.tab_drag.as_ref().is_some_and(|(d, _)| d == id);
+        // A tab taking dropped tasks lights up as the reference's does (#12361).
+        if self.drop_tab.as_ref() == Some(id) {
+            painter.rect_filled(wrap, CornerRadius::ZERO, t.wash_2);
+        } else if selected {
             painter.rect_filled(wrap, CornerRadius::ZERO, t.surface_2);
         } else if hovered {
             painter.rect_filled(wrap, CornerRadius::ZERO, t.wash_1);
         }
 
         let tab = Rect::from_min_size(wrap.min, vec2(tab_w, H));
-        let r = ui.interact(tab, egui::Id::new(("app.appbar.tab", id.clone())), Sense::click());
+        let r = ui.interact(tab, egui::Id::new(("app.appbar.tab", id.clone())), Sense::click_and_drag());
+        if r.drag_started() {
+            let grab = ui.input(|i| i.pointer.press_origin()).map(|p| p - wrap.min).unwrap_or_default();
+            self.tab_drag = Some((id.clone(), grab));
+        }
         r.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, name.clone()));
         ui.ctx().accesskit_node_builder(r.id, |n| n.set_selected(selected));
         if let Some(p) = tab_part(i, self.roles.get(id).copied().or((name == "Hardware").then_some("Hardware"))) {
@@ -484,6 +539,8 @@ impl AppBar {
                 part(ui, &m, parts::PANEMARKER);
             }
         }
+        // The dragged tab stays in its place, dimmed: the tabs do not shift while it moves (#12362).
+        let color = if dragged { color.gamma_multiply(0.35) } else { color };
         painter.galley(pos2(tab.left() + TAB_L + marker_w, tab.center().y - text.size().y / 2.0), text, color);
         if r.has_focus() {
             painter.rect_stroke(tab, CornerRadius::ZERO, Stroke::new(2.0, t.focus_1), StrokeKind::Inside);
@@ -608,6 +665,22 @@ impl AppBar {
                 let name = snap.list_name(&id).unwrap_or_default();
                 ev.push(AppbarEvent::ListDeleteRequested { name });
                 app.sheet = Some(Sheet::DeleteList(id));
+            }
+            Act::ListMove(id, to) => {
+                // Between the two lists either side of the place, by sort order.
+                let Some(project) = app.ui.project.clone() else { return };
+                let orders: Vec<(Id, f64)> = app.data.lists_of(&project).iter().map(|l| (l.id.clone(), l.sort_order)).collect();
+                let before = to.checked_sub(1).and_then(|i| orders.get(i)).map(|(_, o)| *o);
+                let after = orders.get(to).map(|(_, o)| *o);
+                let order = match (before, after) {
+                    (Some(a), Some(b)) => (a + b) / 2.0,
+                    (Some(a), None) => a + 1.0,
+                    (None, Some(b)) => b - 1.0,
+                    (None, None) => return,
+                };
+                if let Err(e) = app.data.reorder_list(&id, order) {
+                    app.refused(e);
+                }
             }
             Act::ListExport(id) => {
                 self.tab_menu = None;
