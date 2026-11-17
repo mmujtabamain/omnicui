@@ -64,18 +64,24 @@ pub struct RichTextEditor {
     /// Where the @ list was drawn last frame: a press on it takes focus from the text for a moment,
     /// and the list must stay open until the press lands on a row.
     list_rect: Option<egui::Rect>,
+    /// The formatting: a style per character, links, a kind per paragraph (the text and line breaks are
+    /// `text` and `soft`). Read from the note's HTML, kept through edits, written back by `html()`.
+    rich: crate::rich::Rich,
 }
 
 impl RichTextEditor {
     pub fn new(p: RichtexteditorProps) -> Self {
         let mentions = serde_json::from_str::<Vec<Mention>>(&p.mentions).unwrap_or_default();
-        let text = p.value.clone();
+        // A note may be the reference's HTML: its text is shown, its formatting kept.
+        let rich = crate::rich::parse(&p.value);
+        let text = rich.text.clone();
+        let soft = rich.soft.clone();
         let cursor = text.chars().count();
         Self {
             p,
             text,
             cursor,
-            soft: vec![],
+            soft,
             chips: vec![],
             chip_at: vec![],
             mentions,
@@ -86,6 +92,7 @@ impl RichTextEditor {
             started: false,
             focus_prev: false,
             list_rect: None,
+            rich,
         }
     }
 
@@ -141,14 +148,10 @@ impl RichTextEditor {
             }
 
             if focused {
-                if take_cmd(ui, Key::B) {
-                    self.marks[0] = !self.marks[0];
-                }
-                if take_cmd(ui, Key::I) {
-                    self.marks[1] = !self.marks[1];
-                }
-                if take_cmd(ui, Key::U) {
-                    self.marks[2] = !self.marks[2];
+                for (key, i) in [(Key::B, 0), (Key::I, 1), (Key::U, 2)] {
+                    if take_cmd(ui, key) {
+                        self.toggle_mark(ui.ctx(), editor_id, i);
+                    }
                 }
                 if take_cmd(ui, Key::Enter) && self.p.submitOnModEnter {
                     events.push(RichtexteditorEvent::Submitted {});
@@ -250,26 +253,39 @@ impl RichTextEditor {
             }
 
             // The box: a TextEdit with its own frame off, drawn over a background set after it.
-            // The web's minimum heights: sm 3.5rem, md 6rem, capped 4rem growing to 10rem. The box holds its
-            // rows and scrolls past its maximum.
+            // The web's heights: sm at least 3.5rem and md at least 6rem, both growing with the note; capped
+            // 4rem growing to 10rem, then scrolling. Only capped scrolls: a growing box follows its content
+            // (a scroll area would take the height its parent row offers, and egui's 64 px minimum).
             let (rows, max_h) = match self.p.size.as_str() {
-                "md" => (4, rem(6.0)),
+                "md" => (4, f32::INFINITY),
                 "capped" => (2, rem(10.0)),
-                _ => (2, rem(3.5)),
+                _ => (2, f32::INFINITY),
             };
+            let scrolls = max_h.is_finite();
             let bg = ui.painter().add(Shape::Noop);
             let old_chars: Vec<char> = self.text.chars().collect();
             let scroll = egui::ScrollArea::vertical()
                 .id_salt(base.with("scroll"))
                 .max_height(max_h)
+                .vscroll(scrolls)
                 .auto_shrink([false, true])
                 .show(ui, |ui| {
                     // The web's px-2 padding is laid out by hand, so it holds whatever the TextEdit's margin does.
                     ui.horizontal(|ui| {
                         ui.add_space(8.0);
                         ui.vertical(|ui| {
+                            let styles = self.rich.styles.clone();
+                            let kinds = self.rich.kinds.clone();
+                            let soft_now = self.soft.clone();
+                            let typing = self.marks;
+                            let ink = if disabled { t.content_2 } else { t.content_1 };
+                            let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap: f32| {
+                                let job = styled_job(buf.as_str(), &styles, &kinds, &soft_now, typing, ink, wrap);
+                                ui.fonts_mut(|f| f.layout_job(job))
+                            };
                             egui::TextEdit::multiline(&mut self.text)
                                 .id(editor_id)
+                                .layouter(&mut layouter)
                                 .font(FontId::new(rem(0.9643), weight(400)))
                                 .text_color(if disabled { t.content_2 } else { t.content_1 })
                                 .frame(egui::Frame::NONE)
@@ -285,7 +301,39 @@ impl RichTextEditor {
                     .inner
                 });
             let out = scroll.inner;
-            let frame_rect = scroll.inner_rect;
+            // List items: their bullet or number in the indent the layout left before them.
+            {
+                let chars: Vec<char> = self.text.chars().collect();
+                let mut starts = vec![0usize];
+                for (i, c) in chars.iter().enumerate() {
+                    if *c == '\n' && !self.soft.contains(&i) {
+                        starts.push(i + 1);
+                    }
+                }
+                let mut number = 0;
+                for (pi, start) in starts.iter().enumerate() {
+                    let kind = self.rich.kinds.get(pi).copied().unwrap_or(crate::rich::PARA);
+                    number = if kind == crate::rich::NUMBER { number + 1 } else { 0 };
+                    if kind == crate::rich::PARA {
+                        continue;
+                    }
+                    let at = out.galley.pos_from_cursor(egui::text::CCursor::new(*start)).translate(out.galley_pos.to_vec2());
+                    let mark = if kind == crate::rich::BULLET { "•".to_owned() } else { format!("{number}.") };
+                    ui.painter().text(
+                        pos2(at.left() - 9.0, at.center().y),
+                        Align2::CENTER_CENTER,
+                        mark,
+                        FontId::new(rem(0.9643), weight(400)),
+                        if disabled { t.content_2 } else { t.content_1 },
+                    );
+                }
+            }
+            // The box: the area's width, down to the text's bottom margin (a growing box has no scroll height).
+            let frame_rect = if scrolls {
+                scroll.inner_rect
+            } else {
+                Rect::from_min_max(scroll.inner_rect.min, pos2(scroll.inner_rect.max.x.max(out.response.rect.max.x), out.response.rect.max.y + 6.0))
+            };
             let focus_now = out.response.has_focus();
             // The editor keeps Tab, the arrows and Escape: they are its keys, and the handling decides them.
             // Set after the TextEdit, which sets its own filter while it is shown.
@@ -352,6 +400,10 @@ impl RichTextEditor {
             if changed {
                 let new_chars: Vec<char> = self.text.chars().collect();
                 let (p, r, k) = diff(&old_chars, &new_chars);
+                let soft_old = self.soft.clone();
+                let typing = (0..4).filter(|&i| self.marks[i]).fold(0u8, |b, i| b | (1 << i));
+                let soft_typed = shift_enter && new_chars.get(cursor_before) == Some(&'\n');
+                crate::rich::splice(&mut self.rich, &old_chars, &new_chars, p, r, k, typing, &soft_old, soft_typed);
                 shift_soft(&mut self.soft, p, r, k);
                 if shift_enter && new_chars.get(cursor_before) == Some(&'\n') {
                     // The newline just typed by Shift+Enter is a line break, not a new paragraph.
@@ -560,18 +612,21 @@ impl RichTextEditor {
             // A press keeps focus in the editor, as the web's buttons do.
             if resp.clicked() && !disabled {
                 match i {
-                    0..=3 => self.marks[i] = !self.marks[i],
+                    // With text selected, the style goes on (or off) the selection; else it is what typing gets.
+                    0..=3 => self.toggle_mark(ui.ctx(), editor_id, i),
                     4 => {
                         self.marks[4] = !self.marks[4];
                         if self.marks[4] {
                             self.marks[5] = false;
                         }
+                        self.set_kind(if self.marks[4] { crate::rich::BULLET } else { crate::rich::PARA });
                     }
                     5 => {
                         self.marks[5] = !self.marks[5];
                         if self.marks[5] {
                             self.marks[4] = false;
                         }
+                        self.set_kind(if self.marks[5] { crate::rich::NUMBER } else { crate::rich::PARA });
                     }
                     _ => events.push(RichtexteditorEvent::LinkRequested {}),
                 }
@@ -597,6 +652,38 @@ impl RichTextEditor {
     /// The text as the value: paragraphs and soft breaks both as '\n'.
     fn value(&self) -> String {
         self.text.clone()
+    }
+
+    /// The note as the reference stores it: HTML with its formatting, lists, links and line breaks.
+    pub fn html(&self) -> String {
+        let mut r = self.rich.clone();
+        r.text = self.text.clone();
+        r.soft = self.soft.clone();
+        crate::rich::to_html(&r)
+    }
+
+    /// Bold, italic, underline or strikethrough: on the selection when there is one, else for what is typed next.
+    fn toggle_mark(&mut self, ctx: &egui::Context, editor_id: Id, i: usize) {
+        let selection = egui::TextEdit::load_state(ctx, editor_id)
+            .and_then(|st| st.cursor.char_range())
+            .map(|r| {
+                let (a, b): (usize, usize) = (r.primary.index.into(), r.secondary.index.into());
+                (a.min(b), a.max(b))
+            })
+            .filter(|(a, b)| a < b);
+        match selection {
+            Some((a, b)) => self.marks[i] = crate::rich::toggle(&mut self.rich, a, b, 1 << i),
+            None => self.marks[i] = !self.marks[i],
+        }
+    }
+
+    /// Sets the kind (paragraph or list item) of the paragraph the caret is in.
+    fn set_kind(&mut self, kind: u8) {
+        let chars: Vec<char> = self.text.chars().collect();
+        let para = chars[..self.cursor.min(chars.len())].iter().enumerate().filter(|(i, c)| **c == '\n' && !self.soft.contains(i)).count();
+        if let Some(k) = self.rich.kinds.get_mut(para) {
+            *k = kind;
+        }
     }
 
     /// Finds an "@query" before the caret, and opens the list with the attachments that match it.
@@ -739,4 +826,51 @@ fn set_cursor(ctx: &egui::Context, id: Id, index: usize) {
         .cursor
         .set_char_range(Some(egui::text_selection::CCursorRange::one(egui::text::CCursor::new(index))));
     state.store(ctx, id);
+}
+
+/// The text laid out with each character's style (bold, italic, underline, strikethrough), list items
+/// indented. Characters past the known styles (typed this frame) take the typing style.
+fn styled_job(text: &str, styles: &[u8], kinds: &[u8], soft: &[usize], typing: [bool; 6], ink: Color32, wrap: f32) -> egui::text::LayoutJob {
+    use crate::rich::{BOLD, ITALIC, MENTION, PARA, STRIKE, UNDERLINE};
+    let typed = (0..4).filter(|&i| typing[i]).fold(0u8, |b, i| b | (1 << i));
+    let mut job = egui::text::LayoutJob::default();
+    job.wrap.max_width = wrap;
+    let chars: Vec<char> = text.chars().collect();
+    let mut para = 0usize;
+    let mut para_start = true;
+    let mut i = 0;
+    while i < chars.len() {
+        let st = styles.get(i).copied().unwrap_or(typed);
+        let mut j = i + 1;
+        while j < chars.len() && styles.get(j).copied().unwrap_or(typed) == st && chars[j - 1] != '\n' {
+            j += 1;
+        }
+        let run: String = chars[i..j].iter().collect();
+        let kind = kinds.get(para).copied().unwrap_or(PARA);
+        let mut format = egui::TextFormat {
+            font_id: FontId::new(rem(0.9643), weight(if st & BOLD != 0 { 700 } else { 400 })),
+            color: if st & MENTION != 0 { ink.gamma_multiply(0.85) } else { ink },
+            italics: st & ITALIC != 0,
+            ..Default::default()
+        };
+        if st & UNDERLINE != 0 {
+            format.underline = Stroke::new(1.0, ink);
+        }
+        if st & STRIKE != 0 {
+            format.strikethrough = Stroke::new(1.0, ink);
+        }
+        let lead = if para_start && kind != PARA { 18.0 } else { 0.0 };
+        job.append(&run, lead, format);
+        for (k, c) in chars[i..j].iter().enumerate() {
+            if *c == '\n' && !soft.contains(&(i + k)) {
+                para += 1;
+            }
+        }
+        para_start = chars[j - 1] == '\n';
+        i = j;
+    }
+    if chars.is_empty() {
+        job.append("", 0.0, egui::TextFormat { font_id: FontId::new(rem(0.9643), weight(400)), color: ink, ..Default::default() });
+    }
+    job
 }

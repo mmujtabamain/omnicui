@@ -17,6 +17,8 @@ pub mod tokens;
 pub use tokens::Tokens;
 
 /// The widgets (src/widgets/), found by build.rs, and the registry from contract id to widget.
+pub mod rich;
+
 pub mod widgets {
     include!(concat!(env!("OUT_DIR"), "/widgets.rs"));
 }

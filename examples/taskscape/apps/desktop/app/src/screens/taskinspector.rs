@@ -42,6 +42,8 @@ struct NoteEditor {
     last: String,
     /// The saved note, once there is one.
     note: Option<Id>,
+    /// The note as last written: HTML, with the formatting the plain `last` does not show.
+    html: String,
 }
 
 pub struct TaskInspector {
@@ -247,7 +249,7 @@ impl TaskInspector {
         self.notes.retain(|(id, _)| saved.iter().any(|n| n.id == *id));
         for n in saved {
             if !self.notes.iter().any(|(id, _)| *id == n.id) {
-                let mut ne = new_editor(&plain(&n.content), "", false, mentions);
+                let mut ne = new_editor(&n.content, "", false, mentions);
                 ne.note = Some(n.id.clone());
                 self.notes.push((n.id.clone(), ne));
             }
@@ -330,7 +332,8 @@ impl TaskInspector {
                 let ne = &mut self.notes[pos].1;
                 ne.text = value.clone();
                 if !value.is_empty() && value != ne.last {
-                    save_note(app, out, id, &value, &mut ne.last);
+                    let html = ne.editor.html();
+                    save_note(app, out, id, &value, &html, &mut ne.last, &mut ne.html);
                 }
             }
             RichtexteditorEvent::Blurred { value } => {
@@ -347,8 +350,10 @@ impl TaskInspector {
                         }
                         Err(e) => app.refused(e),
                     }
-                } else if value != ne.last {
-                    save_note(app, out, id, &value, &mut ne.last);
+                } else if value != ne.last || ne.editor.html() != ne.html {
+                    // A formatting change alone (bold on a word) is saved when the note loses focus.
+                    let html = ne.editor.html();
+                    save_note(app, out, id, &value, &html, &mut ne.last, &mut ne.html);
                 }
             }
             RichtexteditorEvent::LinkRequested {} => out.push(TaskinspectorEvent::LinkRequested { r#where: "note".into() }),
@@ -385,14 +390,17 @@ impl TaskInspector {
                 }
             }
         } else if let Some(id) = d.note.clone() {
-            if value != d.last {
-                save_note(app, out, &id, &value, &mut d.last);
+            let html = d.editor.html();
+            if value != d.last || html != d.html {
+                save_note(app, out, &id, &value, &html, &mut d.last, &mut d.html);
             }
         } else {
-            match app.data.create_note(&task.id, &value) {
+            let html = d.editor.html();
+            match app.data.create_note(&task.id, &html) {
                 Ok(note) => {
                     d.note = Some(note.id.clone());
                     d.last = value.clone();
+                    d.html = html;
                     out.push(TaskinspectorEvent::NotesChanged { count: app.data.notes_of(&task.id).len() as i64 });
                     out.push(TaskinspectorEvent::NoteSaved { text: value });
                 }
@@ -489,34 +497,6 @@ impl TaskInspector {
     }
 }
 
-/// Note text as the editor works with it: the stored HTML's text, paragraphs on their own lines.
-fn plain(content: &str) -> String {
-    if !content.contains('<') {
-        return content.to_owned();
-    }
-    let mut out = String::new();
-    let mut tag = String::new();
-    let mut in_tag = false;
-    for c in content.chars() {
-        match (in_tag, c) {
-            (false, '<') => {
-                in_tag = true;
-                tag.clear();
-            }
-            (true, '>') => {
-                in_tag = false;
-                let closing = tag.starts_with('/');
-                let name = tag.trim_start_matches('/').split(|c: char| c.is_whitespace() || c == '/').next().unwrap_or("").to_lowercase();
-                if name == "br" || (closing && matches!(name.as_str(), "p" | "li" | "div")) {
-                    out.push('\n');
-                }
-            }
-            (true, _) => tag.push(c),
-            (false, _) => out.push(c),
-        }
-    }
-    out.replace("&amp;", "&").replace("&nbsp;", " ").trim_end_matches('\n').to_owned()
-}
 
 /// The Subtasks section: shown only when the task has children.
 fn subtasks_section(app: &mut App, ui: &mut egui::Ui, look: Look, task: &Task, out: &mut Vec<TaskinspectorEvent>) {
@@ -607,11 +587,12 @@ fn editor_ui(ui: &mut egui::Ui, look: Look, ne: &mut NoteEditor, body: &str, cou
     (evs, focused)
 }
 
-/// Saves a note's text (autosave while typing, and on blur).
-fn save_note(app: &mut App, out: &mut Vec<TaskinspectorEvent>, id: &Id, value: &str, last: &mut String) {
-    match app.data.update_note(id, value) {
+/// Saves a note (autosave while typing, and on blur): its HTML, as the reference stores notes.
+fn save_note(app: &mut App, out: &mut Vec<TaskinspectorEvent>, id: &Id, value: &str, html: &str, last: &mut String, last_html: &mut String) {
+    match app.data.update_note(id, html) {
         Ok(_) => {
             *last = value.to_owned();
+            *last_html = html.to_owned();
             out.push(TaskinspectorEvent::NoteSaved { text: value.to_owned() });
         }
         Err(e) => app.refused(e),
@@ -629,7 +610,10 @@ fn new_editor(value: &str, placeholder: &str, auto_focus: bool, mentions: &str) 
         "autoFocus": auto_focus,
         "mentions": mentions
     ));
-    NoteEditor { editor, text: value.to_owned(), last: value.to_owned(), note: None }
+    // `value` may be the reference's HTML: the editor shows its text, and the note is compared by both.
+    let text = taskscape_ui::rich::parse(value).text;
+    let html = if value.is_empty() { String::new() } else { editor.html() };
+    NoteEditor { editor, text: text.clone(), last: text, note: None, html }
 }
 
 fn title_input(value: &str, rename: bool) -> Input {
