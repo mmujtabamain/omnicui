@@ -106,6 +106,8 @@ impl TaskInspector {
         let mut title_cancel = false;
         let (mut rename_req, mut close_req, mut copy_req, mut delete_req) = (false, false, false, false);
         let total_w = ui.available_width();
+        // The header sits a little below the panel's top edge, as the reference's does.
+        ui.add_space(rem(0.857));
         let header = ui.horizontal_top(|ui| {
             ui.add_space(rem(0.929));
             let mut cb = Checkbox::new(props!(
@@ -118,9 +120,12 @@ impl TaskInspector {
                 let CheckboxEvent::CheckedChange { checked } = e;
                 done_req = Some(checked);
             }
-            let buttons_w = rem(1.5) * 4.0 + 12.0;
+            // The text column takes the room up to the button column, which sits at the panel's right edge.
+            let text_w = (ui.available_width() - rem(1.5) - ui.spacing().item_spacing.x - rem(0.857)).max(0.0);
+            let _ = total_w;
             ui.vertical(|ui| {
-                ui.set_max_width((total_w - buttons_w - rem(0.929) * 2.0 - rem(1.5)).max(0.0));
+                ui.set_min_width(text_w);
+                ui.set_max_width(text_w);
                 ui.spacing_mut().item_spacing.y = rem(0.07);
                 if let Some(field) = self.title.as_mut() {
                     for e in as_part(ui, &[(input_parts::FIELD, parts::TITLE)], |ui| field.ui(ui, look)) {

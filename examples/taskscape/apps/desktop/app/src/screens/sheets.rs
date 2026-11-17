@@ -94,6 +94,11 @@ impl Default for Sheets {
 }
 
 impl Sheets {
+    /// The card's height in the last frame: a window holding only the card fits itself to it.
+    pub fn card_height(&self) -> f32 {
+        self.card_h
+    }
+
     pub fn new() -> Self {
         Self { initial_name: None, shown: None, input: None, name: String::new(), card_h: 0.0, focus_frames: 0, toast_key: None, toast_at: 0.0 }
     }

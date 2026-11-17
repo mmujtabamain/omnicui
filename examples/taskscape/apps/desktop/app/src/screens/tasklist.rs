@@ -1403,6 +1403,8 @@ impl TaskList {
             }
             let chord = (enter_key && plat) || (space_key && alt);
             if body.clicked() && !chord {
+                // The pressed row takes the keyboard, so its keys (Delete, F2, the arrows) act on it next.
+                body.request_focus();
                 let flat = s.flat();
                 let idx = flat.iter().position(|r| r.id == row.id).unwrap_or(0);
                 if shift {

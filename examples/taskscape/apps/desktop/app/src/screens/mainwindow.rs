@@ -267,10 +267,14 @@ impl MainWindow {
     /// The Trash, Settings and a confirmation, each as an OS window of its own (eframe viewports). Closing
     /// one with the OS's close button closes it here too.
     pub fn windows(&mut self, app: &mut App, ctx: &egui::Context, look: Look) {
+        let open_before = (app.trash_window, app.settings_window.is_some(), app.sheet.is_some());
         let t = look.t;
         let frame = egui::Frame::NONE.fill(t.surface_1);
+        // Each window opens centred over the main window.
+        let main = ctx.input(|i| i.viewport().outer_rect);
+        let at = |w: f32, h: f32| main.map(|r| r.center() - egui::vec2(w, h) / 2.0).unwrap_or(egui::pos2(80.0, 80.0));
         if app.trash_window {
-            let vp = egui::ViewportBuilder::default().with_title("Trash").with_inner_size([520.0, 560.0]).with_min_inner_size([420.0, 360.0]);
+            let vp = egui::ViewportBuilder::default().with_title("Trash").with_inner_size([520.0, 560.0]).with_position(at(520.0, 560.0)).with_min_inner_size([420.0, 360.0]);
             ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("trash"), vp, |ctx, _| {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
                     self.trash.show(app, ui, look);
@@ -281,7 +285,7 @@ impl MainWindow {
             });
         }
         if app.settings_window.is_some() {
-            let vp = egui::ViewportBuilder::default().with_title("Settings").with_inner_size([640.0, 520.0]).with_min_inner_size([640.0, 520.0]);
+            let vp = egui::ViewportBuilder::default().with_title("Settings").with_inner_size([640.0, 520.0]).with_position(at(640.0, 520.0)).with_min_inner_size([640.0, 520.0]);
             ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("settings"), vp, |ctx, _| {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
                     self.settings.show(app, ui, look);
@@ -292,15 +296,24 @@ impl MainWindow {
             });
         }
         if app.sheet.is_some() {
-            let vp = egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([380.0, 230.0]).with_resizable(false);
+            let vp = egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([380.0, 140.0]).with_position(at(380.0, 140.0)).with_resizable(false);
             ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("sheet"), vp, |ctx, _| {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
                     self.sheets.show(app, ui, look);
                 });
+                // The window fits the card: its height follows the card's.
+                let want = egui::vec2(380.0, (self.sheets.card_height() + 18.0).max(120.0));
+                if self.sheets.card_height() > 0.0 && ctx.input(|i| i.viewport().inner_rect).is_some_and(|r| (r.height() - want.y).abs() > 1.0) {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(want));
+                }
                 if ctx.input(|i| i.viewport().close_requested()) {
                     app.sheet = None;
                 }
             });
+        }
+        // A window that closed itself from its own keys: the main window draws again, so the OS window goes.
+        if open_before != (app.trash_window, app.settings_window.is_some(), app.sheet.is_some()) {
+            ctx.request_repaint_of(egui::ViewportId::ROOT);
         }
     }
 
