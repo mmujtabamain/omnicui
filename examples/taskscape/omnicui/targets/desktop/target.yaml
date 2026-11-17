@@ -1,0 +1,13 @@
+name: desktop
+language: rust
+# The desktop app (apps/desktop, egui) headless: its widgets (ui crate) and its windows and screens
+# (app crate), mounted with egui_kittest and read through AccessKit. Set up once: Rust (cargo), and
+# for screenshots a Vulkan driver (Mesa's lavapipe works without a GPU: VK_ICD_FILENAMES).
+# DESKTOP_ADAPTER points at a prebuilt adapter (apps/desktop/scripts/check-widget.py builds one per slot).
+adapter: exec ${DESKTOP_ADAPTER:-cargo run -q --release --locked --bin adapter}
+# Writes the contracts' types (props, events, part ids) into the widget library.
+stubs: cargo run -q --release --locked -p taskscape-desktop-stubs -- ../../../apps/desktop/ui/src/omnicui
+platform: [desktop]
+design: desktop
+stepTimeout: 20s
+startTimeout: 600s
