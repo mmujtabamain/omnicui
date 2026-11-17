@@ -67,3 +67,14 @@ python3 apps/desktop/scripts/check-widget.py <name> --slot <slot> [--test "<part
 ```
 
 It builds your draft with the finished widgets and screens, and runs the contract on the desktop target. Tests tagged `only: [web]` are "not applicable". Fix until it exits 0, then look at a few screenshots.
+
+## A library widget under the screen's part names
+
+A library widget tags its own parts (`ui.button.button`). Where the contract names the same thing as a screen part (`app.toasthost.undo`), draw the widget inside `taskscape_ui::as_part`:
+
+```rust
+use taskscape_ui::{as_part, omnicui::button::parts as button_parts};
+as_part(ui, &[(button_parts::BUTTON, parts::UNDO)], |ui| self.undo.ui(ui, look));
+```
+
+The node is then found by the screen's part id. This is the web's `data-part="ui.button.button app.toasthost.undo"`.

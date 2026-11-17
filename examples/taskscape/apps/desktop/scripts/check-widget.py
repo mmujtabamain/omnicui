@@ -56,7 +56,8 @@ toml = toml.replace('name = "taskscape-target-desktop"', f'name = "taskscape-tar
 (target / "Cargo.toml").write_text(toml)
 shutil.copy(TARGET / "Cargo.lock", target / "Cargo.lock")
 
-shared = ROOT / ".checks" / "desktop-slots" / "shared-build"
+# Slots 10 and up (the screen builders) share a second build folder, so they do not queue behind the widget builders.
+shared = ROOT / ".checks" / "desktop-slots" / ("shared-build" if int(slot) < 10 else "shared-build-2")
 env = {**os.environ, "CARGO_TARGET_DIR": str(shared), "PATH": f"{Path.home()}/.cargo/bin:{Path.home()}/.local/node22/bin:{os.environ['PATH']}"}
 build = subprocess.run(["cargo", "build", "-q", "--release", "--bin", f"adapter-slot{slot}"], cwd=target, env=env, capture_output=True, text=True)
 errors = [l for l in build.stderr.splitlines() if l.startswith(("error", "warning"))]

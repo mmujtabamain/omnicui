@@ -44,7 +44,9 @@ impl Data {
     /// Opens a store in a fresh folder of its own, loaded with a demo data set (standard, empty,
     /// nolists, long): what each screen test starts from.
     pub fn demo(dataset: &str) -> Result<Self> {
-        let dir = std::env::temp_dir().join(format!("taskscape-{}-{}", std::process::id(), NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)));
+        // One folder per process, emptied for each mount: a test that compares two mounts (a press and
+        // its keyboard twin) sees the same paths in both.
+        let dir = std::env::temp_dir().join(format!("taskscape-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         // SAFETY: the target mounts one screen at a time on one thread; nothing reads the variable concurrently.
         unsafe { std::env::set_var("TASKSCAPE_DATA_DIR", &dir) };
@@ -239,5 +241,3 @@ impl Data {
         self.rt.block_on(f(&self.store))
     }
 }
-
-static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);

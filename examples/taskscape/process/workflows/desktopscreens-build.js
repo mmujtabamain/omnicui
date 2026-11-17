@@ -56,7 +56,8 @@ Fix the draft until the check exits 0. Change only that file; keep \`pub struct 
 
 const queue = [...args.screens]
 const done = []
-await Promise.all(Array.from({ length: args.slots }, async (_, slot) => {
+await Promise.all(Array.from({ length: args.slots }, async (_, i) => {
+  const slot = (args.firstSlot ?? 0) + i
   while (queue.length) {
     const w = queue.shift()
     const first = await agent(build(w, slot), { ...OPTS, schema: RESULT, label: `build ${w.contract} (slot ${slot})`, phase: 'Build' })

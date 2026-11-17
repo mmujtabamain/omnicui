@@ -75,9 +75,34 @@ pub const fn rem(r: f32) -> f32 {
     r * 14.0
 }
 
-/// Marks a widget's response as a contract part: AccessKit's `author_id` is the part id.
+/// Marks a widget's response as a contract part: AccessKit's `author_id` is the part id. Inside
+/// [`as_part`], a part id the screen renamed is tagged with the screen's name instead.
 pub fn part(ui: &egui::Ui, response: &Response, id: &str) {
-    ui.ctx().accesskit_node_builder(response.id, |node| node.set_author_id(id.to_owned()));
+    let renamed = ui.ctx().data(|d| d.get_temp::<Vec<(String, String)>>(part_map_id())).and_then(|map| map.iter().rev().find(|(from, _)| from == id).map(|(_, to)| to.clone()));
+    let id = renamed.unwrap_or_else(|| id.to_owned());
+    ui.ctx().accesskit_node_builder(response.id, |node| node.set_author_id(id));
+}
+
+fn part_map_id() -> egui::Id {
+    egui::Id::new("taskscape-part-renames")
+}
+
+/// Draws a library widget under a screen's own part names: while `f` runs, a part the widget tags
+/// as `from` (`ui.button.button`) is tagged `to` (`app.toasthost.undo`) instead. This is the desktop
+/// form of the web's space-separated `data-part` tokens.
+///
+/// ```ignore
+/// as_part(ui, &[(omnicui::button::parts::BUTTON, parts::UNDO)], |ui| self.undo.ui(ui, look));
+/// ```
+pub fn as_part<R>(ui: &mut egui::Ui, renames: &[(&str, &str)], f: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    let id = part_map_id();
+    let before = ui.ctx().data(|d| d.get_temp::<Vec<(String, String)>>(id)).unwrap_or_default();
+    let mut map = before.clone();
+    map.extend(renames.iter().map(|(a, b)| ((*a).to_owned(), (*b).to_owned())));
+    ui.ctx().data_mut(|d| d.insert_temp(id, map));
+    let out = f(ui);
+    ui.ctx().data_mut(|d| d.insert_temp(id, before));
+    out
 }
 
 /// Inter's weights as font families: `weight(600)` is SemiBold.
