@@ -447,11 +447,13 @@ impl MainWindow {
                 self.inspector.show(app, ui, look);
             } else {
                 node(ui, rect, "mainwindow.preview", parts::PREVIEWPANEL, "Preview");
-                // The empty preview: an icon over "No task selected" and its hint.
+                // The empty preview: an icon over "No task selected" and its hint, placed as the reference's
+                // recording has them (main-default): the reference's left_click glyph at 28 px, the title 3 px
+                // and the hint 7 px lower than ours were.
                 let c = rect.center();
-                ui.painter().text(c - egui::vec2(0.0, 26.0), Align2::CENTER_CENTER, taskscape_ui::icon("ads_click", 24.0).text(), FontId::new(24.0, egui::FontFamily::Name("Icons".into())), t.content_3);
-                let title = ui.painter().text(c, Align2::CENTER_CENTER, "No task selected", FontId::new(rem(1.071), weight(500)), t.content_2);
-                ui.painter().text(c + egui::vec2(0.0, 22.0), Align2::CENTER_CENTER, "Select a task to inspect it", FontId::new(rem(0.893), weight(400)), t.content_3);
+                ui.painter().text(c - egui::vec2(0.0, 26.5), Align2::CENTER_CENTER, taskscape_ui::icon("left_click", 28.0).text(), FontId::new(28.0, egui::FontFamily::Name("Icons".into())), t.content_3);
+                let title = ui.painter().text(c + egui::vec2(0.0, 3.0), Align2::CENTER_CENTER, "No task selected", FontId::new(rem(1.071), weight(500)), t.content_2);
+                ui.painter().text(c + egui::vec2(0.0, 29.0), Align2::CENTER_CENTER, "Select a task to inspect it", FontId::new(rem(0.893), weight(400)), t.content_3);
                 let r = ui.interact(title.expand2(egui::vec2(60.0, 20.0)), Id::new("mainwindow.previewempty"), Sense::hover());
                 r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "No task selected"));
                 ui.ctx().accesskit_node_builder(r.id, |n| n.set_value("No task selected".to_owned()));
