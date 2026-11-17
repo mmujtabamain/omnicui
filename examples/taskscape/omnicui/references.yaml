@@ -1,0 +1,62 @@
+# Recorded screenshots of the reference app (spec/references, 1180×760, light, the standard data set),
+# each compared by omnicui with every target's screenshot of the test it shows. Masked: what the
+# reference draws that the targets don't in a test, never what they should match.
+#
+# The main window's bar is masked on both sides: the reference draws its own macOS lights and a drag
+# grip at the bar's left, which a target's test window doesn't (and the real app on macOS shows the
+# OS's lights), so everything in the bar sits 100 px further right there. The bar's controls have their
+# own contract (appbar). Below the bar, the list, the inspector and the footer are compared.
+#
+# The reference's text is in system-ui, which the machine that recorded these resolved to a wider
+# font than the targets' Inter: text runs differ in width. That is the recording's, not the design's.
+
+- contract: app.mainwindow
+  test: main window at rest on Home, Errands
+  image: ../spec/references/main-default/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }]
+  maskParts: [titleBar]
+  why: main-default, the window on launch
+
+- contract: app.mainwindow
+  test: preview panel hidden gives the task pane the full width
+  image: ../spec/references/preview-hidden/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }]
+  maskParts: [titleBar]
+  why: preview-hidden
+
+- contract: app.mainwindow
+  test: split view opens with Reading in the right pane
+  image: ../spec/references/split-view/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }]
+  maskParts: [titleBar]
+  why: split-view
+
+- contract: app.mainwindow
+  test: no lists shows the empty state and disables split view
+  image: ../spec/references/no-lists/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }]
+  maskParts: [titleBar]
+  why: no-lists
+
+# Settings: the title row is masked (the reference's lights put its title 80 px in, the targets' test
+# window draws none), and so is Reduced motion's control: the reference has a switch, the targets the
+# three-way choice decision 16 asks for.
+- contract: app.settingswindow
+  test: opens on General with nothing pending
+  image: ../spec/references/settings-general/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }, { x: 1118, y: 177, width: 40, height: 28 }]
+  maskParts: [title, reducedSystem, reducedOn, reducedOff]
+  why: settings-general
+
+- contract: app.settingswindow
+  test: typing filters every pane live to matching rows
+  image: ../spec/references/settings-search/shot.png
+  mask: [{ x: 0, y: 0, width: 1180, height: 45 }, { x: 1118, y: 92, width: 40, height: 28 }]
+  maskParts: [title, reducedSystem, reducedOn, reducedOff]
+  why: settings-search
+
+- contract: app.taskinspector
+  test: a task with no notes, subtasks or attachments shows its empty states
+  image: ../spec/references/row-selected/shot.png
+  crop: { x: 861, y: 45, width: 319, height: 715 }
+  why: row-selected shows Book bike service in the inspector, the window's right 319 px below the bar
