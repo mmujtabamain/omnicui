@@ -260,8 +260,9 @@ impl Sheets {
     fn field(&mut self, ui: &mut egui::Ui, look: Look, cfg: &Config, prompt: &Prompt, act: &mut Option<Act>) {
         let t = look.t;
         let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), rem(2.5)), Sense::hover());
-        let edge = if ui.ctx().memory(|m| m.has_focus(input_id())) { t.accent_500 } else { t.edge_2 };
-        ui.painter().rect(rect, CornerRadius::same(5), t.surface_1, Stroke::new(1.0, edge), StrokeKind::Inside);
+        // The row is the field: its border becomes the focus ring while the name has the keyboard.
+        let stroke = if ui.ctx().memory(|m| m.has_focus(input_id())) { Stroke::new(2.0, t.focus_1) } else { Stroke::new(1.0, t.edge_2) };
+        ui.painter().rect(rect, CornerRadius::same(5), t.surface_1, stroke, StrokeKind::Inside);
         // The row's padding: 10px at the left, 6px at the right.
         let inner = Rect::from_min_max(pos2(rect.left() + 10.0, rect.top()), pos2(rect.right() - 6.0, rect.bottom()));
 
@@ -346,6 +347,7 @@ impl Sheets {
             if pressed {
                 *act = Some(Act::Instead("import".into()));
             }
+            outline(ui, look, r);
         }
 
         // Cancel is drawn here, with the look of the lg neutral Button, because a destructive sheet starts
@@ -363,6 +365,7 @@ impl Sheets {
         let cancel_fill = if cancel_resp.hovered() { t.wash_2 } else { t.surface_0 };
         ui.painter().rect_filled(cancel_r, CornerRadius::same(4), cancel_fill);
         ui.painter().text(cancel_r.center(), Align2::CENTER_CENTER, "Cancel", FontId::new(14.0, weight(500)), t.content_1);
+        outline(ui, look, cancel_r);
         if cancel_resp.has_focus() {
             ui.painter().rect_stroke(cancel_r, CornerRadius::same(4), Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
         }
@@ -378,6 +381,9 @@ impl Sheets {
             ..Default::default()
         });
         let pressed = !at(ui, "sheets.accept", accept_r, |ui| as_part(ui, &[(button_parts::BUTTON, parts::ACCEPT)], |ui| accept.ui(ui, look))).is_empty();
+        if !cfg.danger {
+            outline(ui, look, accept_r);
+        }
         if pressed && !disabled && !(cfg.danger && enter) {
             let name = if prompt { self.name.trim().to_owned() } else { String::new() };
             *act = Some(Act::Accept(name));
@@ -739,6 +745,11 @@ fn make_input(value: &str, title: &str, placeholder: &str) -> Input {
         spellCheck: false,
         ..Default::default()
     })
+}
+
+/// The 1 px edge the reference's sheet buttons have (the flat lg buttons read as unbordered, #12360).
+fn outline(ui: &egui::Ui, look: Look, r: Rect) {
+    ui.painter().rect_stroke(r, CornerRadius::same(4), Stroke::new(1.0, look.t.edge_2), StrokeKind::Inside);
 }
 
 /// The width of an lg footer button's content: its label and the 10px sides.

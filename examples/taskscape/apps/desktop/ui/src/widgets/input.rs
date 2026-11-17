@@ -201,7 +201,8 @@ impl Input {
 
         let hint = RichText::new(self.p.placeholder.clone()).color(t.content_3);
         let field = if multi {
-            TextEdit::multiline(&mut self.text)
+            // One row at rest (egui's multiline field asks for four, which made the title two lines tall, #12343).
+            TextEdit::multiline(&mut self.text).desired_rows(1)
         } else {
             TextEdit::singleline(&mut self.text)
         };
@@ -217,6 +218,7 @@ impl Input {
             ScrollArea::vertical()
                 .id_salt(edit_id.with("scroll"))
                 .max_height(box_h)
+                .min_scrolled_height(box_h)
                 .auto_shrink([false, true])
                 .show(&mut child, |ui| field.show(ui))
                 .inner
@@ -261,7 +263,8 @@ impl Input {
             self.commit_once(text, events);
         }
 
-        if focused {
+        // A bare field's host shows the focus (the sheet's name row): a ring here too read as two (#12360).
+        if focused && self.p.mode != "bare" {
             ui.painter().rect_stroke(rect.expand(2.0), radius, Stroke::new(2.0, t.focus_1), StrokeKind::Outside);
         }
         let label = self.p.ariaLabel.clone();

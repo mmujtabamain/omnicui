@@ -24,3 +24,15 @@ pub fn open_json() -> Option<std::path::PathBuf> {
         None
     }
 }
+
+/// Any file, to attach to a task.
+pub fn open_any() -> Option<std::path::PathBuf> {
+    #[cfg(feature = "window")]
+    {
+        rfd::FileDialog::new().pick_file()
+    }
+    #[cfg(not(feature = "window"))]
+    {
+        None
+    }
+}

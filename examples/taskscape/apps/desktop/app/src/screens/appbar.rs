@@ -385,6 +385,8 @@ impl AppBar {
     }
 
     fn tabs(&mut self, ui: &mut egui::Ui, look: Look, snap: &Snap, acts: &mut Vec<Act>) {
+        // Tabs and separators sit edge to edge (egui would put 8 px between them: the gap strip, #12344).
+        ui.spacing_mut().item_spacing.x = 0.0;
         let focused = snap.focused();
         let marker = snap.marker();
         let n = snap.lists.len();

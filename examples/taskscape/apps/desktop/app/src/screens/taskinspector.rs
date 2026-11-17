@@ -118,7 +118,13 @@ impl TaskInspector {
                 "intent": "done",
                 "size": "sm"
             ));
-            for e in as_part(ui, &[(checkbox_parts::CONTROL, parts::DONETOGGLE)], |ui| cb.ui(ui, look)) {
+            // Centred on the title's first line (21 px), as the reference's (#12357).
+            let events = ui
+                .allocate_ui_with_layout(vec2(rem(1.143), 21.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    as_part(ui, &[(checkbox_parts::CONTROL, parts::DONETOGGLE)], |ui| cb.ui(ui, look))
+                })
+                .inner;
+            for e in events {
                 let CheckboxEvent::CheckedChange { checked } = e;
                 done_req = Some(checked);
             }
@@ -419,7 +425,7 @@ impl TaskInspector {
     }
 
     fn attachments_section(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look, task: &Task, atts: &[Attachment], out: &mut Vec<TaskinspectorEvent>) {
-        let (mut link_req, mut file_req) = (false, false);
+        let (mut link_req, mut file_req, mut shot_req) = (false, false, false);
         heading(ui, look, "Attachments", parts::ATTACHMENTSHEADING, false, |ui| {
             file_req |= button(ui, look, parts::ATTACHFILE, props!(
                 "label": "File", "icon": "note_add", "iconSize": 14, "variant": "ghost", "size": "sm",
@@ -429,7 +435,32 @@ impl TaskInspector {
                 "label": "Link", "icon": "add_link", "iconSize": 14, "variant": "ghost", "size": "sm",
                 "width": "content", "tone": "muted", "ariaLabel": "Add a link", "tabbable": true
             ));
+            // Shot: captures the full screen and attaches it (the reference's, decision 27). Laid out from the
+            // right, so it comes first in reading order: Shot, Link, File.
+            shot_req |= button(ui, look, parts::ATTACHSHOT, props!(
+                "label": "Shot", "icon": "screenshot_monitor", "iconSize": 14, "variant": "ghost", "size": "sm",
+                "width": "content", "tone": "muted", "ariaLabel": "Screenshot",
+                "description": "Capture the full screen and attach it", "tabbable": true
+            ));
         });
+        if shot_req && app.native_window {
+            match taskscape_storage::screenshot::capture() {
+                Ok(Some(path)) => {
+                    if let Err(e) = app.data.add_file(&task.id, &path.to_string_lossy()) {
+                        app.refused(e);
+                    }
+                }
+                Ok(None) => {}
+                Err(e) => app.refused(e),
+            }
+        }
+        if file_req && app.native_window {
+            if let Some(path) = crate::dialogs::open_any() {
+                if let Err(e) = app.data.add_file(&task.id, &path.to_string_lossy()) {
+                    app.refused(e);
+                }
+            }
+        }
         if file_req {
             out.push(TaskinspectorEvent::AttachRequested { kind: "file".into() });
         }
@@ -438,22 +469,16 @@ impl TaskInspector {
         }
 
         if atts.is_empty() {
+            // The reference's empty state: a dashed box split in two, each half an icon over its label.
+            let t = look.t;
             let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), rem(5.0)), Sense::hover());
-            ui.painter().rect(rect, CornerRadius::same(7), look.t.surface_3, Stroke::new(1.0, look.t.edge_2), StrokeKind::Inside);
-            let (mut copy, mut add) = (false, false);
-            ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-                ui.add_space(((rect.height() - rem(1.8)) / 2.0).max(0.0));
-                ui.columns(2, |cols| {
-                    copy = button(&mut cols[0], look, parts::EMPTYCOPYFILE, props!(
-                        "label": "Copy a file", "icon": "note_add", "iconSize": 18, "variant": "ghost", "size": "md",
-                        "tone": "muted", "width": "full", "tabbable": true
-                    ));
-                    add = button(&mut cols[1], look, parts::EMPTYADDLINK, props!(
-                        "label": "Add a link", "icon": "add_link", "iconSize": 18, "variant": "ghost", "size": "md",
-                        "tone": "muted", "width": "full", "ariaLabel": "Add a link", "tabbable": true
-                    ));
-                });
-            });
+            ui.painter().rect_filled(rect, CornerRadius::same(7), t.surface_3);
+            dashed_rect(ui.painter(), rect.shrink(0.5), 7.0, Stroke::new(1.0, t.edge_3));
+            let mid = rect.center().x;
+            ui.painter().vline(mid, (rect.top() + 10.0)..=(rect.bottom() - 10.0), Stroke::new(1.0, t.edge_2));
+            let half = |left: bool| if left { Rect::from_min_max(rect.min, pos2(mid, rect.max.y)) } else { Rect::from_min_max(pos2(mid, rect.min.y), rect.max) };
+            let copy = empty_choice(ui, look, half(true), "note_add", "Copy a file", parts::EMPTYCOPYFILE);
+            let add = empty_choice(ui, look, half(false), "add_link", "Add a link", parts::EMPTYADDLINK);
             if copy {
                 out.push(TaskinspectorEvent::AttachRequested { kind: "file".into() });
             }
@@ -462,6 +487,12 @@ impl TaskInspector {
             }
         } else {
             let mut opened: Vec<Id> = vec![];
+            // The reference's grid: as many columns of at least 72 px as fit, sharing the row's width.
+            let gap = 6.0;
+            let avail = ui.available_width();
+            let cols = ((avail + gap) / (72.0 + gap)).floor().max(1.0);
+            let side = ((avail - gap * (cols - 1.0)) / cols).floor();
+            ui.spacing_mut().item_spacing = vec2(gap, gap);
             ui.horizontal_wrapped(|ui| {
                 for a in atts {
                     let remote = is_remote(a);
@@ -476,17 +507,19 @@ impl TaskInspector {
                     let mut tile = AttachmentTile::new(props!(
                         "kind": if image { "image" } else { "link" },
                         "name": a.name.clone(),
-                        "thumbnailSrc": if image { a.location.clone() } else { String::new() },
+                        // A copied file's location is relative to the data folder.
+                        "thumbnailSrc": if image { thumb_path(&a.location) } else { String::new() },
                         "draggable": false
                     ));
+                    tile.side = side;
                     ui.vertical(|ui| {
-                        ui.set_width(rem(6.714));
+                        ui.set_width(side);
                         for e in as_part(ui, &[(tile_parts::TILE, tile_part)], |ui| tile.ui(ui, look)) {
                             if let AttachmenttileEvent::Opened { .. } = e {
                                 opened.push(a.id.clone());
                             }
                         }
-                        text_only(ui, look, "app.taskinspector.attachmentCaption", a.name.clone());
+                        caption(ui, look, side, &a.name);
                     });
                 }
             });
@@ -524,7 +557,10 @@ fn subtask_rows(app: &mut App, ui: &mut egui::Ui, look: Look, parent: &Id, depth
         };
         let mut toggled: Option<bool> = None;
         let mut selected = false;
-        ui.horizontal(|ui| {
+        // A row of the title button's height, everything centred on it: in a plain horizontal row the
+        // checkbox is placed before the taller button and stays at the top (#12348).
+        let row_w = ui.available_width();
+        ui.allocate_ui_with_layout(vec2(row_w, rem(2.2857)), egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.add_space(rem(0.4286) + depth as f32 * rem(1.2857));
             let label = if kid.done { "Mark not done" } else { "Mark done" };
             let mut cb = Checkbox::new(props!("checked": kid.done, "ariaLabel": label, "intent": "done", "size": "sm"));
@@ -566,6 +602,8 @@ fn editor_ui(ui: &mut egui::Ui, look: Look, ne: &mut NoteEditor, body: &str, cou
         (editor_parts::MENTIONCHIP, parts::MENTIONCHIP),
         (editor_parts::MENTIONLIST, parts::MENTIONPOPUP),
         (editor_parts::MENTIONOPTION, parts::MENTIONITEM),
+        // The count sits in the floating bar, as the reference's.
+        (taskscape_ui::widgets::richtexteditor::BAR_COUNT, counter),
     ];
     // Each editor gets a scope of its own: the widget's ids come from the scope, so two editors must not share one.
     let (evs, focused) = ui
@@ -577,13 +615,6 @@ fn editor_ui(ui: &mut egui::Ui, look: Look, ne: &mut NoteEditor, body: &str, cou
             })
         })
         .inner;
-    if focused {
-        let count = ne.text.chars().count() as i64;
-        let mut c = CharacterCounter::new(props!("count": count, "limit": NOTE_LIMIT, "nearRatio": 0.9));
-        as_part(ui, &[(counter_parts::READOUT, counter)], |ui| {
-            c.ui(ui, look);
-        });
-    }
     (evs, focused)
 }
 
@@ -753,4 +784,68 @@ pub fn mount(mut app: App, props: serde_json::Value) -> Result<Box<dyn Mounted>,
     app.ui.open_list(Some(found.list_id.clone()), Some(0));
     app.ui.preview = Some(found.id.clone());
     Ok(Box::new(Mount { app, screen: TaskInspector::new() }))
+}
+
+/// Where a thumbnail loads from: a copied file's location is relative to the data folder.
+fn thumb_path(location: &str) -> String {
+    if location.contains("://") || std::path::Path::new(location).is_absolute() {
+        location.to_owned()
+    } else {
+        taskscape_storage::paths::root_dir().join(location).display().to_string()
+    }
+}
+
+/// A tile's name: one line, centred, cut with an ellipsis (the reference's truncated 11 px label).
+fn caption(ui: &mut egui::Ui, look: Look, width: f32, name: &str) {
+    let mut job = egui::text::LayoutJob::single_section(name.to_owned(), egui::TextFormat { font_id: FontId::new(11.0, weight(400)), color: look.t.content_2, ..Default::default() });
+    job.wrap.max_width = width;
+    job.wrap.max_rows = 1;
+    job.wrap.break_anywhere = true;
+    job.wrap.overflow_character = Some('…');
+    let g = ui.painter().layout_job(job);
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, g.size().y + 2.0), Sense::hover());
+    resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, name));
+    part(ui, &resp, "app.taskinspector.attachmentCaption");
+    ui.painter().galley(pos2(rect.center().x - g.size().x / 2.0, rect.top() + 2.0), g, look.t.content_2);
+}
+
+/// One half of the empty attachments box: a press target with its icon over its label.
+fn empty_choice(ui: &mut egui::Ui, look: Look, rect: Rect, glyph: &str, label: &str, part_id: &str) -> bool {
+    let t = look.t;
+    let resp = ui.interact(rect.shrink(4.0), egui::Id::new(("inspector.empty", part_id)), Sense::click());
+    resp.widget_info(|| WidgetInfo::labeled(Role::Button, true, label));
+    part(ui, &resp, part_id);
+    let ink = if resp.hovered() { t.content_1 } else { t.content_3 };
+    if resp.hovered() {
+        ui.painter().rect_filled(rect.shrink(4.0), CornerRadius::same(5), t.wash_1);
+    }
+    if resp.has_focus() {
+        ui.painter().rect_stroke(rect.shrink(4.0), CornerRadius::same(5), Stroke::new(2.0, t.focus_1), StrokeKind::Inside);
+    }
+    let c = rect.center();
+    ui.painter().text(pos2(c.x, c.y - 10.0), egui::Align2::CENTER_CENTER, icon(glyph, 18.0).text(), FontId::new(18.0, FontFamily::Name("Icons".into())), ink);
+    ui.painter().text(pos2(c.x, c.y + 12.0), egui::Align2::CENTER_CENTER, label, FontId::new(rem(0.929), weight(600)), ink);
+    resp.clicked()
+}
+
+/// A rounded rectangle's outline in dashes (egui has no dashed stroke for rects).
+fn dashed_rect(p: &egui::Painter, r: Rect, radius: f32, stroke: Stroke) {
+    let (dash, gap) = (4.0, 3.0);
+    let segs = [
+        [pos2(r.left() + radius, r.top()), pos2(r.right() - radius, r.top())],
+        [pos2(r.right(), r.top() + radius), pos2(r.right(), r.bottom() - radius)],
+        [pos2(r.right() - radius, r.bottom()), pos2(r.left() + radius, r.bottom())],
+        [pos2(r.left(), r.bottom() - radius), pos2(r.left(), r.top() + radius)],
+    ];
+    for seg in segs {
+        p.extend(egui::Shape::dashed_line(&seg, stroke, dash, gap));
+    }
+    // The corners: quarter arcs, drawn solid (too short to dash).
+    for (c, a0) in [(pos2(r.right() - radius, r.top() + radius), -90.0f32), (pos2(r.right() - radius, r.bottom() - radius), 0.0), (pos2(r.left() + radius, r.bottom() - radius), 90.0), (pos2(r.left() + radius, r.top() + radius), 180.0)] {
+        let pts: Vec<egui::Pos2> = (0..=6).map(|i| {
+            let a = (a0 + 15.0 * i as f32).to_radians();
+            pos2(c.x + radius * a.cos(), c.y + radius * a.sin())
+        }).collect();
+        p.add(egui::Shape::line(pts, stroke));
+    }
 }

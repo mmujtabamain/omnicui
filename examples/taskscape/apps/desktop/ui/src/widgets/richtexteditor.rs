@@ -19,6 +19,9 @@ const BUTTONS: [(&str, &str, &str); 7] = [
     ("format_list_numbered", "Numbered list", parts::ORDEREDLIST),
     ("link", "Link", parts::LINK),
 ];
+/// The floating bar's count ("n/limit"): no part of this widget's contract, named for a screen to rename.
+pub const BAR_COUNT: &str = "ui.richtexteditor.barCount";
+
 /// A toolbar button's square side: the web's Toggle sm, h-6 (21 px).
 const BUTTON: f32 = rem(1.5);
 /// The corner radius of a control, in px.
@@ -222,6 +225,8 @@ impl RichTextEditor {
                 self.bar(ui, look, base, editor_id, disabled, docked, &mut events);
             }
 
+            // The widget's top: the floating bar sits above it, clear of the chips.
+            let widget_top = ui.cursor().top();
             // The attachments, as chips above the text.
             if !self.chips.is_empty() {
                 let chips = self.chips.clone();
@@ -289,7 +294,7 @@ impl RichTextEditor {
                                 .font(FontId::new(rem(0.9643), weight(400)))
                                 .text_color(if disabled { t.content_2 } else { t.content_1 })
                                 .frame(egui::Frame::NONE)
-                                .margin(egui::Margin { left: 0, right: 0, top: 6, bottom: 6 })
+                                .margin(egui::Margin { left: 0, right: 0, top: 8, bottom: 8 })
                                 .desired_width(ui.available_width() - 8.0)
                                 .desired_rows(rows)
                                 .char_limit(max_len)
@@ -360,21 +365,15 @@ impl RichTextEditor {
             let radius = CornerRadius::same(RADIUS);
             let mut shapes = vec![
                 Shape::rect_filled(frame_rect, radius, if disabled { t.surface_2 } else { t.surface_3 }),
+                // One ring: the border turns into the 2 px focus ring (a border plus a ring outside it read as
+                // two rings, #12380).
                 Shape::rect_stroke(
                     frame_rect,
                     radius,
-                    Stroke::new(1.0, if focus_now { t.focus_1 } else { t.edge_2 }),
+                    if focus_now { Stroke::new(2.0, t.focus_1) } else { Stroke::new(1.0, t.edge_2) },
                     StrokeKind::Inside,
                 ),
             ];
-            if focus_now {
-                shapes.push(Shape::rect_stroke(
-                    frame_rect.expand(2.0),
-                    radius,
-                    Stroke::new(2.0, t.focus_1),
-                    StrokeKind::Outside,
-                ));
-            }
             ui.painter().set(bg, Shape::Vec(shapes));
 
             // The placeholder: only while the text is empty, so it is absent once typing starts.
@@ -433,8 +432,13 @@ impl RichTextEditor {
                 inserted = true;
             }
 
+            // The floating bar is a popover 6 px above the box (the reference's), over whatever is there.
             if !docked && show_bar {
-                self.bar(ui, look, base, editor_id, disabled, docked, &mut events);
+                let bar_h = BUTTON + 2.0 * rem(0.125);
+                let at = pos2(frame_rect.left(), widget_top.min(frame_rect.top()) - 6.0 - bar_h);
+                egui::Area::new(base.with("floating-bar")).order(egui::Order::Foreground).fixed_pos(at).show(ui.ctx(), |ui| {
+                    self.bar(ui, look, base, editor_id, disabled, docked, &mut events);
+                });
             }
 
             // The @ list: drawn only while open, so it is absent when closed.
@@ -538,7 +542,10 @@ impl RichTextEditor {
         } else {
             (rem(0.125), rem(0.125), rem(0.125))
         };
-        let width = if docked { ui.available_width() } else { n * BUTTON + (n - 1.0) * gap + 2.0 * pad_x };
+        // The floating bar ends with the count, "n/limit", as the reference's.
+        let count_text = (!docked && self.p.maxLength > 0).then(|| format!("{}/{}", self.text.chars().count(), self.p.maxLength));
+        let count_w = count_text.as_ref().map_or(0.0, |c| ui.painter().layout_no_wrap(c.clone(), FontId::new(11.0, weight(500)), Color32::WHITE).size().x + 14.0);
+        let width = if docked { ui.available_width() } else { n * BUTTON + (n - 1.0) * gap + 2.0 * pad_x + count_w };
         let height = BUTTON + 2.0 * pad_y;
         let (rect, _) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
         let bar = ui.interact(rect, base.with("bar"), Sense::hover());
@@ -633,6 +640,13 @@ impl RichTextEditor {
                 ui.memory_mut(|m| m.request_focus(editor_id));
             }
             x += BUTTON + gap;
+        }
+        if let Some(c) = count_text {
+            ui.painter().vline(x + 2.0, (rect.top() + 6.0)..=(rect.bottom() - 6.0), Stroke::new(1.0, t.edge_2));
+            let r = ui.painter().text(pos2(x + 9.0, rect.center().y), Align2::LEFT_CENTER, &c, FontId::new(11.0, weight(500)), t.content_3);
+            let node = ui.interact(r, base.with("bar-count"), Sense::hover());
+            node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, &c));
+            part(ui, &node, BAR_COUNT);
         }
     }
 

@@ -11,11 +11,14 @@ pub struct AttachmentDrag {
 
 pub struct AttachmentTile {
     p: AttachmenttileProps,
+    /// The tile's side; a grid that fills its row sets it (the reference's tiles are at least 72 px and
+    /// share the row's width).
+    pub side: f32,
 }
 
 impl AttachmentTile {
     pub fn new(p: AttachmenttileProps) -> Self {
-        Self { p }
+        Self { p, side: rem(6.714) }
     }
 
     fn is_link(&self) -> bool {
@@ -35,7 +38,7 @@ impl AttachmentTile {
     pub fn ui(&mut self, ui: &mut egui::Ui, look: Look) -> Vec<AttachmenttileEvent> {
         let mut events = vec![];
         let t = look.t;
-        let side = rem(6.714);
+        let side = self.side;
         let radius = CornerRadius::same(7);
         let sense = if self.p.draggable { Sense::click_and_drag() } else { Sense::click() };
         let (rect, response) = ui.allocate_exact_size(vec2(side, side), sense);
@@ -143,7 +146,9 @@ impl AttachmentTile {
                 let uv = Rect::from_center_size(pos2(0.5, 0.5), vec2(rect.width() / (tw * s), rect.height() / (th * s)));
                 egui::Image::from_texture(texture).uv(uv).corner_radius(radius).paint_at(ui, rect);
             }
-            Ok(egui::load::TexturePoll::Pending { .. }) => ui.ctx().request_repaint(),
+            // The loader asks for a frame itself once the image is in; asking here every frame would keep a
+            // headless run from ever settling.
+            Ok(egui::load::TexturePoll::Pending { .. }) => {}
             Err(_) => {}
         }
     }

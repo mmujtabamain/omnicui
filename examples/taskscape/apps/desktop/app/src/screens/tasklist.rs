@@ -526,7 +526,10 @@ fn select_all(ctx: &egui::Context, id: Id, text: &str) {
 /// A bare single-line field at a rect, named and valued for the accessibility tree.
 #[allow(clippy::too_many_arguments)]
 fn text_field(ui: &mut egui::Ui, rect: Rect, id: Id, text: &mut String, hint: &str, label: &str, part_id: Option<&str>, px: f32, w: u16, color: Color32, hint_color: Color32) -> Response {
-    let mut child = ui.new_child(UiBuilder::new().max_rect(rect).layout(Layout::left_to_right(Align::Center)));
+    // The field is centred in its box by hand: a line of text placed in a taller box sits at its top (#12345).
+    let line = ui.fonts_mut(|f| f.row_height(&FontId::new(px, weight(w))));
+    let field = Rect::from_center_size(rect.center(), vec2(rect.width(), line.min(rect.height())));
+    let mut child = ui.new_child(UiBuilder::new().max_rect(field).layout(Layout::left_to_right(Align::Center)));
     let resp = child.add(
         TextEdit::singleline(&mut *text)
             .id(id)
@@ -1371,6 +1374,11 @@ impl TaskList {
             self.menu_at = None;
             self.submenu_open = false;
         }
+        // Laid out from the right: More, the attachments, the subtask count, then the disclosure, so the two
+        // counts sit side by side in the reference's order (#12347).
+        if row.attach > 0 {
+            badge(&mut tr, look, pt.attach, &row.attach.to_string(), true);
+        }
         if row.kids > 0 && !s.searching {
             badge(&mut tr, look, pt.badge, &format!("{}/{}", row.kids_done, row.kids), false);
             let expanded = row.expanded;
@@ -1399,9 +1407,6 @@ impl TaskList {
                     self.collapsed.remove(&row.id);
                 }
             }
-        }
-        if row.attach > 0 {
-            badge(&mut tr, look, pt.attach, &row.attach.to_string(), true);
         }
         let used = tr.min_rect();
 

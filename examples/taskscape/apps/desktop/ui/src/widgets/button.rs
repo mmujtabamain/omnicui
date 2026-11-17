@@ -255,10 +255,9 @@ impl Button {
                 fill = Some(if hot { t.wash_2 } else { t.surface_0 });
             }
             "dashed" => {
+                // A raised fill inside the dashes, as the reference's Add note box (#12349).
                 border = Some((if hot { t.edge_3 } else { t.edge_2 }, true));
-                if hot {
-                    fill = Some(t.wash_1);
-                }
+                fill = Some(if hot { t.surface_3.lerp_to_gamma(t.content_1, 0.04) } else { t.surface_3 });
             }
             "link" => {
                 underline = hot;
