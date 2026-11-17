@@ -470,24 +470,40 @@ fn read_keys(ui: &egui::Ui) -> Keys {
 }
 
 fn body_id(id: &str) -> Id {
-    Id::new(("tasklist.body", id))
+    tid(("tasklist.body", id))
 }
 fn check_id(id: &str) -> Id {
-    Id::new(("tasklist.check", id))
+    tid(("tasklist.check", id))
 }
 /// Parts no test of this contract names, for a window around the pane: the row menu's Move to list
 /// submenu, and its Garden item.
 pub const MOVE_SUBMENU: &str = "app.tasklist.moveSubmenu";
 pub const MOVE_TARGET_GARDEN: &str = "app.tasklist.moveTargetGarden";
 
-pub fn search_id() -> Id {
-    Id::new("tasklist.search")
+/// The search field of a pane (the window focuses it with the search chord).
+pub fn search_id_of(pane: usize) -> Id {
+    Id::new(("tasklist", pane, "tasklist.search"))
+}
+
+fn search_id() -> Id {
+    tid("tasklist.search")
+}
+
+thread_local! {
+    /// The pane being drawn: every id the task list makes carries it, so two panes side by side never share
+    /// a widget (egui's id clash) or its state (the search text, the scroll position).
+    static PANE: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// An id of the task list, for the pane being drawn.
+fn tid(x: impl std::hash::Hash + std::fmt::Debug) -> Id {
+    Id::new(("tasklist", PANE.with(|p| p.get()), x))
 }
 fn rename_id() -> Id {
-    Id::new("tasklist.rename")
+    tid("tasklist.rename")
 }
 fn composer_id() -> Id {
-    Id::new("tasklist.composer")
+    tid("tasklist.composer")
 }
 
 fn info(role: Role, label: &str, value: &str) -> WidgetInfo {
@@ -571,7 +587,7 @@ fn status(ui: &mut egui::Ui, part_id: Option<&str>, value: &str, shown: &str, px
 /// A status that is out of sight: it has no size (the part reads as not visible) but keeps its text, as the web keeps
 /// both footers in the page.
 fn hidden_status(ui: &mut egui::Ui, at: Pos2, part_id: &str, value: &str) {
-    let resp = ui.interact(Rect::from_min_size(at, vec2(0.0, 0.0)), Id::new(("tasklist.hidden", part_id)), Sense::hover());
+    let resp = ui.interact(Rect::from_min_size(at, vec2(0.0, 0.0)), tid(("tasklist.hidden", part_id)), Sense::hover());
     resp.widget_info(|| info(Role::Status, value, value));
     part(ui, &resp, part_id);
 }
@@ -624,7 +640,7 @@ fn mark_rect(g: &egui::Galley, start: usize, end: usize) -> Rect {
 #[allow(clippy::too_many_arguments)]
 fn menu_row(ui: &mut egui::Ui, look: Look, rect: Rect, key: &str, label: &str, icon_name: Option<&str>, danger: bool, checked: Option<bool>, submenu: bool, part_id: Option<&str>) -> Response {
     let t = look.t;
-    let resp = ui.interact(rect, Id::new(("tasklist.menurow", key)), Sense::click());
+    let resp = ui.interact(rect, tid(("tasklist.menurow", key)), Sense::click());
     let painter = ui.painter().clone();
     if resp.hovered() {
         painter.rect_filled(rect.shrink2(vec2(4.0, 0.0)), CornerRadius::same(4), t.wash_2);
@@ -775,6 +791,7 @@ impl TaskList {
 
     /// One frame: draws the pane and returns the events it raised.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<TasklistEvent> {
+        PANE.with(|p| p.set(self.pane));
         let ctx = ui.ctx().clone();
         let full = ui.available_rect_before_wrap();
         self.pane_rect = full;
@@ -795,7 +812,7 @@ impl TaskList {
         // Escape in the Move to list submenu closes the submenu only, and gives Move to list the keyboard.
         if self.menu_for.is_some() && self.submenu_open && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
             self.submenu_open = false;
-            ui.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", "move"))));
+            ui.memory_mut(|m| m.request_focus(tid(("tasklist.menurow", "move"))));
         }
         if self.menu_for.is_some() && !self.submenu_open && ui.input(|i| i.key_pressed(Key::Escape)) {
             if let Some(id) = self.more_focus.take() {
@@ -1047,7 +1064,7 @@ impl TaskList {
     pub fn start_search(&mut self, ctx: &egui::Context, c: char) {
         self.query = c.to_string();
         self.match_at = None;
-        ctx.memory_mut(|m| m.request_focus(search_id()));
+        ctx.memory_mut(|m| m.request_focus(search_id_of(self.pane)));
     }
 
     fn start_rename(&mut self, id: &str, title: &str) {
@@ -1145,13 +1162,13 @@ impl TaskList {
 
     fn body(&mut self, ui: &mut egui::Ui, look: Look, s: &Shown, rect: Rect, acts: &mut Vec<Act>) {
         let mut ch = ui.new_child(UiBuilder::new().max_rect(rect).layout(Layout::top_down(Align::Min)));
-        let region = ch.interact(rect, Id::new("tasklist.region"), Sense::click());
+        let region = ch.interact(rect, tid("tasklist.region"), Sense::click());
         region.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         if let Some(p) = self.pp(parts::SCROLLAREA, None) {
             part(&ch, &region, p);
         }
         let blank_click = region.clicked();
-        egui::ScrollArea::vertical().id_salt("tasklist.scroll").auto_shrink([false, false]).scroll_source(egui::scroll_area::ScrollSource { drag: egui::scroll_area::DragScroll::Never, ..Default::default() }).show(&mut ch, |ui| {
+        egui::ScrollArea::vertical().id_salt(tid("tasklist.scroll")).auto_shrink([false, false]).scroll_source(egui::scroll_area::ScrollSource { drag: egui::scroll_area::DragScroll::Never, ..Default::default() }).show(&mut ch, |ui| {
             // Rows sit edge to edge, their hairlines between them (egui spaces items 3 px apart by default).
             ui.spacing_mut().item_spacing.y = 0.0;
             for (gi, g) in s.groups.iter().enumerate() {
@@ -1211,7 +1228,7 @@ impl TaskList {
             })
             .response
             .rect;
-        let resp = ui.interact(r, Id::new("tasklist.empty"), Sense::hover());
+        let resp = ui.interact(r, tid("tasklist.empty"), Sense::hover());
         let joined = format!("{title} {sub}");
         resp.widget_info(|| info(Role::GenericContainer, title, &joined));
         if let Some(p) = self.pp(parts::EMPTYSTATE, None) {
@@ -1266,14 +1283,14 @@ impl TaskList {
             pt.more = Some(p);
         }
         if let Some((_, p)) = self.row_box.filter(|(title, _)| row.title == *title) {
-            let c = ui.interact(rect, Id::new(("tasklist.rowbox", row.id.as_str())), Sense::hover());
+            let c = ui.interact(rect, tid(("tasklist.rowbox", row.id.as_str())), Sense::hover());
             c.widget_info(|| info(Role::GenericContainer, &row.title, &value));
             part(ui, &c, p);
         }
         // Inside a window, a title button reads as its title alone.
         let value = if self.row_box.is_some() { row.title.clone() } else { value };
         if let Some(p) = pt.subtask {
-            let c = ui.interact(rect, Id::new(("tasklist.sub", row.id.as_str())), Sense::hover());
+            let c = ui.interact(rect, tid(("tasklist.sub", row.id.as_str())), Sense::hover());
             c.widget_info(|| info(Role::GenericContainer, &row.title, &value));
             part(ui, &c, p);
         }
@@ -1462,7 +1479,7 @@ impl TaskList {
             if title_hit {
                 if let (Some(p), Some((cs, ce, m))) = (pt.mark, tmatch) {
                     let r = mark_rect(&tgal, cs, ce).translate(title_pos.to_vec2());
-                    let mk = ui.interact(r, Id::new(("tasklist.mark", row.id.as_str())), Sense::hover());
+                    let mk = ui.interact(r, tid(("tasklist.mark", row.id.as_str())), Sense::hover());
                     mk.widget_info(|| info(Role::GenericContainer, &m, &m));
                     part(ui, &mk, p);
                 }
@@ -1481,7 +1498,7 @@ impl TaskList {
                 if note_hit && !title_hit {
                     if let (Some(p), Some((cs, ce, m))) = (pt.mark, nmatch) {
                         let r = mark_rect(&ngal, cs, ce).translate(note_pos.to_vec2());
-                        let mk = ui.interact(r, Id::new(("tasklist.mark-note", row.id.as_str())), Sense::hover());
+                        let mk = ui.interact(r, tid(("tasklist.mark-note", row.id.as_str())), Sense::hover());
                         mk.widget_info(|| info(Role::GenericContainer, &m, &m));
                         part(ui, &mk, p);
                     }
@@ -1762,7 +1779,7 @@ impl TaskList {
             });
         } else {
             // The bar as a whole carries the bulkBar part. It is added before its buttons, so they stay on top.
-            let bar = ui.interact(rect, Id::new("tasklist.bulkbar"), Sense::hover());
+            let bar = ui.interact(rect, tid("tasklist.bulkbar"), Sense::hover());
             bar.widget_info(|| WidgetInfo::new(Role::GenericContainer));
             part(ui, &bar, parts::BULKBAR);
             // The stats footer is out of sight while picked, but its counts keep their text (the web keeps both in the page).
@@ -1887,11 +1904,11 @@ impl TaskList {
         let mut hovered_other = false;
         let pick = |main: &'static str| if pane0 { Some(main) } else { None };
 
-        egui::Area::new(Id::new("tasklist.rowmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
+        egui::Area::new(tid("tasklist.rowmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
             ui.painter().rect_filled(panel, CornerRadius::same(7), t.surface_3);
             ui.painter().rect_stroke(panel, CornerRadius::same(7), Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
             let mr = Rect::from_min_size(panel.min, panel.size());
-            let menu_resp = ui.interact(mr, Id::new("tasklist.rowmenu.panel"), Sense::hover());
+            let menu_resp = ui.interact(mr, tid("tasklist.rowmenu.panel"), Sense::hover());
             if let Some(p) = pick(parts::ROWMENU) {
                 part(ui, &menu_resp, p);
             }
@@ -2000,8 +2017,8 @@ impl TaskList {
             self.open_panels.push(sub);
             let mut picked: Option<TaskId> = None;
             let mut back = false;
-            egui::Area::new(Id::new("tasklist.movemenu")).order(Order::Foreground).fixed_pos(sub.min).show(ctx, |ui| {
-                let panel_node = ui.interact(sub, Id::new("tasklist.movemenu.panel"), Sense::hover());
+            egui::Area::new(tid("tasklist.movemenu")).order(Order::Foreground).fixed_pos(sub.min).show(ctx, |ui| {
+                let panel_node = ui.interact(sub, tid("tasklist.movemenu.panel"), Sense::hover());
                 panel_node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Move to list"));
                 part(ui, &panel_node, MOVE_SUBMENU);
                 ui.painter().rect_filled(sub, CornerRadius::same(7), t.surface_3);
@@ -2012,7 +2029,7 @@ impl TaskList {
                 if self.submenu_focus && !ui.input(|i| i.key_pressed(Key::ArrowRight)) {
                     self.submenu_focus = false;
                     if let Some(k) = &first_key {
-                        ui.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", k.as_str()))));
+                        ui.memory_mut(|m| m.request_focus(tid(("tasklist.menurow", k.as_str()))));
                     }
                 }
                 for (tid, name) in &targets {
@@ -2037,7 +2054,7 @@ impl TaskList {
             });
             if back {
                 self.submenu_open = false;
-                ctx.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", "move"))));
+                ctx.memory_mut(|m| m.request_focus(tid(("tasklist.menurow", "move"))));
             }
             if let Some(tid) = picked {
                 acts.push(Act::MoveTo(vec![row_id.clone()], tid));
@@ -2062,11 +2079,11 @@ impl TaskList {
         let (scope, fields) = (self.scope, self.fields);
         let mut next_scope: Option<Scope> = None;
         let mut next_fields: Option<Fields> = None;
-        egui::Area::new(Id::new("tasklist.searchmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
+        egui::Area::new(tid("tasklist.searchmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
             ui.painter().rect_filled(panel, CornerRadius::same(7), t.surface_3);
             ui.painter().rect_stroke(panel, CornerRadius::same(7), Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
             let mr = Rect::from_min_size(panel.min, panel.size());
-            let menu_resp = ui.interact(mr, Id::new("tasklist.searchmenu.panel"), Sense::hover());
+            let menu_resp = ui.interact(mr, tid("tasklist.searchmenu.panel"), Sense::hover());
             if pane0 {
                 part(ui, &menu_resp, parts::SEARCHMENU);
             }
@@ -2130,7 +2147,7 @@ impl TaskList {
         let panel = Rect::from_min_size(pos2(btn.left(), btn.top() - 4.0 - h), vec2(MENU_W, h));
         self.open_panels.push(panel);
         let mut picked: Option<TaskId> = None;
-        egui::Area::new(Id::new("tasklist.bulkmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
+        egui::Area::new(tid("tasklist.bulkmenu")).order(Order::Foreground).fixed_pos(panel.min).show(ctx, |ui| {
             ui.painter().rect_filled(panel, CornerRadius::same(7), t.surface_3);
             ui.painter().rect_stroke(panel, CornerRadius::same(7), Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
             let mut y = panel.top() + 4.0;

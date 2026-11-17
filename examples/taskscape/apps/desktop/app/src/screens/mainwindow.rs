@@ -477,7 +477,7 @@ impl MainWindow {
             }
         }
         if search {
-            ui.memory_mut(|m| m.request_focus(crate::screens::tasklist::search_id()));
+            ui.memory_mut(|m| m.request_focus(crate::screens::tasklist::search_id_of(app.ui.active_pane.min(1))));
         }
         if let Some(c) = letter {
             self.panes[pane].start_search(ui.ctx(), c);

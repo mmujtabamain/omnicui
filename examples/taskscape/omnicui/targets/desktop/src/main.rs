@@ -105,6 +105,27 @@ fn keys(combo: &str) -> Result<(Modifiers, Key)> {
     Ok((mods, key))
 }
 
+/// The id-clash warnings egui painted in the last frame ("First use of widget ID …"), read from its shapes.
+fn id_clashes(shapes: &[egui::epaint::ClippedShape]) -> Vec<String> {
+    fn walk(shape: &egui::Shape, out: &mut Vec<String>) {
+        match shape {
+            egui::Shape::Text(t) => {
+                let text = t.galley.text();
+                if text.contains(" use of ") && text.contains(" ID ") && !out.iter().any(|o| o == text) {
+                    out.push(text.trim_start_matches(|c: char| !c.is_ascii_alphabetic()).to_owned());
+                }
+            }
+            egui::Shape::Vec(v) => v.iter().for_each(|s| walk(s, out)),
+            _ => {}
+        }
+    }
+    let mut out = vec![];
+    for s in shapes {
+        walk(&s.shape, &mut out);
+    }
+    out
+}
+
 fn build(component: Box<dyn Mounted>, look: Look, size: egui::Vec2, dark: bool) -> Harness<'static, AppState> {
     Harness::builder()
         .with_size(size)
@@ -119,6 +140,9 @@ fn build(component: Box<dyn Mounted>, look: Look, size: egui::Vec2, dark: bool) 
         .with_theme(if dark { egui::Theme::Dark } else { egui::Theme::Light })
         .with_context_setup(move |ctx| {
             fonts(ctx);
+            // egui's own check for two widgets with one id (state shared by accident); its warnings
+            // are read back after each settle and fail the step (see id_clashes).
+            ctx.options_mut(|o| o.warn_on_id_clash = true);
             ctx.all_styles_mut(|s| {
                 for w in [&mut s.visuals.widgets.inactive, &mut s.visuals.widgets.hovered, &mut s.visuals.widgets.active] {
                     w.expansion = 0.0;
@@ -159,7 +183,14 @@ impl Target {
             std::thread::sleep(Duration::from_millis(10));
             h.step();
         }
-        h.try_run().map(|_| ()).map_err(|e| fail(STEP_FAILED, format!("the UI did not settle: {e}")))
+        h.try_run().map_err(|e| fail(STEP_FAILED, format!("the UI did not settle: {e}")))?;
+        // A toolkit warning is a failure: egui painted an id clash (two widgets sharing one id, and so
+        // their state), which the parts read back would never show.
+        let clashes = id_clashes(&h.output().shapes);
+        if !clashes.is_empty() {
+            return Err(fail(STEP_FAILED, format!("egui reported an id clash: {}", clashes.join("; "))));
+        }
+        Ok(())
     }
 
     fn handle(&mut self, method: &str, p: &Value) -> Result<Value> {
@@ -559,6 +590,11 @@ fn main() {
                 let method = req["method"].as_str().unwrap_or_default().to_owned();
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| target.handle(&method, &req["params"]))).unwrap_or_else(|p| {
                     let why = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default();
+                    // egui marks its id-clash warning with 🔥, a glyph the app's fonts lack: kittest panics drawing
+                    // it, before the warning could be read back. Report it as what it is.
+                    if why.contains('🔥') {
+                        return Err(fail(STEP_FAILED, format!("{method}: egui reported an id clash (two widgets with one id, sharing their state)")));
+                    }
                     Err(fail(STEP_FAILED, format!("{method} panicked: {}", why.lines().next().unwrap_or_default())))
                 });
                 match result {

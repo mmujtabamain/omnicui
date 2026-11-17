@@ -154,5 +154,8 @@ pub fn fonts(ctx: &egui::Context) {
         fonts.families.insert(FontFamily::Name(name.into()), chain);
     }
     fonts.families.entry(FontFamily::Proportional).or_default().insert(0, "Inter".into());
+    // The monospace family falls back to Inter: without egui's bundled fonts it would be empty, and egui
+    // panics drawing any monospace text (its own debug warnings among them).
+    fonts.families.entry(FontFamily::Monospace).or_default().push("Inter".into());
     ctx.set_fonts(fonts);
 }
