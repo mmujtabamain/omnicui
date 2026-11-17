@@ -120,8 +120,22 @@ tests:
     screenshot: true
 
   - name: "More on the Reading tab opens the list tab menu with its four items (tab-context-menu state)"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
+    expect:
+      - { part: tabMenu, visible: true }
+      - { part: menuTabRename, text: { contains: "Rename" } }
+      - { part: menuTabSplit, text: { contains: "Open in split view" } }
+      - { part: menuTabExport, text: { contains: "Export list" } }
+      - { part: menuTabDelete, text: { contains: "Delete list" } }
+      - { part: rowMenu, visible: false }
+    screenshot: true
+
+  - name: "More on the Reading tab opens the list tab menu with its four items (tab-context-menu state) (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
     expect:
       - { part: tabMenu, visible: true }
       - { part: menuTabRename, text: { contains: "Rename" } }
@@ -200,6 +214,7 @@ tests:
       - { part: rowPrescription, text: { contains: "Pick up prescription" } }
 
   - name: "Escape closes the list tab menu"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: focus, part: menuTabRename }
@@ -207,9 +222,28 @@ tests:
     expect:
       - { part: tabMenu, visible: false }
 
+  - name: "Escape closes the list tab menu (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: focus, part: menuTabRename }
+      - { action: key, part: menuTabRename, key: Escape }
+    expect:
+      - { part: tabMenu, visible: false }
+
   - name: "A press outside the list tab menu closes it and does not reach the tab below"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
+      - { action: press, part: firstTab }
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: firstTab, selected: true }
+
+  - name: "A press outside the list tab menu closes it and does not reach the tab below (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
       - { action: press, part: firstTab }
     expect:
       - { part: tabMenu, visible: false }
@@ -493,6 +527,7 @@ tests:
 
   # List tab menu
   - name: "Open in split view closes the tab menu"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabSplit }
@@ -500,7 +535,17 @@ tests:
     expect:
       - { part: tabMenu, visible: false }
 
+  - name: "Open in split view closes the tab menu (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabSplit }
+    # The result of opening split view is not recorded; only the menu closing is checked.
+    expect:
+      - { part: tabMenu, visible: false }
+
   - name: "Export list closes the tab menu without a sheet"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabExport }
@@ -509,7 +554,18 @@ tests:
       - { part: tabMenu, visible: false }
       - { part: sheetHeadline, visible: false }
 
+  - name: "Export list closes the tab menu without a sheet (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabExport }
+    # The export result is not recorded; only the menu closing and the absence of a sheet are checked.
+    expect:
+      - { part: tabMenu, visible: false }
+      - { part: sheetHeadline, visible: false }
+
   - name: "Rename list sheet opens prefilled with the list name"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabRename }
@@ -520,7 +576,20 @@ tests:
       - { part: sheetAccept, text: { contains: "Rename" } }
       - { part: sheetCancel, text: { contains: "Cancel" } }
 
+  - name: "Rename list sheet opens prefilled with the list name (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabRename }
+    expect:
+      - { part: sheetHeadline, text: "Rename list" }
+      - { part: sheetInput, text: "Reading" }
+      - { part: sheetInput, focused: true }
+      - { part: sheetAccept, text: { contains: "Rename" } }
+      - { part: sheetCancel, text: { contains: "Cancel" } }
+
   - name: "Enter in the Rename list sheet renames the tab"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabRename }
@@ -530,7 +599,19 @@ tests:
       - { part: sheetHeadline, visible: false }
       - { part: tabReading, text: "Book club" }
 
+  - name: "Enter in the Rename list sheet renames the tab (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabRename }
+      - { action: type, part: sheetInput, text: "Book club" }
+      - { action: key, part: sheetInput, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: tabReading, text: "Book club" }
+
   - name: "An empty name disables Rename, and Enter does not accept it"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabRename }
@@ -542,7 +623,21 @@ tests:
       - { part: sheetAccept, disabled: true }
       - { part: tabReading, text: { contains: "Reading" } }
 
+  - name: "An empty name disables Rename, and Enter does not accept it (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabRename }
+      - { action: focus, part: sheetInput }
+      - { action: key, part: sheetInput, key: Backspace }
+      - { action: key, part: sheetInput, key: Enter }
+    expect:
+      - { part: sheetHeadline, text: "Rename list" }
+      - { part: sheetAccept, disabled: true }
+      - { part: tabReading, text: { contains: "Reading" } }
+
   - name: "Delete list sheet names the list and its task count (Delete list sheet state)"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabDelete }
@@ -554,7 +649,21 @@ tests:
       - { part: sheetCancel, focused: true }
     screenshot: true
 
+  - name: "Delete list sheet names the list and its task count (Delete list sheet state) (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabDelete }
+    expect:
+      - { part: sheetHeadline, text: { contains: "Delete “Reading”?" } }
+      - { part: sheetDetail, text: "Its 3 tasks go with it. No undo." }
+      - { part: sheetAccept, text: { contains: "Delete list" } }
+      - { part: sheetCancel, text: { contains: "Cancel" } }
+      - { part: sheetCancel, focused: true }
+    screenshot: true
+
   - name: "Cancel in the Delete list sheet keeps the list"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabDelete }
@@ -563,7 +672,18 @@ tests:
       - { part: sheetHeadline, visible: false }
       - { part: tabReading, visible: true }
 
+  - name: "Cancel in the Delete list sheet keeps the list (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabDelete }
+      - { action: press, part: sheetCancel }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: tabReading, visible: true }
+
   - name: "Escape on the Delete list sheet cancels and keeps the list"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabDelete }
@@ -572,7 +692,18 @@ tests:
       - { part: sheetHeadline, visible: false }
       - { part: tabReading, visible: true }
 
+  - name: "Escape on the Delete list sheet cancels and keeps the list (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabDelete }
+      - { action: key, part: sheetCancel, key: Escape }
+    expect:
+      - { part: sheetHeadline, visible: false }
+      - { part: tabReading, visible: true }
+
   - name: "Enter on the focused Delete list button does not delete the list"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
       - { action: press, part: menuTabDelete }
@@ -582,9 +713,32 @@ tests:
       - { part: sheetHeadline, visible: true }
       - { part: tabReading, visible: true }
 
+  - name: "Enter on the focused Delete list button does not delete the list (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
+      - { action: press, part: menuTabDelete }
+      - { action: focus, part: sheetAccept }
+      - { action: key, part: sheetAccept, key: Enter }
+    expect:
+      - { part: sheetHeadline, visible: true }
+      - { part: tabReading, visible: true }
+
   - name: "Delete list on its sheet removes the list and its tasks"
+    only: [web]   # the tab More button is a web addition; the desktop opens the tab menu with a right-click
     steps:
       - { action: press, part: tabMoreReading }
+      - { action: press, part: menuTabDelete }
+      - { action: press, part: sheetAccept }
+    expect:
+      - { part: tabReading, visible: false }
+      - { part: tabGarden, visible: true }
+      - { part: firstTab, text: { contains: "Errands" } }
+
+  - name: "Delete list on its sheet removes the list and its tasks (desktop: right-click on the tab)"
+    only: [desktop]
+    steps:
+      - { do: contextMenu, part: tabReading }
       - { action: press, part: menuTabDelete }
       - { action: press, part: sheetAccept }
     expect:

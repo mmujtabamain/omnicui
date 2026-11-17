@@ -724,7 +724,9 @@ fn project_menu(ctx: &egui::Context, look: Look, snap: &Snap, anchor: Pos2) -> (
             for (i, (id, name)) in snap.projects.iter().enumerate() {
                 let parts3 = match i {
                     0 => (Some(parts::PROJECTROW), Some(parts::PROJECTRENAME), Some(parts::PROJECTDELETE)),
-                    1 => (Some(parts::PROJECTROWSPRING), None, Some(parts::PROJECTDELETESPRING)),
+                    1 => (Some(parts::PROJECTROWSPRING), Some(PROJECT_RENAME_SPRING), Some(parts::PROJECTDELETESPRING)),
+                    // The last row of three or more (a project a test created is appended here).
+                    n if n + 1 == snap.projects.len() => (Some(PROJECT_ROW_LAST), None, None),
                     _ => (None, None, None),
                 };
                 project_row(ui, look, id, name, snap.project == Some(i), parts3, &mut acts);
@@ -890,6 +892,9 @@ fn sep(ui: &mut egui::Ui, look: Look, adjacent: bool) {
 /// Delete list, and the tab a New list test adds (Hardware).
 pub const TAB_DELETE_READING: &str = "app.appbar.listTabDeleteReading";
 pub const TAB_HARDWARE: &str = "app.appbar.listTabHardware";
+/// The second project's Rename, and the last project row of three or more.
+pub const PROJECT_RENAME_SPRING: &str = "app.appbar.projectRenameSpring";
+pub const PROJECT_ROW_LAST: &str = "app.appbar.projectRowLast";
 
 /// The test part of a tab: the first tab is listTab; Reading and Garden have their own names.
 fn tab_part(i: usize, role: Option<&'static str>) -> Option<&'static str> {

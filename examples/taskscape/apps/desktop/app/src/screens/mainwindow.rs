@@ -140,6 +140,20 @@ impl MainWindow {
         ui.painter().rect_filled(full, 0.0, t.surface_1);
         node(ui, full, "mainwindow.window", parts::WINDOW, "Taskscape");
         self.keys(app, ui);
+        // While a pane's menu is open, a press anywhere else closes it and goes no further (the web's menu
+        // overlay): a layer over the window, under the menus, takes it.
+        if self.panes.iter().any(|p| p.menu_open()) {
+            let ctx = ui.ctx().clone();
+            let closed = egui::Area::new(Id::new("mainwindow.menublocker")).order(egui::Order::Middle).fixed_pos(full.min).show(&ctx, |ui| {
+                let r = ui.interact(full, Id::new("mainwindow.menublocker.hit"), Sense::click());
+                r.clicked() || r.secondary_clicked()
+            });
+            if closed.inner {
+                for p in &mut self.panes {
+                    p.close_menus();
+                }
+            }
+        }
 
         as_part(ui, RENAMES, |ui| {
             // The title bar.
@@ -192,7 +206,7 @@ impl MainWindow {
             }
             if aside_shown {
                 let aside = Rect::from_min_max(Pos2::new(panes_rect.max.x, body.min.y), body.max);
-                ui.painter().rect_filled(aside, 0.0, t.surface_2);
+                ui.painter().rect_filled(aside, 0.0, t.surface_1);
                 ui.painter().vline(aside.min.x, aside.y_range(), Stroke::new(1.0, t.edge_1));
                 self.aside(app, ui, aside, look);
                 let strip = Rect::from_center_size(Pos2::new(aside.min.x, aside.center().y), egui::vec2(6.0, aside.height()));
@@ -321,6 +335,11 @@ impl MainWindow {
                 self.panes[over].set_dragged(ids);
             }
         }
+    }
+
+    /// The left (or only) pane, for a window that names more of its rows.
+    pub fn left_pane(&mut self) -> &mut TaskList {
+        &mut self.panes[0]
     }
 
     /// A task pane: the task list on a list, in its own container part.

@@ -23,8 +23,8 @@ impl eframe::App for Taskscape {
         ctx.set_theme(if dark { egui::Theme::Dark } else { egui::Theme::Light });
         // Reduced motion: On cuts egui's own animations; System follows the OS (egui has no signal for it).
         let reduced = self.app.data.settings.reduced_motion == "on";
-        ctx.style_mut(|s| s.animation_time = if reduced { 0.0 } else { 1.0 / 12.0 });
-        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(look.t.surface_1)).show_inside(ui, |ui| {
+        ctx.all_styles_mut(|s| s.animation_time = if reduced { 0.0 } else { 1.0 / 12.0 });
+        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(look.t.surface_1)).show(ui, |ui| {
             self.window.show(&mut self.app, ui, look);
         });
         self.window.windows(&mut self.app, &ctx, look);

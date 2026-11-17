@@ -69,6 +69,9 @@ enum Act {
 
 /// The screen's own state: the sheet it last drew, its name field, and the toast's timer.
 pub struct Sheets {
+    /// The text the next prompt starts with, selected, instead of its rolled or current name (a window
+    /// that opens a prompt with a name already in it).
+    pub initial_name: Option<String>,
     /// The sheet the card last drew. A change of `app.sheet` starts the card over.
     shown: Option<Sheet>,
     /// The name field of a prompt. It is rebuilt when the prompt starts and when the dice roll.
@@ -92,7 +95,7 @@ impl Default for Sheets {
 
 impl Sheets {
     pub fn new() -> Self {
-        Self { shown: None, input: None, name: String::new(), card_h: 0.0, focus_frames: 0, toast_key: None, toast_at: 0.0 }
+        Self { initial_name: None, shown: None, input: None, name: String::new(), card_h: 0.0, focus_frames: 0, toast_key: None, toast_at: 0.0 }
     }
 
     /// One frame, on the app: the card of `app.sheet` and the Moved to Trash toast. Returns the
@@ -141,7 +144,8 @@ impl Sheets {
         self.focus_frames = 0;
         let Some(sheet) = &app.sheet else { return };
         let cfg = config(app, sheet);
-        if let (Some(prompt), Some(initial)) = (&cfg.prompt, prompt_initial(app, sheet)) {
+        let given = self.initial_name.take().filter(|n| !n.is_empty());
+        if let (Some(prompt), Some(initial)) = (&cfg.prompt, given.or_else(|| prompt_initial(app, sheet))) {
             self.input = Some(make_input(&initial, &cfg.title, prompt.placeholder));
             self.name = initial;
         }
@@ -183,7 +187,12 @@ impl Sheets {
             .inner;
         self.card_h = rect.height();
         let node = ui.interact(rect, ui.scope_id().with("sheets.card"), Sense::hover());
-        node.widget_info(|| WidgetInfo::new(Role::GenericContainer));
+        // The card reads as its headline and detail.
+        let words = match &cfg.detail {
+            Some(d) => format!("{} {}", cfg.title, d),
+            None => cfg.title.clone(),
+        };
+        node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, &words));
         part(ui, &node, parts::CARD);
 
         // A destructive sheet starts on Cancel until something else takes the focus (decision 13); see the footer.
@@ -557,7 +566,7 @@ fn config(app: &App, sheet: &Sheet) -> Config {
                 glyph: "delete",
                 danger: true,
                 title: format!("Delete “{}”?", list_name(app, id)),
-                detail: Some(format!("Its {} {} with it. No undo.", plural(n, "task", "tasks"), goes(n))),
+                detail: Some(if n == 0 { "The list is empty. No undo.".to_owned() } else { format!("Its {} {} with it. No undo.", plural(n, "task", "tasks"), goes(n)) }),
                 accept: "Delete list",
                 instead: false,
                 prompt: None,
@@ -579,11 +588,14 @@ fn config(app: &App, sheet: &Sheet) -> Config {
         }
         Sheet::DeleteTask(id) => {
             let title = app.data.task(id).map(|t| t.title.clone()).unwrap_or_default();
+            // A parent goes with its subtasks: the copy counts them.
+            let kids = app.data.children_of(id).len();
+            let what = if kids == 0 { format!("“{title}”") } else { format!("“{title}” and its {}", plural(kids, "subtask", "subtasks")) };
             Config {
                 glyph: "delete",
                 danger: true,
                 title: "Move to Trash?".into(),
-                detail: Some(format!("“{title}” — {undo_key} puts it back.")),
+                detail: Some(format!("{what} — {undo_key} puts it back.")),
                 accept: "Move to Trash",
                 instead: false,
                 prompt: None,
@@ -595,7 +607,7 @@ fn config(app: &App, sheet: &Sheet) -> Config {
                 glyph: "delete",
                 danger: true,
                 title: "Empty Trash?".into(),
-                detail: Some(format!("{} {} for good. No undo.", plural(n, "task", "tasks"), goes(n))),
+                detail: Some(format!("{} deleted for good. No undo.", plural(n, "task", "tasks"))),
                 accept: "Empty Trash",
                 instead: false,
                 prompt: None,
@@ -607,7 +619,7 @@ fn config(app: &App, sheet: &Sheet) -> Config {
                 glyph: "delete",
                 danger: true,
                 title: "Delete permanently?".into(),
-                detail: Some(format!("{} {} for good. No undo.", plural(n, "task", "tasks"), goes(n))),
+                detail: Some(format!("{} deleted for good. No undo.", plural(n, "task", "tasks"))),
                 accept: "Delete permanently",
                 instead: false,
                 prompt: None,

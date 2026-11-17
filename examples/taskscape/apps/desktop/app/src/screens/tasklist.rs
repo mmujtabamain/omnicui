@@ -475,6 +475,11 @@ fn body_id(id: &str) -> Id {
 fn check_id(id: &str) -> Id {
     Id::new(("tasklist.check", id))
 }
+/// Parts no test of this contract names, for a window around the pane: the row menu's Move to list
+/// submenu, and its Garden item.
+pub const MOVE_SUBMENU: &str = "app.tasklist.moveSubmenu";
+pub const MOVE_TARGET_GARDEN: &str = "app.tasklist.moveTargetGarden";
+
 pub fn search_id() -> Id {
     Id::new("tasklist.search")
 }
@@ -678,6 +683,12 @@ pub struct TaskList {
     /// Set by a window around the pane: the first root row's whole box carries this part, and title
     /// buttons read as the title alone (the window's tests name the title, the row, and its parts apart).
     pub row_box: Option<(&'static str, &'static str)>,
+    /// Set by a window around the pane: the More buttons of rows named by their title, as (title, part).
+    pub more_claims: Vec<(&'static str, &'static str)>,
+    /// The tasks a claim found, kept by id so a renamed task keeps its part.
+    claimed: HashMap<TaskId, &'static str>,
+    /// The More button that opened the row menu: Escape gives it the keyboard back.
+    more_focus: Option<Id>,
     pane: usize,
     query: String,
     scope: Scope,
@@ -695,6 +706,8 @@ pub struct TaskList {
     menu_for: Option<TaskId>,
     menu_at: Option<Pos2>,
     submenu_open: bool,
+    /// The submenu was opened from the keyboard: its first item takes the keyboard when it draws.
+    submenu_focus: bool,
     bulk_move_open: bool,
     anchor: Option<TaskId>,
     match_at: Option<usize>,
@@ -721,6 +734,9 @@ impl TaskList {
         Self {
             claims: vec![],
             row_box: None,
+            more_claims: vec![],
+            claimed: HashMap::new(),
+            more_focus: None,
             pane,
             query: String::new(),
             scope: Scope::List,
@@ -738,6 +754,7 @@ impl TaskList {
             menu_for: None,
             menu_at: None,
             submenu_open: false,
+            submenu_focus: false,
             bulk_move_open: false,
             anchor: None,
             match_at: None,
@@ -775,6 +792,16 @@ impl TaskList {
         let mut acts: Vec<Act> = Vec::new();
 
         // Escape closes an open menu before anything else reads it.
+        // Escape in the Move to list submenu closes the submenu only, and gives Move to list the keyboard.
+        if self.menu_for.is_some() && self.submenu_open && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+            self.submenu_open = false;
+            ui.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", "move"))));
+        }
+        if self.menu_for.is_some() && !self.submenu_open && ui.input(|i| i.key_pressed(Key::Escape)) {
+            if let Some(id) = self.more_focus.take() {
+                ui.memory_mut(|m| m.request_focus(id));
+            }
+        }
         if (self.menu_for.is_some() || self.options_open || self.bulk_move_open) && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
             self.close_menus();
         }
@@ -826,7 +853,17 @@ impl TaskList {
         events
     }
 
-    fn close_menus(&mut self) {
+    /// Whether a menu of this pane is open (the row menu, the search options, the bulk Move menu).
+    pub fn menu_open(&self) -> bool {
+        self.menu_for.is_some() || self.options_open || self.bulk_move_open
+    }
+
+    /// The boxes of the menus open now, which a press outside them closes.
+    pub fn menu_panels(&self) -> &[Rect] {
+        &self.open_panels
+    }
+
+    pub fn close_menus(&mut self) {
         self.menu_for = None;
         self.menu_at = None;
         self.options_open = false;
@@ -1115,6 +1152,8 @@ impl TaskList {
         }
         let blank_click = region.clicked();
         egui::ScrollArea::vertical().id_salt("tasklist.scroll").auto_shrink([false, false]).scroll_source(egui::scroll_area::ScrollSource { drag: egui::scroll_area::DragScroll::Never, ..Default::default() }).show(&mut ch, |ui| {
+            // Rows sit edge to edge, their hairlines between them (egui spaces items 3 px apart by default).
+            ui.spacing_mut().item_spacing.y = 0.0;
             for (gi, g) in s.groups.iter().enumerate() {
                 if let Some(h) = &g.heading {
                     self.heading(ui, look, gi, g, h);
@@ -1217,8 +1256,14 @@ impl TaskList {
 
         let value = if row.note.is_empty() { row.title.clone() } else { format!("{} {}", row.title, row.note) };
         let mut pt = pt;
-        if let Some((_, p)) = self.claims.iter().find(|(text, _)| value.contains(text)) {
+        if let Some(p) = self.claimed.get(&row.id) {
             pt.row = Some(p);
+        } else if let Some((_, p)) = self.claims.iter().find(|(text, _)| value.contains(text)) {
+            pt.row = Some(p);
+            self.claimed.insert(row.id.clone(), p);
+        }
+        if let Some((_, p)) = self.more_claims.iter().find(|(title, _)| row.title == *title) {
+            pt.more = Some(p);
         }
         if let Some((_, p)) = self.row_box.filter(|(title, _)| row.title == *title) {
             let c = ui.interact(rect, Id::new(("tasklist.rowbox", row.id.as_str())), Sense::hover());
@@ -1303,6 +1348,8 @@ impl TaskList {
         );
         self.more_rects.push((row.id.clone(), more_rect));
         if more_pressed {
+            let ctx = ui.ctx().clone();
+            self.more_focus = ctx.memory(|m| m.focused()).or_else(|| ctx.interaction_snapshot(|s| s.clicked));
             self.menu_for = if self.menu_for.as_deref() == Some(row.id.as_str()) { None } else { Some(row.id.clone()) };
             self.menu_at = None;
             self.submenu_open = false;
@@ -1895,7 +1942,15 @@ impl TaskList {
                 hovered_move = true;
             }
             if resp.clicked() {
-                self.submenu_open = !self.submenu_open;
+                self.submenu_open = true;
+            }
+            if resp.has_focus() {
+                // The item keeps the arrows: ArrowRight opens the submenu, egui must not move the focus.
+                ui.memory_mut(|m| m.set_focus_lock_filter(resp.id, EventFilter { horizontal_arrows: true, ..Default::default() }));
+            }
+            if resp.has_focus() && ui.input(|i| i.key_pressed(Key::ArrowRight)) {
+                self.submenu_open = true;
+                self.submenu_focus = true;
             }
 
             if has_parent {
@@ -1924,9 +1979,12 @@ impl TaskList {
             }
         });
 
-        if hovered_move {
+        // The pointer opens and closes the submenu as it moves over the items; a pointer at rest leaves
+        // the keyboard in charge.
+        let moving = ctx.input(|i| i.pointer.is_moving());
+        if hovered_move && moving {
             self.submenu_open = true;
-        } else if hovered_other {
+        } else if hovered_other && moving {
             self.submenu_open = false;
         }
         if close {
@@ -1939,20 +1997,46 @@ impl TaskList {
             let sub = Rect::from_min_size(pos2(sub_x, move_rect.top() - 4.0), vec2(MENU_W, targets.len() as f32 * MENU_ITEM + 8.0));
             self.open_panels.push(sub);
             let mut picked: Option<TaskId> = None;
+            let mut back = false;
             egui::Area::new(Id::new("tasklist.movemenu")).order(Order::Foreground).fixed_pos(sub.min).show(ctx, |ui| {
+                let panel_node = ui.interact(sub, Id::new("tasklist.movemenu.panel"), Sense::hover());
+                panel_node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Move to list"));
+                part(ui, &panel_node, MOVE_SUBMENU);
                 ui.painter().rect_filled(sub, CornerRadius::same(7), t.surface_3);
                 ui.painter().rect_stroke(sub, CornerRadius::same(7), Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
                 let mut y = sub.top() + 4.0;
+                let first_key = targets.first().map(|(tid, _)| format!("move-{tid}"));
+                // The frame after the ArrowRight: egui's own arrow focus move runs at the end of that frame.
+                if self.submenu_focus && !ui.input(|i| i.key_pressed(Key::ArrowRight)) {
+                    self.submenu_focus = false;
+                    if let Some(k) = &first_key {
+                        ui.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", k.as_str()))));
+                    }
+                }
                 for (tid, name) in &targets {
                     let r = Rect::from_min_size(pos2(sub.left() + 4.0, y), vec2(MENU_W - 8.0, MENU_ITEM));
                     y += MENU_ITEM;
-                    let part_id = if name == "Reading" { pick(parts::MOVETARGETREADING) } else { None };
+                    let part_id = match name.as_str() {
+                        "Reading" => pick(parts::MOVETARGETREADING),
+                        "Garden" => Some(MOVE_TARGET_GARDEN),
+                        _ => None,
+                    };
                     let resp = menu_row(ui, look, r, &format!("move-{tid}"), name, None, false, None, false, part_id);
                     if resp.clicked() {
                         picked = Some(tid.clone());
                     }
+                    if resp.has_focus() {
+                        ui.memory_mut(|m| m.set_focus_lock_filter(resp.id, EventFilter { horizontal_arrows: true, ..Default::default() }));
+                    }
+                    if resp.has_focus() && ui.input(|i| i.key_pressed(Key::ArrowLeft)) {
+                        back = true;
+                    }
                 }
             });
+            if back {
+                self.submenu_open = false;
+                ctx.memory_mut(|m| m.request_focus(Id::new(("tasklist.menurow", "move"))));
+            }
             if let Some(tid) = picked {
                 acts.push(Act::MoveTo(vec![row_id.clone()], tid));
                 self.close_menus();
