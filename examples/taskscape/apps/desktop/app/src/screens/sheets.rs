@@ -22,7 +22,7 @@ use taskscape_ui::widgets::text::Text;
 use taskscape_ui::{as_part, part, rem, text, weight, Look, Mounted};
 
 /// The card's width (26rem) and the lg footer button's height and label sides (the web's lg size).
-const CARD_W: f32 = rem(26.0);
+pub const CARD_W: f32 = rem(26.0);
 const BTN_H: f32 = rem(2.0);
 const BTN_SIDE: f32 = 10.0;
 /// The gap between the footer's buttons and between the name field's items (the web's 0.357rem).

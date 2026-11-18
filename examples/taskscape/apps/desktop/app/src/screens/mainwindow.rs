@@ -232,8 +232,32 @@ impl MainWindow {
             if self.in_place {
                 self.windows_in_place(app, ui, full, look);
             }
+            self.sheet_overlay(app, ui, full, look);
         });
         vec![]
+    }
+
+    /// A sheet (New list, Rename, Delete…) over the main window, as the reference's SheetHost puts it on
+    /// its modal layer: centred in the window, the window behind left as it is (no dimming), and a press
+    /// outside the card cancels. The app used to open it as an OS window of its own, which macOS drew in
+    /// a black box (Mujtaba's review).
+    fn sheet_overlay(&mut self, app: &mut App, ui: &mut Ui, full: Rect, look: Look) {
+        let Some(sheet) = app.sheet.clone() else { return };
+        let accept = accept_part(&sheet);
+        let sheets = &mut self.sheets;
+        egui::Area::new(Id::unique("mainwindow.sheet")).order(egui::Order::Foreground).fixed_pos(full.min).show(ui.ctx(), |ui| {
+            ui.set_clip_rect(full);
+            let scrim = ui.interact(full, Id::unique("mainwindow.sheetScrim"), Sense::click());
+            let card = Rect::from_center_size(full.center(), egui::vec2(crate::screens::sheets::CARD_W, sheets.card_height().max(1.0)));
+            ui.scope_builder(UiBuilder::new().max_rect(full), |ui| {
+                as_part(ui, &[("app.sheets.accept", accept)], |ui| sheets.show(app_ptr(app), ui, look));
+            });
+            node(ui, card, "mainwindow.sheetwin", "app.mainwindow.sheetWindow", "");
+            let outside = ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| !card.contains(p));
+            if scrim.clicked() && outside {
+                app.sheet = None;
+            }
+        });
     }
 
     /// The windows the main window opens, drawn as panels over it (a test has one window; the app opens
@@ -260,13 +284,6 @@ impl MainWindow {
             let settings = &mut self.settings;
             panel(ui, egui::vec2(640.0, 520.0), "mainwindow.settingswin", parts::SETTINGSDIALOG, "Settings", &mut |ui| {
                 settings.show(app_ptr(app), ui, look);
-            });
-        }
-        if let Some(sheet) = app.sheet.clone() {
-            let sheets = &mut self.sheets;
-            let accept = accept_part(&sheet);
-            panel(ui, egui::vec2(380.0, 230.0), "mainwindow.sheetwin", "app.mainwindow.sheetWindow", "", &mut |ui| {
-                as_part(ui, &[("app.sheets.accept", accept)], |ui| sheets.show(app_ptr(app), ui, look));
             });
         }
     }
@@ -326,27 +343,6 @@ impl MainWindow {
                 });
                 if ctx.input(|i| i.viewport().close_requested()) {
                     app.settings_window = None;
-                }
-            });
-        }
-        if app.sheet.is_some() {
-            let vp = chrome::sheet(egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([380.0, 140.0]).with_position(at(380.0, 140.0)).with_active(true));
-            let id = egui::ViewportId::from_hash_of("sheet");
-            if opened.2 {
-                ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
-            }
-            ctx.show_viewport_immediate(id, vp, |ctx, _| {
-                // The sheet's card is the whole window: no fill around it (the window is transparent).
-                egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| {
-                    self.sheets.show(app, ui, look);
-                });
-                // The window fits the card: its height follows the card's.
-                let want = egui::vec2(380.0, (self.sheets.card_height() + 18.0).max(120.0));
-                if self.sheets.card_height() > 0.0 && ctx.input(|i| i.viewport().inner_rect).is_some_and(|r| (r.height() - want.y).abs() > 1.0) {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(want));
-                }
-                if ctx.input(|i| i.viewport().close_requested()) {
-                    app.sheet = None;
                 }
             });
         }
