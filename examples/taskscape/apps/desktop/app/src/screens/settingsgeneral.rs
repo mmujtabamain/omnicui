@@ -32,7 +32,8 @@ const TAB_ICONS: [&str; 3] = ["tune", "keyboard", "info"];
 const WINDOW_PANES: [&str; 4] = ["general", "capture", "shortcuts", "about"];
 const WINDOW_TAB_PARTS: [&str; 4] = [parts::GENERALTAB, CAPTURE_TAB, parts::SHORTCUTSTAB, parts::ABOUTTAB];
 const WINDOW_TAB_NAMES: [&str; 4] = ["General", "Capture", "Shortcuts", "About"];
-const WINDOW_TAB_ICONS: [&str; 4] = ["tune", "capture", "keyboard", "info"];
+// The reference's own glyphs (its recording: tune, screenshot_monitor, keyboard, info).
+const WINDOW_TAB_ICONS: [&str; 4] = ["tune", "screenshot_monitor", "keyboard", "info"];
 /// Parts the page has only in the window (its contract has no Capture section and no row containers).
 pub const CAPTURE_TAB: &str = "app.settingsgeneral.captureTab";
 pub const SIDEBAR: &str = "app.settingsgeneral.sidebar";
@@ -105,8 +106,6 @@ pub struct SettingsGeneral {
     /// The content the fade last started for, and when it started (seconds).
     fade_key: String,
     fade_from: f64,
-    /// The search field was given the keyboard once, when the page first drew.
-    primed: bool,
     /// Drawn as the desktop Settings window: four sections, and the window's own keys (Escape and the
     /// close chord close it). The window draws the panes other than General into `content`.
     pub window: bool,
@@ -136,7 +135,6 @@ impl SettingsGeneral {
             scoped: false,
             fade_key: String::new(),
             fade_from: 0.0,
-            primed: false,
             window: false,
             lead: 0.0,
             trail: 0.0,
@@ -243,10 +241,6 @@ impl SettingsGeneral {
         let edit_left = search_rect.left() + rem(0.643) + 14.0 + 6.0;
         let edit_right = search_rect.right() - 3.5 - if has_q { box_px } else { 0.0 };
         let edit_rect = Rect::from_min_max(pos2(edit_left, search_rect.top()), pos2(edit_right, search_rect.bottom()));
-        if !self.primed {
-            self.primed = true;
-            ui.memory_mut(|m| m.request_focus(search_id));
-        }
         let mut edit_ui = nv.new_child(UiBuilder::new().max_rect(edit_rect).layout(Layout::left_to_right(Align::Center)));
         let field = TextEdit::singleline(&mut self.query)
             .id(search_id)
@@ -351,12 +345,14 @@ impl SettingsGeneral {
             p.galley(pos2(r.left() + rem(0.643) + 16.0 + rem(0.5), ly), label, fg);
             if i == 0 && searching && general_matches > 0 {
                 let count = general_matches.to_string();
-                let g = lay(ui, &count, 11.0, 600, t.content_2, f32::INFINITY);
+                // The reference's recessed badge (as recorded): 18 px tall, 10.5 px semibold, an edge-2 border on
+                // surface-0, the field's corners.
+                let g = lay(ui, &count, 10.5, 600, t.content_2, f32::INFINITY);
                 let gs = g.size();
-                let bw = gs.x + 12.0;
-                let bh = rem(1.143);
+                let bw = (gs.x + 8.0).max(16.0);
+                let bh = 18.0;
                 let br = Rect::from_min_size(pos2(r.right() - rem(0.643) - bw, r.center().y - bh / 2.0), vec2(bw, bh));
-                p.rect_filled(br, CornerRadius::same(8), t.wash_2);
+                p.rect(br, CornerRadius::same(4), t.surface_0, Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
                 node_text(ui, Rect::from_center_size(br.center(), gs), g, t.content_2, parts::GENERALMATCHES, &count, Role::GenericContainer);
             }
             resp.widget_info(|| WidgetInfo::selected(Role::Button, true, selected, tab_names[i]));
