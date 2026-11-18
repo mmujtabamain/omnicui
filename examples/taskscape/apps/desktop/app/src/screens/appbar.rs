@@ -243,7 +243,7 @@ impl AppBar {
         painter.hline(bar.x_range(), bar.bottom() - 0.5, Stroke::new(1.0, t.edge_2));
         // In a real window the bar is the title bar: room for the window buttons, and a drag region under
         // the controls (see chrome).
-        let (lead, trail) = (crate::chrome::lead(app.native_window), crate::chrome::trail(app.native_window, 3));
+        let (lead, trail) = (crate::chrome::lead(ui, app.native_window), crate::chrome::trail(app.native_window, 3));
         if app.native_window {
             crate::chrome::drag_region(ui, bar, true);
             if trail > 0.0 && crate::chrome::buttons(ui, look, Rect::from_min_max(pos2(bar.right() - trail, bar.top()), bar.max), true) {

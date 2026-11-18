@@ -60,8 +60,10 @@ pub fn kind(vb: &ViewportBuilder) -> taskscape_ui::WindowKind {
 }
 
 /// Space to keep free at the left of a window's bar for the OS's buttons (macOS overlay), else none.
-pub fn lead(native: bool) -> f32 {
-    if native && MAC {
+/// None in full screen, where macOS hides the lights (it shows them only with the menu bar).
+pub fn lead(ui: &Ui, native: bool) -> f32 {
+    let full_screen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
+    if native && MAC && !full_screen {
         LIGHTS_W
     } else {
         0.0
@@ -186,9 +188,7 @@ pub fn align_window_controls(zoom: f32) {
             let rect = button.convertRect_toView(button.bounds(), None);
             (left.min(rect.origin.x), right.max(rect.origin.x + rect.size.width))
         });
-        // Keep the native spacing between the buttons. At very small app zooms,
-        // the AppKit buttons still need enough room to clear the rounded corner.
-        let group_left = content.origin.x + ((slot_width - (right - left)) / 2.0).max(4.0);
+        let group_left = content.origin.x + lights_left(slot_width, right - left);
         let offset_x = group_left - left;
         for button in buttons.into_iter().flatten() {
             // SAFETY: used immediately, on the main thread, while the window owns the button.
@@ -205,5 +205,28 @@ pub fn align_window_controls(zoom: f32) {
                 button.setFrameOrigin(origin);
             }
         }
+    }
+}
+
+/// Where the lights' group starts in the slot before a bar's first item: centred, keeping the buttons'
+/// native spacing; at very small zooms, at least 4 points in, clear of the window's rounded corner.
+pub fn lights_left(slot_width: f64, group_width: f64) -> f64 {
+    ((slot_width - group_width) / 2.0).max(4.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_lights_sit_centred_in_their_slot() {
+        // The main window at 1×: the lights' slot is LIGHTS_W + the pill's inset; AppKit's group is 52 points.
+        let slot = f64::from(LIGHTS_W + PROJECT_INSET);
+        assert_eq!(lights_left(slot, 52.0), (slot - 52.0) / 2.0);
+        // Settings: its title's inset.
+        let slot = f64::from(LIGHTS_W + SETTINGS_TITLE_INSET);
+        assert!((lights_left(slot, 52.0) * 2.0 + 52.0 - slot).abs() < 1e-9);
+        // A slot narrower than the group (a tiny zoom): never closer than 4 points to the corner.
+        assert_eq!(lights_left(40.0, 52.0), 4.0);
     }
 }

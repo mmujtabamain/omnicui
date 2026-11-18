@@ -169,7 +169,7 @@ impl AttachmentLightbox {
         // The overlay shares the main window with AppKit's traffic lights.
         // Inset the icon and filename; the right-side actions stay anchored.
         let mut top_content = top;
-        top_content.min.x += crate::chrome::lead(app.native_window);
+        top_content.min.x += crate::chrome::lead(ui, app.native_window);
         self.top_bar(ui, look, top_content, &cur, kind, index, count, &mut cmds);
 
         // The stage: a press on empty stage closes the lightbox, as the web's does. The media takes its own presses.

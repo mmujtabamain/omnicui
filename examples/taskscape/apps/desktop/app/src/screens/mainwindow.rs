@@ -295,7 +295,7 @@ impl MainWindow {
                 egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
                     let bar = header(ui);
                     chrome::drag_region(ui, bar, false);
-                    self.trash.lead = chrome::lead(native);
+                    self.trash.lead = chrome::lead(ui, native);
                     self.trash.show(app, ui, look);
                     let trail = chrome::trail(native, 1);
                     if trail > 0.0 && chrome::buttons(ui, look, egui::Rect::from_min_max(egui::pos2(bar.right() - trail, bar.top()), bar.max), false) {
@@ -318,7 +318,7 @@ impl MainWindow {
                     let bar = header(ui);
                     chrome::drag_region(ui, bar, false);
                     let trail = chrome::trail(native, 1);
-                    self.settings.general_chrome = (chrome::lead(native), trail);
+                    self.settings.general_chrome = (chrome::lead(ui, native), trail);
                     self.settings.show(app, ui, look);
                     if trail > 0.0 && chrome::buttons(ui, look, egui::Rect::from_min_max(egui::pos2(bar.right() - trail, bar.top()), bar.max), false) {
                         app.settings_window = None;
