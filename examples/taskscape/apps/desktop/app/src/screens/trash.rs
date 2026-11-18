@@ -95,7 +95,7 @@ impl Trash {
     /// One frame: draws the Trash list and returns the events it raised.
     pub fn show(&mut self, app: &mut App, ui: &mut egui::Ui, look: Look) -> Vec<TrashEvent> {
         let t = look.t;
-        let now = now_secs();
+        let now = crate::time::now_ms(ui.ctx()) / 1000;
         let entries: Vec<Entry> = app
             .data
             .trash
@@ -471,10 +471,6 @@ fn relative(deleted: i64, now: i64) -> String {
     // `now` is in seconds; storage keeps deleted_at in milliseconds (an older seconds value still reads).
     let deleted_ms = if deleted > 100_000_000_000 { deleted } else { deleted * 1000 };
     crate::time::relative(deleted_ms, now * 1000)
-}
-
-fn now_secs() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
 /// The test's mount: the app on its data set, with the Trash list alone.

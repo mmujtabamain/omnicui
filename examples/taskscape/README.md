@@ -20,3 +20,19 @@ node contact-sheet.mjs /tmp/sheet                         # thumbnails, 24 state
 ```
 
 Each state folder holds `shot.png`, `tree.txt` (React's component tree: names, props, boxes), `elements.json` (roles, labels, colours, type) and `meta.json` (the commands the app sent).
+
+## Recording egui for comparison
+
+From the repository root on macOS, using Python 3.10+, Node and Cargo:
+
+```bash
+mkdir -p .tmp/taskscape-captures
+python3 examples/taskscape/tools/reference-viewer/record-egui.py \
+  ~/Desktop/taskscape-references-macos.zip .tmp/taskscape-captures/egui
+unzip -q ~/Desktop/taskscape-references-macos.zip 'references/*' references-record.log -d .tmp/taskscape-captures
+omnicui compare .tmp/taskscape-captures/references/main-default/shot.png \
+  .tmp/taskscape-captures/egui/main-default/shot.png --diff .tmp/main-default-diff.png
+(cd .tmp/taskscape-captures && zip -qr ../taskscape-comparison.zip references references-record.log egui)
+```
+
+The egui recorder reuses the reference viewer's fixture data and clock in disposable SQLite stores. It reads each viewport size from the ZIP and renders at 1×. Append state IDs to the recorder command to capture a subset. Check `egui/egui-record.log` for scenario failures. The PNGs show the app's content and omit the native macOS window buttons because the renderer runs headlessly.

@@ -88,7 +88,7 @@ impl TaskInspector {
         let mentions = mentions_json(&attachments);
         self.sync_notes(&app.data.notes_of(&task.id), &mentions);
 
-        let now = now_ms();
+        let now = crate::time::now_ms(ui.ctx());
         let copied = self.copied_at.is_some_and(|at| ui.input(|i| i.time) - at < 1.2);
         if copied {
             ui.ctx().request_repaint_after(std::time::Duration::from_millis(1250));
@@ -815,10 +815,6 @@ fn is_remote(a: &Attachment) -> bool {
 fn is_image(name: &str) -> bool {
     let n = name.to_lowercase();
     [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif"].iter().any(|e| n.ends_with(e))
-}
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
 /// "5m ago", "2d ago" and so on, as the web's relative time.

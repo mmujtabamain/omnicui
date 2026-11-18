@@ -1,6 +1,18 @@
 //! Relative times as the reference writes them (its time.ts): "just now", "12m ago", "3h ago",
 //! "yesterday", "3d ago", "2w ago", then the date ("Jul 23").
 
+const CAPTURE_CLOCK: &str = "taskscape.capture-clock";
+
+/// Set the display clock for a headless capture without changing the stored dates.
+pub fn set_capture_time(ctx: &egui::Context, epoch: i64) {
+    ctx.data_mut(|data| data.insert_temp(egui::Id::unique(CAPTURE_CLOCK), epoch));
+}
+
+pub fn now_ms(ctx: &egui::Context) -> i64 {
+    ctx.data(|data| data.get_temp(egui::Id::unique(CAPTURE_CLOCK)))
+        .unwrap_or_else(taskscape_storage::util::now_millis)
+}
+
 /// `ms` and `now` in milliseconds since 1970.
 pub fn relative(ms: i64, now: i64) -> String {
     let round = |a: i64, b: i64| (a as f64 / b as f64).round() as i64;
