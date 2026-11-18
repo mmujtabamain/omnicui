@@ -9,6 +9,7 @@ pub mod dialogs;
 pub mod hotkeys;
 pub mod menu;
 pub mod time;
+pub mod tray;
 pub mod data;
 pub mod state;
 

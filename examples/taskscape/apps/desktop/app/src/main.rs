@@ -12,6 +12,10 @@ struct Taskscape {
     /// The Global hotkeys (Capture bar, Screenshot capture); None where the OS offers none.
     hotkeys: Option<taskscape_app::hotkeys::GlobalHotkeys>,
     capture: taskscape_app::capture_window::CaptureWindow,
+    /// The menu-bar or tray icon (macOS, Windows): while it is there, closing the window hides it.
+    tray: Option<taskscape_app::tray::Tray>,
+    /// Quit was chosen: the next close is a real one.
+    quitting: bool,
 }
 
 impl eframe::App for Taskscape {
@@ -23,6 +27,24 @@ impl eframe::App for Taskscape {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        // The tray's menu: Open Taskscape brings the main window back, Quit ends the app.
+        for action in self.tray.as_ref().map(|t| t.poll()).unwrap_or_default() {
+            match action {
+                taskscape_app::tray::TrayAction::OpenMain => {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                }
+                taskscape_app::tray::TrayAction::Quit => {
+                    self.quitting = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+        }
+        // With a tray, closing the main window hides it: the app keeps running for the Global hotkeys.
+        if self.tray.is_some() && !self.quitting && ctx.input(|i| i.viewport().close_requested()) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+        }
         // The Global hotkeys: registered from Settings (again when one changes), and what was pressed.
         if let Some(hotkeys) = self.hotkeys.as_mut() {
             hotkeys.sync(&self.app);
@@ -90,7 +112,8 @@ fn main() -> eframe::Result {
             app.native_window = true;
             let menu = taskscape_app::menu::NativeMenu::install();
             let hotkeys = taskscape_app::hotkeys::GlobalHotkeys::new(&cc.egui_ctx);
-            Ok(Box::new(Taskscape { app, window, menu, hotkeys, capture: taskscape_app::capture_window::CaptureWindow::new() }))
+            let tray = taskscape_app::tray::Tray::new();
+            Ok(Box::new(Taskscape { app, window, menu, hotkeys, capture: taskscape_app::capture_window::CaptureWindow::new(), tray, quitting: false }))
         }),
     )
 }

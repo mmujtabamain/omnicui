@@ -17,7 +17,7 @@ required-features = ["window"]
 # The window needs eframe; the screens don't. The omnicui target turns `window` off and never builds eframe.
 [features]
 default = ["window"]
-window = ["dep:eframe", "dep:rfd", "dep:muda", "dep:objc2", "dep:objc2-app-kit", "dep:raw-window-handle", "dep:global-hotkey"]
+window = ["dep:eframe", "dep:rfd", "dep:muda", "dep:objc2", "dep:objc2-app-kit", "dep:raw-window-handle", "dep:global-hotkey", "dep:tray-icon"]
 
 [dependencies]
 taskscape-ui = { path = "../ui" }
@@ -40,3 +40,7 @@ muda = { version = "0.17", optional = true }
 objc2 = { version = "0.6", optional = true }
 objc2-app-kit = { version = "0.3", optional = true, default-features = false, features = ["std", "NSApplication", "NSButton", "NSControl", "NSEvent", "NSResponder", "NSScreen", "NSView", "NSWindow"] }
 raw-window-handle = { version = "0.6", optional = true }
+
+# The tray (menu-bar) icon on macOS and Windows; on Linux it would need GTK, so there is none.
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+tray-icon = { version = "0.26", optional = true }
