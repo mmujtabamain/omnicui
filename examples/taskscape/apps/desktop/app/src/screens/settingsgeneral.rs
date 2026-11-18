@@ -163,12 +163,12 @@ impl SettingsGeneral {
         let mut actions: Vec<(Field, String)> = Vec::new();
 
         // Header: the heading, and Discard all while any setting differs from when the page opened.
-        let (header, _) = ui.allocate_exact_size(vec2(w, rem(3.286)), Sense::hover());
+        let (header, _) = ui.allocate_exact_size(vec2(w, crate::chrome::BAR_HEIGHT), Sense::hover());
         p.rect_filled(header, 0.0, t.surface_1);
         p.hline(Rangef::new(header.left(), header.right()), header.bottom() - 0.5, Stroke::new(1.0, t.edge_1));
         let title = lay(ui, "Settings", 15.0, 600, t.content_1, f32::INFINITY);
         let ts = title.size();
-        let at = pos2(header.left() + rem(1.286) + self.lead, header.center().y - ts.y / 2.0);
+        let at = pos2(header.left() + crate::chrome::SETTINGS_TITLE_INSET + self.lead, header.center().y - ts.y / 2.0);
         node_text(ui, Rect::from_min_size(at, ts), title, t.content_1, parts::HEADING, "Settings", Role::Heading);
         if ALL.iter().any(|f| differs(&current, &open, *f)) {
             let b = rem(2.0);

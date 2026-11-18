@@ -8,6 +8,17 @@ use taskscape_ui::{icon, Look};
 
 pub const MAC: bool = cfg!(target_os = "macos");
 
+/// The height of the main and panel title bars in egui points.
+pub const BAR_HEIGHT: f32 = 46.0;
+
+pub(crate) const PROJECT_INSET: f32 = 12.0;
+pub(crate) const SETTINGS_TITLE_INSET: f32 = taskscape_ui::rem(1.286);
+pub(crate) const TRASH_TITLE_INSET: f32 = taskscape_ui::rem(1.0);
+
+pub const MAIN_TITLE: &str = "Taskscape";
+pub(crate) const SETTINGS_TITLE: &str = "Settings";
+pub(crate) const TRASH_TITLE: &str = "Trash";
+
 /// The width the OS's window buttons take at the left of an overlay title bar (macOS), with their margin.
 pub const LIGHTS_W: f32 = 78.0;
 
@@ -137,6 +148,62 @@ pub fn not_movable_by_os(handle: &impl raw_window_handle::HasWindowHandle) {
         let view: &objc2_app_kit::NSView = unsafe { h.ns_view.cast().as_ref() };
         if let Some(window) = view.window() {
             window.setMovable(false);
+        }
+    }
+}
+
+/// Center the native traffic lights in the space before the first title bar item.
+/// AppKit can relayout the buttons during resize, so check their positions each frame.
+#[cfg(all(target_os = "macos", feature = "window"))]
+pub fn align_window_controls(zoom: f32) {
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::{NSApplication, NSWindowButton, NSWindowStyleMask};
+
+    let Some(main_thread) = MainThreadMarker::new() else { return };
+    // The immediate Settings and Trash viewports don't expose a window handle
+    // to the caller. Use the app's own windows and select its overlay title bars.
+    for window in NSApplication::sharedApplication(main_thread).windows().iter() {
+        let style = window.styleMask();
+        if !window.isVisible() || !window.titlebarAppearsTransparent()
+            || !style.contains(NSWindowStyleMask::Titled | NSWindowStyleMask::FullSizeContentView)
+            || style.contains(NSWindowStyleMask::FullScreen)
+        {
+            continue;
+        }
+        let inset = match window.title().to_string().as_str() {
+            MAIN_TITLE => PROJECT_INSET,
+            SETTINGS_TITLE => SETTINGS_TITLE_INSET,
+            TRASH_TITLE => TRASH_TITLE_INSET,
+            _ => continue,
+        };
+        let Some(content) = window.contentView() else { continue };
+        let content = content.convertRect_toView(content.bounds(), None);
+        let slot_width = f64::from((LIGHTS_W + inset) * zoom);
+        let center_y = content.origin.y + content.size.height - f64::from(BAR_HEIGHT * zoom) / 2.0;
+        let buttons = [NSWindowButton::CloseButton, NSWindowButton::MiniaturizeButton, NSWindowButton::ZoomButton]
+            .map(|kind| window.standardWindowButton(kind).filter(|button| !button.isHiddenOrHasHiddenAncestor()));
+        let (left, right) = buttons.iter().flatten().fold((f64::INFINITY, f64::NEG_INFINITY), |(left, right), button| {
+            let rect = button.convertRect_toView(button.bounds(), None);
+            (left.min(rect.origin.x), right.max(rect.origin.x + rect.size.width))
+        });
+        // Keep the native spacing between the buttons. At very small app zooms,
+        // the AppKit buttons still need enough room to clear the rounded corner.
+        let group_left = content.origin.x + ((slot_width - (right - left)) / 2.0).max(4.0);
+        let offset_x = group_left - left;
+        for button in buttons.into_iter().flatten() {
+            // SAFETY: used immediately, on the main thread, while the window owns the button.
+            let Some(parent) = (unsafe { button.superview() }) else { continue };
+            let frame = button.frame();
+            let rect = button.convertRect_toView(button.bounds(), None);
+            let mut center = rect.origin;
+            center.x += rect.size.width / 2.0 + offset_x;
+            center.y = center_y;
+            let mut origin = parent.convertPoint_fromView(center, None);
+            origin.x -= frame.size.width / 2.0;
+            origin.y -= frame.size.height / 2.0;
+            if (frame.origin.x - origin.x).abs() > 0.01 || (frame.origin.y - origin.y).abs() > 0.01 {
+                button.setFrameOrigin(origin);
+            }
         }
     }
 }

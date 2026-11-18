@@ -378,9 +378,9 @@ fn pressed(events: &[ButtonEvent]) -> bool {
 /// The header: the delete glyph and the "Trash" title, on a hairline.
 fn header(ui: &mut egui::Ui, look: Look, lead: f32) {
     let t = look.t;
-    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), rem(3.286)), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), crate::chrome::BAR_HEIGHT), Sense::hover());
     ui.painter().hline(rect.x_range(), rect.bottom(), Stroke::new(1.0, t.edge_1));
-    let inner = Rect::from_min_max(rect.min + vec2(rem(1.0) + lead, 0.0), rect.max);
+    let inner = Rect::from_min_max(rect.min + vec2(crate::chrome::TRASH_TITLE_INSET + lead, 0.0), rect.max);
     ui.scope_builder(UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)), |ui| {
         ui.spacing_mut().item_spacing.x = rem(0.357);
         Icon::new(IconProps { name: "delete".into(), size: "lg".into(), tone: "secondary".into(), ..Default::default() })

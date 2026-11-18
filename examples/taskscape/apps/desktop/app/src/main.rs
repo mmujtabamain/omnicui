@@ -40,6 +40,8 @@ impl eframe::App for Taskscape {
             self.window.show(&mut self.app, ui, look);
         });
         self.window.windows(&mut self.app, &ctx, look);
+        #[cfg(target_os = "macos")]
+        taskscape_app::chrome::align_window_controls(ctx.zoom_factor());
     }
 }
 
@@ -52,11 +54,11 @@ fn main() -> eframe::Result {
         }
     };
     let options = eframe::NativeOptions {
-        viewport: taskscape_app::chrome::main_window(egui::ViewportBuilder::default().with_title("Taskscape").with_inner_size([1180.0, 760.0]).with_min_inner_size([820.0, 560.0]).with_app_id("taskscape")),
+        viewport: taskscape_app::chrome::main_window(egui::ViewportBuilder::default().with_title(taskscape_app::chrome::MAIN_TITLE).with_inner_size([1180.0, 760.0]).with_min_inner_size([820.0, 560.0]).with_app_id("taskscape")),
         ..Default::default()
     };
     eframe::run_native(
-        "Taskscape",
+        taskscape_app::chrome::MAIN_TITLE,
         options,
         Box::new(|cc| {
             taskscape_ui::fonts(&cc.egui_ctx);
