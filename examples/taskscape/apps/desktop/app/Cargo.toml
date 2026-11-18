@@ -17,7 +17,7 @@ required-features = ["window"]
 # The window needs eframe; the screens don't. The omnicui target turns `window` off and never builds eframe.
 [features]
 default = ["window"]
-window = ["dep:eframe", "dep:rfd", "dep:muda", "dep:objc2", "dep:objc2-app-kit", "dep:raw-window-handle"]
+window = ["dep:eframe", "dep:rfd", "dep:muda", "dep:objc2", "dep:objc2-app-kit", "dep:raw-window-handle", "dep:global-hotkey"]
 
 [dependencies]
 taskscape-ui = { path = "../ui" }
@@ -30,11 +30,13 @@ anyhow = "1"
 # OS file dialogs (list import and export); the portal backend on Linux needs no GTK.
 rfd = { version = "0.15", optional = true, default-features = false, features = ["xdg-portal", "async-std"] }
 eframe = { version = "0.37", optional = true, default-features = false, features = ["accesskit", "default_fonts", "wgpu", "wayland", "x11"] }
+# The OS-wide hotkeys (Capture bar, Screenshot capture), as decision 21 names.
+global-hotkey = { version = "0.10", optional = true }
 
 # The macOS menu bar (App, View, Window, List), as the reference's.
 [target.'cfg(target_os = "macos")'.dependencies]
 muda = { version = "0.17", optional = true }
 # Native title bar buttons and window dragging.
 objc2 = { version = "0.6", optional = true }
-objc2-app-kit = { version = "0.3", optional = true, default-features = false, features = ["std", "NSApplication", "NSButton", "NSControl", "NSResponder", "NSView", "NSWindow"] }
+objc2-app-kit = { version = "0.3", optional = true, default-features = false, features = ["std", "NSApplication", "NSButton", "NSControl", "NSEvent", "NSResponder", "NSScreen", "NSView", "NSWindow"] }
 raw-window-handle = { version = "0.6", optional = true }

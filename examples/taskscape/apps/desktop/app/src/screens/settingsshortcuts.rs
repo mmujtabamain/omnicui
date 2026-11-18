@@ -716,7 +716,7 @@ fn tab_part(pane: Pane) -> &'static str {
 }
 
 /// The settings key a row's binding is saved under, in the app's data.
-fn setting_key(command: &str) -> String {
+pub(crate) fn setting_key(command: &str) -> String {
     format!("shortcut.{command}")
 }
 

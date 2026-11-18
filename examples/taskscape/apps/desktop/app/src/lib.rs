@@ -3,8 +3,10 @@
 //! omnicui/contracts/<name>.contract.yaml; the main window and the other windows compose the same
 //! screens the contracts check one at a time.
 pub mod app;
+pub mod capture_window;
 pub mod chrome;
 pub mod dialogs;
+pub mod hotkeys;
 pub mod menu;
 pub mod time;
 pub mod data;

@@ -9,11 +9,30 @@ struct Taskscape {
     app: App,
     window: MainWindow,
     menu: Option<taskscape_app::menu::NativeMenu>,
+    /// The Global hotkeys (Capture bar, Screenshot capture); None where the OS offers none.
+    hotkeys: Option<taskscape_app::hotkeys::GlobalHotkeys>,
+    capture: taskscape_app::capture_window::CaptureWindow,
 }
 
 impl eframe::App for Taskscape {
+    /// Every window clears to transparent: the panels paint their own fill, and the capture bar's rounded card
+    /// sits on nothing (eframe's default is a dark grey, which macOS showed as a black box).
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        [0.0; 4]
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        // The Global hotkeys: registered from Settings (again when one changes), and what was pressed.
+        if let Some(hotkeys) = self.hotkeys.as_mut() {
+            hotkeys.sync(&self.app);
+            for action in hotkeys.pressed() {
+                match action {
+                    taskscape_app::hotkeys::GlobalAction::ToggleCaptureBar => self.capture.toggle(&mut self.app, &ctx),
+                    taskscape_app::hotkeys::GlobalAction::ScreenshotCapture => self.capture.screenshot(&mut self.app, &ctx),
+                }
+            }
+        }
         // The OS menu's List items.
         if let Some(action) = self.menu.as_ref().and_then(|m| m.poll()) {
             match action {
@@ -40,6 +59,7 @@ impl eframe::App for Taskscape {
             self.window.show(&mut self.app, ui, look);
         });
         self.window.windows(&mut self.app, &ctx, look);
+        self.capture.show(&mut self.app, &ctx, look);
         #[cfg(target_os = "macos")]
         taskscape_app::chrome::align_window_controls(ctx.zoom_factor());
     }
@@ -69,7 +89,8 @@ fn main() -> eframe::Result {
             let mut app = App::new(data);
             app.native_window = true;
             let menu = taskscape_app::menu::NativeMenu::install();
-            Ok(Box::new(Taskscape { app, window, menu }))
+            let hotkeys = taskscape_app::hotkeys::GlobalHotkeys::new(&cc.egui_ctx);
+            Ok(Box::new(Taskscape { app, window, menu, hotkeys, capture: taskscape_app::capture_window::CaptureWindow::new() }))
         }),
     )
 }

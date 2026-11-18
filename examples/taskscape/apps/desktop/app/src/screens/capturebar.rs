@@ -75,6 +75,10 @@ pub struct CaptureBar {
     visible: bool,
     /// "native" takes the screen grab; a test's props answer with captured, cancelled, failed or pending.
     answer: String,
+    /// "window" (the capture window): a grab the window takes after hiding the bar, asked for here.
+    shot_requested: bool,
+    /// The card's height last frame: the capture window is exactly as tall as the card.
+    card_h: f32,
     bold: Toggle,
     italic: Toggle,
     underline: Toggle,
@@ -106,6 +110,8 @@ impl CaptureBar {
             failed: false,
             visible: true,
             answer: "native".into(),
+            shot_requested: false,
+            card_h: 0.0,
             bold: toggle("format_bold", "Bold", "Mod+B"),
             italic: toggle("format_italic", "Italic", "Mod+I"),
             underline: toggle("format_underlined", "Underline", "Mod+U"),
@@ -168,6 +174,7 @@ impl CaptureBar {
             .stroke(Stroke::new(1.0, look.t.edge_2))
             .corner_radius(CornerRadius::same(10));
         let out = card.show(ui, |ui| self.body(ui, look, &names));
+        self.card_h = out.response.rect.height();
         out.response.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Quick capture"));
         part(ui, &out.response, parts::CARD);
         let c = out.inner;
@@ -419,6 +426,59 @@ impl CaptureBar {
         self.focus = Some(Focus::Title);
     }
 
+    /// The capture window's: Shot (and Screenshot capture) ask the window for the grab, so the bar isn't in it.
+    pub fn use_window_capture(&mut self) {
+        self.answer = "window".into();
+    }
+
+    /// Shows the bar, its draft as it was left, the title focused.
+    pub fn reveal(&mut self) {
+        self.visible = true;
+        self.focus = Some(Focus::Title);
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    /// Hides the bar and keeps its draft (a click away, or Capture bar pressed again).
+    pub fn dismiss(&mut self, app: &mut App) -> Vec<CapturebarEvent> {
+        let mut ev = vec![];
+        if self.visible {
+            self.hide(app, &mut ev);
+        }
+        ev
+    }
+
+    /// Asks for a screenshot, as the Shot button does (Screenshot capture).
+    pub fn request_shot(&mut self) -> Vec<CapturebarEvent> {
+        let mut ev = vec![];
+        self.capture(&mut ev);
+        ev
+    }
+
+    /// A grab the bar asked for since the last call (window capture).
+    pub fn take_shot_request(&mut self) -> bool {
+        std::mem::take(&mut self.shot_requested)
+    }
+
+    /// The window's grab is done: the file, None when it was cancelled, Err when it failed.
+    pub fn finish_shot(&mut self, result: Result<Option<String>, ()>) {
+        self.pending = (self.pending - 1).max(0);
+        match result {
+            Ok(Some(file)) => {
+                self.shots.push(file);
+                self.focus = Some(Focus::Title);
+            }
+            Ok(None) => self.focus = Some(Focus::Title),
+            Err(()) => self.failed = true,
+        }
+    }
+
+    pub fn card_height(&self) -> f32 {
+        self.card_h
+    }
+
     /// One screenshot request. The grab resolves at once (or stays pending, for a test that holds it).
     fn capture(&mut self, ev: &mut Vec<CapturebarEvent>) {
         if self.pending > 0 {
@@ -428,6 +488,11 @@ impl CaptureBar {
         self.failed = false;
         self.pending += 1;
         ev.push(CapturebarEvent::CaptureStarted { pending: self.pending });
+        if self.answer == "window" {
+            // The capture window takes the grab once the bar is off screen (finish_shot).
+            self.shot_requested = true;
+            return;
+        }
         let outcome = match self.answer.as_str() {
             "native" => match taskscape_storage::screenshot::capture() {
                 Ok(Some(path)) => Outcome::Shot(path.to_string_lossy().into_owned()),
