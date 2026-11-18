@@ -112,7 +112,7 @@ impl SettingsAbout {
         let t = look.t;
         let prev_focus = self.focus_seen;
         // (Tab, arrows and Escape are read here before egui's own handling of them.)
-        let search_id = Id::new(parts::SEARCH);
+        let search_id = Id::unique(parts::SEARCH);
         let search_was_focused = prev_focus == Some(search_id);
         // Escape in the search field clears the query first; with no query it closes the window (desktop).
         if search_was_focused && ui.input(|i| i.key_pressed(Key::Escape)) {
@@ -217,7 +217,7 @@ impl SettingsAbout {
         let scoped = self.scoped;
 
         // Section list: arrows move between the tabs, and only the selected tab takes the Tab key.
-        let tab_ids: Vec<Id> = Pane::ALL.iter().map(|pane| Id::new(pane.part())).collect();
+        let tab_ids: Vec<Id> = Pane::ALL.iter().map(|pane| Id::unique(pane.part())).collect();
         let tab_at = |f: Option<Id>| f.and_then(|f| tab_ids.iter().position(|id| *id == f));
         let focused = ui.ctx().memory(|m| m.focused());
         let sel_idx = Pane::ALL.iter().position(|pane| *pane == self.pane).unwrap_or(0);
@@ -361,7 +361,7 @@ impl SettingsAbout {
                 let row_r = Rect::from_min_size(pos2(x + 8.0, by), vec2(w - 16.0, 30.0));
                 if !self.confirming {
                     if self.focus_reset {
-                        ui.memory_mut(|m| m.request_focus(Id::new(parts::RESETBUTTON)));
+                        ui.memory_mut(|m| m.request_focus(Id::unique(parts::RESETBUTTON)));
                         self.focus_reset = false;
                     }
                     let resp = tag(ui, row_r, Sense::click(), Role::Button, "Reset all settings…", Some("Reset all settings…"), None, parts::RESETBUTTON);
@@ -373,7 +373,7 @@ impl SettingsAbout {
                     }
                 } else {
                     if self.focus_cancel {
-                        ui.memory_mut(|m| m.request_focus(Id::new(parts::CANCELRESET)));
+                        ui.memory_mut(|m| m.request_focus(Id::unique(parts::CANCELRESET)));
                         self.focus_cancel = false;
                     }
                     let half = (w - 16.0 - 8.0) / 2.0;
@@ -387,8 +387,8 @@ impl SettingsAbout {
                     button_paint(&p, cancel_r, &t, t.surface_3, Some(cb), cancel.has_focus(), "Cancel", t.content_1);
                     let fill = if confirm.hovered() { t.danger_600 } else { t.danger_500 };
                     button_paint(&p, confirm_r, &t, fill, None, confirm.has_focus(), "Reset all settings", t.on_accent);
-                    let cancel_was_focused = prev_focus == Some(Id::new(parts::CANCELRESET));
-                    let confirm_was_focused = prev_focus == Some(Id::new(parts::CONFIRMRESET));
+                    let cancel_was_focused = prev_focus == Some(Id::unique(parts::CANCELRESET));
+                    let confirm_was_focused = prev_focus == Some(Id::unique(parts::CONFIRMRESET));
                     if cancel.clicked() || ((cancel_was_focused || cancel.has_focus()) && esc) || ((confirm_was_focused || confirm.has_focus()) && esc) {
                         self.confirming = false;
                         self.focus_reset = true;
@@ -462,7 +462,7 @@ fn wrapped(p: &Painter, s: &str, px: f32, w: u16, color: Color32, width: f32) ->
 
 /// Tags a rect as a contract part. The node's label is the name; `value` is the text when it differs.
 fn tag(ui: &Ui, rect: Rect, sense: Sense, role: Role, label: &str, value: Option<&str>, selected: Option<bool>, part_id: &str) -> Response {
-    let response = ui.interact(rect, Id::new(part_id), sense);
+    let response = ui.interact(rect, Id::unique(part_id), sense);
     if let Some(on) = selected {
         // A button's selected state is set on the node itself (WidgetInfo carries it for checkboxes only).
         ui.ctx().accesskit_node_builder(response.id, |n| n.set_selected(on));

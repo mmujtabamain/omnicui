@@ -541,7 +541,7 @@ impl Mounted for Mount {
     }
 }
 
-pub fn mount(mut app: App, props: serde_json::Value) -> Result<Box<dyn Mounted>, String> {
+pub fn mount(app: App, props: serde_json::Value) -> Result<Box<dyn Mounted>, String> {
     let p: AttachmentlightboxProps = serde_json::from_value(props).map_err(|e| e.to_string())?;
     let task = app
         .data

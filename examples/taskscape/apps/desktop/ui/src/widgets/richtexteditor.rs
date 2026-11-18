@@ -367,7 +367,7 @@ impl RichTextEditor {
             });
 
             let radius = CornerRadius::same(RADIUS);
-            let mut shapes = vec![
+            let shapes = vec![
                 Shape::rect_filled(frame_rect, radius, if disabled { t.surface_2 } else { t.surface_3 }),
                 // One ring: the border turns into the 2 px focus ring (a border plus a ring outside it read as
                 // two rings, #12380).

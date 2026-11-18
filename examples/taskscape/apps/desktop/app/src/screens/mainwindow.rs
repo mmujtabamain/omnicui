@@ -153,8 +153,8 @@ impl MainWindow {
         // overlay): a layer over the window, under the menus, takes it.
         if self.panes.iter().any(|p| p.menu_open()) {
             let ctx = ui.ctx().clone();
-            let closed = egui::Area::new(Id::new("mainwindow.menublocker")).order(egui::Order::Middle).fixed_pos(full.min).show(&ctx, |ui| {
-                let r = ui.interact(full, Id::new("mainwindow.menublocker.hit"), Sense::click());
+            let closed = egui::Area::new(Id::unique("mainwindow.menublocker")).order(egui::Order::Middle).fixed_pos(full.min).show(&ctx, |ui| {
+                let r = ui.interact(full, Id::unique("mainwindow.menublocker.hit"), Sense::click());
                 r.clicked() || r.secondary_clicked()
             });
             if closed.inner {
@@ -242,9 +242,9 @@ impl MainWindow {
     /// them as OS windows with the same content, see src/main.rs).
     fn windows_in_place(&mut self, app: &mut App, ui: &mut Ui, full: Rect, look: Look) {
         let t = look.t;
-        let mut panel = |ui: &mut Ui, size: egui::Vec2, id: &str, part_id: &str, label: &str, f: &mut dyn FnMut(&mut Ui)| {
+        let panel = |ui: &mut Ui, size: egui::Vec2, id: &str, part_id: &str, label: &str, f: &mut dyn FnMut(&mut Ui)| {
             let r = Rect::from_center_size(full.center(), size.min(full.size() - egui::vec2(16.0, 16.0)));
-            egui::Area::new(Id::new(id)).order(egui::Order::Foreground).fixed_pos(r.min).show(ui.ctx(), |ui| {
+            egui::Area::new(Id::unique(id)).order(egui::Order::Foreground).fixed_pos(r.min).show(ui.ctx(), |ui| {
                 ui.set_clip_rect(r);
                 ui.painter().rect(r, CornerRadius::same(10), t.surface_1, Stroke::new(1.0, t.edge_2), StrokeKind::Inside);
                 node(ui, r, id, part_id, label);
@@ -455,7 +455,7 @@ impl MainWindow {
                 ui.painter().text(c - egui::vec2(0.0, 26.5), Align2::CENTER_CENTER, taskscape_ui::icon("left_click", 28.0).text(), FontId::new(28.0, egui::FontFamily::Name("Icons".into())), t.content_3);
                 let title = ui.painter().text(c + egui::vec2(0.0, 3.0), Align2::CENTER_CENTER, "No task selected", FontId::new(rem(1.071), weight(500)), t.content_2);
                 ui.painter().text(c + egui::vec2(0.0, 29.0), Align2::CENTER_CENTER, "Select a task to inspect it", FontId::new(rem(0.893), weight(400)), t.content_3);
-                let r = ui.interact(title.expand2(egui::vec2(60.0, 20.0)), Id::new("mainwindow.previewempty"), Sense::hover());
+                let r = ui.interact(title.expand2(egui::vec2(60.0, 20.0)), Id::unique("mainwindow.previewempty"), Sense::hover());
                 r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "No task selected"));
                 ui.ctx().accesskit_node_builder(r.id, |n| n.set_value("No task selected".to_owned()));
                 part(ui, &r, parts::PREVIEWEMPTY);
@@ -471,7 +471,7 @@ impl MainWindow {
         let title = ui.painter().text(c - egui::vec2(0.0, 10.0), Align2::CENTER_CENTER, "No lists yet", FontId::new(rem(1.071), weight(500)), t.content_2);
         let sub = ui.painter().text(c + egui::vec2(0.0, 12.0), Align2::CENTER_CENTER, "Create a list to start adding tasks", FontId::new(rem(0.893), weight(400)), t.content_3);
         for (r, id, p, s) in [(title, "mainwindow.nolists.title", parts::NOLISTSTITLE, "No lists yet"), (sub, "mainwindow.nolists.sub", parts::NOLISTSSUBTITLE, "Create a list to start adding tasks")] {
-            let resp = ui.interact(r, Id::new(id), Sense::hover());
+            let resp = ui.interact(r, Id::unique(id), Sense::hover());
             resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, s));
             ui.ctx().accesskit_node_builder(resp.id, |n| n.set_value(s.to_owned()));
             part(ui, &resp, p);
@@ -571,7 +571,7 @@ fn app_ptr(app: &mut App) -> &mut App {
 
 /// A region of the window as a part: a node over `rect`, named `label`.
 fn node(ui: &mut Ui, rect: Rect, id: &str, part_id: &str, label: &str) -> egui::Response {
-    let r = ui.interact(rect, Id::new(id), Sense::hover());
+    let r = ui.interact(rect, Id::unique(id), Sense::hover());
     let label = label.to_owned();
     r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, &label));
     part(ui, &r, part_id);
@@ -614,7 +614,7 @@ pub fn mount(app: App, props: serde_json::Value) -> Result<Box<dyn Mounted>, Str
 fn ghost(app: &App, ui: &Ui, look: Look, ids: &[crate::data::Id], p: Pos2, grab: egui::Vec2, adds: bool) {
     let t = look.t;
     let Some(first) = ids.first().and_then(|id| app.data.task(id)) else { return };
-    let fg = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Tooltip, Id::new("mainwindow.taskGhost")));
+    let fg = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Tooltip, Id::unique("mainwindow.taskGhost")));
     let title = if ids.len() > 1 { format!("{}  +{}", first.title, ids.len() - 1) } else { first.title.clone() };
     let text = fg.layout_no_wrap(title, FontId::new(13.0, weight(400)), t.content_1);
     let check = 14.0;

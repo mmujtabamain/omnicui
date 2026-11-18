@@ -353,7 +353,7 @@ impl Sheets {
         // Cancel is drawn here, with the look of the lg neutral Button, because a destructive sheet starts
         // with it focused (decision 13) and only a response of this control can be given that focus.
         // Enter and Space on the focused control click it, as they do a Button.
-        let cancel_resp = ui.interact(cancel_r, Id::new("sheets.cancel"), Sense::click());
+        let cancel_resp = ui.interact(cancel_r, Id::unique("sheets.cancel"), Sense::click());
         if cfg.danger && self.focus_frames > 0 && ui.ctx().memory(|m| m.focused()).is_none() {
             cancel_resp.request_focus();
         }
@@ -728,7 +728,7 @@ fn goes(n: usize) -> &'static str {
 
 fn input_id() -> Id {
     // The id the input widget gives its field.
-    Id::new("ui.input.field")
+    Id::unique("ui.input.field")
 }
 
 

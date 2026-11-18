@@ -67,7 +67,7 @@ pub fn trail(native: bool, buttons: usize) -> f32 {
 }
 
 fn no_drag_id(bar: Rect) -> Id {
-    Id::new(("chrome.noDrag", bar.min.x as i32, bar.min.y as i32))
+    Id::unique(("chrome.noDrag", bar.min.x as i32, bar.min.y as i32))
 }
 
 /// A control in a bar: a press on it never moves the window, even where egui would hand the drag to the bar.
@@ -81,7 +81,7 @@ pub fn no_drag(ui: &Ui, bar: Rect, control: Rect) {
 /// the window on macOS, #12480).
 pub fn drag_region(ui: &mut Ui, bar: Rect, zoomable: bool) {
     let controls = ui.ctx().data_mut(|d| std::mem::take(d.get_temp_mut_or_default::<Vec<Rect>>(no_drag_id(bar))));
-    let r = ui.interact(bar, Id::new(("chrome.drag", bar.min.x as i32, bar.min.y as i32)), Sense::click_and_drag());
+    let r = ui.interact(bar, Id::unique(("chrome.drag", bar.min.x as i32, bar.min.y as i32)), Sense::click_and_drag());
     let origin = ui.input(|i| i.pointer.press_origin());
     let on_control = origin.is_some_and(|p| controls.iter().any(|c| c.contains(p)));
     if r.drag_started() && !on_control {
@@ -103,7 +103,7 @@ pub fn buttons(ui: &mut Ui, look: Look, bar: Rect, minimise: bool) -> bool {
     for (glyph, name) in names {
         let r = Rect::from_min_size(pos2(x, bar.top()), vec2(BUTTON_W, bar.height()));
         x += BUTTON_W;
-        let resp = ui.interact(r, Id::new(("chrome.button", *name, bar.min.y as i32)), Sense::click());
+        let resp = ui.interact(r, Id::unique(("chrome.button", *name, bar.min.y as i32)), Sense::click());
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, *name));
         if resp.hovered() {
             let fill = if *name == "Close" { t.danger_500 } else { t.wash_2 };

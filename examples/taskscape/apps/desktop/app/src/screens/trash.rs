@@ -175,7 +175,6 @@ impl Trash {
                     close_sheet = true;
                 }
                 DialogEvent::OpenChanged { .. } => close_sheet = true,
-                _ => {}
             }
         }
         if accepted {

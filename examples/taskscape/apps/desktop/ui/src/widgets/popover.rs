@@ -12,7 +12,7 @@ const ROW_PARTS: [&str; 6] = [parts::ROW1, parts::ROW2, parts::ROW3, parts::ROW4
 /// The id of the @ field. Fixed, so the mount can focus it before the widget draws.
 #[allow(deprecated)]
 fn editor_key() -> egui::Id {
-    egui::Id::new("ui.popover.editor")
+    egui::Id::unique("ui.popover.editor")
 }
 
 /// The @ query at the end of the text: where its @ is, and the query in lower case.

@@ -35,7 +35,7 @@ const LETTERS: [Key; 26] = [
 
 /// The id of a named part of this menu. Rows, the trigger and the panels each have one.
 fn rid(name: &'static str) -> Id {
-    Id::new(("ui.menu", name))
+    Id::unique(("ui.menu", name))
 }
 
 /// The keys this frame, read once.

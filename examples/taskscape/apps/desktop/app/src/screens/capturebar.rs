@@ -15,7 +15,6 @@ use taskscape_ui::{as_part, icon, part, rem, weight, Look, Mounted};
 const TITLE_ID: &str = "app.capturebar.title.field";
 const NOTES_ID: &str = "app.capturebar.notes.field";
 const CLEAR_ID: &str = "app.capturebar.clear.button";
-const HINT_ID: &str = "app.capturebar.notesHint.button";
 const SHOT_ID: &str = "app.capturebar.screenshot.button";
 /// The notes limit the counter reads against (count/2000).
 const LIMIT: i64 = 2000;
@@ -128,8 +127,8 @@ impl CaptureBar {
             return ev;
         }
         app.capture_open = true;
-        let title_id = egui::Id::new(TITLE_ID);
-        let notes_id = egui::Id::new(NOTES_ID);
+        let title_id = egui::Id::unique(TITLE_ID);
+        let notes_id = egui::Id::unique(NOTES_ID);
         if self.focus == Some(Focus::Title) {
             ui.memory_mut(|m| m.request_focus(title_id));
         }
@@ -228,7 +227,7 @@ impl CaptureBar {
             }
             let field = (ui.available_width() - 12.0).max(0.0);
             let edit = TextEdit::singleline(&mut self.title)
-                .id(egui::Id::new(TITLE_ID))
+                .id(egui::Id::unique(TITLE_ID))
                 .lock_focus(true)
                 .frame(egui::Frame::NONE)
                 .font(FontId::new(rem(1.0), weight(400)))
@@ -269,7 +268,7 @@ impl CaptureBar {
         egui::Frame::new().inner_margin(Margin::symmetric(12, 8)).show(ui, |ui| {
             egui::ScrollArea::vertical().max_height(144.0).min_scrolled_height(48.0).auto_shrink([false, true]).show(ui, |ui| {
                 let edit = TextEdit::multiline(&mut self.notes)
-                    .id(egui::Id::new(NOTES_ID))
+                    .id(egui::Id::unique(NOTES_ID))
                     .lock_focus(true)
                     .frame(egui::Frame::NONE)
                     .font(FontId::new(rem(0.964), weight(400)))
@@ -358,7 +357,7 @@ impl CaptureBar {
         } else {
             format!("{n} shots")
         };
-        let id = egui::Id::new(SHOT_ID);
+        let id = egui::Id::unique(SHOT_ID);
         let hot = was_hovered(ui, id) && !capturing;
         let ink = if self.failed {
             t.danger_500
@@ -575,7 +574,7 @@ fn take_key(ui: &egui::Ui, key: Key, platform: bool, shift: bool) -> bool {
 /// The Clear button: a well at the right edge of the title row. True when it was clicked.
 fn clear_button(ui: &mut egui::Ui, look: Look) -> bool {
     let t = look.t;
-    let id = egui::Id::new(CLEAR_ID);
+    let id = egui::Id::unique(CLEAR_ID);
     let hot = was_hovered(ui, id);
     let ink = if hot { t.content_1 } else { t.content_2 };
     let bg = ui.painter().add(Shape::Noop);
@@ -693,7 +692,7 @@ fn words(ui: &mut egui::Ui, s: &str, px: f32, w: u16, color: Color32) {
 
 /// An invisible region under a row or group, tagged as a contract part.
 fn tag_area(ui: &egui::Ui, rect: Rect, id: &str, part_id: &str, label: &str) {
-    let r = ui.interact(rect, egui::Id::new(id), Sense::hover());
+    let r = ui.interact(rect, egui::Id::unique(id), Sense::hover());
     r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, label));
     part(ui, &r, part_id);
 }

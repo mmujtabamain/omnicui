@@ -203,7 +203,7 @@ impl SettingsShortcuts {
             self.pane = Pane::Shortcuts;
         }
         let t = look.t;
-        let search_id = Id::new(SEARCH_FIELD);
+        let search_id = Id::unique(SEARCH_FIELD);
 
         // Escape: a recording keycap takes it (it cancels the recording); otherwise it clears the search, and with
         // no search it closes Settings.
@@ -234,7 +234,7 @@ impl SettingsShortcuts {
 
         // The window: its background, then the title bar.
         let rect = ui.max_rect();
-        let root = ui.interact(rect, ui.id().with("settings-dialog"), Sense::hover());
+        let root = ui.interact(rect, ui.scope_id().with("settings-dialog"), Sense::hover());
         root.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Settings"));
         part(ui, &root, parts::DIALOG);
         ui.painter().rect_filled(rect, CornerRadius::same(0), t.surface_2);
@@ -390,7 +390,7 @@ impl SettingsShortcuts {
 
         // The pane: the scrolling content to the right of the list.
         let pane_name = PANES.iter().find(|p| p.0 == self.pane).map_or("", |p| p.1);
-        let pane_node = ui.interact(pane, ui.id().with("settings-pane"), Sense::hover());
+        let pane_node = ui.interact(pane, ui.scope_id().with("settings-pane"), Sense::hover());
         pane_node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, pane_name));
         part(ui, &pane_node, parts::PANE);
         let pane_left = pane.left();
@@ -453,7 +453,7 @@ impl SettingsShortcuts {
             let full = ui.max_rect();
             // The empty state is one status node, so its text is the whole message.
             let area = Rect::from_min_max(pos2(full.left(), top), pos2(full.right(), bottom));
-            let node = ui.interact(area, ui.id().with("no-match"), Sense::hover());
+            let node = ui.interact(area, ui.scope_id().with("no-match"), Sense::hover());
             let label = format!("No settings match. Nothing here for “{}”.", view.query);
             node.widget_info(|| WidgetInfo::labeled(Role::Status, true, label.as_str()));
             part(ui, &node, parts::NOMATCH);
@@ -517,7 +517,7 @@ impl SettingsShortcuts {
 
         // The row's own node is added before its controls, so they stay on top of it for hit tests.
         let row_rect = Rect::from_min_size(ui.cursor().min, vec2(ui.available_width(), ROW_H));
-        let node = ui.interact(row_rect, ui.id().with(("settings-row", i)), Sense::hover());
+        let node = ui.interact(row_rect, ui.scope_id().with(("settings-row", i)), Sense::hover());
         node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, item.label));
         part(ui, &node, item.row.unwrap_or(parts::ROW));
 

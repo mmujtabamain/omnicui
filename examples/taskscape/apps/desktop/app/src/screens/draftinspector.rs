@@ -101,10 +101,10 @@ impl DraftInspector {
             return vec![];
         }
         let t = look.t;
-        let title_id = Id::new("app.draftinspector.title");
-        let discard_id = Id::new("app.draftinspector.discardDraft");
-        let note_id = Id::new("app.draftinspector.noteButton");
-        let image_id = Id::new("app.draftinspector.imageButton");
+        let title_id = Id::unique("app.draftinspector.title");
+        let discard_id = Id::unique("app.draftinspector.discardDraft");
+        let note_id = Id::unique("app.draftinspector.noteButton");
+        let image_id = Id::unique("app.draftinspector.imageButton");
 
         // Keys are read before the field sees them, so Enter never adds a line. The title counts as focused
         // from the last frame too: egui takes the focus away on Escape and moves it on Tab before this frame.
@@ -223,7 +223,7 @@ impl DraftInspector {
             Some(l) => format!("{project} / {l}"),
             None => project.clone(),
         };
-        let bc = ui.interact(Rect::from_min_size(pos2(left, bc_top), vec2(inner_w, 16.0)), Id::new("app.draftinspector.breadcrumb"), Sense::hover());
+        let bc = ui.interact(Rect::from_min_size(pos2(left, bc_top), vec2(inner_w, 16.0)), Id::unique("app.draftinspector.breadcrumb"), Sense::hover());
         bc.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, &label));
         part(ui, &bc, parts::BREADCRUMB);
 
@@ -234,7 +234,7 @@ impl DraftInspector {
         let (sw_label_w, sw_label_h) = (sw_label.size().x, sw_label.size().y);
         ui.painter().galley(pos2(left, sw_mid - sw_label_h / 2.0), sw_label, t.content_3);
         ui.painter().line_segment([pos2(left + sw_label_w + 8.0, sw_mid), pos2(left + inner_w, sw_mid)], Stroke::new(1.0, t.edge_1));
-        let sw = ui.interact(Rect::from_min_size(pos2(left, sw_top), vec2(inner_w, 16.0)), Id::new("app.draftinspector.startWith"), Sense::hover());
+        let sw = ui.interact(Rect::from_min_size(pos2(left, sw_top), vec2(inner_w, 16.0)), Id::unique("app.draftinspector.startWith"), Sense::hover());
         sw.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Start with"));
         part(ui, &sw, parts::STARTWITH);
 
@@ -265,7 +265,7 @@ impl DraftInspector {
         job.wrap.max_width = inner_w;
         let hint = ui.painter().layout_job(job);
         let hint_rect = Rect::from_min_size(pos2(left, hint_top), hint.size());
-        let hint_node = ui.interact(hint_rect, Id::new("app.draftinspector.hint"), Sense::hover());
+        let hint_node = ui.interact(hint_rect, Id::unique("app.draftinspector.hint"), Sense::hover());
         hint_node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, HINT));
         part(ui, &hint_node, parts::HINT);
         ui.painter().galley(hint_rect.min, hint, t.content_3);

@@ -66,10 +66,15 @@ if build.returncode != 0:
     blocks = [b for b in build.stderr.split("\n\n") if b.lstrip().startswith("error")]
     print("\n\n".join(blocks[:12])[:8000] or "\n".join(build.stderr.splitlines()[-60:]))
     sys.exit(1)
-own = [l for l in build.stderr.split("\n\n") if f"widgets/{name}.rs" in l and l.startswith("warning")]
-print("BUILD: ok" + (f" ({len(own)} warnings in {name}.rs)" if own else ""))
-for w in own[:10]:
-    print(w)
+# A warning in our own code fails the check, wherever it is: counted but let through, 82 piled up (egui's
+# deprecations among them) before anyone saw them. Cargo prints a crate's warnings when it compiles it, so a
+# change brings its warnings here.
+warns = [b.strip() for b in build.stderr.split("\n\n") if b.lstrip().startswith("warning") and "-->" in b]
+if warns:
+    print(f"BUILD: {len(warns)} warnings (the build must have none)")
+    print("\n\n".join(warns[:12])[:8000])
+    sys.exit(1)
+print("BUILD: ok")
 
 out = ROOT / ".checks" / f"desktop-{name}"
 env["DESKTOP_ADAPTER"] = str(shared / "release" / f"adapter-slot{slot}")

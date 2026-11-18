@@ -297,7 +297,7 @@ impl FilterPanel {
                     glyph(ui, gr.center(), "search", 16.0, t.content_2);
                     let trailing = 26.0 + 2.0 + 26.0 + 26.0 + if searching { 56.0 } else { 0.0 } + 16.0;
                     let fw = (ui.available_width() - trailing).max(60.0);
-                    let sid = ui.id().with(("search", i));
+                    let sid = ui.scope_id().with(("search", i));
                     let was_focused = ui.memory(|m| m.has_focus(sid));
                     let resp = ui.add(egui::TextEdit::singleline(&mut self.queries[i]).id(sid).frame(egui::Frame::NONE).desired_width(fw).hint_text(format!("Search {name}")));
                     if primary {
@@ -315,7 +315,7 @@ impl FilterPanel {
                     if searching {
                         let count = matches.to_string();
                         let (cr, _) = ui.allocate_exact_size(vec2(30.0, 18.0), Sense::hover());
-                        let cn = ui.interact(cr, ui.id().with(("count", i)), Sense::hover());
+                        let cn = ui.interact(cr, ui.scope_id().with(("count", i)), Sense::hover());
                         ui.painter().text(cr.right_center(), Align2::RIGHT_CENTER, &count, FontId::new(12.0, weight(600)), t.content_2);
                         node(ui, &cn, Role::GenericContainer, true, &count, None, if primary { parts::SEARCHCOUNT } else { "" });
                         if icon_button(ui, look, if primary { parts::SEARCHCLEAR } else { "" }, "Clear search", "close", None, true).clicked() {
@@ -374,19 +374,19 @@ impl FilterPanel {
         let indent = r.depth as f32 * 24.0;
         let cy = rect.top() + 17.0;
 
-        let row_r = ui.interact(rect, ui.id().with(("row", &r.id)), Sense::hover());
+        let row_r = ui.interact(rect, ui.scope_id().with(("row", &r.id)), Sense::hover());
         node(ui, &row_r, Role::GenericContainer, true, &r.title, None, if f.primary && f.first { parts::ROW } else { "" });
         if f.primary {
             let named = row_part(&r.title);
             if !named.is_empty() {
-                let nr = ui.interact(rect, ui.id().with(("named", &r.id)), Sense::hover());
+                let nr = ui.interact(rect, ui.scope_id().with(("named", &r.id)), Sense::hover());
                 node(ui, &nr, Role::GenericContainer, true, &r.title, None, named);
             }
         }
 
         // The round check: done fills with the done lamp and draws a check.
         let circle = Rect::from_center_size(pos2(rect.left() + 22.0 + indent, cy), vec2(16.0, 16.0));
-        let cb = ui.interact(circle, ui.id().with(("done", &r.id)), Sense::click());
+        let cb = ui.interact(circle, ui.scope_id().with(("done", &r.id)), Sense::click());
         let fill = if r.done { t.done_lamp_1 } else { t.surface_3 };
         let edge = if r.done { t.done_lamp_1 } else { t.content_3 };
         ui.painter().circle(circle.center(), 8.0, fill, Stroke::new(1.0, edge));
@@ -415,7 +415,7 @@ impl FilterPanel {
             let y = title_rect.top() + 10.0;
             ui.painter().line_segment([pos2(tx, y), pos2(tx + tw, y)], Stroke::new(1.0, t.content_3));
         }
-        let tr = ui.interact(title_rect, ui.id().with(("title", &r.id)), Sense::click());
+        let tr = ui.interact(title_rect, ui.scope_id().with(("title", &r.id)), Sense::click());
         if tr.clicked() {
             app.ui.preview = Some(r.id.clone());
         }
@@ -428,7 +428,7 @@ impl FilterPanel {
         // The subtask toggle and the done count of the visible children.
         if r.has_kids && !f.searching {
             let tg_rect = Rect::from_center_size(pos2(rect.right() - 46.0, cy), vec2(22.0, 22.0));
-            let tg = ui.interact(tg_rect, ui.id().with(("toggle", &r.id)), Sense::click());
+            let tg = ui.interact(tg_rect, ui.scope_id().with(("toggle", &r.id)), Sense::click());
             if tg.hovered() {
                 ui.painter().rect_filled(tg_rect, CornerRadius::same(6), t.wash_1);
             }
@@ -453,14 +453,14 @@ impl FilterPanel {
                 let br = Rect::from_min_size(pos2(tg_rect.left() - 8.0 - bw, cy - 9.0), vec2(bw, 18.0));
                 ui.painter().rect_filled(br, CornerRadius::same(9), t.wash_2);
                 ui.painter().text(br.center(), Align2::CENTER_CENTER, &label, FontId::new(12.0, weight(600)), t.content_2);
-                let bn = ui.interact(br, ui.id().with(("count", &r.id)), Sense::hover());
+                let bn = ui.interact(br, ui.scope_id().with(("count", &r.id)), Sense::hover());
                 node(ui, &bn, Role::GenericContainer, true, &label, None, if f.primary && f.parent { parts::SUBTASKCOUNT } else { "" });
             }
         }
 
         // The More button.
         let mr = Rect::from_center_size(pos2(rect.right() - 16.0, cy), vec2(24.0, 24.0));
-        let mo = ui.interact(mr, ui.id().with(("more", &r.id)), Sense::click());
+        let mo = ui.interact(mr, ui.scope_id().with(("more", &r.id)), Sense::click());
         if mo.hovered() {
             ui.painter().rect_filled(mr, CornerRadius::same(7), t.wash_1);
         }
@@ -485,7 +485,7 @@ impl FilterPanel {
         glyph(ui, c - vec2(0.0, 26.0), "ads_click", 28.0, t.content_3);
         ui.painter().text(c + vec2(0.0, 2.0), Align2::CENTER_CENTER, "No task selected", FontId::new(14.0, weight(600)), t.content_1);
         ui.painter().text(c + vec2(0.0, 22.0), Align2::CENTER_CENTER, "Select a task to inspect it", FontId::new(12.0, weight(500)), t.content_2);
-        let r = ui.interact(rect, ui.id().with("previewEmpty"), Sense::hover());
+        let r = ui.interact(rect, ui.scope_id().with("previewEmpty"), Sense::hover());
         node(ui, &r, Role::Status, true, "No task selected", None, parts::PREVIEWEMPTY);
     }
 
@@ -635,7 +635,7 @@ impl FilterPanel {
                             self.days = self.days.saturating_sub(1).max(1);
                             self.days_text = self.days.to_string();
                         }
-                        let tid = ui.id().with("days");
+                        let tid = ui.scope_id().with("days");
                         let resp = ui.add(egui::TextEdit::singleline(&mut self.days_text).id(tid).desired_width(44.0));
                         if self.focus_days {
                             resp.request_focus();
@@ -777,7 +777,7 @@ fn footer(app: &mut App, ui: &mut egui::Ui, look: Look, primary: bool, m: &Model
         ui.painter().rect_filled(bar, CornerRadius::same(2), t.edge_2);
         let fill = Rect::from_min_size(bar.min, vec2(bar.width() * frac, bar.height()));
         ui.painter().rect_filled(fill, CornerRadius::same(2), t.accent_500);
-        let br = ui.interact(bar, ui.id().with("progress"), Sense::hover());
+        let br = ui.interact(bar, ui.scope_id().with("progress"), Sense::hover());
         node(ui, &br, Role::GenericContainer, true, "Done progress", None, if primary { parts::PROGRESSBAR } else { "" });
         let pt = format!("{pct}%");
         let pr = ui.label(text(pt.clone(), 11.0, 600));
@@ -1017,7 +1017,7 @@ fn node(ui: &egui::Ui, r: &Response, role: Role, enabled: bool, label: &str, on:
 fn icon_button(ui: &mut egui::Ui, look: Look, part_id: &str, name: &str, glyph_name: &str, on: Option<bool>, enabled: bool) -> Response {
     let t = look.t;
     let (rect, _) = ui.allocate_exact_size(vec2(24.0, 24.0), Sense::hover());
-    let r = ui.interact(rect, ui.id().with((part_id, name)), if enabled { Sense::click() } else { Sense::hover() });
+    let r = ui.interact(rect, ui.scope_id().with((part_id, name)), if enabled { Sense::click() } else { Sense::hover() });
     let hot = enabled && r.hovered();
     if on == Some(true) {
         ui.painter().rect_filled(rect, CornerRadius::same(7), t.wash_2);
@@ -1043,7 +1043,7 @@ fn icon_button(ui: &mut egui::Ui, look: Look, part_id: &str, name: &str, glyph_n
 fn pill(ui: &mut egui::Ui, look: Look, part_id: &str, label: &str, lead: &str, trail: &str, width: f32, style: Style, enabled: bool) -> Response {
     let t = look.t;
     let (rect, _) = ui.allocate_exact_size(vec2(width, 27.0), Sense::hover());
-    let r = ui.interact(rect, ui.id().with((part_id, label)), if enabled { Sense::click() } else { Sense::hover() });
+    let r = ui.interact(rect, ui.scope_id().with((part_id, label)), if enabled { Sense::click() } else { Sense::hover() });
     let hot = enabled && r.hovered();
     let (fill, fg) = match style {
         Style::Primary => (if hot { t.accent_600 } else { t.accent_500 }, t.on_accent),
@@ -1071,7 +1071,7 @@ fn pill(ui: &mut egui::Ui, look: Look, part_id: &str, label: &str, lead: &str, t
 fn tab(ui: &mut egui::Ui, look: Look, part_id: &str, label: &str, width: f32, on: bool) -> Response {
     let t = look.t;
     let (rect, _) = ui.allocate_exact_size(vec2(width, 26.0), Sense::hover());
-    let r = ui.interact(rect, ui.id().with((part_id, label)), Sense::click());
+    let r = ui.interact(rect, ui.scope_id().with((part_id, label)), Sense::click());
     let fill = if on {
         t.wash_2
     } else if r.hovered() {
@@ -1096,7 +1096,7 @@ fn segments(ui: &mut egui::Ui, look: Look, opts: &[(&str, &str, bool)]) -> Optio
     let mut clicked = None;
     for (i, (part_id, label, on)) in opts.iter().enumerate() {
         let r = Rect::from_min_size(grp.min + vec2(i as f32 * w, 0.0), vec2(w, 24.0)).shrink(1.5);
-        let resp = ui.interact(r, ui.id().with((*part_id, *label)), Sense::click());
+        let resp = ui.interact(r, ui.scope_id().with((*part_id, *label)), Sense::click());
         if *on {
             ui.painter().rect_filled(r, CornerRadius::same(6), t.accent_500);
         } else if resp.hovered() {
@@ -1115,7 +1115,7 @@ fn segments(ui: &mut egui::Ui, look: Look, opts: &[(&str, &str, bool)]) -> Optio
 fn menu_item(ui: &mut egui::Ui, look: Look, part_id: &str, label: &str) -> bool {
     let t = look.t;
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 26.0), Sense::hover());
-    let r = ui.interact(rect, ui.id().with((part_id, label)), Sense::click());
+    let r = ui.interact(rect, ui.scope_id().with((part_id, label)), Sense::click());
     if r.hovered() {
         ui.painter().rect_filled(rect, CornerRadius::same(6), t.wash_1);
     }
@@ -1125,7 +1125,7 @@ fn menu_item(ui: &mut egui::Ui, look: Look, part_id: &str, label: &str) -> bool 
 }
 
 fn popup(ui: &egui::Ui, key: &str, at: Pos2, add: impl FnOnce(&mut egui::Ui)) {
-    egui::Area::new(egui::Id::new(key)).order(egui::Order::Foreground).fixed_pos(at).show(ui.ctx(), |ui| {
+    egui::Area::new(egui::Id::unique(key)).order(egui::Order::Foreground).fixed_pos(at).show(ui.ctx(), |ui| {
         egui::Frame::popup(ui.style()).show(ui, |ui| {
             ui.set_width(180.0);
             add(ui);
@@ -1141,7 +1141,7 @@ fn section_title(ui: &mut egui::Ui, look: Look, label: &str, part_id: &str, on: 
     ui.horizontal(|ui| {
         let (rect, _) = ui.allocate_exact_size(galley.size(), Sense::hover());
         ui.painter().galley(rect.min, galley.clone(), t.content_2);
-        let h = ui.interact(rect, ui.id().with(part_id), Sense::hover());
+        let h = ui.interact(rect, ui.scope_id().with(part_id), Sense::hover());
         node(ui, &h, Role::Heading, true, label, None, part_id);
         if on {
             let (d, _) = ui.allocate_exact_size(vec2(6.0, 6.0), Sense::hover());
@@ -1160,7 +1160,7 @@ fn section_title(ui: &mut egui::Ui, look: Look, label: &str, part_id: &str, on: 
 fn center_text(ui: &mut egui::Ui, s: &str, size: f32, w: u16, color: Color32) -> Response {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), size * 2.4), Sense::hover());
     ui.painter().text(rect.center(), Align2::CENTER_CENTER, s, FontId::new(size, weight(w)), color);
-    ui.interact(rect, ui.id().with(s), Sense::hover())
+    ui.interact(rect, ui.scope_id().with(s), Sense::hover())
 }
 
 /// The test's mount: the app on the props' data set, put where the props say the screen starts.

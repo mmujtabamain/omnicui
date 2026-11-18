@@ -69,7 +69,7 @@ impl Input {
     }
 
     fn edit_id(&self) -> Id {
-        Id::new("ui.input.field")
+        Id::unique("ui.input.field")
     }
 
     /// Font size in px, line height in px and weight, from the size axis.

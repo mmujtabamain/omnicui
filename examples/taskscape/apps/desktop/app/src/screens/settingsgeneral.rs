@@ -201,7 +201,7 @@ impl SettingsGeneral {
         );
         let (search_rect, _) = nv.allocate_exact_size(vec2(inner_w, rem(1.75)), Sense::hover());
         // A fixed id: the field keeps its focus and its typed text from frame to frame.
-        let search_id = egui::Id::new("app.settingsgeneral.search");
+        let search_id = egui::Id::unique("app.settingsgeneral.search");
         let focused = ui.memory(|m| m.has_focus(search_id));
         self.writes.clear();
         self.closed = None;

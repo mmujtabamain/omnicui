@@ -49,7 +49,7 @@ impl TitleBar {
         let leading = p.controls == "leading";
         // Window chrome on desktop: the bar drags the window and a double-click maximises it.
         let drag = window && leading;
-        let id = ui.id().with("titlebar");
+        let id = ui.scope_id().with("titlebar");
         let sw_id = id.with("switcher");
         let font = FontId::new(13.0, weight(500));
         let gap = 6.0;

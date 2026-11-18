@@ -186,7 +186,7 @@ impl TaskInspector {
         // The accent tick at the header's left edge (decorative, but a node for the contract).
         let r = header.response.rect;
         let tick = Rect::from_min_size(pos2(r.left(), r.top() + rem(1.143)), vec2(2.0, 16.0));
-        let tick_resp = ui.interact(tick, ui.id().with("accentTick"), Sense::hover());
+        let tick_resp = ui.interact(tick, ui.scope_id().with("accentTick"), Sense::hover());
         tick_resp.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         part(ui, &tick_resp, parts::ACCENTTICK);
         ui.painter().rect_filled(tick, CornerRadius::same(0), look.t.accent_500);
@@ -211,10 +211,10 @@ impl TaskInspector {
                 }
             }
             self.title = Some(title_input(&saved, false));
-            ui.ctx().memory_mut(|m| m.surrender_focus(egui::Id::new("ui.input.field")));
+            ui.ctx().memory_mut(|m| m.surrender_focus(egui::Id::unique("ui.input.field")));
         } else if title_cancel {
             self.title = Some(title_input(&task.title, false));
-            ui.ctx().memory_mut(|m| m.surrender_focus(egui::Id::new("ui.input.field")));
+            ui.ctx().memory_mut(|m| m.surrender_focus(egui::Id::unique("ui.input.field")));
         }
         if rename_req {
             self.title = Some(title_input(&task.title, true));
@@ -248,9 +248,9 @@ impl TaskInspector {
         if let Some(lb) = self.lightbox.as_mut() {
             let screen = ui.ctx().content_rect();
             let mut closed = false;
-            egui::Area::new(egui::Id::new("app.taskinspector.lightboxArea")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ui.ctx(), |ui| {
+            egui::Area::new(egui::Id::unique("app.taskinspector.lightboxArea")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ui.ctx(), |ui| {
                 ui.scope_builder(egui::UiBuilder::new().max_rect(screen), |ui| {
-                    let node = ui.interact(screen, egui::Id::new("app.taskinspector.lightboxNode"), Sense::hover());
+                    let node = ui.interact(screen, egui::Id::unique("app.taskinspector.lightboxNode"), Sense::hover());
                     node.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Attachment"));
                     part(ui, &node, parts::LIGHTBOX);
                     let renames = [("app.attachmentlightbox.fileName", parts::LIGHTBOXFILENAME)];
@@ -730,7 +730,7 @@ fn heading(ui: &mut egui::Ui, look: Look, label: &str, part_id: &str, rule: bool
         let g = taskscape_ui::eyebrow(ui.painter(), label, t.content_2);
         let (r, _) = ui.allocate_exact_size(g.size(), Sense::hover());
         ui.painter().galley(r.min, g, t.content_2);
-        let r = ui.interact(r, egui::Id::new(("inspector.heading", part_id)), Sense::hover());
+        let r = ui.interact(r, egui::Id::unique(("inspector.heading", part_id)), Sense::hover());
         r.widget_info(|| WidgetInfo::labeled(Role::Heading, true, label));
         part(ui, &r, part_id);
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -878,7 +878,7 @@ fn caption(ui: &mut egui::Ui, look: Look, width: f32, name: &str) {
 /// One half of the empty attachments box: a press target with its icon over its label.
 fn empty_choice(ui: &mut egui::Ui, look: Look, rect: Rect, glyph: &str, label: &str, part_id: &str) -> bool {
     let t = look.t;
-    let resp = ui.interact(rect.shrink(4.0), egui::Id::new(("inspector.empty", part_id)), Sense::click());
+    let resp = ui.interact(rect.shrink(4.0), egui::Id::unique(("inspector.empty", part_id)), Sense::click());
     resp.widget_info(|| WidgetInfo::labeled(Role::Button, true, label));
     part(ui, &resp, part_id);
     let ink = if resp.hovered() { t.content_1 } else { t.content_3 };

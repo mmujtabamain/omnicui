@@ -12,15 +12,15 @@ const INSET: f32 = 4.0;
 const ROWS: [&str; 3] = ["Home", "Work", "Errands"];
 
 fn trigger_id() -> Id {
-    Id::new(("ui.menubutton", "trigger"))
+    Id::unique(("ui.menubutton", "trigger"))
 }
 
 fn panel_id() -> Id {
-    Id::new(("ui.menubutton", "panel"))
+    Id::unique(("ui.menubutton", "panel"))
 }
 
 fn area_id() -> Id {
-    Id::new(("ui.menubutton", "area"))
+    Id::unique(("ui.menubutton", "area"))
 }
 
 /// The keys a focused trigger or menu keeps for itself: the arrows and Escape, not egui's spatial focus moves.

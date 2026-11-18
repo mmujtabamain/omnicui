@@ -89,7 +89,6 @@ struct Where {
     list: TaskId,
     list_name: String,
     project: TaskId,
-    project_name: String,
 }
 
 #[derive(Clone)]
@@ -140,7 +139,6 @@ struct Shown {
     list: Option<TaskId>,
     list_name: String,
     searching: bool,
-    show_headings: bool,
     groups: Vec<Group>,
     total: usize,
     done: usize,
@@ -485,7 +483,7 @@ pub const MOVE_TARGET_GARDEN: &str = "app.tasklist.moveTargetGarden";
 
 /// The search field of a pane (the window focuses it with the search chord).
 pub fn search_id_of(pane: usize) -> Id {
-    Id::new(("tasklist", pane, "tasklist.search"))
+    Id::unique(("tasklist", pane, "tasklist.search"))
 }
 
 fn search_id() -> Id {
@@ -500,7 +498,7 @@ thread_local! {
 
 /// An id of the task list, for the pane being drawn.
 fn tid(x: impl std::hash::Hash + std::fmt::Debug) -> Id {
-    Id::new(("tasklist", PANE.with(|p| p.get()), x))
+    Id::unique(("tasklist", PANE.with(|p| p.get()), x))
 }
 fn rename_id() -> Id {
     tid("tasklist.rename")
@@ -935,7 +933,6 @@ impl TaskList {
             list: list.clone().unwrap_or_default(),
             list_name: list_name.clone(),
             project: project.clone().unwrap_or_default(),
-            project_name: project_name.clone(),
         };
         let (roots, kids) = tree(&list_tasks);
         let mut groups: Vec<Group> = Vec::new();
@@ -967,7 +964,7 @@ impl TaskList {
                 for l in app.data.lists_of(&pid) {
                     let tasks = app.data.tasks_of(&l.id);
                     let (lr, lk) = tree(&tasks);
-                    let w = Where { list: l.id.clone(), list_name: l.name.clone(), project: pid.clone(), project_name: pname.clone() };
+                    let w = Where { list: l.id.clone(), list_name: l.name.clone(), project: pid.clone() };
                     let mut rows = Vec::new();
                     for r in &lr {
                         match_walk(r, &lk, &q, self.fields, show_done, &w, &mut rows);
@@ -1009,7 +1006,6 @@ impl TaskList {
             list,
             list_name,
             searching,
-            show_headings: searching && self.scope != Scope::List,
             groups,
             total,
             done,
@@ -1952,7 +1948,7 @@ impl TaskList {
             }
             menu_resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Task menu"));
             let mut y = panel.top() + 4.0;
-            let mut next = |y: &mut f32| {
+            let next = |y: &mut f32| {
                 let r = Rect::from_min_size(pos2(panel.left() + 4.0, *y), vec2(MENU_W - 8.0, MENU_ITEM));
                 *y += MENU_ITEM;
                 r
@@ -2127,7 +2123,7 @@ impl TaskList {
             }
             menu_resp.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Search options"));
             let mut y = panel.top() + 4.0;
-            let mut next = |y: &mut f32| {
+            let next = |y: &mut f32| {
                 let r = Rect::from_min_size(pos2(panel.left() + 4.0, *y), vec2(SEARCH_MENU_W - 8.0, MENU_ITEM));
                 *y += MENU_ITEM;
                 r

@@ -100,7 +100,7 @@ fn chrome(ui: &mut egui::Ui, look: Look) {
     ui.painter().rect_filled(area, 0.0, look.t.surface_1);
     let card_w = CARD_W.min(area.width());
     let footer = Rect::from_min_max(pos2(area.center().x - card_w / 2.0, area.bottom() - FOOTER_H), pos2(area.center().x + card_w / 2.0, area.bottom()));
-    let node = ui.interact(footer, egui::Id::new("app.confirmwindows.footer"), Sense::hover());
+    let node = ui.interact(footer, egui::Id::unique("app.confirmwindows.footer"), Sense::hover());
     node.widget_info(|| WidgetInfo::new(Role::GenericContainer));
     part(ui, &node, parts::FOOTER);
 }

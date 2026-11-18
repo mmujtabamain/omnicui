@@ -258,7 +258,7 @@ impl AppBar {
         let (_, pill) = at(ui, pill_area, |ui| {
             Button::new(pill_props(&label)).ui(ui, look);
         });
-        let switcher = ui.interact(pill, egui::Id::new("app.appbar.projectSwitcher"), Sense::click());
+        let switcher = ui.interact(pill, egui::Id::unique("app.appbar.projectSwitcher"), Sense::click());
         switcher.widget_info(|| WidgetInfo::labeled(Role::Button, true, "Switch project"));
         ui.ctx().accesskit_node_builder(switcher.id, |n| n.set_value(label.clone()));
         part(ui, &switcher, parts::PROJECTSWITCHER);
@@ -391,7 +391,7 @@ impl AppBar {
     /// The strip of tabs for the active project: the separators, the tabs (or the inline field), and New list.
     fn strip(&mut self, ui: &mut egui::Ui, look: Look, snap: &Snap, rect: Rect, acts: &mut Vec<Act>) {
         let mut child = ui.new_child(UiBuilder::new().max_rect(rect).layout(Layout::left_to_right(Align::Center)));
-        let container = child.interact(rect, egui::Id::new("app.appbar.listTabs"), Sense::hover());
+        let container = child.interact(rect, egui::Id::unique("app.appbar.listTabs"), Sense::hover());
         container.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, "Lists"));
         part(&child, &container, parts::LISTTABS);
         ScrollArea::horizontal()
@@ -457,7 +457,7 @@ impl AppBar {
         let rects: Vec<Rect> = self.tab_rects.iter().map(|(_, r)| *r).collect();
         let to = rects.iter().position(|r| p.x < r.center().x).unwrap_or(rects.len());
         let moves = to != from && to != from + 1;
-        let fg = ui.ctx().layer_painter(egui::LayerId::new(Order::Tooltip, egui::Id::new("app.appbar.tabDrag")));
+        let fg = ui.ctx().layer_painter(egui::LayerId::new(Order::Tooltip, egui::Id::unique("app.appbar.tabDrag")));
         let name = &snap.lists[from].1;
         let text = fg.layout_no_wrap(name.clone(), FontId::new(13.0, weight(500)), t.content_1);
         let ghost = Rect::from_min_size(p - grab, vec2(TAB_L + text.size().x + TAB_R, H));
@@ -527,7 +527,7 @@ impl AppBar {
         }
 
         let tab = Rect::from_min_size(wrap.min, vec2(tab_w, H));
-        let r = ui.interact(tab, egui::Id::new(("app.appbar.tab", id.clone())), Sense::click_and_drag());
+        let r = ui.interact(tab, egui::Id::unique(("app.appbar.tab", id.clone())), Sense::click_and_drag());
         if r.drag_started() {
             let grab = ui.input(|i| i.pointer.press_origin()).map(|p| p - wrap.min).unwrap_or_default();
             self.tab_drag = Some((id.clone(), grab));
@@ -544,7 +544,7 @@ impl AppBar {
             let glyph = if side == "left" { "line_start_circle" } else { "line_end_circle" };
             painter.text(c, Align2::CENTER_CENTER, icon(glyph, MARKER).text(), FontId::new(MARKER, FontFamily::Name("Icons".into())), t.accent_500);
             if marker == Some(i) {
-                let m = ui.interact(Rect::from_center_size(c, vec2(MARKER, MARKER)), egui::Id::new(("app.appbar.marker", id.clone())), Sense::hover());
+                let m = ui.interact(Rect::from_center_size(c, vec2(MARKER, MARKER)), egui::Id::unique(("app.appbar.marker", id.clone())), Sense::hover());
                 let pane = if side == "left" { "Left pane" } else { "Right pane" };
                 m.widget_info(|| WidgetInfo::labeled(Role::Image, true, pane));
                 part(ui, &m, parts::PANEMARKER);
@@ -808,7 +808,7 @@ fn toolbar_width(snap: &Snap) -> f32 {
 fn project_menu(ctx: &egui::Context, look: Look, snap: &Snap, anchor: Pos2) -> (Rect, Vec<Act>) {
     let t = look.t;
     let mut acts = vec![];
-    let area = Area::new(egui::Id::new("app.appbar.projectMenu")).order(Order::Foreground).fixed_pos(anchor).show(ctx, |ui| {
+    let area = Area::new(egui::Id::unique("app.appbar.projectMenu")).order(Order::Foreground).fixed_pos(anchor).show(ctx, |ui| {
         let frame = Frame::popup(ui.style())
             .fill(t.surface_3)
             .stroke(Stroke::new(1.0, t.edge_1))
@@ -831,7 +831,7 @@ fn project_menu(ctx: &egui::Context, look: Look, snap: &Snap, anchor: Pos2) -> (
             new_project_row(ui, look, &mut acts);
         });
         let rect = f.response.rect;
-        let node = ui.interact(rect, egui::Id::new("app.appbar.projectMenu.panel"), Sense::hover());
+        let node = ui.interact(rect, egui::Id::unique("app.appbar.projectMenu.panel"), Sense::hover());
         node.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         part(ui, &node, parts::PROJECTMENU);
         rect
@@ -850,7 +850,7 @@ fn project_row(ui: &mut egui::Ui, look: Look, id: &Id, name: &str, active: bool,
     let ren = del.translate(vec2(-CLOSE, 0.0));
     let name_rect = Rect::from_min_max(row.min, pos2(ren.left(), row.bottom()));
 
-    let r = ui.interact(name_rect, egui::Id::new(("app.appbar.project", id.clone())), Sense::click());
+    let r = ui.interact(name_rect, egui::Id::unique(("app.appbar.project", id.clone())), Sense::click());
     r.widget_info(|| WidgetInfo::labeled(Role::Button, true, name));
     ui.ctx().accesskit_node_builder(r.id, |n| n.set_selected(active));
     if let Some(p) = row_part {
@@ -886,7 +886,7 @@ fn project_row(ui: &mut egui::Ui, look: Look, id: &Id, name: &str, active: bool,
 fn new_project_row(ui: &mut egui::Ui, look: Look, acts: &mut Vec<Act>) {
     let t = look.t;
     let (row, _) = ui.allocate_exact_size(vec2(ui.available_width(), ROW_H), Sense::hover());
-    let r = ui.interact(row, egui::Id::new("app.appbar.projectNew"), Sense::click());
+    let r = ui.interact(row, egui::Id::unique("app.appbar.projectNew"), Sense::click());
     r.widget_info(|| WidgetInfo::labeled(Role::Button, true, "New project…"));
     part(ui, &r, parts::PROJECTNEW);
     let painter = ui.painter().clone();
@@ -911,7 +911,7 @@ fn tab_menu(ctx: &egui::Context, look: Look, snap: &Snap, tm: &TabMenu) -> Optio
     let t = look.t;
     let split_label = if snap.split { "Close split" } else { "Open in split view" };
     let mut acts = vec![];
-    let area = Area::new(egui::Id::new("app.appbar.tabMenu")).order(Order::Foreground).fixed_pos(tm.anchor).show(ctx, |ui| {
+    let area = Area::new(egui::Id::unique("app.appbar.tabMenu")).order(Order::Foreground).fixed_pos(tm.anchor).show(ctx, |ui| {
         let frame = Frame::popup(ui.style())
             .fill(t.surface_3)
             .stroke(Stroke::new(1.0, t.edge_1))
@@ -934,7 +934,7 @@ fn tab_menu(ctx: &egui::Context, look: Look, snap: &Snap, tm: &TabMenu) -> Optio
             }
         });
         let rect = f.response.rect;
-        let node = ui.interact(rect, egui::Id::new("app.appbar.tabMenu.panel"), Sense::hover());
+        let node = ui.interact(rect, egui::Id::unique("app.appbar.tabMenu.panel"), Sense::hover());
         node.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         part(ui, &node, parts::TABMENU);
         rect
@@ -946,7 +946,7 @@ fn tab_menu(ctx: &egui::Context, look: Look, snap: &Snap, tm: &TabMenu) -> Optio
 fn menu_item(ui: &mut egui::Ui, look: Look, text: &str, part_id: &str, danger: bool) -> bool {
     let t = look.t;
     let (row, _) = ui.allocate_exact_size(vec2(ui.available_width(), ITEM_H), Sense::hover());
-    let r = ui.interact(row, egui::Id::new(part_id), Sense::click());
+    let r = ui.interact(row, egui::Id::unique(part_id), Sense::click());
     r.widget_info(|| WidgetInfo::labeled(Role::Button, true, text));
     part(ui, &r, part_id);
     let painter = ui.painter().clone();

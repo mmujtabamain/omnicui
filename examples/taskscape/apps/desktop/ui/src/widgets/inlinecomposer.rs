@@ -42,7 +42,7 @@ fn field_props(value: String, auto_focus: bool) -> InputProps {
 /// The id egui gives the field's text editor (the input widget draws its editor under this id).
 #[allow(deprecated)]
 fn field_id() -> Id {
-    Id::new("ui.input.field")
+    Id::unique("ui.input.field")
 }
 
 impl InlineComposer {

@@ -185,7 +185,7 @@ impl NativeShell {
         self.bar_focused = false;
         self.bar_focus_wanted = false;
         app.capture_open = false;
-        ctx.memory_mut(|m| m.surrender_focus(Id::new(TITLE_FIELD)));
+        ctx.memory_mut(|m| m.surrender_focus(Id::unique(TITLE_FIELD)));
     }
 
     /// The capture bar: in its own window in the app, drawn over the main window inside a test.
@@ -194,7 +194,7 @@ impl NativeShell {
         let mut events = vec![];
         if self.in_place {
             let at = pos2(full.center().x - BAR_W / 2.0, full.top() + MENU_BAR + 12.0);
-            egui::Area::new(Id::new("nativeshell.capturebar")).order(Order::Foreground).fixed_pos(at).show(&ctx, |ui| {
+            egui::Area::new(Id::unique("nativeshell.capturebar")).order(Order::Foreground).fixed_pos(at).show(&ctx, |ui| {
                 ui.set_width(BAR_W);
                 events = self.draw_bar(app, ui, look);
             });
@@ -224,7 +224,7 @@ impl NativeShell {
 
     /// The bar's card for one frame: its focus requests, the card itself, and whether the title has focus after it.
     fn draw_bar(&mut self, app: &mut App, ui: &mut Ui, look: Look) -> Vec<CapturebarEvent> {
-        let title = Id::new(TITLE_FIELD);
+        let title = Id::unique(TITLE_FIELD);
         if std::mem::take(&mut self.bar_focus_wanted) {
             ui.ctx().memory_mut(|m| m.request_focus(title));
         }
@@ -262,7 +262,7 @@ impl NativeShell {
 
     /// The menu bar: the Edit and List titles at the left, and the tray agent's items at the right (its tooltip icon,
     /// Open Taskscape, Quit Taskscape). Returns the left x of the Edit and List titles, where their menus open.
-    fn menu_bar(&mut self, app: &mut App, ui: &mut Ui, rect: Rect, look: Look, out: &mut Vec<NativeshellEvent>) -> [f32; 2] {
+    fn menu_bar(&mut self, _app: &mut App, ui: &mut Ui, rect: Rect, look: Look, out: &mut Vec<NativeshellEvent>) -> [f32; 2] {
         let t = look.t;
         ui.painter().rect_filled(rect, CornerRadius::ZERO, t.surface_1);
         ui.painter().rect_filled(Rect::from_min_size(pos2(rect.left(), rect.bottom() - 1.0), vec2(rect.width(), 1.0)), CornerRadius::ZERO, t.edge_1);
@@ -297,7 +297,7 @@ impl NativeShell {
     /// The tray agent's icon: its tooltip is the status the agent sets (the capture combo, or plain when unbound).
     fn tray_icon(&self, ui: &mut Ui, look: Look, rect: Rect) {
         let tip = self.tray_tooltip();
-        let r = ui.interact(rect, Id::new(parts::TRAYTOOLTIP), Sense::hover()).on_hover_text(tip.clone());
+        let r = ui.interact(rect, Id::unique(parts::TRAYTOOLTIP), Sense::hover()).on_hover_text(tip.clone());
         ui.painter().text(rect.center(), Align2::CENTER_CENTER, icon("task_alt", 15.0).text(), FontId::new(15.0, FontFamily::Name("Icons".into())), look.t.content_2);
         r.widget_info(|| WidgetInfo::labeled(Role::Status, true, tip.as_str()));
         ui.ctx().accesskit_node_builder(r.id, |n| n.set_value(tip.clone()));
@@ -317,7 +317,7 @@ impl NativeShell {
     fn open_label(&self, app: &App, ui: &mut Ui, bar: Rect, look: Look) {
         let text = open_text(app);
         let area = Rect::from_center_size(bar.center(), vec2(280.0, MENU_BAR));
-        let resp = ui.interact(area, Id::new(parts::OPENLISTLABEL), Sense::hover());
+        let resp = ui.interact(area, Id::unique(parts::OPENLISTLABEL), Sense::hover());
         ui.painter().text(area.center(), Align2::CENTER_CENTER, text.as_str(), FontId::new(rem(0.857), weight(500)), look.t.content_2);
         resp.widget_info(|| WidgetInfo::labeled(Role::Status, true, text.as_str()));
         ui.ctx().accesskit_node_builder(resp.id, |n| n.set_value(text.clone()));
@@ -339,7 +339,7 @@ impl NativeShell {
             OpenMenu::List => &[("Import List from JSON…", parts::MENUIMPORTLIST), ("Export List to JSON…", parts::MENUEXPORTLIST)],
         };
         let mut picked: Option<usize> = None;
-        egui::Area::new(Id::new("nativeshell.menu")).order(Order::Foreground).fixed_pos(at).show(&ctx, |ui| {
+        egui::Area::new(Id::unique("nativeshell.menu")).order(Order::Foreground).fixed_pos(at).show(&ctx, |ui| {
             egui::Frame::new()
                 .fill(t.surface_2)
                 .stroke(Stroke::new(1.0, t.edge_2))
@@ -446,7 +446,7 @@ fn close_chord(ui: &Ui) -> bool {
 
 /// A region of the window as a part: a node over `rect`, named `label`.
 fn node(ui: &mut Ui, rect: Rect, id: &str, part_id: &str, label: &str) {
-    let r = ui.interact(rect, Id::new(id), Sense::hover());
+    let r = ui.interact(rect, Id::unique(id), Sense::hover());
     r.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, label));
     part(ui, &r, part_id);
 }
@@ -456,7 +456,7 @@ fn bar_word(ui: &mut Ui, look: Look, at: Pos2, label: &str, part_id: &str) -> (R
     let t = look.t;
     let galley = ui.painter().layout_no_wrap(label.to_owned(), FontId::new(rem(0.857), weight(500)), t.content_1);
     let rect = Rect::from_min_size(at, vec2(galley.size().x + 16.0, MENU_BAR));
-    let resp = ui.interact(rect, Id::new(part_id), Sense::click());
+    let resp = ui.interact(rect, Id::unique(part_id), Sense::click());
     if resp.hovered() {
         ui.painter().rect_filled(rect.shrink(2.0), CornerRadius::same(4), t.wash_1);
     }
@@ -489,7 +489,7 @@ fn boot_veil(ui: &mut Ui, full: Rect, look: Look) {
     ui.painter().rect_filled(full, CornerRadius::ZERO, look.t.surface_1);
     node(ui, full, "nativeshell.bootveil", parts::BOOTVEIL, "Starting Taskscape");
     let b = Rect::from_center_size(full.center(), vec2(25.0, 25.0));
-    let r = ui.interact(b, Id::new("nativeshell.bootbox"), Sense::hover());
+    let r = ui.interact(b, Id::unique("nativeshell.bootbox"), Sense::hover());
     ui.painter().rect_stroke(b, CornerRadius::same(4), Stroke::new(1.0, look.t.content_3), StrokeKind::Inside);
     r.widget_info(|| WidgetInfo::selected(Role::CheckBox, true, false, "Starting Taskscape"));
     part(ui, &r, parts::BOOTBOX);

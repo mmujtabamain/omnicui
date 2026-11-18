@@ -94,7 +94,7 @@ pub fn part(ui: &egui::Ui, response: &Response, id: &str) {
 }
 
 fn part_map_id() -> egui::Id {
-    egui::Id::new("taskscape-part-renames")
+    egui::Id::unique("taskscape-part-renames")
 }
 
 /// Draws a library widget under a screen's own part names: while `f` runs, a part the widget tags
@@ -182,7 +182,7 @@ pub struct WindowKind {
 }
 
 fn window_map_id() -> egui::Id {
-    egui::Id::new("taskscape-window-kinds")
+    egui::Id::unique("taskscape-window-kinds")
 }
 
 /// Records the window a part's screen is in (see WindowKind).

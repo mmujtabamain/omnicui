@@ -77,7 +77,7 @@ impl MultiInspector {
 
         // The panel: its surface and its leading edge (the web's bg-surface-1 and border-l).
         let area = ui.available_rect_before_wrap();
-        let root = ui.interact(area, egui::Id::new("multiinspector.root"), Sense::hover());
+        let root = ui.interact(area, egui::Id::unique("multiinspector.root"), Sense::hover());
         root.widget_info(|| WidgetInfo::new(Role::GenericContainer));
         part(ui, &root, parts::INSPECTOR);
         ui.painter().rect_filled(area, 0.0, t.surface_1);
@@ -153,7 +153,7 @@ fn header(ui: &mut egui::Ui, look: Look, count: usize, done: usize, acts: &mut V
         })
         .response
         .rect;
-        tag(ui, egui::Id::new("multiinspector.count"), badge_rect, Sense::hover(), Some(parts::COUNT), || value_info(&count_s, &count_s));
+        tag(ui, egui::Id::unique("multiinspector.count"), badge_rect, Sense::hover(), Some(parts::COUNT), || value_info(&count_s, &count_s));
 
         ui.vertical(|ui| {
             ui.set_width(col_w);
@@ -179,7 +179,7 @@ fn header(ui: &mut egui::Ui, look: Look, count: usize, done: usize, acts: &mut V
         })
         .response
         .rect;
-        let clear_btn = tag(ui, egui::Id::new("multiinspector.clear"), clear_rect, Sense::click(), Some(parts::CLEARSELECTION), || WidgetInfo::labeled(Role::Button, true, "Clear selection"));
+        let clear_btn = tag(ui, egui::Id::unique("multiinspector.clear"), clear_rect, Sense::click(), Some(parts::CLEARSELECTION), || WidgetInfo::labeled(Role::Button, true, "Clear selection"));
         if clear_btn.clicked() {
             acts.push(Act::Clear);
         }
@@ -254,7 +254,7 @@ fn draw_row(ui: &mut egui::Ui, look: Look, row: &Row, width: f32, acts: &mut Vec
         } else {
             None
         };
-        let check = tag(ui, egui::Id::new(("multiinspector.check", row.id.as_str())), check_rect, Sense::click(), check_part, || WidgetInfo::selected(Role::CheckBox, true, checked, label));
+        let check = tag(ui, egui::Id::unique(("multiinspector.check", row.id.as_str())), check_rect, Sense::click(), check_part, || WidgetInfo::selected(Role::CheckBox, true, checked, label));
         let enter = check.has_focus() && ui.input(|i| i.key_pressed(Key::Enter));
         let space = check.has_focus() && ui.input(|i| i.key_pressed(Key::Space));
         if (check.clicked() && !enter) || space {
@@ -268,7 +268,7 @@ fn draw_row(ui: &mut egui::Ui, look: Look, row: &Row, width: f32, acts: &mut Vec
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             // Open fades in while its row is hovered (the web's reveal="row").
             let (open_rect, open) = ui.allocate_exact_size(vec2(ICON, ICON), Sense::click());
-            let reveal = ui.ctx().animate_bool_with_time(egui::Id::new(("multiinspector.reveal", row.id.as_str())), hot || open.has_focus(), 0.18);
+            let reveal = ui.ctx().animate_bool_with_time(egui::Id::unique(("multiinspector.reveal", row.id.as_str())), hot || open.has_focus(), 0.18);
             if open.hovered() {
                 ui.painter().rect_filled(open_rect, CornerRadius::same(4), t.wash_1.gamma_multiply(reveal));
             }
@@ -293,7 +293,7 @@ fn draw_row(ui: &mut egui::Ui, look: Look, row: &Row, width: f32, acts: &mut Vec
                     .response
                     .rect;
                 if first {
-                    tag(ui, egui::Id::new("multiinspector.list"), badge_rect, Sense::hover(), Some(parts::ROWLISTBADGE), || value_info(list, list));
+                    tag(ui, egui::Id::unique("multiinspector.list"), badge_rect, Sense::hover(), Some(parts::ROWLISTBADGE), || value_info(list, list));
                 }
             }
 
