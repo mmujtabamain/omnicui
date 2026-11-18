@@ -384,17 +384,20 @@ impl RichTextEditor {
             if self.text.is_empty() && !self.p.placeholder.is_empty() {
                 let text = self.p.placeholder.clone();
                 let origin = out.galley_pos;
-                let area = Rect::from_min_size(origin, vec2((frame_rect.width() - 16.0).max(0.0), rem(1.25)));
+                // Wrapped to the box, as the reference's placeholder wraps (it ran past the right edge, cut off),
+                // on the note's 20 px line.
+                let wrap = (frame_rect.right() - 12.0 - origin.x).max(0.0);
+                let mut job = egui::text::LayoutJob::single_section(
+                    text.clone(),
+                    egui::TextFormat { font_id: FontId::new(rem(0.9643), weight(400)), color: t.content_3, line_height: Some(20.0), ..Default::default() },
+                );
+                job.wrap.max_width = wrap;
+                let galley = ui.painter().layout_job(job);
+                let area = Rect::from_min_size(origin, vec2(wrap, galley.size().y));
                 let ph = ui.interact(area, base.with("placeholder"), Sense::hover());
                 ph.widget_info(|| WidgetInfo::labeled(Role::GenericContainer, true, text.as_str()));
                 part(ui, &ph, parts::PLACEHOLDER);
-                ui.painter().text(
-                    origin,
-                    Align2::LEFT_TOP,
-                    text.as_str(),
-                    FontId::new(rem(0.9643), weight(400)),
-                    t.content_3,
-                );
+                ui.painter().galley(origin, galley, t.content_3);
             }
 
             // The caret, the text change and the @ list.

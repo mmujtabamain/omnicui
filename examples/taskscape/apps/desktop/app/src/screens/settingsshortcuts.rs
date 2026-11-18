@@ -526,7 +526,7 @@ impl SettingsShortcuts {
             _ => Keycap::new(KeycapProps {
                 mode: mode.into(),
                 binding: "default".into(),
-                accel: stored.clone(),
+                accel: glyph_accel(&accel),
                 reserved: RESERVED.into(),
                 prompt: "Type shortcut…".into(),
                 unboundLabel: "None".into(),
@@ -535,6 +535,8 @@ impl SettingsShortcuts {
                 ..Default::default()
             }),
         };
+        // Drawn as glyphs, named in words ("Command N"), as a screen reader speaks it.
+        keycap.spoken = Some(words(&accel));
         let key_part = item.key.unwrap_or(parts::KEYCAP);
         let mut reset_clicked = false;
         let mut keycap_events = Vec::new();
@@ -791,6 +793,31 @@ fn keycap_accel(stored: &str) -> String {
     let (mods, key) = split_accel(stored);
     let mut names: Vec<&str> = mods.into_iter().map(spoken_modifier).collect();
     names.push(spoken_key(key));
+    names.join("+")
+}
+
+/// The accelerator a keycap draws its glyphs from (HotkeyHint's names: Meta, Control, Alt, Shift, then the
+/// key), so macOS shows ⌘ ⌥ ⇧ ⌃ as the reference does, not the spoken words ("Command N" was drawn as text).
+fn glyph_accel(stored: &str) -> String {
+    if stored.is_empty() {
+        return String::new();
+    }
+    let (mods, key) = split_accel(stored);
+    let mut names: Vec<&str> = mods
+        .into_iter()
+        .map(|m| match m {
+            "Mod" => {
+                if MAC {
+                    "Meta"
+                } else {
+                    "Control"
+                }
+            }
+            "Ctrl" => "Control",
+            other => other,
+        })
+        .collect();
+    names.push(key);
     names.join("+")
 }
 

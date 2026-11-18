@@ -17,6 +17,9 @@ pub struct Keycap {
     focused: bool,
     /// The refusal message of the last reserved combo, announced until the next key.
     refusal: Option<String>,
+    /// The combo's spoken words ("Command N"), when its owner speaks it differently from the accelerator
+    /// the glyphs are drawn from ("Meta+N"); else the accelerator's own words.
+    pub spoken: Option<String>,
 }
 
 /// Accelerator notation: Control, Alt, Shift, Meta, then the key, joined with "+".
@@ -41,7 +44,7 @@ fn combo(m: Modifiers, key: Key) -> String {
 impl Keycap {
     pub fn new(p: KeycapProps) -> Self {
         let recording = p.mode == "recording";
-        Self { p, recording, was_recording: false, focused: false, refusal: None }
+        Self { p, recording, was_recording: false, focused: false, refusal: None, spoken: None }
     }
 
     /// One frame: draws the keycap, and the reset control beside it when shown, and returns the events it raised.
@@ -176,7 +179,7 @@ impl Keycap {
         let radius = CornerRadius::same(5);
         let hot = response.hovered() && !disabled;
         let fill = if !self.recording && hot { t.wash_2 } else { t.surface_0 };
-        let spoken = self.p.accel.split('+').map(str::trim).collect::<Vec<_>>().join(" ");
+        let spoken = self.spoken.clone().unwrap_or_else(|| self.p.accel.split('+').map(str::trim).collect::<Vec<_>>().join(" "));
         let value = if self.recording {
             self.p.prompt.clone()
         } else if unbound {
