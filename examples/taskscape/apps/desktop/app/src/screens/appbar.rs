@@ -21,10 +21,10 @@ use taskscape_ui::widgets::statusindicator::StatusIndicator;
 use taskscape_ui::{as_part, icon, part, weight, Look, Mounted};
 
 // The web's sizes, in px (rem = 14 px). The bar is 46 px with its bottom rule; the content is 45 px.
-const BAR_H: f32 = 46.0;
+const BAR_H: f32 = crate::chrome::BAR_HEIGHT;
 const H: f32 = 45.0;
 /// The project pill's container padding: pl-[0.857rem], pr-[0.929rem].
-const PILL_L: f32 = 12.0;
+const PILL_L: f32 = crate::chrome::PROJECT_INSET;
 const PILL_R: f32 = 13.0;
 /// The toolbar's padding: pl-[0.429rem], pr-[0.643rem]; gap-[0.357rem] between its items.
 const TOOL_L: f32 = 6.0;

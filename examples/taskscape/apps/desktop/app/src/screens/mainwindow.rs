@@ -3,6 +3,7 @@
 //! The other windows (Trash, Settings, a confirmation or prompt) are real OS windows in the app
 //! (src/main.rs opens them as eframe viewports). A screen test has one window, so the test mount draws
 //! each open window as a panel over this one, with the same content.
+use crate::chrome::BAR_HEIGHT as BAR;
 use crate::screens::{
     appbar::AppBar, draftinspector::DraftInspector, filterpanel::FilterPanel, multiinspector::MultiInspector, palette::Palette, settingswindow::SettingsWindow, sheets::Sheets, taskinspector::TaskInspector,
     tasklist::TaskList, toasthost::ToastHost, trashwindow::TrashWindow,
@@ -14,9 +15,6 @@ use taskscape_ui::omnicui::mainwindow::{parts, MainwindowEvent, MainwindowProps}
 use taskscape_ui::omnicui::resizer::{parts::RESIZER as RESIZER_HANDLE, ResizerProps};
 use taskscape_ui::widgets::resizer::Resizer;
 use taskscape_ui::{as_part, part, rem, weight, Look, Mounted};
-
-/// The title bar's height (the web's h-[3.286rem]).
-const BAR: f32 = 46.0;
 
 /// The task rows the main window's tests name by their text (the web's TITLES), on the left pane.
 const CLAIMS: &[(&str, &str)] = &[
@@ -283,12 +281,12 @@ impl MainWindow {
         let t = look.t;
         let frame = egui::Frame::NONE.fill(t.surface_1);
         let native = app.native_window;
-        let header = |ui: &egui::Ui| egui::Rect::from_min_size(ui.max_rect().min, egui::vec2(ui.max_rect().width(), 46.0));
+        let header = |ui: &egui::Ui| egui::Rect::from_min_size(ui.max_rect().min, egui::vec2(ui.max_rect().width(), BAR));
         // Each window opens centred over the main window.
         let main = ctx.input(|i| i.viewport().outer_rect);
         let at = |w: f32, h: f32| main.map(|r| r.center() - egui::vec2(w, h) / 2.0).unwrap_or(egui::pos2(80.0, 80.0));
         if app.trash_window {
-            let vp = chrome::panel(egui::ViewportBuilder::default().with_title("Trash").with_inner_size([520.0, 560.0]).with_position(at(520.0, 560.0)).with_min_inner_size([420.0, 360.0]).with_active(true));
+            let vp = chrome::panel(egui::ViewportBuilder::default().with_title(chrome::TRASH_TITLE).with_inner_size([520.0, 560.0]).with_position(at(520.0, 560.0)).with_min_inner_size([420.0, 360.0]).with_active(true));
             let id = egui::ViewportId::from_hash_of("trash");
             if opened.0 {
                 ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
@@ -310,7 +308,7 @@ impl MainWindow {
             });
         }
         if app.settings_window.is_some() {
-            let vp = chrome::panel(egui::ViewportBuilder::default().with_title("Settings").with_inner_size([640.0, 520.0]).with_position(at(640.0, 520.0)).with_min_inner_size([640.0, 520.0]).with_active(true));
+            let vp = chrome::panel(egui::ViewportBuilder::default().with_title(chrome::SETTINGS_TITLE).with_inner_size([640.0, 520.0]).with_position(at(640.0, 520.0)).with_min_inner_size([640.0, 520.0]).with_active(true));
             let id = egui::ViewportId::from_hash_of("settings");
             if opened.1 {
                 ctx.send_viewport_cmd_to(id, egui::ViewportCommand::Focus);
