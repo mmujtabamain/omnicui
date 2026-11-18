@@ -27,6 +27,10 @@ parts:
   shortcutsMatches: { role: status }   # match-count badge on the Shortcuts tab while searching; counts matching rows
   pane: { role: generic }              # aria: tabpanel. The scrolling content below the sidebar
   intro: { role: generic }             # muted line above the groups; hidden while searching; scrolls out of view
+  groupGlobal: { role: heading }       # desktop only: "Global", the OS-wide hotkeys (the web drops the group, decision 15)
+  rowCaptureBar: { role: generic }      # desktop only: Global row "Capture bar"
+  keycapCaptureBar: { role: button }    # desktop only: its keycap (default Mod+Enter)
+  keycapScreenshotCapture: { role: button }  # desktop only: Screenshot capture's keycap (default Mod+Shift+Enter)
   groupMain: { role: heading }         # "Main window" group heading; "Shortcuts · Main window" while searching
   discardGroup: { role: button }       # undo icon in the group header; shown only while the Main window group has a change (replaces the dot, review note 12)
   row: { role: generic }               # any shortcut row; the first is New task
@@ -57,6 +61,14 @@ keyboard: true                         # buttons: Enter and Space must do what a
 # No drag-and-drop tests: drag acts only on slider parts and this pane has none.
 
 tests:
+  - name: the Global group sits above Main window with Capture bar and Screenshot capture
+    only: [desktop]   # a browser can't have global hotkeys (decision 15)
+    expect:
+      - { part: groupGlobal, text: "Global", above: groupMain }
+      - { part: rowCaptureBar, text: { contains: "Capture bar" }, visible: true }
+      - { part: keycapCaptureBar, name: { default: "Ctrl Return", macos: "Command Return" }, why: "Mod is Command on macOS, Ctrl elsewhere (the reference's Cmd+Return)" }
+      - { part: keycapScreenshotCapture, name: { default: "Ctrl Shift Return", macos: "Command Shift Return" }, why: "the reference's Cmd+Shift+Return" }
+
   - name: opens on the Shortcuts tab with the Main window rows
     steps:
       - { action: hover, part: title }

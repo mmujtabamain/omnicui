@@ -27,6 +27,9 @@ const MAC: bool = cfg!(target_os = "macos");
 const RESERVED: &str = if MAC { "Meta+Q,Meta+H,Meta+M,Meta+Tab,Meta+Space" } else { "Alt+F4,Alt+Tab" };
 
 const GROUP: &str = "Main window";
+/// The Global group's heading and its discard button (no part in the contract, which the web shares).
+const GROUP_GLOBAL: &str = parts::GROUPGLOBAL;
+const DISCARD_GLOBAL: &str = "app.settingsshortcuts.discardGlobal";
 const INTRO: &str = "Click a shortcut to change it — press the new keys, Backspace to remove, Esc to cancel.";
 /// The id egui gives the search field's text editor (the Input widget's field).
 const SEARCH_FIELD: &str = "ui.input.field";
@@ -68,14 +71,33 @@ struct Row {
     accel: &'static str,
     row: Option<&'static str>,
     key: Option<&'static str>,
+    /// In the Global group: the OS-wide hotkeys, which work while another app is in front.
+    global: bool,
 }
 
 const fn r(command: &'static str, label: &'static str, accel: &'static str, row: Option<&'static str>, key: Option<&'static str>) -> Row {
-    Row { command, label, accel, row, key }
+    Row { command, label, accel, row, key, global: false }
 }
 
-/// The Main window group in the catalog's order (31 rows).
+/// A Global group row (the reference's catalog: Scope::Global).
+const fn g(command: &'static str, label: &'static str, accel: &'static str, row: Option<&'static str>, key: Option<&'static str>) -> Row {
+    Row { command, label, accel, row, key, global: true }
+}
+
+/// The Global group's hint beside its heading, per platform (decision 30).
+const GLOBAL_HINT: &str = if cfg!(target_os = "macos") {
+    "work anywhere on your Mac"
+} else if cfg!(target_os = "windows") {
+    "work anywhere in Windows"
+} else {
+    "work anywhere on your desktop"
+};
+
+/// The rows in the catalog's order: the Global group (the reference's GLOBAL, which only the web drops,
+/// decision 15), then the Main window group (31 rows).
 const MAIN_ROWS: &[Row] = &[
+    g("toggle_capture_bar", "Capture bar", "Mod+Enter", Some(parts::ROWCAPTUREBAR), Some(parts::KEYCAPCAPTUREBAR)),
+    g("screenshot_capture", "Screenshot capture", "Mod+Shift+Enter", None, Some(parts::KEYCAPSCREENSHOTCAPTURE)),
     r("new_task", "New task", "Mod+N", Some(parts::ROWNEWTASK), Some(parts::KEYCAPNEWTASK)),
     r("search", "Search", "Mod+F", None, Some(parts::KEYCAPSEARCH)),
     r("toggle_preview", "Toggle preview", "Mod+\\", None, None),
@@ -469,40 +491,57 @@ impl SettingsShortcuts {
             ui.add_space(BLOCK_GAP);
         }
 
-        let heading = if view.searching && !self.scoped { "Shortcuts · Main window" } else { GROUP };
-        let changed = !view.changed.is_empty();
-        ui.horizontal(|ui| {
-            group_label(ui, look, heading);
-            let trailing = if changed { ICON_BUTTON + GAP } else { 0.0 };
-            let line_w = (ui.available_width() - trailing - GAP).max(0.0);
-            let (line, _) = ui.allocate_exact_size(vec2(line_w, 1.0), Sense::hover());
-            ui.painter().line_segment([line.left_center(), line.right_center()], Stroke::new(1.0, t.edge_2));
-            if changed {
-                let props = ButtonProps {
-                    iconSize: 14 as _,
-                    ..icon_button_props("undo", "sm", "muted", "Discard changes in this group", "Discard changes made since this window opened")
-                };
-                if icon_button(ui, look, parts::DISCARDGROUP, props) {
-                    actions.push(Action::Discard(view.changed.clone()));
-                }
+        // The Global group (the OS-wide hotkeys) above the Main window group, each with its heading and card.
+        for global in [true, false] {
+            let rows: Vec<usize> = view.rows.iter().copied().filter(|&i| MAIN_ROWS[i].global == global).collect();
+            if rows.is_empty() {
+                continue;
             }
-        });
-
-        ui.add_space(rem(0.5));
-        // The reference's group: a Surface at step 3 over the pane (#12365).
-        egui::Frame::NONE
-            .fill(t.surface_3)
-            .stroke(Stroke::new(1.0, t.edge_2))
-            .corner_radius(CornerRadius::same(10))
-            .show(ui, |ui| {
-                for (n, &i) in view.rows.iter().enumerate() {
-                    if n > 0 {
-                        let (line, _) = ui.allocate_exact_size(vec2(ui.available_width(), 1.0), Sense::hover());
-                        ui.painter().rect_filled(line, CornerRadius::same(0), t.edge_1);
+            let changed: Vec<usize> = view.changed.iter().copied().filter(|&i| MAIN_ROWS[i].global == global).collect();
+            let name = if global { "Global" } else { GROUP };
+            let heading = if view.searching && !self.scoped { format!("Shortcuts · {name}") } else { name.to_owned() };
+            ui.horizontal(|ui| {
+                group_label(ui, look, &heading, if global { GROUP_GLOBAL } else { parts::GROUPMAIN });
+                if global {
+                    ui.add_space(rem(0.5) - ui.spacing().item_spacing.x);
+                    let hint = ui.painter().layout_no_wrap(GLOBAL_HINT.to_owned(), FontId::new(11.0, weight(400)), t.content_3);
+                    let (r, _) = ui.allocate_exact_size(hint.size(), Sense::hover());
+                    ui.painter().galley(r.min, hint, t.content_3);
+                }
+                let trailing = if !changed.is_empty() { ICON_BUTTON + GAP } else { 0.0 };
+                let line_w = (ui.available_width() - trailing - GAP).max(0.0);
+                let (line, _) = ui.allocate_exact_size(vec2(line_w, 1.0), Sense::hover());
+                ui.painter().line_segment([line.left_center(), line.right_center()], Stroke::new(1.0, t.edge_2));
+                if !changed.is_empty() {
+                    let props = ButtonProps {
+                        iconSize: 14 as _,
+                        ..icon_button_props("undo", "sm", "muted", "Discard changes in this group", "Discard changes made since this window opened")
+                    };
+                    if icon_button(ui, look, if global { DISCARD_GLOBAL } else { parts::DISCARDGROUP }, props) {
+                        actions.push(Action::Discard(changed.clone()));
                     }
-                    self.row(ui, look, i, actions);
                 }
             });
+
+            ui.add_space(rem(0.5));
+            // The reference's group: a Surface at step 3 over the pane (#12365).
+            egui::Frame::NONE
+                .fill(t.surface_3)
+                .stroke(Stroke::new(1.0, t.edge_2))
+                .corner_radius(CornerRadius::same(10))
+                .show(ui, |ui| {
+                    for (n, &i) in rows.iter().enumerate() {
+                        if n > 0 {
+                            let (line, _) = ui.allocate_exact_size(vec2(ui.available_width(), 1.0), Sense::hover());
+                            ui.painter().rect_filled(line, CornerRadius::same(0), t.edge_1);
+                        }
+                        self.row(ui, look, i, actions);
+                    }
+                });
+            if global {
+                ui.add_space(BLOCK_GAP);
+            }
+        }
     }
 
     /// One shortcut row: the title on the left, the keycap on the right, the reset beside it while the row differs
@@ -689,7 +728,8 @@ fn query_tokens(query: &str) -> Vec<String> {
 /// A row matches when every word is in its group, title, keywords or combo text (case-insensitive). The combo
 /// is searched both as stored ("Mod+N") and as spoken ("Ctrl+N").
 fn row_matches(row: &Row, tokens: &[String], accel: &str) -> bool {
-    let haystack = format!("{GROUP} {} shortcut hotkey key binding {accel} {}", row.label, keycap_accel(accel)).to_lowercase();
+    let group = if row.global { "Global" } else { GROUP };
+    let haystack = format!("{group} {} shortcut hotkey key binding {accel} {}", row.label, keycap_accel(accel)).to_lowercase();
     tokens.iter().all(|t| haystack.contains(t.as_str()))
 }
 
@@ -866,15 +906,15 @@ fn paragraph(ui: &mut egui::Ui, text: &str, px: f32, w: u16, color: Color32, par
     part(ui, &response, part_id);
 }
 
-/// The Main window group's heading: small caps in the muted colour. Its text is the group name as written.
-fn group_label(ui: &mut egui::Ui, look: Look, text: &str) {
+/// A group's heading: small caps in the muted colour. Its text is the group name as written.
+fn group_label(ui: &mut egui::Ui, look: Look, text: &str, part_id: &str) {
     let color = look.t.content_3;
     let galley = taskscape_ui::eyebrow(ui.painter(), text, color);
     let (rect, response) = ui.allocate_exact_size(galley.size(), Sense::hover());
     ui.painter().galley(rect.min, galley, color);
     ui.ctx().accesskit_node_builder(response.id, |node| node.set_level(2));
     response.widget_info(|| WidgetInfo::labeled(Role::Heading, true, text));
-    part(ui, &response, parts::GROUPMAIN);
+    part(ui, &response, part_id);
 }
 
 /// The red line under a row whose change was refused or failed.

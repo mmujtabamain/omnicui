@@ -44,6 +44,10 @@ pub mod parts {
     pub const SHORTCUTSMATCHES: &str = "app.settingsshortcuts.shortcutsMatches";
     pub const PANE: &str = "app.settingsshortcuts.pane";
     pub const INTRO: &str = "app.settingsshortcuts.intro";
+    pub const GROUPGLOBAL: &str = "app.settingsshortcuts.groupGlobal";
+    pub const ROWCAPTUREBAR: &str = "app.settingsshortcuts.rowCaptureBar";
+    pub const KEYCAPCAPTUREBAR: &str = "app.settingsshortcuts.keycapCaptureBar";
+    pub const KEYCAPSCREENSHOTCAPTURE: &str = "app.settingsshortcuts.keycapScreenshotCapture";
     pub const GROUPMAIN: &str = "app.settingsshortcuts.groupMain";
     pub const DISCARDGROUP: &str = "app.settingsshortcuts.discardGroup";
     pub const ROW: &str = "app.settingsshortcuts.row";
